@@ -91,11 +91,6 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
         icon={<Percent className="size-3" aria-hidden />}
         valueClass={netColor}
       />
-      <p className="col-span-full ds-text-10 text-muted-foreground/70 italic">
-        {isMobile
-          ? 'Simulation only; final result is on-chain.'
-          : 'Simulation is for reference only. Final result depends on on-chain execution.'}
-      </p>
     </div>
   );
 });

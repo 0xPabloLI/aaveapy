@@ -79,7 +79,7 @@ export const usePortfolioToggle = ({
           (p) => p.reserveId === reserveId && p.side === side,
         );
         if (existing) {
-          portfolioActions.removePosition(existing.positionId);
+          portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
           portfolioActions.addPosition({
             reserveId,
@@ -91,8 +91,7 @@ export const usePortfolioToggle = ({
         }
       } else {
         if (portfolioReserveIds.has(reserveId)) {
-          const toRemove = portfolioPositions?.filter((p) => p.reserveId === reserveId) ?? [];
-          toRemove.forEach((p) => portfolioActions.removePosition(p.positionId));
+          portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
           portfolioActions.addPosition({
             reserveId,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sortPositionsByHidden, getSoftDeleteAction } from './portfolioSoftDelete'
+import { sortPositionsByHidden, getSoftDeleteAction, hideOrRemoveReserve, unhideReserve } from './portfolioSoftDelete'
 import type { PortfolioPosition } from '@/types/portfolio'
 
 const makePos = (overrides: Partial<PortfolioPosition> & { positionId: string }): PortfolioPosition => ({
@@ -70,5 +70,54 @@ describe('getSoftDeleteAction', () => {
   it('returns "remove" for manual position with empty amount', () => {
     const pos = makePos({ positionId: 'a', walletValue: null, amount: '' })
     expect(getSoftDeleteAction(pos)).toBe('remove')
+  })
+})
+
+describe('hideOrRemoveReserve', () => {
+  it('resets wallet positions to walletValue and marks hidden=true', () => {
+    const supply = makePos({ positionId: 's1', reserveId: 'r1', side: 'supply', walletValue: 1000, amount: '2000' })
+    const borrow = makePos({ positionId: 'b1', reserveId: 'r1', side: 'borrow', walletValue: 500, amount: '600' })
+    const other = makePos({ positionId: 'o1', reserveId: 'r2', side: 'supply', walletValue: 100, amount: '100' })
+    const result = hideOrRemoveReserve('r1', [supply, borrow, other])
+    const r1Result = result.filter(p => p.reserveId === 'r1')
+    expect(r1Result).toHaveLength(2)
+    expect(r1Result.find(p => p.side === 'supply')).toMatchObject({ amount: '1000', inputMode: 'usd', hidden: true })
+    expect(r1Result.find(p => p.side === 'borrow')).toMatchObject({ amount: '500', inputMode: 'usd', hidden: true })
+    expect(result.filter(p => p.reserveId === 'r2')).toHaveLength(1)
+  })
+
+  it('removes purely manual positions entirely', () => {
+    const supply = makePos({ positionId: 's1', reserveId: 'r1', side: 'supply', walletValue: null, amount: '500' })
+    const borrow = makePos({ positionId: 'b1', reserveId: 'r1', side: 'borrow', walletValue: null, amount: '300' })
+    const other = makePos({ positionId: 'o1', reserveId: 'r2', side: 'supply', walletValue: 100, amount: '100' })
+    const result = hideOrRemoveReserve('r1', [supply, borrow, other])
+    expect(result.filter(p => p.reserveId === 'r1')).toHaveLength(0)
+    expect(result).toHaveLength(1)
+  })
+
+  it('resets wallet positions and discards manual sides in mixed reserve', () => {
+    const supply = makePos({ positionId: 's1', reserveId: 'r1', side: 'supply', walletValue: 1000, amount: '2000' })
+    const borrow = makePos({ positionId: 'b1', reserveId: 'r1', side: 'borrow', walletValue: null, amount: '500' })
+    const result = hideOrRemoveReserve('r1', [supply, borrow])
+    const r1Result = result.filter(p => p.reserveId === 'r1')
+    expect(r1Result).toHaveLength(1)
+    expect(r1Result[0]).toMatchObject({ side: 'supply', amount: '1000', hidden: true })
+  })
+})
+
+describe('unhideReserve', () => {
+  it('sets hidden=false for all positions with matching reserveId', () => {
+    const s1 = makePos({ positionId: 's1', reserveId: 'r1', side: 'supply', walletValue: 1000, amount: '1000', hidden: true })
+    const b1 = makePos({ positionId: 'b1', reserveId: 'r1', side: 'borrow', walletValue: 500, amount: '500', hidden: true })
+    const o1 = makePos({ positionId: 'o1', reserveId: 'r2', side: 'supply', hidden: false })
+    const result = unhideReserve('r1', [s1, b1, o1])
+    expect(result.filter(p => p.reserveId === 'r1').every(p => !p.hidden)).toBe(true)
+    expect(result.find(p => p.reserveId === 'r2')!.hidden).toBe(false)
+  })
+
+  it('does not change positions for non-matching reserveId', () => {
+    const o1 = makePos({ positionId: 'o1', reserveId: 'r2', hidden: true })
+    const result = unhideReserve('r1', [o1])
+    expect(result[0].hidden).toBe(true)
   })
 })

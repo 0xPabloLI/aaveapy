@@ -50,6 +50,11 @@ const makeActions = (): PortfolioSimulationActions => ({
   importPositions: vi.fn(),
   restorePosition: vi.fn(),
   toggleHidden: vi.fn(),
+  restoreToWallet: vi.fn(),
+  removeReserve: vi.fn(),
+  hideOrRemoveReserveAction: vi.fn(),
+  unhideReserveAction: vi.fn(),
+  undoLastRemove: vi.fn(),
 });
 
 describe('usePortfolioToggle', () => {
@@ -99,7 +104,7 @@ describe('usePortfolioToggle', () => {
       expect(actions.removePosition).not.toHaveBeenCalled();
     });
 
-    it('removes only the matching side when it exists', () => {
+    it('calls hideOrRemoveReserveAction when the matching side exists', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const positions = [
@@ -117,8 +122,8 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
-      expect(actions.removePosition).toHaveBeenCalledWith('p-sup');
-      expect(actions.removePosition).toHaveBeenCalledTimes(1);
+      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledWith('r-1');
+      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledTimes(1);
       expect(actions.addPosition).not.toHaveBeenCalled();
     });
   });
@@ -143,7 +148,7 @@ describe('usePortfolioToggle', () => {
       expect(actions.addPosition).toHaveBeenNthCalledWith(2, expect.objectContaining({ side: 'borrow' }));
     });
 
-    it('removes ALL positions for the reserve when any side is present', () => {
+    it('calls hideOrRemoveReserveAction for the reserve when any side is present', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const positions = [
@@ -162,9 +167,8 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
 
-      expect(actions.removePosition).toHaveBeenCalledTimes(2);
-      expect(actions.removePosition).toHaveBeenCalledWith('p-sup');
-      expect(actions.removePosition).toHaveBeenCalledWith('p-bor');
+      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledWith('r-1');
+      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledTimes(1);
       expect(actions.addPosition).not.toHaveBeenCalled();
     });
 

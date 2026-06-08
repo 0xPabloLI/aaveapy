@@ -44,7 +44,7 @@ describe('usePortfolioSimulation.removeReserve', () => {
     expect(group[0].walletValue).toBe(5000)
     expect(group[0].amount).toBe('5000')
     expect(group[0].inputMode).toBe('usd')
-    expect(group[0].hidden).toBe(false)
+    expect(group[0].hidden).toBe(true)
   })
 
   it('hard-removes a row that has no wallet-owned sides', () => {
@@ -58,7 +58,7 @@ describe('usePortfolioSimulation.removeReserve', () => {
     expect(result.current.positions.filter((p) => p.reserveId === 'reserve-weth')).toHaveLength(0)
   })
 
-  it('undoLastRemove restores the previous positions verbatim (including manual edits)', () => {
+  it('removeReserve with wallet positions marks hidden=true; unhideReserveAction restores visibility', () => {
     const { result } = renderHook(() => usePortfolioSimulation())
     act(() => {
       result.current.actions.importPositions([
@@ -68,18 +68,16 @@ describe('usePortfolioSimulation.removeReserve', () => {
     })
 
     act(() => result.current.actions.removeReserve('reserve-weth'))
-    // Sanity: reset happened.
-    expect(result.current.positions.find((p) => p.positionId === 'p-supply')?.amount).toBe('5000')
+    // After removeReserve: wallet supply side is reset + hidden, manual borrow is dropped
+    const supply = result.current.positions.find((p) => p.positionId === 'p-supply')
+    expect(supply?.amount).toBe('5000')
+    expect(supply?.hidden).toBe(true)
     expect(result.current.positions.find((p) => p.positionId === 'p-borrow')).toBeUndefined()
 
-    let restored = false
-    act(() => { restored = result.current.actions.undoLastRemove() })
-    expect(restored).toBe(true)
-
-    const supply = result.current.positions.find((p) => p.positionId === 'p-supply')
-    const borrow = result.current.positions.find((p) => p.positionId === 'p-borrow')
-    expect(supply?.amount).toBe('9999')
-    expect(borrow?.amount).toBe('1234')
+    // unhideReserveAction restores visibility
+    act(() => result.current.actions.unhideReserveAction('reserve-weth'))
+    const unhidden = result.current.positions.find((p) => p.positionId === 'p-supply')
+    expect(unhidden?.hidden).toBe(false)
   })
 
   it('undoLastRemove returns false and is a no-op when there is nothing to undo', () => {

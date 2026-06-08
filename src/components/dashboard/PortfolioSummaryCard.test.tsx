@@ -25,22 +25,10 @@ describe('PortfolioSummaryCard', () => {
     expect(screen.getByText('Net Effective APY')).toBeInTheDocument();
   });
 
-  it('renders simulation disclaimer below the metric grid', () => {
+  it('no longer renders simulation disclaimer (moved to PortfolioPanel header)', () => {
     render(<PortfolioSummaryCard summary={makeSummary()} />);
-    const disclaimer = screen.getByText(
+    expect(screen.queryByText(
       /Simulation is for reference only\. Final result depends on on-chain execution\./,
-    );
-    expect(disclaimer).toBeInTheDocument();
-    expect(disclaimer.tagName).toBe('P');
-  });
-
-  it('disclaimer has correct styling classes', () => {
-    render(<PortfolioSummaryCard summary={makeSummary()} />);
-    const disclaimer = screen.getByText(
-      /Simulation is for reference only\./,
-    );
-    expect(disclaimer).toHaveClass('ds-text-10');
-    expect(disclaimer).toHaveClass('italic');
-    expect(disclaimer.className).toMatch(/text-muted-foreground\/70/);
+    )).not.toBeInTheDocument();
   });
 });

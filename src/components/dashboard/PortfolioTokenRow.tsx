@@ -9,7 +9,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { getWalletSyncState } from '@/lib/portfolioWalletSync';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { getSoftDeleteAction } from '@/lib/portfolioSoftDelete';
+import { getGroupSoftDeleteAction } from '@/lib/portfolioSoftDelete';
 
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
@@ -26,20 +26,21 @@ interface PortfolioTokenRowProps {
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
   onUpdateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
-  onToggleHidden?: (positionId: string) => void;
+  onHideOrRemoveReserve: (reserveId: string) => void;
+  onUnhideReserve?: (reserveId: string) => void;
   onRestorePosition?: (positionId: string) => void;
   tokenPriceInUsd?: number;
 }
 
-function WalletSyncIndicator({ positions, onRestore }: {
+function WalletSyncIndicator({ positions, onRestoreReserve, reserveId }: {
   positions: Array<PortfolioPosition | null>;
-  onRestore?: (positionId: string) => void;
+  onRestoreReserve?: (reserveId: string) => void;
+  reserveId: string;
 }) {
   const present = positions.filter((p): p is PortfolioPosition => p !== null);
   if (present.length === 0) {
     return <div className="size-3.5 shrink-0" aria-hidden="true" />;
   }
-  // Aggregate: modified wins over synced; if any side has wallet origin show wallet.
   const states = present.map(getWalletSyncState);
   const aggregate: 'modified' | 'synced' | 'manual' = states.includes('modified')
     ? 'modified'
@@ -59,12 +60,10 @@ function WalletSyncIndicator({ positions, onRestore }: {
     );
   }
 
-  // modified — clicking restores every modified side back to its wallet value.
-  const modifiedPositions = present.filter((p) => getWalletSyncState(p) === 'modified');
   return (
     <button
       type="button"
-      onClick={onRestore ? () => modifiedPositions.forEach((p) => onRestore(p.positionId)) : undefined}
+      onClick={onRestoreReserve ? () => onRestoreReserve(reserveId) : undefined}
       className="group relative shrink-0"
       aria-label="Modified — click to restore amounts to wallet values"
       title="Restore to wallet value"
@@ -86,7 +85,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   reserveId,
   onUpdateAmount,
   onUpdateInputMode,
-  onToggleHidden,
+  onHideOrRemoveReserve,
+  onUnhideReserve,
   onRestorePosition,
   tokenPriceInUsd,
 }: PortfolioTokenRowProps) {
@@ -98,6 +98,20 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
 
   const anyPosition = supplyPosition ?? borrowPosition;
   const isHidden = anyPosition?.hidden ?? false;
+
+  const handleMinusClick = useCallback(() => {
+    if (!anyPosition) return;
+    if (isHidden) {
+      onUnhideReserve?.(reserveId);
+    } else {
+      const action = getGroupSoftDeleteAction([supplyPosition, borrowPosition]);
+      if (action === 'toggleHidden') {
+        onHideOrRemoveReserve(reserveId);
+      } else {
+        onRemove(reserveId);
+      }
+    }
+  }, [anyPosition, isHidden, supplyPosition, borrowPosition, onHideOrRemoveReserve, onUnhideReserve, onRemove, reserveId]);
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
@@ -242,16 +256,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   };
 
-  const handleMinusClick = useCallback(() => {
-    if (!anyPosition) return;
-    const action = getSoftDeleteAction(anyPosition);
-    if (action === 'toggleHidden' && onToggleHidden) {
-      onToggleHidden(anyPosition.positionId);
-    } else {
-      onRemove(reserveId);
-    }
-  }, [anyPosition, onToggleHidden, onRemove, reserveId]);
-
   const minusBtn = (
     <button
       type="button"
@@ -263,7 +267,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       )}
       aria-label={isHidden ? `Restore ${tokenSymbol}` : `Remove ${tokenSymbol} from portfolio`}
     >
-      <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
+      {isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
     </button>
   );
 
@@ -273,7 +277,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     <div className="flex w-4 justify-center shrink-0">
       <WalletSyncIndicator
         positions={[supplyPosition, borrowPosition]}
-        onRestore={onRestorePosition}
+        onRestoreReserve={onUnhideReserve}
+        reserveId={reserveId}
       />
     </div>
   );
@@ -305,7 +310,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             : 'border-border/50 bg-card/80 hover:border-border',
           isHidden && 'cursor-pointer',
         )}
-        onClick={isHidden && onToggleHidden && anyPosition ? () => onToggleHidden(anyPosition.positionId) : undefined}
+        onClick={isHidden && onUnhideReserve ? () => onUnhideReserve(reserveId) : undefined}
       >
         <div className="flex min-w-0 items-center gap-1">
           {minusBtn}
@@ -350,7 +355,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             : 'border-border/50 bg-card/80 hover:border-border',
         isHidden && 'cursor-pointer',
       )}
-      onClick={isHidden && onToggleHidden && anyPosition ? () => onToggleHidden(anyPosition.positionId) : undefined}
+      onClick={isHidden && onUnhideReserve ? () => onUnhideReserve(reserveId) : undefined}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         {minusBtn}

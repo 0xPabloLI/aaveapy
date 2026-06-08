@@ -201,9 +201,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const SEARCH_PAGE_SIZE = 20;
   const [visibleSearchCount, setVisibleSearchCount] = useState(SEARCH_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Always default the search bar open whenever the portfolio panel mounts/opens.
-  // Users can still collapse it manually via the X button.
-  const [searchOpen, setSearchOpen] = useState(true);
+  // Open search bar by default only when there are no positions.
+  // Users can still toggle it manually via the search/X button.
+  const [searchOpen, setSearchOpen] = useState(() => positions.length === 0);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -492,6 +492,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <Layers className={`size-4 ${PORTFOLIO_THEME.text}`} aria-hidden />
             <span className="ds-text-14 font-semibold text-foreground">
               Portfolio
+            </span>
+            <span className="ds-text-10 text-muted-foreground/50 italic">
+              {isMobile
+                ? 'Simulation only; final result is on-chain.'
+                : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
@@ -787,7 +792,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onRemove={handleRemoveToken}
                   onUpdateAmount={actions.updateAmount}
                   onUpdateInputMode={actions.updateInputMode}
-                  onToggleHidden={handleToggleHidden}
+                  onHideOrRemoveReserve={actions.hideOrRemoveReserveAction}
+                  onUnhideReserve={actions.unhideReserveAction}
                   onRestorePosition={handleRestorePosition}
                   tokenPriceInUsd={reserves.find((r) => getReserveKey(r) === reserveId)?.tokenPrice}
                 />

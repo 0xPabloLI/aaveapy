@@ -22,6 +22,7 @@ import {
   formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
 import { mergePositions } from '@/lib/portfolioMerger';
+import { hideOrRemoveReserve, unhideReserve as unhideReserveLogic } from '@/lib/portfolioSoftDelete';
 
 let nextPositionId = 1;
 const generatePositionId = (): string => `port-${nextPositionId++}`;
@@ -68,6 +69,10 @@ export interface PortfolioSimulationActions {
   restoreToWallet: (positionId: string) => void;
   /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
   removeReserve: (reserveId: string) => void;
+  /** Reserve-level hide-or-remove: wallet positions → reset+hidden, manual → removed. */
+  hideOrRemoveReserveAction: (reserveId: string) => void;
+  /** Unhide all positions for a reserveId. */
+  unhideReserveAction: (reserveId: string) => void;
   /** Undo the most recent removeReserve call, restoring prior positions verbatim. Returns true if anything was restored. */
   undoLastRemove: () => boolean;
 }
@@ -246,30 +251,15 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const removeReserve = useCallback((reserveId: string) => {
-    setPositions((prev) => {
-      const group = prev.filter((p) => p.reserveId === reserveId);
-      if (group.length === 0) return prev;
-      // Capture snapshot for undo before mutating.
-      lastRemoveSnapshotRef.current = prev.map((p) => ({ ...p }));
-      const anyWallet = group.some((p) => p.walletValue !== null);
-      if (anyWallet) {
-        // Reset the group to its actual wallet state:
-        // - Wallet-owned sides: restore amount/inputMode to wallet value, un-hide.
-        // - Purely manual sides (walletValue === null) layered on top of a wallet
-        //   reserve: drop them entirely so the row reflects only what the wallet holds.
-        return prev.flatMap((p) => {
-          if (p.reserveId !== reserveId) return [p];
-          if (p.walletValue === null) return [];
-          return [{
-            ...p,
-            amount: formatConvertedAmount(p.walletValue),
-            inputMode: 'usd' as const,
-            hidden: false,
-          }];
-        });
-      }
-      return prev.filter((p) => p.reserveId !== reserveId);
-    });
+    setPositions((prev) => hideOrRemoveReserve(reserveId, prev));
+  }, []);
+
+  const hideOrRemoveReserveAction = useCallback((reserveId: string) => {
+    setPositions((prev) => hideOrRemoveReserve(reserveId, prev));
+  }, []);
+
+  const unhideReserveAction = useCallback((reserveId: string) => {
+    setPositions((prev) => unhideReserveLogic(reserveId, prev));
   }, []);
 
   const undoLastRemove = useCallback((): boolean => {
@@ -296,9 +286,11 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       toggleHidden,
       restoreToWallet,
       removeReserve,
+      hideOrRemoveReserveAction,
+      unhideReserveAction,
       undoLastRemove,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve, undoLastRemove]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve, hideOrRemoveReserveAction, unhideReserveAction, undoLastRemove]
   );
 
   return {
