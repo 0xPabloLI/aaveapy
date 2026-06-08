@@ -47,7 +47,7 @@ import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
-import { buildPerReserveInputs } from '@/lib/portfolioSimulator';
+import { buildPerReserveInputsFromEntries } from '@/lib/portfolioSimulator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
@@ -57,7 +57,7 @@ import { getProtocolVersion } from '@/lib/protocolVersion';
 import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import PortfolioPanel from './PortfolioPanel';
@@ -80,8 +80,7 @@ interface ReservesTableProps {
   /** Portfolio simulation mode. */
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
-  portfolioPositions?: PortfolioPosition[];
-  portfolioEntries?: import('@/types/portfolio').PortfolioReserveEntry[];
+  portfolioEntries?: PortfolioReserveEntry[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
   onWalletSync?: () => void;
@@ -113,7 +112,6 @@ const ReservesTable = ({
   scrollToReserveId,
   simulationMode = 'single',
   onSimulationModeChange,
-  portfolioPositions,
   portfolioEntries,
   portfolioActions,
   portfolioSnapshots,
@@ -264,8 +262,8 @@ const ReservesTable = ({
   const isPortfolioMode = simulationMode === 'portfolio';
 
   const perReserveInputs = useMemo(
-    () => (isPortfolioMode && portfolioPositions ? buildPerReserveInputs(portfolioPositions, reserves) : undefined),
-    [isPortfolioMode, portfolioPositions, reserves],
+    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
+    [isPortfolioMode, portfolioEntries, reserves],
   );
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
@@ -836,7 +834,6 @@ const ReservesTable = ({
     isPortfolioMode,
     reserves,
     entries: portfolioEntries,
-    portfolioPositions,
     portfolioActions,
     simulationContext: portfolioSimulationContext,
   });
@@ -857,12 +854,12 @@ const ReservesTable = ({
               />
             </div>
           )}
-          {onSimulationModeChange && (
+          {!isPortfolioMode && onSimulationModeChange && (
             <div className="ml-auto shrink-0">
               <PortfolioModeToggle
                 mode={simulationMode}
                 onModeChange={onSimulationModeChange}
-                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+                positionCount={portfolioEntries?.length ?? 0}
               />
             </div>
           )}
@@ -879,12 +876,12 @@ const ReservesTable = ({
               />
             </div>
           )}
-          {onSimulationModeChange && (
+          {!isPortfolioMode && onSimulationModeChange && (
             <div className="ml-auto shrink-0">
               <PortfolioModeToggle
                 mode={simulationMode}
                 onModeChange={onSimulationModeChange}
-                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+                positionCount={portfolioEntries?.length ?? 0}
               />
             </div>
           )}
@@ -893,9 +890,9 @@ const ReservesTable = ({
       {isPortfolioMode && (
         isLoading && reserves.length === 0 ? (
           <PortfolioPanelSkeleton />
-        ) : portfolioPositions && portfolioActions ? (
+        ) : portfolioEntries && portfolioActions ? (
           <PortfolioPanel
-            positions={portfolioPositions}
+            entries={portfolioEntries}
             actions={portfolioActions}
             reserves={reserves}
             positionResults={portfolioResults}
