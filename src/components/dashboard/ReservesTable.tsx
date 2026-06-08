@@ -904,6 +904,8 @@ const ReservesTable = ({
             onWalletSync={onWalletSync}
             onRefresh={onRefresh}
             walletLoadState={walletLoadState}
+            simulationMode={simulationMode}
+            onSimulationModeChange={onSimulationModeChange}
           />
         ) : null
       )}
