@@ -368,11 +368,12 @@ export const sumForecastMeritValues = (
   isApy: boolean,
   inputUsd: number,
   anchorTvlUsd?: number,
+  totalPositionUsd?: number,
 ): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
     if (!isCampaignActive(value.startDate, value.endDate)) return sum;
-    const aprPercent = forecastMeritAprPercent(value, inputUsd, anchorTvlUsd);
+    const aprPercent = forecastMeritAprPercent(value, inputUsd, anchorTvlUsd, totalPositionUsd);
     if (aprPercent <= 0) return sum;
     return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
   }, 0);
@@ -872,6 +873,8 @@ export const buildIncentiveAfter = (
   hubBorrowed?: string,
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
+  principalSupplyUsd?: number,
+  principalBorrowUsd?: number,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -885,9 +888,14 @@ export const buildIncentiveAfter = (
     tydroPointToUsdRate,
   });
 
+  const principalUsd = side === 'supply' ? principalSupplyUsd : principalBorrowUsd;
+  const totalPositionUsd = principalUsd != null && principalUsd > 0
+    ? principalUsd + netInputUsd
+    : undefined;
+
   return (
     sumNumberArray(protocol, isApy) +
-    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed)) * eligibilityRatio +
+    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed), totalPositionUsd) * eligibilityRatio +
     sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier, campaignAccessStatuses) +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
@@ -1215,6 +1223,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
+        principalSupplyUsd,
+        principalBorrowUsd,
       )
     : null;
   const borrowAfterIncentiveRaw = hasAnyInput
@@ -1233,6 +1243,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
+        principalSupplyUsd,
+        principalBorrowUsd,
       )
     : null;
   const supplyAfterIncentiveAprRaw = hasAnyInput
@@ -1251,6 +1263,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
+        principalSupplyUsd,
+        principalBorrowUsd,
       )
     : null;
   const borrowAfterIncentiveAprRaw = hasAnyInput
@@ -1269,6 +1283,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
+        principalSupplyUsd,
+        principalBorrowUsd,
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.

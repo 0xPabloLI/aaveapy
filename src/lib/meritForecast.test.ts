@@ -162,6 +162,70 @@ describe('forecastMeritCampaign', () => {
     expect(result?.estimateKind).toBe('MERIT_SELF_CAP');
     expect(result?.meritEstimateSource).toBe('reserve_tvl');
   });
+
+  it('BUG REPRO: same delta + same cap but different existing position produces same APY (should differ)', () => {
+    const aprPct = 4;
+    const selfCap = 1000;
+
+    const withNoPosition = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 1000,
+      forecastAprPercent: aprPct,
+      selfCapUsd: selfCap,
+    });
+
+    const withExistingPosition = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 1000,
+      forecastAprPercent: aprPct,
+      selfCapUsd: selfCap,
+      totalPositionUsd: 2000,
+    });
+
+    const withLargerPosition = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 2000,
+      forecastAprPercent: aprPct,
+      selfCapUsd: selfCap,
+      totalPositionUsd: 3000,
+    });
+
+    expect(withNoPosition).not.toBeNull();
+    expect(withExistingPosition).not.toBeNull();
+    expect(withLargerPosition).not.toBeNull();
+
+    expect(withNoPosition!.apr).toBeCloseTo(aprPct / 100, 10);
+
+    expect(withExistingPosition!.apr).toBeLessThan(withNoPosition!.apr);
+
+    expect(withLargerPosition!.apr).toBeLessThan(withExistingPosition!.apr);
+  });
+
+  it('with totalPositionUsd, eligible deposit uses total position for cap check', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 1000,
+      forecastAprPercent: 4,
+      selfCapUsd: 1000,
+      totalPositionUsd: 2000,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.selfEligibleUsd).toBe(1000);
+    expect(result!.apr).toBeCloseTo((4 * (1000 / 2000)) / 100, 10);
+  });
+
+  it('totalPositionUsd within cap is not diluted', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 500,
+      forecastAprPercent: 4,
+      selfCapUsd: 1000,
+      totalPositionUsd: 800,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.selfEligibleUsd).toBe(800);
+    expect(result!.apr).toBeCloseTo(4 / 100, 10);
+  });
 });
 
 describe('getMeritCampaignCycleDays', () => {

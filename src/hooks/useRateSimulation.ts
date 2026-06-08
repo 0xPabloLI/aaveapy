@@ -271,6 +271,8 @@ export const useSharedRateSimulations = ({
           reserveSymbolById,
           hubSupplied,
           hubBorrowed,
+          principalSupplyUsd: reservePositions?.get(reserveId)?.supplyUsd,
+          principalBorrowUsd: reservePositions?.get(reserveId)?.borrowUsd,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasEffectiveInput && forecastLoading,

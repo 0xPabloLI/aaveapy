@@ -33,11 +33,14 @@ interface ForecastMeritCampaignInput {
   startDate?: string;
   endDate?: string;
   lastRoundRewardUsd?: number;
-  /** If set, assumes this USD TVL matches Merit’s rate denominator; daily reward = TVL × APR / 365, then dilutes. */
+  /** If set, assumes this USD TVL matches Merit's rate denominator; daily reward = TVL × APR / 365, then dilutes. */
   anchorTvlUsd?: number;
   selfCapUsd?: number;
   baseAprPercent?: number;
   baseLastRoundRewardUsd?: number;
+  /** Total position USD (existing wallet position + delta). Used for self-cap eligibility check
+   *  so that cap dilution accounts for the full position, not just the incremental input. */
+  totalPositionUsd?: number;
 }
 
 function sanitizePercent(value: number | undefined): number {
@@ -171,6 +174,7 @@ export function forecastMeritCampaign({
   selfCapUsd,
   baseAprPercent,
   baseLastRoundRewardUsd,
+  totalPositionUsd,
 }: ForecastMeritCampaignInput): MeritForecastPreview | null {
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) return null;
 
@@ -179,7 +183,9 @@ export function forecastMeritCampaign({
 
   if (mode === 'MERIT_SELF_CAP') {
     if (!Number.isFinite(selfCapUsd) || selfCapUsd! <= 0) return null;
-    const eligibleDepositUsd = Math.min(depositUsd, selfCapUsd!);
+    const positionForCap = totalPositionUsd ?? depositUsd;
+    if (positionForCap <= 0) return null;
+    const eligibleDepositUsd = Math.min(positionForCap, selfCapUsd!);
     if (eligibleDepositUsd <= 0) return null;
 
     const latestRoundBaseApr = sanitizePercent(baseAprPercent);
@@ -210,7 +216,7 @@ export function forecastMeritCampaign({
         if (hypotheticalTvl > 0) {
           const baseForecastAprPercent = (baseEstimate.estimatedDailyRewardUsd * 365 * 100) / hypotheticalTvl;
           if (Number.isFinite(baseForecastAprPercent) && baseForecastAprPercent > 0) {
-            const effectiveAprPercent = baseForecastAprPercent * (eligibleDepositUsd / depositUsd);
+            const effectiveAprPercent = baseForecastAprPercent * (eligibleDepositUsd / positionForCap);
             return {
               unavailable: false,
               hypotheticalTvl,
@@ -229,7 +235,7 @@ export function forecastMeritCampaign({
       }
     }
 
-    const effectiveAprPercent = aprPercent * (eligibleDepositUsd / depositUsd);
+    const effectiveAprPercent = aprPercent * (eligibleDepositUsd / positionForCap);
     return {
       unavailable: false,
       dailyRewards: (aprPercent / 100) * (eligibleDepositUsd / 365),
@@ -306,6 +312,7 @@ export function forecastMeritAprPercent(
   incentive: MeritIncentive,
   depositUsd: number,
   anchorTvlUsd?: number,
+  totalPositionUsd?: number,
 ): number {
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
     return sanitizePercent(incentive.apr) + sanitizePercent(incentive.selfApr);
@@ -339,6 +346,7 @@ export function forecastMeritAprPercent(
         baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
         baseLastRoundRewardUsd: incentive.lastRoundRewardUsd,
         anchorTvlUsd,
+        totalPositionUsd,
       })
     : null;
 
