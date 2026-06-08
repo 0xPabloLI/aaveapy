@@ -115,11 +115,17 @@ export function simulatePortfolioPositions(
     return { results: [], summary: aggregatePortfolioSummary([]) };
   }
 
+  // Hidden positions should not contribute to Earn calculations (AAV-671)
+  const visiblePositions = positions.filter((p) => !p.hidden);
+  if (visiblePositions.length === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
   const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
   const groupMap = new Map<string, PositionGroup>();
-  for (const pos of positions) {
+  for (const pos of visiblePositions) {
     const key = getReserveKey({ reserveId: pos.reserveId });
     const reserve = reserveMap.get(key);
     const amountUsd = resolvePositionAmountUsd(pos, reserve);

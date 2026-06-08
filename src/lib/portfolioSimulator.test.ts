@@ -350,6 +350,37 @@ describe('simulatePortfolioPositions', () => {
     expect(results).toEqual([]);
   });
 
+  it('skips hidden positions from results and summary', () => {
+    const reserve = makeRateCalcReserve();
+    const positions = [
+      makePosition({ positionId: 'p-visible', side: 'supply', amount: '10000', hidden: false }),
+      makePosition({ positionId: 'p-hidden', side: 'supply', amount: '5000', hidden: true }),
+    ];
+    const args = baseSimArgs({ positions, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioPositions(args);
+    // Only the visible position should appear in results
+    expect(results).toHaveLength(1);
+    expect(results[0].positionId).toBe('p-visible');
+    // Summary should only include the visible position's contribution
+    expect(summary.totalSupplyUsd).toBe(10000);
+  });
+
+  it('mixed hidden + visible positions: summary excludes hidden contribution', () => {
+    const reserve = makeRateCalcReserve();
+    const positions = [
+      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000', hidden: false }),
+      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '3000', hidden: true }),
+    ];
+    const args = baseSimArgs({ positions, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioPositions(args);
+    // Only supply position should appear
+    expect(results).toHaveLength(1);
+    expect(results[0].side).toBe('supply');
+    // Borrow should be 0 since it's hidden
+    expect(summary.totalBorrowUsd).toBe(0);
+    expect(summary.totalSupplyUsd).toBe(10000);
+  });
+
   describe('cross-reserve net position constraint', () => {
     it('equal supply+borrow across reserves → Merkl incentive fully offset', () => {
       const usdcReserveId = 'r-usdc-ink';
