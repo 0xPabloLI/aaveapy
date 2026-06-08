@@ -651,6 +651,7 @@ const Index = () => {
               simulationMode={simulationMode}
               onSimulationModeChange={setSimulationMode}
               portfolioPositions={portfolio.positions}
+              portfolioEntries={portfolio.entries}
               portfolioActions={portfolio.actions}
               portfolioSnapshots={portfolio.snapshots}
               onWalletSync={handleWalletSync}

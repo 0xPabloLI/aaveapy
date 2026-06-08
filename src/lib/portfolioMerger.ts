@@ -1,3 +1,4 @@
+/** @deprecated Use mergeEntriesWithDelta in usePortfolioSimulation instead. */
 import type { PortfolioPosition } from '@/types/portfolio'
 import { formatConvertedAmount } from './portfolioCalculator'
 import { computeDelta } from './deltaCalculator'
@@ -34,6 +35,7 @@ function computeNewAmount(existing: PortfolioPosition, newWalletValue: number): 
   return formatConvertedAmount(newEffective)
 }
 
+/** @deprecated Use mergeEntriesWithDelta instead. */
 export function mergePositions({ current, incoming }: MergeParams): PortfolioPosition[] {
   const currentMap = new Map<string, PortfolioPosition>()
   for (const pos of current) {

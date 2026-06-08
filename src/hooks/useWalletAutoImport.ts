@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import type { WalletLoadState, DegradedResult } from '@/hooks/useUserPositionsSdk'
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import type { ReserveWithSpread } from '@/types/aave'
-import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio'
+import { convertWalletPositionsToEntries } from '@/lib/walletPositionToPortfolio'
 
 interface UseWalletAutoImportParams {
   address: `0x${string}` | undefined
@@ -41,19 +41,19 @@ export function useWalletAutoImport({
     if (lastImportedAddress.current === addressKey) return
 
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
-      const incoming = convertWalletPositionsToPortfolio(
+      const incoming = convertWalletPositionsToEntries(
         walletResult.data.positions,
         reserves,
       )
       lastImportedAddress.current = addressKey
 
       if (incoming.length === 0) {
-        portfolioActions.importPositions([])
+        portfolioActions.importReserves([])
         toast.info('Wallet has no positions')
         return
       }
 
-      portfolioActions.importPositions(incoming)
+      portfolioActions.importReserves(incoming)
       onImport?.()
       toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`)
     } else if (walletResult.status === 'error') {

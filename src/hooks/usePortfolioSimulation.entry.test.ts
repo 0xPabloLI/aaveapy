@@ -138,7 +138,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       const entry = result.current.entries.find(e => e.reserveId === 'r-weth')
       expect(entry?.supply.inputMode).toBe('token')
-      expect(entry?.supply.amount).toBe('2.00')
+      expect(entry?.supply.amount).toBe('2')
     })
   })
 
@@ -251,7 +251,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       })
 
       const entry = result.current.entries.find(e => e.reserveId === 'r-weth')
-      expect(entry?.supply.amount).toBe('1,737')
+      expect(entry?.supply.amount).toBe('1737')
       expect(entry?.borrow.amount).toBe('500')
     })
 
@@ -280,7 +280,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       })
 
       const entry = result.current.entries.find(e => e.reserveId === 'r-weth')
-      expect(entry?.supply.amount).toBe('1,737')
+      expect(entry?.supply.amount).toBe('1737')
       expect(entry?.borrow.amount).toBe('8888')
     })
   })

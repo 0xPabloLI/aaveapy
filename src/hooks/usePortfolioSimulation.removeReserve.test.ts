@@ -35,7 +35,7 @@ describe('usePortfolioSimulation.removeReserve', () => {
       ])
     })
 
-    act(() => result.current.actions.removeReserve('reserve-weth'))
+    act(() => result.current.actions.hideOrRemoveReserveAction('reserve-weth'))
 
     const group = result.current.positions.filter((p) => p.reserveId === 'reserve-weth')
     // Manual borrow side should be gone, wallet supply side should remain at 5000.
@@ -54,7 +54,7 @@ describe('usePortfolioSimulation.removeReserve', () => {
         basePos({ positionId: 'p-manual', side: 'supply', walletValue: null, amount: '500' }),
       ])
     })
-    act(() => result.current.actions.removeReserve('reserve-weth'))
+    act(() => result.current.actions.hideOrRemoveReserveAction('reserve-weth'))
     expect(result.current.positions.filter((p) => p.reserveId === 'reserve-weth')).toHaveLength(0)
   })
 
@@ -67,16 +67,16 @@ describe('usePortfolioSimulation.removeReserve', () => {
       ])
     })
 
-    act(() => result.current.actions.removeReserve('reserve-weth'))
-    // After removeReserve: wallet supply side is reset + hidden, manual borrow is dropped
-    const supply = result.current.positions.find((p) => p.positionId === 'p-supply')
+    act(() => result.current.actions.hideOrRemoveReserveAction('reserve-weth'))
+    // After hideOrRemoveReserveAction: wallet supply side is reset + hidden, manual borrow is dropped
+    const supply = result.current.positions.find((p) => p.reserveId === 'reserve-weth' && p.side === 'supply')
     expect(supply?.amount).toBe('5000')
     expect(supply?.hidden).toBe(true)
-    expect(result.current.positions.find((p) => p.positionId === 'p-borrow')).toBeUndefined()
+    expect(result.current.positions.find((p) => p.reserveId === 'reserve-weth' && p.side === 'borrow')).toBeUndefined()
 
     // unhideReserveAction restores visibility
     act(() => result.current.actions.unhideReserveAction('reserve-weth'))
-    const unhidden = result.current.positions.find((p) => p.positionId === 'p-supply')
+    const unhidden = result.current.positions.find((p) => p.reserveId === 'reserve-weth' && p.side === 'supply')
     expect(unhidden?.hidden).toBe(false)
   })
 

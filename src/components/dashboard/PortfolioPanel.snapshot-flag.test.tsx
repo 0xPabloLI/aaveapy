@@ -86,17 +86,15 @@ const makeActions = (): PortfolioSimulationActions => ({
 const makeSnapshot = (label: string): PortfolioSnapshot => ({
   id: `snap-${label}`,
   label,
-  createdAt: new Date().toISOString(),
-  positions: [],
+  createdAt: Date.now(),
+  entries: [],
   summary: {
     totalSupplyUsd: 1000,
     totalBorrowUsd: 500,
-    netUsd: 500,
-    weightedSupplyApy: 4.2,
-    weightedBorrowApy: 6.1,
-    netApy: 2.1,
-    supplyIncentiveApr: 0,
-    borrowIncentiveApr: 0,
+    supplyUsdPerDay: 0.115,
+    borrowUsdPerDay: 0.084,
+    netUsdPerDay: 0.031,
+    netEffectiveApy: 1.13,
   },
   positionResults: [],
 });

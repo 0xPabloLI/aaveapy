@@ -213,13 +213,13 @@ describe('Architecture guard: WalletPositionSource and PositionSource must stay 
   });
 });
 
-describe('Architecture guard: convertWalletPositionsToPortfolio must preserve source field', () => {
+describe('Architecture guard: walletPositionToPortfolio must preserve source field', () => {
   it('converter output includes source: walletSourceToPositionSource(wp.source)', () => {
     const src = readFile('lib/walletPositionToPortfolio.ts');
     expect(
       src,
-      'convertWalletPositionsToPortfolio must set source from walletSourceToPositionSource',
-    ).toMatch(/source:\s*walletSourceToPositionSource\(wp\.source\)/);
+      'convertWalletPositionsToEntries must derive source from walletSourceToPositionSource',
+    ).toMatch(/walletSourceToPositionSource\(wp\.source\)/);
   });
 
   it('walletSourceToPositionSource function exists and is not a no-op placeholder', () => {

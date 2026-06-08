@@ -25,6 +25,7 @@ export function getGroupSoftDeleteAction(
   return anyWallet ? 'toggleHidden' : 'remove'
 }
 
+/** @deprecated Logic inlined in usePortfolioSimulation.hideOrRemoveReserveAction. */
 export function hideOrRemoveReserve(
   reserveId: string,
   positions: PortfolioPosition[],
@@ -47,6 +48,7 @@ export function hideOrRemoveReserve(
   return positions.filter(p => p.reserveId !== reserveId)
 }
 
+/** @deprecated Logic inlined in usePortfolioSimulation.unhideReserve. */
 export function unhideReserve(
   reserveId: string,
   positions: PortfolioPosition[],

@@ -29,8 +29,6 @@ import {
   formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
 import { computeDelta } from '@/lib/deltaCalculator';
-import { mergePositions } from '@/lib/portfolioMerger';
-import { hideOrRemoveReserve, unhideReserve as unhideReserveLogic } from '@/lib/portfolioSoftDelete';
 
 let nextPositionId = 1;
 const generatePositionId = (): string => `port-${nextPositionId++}`;

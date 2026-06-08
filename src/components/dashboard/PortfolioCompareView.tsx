@@ -124,13 +124,13 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
   for (const r of snapshotA.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
     allTokenKeys.add(key);
-    const pos = snapshotA.positions.find(p => p.positionId === r.positionId);
+    const pos = snapshotA.entries.find(p => p.reserveId === r.reserveId);
     tokenMap.set(key, { symbol: pos?.tokenSymbol ?? '?', side: r.side, aprA: r.totalPercent, aprB: null, usdDayA: r.usdPerDay, usdDayB: null });
   }
   for (const r of snapshotB.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
     allTokenKeys.add(key);
-    const pos = snapshotB.positions.find(p => p.positionId === r.positionId);
+    const pos = snapshotB.entries.find(p => p.reserveId === r.reserveId);
     const existing = tokenMap.get(key);
     if (existing) {
       existing.aprB = r.totalPercent;

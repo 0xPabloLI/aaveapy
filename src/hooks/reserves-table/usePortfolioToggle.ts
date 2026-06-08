@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import type {
+  PortfolioReserveEntry,
   PortfolioPosition,
   PortfolioPositionResult,
   PortfolioSummary,
@@ -25,6 +26,8 @@ export interface PortfolioSimulationContext {
 export interface UsePortfolioToggleArgs {
   isPortfolioMode: boolean;
   reserves: ReserveWithSpread[];
+  entries?: PortfolioReserveEntry[];
+  /** @deprecated Use entries instead. */
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
   simulationContext?: PortfolioSimulationContext;
@@ -41,96 +44,102 @@ export interface UsePortfolioToggleResult {
   portfolioSummary: PortfolioSummary;
 }
 
-/**
- * Encapsulates the portfolio-side state derivations and toggle handler used
- * by `ReservesTable`:
- *
- * - `portfolioReserveIds`: a Set of reserveIds currently in the portfolio.
- * - `handlePortfolioToggle`: add/remove a reserve in/out of the portfolio.
- *   When `side` is provided, adds that side AND mirrors the opposite side
- *   if not already present (supply-borrow inseparability, see
- *   [b8a89191]); to remove, use the explicit `hideOrRemoveReserveAction`
- *   instead. When `side` is omitted, adds BOTH supply and borrow if
- *   absent, or removes ALL positions for that reserve if any side is
- *   present.
- * - `portfolioResults` / `portfolioSummary`: derived view-model rows and
- *   aggregate summary; empty when not in portfolio mode or no positions.
- *
- * Behavior preserved verbatim from the original inline implementation in
- * `src/components/dashboard/ReservesTable.tsx`, with the side-toggled
- * addition extended to also add the opposite side when missing.
- */
+function entriesToPositionsForToggle(entries: PortfolioReserveEntry[]): PortfolioPosition[] {
+  return entries.flatMap((e) => {
+    const makePos = (side: 'supply' | 'borrow', s: PortfolioReserveEntry['supply']): PortfolioPosition => ({
+      positionId: `${e.reserveId}::${side}`,
+      reserveId: e.reserveId,
+      marketName: e.marketName,
+      chainName: e.chainName,
+      tokenSymbol: e.tokenSymbol,
+      side,
+      amount: s.amount,
+      inputMode: s.inputMode,
+      walletValue: s.walletValue,
+      hidden: e.hidden,
+      isOrphan: e.isOrphan,
+      source: s.source,
+      deltaSign: s.deltaSign ?? 1,
+    });
+    const sides: PortfolioPosition[] = [];
+    if (e.hidden && e.supply.walletValue === null && e.borrow.walletValue !== null) {
+      sides.push(makePos('borrow', e.borrow));
+    } else if (e.hidden && e.borrow.walletValue === null && e.supply.walletValue !== null) {
+      sides.push(makePos('supply', e.supply));
+    } else {
+      sides.push(makePos('supply', e.supply));
+      sides.push(makePos('borrow', e.borrow));
+    }
+    return sides;
+  });
+}
+
 export const usePortfolioToggle = ({
   isPortfolioMode,
   reserves,
+  entries,
   portfolioPositions,
   portfolioActions,
   simulationContext,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
-  // Set of reserveIds currently in the portfolio
+  const effectiveEntries = useMemo(() => entries ?? [], [entries]);
   const portfolioReserveIds = useMemo(() => {
-    if (!portfolioPositions) return new Set<string>();
-    return new Set(portfolioPositions.map((p) => p.reserveId));
-  }, [portfolioPositions]);
+    return new Set(effectiveEntries.map((e) => e.reserveId));
+  }, [effectiveEntries]);
 
-  // Local helper: add one position with the standard payload shape.
-  const addOneSide = useCallback(
-    (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => {
-      portfolioActions?.addPosition({
-        reserveId: reserve.reserveId,
-        marketName: reserve.marketName,
-        chainName: reserve.chainName,
-        tokenSymbol: reserve.tokenSymbol,
-        side,
-      });
-    },
-    [portfolioActions],
-  );
-
-  // Callback: toggle a reserve in/out of portfolio (adds as specific side if provided, else defaults to supply+borrow)
   const handlePortfolioToggle = useCallback(
     (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => {
       if (!portfolioActions) return;
 
       if (side) {
-        const existing = portfolioPositions?.find(
-          (p) => p.reserveId === reserveId && p.side === side,
-        );
-        if (existing) {
+        const entry = effectiveEntries.find((e) => e.reserveId === reserveId);
+        const sideData = entry?.[side];
+        if (entry && sideData) {
           portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
           const oppositeSide = side === 'supply' ? 'borrow' : 'supply';
-          const hasOpposite = portfolioPositions?.some(
-            (p) => p.reserveId === reserveId && p.side === oppositeSide,
-          );
-          addOneSide(reserve, side);
-          if (!hasOpposite) {
-            addOneSide(reserve, oppositeSide);
+          const hasOpposite = entry?.[oppositeSide]?.walletValue !== null || (entry?.[oppositeSide]?.amount ?? '') !== '';
+          portfolioActions.addReserve({
+            reserveId: reserve.reserveId,
+            marketName: reserve.marketName,
+            chainName: reserve.chainName,
+            tokenSymbol: reserve.tokenSymbol,
+          });
+          if (!hasOpposite && !entry) {
+            // addReserve already adds both sides as empty; no extra action needed
           }
         }
       } else {
         if (portfolioReserveIds.has(reserveId)) {
           portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
-          addOneSide(reserve, 'supply');
-          addOneSide(reserve, 'borrow');
+          portfolioActions.addReserve({
+            reserveId: reserve.reserveId,
+            marketName: reserve.marketName,
+            chainName: reserve.chainName,
+            tokenSymbol: reserve.tokenSymbol,
+          });
         }
       }
     },
-    [addOneSide, portfolioActions, portfolioPositions, portfolioReserveIds],
+    [portfolioActions, effectiveEntries, portfolioReserveIds],
   );
 
-  // Portfolio results computation
+  const positionsForCalc = useMemo(() => {
+    if (effectiveEntries.length > 0) return entriesToPositionsForToggle(effectiveEntries);
+    return portfolioPositions ?? [];
+  }, [effectiveEntries, portfolioPositions]);
+
   const { portfolioResults, portfolioSummary } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
     portfolioSummary: PortfolioSummary;
   }>(() => {
-    if (!isPortfolioMode || !portfolioPositions || portfolioPositions.length === 0) {
+    if (!isPortfolioMode || positionsForCalc.length === 0) {
       return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
     }
     if (simulationContext) {
       const { results, summary } = simulatePortfolioPositions({
-        positions: portfolioPositions,
+        positions: positionsForCalc,
         reserves,
         isApy: simulationContext.isApy,
         whitelistMerklCampaignIds: simulationContext.whitelistMerklCampaignIds,
@@ -139,9 +148,8 @@ export const usePortfolioToggle = ({
       });
       return { portfolioResults: results, portfolioSummary: summary };
     }
-    // Fallback: simplified calculation (no buildRateSimulationResult)
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
-    const results: PortfolioPositionResult[] = portfolioPositions
+    const results: PortfolioPositionResult[] = positionsForCalc
       .map((pos) => {
         const reserve = reserveMap.get(getReserveKey({ reserveId: pos.reserveId }));
         const amountUsd = resolvePositionAmountUsd(pos, reserve);
@@ -160,7 +168,7 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, portfolioPositions, reserves, simulationContext]);
+  }, [isPortfolioMode, positionsForCalc, reserves, simulationContext]);
 
   return {
     portfolioReserveIds,
