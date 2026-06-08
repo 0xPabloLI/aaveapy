@@ -42,3 +42,17 @@
 ## 6. Desktop / Mobile 行为一致
 
 同一数据在不同视口的表现应语义一致。如需差异，在文档中明确说明。
+
+## 7. Supply-Borrow 不可分性（Supply-Borrow Inseparability）
+
+一个 token 进出 portfolio 时，supply 和 borrow 两个 side **必须同时存在**。不可出现只有单 side 的 position。
+
+**规则：**
+
+- 添加 token 到 portfolio → 同时创建 supply + borrow 两个 position（空 amount 的 side 也必须存在）
+- 从 portfolio 移除 token → 同时删除/隐藏同 reserveId 的所有 position
+- `addPosition` 是底层 API，**不保证一体化**；所有添加 token 的调用方必须自行补全另一侧，或通过高层 API（`handleAddToken`、`importPositions`）操作
+
+**根因教训（c788618f）：** `usePortfolioToggle.handlePortfolioToggle(reserveId, reserve, side?)` 的 `side` 分支曾只添加单 side，导致 `PortfolioTokenRow` 中该 token 只渲染一个 side，与"一体化"设计矛盾。修复：在添加指定 side 时检查并补全另一侧。
+
+**长期方向：** 将"添加 token"提升为一等公民 API（如 `addReserve`），内部保证双 side，避免每个调用方各自实现补全逻辑。`addPosition` 降级为内部实现细节，不对外暴露。
