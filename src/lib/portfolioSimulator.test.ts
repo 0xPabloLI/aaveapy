@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { simulatePortfolioPositions, buildPerReserveInputs } from './portfolioSimulator';
+import type { SimulationLane } from '@/lib/rateSimulationCalculator';
+import { simulatePortfolioPositions, buildPerReserveInputs, buildMetricsFromLane } from './portfolioSimulator';
 import type { SimulatePortfolioPositionsArgs } from './portfolioSimulator';
 
 const makeRateCalcReserve = (
@@ -673,5 +674,75 @@ describe('simulatePortfolioPositions', () => {
       expect(input.borrowInput).toBe('300');
       expect(input.principalBorrowUsd).toBe(800);
     });
+  });
+});
+
+const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
+  hasInput: true,
+  inputAmount: 10000,
+  inputUsd: 10000,
+  currentNative: 2.8,
+  currentIncentive: 0.9,
+  currentTotal: 3.7,
+  afterNative: 3.0,
+  afterIncentive: 1.0,
+  afterTotal: 4.0,
+  deltaNative: 0.2,
+  deltaIncentive: 0.1,
+  deltaTotal: 0.3,
+  sources: {
+    protocol: { current: 0, after: 0, delta: 0 },
+    merit: { current: 0, after: 0, delta: 0 },
+    merkl: { current: 0, after: 0, delta: 0 },
+    brevis: { current: 0, after: 0, delta: 0 },
+  },
+  ...overrides,
+});
+
+describe('buildMetricsFromLane', () => {
+  it('extracts native/incentive/total metrics from lane', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.nativeMetric).toEqual({ current: 2.8, after: 3.0, delta: 0.2 });
+    expect(metrics.incentiveMetric).toEqual({ current: 0.9, after: 1.0, delta: 0.1 });
+    expect(metrics.totalMetric).toEqual({ current: 3.7, after: 4.0, delta: 0.3 });
+  });
+
+  it('computes usdPerDayMetric from current and after rates', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.usdPerDayMetric).toBeDefined();
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      (10000 * 3.0 / 100 / 365) + (10000 * 1.0 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
+      metrics.usdPerDayMetric!.after - metrics.usdPerDayMetric!.current,
+      6,
+    );
+  });
+
+  it('computes borrow usdPerDayMetric with correct sign', () => {
+    const lane = makeLane({ currentNative: 5, afterNative: 6, deltaNative: 1, currentIncentive: 0.5, afterIncentive: 0.6, deltaIncentive: 0.1 });
+    const metrics = buildMetricsFromLane(lane, 'borrow', 10000);
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      -(10000 * 5 / 100 / 365) + (10000 * 0.5 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      -(10000 * 6 / 100 / 365) + (10000 * 0.6 / 100 / 365),
+      6,
+    );
+  });
+
+  it('handles null native rates in usdPerDayMetric', () => {
+    const lane = makeLane({ currentNative: null, afterNative: null, deltaNative: null });
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.nativeMetric!.current).toBeNull();
+    expect(metrics.usdPerDayMetric).toBeDefined();
   });
 });

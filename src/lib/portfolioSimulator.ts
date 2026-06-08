@@ -56,7 +56,7 @@ interface PositionGroup {
 
 const DAYS_PER_YEAR = 365;
 
-function buildMetricsFromLane(
+export function buildMetricsFromLane(
   lane: SimulationLane,
   side: 'supply' | 'borrow',
   amountUsd: number,
