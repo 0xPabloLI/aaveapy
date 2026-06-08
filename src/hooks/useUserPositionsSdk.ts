@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useWallet } from './useWallet'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUserSupplies as useV4UserSupplies, useUserBorrows as useV4UserBorrows } from '@aave/react'
 import { useUserSupplies as useV3UserSupplies, useUserBorrows as useV3UserBorrows } from '@aave/react-v3'
 import { evmAddress, chainId } from '@aave/types'
@@ -23,6 +23,7 @@ import { isInfrastructureFailure } from '@/lib/userData/rpcResilience'
 import { computeGapChainIds, type SdkCoverage } from '@/lib/userData/gapChainComputation'
 import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery'
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge'
+import { subscribeRefetch } from '@/lib/userData/refetchEvent'
 
 export type WalletLoadState = 'idle' | 'loading' | 'success-empty' | 'success' | 'error'
 
@@ -182,6 +183,7 @@ export function useUserPositionsSdk(
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
 ) {
   const { address, isConnected } = useWallet()
+  const queryClient = useQueryClient()
 
   const enabled = isConnected && !!address
   const account = (enabled ? address : undefined) as `0x${string}`
@@ -251,6 +253,30 @@ export function useUserPositionsSdk(
     v4ReservesBySpoke,
     enabled: enabled && !sdkLoading && (hasV3Gap || hasV4Gap),
   })
+
+  // Subscribe to the unified `refetchEvent` emitter. On every bump (F5,
+  // Refresh button, Watch Mode re-submit) invalidate the onchain-fallback
+  // RQ key and refetch the gap-fallback query. The SDK/urql refetch path
+  // is handled separately (S4) — S3 covers the RQ + gap paths so the
+  // "infrastructure failure" recovery path is responsive.
+  //
+  // The subscription is re-established on every address change so the
+  // closure captures the current `address`. The returned unsubscribe is
+  // called on unmount or before the next subscription is created.
+  // See ADR-0015.
+  useEffect(() => {
+    return subscribeRefetch(() => {
+      void queryClient.invalidateQueries({
+        queryKey: ['user-positions-onchain-fallback', address ?? 'no-wallet'],
+      })
+      void gapFallbackQuery.refetch()
+    })
+    // gapFallbackQuery is intentionally omitted: the gap fallback is a
+    // stable useQuery result and calling `refetch()` on the latest
+    // instance is safe. We only re-subscribe when `address` changes so the
+    // captured `address` value stays accurate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, queryClient])
 
   const sdkPositions: WalletPosition[] = []
   const sdkFailed: string[] = []

@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest'
+// @vitest-environment happy-dom
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   enrichV3SupplyPositions,
   enrichV3BorrowPositions,
@@ -8,11 +11,65 @@ import {
   buildV4ChainIds,
   buildV3SdkArgs,
   buildV4SdkArgs,
+  useUserPositionsSdk,
 } from './useUserPositionsSdk'
 import { composeReserveId } from '@/lib/reserveKey'
 import { V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
 import type { ReserveWithSpread } from '@/types/aave'
 import { evmAddress, chainId } from '@aave/types'
+import { bumpRefetch, _resetRefetchListeners } from '@/lib/userData/refetchEvent'
+
+// ---------- mocks (must be set up before any import that uses them) ----------
+
+const { useWalletMock } = vi.hoisted(() => ({
+  useWalletMock: vi.fn(),
+}))
+const { mockGapRefetch } = vi.hoisted(() => ({ mockGapRefetch: vi.fn() }))
+const { mockInvalidateQueries, lastOnchainFallbackQueryKey } = vi.hoisted(() => ({
+  mockInvalidateQueries: vi.fn(),
+  lastOnchainFallbackQueryKey: { value: undefined as readonly unknown[] | undefined },
+}))
+
+vi.mock('./useWallet', () => ({
+  useWallet: useWalletMock,
+}))
+
+vi.mock('@aave/react', () => ({
+  useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+}))
+
+vi.mock('@aave/react-v3', () => ({
+  useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+}))
+
+vi.mock('@/lib/userData/gapFallbackQuery', () => ({
+  useGapFallbackQuery: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    refetch: mockGapRefetch,
+  })),
+}))
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
+  return {
+    ...actual,
+    useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+    useQuery: (opts: { queryKey: readonly unknown[] }) => {
+      if (Array.isArray(opts.queryKey) && opts.queryKey[0] === 'user-positions-onchain-fallback') {
+        lastOnchainFallbackQueryKey.value = opts.queryKey
+      }
+      return {
+        data: undefined,
+        isLoading: false,
+        isFetched: false,
+        refetch: vi.fn(),
+      }
+    },
+  }
+})
 
 const POOL = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
@@ -260,5 +317,84 @@ describe('buildV4SdkArgs', () => {
     const result = buildV4SdkArgs(true, USER, [1, 42161])
     expect(String(result.query.userChains.user)).toBe(String(evmAddress(USER)))
     expect(result.query.userChains.chainIds.map(String)).toEqual([String(chainId(1)), String(chainId(42161))])
+  })
+})
+
+// ---------- refetchEvent subscription (S3) ----------
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function wrapper({ children }: { children: React.ReactNode }) {
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+}
+
+describe('useUserPositionsSdk - refetchEvent subscription (S3, AAV-679)', () => {
+  beforeEach(() => {
+    _resetRefetchListeners()
+    mockInvalidateQueries.mockClear()
+    mockGapRefetch.mockClear()
+    lastOnchainFallbackQueryKey.value = undefined
+    useWalletMock.mockReturnValue({
+      address: USER,
+      isConnected: true,
+      isWatchMode: false,
+    })
+  })
+
+  it('invalidates the onchain-fallback query when refetchEvent is bumped', () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['user-positions-onchain-fallback', USER],
+    })
+    unmount()
+  })
+
+  it('also refetches the gap-fallback query when refetchEvent is bumped', () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('button')
+
+    expect(mockGapRefetch).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('uses the no-wallet fallback key when no address is connected', () => {
+    useWalletMock.mockReturnValue({
+      address: undefined,
+      isConnected: false,
+      isWatchMode: false,
+    })
+
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['user-positions-onchain-fallback', 'no-wallet'],
+    })
+    unmount()
+  })
+
+  it('does not fire the callback after unmount', () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+    unmount()
+
+    bumpRefetch('watch-reentry')
+    expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    expect(mockGapRefetch).not.toHaveBeenCalled()
   })
 })
