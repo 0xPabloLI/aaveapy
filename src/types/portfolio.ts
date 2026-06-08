@@ -110,6 +110,8 @@ export interface PortfolioSnapshot {
   label: string;
   createdAt: number;
   entries: PortfolioReserveEntry[];
+  /** @deprecated Derived from entries. Use entries instead. */
+  positions?: PortfolioPosition[];
   summary: PortfolioSummary;
   positionResults: PortfolioPositionResult[];
 }

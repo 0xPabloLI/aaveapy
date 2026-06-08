@@ -63,6 +63,7 @@ function renderRow(opts?: { isMobile?: boolean; borrow?: boolean; supplyOverride
       onRemove={noop}
       onUpdateAmount={noop}
       onUpdateInputMode={noop}
+      onUpdateDeltaSign={noop}
       tokenPriceInUsd={opts?.tokenPriceInUsd}
     />,
     { wrapper: Wrapper },

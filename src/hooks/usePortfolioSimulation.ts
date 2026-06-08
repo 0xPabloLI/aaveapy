@@ -1,18 +1,25 @@
 /**
  * usePortfolioSimulation — state management for multi-token portfolio simulation.
  *
- * Manages positions (add/remove/update), computes per-position results by
- * delegating to `buildRateSimulationResult`, and aggregates via `portfolioCalculator`.
+ * Manages entries (reserve-level, supply+borrow together), computes per-position
+ * results by delegating to `buildRateSimulationResult`, and aggregates via
+ * `portfolioCalculator`.
+ *
+ * Primary state: `entries: PortfolioReserveEntry[]` (new API).
+ * Derived: `positions: PortfolioPosition[]` (legacy, one position per side).
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
+  DeltaSign,
   PortfolioInputMode,
   PortfolioPosition,
   PortfolioPositionResult,
+  PortfolioReserveEntry,
   PortfolioSide,
   PortfolioSnapshot,
   PortfolioSummary,
+  ReservePatch,
 } from '@/types/portfolio';
 import {
   aggregatePortfolioSummary,
@@ -21,6 +28,7 @@ import {
   convertPortfolioInputAmount,
   formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
+import { computeDelta } from '@/lib/deltaCalculator';
 import { mergePositions } from '@/lib/portfolioMerger';
 import { hideOrRemoveReserve, unhideReserve as unhideReserveLogic } from '@/lib/portfolioSoftDelete';
 
@@ -31,13 +39,134 @@ let nextSnapshotId = 1;
 const generateSnapshotId = (): string => `snap-${nextSnapshotId++}`;
 
 // ---------------------------------------------------------------------------
+// Entry ↔ Position conversion helpers
+// ---------------------------------------------------------------------------
+
+const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
+
+function entriesToPositions(entries: PortfolioReserveEntry[]): PortfolioPosition[] {
+  return entries.flatMap((e) => {
+    const sides: PortfolioPosition[] = [];
+    const makePos = (side: PortfolioSide, s: PortfolioReserveEntry['supply']): PortfolioPosition => ({
+      positionId: `${e.reserveId}::${side}`,
+      reserveId: e.reserveId,
+      marketName: e.marketName,
+      chainName: e.chainName,
+      tokenSymbol: e.tokenSymbol,
+      side,
+      amount: s.amount,
+      inputMode: s.inputMode,
+      walletValue: s.walletValue,
+      hidden: e.hidden,
+      isOrphan: e.isOrphan,
+      source: s.source,
+      deltaSign: s.deltaSign ?? 1,
+    });
+    if (e.hidden && e.supply.walletValue === null && e.borrow.walletValue !== null) {
+      sides.push(makePos('borrow', e.borrow));
+    } else if (e.hidden && e.borrow.walletValue === null && e.supply.walletValue !== null) {
+      sides.push(makePos('supply', e.supply));
+    } else {
+      sides.push(makePos('supply', e.supply));
+      sides.push(makePos('borrow', e.borrow));
+    }
+    return sides;
+  });
+}
+
+function mergeEntriesWithDelta(
+  current: PortfolioReserveEntry[],
+  incoming: PortfolioReserveEntry[],
+): PortfolioReserveEntry[] {
+  const currentMap = new Map(current.map((e) => [e.reserveId, e]));
+  const result = new Map<string, PortfolioReserveEntry>();
+
+  for (const inc of incoming) {
+    const existing = currentMap.get(inc.reserveId);
+    if (existing) {
+      result.set(inc.reserveId, {
+        ...existing,
+        supply: mergeSideWithDelta(existing.supply, inc.supply),
+        borrow: mergeSideWithDelta(existing.borrow, inc.borrow),
+        hidden: false,
+        isOrphan: inc.isOrphan,
+      });
+    } else {
+      result.set(inc.reserveId, { ...inc });
+    }
+    currentMap.delete(inc.reserveId);
+  }
+
+  for (const [, entry] of currentMap) {
+    const anyWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
+    if (!anyWallet) {
+      result.set(entry.reserveId, entry);
+    }
+  }
+
+  return Array.from(result.values());
+}
+
+function mergeSideWithDelta(
+  existing: PortfolioReserveEntry['supply'],
+  incoming: PortfolioReserveEntry['supply'],
+): PortfolioReserveEntry['supply'] {
+  if (existing.walletValue === null || incoming.walletValue === null) {
+    return { ...incoming };
+  }
+  const { deltaUsd } = computeDelta({
+    amount: existing.amount,
+    walletValue: existing.walletValue,
+    inputMode: existing.inputMode,
+  });
+  if (deltaUsd === 0) {
+    return { ...incoming };
+  }
+  const newEffective = Math.max(incoming.walletValue + deltaUsd, 0);
+  return {
+    ...incoming,
+    amount: formatConvertedAmount(newEffective),
+    inputMode: 'usd',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Public interface
 // ---------------------------------------------------------------------------
 
 export interface PortfolioSimulationActions {
   /** Toggle portfolio mode on/off. */
   setActive: (active: boolean) => void;
-  /** Add a new position. Returns the created positionId. */
+  /** Add a reserve entry (supply + borrow together). No-op if reserveId already exists. */
+  addReserve: (params: {
+    reserveId: string;
+    marketName: string;
+    chainName: string;
+    tokenSymbol: string;
+  }) => void;
+  /** Remove an entire reserve entry by reserveId. */
+  removeReserve: (reserveId: string) => void;
+  /** Patch specific fields on a reserve entry. priceInUsd used for inputMode conversion. */
+  updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
+  /** Hide a reserve entry (soft delete). */
+  hideReserve: (reserveId: string) => void;
+  /** Unhide a reserve entry. */
+  unhideReserve: (reserveId: string) => void;
+  /** Import wallet entries with delta-preserving merge. */
+  importReserves: (incoming: PortfolioReserveEntry[]) => void;
+  /** Restore one or both sides to wallet values. */
+  restoreToWallet: (reserveId: string, side?: PortfolioSide) => void;
+  /** Remove all entries. */
+  clearAll: () => void;
+  /** Save current state as a named snapshot. */
+  saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
+  /** Delete a saved snapshot. */
+  deleteSnapshot: (snapshotId: string) => void;
+  /** Undo the most recent removeReserve call. Returns true if anything was restored. */
+  undoLastRemove: () => boolean;
+
+  // --- Legacy position-level actions (deprecated, will be removed after UI migration) ---
+  /** @deprecated Use addReserve instead. */
   addPosition: (params: {
     reserveId: string;
     marketName: string;
@@ -47,38 +176,31 @@ export interface PortfolioSimulationActions {
     amount?: string;
     inputMode?: PortfolioInputMode;
   }) => string;
-  /** Remove a position by its positionId. */
+  /** @deprecated Use removeReserve instead. */
   removePosition: (positionId: string) => void;
-  /** Update amount for a position. */
+  /** @deprecated Use updateReserve instead. */
   updateAmount: (positionId: string, amount: string) => void;
-  /** Update input mode for a position; converts amount if priceInUsd is provided. */
+  /** @deprecated */
+  updateDeltaSign: (positionId: string, sign: DeltaSign) => void;
+  /** @deprecated Use updateReserve instead. */
   updateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
-  /** Remove all positions. */
-  clearAll: () => void;
-  /** Save current state as a named snapshot (with pre-computed results). */
-  saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
-  /** Delete a saved snapshot. */
-  deleteSnapshot: (snapshotId: string) => void;
-  /** Merge wallet positions into current positions (replace/add/keep semantics). */
+  /** @deprecated Use importReserves instead. */
   importPositions: (incoming: PortfolioPosition[]) => void;
-  /** Restore a hidden position (unhide). */
+  /** @deprecated Use unhideReserve instead. */
   restorePosition: (positionId: string) => void;
-  /** Toggle hidden flag on a position (soft delete). */
+  /** @deprecated Use hideReserve/unhideReserve instead. */
   toggleHidden: (positionId: string) => void;
-  /** Restore amount/inputMode for a wallet-synced position back to its walletValue (USD). Also unhides. */
-  restoreToWallet: (positionId: string) => void;
-  /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
-  removeReserve: (reserveId: string) => void;
-  /** Reserve-level hide-or-remove: wallet positions → reset+hidden, manual → removed. */
+  /** @deprecated Use hideOrRemoveReserveAction instead. */
   hideOrRemoveReserveAction: (reserveId: string) => void;
-  /** Unhide all positions for a reserveId. */
+  /** @deprecated Use unhideReserve instead. */
   unhideReserveAction: (reserveId: string) => void;
-  /** Undo the most recent removeReserve call, restoring prior positions verbatim. Returns true if anything was restored. */
-  undoLastRemove: () => boolean;
 }
 
 export interface UsePortfolioSimulationReturn {
   active: boolean;
+  /** Reserve-level entries (primary API). */
+  entries: PortfolioReserveEntry[];
+  /** @deprecated Side-level positions (derived from entries). Use entries instead. */
   positions: PortfolioPosition[];
   snapshots: PortfolioSnapshot[];
   actions: PortfolioSimulationActions;
@@ -90,13 +212,165 @@ export interface UsePortfolioSimulationReturn {
 
 export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
-  const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+  const [entries, setEntries] = useState<PortfolioReserveEntry[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
-  // Snapshot of positions captured immediately before the last removeReserve call,
-  // used by undoLastRemove to restore the prior state verbatim.
-  const lastRemoveSnapshotRef = useRef<PortfolioPosition[] | null>(null);
+  const lastRemoveSnapshotRef = useRef<PortfolioReserveEntry[] | null>(null);
 
-  // --- Actions ---
+  const positions = useMemo(() => entriesToPositions(entries), [entries]);
+
+  // --- Entry-level actions ---
+
+  const addReserve = useCallback(
+    (params: { reserveId: string; marketName: string; chainName: string; tokenSymbol: string }) => {
+      setEntries((prev) => {
+        if (prev.some((e) => e.reserveId === params.reserveId)) return prev;
+        return [
+          ...prev,
+          {
+            reserveId: params.reserveId,
+            marketName: params.marketName,
+            chainName: params.chainName,
+            tokenSymbol: params.tokenSymbol,
+            supply: { ...EMPTY_SIDE },
+            borrow: { ...EMPTY_SIDE },
+            hidden: false,
+            isOrphan: false,
+          },
+        ];
+      });
+    },
+    [],
+  );
+
+  const removeReserve = useCallback((reserveId: string) => {
+    setEntries((prev) => {
+      lastRemoveSnapshotRef.current = prev;
+      return prev.filter((e) => e.reserveId !== reserveId);
+    });
+  }, []);
+
+  const updateReserve = useCallback(
+    (reserveId: string, patch: ReservePatch, priceInUsd?: number) => {
+      setEntries((prev) =>
+        prev.map((e) => {
+          if (e.reserveId !== reserveId) return e;
+          let supply = { ...e.supply };
+          let borrow = { ...e.borrow };
+
+          if (patch.supplyAmount !== undefined) supply = { ...supply, amount: patch.supplyAmount };
+          if (patch.supplyInputMode !== undefined) {
+            const currentAmount = parseFloat(supply.amount);
+            let newAmount = supply.amount;
+            if (
+              priceInUsd !== undefined &&
+              supply.amount.trim() !== '' &&
+              Number.isFinite(currentAmount)
+            ) {
+              const converted = convertPortfolioInputAmount(
+                currentAmount,
+                supply.inputMode,
+                patch.supplyInputMode,
+                priceInUsd,
+              );
+              newAmount = converted !== null ? formatConvertedAmount(converted) : '';
+            }
+            supply = { ...supply, inputMode: patch.supplyInputMode, amount: newAmount };
+          }
+          if (patch.borrowAmount !== undefined) borrow = { ...borrow, amount: patch.borrowAmount };
+          if (patch.borrowInputMode !== undefined) {
+            const currentAmount = parseFloat(borrow.amount);
+            let newAmount = borrow.amount;
+            if (
+              priceInUsd !== undefined &&
+              borrow.amount.trim() !== '' &&
+              Number.isFinite(currentAmount)
+            ) {
+              const converted = convertPortfolioInputAmount(
+                currentAmount,
+                borrow.inputMode,
+                patch.borrowInputMode,
+                priceInUsd,
+              );
+              newAmount = converted !== null ? formatConvertedAmount(converted) : '';
+            }
+            borrow = { ...borrow, inputMode: patch.borrowInputMode, amount: newAmount };
+          }
+
+          return { ...e, supply, borrow };
+        }),
+      );
+    },
+    [],
+  );
+
+  const hideReserve = useCallback((reserveId: string) => {
+    setEntries((prev) =>
+      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)),
+    );
+  }, []);
+
+  const unhideReserve = useCallback((reserveId: string) => {
+    setEntries((prev) =>
+      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: false } : e)),
+    );
+  }, []);
+
+  const importReserves = useCallback((incoming: PortfolioReserveEntry[]) => {
+    setEntries((prev) => mergeEntriesWithDelta(prev, incoming));
+  }, []);
+
+  const restoreToWallet = useCallback((reserveId: string, side?: PortfolioSide) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.reserveId !== reserveId) return e;
+        const restoreSide = (
+          s: PortfolioReserveEntry['supply'],
+        ): PortfolioReserveEntry['supply'] => {
+          if (s.walletValue === null) return s;
+          return { ...s, amount: formatConvertedAmount(s.walletValue), inputMode: 'usd' };
+        };
+        return {
+          ...e,
+          hidden: false,
+          supply: side === undefined || side === 'supply' ? restoreSide(e.supply) : e.supply,
+          borrow: side === undefined || side === 'borrow' ? restoreSide(e.borrow) : e.borrow,
+        };
+      }),
+    );
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setEntries([]);
+  }, []);
+
+  const saveSnapshot = useCallback(
+    (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => {
+      const snapshot: PortfolioSnapshot = {
+        id: generateSnapshotId(),
+        label,
+        createdAt: Date.now(),
+        entries: [...entries],
+        summary: summary ?? aggregatePortfolioSummary([]),
+        positionResults: results ?? [],
+      };
+      setSnapshots((prev) => [...prev, snapshot]);
+    },
+    [entries],
+  );
+
+  const deleteSnapshot = useCallback((snapshotId: string) => {
+    setSnapshots((prev) => prev.filter((s) => s.id !== snapshotId));
+  }, []);
+
+  const undoLastRemove = useCallback((): boolean => {
+    const snapshot = lastRemoveSnapshotRef.current;
+    if (!snapshot) return false;
+    lastRemoveSnapshotRef.current = null;
+    setEntries(snapshot);
+    return true;
+  }, []);
+
+  // --- Legacy position-level actions (operate on entries internally) ---
 
   const addPosition = useCallback(
     (params: {
@@ -108,193 +382,208 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       amount?: string;
       inputMode?: PortfolioInputMode;
     }): string => {
-      const positionId = generatePositionId();
-      const position: PortfolioPosition = {
-        positionId,
-        reserveId: params.reserveId,
-        marketName: params.marketName,
-        chainName: params.chainName,
-        tokenSymbol: params.tokenSymbol,
-        side: params.side,
-        amount: params.amount ?? '',
-        inputMode: params.inputMode ?? 'usd',
-        walletValue: null,
-        hidden: false,
-        isOrphan: false,
-      };
-      setPositions((prev) => [...prev, position]);
+      const positionId = `${params.reserveId}::${params.side}`;
+      setEntries((prev) => {
+        const existing = prev.find((e) => e.reserveId === params.reserveId);
+        if (existing) {
+          return prev.map((e) => {
+            if (e.reserveId !== params.reserveId) return e;
+            return {
+              ...e,
+              [params.side]: {
+                ...e[params.side],
+                amount: params.amount ?? e[params.side].amount,
+                inputMode: params.inputMode ?? e[params.side].inputMode,
+              },
+            };
+          });
+        }
+        return [
+          ...prev,
+          {
+            reserveId: params.reserveId,
+            marketName: params.marketName,
+            chainName: params.chainName,
+            tokenSymbol: params.tokenSymbol,
+            supply: params.side === 'supply'
+              ? { amount: params.amount ?? '', inputMode: params.inputMode ?? 'usd', walletValue: null }
+              : { ...EMPTY_SIDE },
+            borrow: params.side === 'borrow'
+              ? { amount: params.amount ?? '', inputMode: params.inputMode ?? 'usd', walletValue: null }
+              : { ...EMPTY_SIDE },
+            hidden: false,
+            isOrphan: false,
+          },
+        ];
+      });
       return positionId;
     },
-    []
+    [],
   );
 
   const removePosition = useCallback((positionId: string) => {
-    setPositions((prev) => prev.filter((p) => p.positionId !== positionId));
+    const reserveId = positionId.split('::')[0];
+    setEntries((prev) => prev.filter((e) => e.reserveId !== reserveId));
   }, []);
 
   const updateAmount = useCallback((positionId: string, amount: string) => {
-    setPositions((prev) =>
-      prev.map((p) => (p.positionId === positionId ? { ...p, amount } : p))
+    const [reserveId, sideStr] = positionId.split('::');
+    const side = sideStr as PortfolioSide;
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.reserveId !== reserveId) return e;
+        return { ...e, [side]: { ...e[side], amount } };
+      }),
     );
   }, []);
 
-  const updateInputMode = useCallback((positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => {
-    setPositions((prev) =>
-      prev.map((p) => {
-        if (p.positionId !== positionId) return p;
-        const currentAmount = parseFloat(p.amount);
-        let newAmount = p.amount;
-        if (priceInUsd !== undefined && p.amount.trim() !== '' && Number.isFinite(currentAmount)) {
-          const converted = convertPortfolioInputAmount(currentAmount, p.inputMode, mode, priceInUsd);
-          newAmount = converted !== null ? formatConvertedAmount(converted) : '';
-        }
-        return { ...p, inputMode: mode, amount: newAmount };
-      })
+  const updateDeltaSign = useCallback((positionId: string, sign: DeltaSign) => {
+    const [reserveId, sideStr] = positionId.split('::');
+    const side = sideStr as PortfolioSide;
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.reserveId !== reserveId) return e;
+        return { ...e, [side]: { ...e[side], deltaSign: sign } };
+      }),
     );
   }, []);
 
-  const clearAll = useCallback(() => {
-    setPositions([]);
-  }, []);
-
-  const saveSnapshot = useCallback(
-    (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => {
-      const snapshot: PortfolioSnapshot = {
-        id: generateSnapshotId(),
-        label,
-        createdAt: Date.now(),
-        positions: [...positions],
-        summary: summary ?? aggregatePortfolioSummary([]),
-        positionResults: results ?? [],
-      };
-      setSnapshots((prev) => [...prev, snapshot]);
+  const updateInputMode = useCallback(
+    (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => {
+      const [reserveId, sideStr] = positionId.split('::');
+      const side = sideStr as PortfolioSide;
+      setEntries((prev) =>
+        prev.map((e) => {
+          if (e.reserveId !== reserveId) return e;
+          const s = e[side];
+          const currentAmount = parseFloat(s.amount);
+          let newAmount = s.amount;
+          if (priceInUsd !== undefined && s.amount.trim() !== '' && Number.isFinite(currentAmount)) {
+            const converted = convertPortfolioInputAmount(currentAmount, s.inputMode, mode, priceInUsd);
+            newAmount = converted !== null ? formatConvertedAmount(converted) : '';
+          }
+          return { ...e, [side]: { ...s, inputMode: mode, amount: newAmount } };
+        }),
+      );
     },
-    [positions],
+    [],
   );
 
-  const deleteSnapshot = useCallback((snapshotId: string) => {
-    setSnapshots((prev) => prev.filter((s) => s.id !== snapshotId));
-  }, []);
-
   const importPositions = useCallback((incoming: PortfolioPosition[]) => {
-    // Auto-complete: for each reserve in incoming positions, ensure both
-    // supply and borrow sides exist so users can manually adjust either side.
-    const withMissingSides: PortfolioPosition[] = [];
-    const seenReserves = new Map<string, Set<PortfolioSide>>();
+    const reserveMap = new Map<string, PortfolioReserveEntry>();
     for (const pos of incoming) {
-      const sides = seenReserves.get(pos.reserveId) ?? new Set<PortfolioSide>();
-      sides.add(pos.side);
-      seenReserves.set(pos.reserveId, sides);
-      withMissingSides.push(pos);
-    }
-    for (const [reserveId, sides] of seenReserves) {
-      const ref = incoming.find(p => p.reserveId === reserveId)!;
-      if (!sides.has('supply')) {
-        withMissingSides.push({
-          positionId: generatePositionId(),
-          reserveId,
-          marketName: ref.marketName,
-          chainName: ref.chainName,
-          tokenSymbol: ref.tokenSymbol,
-          side: 'supply',
-          amount: '',
-          inputMode: 'usd',
-          walletValue: null,
-          hidden: false,
-          isOrphan: ref.isOrphan,
-        });
+      let entry = reserveMap.get(pos.reserveId);
+      if (!entry) {
+        entry = {
+          reserveId: pos.reserveId,
+          marketName: pos.marketName,
+          chainName: pos.chainName,
+          tokenSymbol: pos.tokenSymbol,
+          supply: { ...EMPTY_SIDE },
+          borrow: { ...EMPTY_SIDE },
+          hidden: pos.hidden,
+          isOrphan: pos.isOrphan,
+        };
       }
-      if (!sides.has('borrow')) {
-        withMissingSides.push({
-          positionId: generatePositionId(),
-          reserveId,
-          marketName: ref.marketName,
-          chainName: ref.chainName,
-          tokenSymbol: ref.tokenSymbol,
-          side: 'borrow',
-          amount: '',
-          inputMode: 'usd',
-          walletValue: null,
-          hidden: false,
-          isOrphan: ref.isOrphan,
-        });
-      }
+      entry = {
+        ...entry,
+        [pos.side]: {
+          amount: pos.amount,
+          inputMode: pos.inputMode,
+          walletValue: pos.walletValue,
+          source: pos.source,
+          deltaSign: pos.deltaSign,
+        },
+      };
+      reserveMap.set(pos.reserveId, entry);
     }
-    setPositions((prev) => mergePositions({ current: prev, incoming: withMissingSides }));
+    const incomingEntries = Array.from(reserveMap.values());
+    setEntries((prev) => mergeEntriesWithDelta(prev, incomingEntries));
   }, []);
 
   const restorePosition = useCallback((positionId: string) => {
-    setPositions((prev) =>
-      prev.map((p) => (p.positionId === positionId ? { ...p, hidden: false } : p))
-    );
-  }, []);
+    const reserveId = positionId.split('::')[0];
+    unhideReserve(reserveId);
+  }, [unhideReserve]);
 
   const toggleHidden = useCallback((positionId: string) => {
-    setPositions((prev) =>
-      prev.map((p) => (p.positionId === positionId ? { ...p, hidden: !p.hidden } : p))
+    const reserveId = positionId.split('::')[0];
+    setEntries((prev) =>
+      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: !e.hidden } : e)),
     );
-  }, []);
-
-  const restoreToWallet = useCallback((positionId: string) => {
-    setPositions((prev) =>
-      prev.map((p) => {
-        if (p.positionId !== positionId) return p;
-        if (p.walletValue === null) return p;
-        return {
-          ...p,
-          amount: formatConvertedAmount(p.walletValue),
-          inputMode: 'usd',
-          hidden: false,
-        };
-      })
-    );
-  }, []);
-
-  const removeReserve = useCallback((reserveId: string) => {
-    setPositions((prev) => hideOrRemoveReserve(reserveId, prev));
   }, []);
 
   const hideOrRemoveReserveAction = useCallback((reserveId: string) => {
-    setPositions((prev) => hideOrRemoveReserve(reserveId, prev));
+    setEntries((prev) => {
+      const entry = prev.find((e) => e.reserveId === reserveId);
+      if (!entry) return prev;
+      const anyWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
+      if (anyWallet) {
+        return prev.map((e) => {
+          if (e.reserveId !== reserveId) return e;
+          return {
+            ...e,
+            supply: {
+              ...e.supply,
+              amount: e.supply.walletValue !== null ? formatConvertedAmount(e.supply.walletValue) : '',
+              inputMode: e.supply.walletValue !== null ? 'usd' as const : e.supply.inputMode,
+              walletValue: e.supply.walletValue,
+            },
+            borrow: {
+              ...e.borrow,
+              amount: e.borrow.walletValue !== null ? formatConvertedAmount(e.borrow.walletValue) : '',
+              inputMode: e.borrow.walletValue !== null ? 'usd' as const : e.borrow.inputMode,
+              walletValue: e.borrow.walletValue,
+            },
+            hidden: true,
+          };
+        });
+      }
+      return prev.filter((e) => e.reserveId !== reserveId);
+    });
   }, []);
 
   const unhideReserveAction = useCallback((reserveId: string) => {
-    setPositions((prev) => unhideReserveLogic(reserveId, prev));
-  }, []);
-
-  const undoLastRemove = useCallback((): boolean => {
-    const snapshot = lastRemoveSnapshotRef.current;
-    if (!snapshot) return false;
-    lastRemoveSnapshotRef.current = null;
-    setPositions(snapshot);
-    return true;
-  }, []);
-
+    unhideReserve(reserveId);
+  }, [unhideReserve]);
 
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
-      addPosition,
-      removePosition,
-      updateAmount,
-      updateInputMode,
+      addReserve,
+      removeReserve,
+      updateReserve,
+      hideReserve,
+      unhideReserve,
+      importReserves,
+      restoreToWallet,
       clearAll,
       saveSnapshot,
       deleteSnapshot,
+      undoLastRemove,
+      addPosition,
+      removePosition,
+      updateAmount,
+      updateDeltaSign,
+      updateInputMode,
       importPositions,
       restorePosition,
       toggleHidden,
-      restoreToWallet,
-      removeReserve,
       hideOrRemoveReserveAction,
       unhideReserveAction,
-      undoLastRemove,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve, hideOrRemoveReserveAction, unhideReserveAction, undoLastRemove]
+    [
+      addReserve, removeReserve, updateReserve, hideReserve, unhideReserve,
+      importReserves, restoreToWallet, clearAll, saveSnapshot, deleteSnapshot,
+      undoLastRemove, addPosition, removePosition, updateAmount, updateDeltaSign,
+      updateInputMode, importPositions, restorePosition, toggleHidden,
+      hideOrRemoveReserveAction, unhideReserveAction,
+    ],
   );
 
   return {
     active,
+    entries,
     positions,
     snapshots,
     actions,

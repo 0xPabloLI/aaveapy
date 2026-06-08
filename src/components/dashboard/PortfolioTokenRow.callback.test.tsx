@@ -30,6 +30,7 @@ function makeSupply(overrides: Partial<PortfolioPosition> = {}): PortfolioPositi
     amount: '5000',
     inputMode: 'usd',
     walletValue: null,
+    deltaSign: 1,
     ...overrides,
   };
 }
@@ -42,6 +43,7 @@ function makeBorrow(overrides: Partial<PortfolioPosition> = {}): PortfolioPositi
     amount: '2000',
     inputMode: 'usd',
     walletValue: null,
+    deltaSign: 1,
     ...overrides,
   };
 }
@@ -62,6 +64,7 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={onRemove}
         onUpdateAmount={vi.fn()}
         onUpdateInputMode={vi.fn()}
+        onUpdateDeltaSign={vi.fn()}
       />,
       { wrapper: Wrapper },
     );
@@ -69,7 +72,7 @@ describe('PortfolioTokenRow callbacks', () => {
     expect(onRemove).toHaveBeenCalledWith('reserve-1');
   });
 
-  it('calls onUpdateAmount when supply input value changes', () => {
+  it('calls onUpdateAmount on supply input blur (committed via useNumberInput)', () => {
     const onUpdateAmount = vi.fn();
     render(
       <PortfolioTokenRow
@@ -82,15 +85,17 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={onUpdateAmount}
         onUpdateInputMode={vi.fn()}
+        onUpdateDeltaSign={vi.fn()}
       />,
       { wrapper: Wrapper },
     );
     const input = screen.getByRole('textbox', { name: /supply.*USDC/i });
     fireEvent.change(input, { target: { value: '10000' } });
+    fireEvent.blur(input);
     expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '10,000');
   });
 
-  it('calls onUpdateAmount when borrow input value changes', () => {
+  it('calls onUpdateAmount on borrow input blur', () => {
     const onUpdateAmount = vi.fn();
     render(
       <PortfolioTokenRow
@@ -103,11 +108,13 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={onUpdateAmount}
         onUpdateInputMode={vi.fn()}
+        onUpdateDeltaSign={vi.fn()}
       />,
       { wrapper: Wrapper },
     );
     const input = screen.getByRole('textbox', { name: /borrow.*USDC/i });
     fireEvent.change(input, { target: { value: '3000' } });
+    fireEvent.blur(input);
     expect(onUpdateAmount).toHaveBeenCalledWith('pos-2', '3,000');
   });
 
@@ -124,6 +131,7 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={vi.fn()}
         onUpdateInputMode={onUpdateInputMode}
+        onUpdateDeltaSign={vi.fn()}
         tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
@@ -145,6 +153,7 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={vi.fn()}
         onUpdateInputMode={onUpdateInputMode}
+        onUpdateDeltaSign={vi.fn()}
         tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
@@ -166,6 +175,7 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={onUpdateAmount}
         onUpdateInputMode={vi.fn()}
+        onUpdateDeltaSign={vi.fn()}
       />,
       { wrapper: Wrapper },
     );
@@ -186,13 +196,14 @@ describe('PortfolioTokenRow callbacks', () => {
           onRemove={vi.fn()}
           onUpdateAmount={vi.fn()}
           onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={vi.fn()}
         />,
         { wrapper: Wrapper },
       );
       expect(screen.getByRole('textbox', { name: /supply.*delta.*USDC/i })).toBeInTheDocument();
     });
 
-    it('calls onUpdateAmount with effective amount when positive delta input changes', () => {
+    it('calls onUpdateAmount with effective amount on blur in positive delta mode', () => {
       const onUpdateAmount = vi.fn();
       render(
         <PortfolioTokenRow
@@ -200,21 +211,23 @@ describe('PortfolioTokenRow callbacks', () => {
           tokenSymbol="USDC"
           chainName="Ethereum"
           marketName="AaveV3Ethereum"
-          supplyPosition={makeSupply({ amount: '5000', walletValue: 3000 })}
+          supplyPosition={makeSupply({ amount: '5000', walletValue: 3000, deltaSign: 1 })}
           borrowPosition={null}
           onRemove={vi.fn()}
           onUpdateAmount={onUpdateAmount}
           onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={vi.fn()}
         />,
         { wrapper: Wrapper },
       );
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '4000' } });
+      fireEvent.blur(input);
       // walletValue(3000) + delta(4000) = effective(7000)
       expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '7,000');
     });
 
-    it('calls onUpdateAmount with effective amount when negative delta input changes', () => {
+    it('calls onUpdateAmount with effective amount on blur in negative delta mode', () => {
       const onUpdateAmount = vi.fn();
       render(
         <PortfolioTokenRow
@@ -222,18 +235,18 @@ describe('PortfolioTokenRow callbacks', () => {
           tokenSymbol="USDC"
           chainName="Ethereum"
           marketName="AaveV3Ethereum"
-          // amount=2000, wallet=5000 → delta = -3000 (negative)
-          supplyPosition={makeSupply({ amount: '2000', walletValue: 5000 })}
+          supplyPosition={makeSupply({ amount: '2000', walletValue: 5000, deltaSign: -1 })}
           borrowPosition={null}
           onRemove={vi.fn()}
           onUpdateAmount={onUpdateAmount}
           onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={vi.fn()}
         />,
         { wrapper: Wrapper },
       );
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
-      // Type 2000 into the delta input (still negative because sign preserved)
       fireEvent.change(input, { target: { value: '2000' } });
+      fireEvent.blur(input);
       // walletValue(5000) + (-1)*2000 = effective(3000)
       expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '3,000');
     });
@@ -246,12 +259,12 @@ describe('PortfolioTokenRow callbacks', () => {
           tokenSymbol="USDC"
           chainName="Ethereum"
           marketName="AaveV3Ethereum"
-          // amount=7000, wallet=3000 → delta=+4000 (hasValue=true → clear button shown)
-          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000 })}
+          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000, deltaSign: 1 })}
           borrowPosition={null}
           onRemove={vi.fn()}
           onUpdateAmount={onUpdateAmount}
           onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={vi.fn()}
         />,
         { wrapper: Wrapper },
       );
@@ -260,7 +273,32 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '3,000');
     });
 
-    it('toggles delta sign from positive to negative', () => {
+    it('toggles delta sign from positive to negative and calls onUpdateDeltaSign', () => {
+      const onUpdateAmount = vi.fn();
+      const onUpdateDeltaSign = vi.fn();
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000, deltaSign: 1 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={onUpdateAmount}
+          onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={onUpdateDeltaSign}
+        />,
+        { wrapper: Wrapper },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+      expect(onUpdateDeltaSign).toHaveBeenCalledWith('pos-1', -1);
+      // walletValue(3000) + (-1)*4000 = max(-1000, 0) = 0
+      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '0');
+    });
+
+    it('toggles delta sign when input is empty (Bug 1 fix)', () => {
+      const onUpdateDeltaSign = vi.fn();
       const onUpdateAmount = vi.fn();
       render(
         <PortfolioTokenRow
@@ -268,19 +306,21 @@ describe('PortfolioTokenRow callbacks', () => {
           tokenSymbol="USDC"
           chainName="Ethereum"
           marketName="AaveV3Ethereum"
-          // amount=7000, wallet=3000 → delta=+4000
-          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000 })}
+          // amount=walletValue=3000 → delta=0 (empty display)
+          supplyPosition={makeSupply({ amount: '3000', walletValue: 3000, deltaSign: 1 })}
           borrowPosition={null}
           onRemove={vi.fn()}
           onUpdateAmount={onUpdateAmount}
           onUpdateInputMode={vi.fn()}
+          onUpdateDeltaSign={onUpdateDeltaSign}
         />,
         { wrapper: Wrapper },
       );
-      // Click the "Adding to position" button to toggle to negative
+      // Click the + button to toggle to − (even though delta is empty)
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-      // walletValue(3000) + (-1)*4000 = max(-1000, 0) = 0
-      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '0');
+      expect(onUpdateDeltaSign).toHaveBeenCalledWith('pos-1', -1);
+      // No onUpdateAmount call because delta is empty (no value to flip)
+      expect(onUpdateAmount).not.toHaveBeenCalled();
     });
   });
 });

@@ -167,7 +167,7 @@ describe('createClientWithRpcRotation catch path', () => {
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')),
-    } as any)
+    } as unknown as ReturnType<typeof createPublicClient>)
 
     await createClientWithRpcRotation(1)
 
@@ -182,7 +182,7 @@ describe('createClientWithRpcRotation catch path', () => {
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('CALL_EXCEPTION')),
-    } as any)
+    } as unknown as ReturnType<typeof createPublicClient>)
 
     await createClientWithRpcRotation(1)
 
@@ -197,7 +197,7 @@ describe('createClientWithRpcRotation catch path', () => {
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('something unexpected')),
-    } as any)
+    } as unknown as ReturnType<typeof createPublicClient>)
 
     await createClientWithRpcRotation(1)
 

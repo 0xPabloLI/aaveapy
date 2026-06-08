@@ -163,7 +163,7 @@ const SnapshotItem = memo(function SnapshotItem({
       </button>
       <div className="flex-1 min-w-0">
         <span className="ds-text-11 font-semibold text-foreground truncate block">{snapshot.label}</span>
-        <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.positions.length} positions</span>
+        <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.entries.length} positions</span>
       </div>
       <button
         type="button"
@@ -726,6 +726,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onRemove={handleRemoveToken}
                   onUpdateAmount={actions.updateAmount}
                   onUpdateInputMode={actions.updateInputMode}
+                  onUpdateDeltaSign={actions.updateDeltaSign}
                   onHideOrRemoveReserve={actions.hideOrRemoveReserveAction}
                   onUnhideReserve={actions.unhideReserveAction}
                   onRestorePosition={handleRestorePosition}

@@ -25,8 +25,8 @@ const reserves = [
 const wallet: WalletPosition[] = [
   // Intentionally noisy floats that, prior to the fix, came out as raw
   // 15-digit strings like "1737.4839284729384".
-  { reserveId: 'r-weth', side: 'supply', tokenSymbol: 'WETH', amountUsd: 1737.4839284729384, isOrphan: false, source: 'sdk' } as unknown as WalletPosition,
-  { reserveId: 'r-gho', side: 'borrow', tokenSymbol: 'GHO', amountUsd: 412.91827361827361, isOrphan: false, source: 'sdk' } as unknown as WalletPosition,
+  { reserveId: 'r-weth', side: 'supply', tokenSymbol: 'WETH', amountUsd: Number('1737.4839284729384'), isOrphan: false, source: 'sdk' } as unknown as WalletPosition,
+  { reserveId: 'r-gho', side: 'borrow', tokenSymbol: 'GHO', amountUsd: Number('412.91827361827361'), isOrphan: false, source: 'sdk' } as unknown as WalletPosition,
 ]
 
 describe('Wallet sync precision', () => {

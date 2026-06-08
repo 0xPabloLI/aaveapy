@@ -38,7 +38,6 @@ export function bumpRefetch(source: RefetchSource): void {
     try {
       listener({ source })
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[refetchEvent] listener failed for source', source, err)
     }
   }

@@ -98,11 +98,11 @@ function renderPanel(props: {
 describe('PortfolioPanel — Wallet Sync button states', () => {
   beforeEach(() => {
     vi.mocked(useWatchModeConnect).mockReturnValue({ connectWatchAddress: vi.fn() });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     vi.mocked(useWallet).mockReturnValue({
       address: '0xabc', isConnected: true, isWatchMode: false,
       disconnect: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useWallet>);
   });
   afterEach(() => cleanup());
 
