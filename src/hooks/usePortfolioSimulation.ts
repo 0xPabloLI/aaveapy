@@ -64,6 +64,46 @@ function mergeEntriesWithDelta(
   return Array.from(result.values());
 }
 
+function forceSyncEntries(
+  current: PortfolioReserveEntry[],
+  incoming: PortfolioReserveEntry[],
+): PortfolioReserveEntry[] {
+  const incomingMap = new Map(incoming.map((e) => [e.reserveId, e]));
+  const result: PortfolioReserveEntry[] = [];
+
+  for (const cur of current) {
+    const inc = incomingMap.get(cur.reserveId);
+    if (inc) {
+      const forceSide = (
+        existing: PortfolioReserveEntry['supply'],
+        incomingSide: PortfolioReserveEntry['supply'],
+      ): PortfolioReserveEntry['supply'] => {
+        if (existing.walletValue === null) return existing;
+        return { ...incomingSide };
+      };
+      result.push({
+        ...cur,
+        supply: forceSide(cur.supply, inc.supply),
+        borrow: forceSide(cur.borrow, inc.borrow),
+        hidden: false,
+        isOrphan: inc.isOrphan,
+      });
+      incomingMap.delete(cur.reserveId);
+    } else {
+      const anyWallet = cur.supply.walletValue !== null || cur.borrow.walletValue !== null;
+      if (!anyWallet) {
+        result.push(cur);
+      }
+    }
+  }
+
+  for (const [, entry] of incomingMap) {
+    result.push({ ...entry });
+  }
+
+  return result;
+}
+
 function mergeSideWithDelta(
   existing: PortfolioReserveEntry['supply'],
   incoming: PortfolioReserveEntry['supply'],
@@ -104,6 +144,7 @@ export interface PortfolioSimulationActions {
   hideReserve: (reserveId: string) => void;
   unhideReserve: (reserveId: string) => void;
   importReserves: (incoming: PortfolioReserveEntry[]) => void;
+  forceSyncReserves: (incoming: PortfolioReserveEntry[]) => void;
   restoreToWallet: (reserveId: string, side?: PortfolioSide) => void;
   removeHiddenEntries: () => number;
   clearAll: () => void;
@@ -232,6 +273,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     setEntries((prev) => mergeEntriesWithDelta(prev, incoming));
   }, []);
 
+  const forceSyncReserves = useCallback((incoming: PortfolioReserveEntry[]) => {
+    setEntries((prev) => forceSyncEntries(prev, incoming));
+  }, []);
+
   const restoreToWallet = useCallback((reserveId: string, side?: PortfolioSide) => {
     setEntries((prev) =>
       prev.map((e) => {
@@ -253,8 +298,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const removeHiddenEntries = useCallback((): number => {
-    const currentEntries = entriesRef.current;
-    const hiddenCount = currentEntries.filter((e) => e.hidden).length;
+    // Use entriesRef for count (always up-to-date after render).
+    // The setEntries callback uses prev which should match entriesRef
+    // in single-update scenarios like wallet disconnect.
+    const hiddenCount = entriesRef.current.filter((e) => e.hidden).length;
     if (hiddenCount === 0) return 0;
     setEntries((prev) => prev.filter((e) => !e.hidden));
     return hiddenCount;
@@ -300,6 +347,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       hideReserve,
       unhideReserve,
       importReserves,
+      forceSyncReserves,
       restoreToWallet,
       removeHiddenEntries,
       clearAll,
@@ -309,7 +357,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     }),
     [
       addReserve, removeReserve, updateReserve, hideReserve, unhideReserve,
-      importReserves, restoreToWallet, removeHiddenEntries, clearAll, saveSnapshot, deleteSnapshot,
+      importReserves, forceSyncReserves, restoreToWallet, removeHiddenEntries, clearAll, saveSnapshot, deleteSnapshot,
       undoLastRemove,
     ],
   );
