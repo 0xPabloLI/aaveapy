@@ -200,7 +200,23 @@ _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
 
 **Wallet Address Switch Behavior**:
 切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
-_Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）
+**Watch Mode 重新提交地址（同地址或新地址）也按 refresh 处理**——这是 user-initiated 的 "我想看最新数据" 意图，与 F5、Refresh 按钮走同一条 refresh 通道（详见 [Refresh Action](#refresh-action)）。_Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）、把 re-submit 当成独立 case 走特殊代码路径
+
+**Refresh Action**:
+一个 user-initiated 或 user-equivalent 的 "强制重新拉取仓位数据" 信号。**三条触发路径走同一个 module-scope emitter**（`refetchEvent`）：
+1. F5 / 整页 reload — React tree 重新 mount，所有 query hook 走初始 fetch
+2. Refresh 按钮（若存在）— UI onClick 调 `refetchEvent.bump()`
+3. Watch Mode 重新提交地址（reentry，同/不同地址）— `useWatchModeConnect` 在 isReentry 分支调 `refetchEvent.bump()`
+
+下游消费者（`useUserPositionsSdk` 内部）通过 `useEffect` 订阅 `refetchEvent`，收到 bump 时：
+- 调 RQ 的 `queryClient.invalidateQueries(['user-positions-onchain-fallback', address, ...])`
+- 通过 `@aave/react` 暴露的 urql client 调 `client.refetchQueries()` 覆盖 V3 + V4 两条 query
+
+**为什么是 module-scope emitter**（不是 React state / Context / refetchTrigger prop）：
+- 绕开 wagmi `useSyncExternalStore` 的 `Object.is` 过滤（同地址 reentry 时 React tree 不会 re-render，prop 永远传不下去）
+- 绕开 `useMemo` 的引用稳定（urql/RQ 看不到"值变了"的信号）
+- 三个触发路径共享同一段 invalidation 代码，不留边角 case
+详见 ADR-0015。_Avoid_: 三个路径各写一份 invalidate 逻辑、用 React state 传 nonce（同地址 reentry 不会触发 re-render）、直接 `location.reload()`（违反 manual 仓位保留规则）
 
 **Supply-Borrow Inseparability**:
 一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。数据模型层面通过 `PortfolioReserveEntry`（per-reserve）替代 `PortfolioPosition`（per-side）来强制保证，编译时即不可能出现单 side 缺失。详见 ADR-0014。
