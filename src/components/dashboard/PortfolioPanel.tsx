@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { formatUsd } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioReserveEntry, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
@@ -31,7 +31,8 @@ import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
-import { sortPositionsByHidden } from '@/lib/portfolioSoftDelete';
+import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
+import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
@@ -43,7 +44,7 @@ import {
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
 interface PortfolioPanelProps {
-  positions: PortfolioPosition[];
+  entries: PortfolioReserveEntry[];
   actions: PortfolioSimulationActions;
   reserves: ReserveWithSpread[];
   /** Per-position simulation results (computed externally). */
@@ -70,14 +71,14 @@ interface PortfolioPanelProps {
 function SearchResultRow({
   reserve,
   onAdd,
-  existingPositions,
+  existingEntries,
 }: {
   reserve: ReserveWithSpread;
   onAdd: (reserveId: string) => void;
-  existingPositions: PortfolioPosition[];
+  existingEntries: PortfolioReserveEntry[];
 }) {
   const reserveId = getReserveKey(reserve);
-  const alreadyAdded = existingPositions.some((p) => p.reserveId === reserveId);
+  const alreadyAdded = existingEntries.some((e) => e.reserveId === reserveId);
 
   const chainSrc = getChainIconSrc(reserve.chainName);
   const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
@@ -181,7 +182,7 @@ const SnapshotItem = memo(function SnapshotItem({
 });
 
 const PortfolioPanel = memo(function PortfolioPanel({
-  positions,
+  entries,
   actions,
   reserves,
   positionResults,
@@ -190,6 +191,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   onWalletSync,
   onRefresh,
   walletLoadState,
+  simulationMode,
+  onSimulationModeChange,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const { isConnected: walletConnected } = useWallet();
@@ -198,9 +201,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const SEARCH_PAGE_SIZE = 20;
   const [visibleSearchCount, setVisibleSearchCount] = useState(SEARCH_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Open search bar by default only when there are no positions.
+  // Open search bar by default only when there are no entries.
   // Users can still toggle it manually via the search/X button.
-  const [searchOpen, setSearchOpen] = useState(() => positions.length === 0);
+  const [searchOpen, setSearchOpen] = useState(() => entries.length === 0);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -290,28 +293,24 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return () => observer.disconnect();
   }, [hasMoreResults]);
 
-  // Add both supply and borrow positions for the selected token.
-  // If the reserve is already in the portfolio (any side exists), do nothing.
-  // Otherwise add both — mergePositions deduplicates any that already exist.
+  // Add both supply and borrow for the selected token via addReserve.
   // Search auto-focus is preserved ONLY when the search panel is already open,
   // so clicking a quick-add chip while search is collapsed will NOT reopen it.
   const handleAddToken = useCallback(
     (reserveId: string) => {
       const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
       if (!reserve) return;
-      if (positions.some((p) => p.reserveId === reserveId)) {
+      if (entries.some((e) => e.reserveId === reserveId)) {
         toast.info(`${reserve.tokenSymbol} is already in the portfolio`);
         return;
       }
 
-      const common = {
+      actions.addReserve({
         reserveId,
         marketName: reserve.marketName,
         chainName: reserve.chainName ?? reserve.marketName,
         tokenSymbol: reserve.tokenSymbol,
-      };
-      actions.addPosition({ ...common, side: 'supply' });
-      actions.addPosition({ ...common, side: 'borrow' });
+      });
 
       // Keep focus on the search input only if search is already open;
       // do not force-open it (quick-add chips should not toggle the panel).
@@ -319,7 +318,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         requestAnimationFrame(() => searchInputRef.current?.focus());
       }
     },
-    [reserves, positions, actions, searchOpen],
+    [reserves, entries, actions, searchOpen],
   );
 
   const handleSaveSnapshot = useCallback(() => {
@@ -346,34 +345,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return { a, b };
   }, [canCompare, compareIds, snapshots]);
 
-  const sortedPositions = useMemo(() => sortPositionsByHidden(positions), [positions]);
-
-  const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; isOrphan: boolean; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
-    for (const p of sortedPositions) {
-      if (!map.has(p.reserveId)) {
-        const reserve = reserves.find((r) => getReserveKey(r) === p.reserveId);
-        map.set(p.reserveId, {
-          tokenSymbol: p.tokenSymbol,
-          chainName: p.chainName,
-          marketName: p.marketName,
-          hubName: reserve?.hubName,
-          isOrphan: p.isOrphan,
-          supply: null,
-          borrow: null,
-        });
-      }
-      const entry = map.get(p.reserveId)!;
-      if (p.side === 'supply') entry.supply = p;
-      else entry.borrow = p;
-    }
-    return map;
-  }, [sortedPositions, reserves]);
+  const sortedEntries = useMemo(() => sortEntriesByHidden(entries), [entries]);
 
   // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
   // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
   const suggestedReserves = useMemo(() => {
-    const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
+    const addedSymbols = new Set(entries.map((e) => e.tokenSymbol.toUpperCase()));
     const sortedBySize = [...reserves].sort(
       (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
     );
@@ -395,12 +372,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
       ...pickTop(isEthRelatedSymbol, 2),
       ...pickTop(isBtcRelatedSymbol, 1),
     ];
-  }, [reserves, positions]);
+  }, [reserves, entries]);
 
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     // Capture the affected token symbol for the toast label before mutating.
-    const affected = positions.find((p) => p.reserveId === reserveId);
+    const affected = entries.find((e) => e.reserveId === reserveId);
     actions.removeReserve(reserveId);
     toast('Reset to wallet', {
       description: affected?.tokenSymbol
@@ -414,15 +391,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         },
       },
     });
-  }, [actions, positions]);
-
-  const handleToggleHidden = useCallback((positionId: string) => {
-    actions.toggleHidden(positionId);
-  }, [actions]);
-
-  const handleRestorePosition = useCallback((positionId: string) => {
-    actions.restoreToWallet(positionId);
-  }, [actions]);
+  }, [actions, entries]);
 
   const handleWalletSyncClick = useCallback(() => {
     onWalletSync?.();
@@ -431,24 +400,29 @@ const PortfolioPanel = memo(function PortfolioPanel({
     if (onRefresh) void onRefresh();
   }, [onWalletSync, onRefresh]);
 
-  // When positions transition from non-empty to empty (e.g. clear all),
+  // When entries transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
   // Do NOT continuously force search open while empty — users must be able
-  // to collapse the search bar via the X button even with zero positions.
-  const prevPositionsCountRef = useRef(positions.length);
+  // to collapse the search bar via the X button even with zero entries.
+  const prevEntryCountRef = useRef(entries.length);
   useEffect(() => {
-    const prev = prevPositionsCountRef.current;
-    if (prev > 0 && positions.length === 0) {
+    const prev = prevEntryCountRef.current;
+    if (prev > 0 && entries.length === 0) {
       setSearchOpen(true);
     }
-    prevPositionsCountRef.current = positions.length;
-  }, [positions.length]);
+    prevEntryCountRef.current = entries.length;
+  }, [entries.length]);
+
+  const reserveIdToReserve = useMemo(() => {
+    const map = new Map<string, ReserveWithSpread>();
+    for (const r of reserves) map.set(getReserveKey(r), r);
+    return map;
+  }, [reserves]);
 
   return (
     <div className="space-y-3">
       <div
         className={cn(
-          'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
           isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
         )}
       >
@@ -506,7 +480,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             <WalletButton mobile onWatchSubmit={connectWatchAddress} />
             {/* Save snapshot */}
-            {features.snapshot && positions.length > 0 && summary && (
+            {features.snapshot && entries.length > 0 && summary && (
               <button
                 type="button"
                 onClick={() => setShowSaveInput((p) => !p)}
@@ -540,11 +514,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 <Search className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
               )}
             </button>
-            {positions.length > 0 && (
+            {entries.length > 0 && (
               <ConfirmPopover
                 onConfirm={() => actions.clearAll()}
                 title="Clear all positions?"
-                description={`This will remove all ${positions.length} positions from the portfolio.`}
+                description={`This will remove all ${entries.length} entries from the portfolio.`}
                 confirmLabel="Clear all"
               >
                 <button
@@ -565,7 +539,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <PortfolioModeToggle
                 mode={simulationMode}
                 onModeChange={onSimulationModeChange}
-                positionCount={new Set(positions.map(p => p.reserveId)).size}
+                positionCount={entries.length}
               />
             )}
           </div>
@@ -632,7 +606,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     key={getReserveKey(r)}
                     reserve={r}
                     onAdd={handleAddToken}
-                    existingPositions={positions}
+                    existingEntries={entries}
                   />
                 ))}
                 {hasMoreResults && (
@@ -687,8 +661,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
           );
         })()}
 
-        {/* Position list */}
-        {positions.length === 0 ? (
+        {/* Entry list */}
+        {entries.length === 0 ? (
           <div
             className={cn(
               'rounded-xl border border-dashed px-3 py-4 text-center',
@@ -719,32 +693,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
         ) : (
           <div className="space-y-1.5">
             <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
-              {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
-                <PortfolioTokenRow
-                  key={reserveId}
-                  reserveId={reserveId}
-                  tokenSymbol={entry.tokenSymbol}
-                  chainName={entry.chainName}
-                  marketName={entry.marketName}
-                  hubName={entry.hubName}
-                  isOrphan={entry.isOrphan}
-                  supplyPosition={entry.supply}
-                  borrowPosition={entry.borrow}
-                  onRemove={handleRemoveToken}
-                  onUpdateAmount={actions.updateAmount}
-                  onUpdateInputMode={actions.updateInputMode}
-                  onUpdateDeltaSign={actions.updateDeltaSign}
-                  onHideOrRemoveReserve={actions.hideOrRemoveReserveAction}
-                  onUnhideReserve={actions.unhideReserveAction}
-                  onRestorePosition={handleRestorePosition}
-                  tokenPriceInUsd={reserves.find((r) => getReserveKey(r) === reserveId)?.tokenPrice}
-                />
-              ))}
+              {sortedEntries.map((entry) => {
+                const reserve = reserveIdToReserve.get(entry.reserveId);
+                return (
+                  <PortfolioTokenRow
+                    key={entry.reserveId}
+                    entry={entry}
+                    actions={actions}
+                    reserveId={entry.reserveId}
+                    onRemove={handleRemoveToken}
+                    tokenPriceInUsd={reserve?.tokenPrice}
+                    disabledNotice={reserve ? {
+                      supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
+                      borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
+                    } : undefined}
+                  />
+                );
+              })}
             </div>
-            {positions.some(p => p.hidden) && (
+            {entries.some(e => e.hidden) && (
               <div className="flex items-center gap-2 ds-text-10 text-muted-foreground/60 pt-1">
                 <div className="flex-1 h-px bg-border/20" />
-                <span>{positions.filter(p => p.hidden).length} hidden</span>
+                <span>{entries.filter(e => e.hidden).length} hidden</span>
                 <div className="flex-1 h-px bg-border/20" />
               </div>
             )}
@@ -752,7 +722,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         )}
 
         {/* Summary card */}
-        {summary && positions.length > 0 && (
+        {summary && entries.length > 0 && (
           <div className="mt-3">
             <PortfolioSummaryCard summary={summary} />
           </div>
@@ -761,7 +731,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {/* Per-token results table */}
         {positionResults && positionResults.length > 0 && (
           <div className="mt-2.5">
-            <PortfolioResultsTable positions={positions} results={positionResults} />
+            <PortfolioResultsTable entries={entries} results={positionResults} />
           </div>
         )}
       </div>
@@ -769,7 +739,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
       {/* Saved Snapshots */}
       {features.snapshot && snapshots.length > 0 && (
         <div className={cn(
-          'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
           isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
         )}>
           <div className="flex items-center justify-between mb-2">

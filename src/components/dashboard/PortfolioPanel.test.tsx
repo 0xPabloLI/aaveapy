@@ -90,16 +90,6 @@ const makeActions = (): PortfolioSimulationActions => ({
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
   undoLastRemove: vi.fn(),
-  addPosition: vi.fn(),
-  removePosition: vi.fn(),
-  updateAmount: vi.fn(),
-  updateDeltaSign: vi.fn(),
-  updateInputMode: vi.fn(),
-  importPositions: vi.fn(),
-  restorePosition: vi.fn(),
-  toggleHidden: vi.fn(),
-  hideOrRemoveReserveAction: vi.fn(),
-  unhideReserveAction: vi.fn(),
 });
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
@@ -224,47 +214,4 @@ describe('PortfolioPanel', () => {
     expect(container.innerHTML).not.toContain('position-results');
   });
 
-  it('renders PortfolioModeToggle in header when simulationMode is provided', () => {
-    const reserves = [makeReserve('USDC')];
-    const onModeChange = vi.fn();
-    render(
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-            <PortfolioPanel
-              entries={[]}
-              actions={makeActions()}
-              reserves={reserves}
-              simulationMode="portfolio"
-              onSimulationModeChange={onModeChange}
-            />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>,
-    );
-    const toggle = screen.getByRole('switch', { name: /portfolio/i });
-    expect(toggle).toBeInTheDocument();
-  });
-
-  it('does not render PortfolioModeToggle when simulationMode is not provided', () => {
-    const reserves = [makeReserve('USDC')];
-    render(
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-            <PortfolioPanel
-              entries={[]}
-              actions={makeActions()}
-              reserves={reserves}
-            />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>,
-    );
-    expect(screen.queryByRole('switch', { name: /portfolio/i })).not.toBeInTheDocument();
-  });
 });

@@ -841,70 +841,95 @@ const ReservesTable = ({
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
       {isMobile ? (
-        <div className="flex items-center gap-2">
-          {!isPortfolioMode && (
-            <div className="flex-1 min-w-0">
-              <ScenarioControls
-                ref={scenarioControlsRef}
-                onDebouncedChange={handleScenarioChange}
-                meritMerklNetPosition={meritMerklNetPosition}
-                onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-                mobileNetOpen={mobileNetOpen}
-                onMobileNetToggle={handleMobileNetToggle}
-              />
+        <>
+          {!isPortfolioMode ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <ScenarioControls
+                  ref={scenarioControlsRef}
+                  onDebouncedChange={handleScenarioChange}
+                  meritMerklNetPosition={meritMerklNetPosition}
+                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+                  mobileNetOpen={mobileNetOpen}
+                  onMobileNetToggle={handleMobileNetToggle}
+                />
+              </div>
+              {onSimulationModeChange && (
+                <div className="ml-auto shrink-0">
+                  <PortfolioModeToggle
+                    mode={simulationMode}
+                    onModeChange={onSimulationModeChange}
+                    positionCount={portfolioEntries?.length ?? 0}
+                  />
+                </div>
+              )}
             </div>
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={reserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  onRefresh={onRefresh}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                />
+              ) : null}
+            </>
           )}
-          {!isPortfolioMode && onSimulationModeChange && (
-            <div className="ml-auto shrink-0">
-              <PortfolioModeToggle
-                mode={simulationMode}
-                onModeChange={onSimulationModeChange}
-                positionCount={portfolioEntries?.length ?? 0}
-              />
-            </div>
-          )}
-        </div>
+        </>
       ) : (
-        <div className="flex items-center gap-2">
-          {!isPortfolioMode && (
-            <div className="flex-1 min-w-0">
-              <ScenarioControls
-                ref={scenarioControlsRef}
-                onDebouncedChange={handleScenarioChange}
-                meritMerklNetPosition={meritMerklNetPosition}
-                onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-              />
+        <>
+          {!isPortfolioMode ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <ScenarioControls
+                  ref={scenarioControlsRef}
+                  onDebouncedChange={handleScenarioChange}
+                  meritMerklNetPosition={meritMerklNetPosition}
+                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+                />
+              </div>
+              {onSimulationModeChange && (
+                <div className="ml-auto shrink-0">
+                  <PortfolioModeToggle
+                    mode={simulationMode}
+                    onModeChange={onSimulationModeChange}
+                    positionCount={portfolioEntries?.length ?? 0}
+                  />
+                </div>
+              )}
             </div>
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={reserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  onRefresh={onRefresh}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                />
+              ) : null}
+            </>
           )}
-          {!isPortfolioMode && onSimulationModeChange && (
-            <div className="ml-auto shrink-0">
-              <PortfolioModeToggle
-                mode={simulationMode}
-                onModeChange={onSimulationModeChange}
-                positionCount={portfolioEntries?.length ?? 0}
-              />
-            </div>
-          )}
-        </div>
-      )}
-      {isPortfolioMode && (
-        isLoading && reserves.length === 0 ? (
-          <PortfolioPanelSkeleton />
-        ) : portfolioEntries && portfolioActions ? (
-          <PortfolioPanel
-            entries={portfolioEntries}
-            actions={portfolioActions}
-            reserves={reserves}
-            positionResults={portfolioResults}
-            summary={portfolioSummary}
-            snapshots={portfolioSnapshots}
-            onWalletSync={onWalletSync}
-            onRefresh={onRefresh}
-            walletLoadState={walletLoadState}
-            simulationMode={simulationMode}
-            onSimulationModeChange={onSimulationModeChange}
-          />
-        ) : null
+        </>
       )}
     </div>
   );
