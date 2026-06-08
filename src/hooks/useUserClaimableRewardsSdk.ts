@@ -1,2 +1,2 @@
-export { useUserSummarySdk, useUserClaimableRewardsSdk } from './useUserSummarySdk'
-export type { UserSummaryData, ClaimableRewardData } from './useUserSummarySdk'
+export { useUserSummarySdk } from './useUserSummarySdk'
+export type { UserSummaryData } from './useUserSummarySdk'

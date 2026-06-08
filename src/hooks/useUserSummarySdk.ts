@@ -1,5 +1,4 @@
-import { useUserSummary as useV4UserSummary, useUserClaimableRewards as useV4UserClaimableRewards } from '@aave/react'
-import type { UserClaimableReward } from '@aave/graphql'
+import { useUserSummary as useV4UserSummary } from '@aave/react'
 import { useWallet } from './useWallet'
 
 export interface UserSummaryData {
@@ -13,16 +12,6 @@ export interface UserSummaryData {
   totalSupplied: number
 }
 
-export interface ClaimableRewardData {
-  id: string
-  claimable: number
-  symbol: string
-  startDate: string
-  endDate: string
-  claimUntil: string
-}
-
-type MerklReward = Extract<UserClaimableReward, { __typename: 'UserMerklClaimableReward' }>
 
 export function useUserSummarySdk() {
   const { address, isConnected } = useWallet()
@@ -46,31 +35,6 @@ export function useUserSummarySdk() {
     totalPositions: summary.totalPositions,
     totalSupplied: parseFloat(summary.totalSupplied.current.value),
   }
-
-  return { data, loading: false as const, error: undefined }
-}
-
-export function useUserClaimableRewardsSdk() {
-  const { address, isConnected } = useWallet()
-  const enabled = isConnected && !!address
-
-  const account = (enabled ? address : undefined) as `0x${string}`
-  const result = useV4UserClaimableRewards({ account }, { enabled })
-
-  if (result.loading || !result.data) {
-    return { data: undefined, loading: result.loading, error: result.error }
-  }
-
-  const data: ClaimableRewardData[] = result.data
-    .filter((reward): reward is MerklReward => reward.__typename === 'UserMerklClaimableReward')
-    .map((merkl): ClaimableRewardData => ({
-      id: String(merkl.id),
-      claimable: parseFloat(merkl.claimable?.amount?.value ?? '0'),
-      symbol: merkl.claimable?.exchange?.symbol ?? '',
-      startDate: String(merkl.startDate ?? ''),
-      endDate: String(merkl.endDate ?? ''),
-      claimUntil: String(merkl.claimUntil ?? ''),
-    }))
 
   return { data, loading: false as const, error: undefined }
 }

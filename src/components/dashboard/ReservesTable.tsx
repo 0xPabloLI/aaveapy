@@ -85,8 +85,6 @@ interface ReservesTableProps {
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
   onWalletSync?: () => void;
   walletLoadState?: WalletLoadState;
-  claimableRewards?: import('@/hooks/useUserClaimableRewardsSdk').ClaimableRewardData[];
-  claimableRewardsLoading?: boolean;
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
@@ -119,8 +117,6 @@ const ReservesTable = ({
   portfolioSnapshots,
   onWalletSync,
   walletLoadState,
-  claimableRewards,
-  claimableRewardsLoading,
   onRefresh,
   dataUpdatedAt,
   topOppsRef,
@@ -905,8 +901,6 @@ const ReservesTable = ({
             onWalletSync={onWalletSync}
             onRefresh={onRefresh}
             walletLoadState={walletLoadState}
-            claimableRewards={claimableRewards}
-            claimableRewardsLoading={claimableRewardsLoading}
           />
         ) : null
       )}

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
-import { useUserClaimableRewardsSdk, type ClaimableRewardData } from '@/hooks/useUserClaimableRewardsSdk';
 import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
 import { useWallet } from '@/hooks/useWallet';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
@@ -291,7 +290,6 @@ const Index = () => {
     v4SdkFailed,
   } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
 
-  const { data: claimableRewards, loading: claimableRewardsLoading } = useUserClaimableRewardsSdk();
 
   // Auto-import: wallet connect → SDK query → merge → toast
   useWalletAutoImport({
@@ -657,8 +655,6 @@ const Index = () => {
               portfolioSnapshots={portfolio.snapshots}
               onWalletSync={handleWalletSync}
               walletLoadState={walletLoadState}
-              claimableRewards={claimableRewards}
-              claimableRewardsLoading={claimableRewardsLoading}
               onRefresh={handleRefresh}
               dataUpdatedAt={dataUpdatedAt}
               topOppsRef={topOppsRef}
