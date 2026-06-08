@@ -128,6 +128,10 @@ _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`�
 Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere.
 _Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
 
+**Snapshot Feature Flag**:
+`features.snapshot` (`src/config/features.ts`) 控制 Snapshot UI 的渲染：Save 按钮、Saved Snapshots 列表、Compare 按钮、Compare 视图、prefetch。当前为 `false`（功能暂时下线，详见 ADR-0012）。Hook 层和类型不变。恢复：改一行 flag 为 `true`。
+_Avoid_: 删除代码、移到 dead code 目录、环境变量方式
+
 **Onchain Fallback**:
 Reactive 模式：SDK 失败后才触发 onchain 查询，不提前并发（省 public RPC 配额）。V3/V4 fallback 拆为独立 useQuery，各自 15s timeout、独立 retry、互不阻塞。fallback query staleTime 30s，不 refetchOnWindowFocus / refetchOnReconnect。合约地址从 `@aave-dao/aave-address-book` 取，不硬编码链列表。
 _Avoid_: proactive 并发（浪费 RPC）、private RPC（前端只用 public RPC）、V3/V4 合并单 query（互相阻塞）
@@ -189,9 +193,13 @@ _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
 切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
 _Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）
 
+**Supply-Borrow Inseparability**:
+一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。
+_Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）
+
 **Soft Delete**:
-方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。
-_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制
+方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。
+_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制、只 hidden 一个 side
 
 **Watch Mode UI**:
 Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。入口文案统一为 "View address"，连接后的状态文案统一为 "Viewing"；真实钱包已连接时仍提供显式的 "Switch to watch mode" 入口。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。
