@@ -9,11 +9,14 @@ function resolveExplorerIconPathFromBase(iconBase: string): string | undefined {
   return `/icons/explorers/${key}.${ext}`;
 }
 
+function resolveBrand(base: string): string | undefined {
+  return explorerIconMap[normalizeExplorerBase(base)];
+}
+
 export const getExplorerIconSrc = (base: string): string | undefined => {
-  const normalized = normalizeExplorerBase(base);
-  const iconName = explorerIconMap[normalized];
-  if (!iconName) return undefined;
-  return resolveExplorerIconPathFromBase(iconName);
+  const brand = resolveBrand(base);
+  if (!brand) return undefined;
+  return resolveExplorerIconPathFromBase(brand);
 };
 
 /**
@@ -21,7 +24,4 @@ export const getExplorerIconSrc = (base: string): string | undefined => {
  * The brand is the icon base (e.g. `etherscan`, `blockscout`, `routescan`,
  * `oklink`). For unknown bases returns `undefined`.
  */
-export const getExplorerBrand = (base: string): string | undefined => {
-  const normalized = normalizeExplorerBase(base);
-  return explorerIconMap[normalized];
-};
+export const getExplorerBrand = (base: string): string | undefined => resolveBrand(base);
