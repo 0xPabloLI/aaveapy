@@ -57,7 +57,11 @@
 - Hook: `useWatchModeConnect` → 调用 wagmi `connect({ connector: watchModeConnector })`
 - 地址输入：`WatchAddressInput`（支持 0x 地址 + ENS 解析）
 - 与真实钱包互斥：同一时刻只有一个 active account
-- **AAV-643 fix（2026-06-08）**: Watch Mode 已激活时用户再提交一次地址（页面刷新后 wagmi 从 localStorage 自动恢复 connector 是典型触发场景）需要主动 `queryClient.invalidateQueries({ queryKey: ['user-positions', address] })` 强制 refetch。`setWatchAddress` 同地址 no-op，wagmi 不会发 'change' 事件，否则 React Query cache 保持不变，positions 静默卡住。详见 [`useWatchModeConnect.ts`](../../src/hooks/useWatchModeConnect.ts) 注释与 `useWatchModeConnect.test.ts` 回归测试。
+- **AAV-643 fix（2026-06-08，状态：PARTIAL）**: Watch Mode 已激活时用户再提交一次地址（页面刷新后 wagmi 从 localStorage 自动恢复 connector 是典型触发场景）需要主动 invalidate positions cache。`setWatchAddress` 同地址 no-op，wagmi 不会发 'change' 事件，否则 positions 静默卡住。详见 [`useWatchModeConnect.ts`](../../src/hooks/useWatchModeConnect.ts) 注释与 `useWatchModeConnect.test.ts` 回归测试。
+  - **已修（React Query fallback 路径）**：`useWatchModeConnect` 在 isReentry 路径上 `queryClient.invalidateQueries({ queryKey: ['user-positions', address] })` + 回归测试覆盖同地址/异地址。
+  - **未修（生产主路径）⚠**：上一步 invalidate 的 key `['user-positions', address]` 来自 [`useUserPositions.ts:82`](../../src/hooks/useUserPositions.ts#L82)，但 `useUserPositions` hook 函数本身在 `src/pages/Index.tsx:292` 等生产路径**没有任何 import**（只有 `WalletLoadState` 这个 type 被引用），是死代码。生产真实数据源是 [`useUserPositionsSdk`](../../src/hooks/useUserPositionsSdk.ts#L179)，走 `@aave/react` / `@aave/react-v3` 的 urql hooks（`useUserSupplies/Borrows`），不走 React Query；RQ 上挂着的 key 实际是 `['user-positions-onchain-fallback', address, v3SdkFailed, v4SdkFailed]`（仅在 SDK 失败时启用，[`useUserPositionsSdk.ts:224`](../../src/hooks/useUserPositionsSdk.ts#L224)）。
+  - **影响**：re-submit 同一地址时，React Query 路径会 refetch（但没有 observer，cache 写了没人读），urql 主路径 cache **完全不动**，所以用户实际看到的 positions 仍然 stale。回归测试通过了（mock 了 RQ）但生产行为未修复。
+  - **Follow-up（AAV-643b）**：要么 (a) 在 `useWatchModeConnect` 里同时调 urql 的 `client.refetchQueries` / 触发 SDK 重新 query，要么 (b) 把 watch address 变化映射成 `useUserPositionsSdk` 内部的 query key 依赖（address 已经在 key 里，但 urql 不会因 wagmi 事件自动 refetch），要么 (c) 改用 location.reload 兜底（最简单可靠，待和 reviewer 拍板）。修复前不要关闭 Linear。
 
 ## 钱包自动导入
 
@@ -138,7 +142,7 @@
 | AAV-80 | 个人 position/liquidity | ✅ Done | Phase 4，展示已实现 |
 | AAV-62 | 支持导入现有portfolio | ❌ Canceled | 手动导入按钮不做，用自动导入替代 |
 | AAV-488 | WatchMode 入口不可用 | ✅ Done | Header 已传 onWatchSubmit，WalletButton 自定义渲染已提供入口 |
-| AAV-643 | Watch Mode 重复提交地址 positions 不刷新 | ✅ Done | 2026-06-08,useWatchModeConnect 在 isReentry 路径上 `invalidateQueries(['user-positions', address])`;回归测试覆盖同地址/异地址 |
+| AAV-643 | Watch Mode 重复提交地址 positions 不刷新 | ⚠ Partial | 2026-06-08,RQ fallback 路径已修（`useWatchModeConnect` isReentry 分支 invalidate `['user-positions', address]`），**生产主路径未修** — `useUserPositions` 是死代码，生产走 `useUserPositionsSdk`/urql，cache key 不匹配；follow-up AAV-643b 待决 |
 | AAV-489 | 审查测试 fixture 真实性 | ✅ Done | |
 | AAV-597 | PRD: classifyRpcError 集成 RPC rotation | ✅ Done | ADR-0004 follow-up, per-URL error-type metrics |
 | AAV-598 | TDD: catch 路径集成测试 | ✅ Done | 3 个 catch path 测试 (network/contract/unknown) |
