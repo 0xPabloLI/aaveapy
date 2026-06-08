@@ -1,13 +1,10 @@
 // @vitest-environment happy-dom
 /**
- * Wallet Sync button — verifies the idle / loading / error
- * state machine for the freshness dot, disabled state, spinner, and titles.
+ * Wallet Sync button — verifies the idle / loading states
+ * for the download-from-wallet button.
  *
- * Decisions covered:
- *  - #20/#23 — sync button has three states with freshness dot
- *  - market-update sky dot removed; reserves identity change no longer
- *    produces a distinct state — dot falls through to age-based color
- *  - error UX recovers to idle on successful retry
+ * After simplification the button is a manual trigger (Download icon)
+ * with a spinner while loading. No freshness dot or age-based color.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
@@ -114,138 +111,26 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
   });
   afterEach(() => cleanup());
 
-  it('idle (never synced): button enabled, no spinner, no freshness dot', () => {
+  it('idle: button enabled with Download icon, no spinner', () => {
     renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'idle' });
     const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('idle');
-    expect(btn.getAttribute('title')).toBe('Sync wallet positions');
+    expect(btn.getAttribute('title')).toBe('Import from wallet');
     expect(btn.querySelector('.animate-spin')).toBeNull();
-    expect(screen.queryByTestId('wallet-sync-freshness-dot')).toBeNull();
   });
 
-  it('loading: disabled, spinner visible, no dot rendered, title says Syncing', () => {
+  it('loading: disabled, spinner visible, title says Importing', () => {
     renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'loading' });
     const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('loading');
-    expect(btn.getAttribute('title')).toBe('Syncing…');
+    expect(btn.getAttribute('title')).toBe('Importing…');
     expect(btn.querySelector('.animate-spin')).not.toBeNull();
-    expect(screen.queryByTestId('wallet-sync-freshness-dot')).toBeNull();
   });
 
-  it('loading → success: emits freshness dot and "Updated …" title (idle-synced)', () => {
-    const { rerender } = renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'loading' });
-    rerender(
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-              <PortfolioPanel
-                entries={[]}
-                actions={actions}
-                reserves={[makeReserve('USDC')]}
-                walletLoadState="success-empty"
-              />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>,
-    );
-    const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
-    expect(btn.disabled).toBe(false);
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('idle-synced');
-    expect(btn.getAttribute('title')).toMatch(/^Updated \d+s ago$/);
-    expect(screen.getByTestId('wallet-sync-freshness-dot')).toBeInTheDocument();
-  });
-
-  it('error: red dot, retry title, button still clickable', () => {
+  it('clicking idle button calls onWalletSync', () => {
     const onWalletSync = vi.fn();
-    const { rerender } = renderPanel({
-      reserves: [makeReserve('USDC')], walletLoadState: 'loading', onWalletSync,
-    });
-    rerender(
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-              <PortfolioPanel
-                entries={[]}
-                actions={actions}
-                reserves={[makeReserve('USDC')]}
-                walletLoadState="error"
-                onWalletSync={onWalletSync}
-              />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>,
-    );
-    const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
-    expect(btn.disabled).toBe(false);
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('error');
-    expect(btn.getAttribute('title')).toBe('Sync failed — click to retry');
-    const dot = screen.getByTestId('wallet-sync-freshness-dot');
-    expect(dot.className).toContain('bg-red-400');
-
-    fireEvent.click(btn);
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'idle', onWalletSync });
+    fireEvent.click(screen.getByTestId('wallet-sync-button'));
     expect(onWalletSync).toHaveBeenCalledTimes(1);
-  });
-
-  it('error → success recovers to idle-synced (no longer error)', () => {
-    const reserves = [makeReserve('USDC')];
-    const rerenderWith = (state: 'loading' | 'error' | 'success-empty') => (
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-              <PortfolioPanel
-                entries={[]}
-                actions={actions}
-                reserves={reserves}
-                walletLoadState={state}
-              />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
-    );
-    const { rerender } = render(rerenderWith('loading'));
-    rerender(rerenderWith('error'));
-    expect(screen.getByTestId('wallet-sync-button').getAttribute('data-wallet-sync-state')).toBe('error');
-    rerender(rerenderWith('loading'));
-    rerender(rerenderWith('success-empty'));
-    const btn = screen.getByTestId('wallet-sync-button');
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('idle-synced');
-    expect(btn.getAttribute('title')).toMatch(/^Updated /);
-  });
-
-  it('reserves identity change after sync does not produce has-update (sky dot removed)', () => {
-    const reservesA = [makeReserve('USDC')];
-    const reservesB = [makeReserve('USDC')];
-    const tree = (reserves: ReserveWithSpread[], walletLoadState: 'loading' | 'success-empty') => (
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-              <PortfolioPanel
-                entries={[]}
-                actions={actions}
-                reserves={reserves}
-                walletLoadState={walletLoadState}
-              />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
-    );
-    const { rerender } = render(tree(reservesA, 'loading'));
-    rerender(tree(reservesA, 'success-empty'));
-    expect(screen.getByTestId('wallet-sync-button').getAttribute('data-wallet-sync-state')).toBe('idle-synced');
-    rerender(tree(reservesB, 'success-empty'));
-    const btn = screen.getByTestId('wallet-sync-button');
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('idle-synced');
-    expect(btn.getAttribute('title')).toMatch(/^Updated /);
-    expect(screen.getByTestId('wallet-sync-freshness-dot').className).toContain('bg-emerald-400');
   });
 });

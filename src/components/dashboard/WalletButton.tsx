@@ -5,6 +5,7 @@ import { useWallet } from '@/hooks/useWallet'
 import { WatchAddressInput } from './WatchAddressInput'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { wagmiConfig } from '@/lib/wagmi/config'
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_DESKTOP_ACTIVE_CLASS,
@@ -30,7 +31,7 @@ function truncateAddress(addr: string) {
 }
 
 export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProps) {
-  const { address, isConnected, isWatchMode, disconnect } = useWallet()
+  const { address, isConnected, isWatchMode, disconnect, disconnectAllAsync } = useWallet()
   const [showWatchInput, setShowWatchInput] = useState(false)
   const [pendingSwitch, setPendingSwitch] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -48,6 +49,12 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
     } catch {
       toast.error('Failed to copy address')
     }
+  }
+
+  const handleSwitchWallet = async () => {
+    setPendingSwitch(true)
+    await disconnectAllAsync()
+    await wagmiConfig._internal.storage?.removeItem('recentConnectorId')
   }
 
   useEffect(() => {
@@ -87,7 +94,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     {isWatchMode ? (
                       <Eye className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden />
+                      <Wallet className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                     )}
                     {!mobile && <span>{truncateAddress(address)}</span>}
                     {!mobile && (
@@ -106,18 +113,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   <button
                     type="button"
                     className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                    onClick={handleCopy}
-                  >
-                    {copied
-                      ? <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-                      : <Copy className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-                    }
-                    {copied ? 'Copied!' : 'Copy address'}
-                  </button>
-                  <button
-                    type="button"
-                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                    onClick={() => { setPendingSwitch(true); disconnect() }}
+                    onClick={handleSwitchWallet}
                   >
                     <Wallet className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
                     Switch wallet
@@ -132,6 +128,17 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                       View another address
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
+                    onClick={handleCopy}
+                  >
+                    {copied
+                      ? <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                      : <Copy className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                    }
+                    {copied ? 'Copied!' : 'Copy address'}
+                  </button>
                   <button
                     type="button"
                     className={cn(HEADER_CONTROL_POPOVER_ITEM_CLASS, 'text-destructive')}

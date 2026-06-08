@@ -118,4 +118,5 @@ export const HEADER_CONTROL_POPOVER_ITEM_CLASS = [
   'w-full flex items-center gap-[var(--ds-space-2)]',
   'rounded-sm px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-11',
   'hover:bg-muted/60',
+  HEADER_CONTROL_FOCUS_RING_CLASS,
 ].join(' ')

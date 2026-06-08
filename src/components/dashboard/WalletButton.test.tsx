@@ -18,6 +18,23 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
 
 vi.mock('wagmi', () => ({
   useEnsAddress: () => ({ data: null, isLoading: false }),
+  createConfig: vi.fn(),
+  useConnections: () => [],
+  useConfig: () => ({}),
+}))
+
+vi.mock('@/lib/wagmi/config', () => ({
+  wagmiConfig: {
+    _internal: {
+      storage: {
+        removeItem: vi.fn(async () => undefined),
+      },
+    },
+  },
+}))
+
+vi.mock('@wagmi/core', () => ({
+  disconnect: vi.fn(async () => undefined),
 }))
 
 vi.mock('@/hooks/useWallet')
@@ -30,6 +47,8 @@ function mockWallet(overrides: Partial<ReturnType<typeof useWallet>> = {}) {
     isWatchMode: false,
     connect: vi.fn(),
     disconnect: vi.fn(),
+    disconnectAsync: vi.fn(async () => undefined),
+    disconnectAllAsync: vi.fn(async () => undefined),
     ...overrides,
   } as ReturnType<typeof useWallet>)
 }
@@ -97,10 +116,9 @@ describe('WalletButton — wallet connected (non-watch)', () => {
     expect(screen.getByLabelText(/wallet 0x1234/i)).toBeInTheDocument()
   })
 
-  it('renders green dot indicator', () => {
+  it('renders Wallet icon for connected state', () => {
     const { container } = render(<WalletButton onWatchSubmit={vi.fn()} />)
-    const dot = container.querySelector('[class*="bg-emerald"]')
-    expect(dot).toBeTruthy()
+    expect(container.querySelector('svg.lucide-wallet')).toBeTruthy()
   })
 
   it('shows popover menu with Copy address, Switch wallet, View another address, and Disconnect', () => {
@@ -125,23 +143,24 @@ describe('WalletButton — wallet connected (non-watch)', () => {
     expect(writeText).toHaveBeenCalledWith('0x1234567890abcdef1234567890abcdef12345678')
   })
 
-  it('Switch wallet disconnects and opens connect modal', async () => {
-    const mockDisconnect = vi.fn()
+  it('Switch wallet disconnects all connections and opens connect modal', async () => {
+    const mockDisconnectAllAsync = vi.fn(async () => {
+      vi.mocked(useWallet).mockReturnValue({
+        address: undefined,
+        chainId: 1,
+        isConnected: false,
+        isWatchMode: false,
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        disconnectAsync: vi.fn(async () => undefined),
+        disconnectAllAsync: vi.fn(async () => undefined),
+      } as ReturnType<typeof useWallet>)
+    })
     mockWallet({
       address: '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`,
       isConnected: true,
       isWatchMode: false,
-      disconnect: () => {
-        mockDisconnect()
-        vi.mocked(useWallet).mockReturnValue({
-          address: undefined,
-          chainId: 1,
-          isConnected: false,
-          isWatchMode: false,
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        } as ReturnType<typeof useWallet>)
-      },
+      disconnectAllAsync: mockDisconnectAllAsync,
     })
     mockOpenConnectModal.mockClear()
     const { rerender } = render(<WalletButton onWatchSubmit={vi.fn()} />)
@@ -149,11 +168,13 @@ describe('WalletButton — wallet connected (non-watch)', () => {
     fireEvent.click(screen.getByLabelText(/wallet/i))
     fireEvent.click(screen.getByRole('button', { name: /switch wallet/i }))
 
-    expect(mockDisconnect).toHaveBeenCalled()
+    expect(mockDisconnectAllAsync).toHaveBeenCalled()
 
     rerender(<WalletButton onWatchSubmit={vi.fn()} />)
 
     expect(mockOpenConnectModal).toHaveBeenCalled()
+    const { wagmiConfig: cfg } = await import('@/lib/wagmi/config')
+    expect(cfg._internal.storage!.removeItem).toHaveBeenCalledWith('recentConnectorId')
   })
 
   it('shows Copy address, Switch wallet and Disconnect even without onWatchSubmit', () => {
@@ -235,10 +256,10 @@ describe('WalletButton — watch mode connected', () => {
     expect(screen.getByLabelText(/viewing 0xabcd/i)).toBeInTheDocument()
   })
 
-  it('does not render green dot (uses Eye instead)', () => {
+  it('renders Eye icon for watch mode (not Wallet)', () => {
     const { container } = render(<WalletButton />)
-    const trigger = screen.getByLabelText(/viewing/i)
-    expect(trigger.querySelector('[class*="bg-emerald"]')).not.toBeTruthy()
+    expect(container.querySelector('svg.lucide-eye')).toBeTruthy()
+    expect(container.querySelector('svg.lucide-wallet')).toBeNull()
   })
 
   it('shows popover menu with Copy address, Switch wallet, View another address, and Disconnect', () => {
