@@ -202,8 +202,8 @@ _Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）
 _Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制、只 hidden 一个 side
 
 **Watch Mode UI**:
-Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。入口文案统一为 "View address"，连接后的状态文案统一为 "Viewing"；真实钱包已连接时仍提供显式的 "Switch to watch mode" 入口。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。
-_Avoid_: Watch Mode 和真实钱包并存、先断开真实钱包才能 Watch、把 Watch Mode 当作 RainbowKit 钱包选项依赖、行内常驻输入框（占 Header 空间）、二次弹窗输入地址
+Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。Disconnected 状态入口文案统一为 "View address"。Connected 状态 popover 统一三项菜单：Switch wallet（Wallet 图标，打开 RainbowKit 钱包选择）、View another address（Eye 图标，跳到地址输入）、Disconnect（X 图标，断开）。无论当前是钱包连接还是 View address，菜单结构完全一致。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。
+_Avoid_: Watch Mode 和真实钱包并存、先断开真实钱包才能 Watch、把 Watch Mode 当作 RainbowKit 钱包选项依赖、行内常驻输入框（占 Header 空间）、二次弹窗输入地址、UI 中暴露 "watch mode" 技术术语
 
 ---
 

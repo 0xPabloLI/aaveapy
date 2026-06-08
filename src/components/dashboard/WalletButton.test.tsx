@@ -97,17 +97,49 @@ describe('WalletButton — wallet connected (non-watch)', () => {
   })
 
   it('renders green dot indicator', () => {
-    render(<WalletButton />)
-    const trigger = screen.getByLabelText(/wallet/i)
-    expect(trigger.querySelector('.bg-emerald-500')).toBeInTheDocument()
+    const { container } = render(<WalletButton onWatchSubmit={vi.fn()} />)
+    const dot = container.querySelector('[class*="bg-emerald"]')
+    expect(dot).toBeTruthy()
   })
 
-  it('lets wallet users switch to watch mode without disconnecting first', () => {
+  it('shows unified popover menu with Switch wallet, View another address, and Disconnect', () => {
     render(<WalletButton onWatchSubmit={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText(/wallet/i))
 
-    expect(screen.getByRole('button', { name: /switch to watch mode/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /view another address/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
+  })
+
+  it('Switch wallet opens RainbowKit connect modal', () => {
+    mockOpenConnectModal.mockClear()
+    render(<WalletButton onWatchSubmit={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+    fireEvent.click(screen.getByRole('button', { name: /switch wallet/i }))
+
+    expect(mockOpenConnectModal).toHaveBeenCalled()
+  })
+
+  it('shows Switch wallet and Disconnect even without onWatchSubmit', () => {
+    render(<WalletButton />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+
+    expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /view another address/i })).not.toBeInTheDocument()
+  })
+
+  it('View another address opens address input flow', () => {
+    const onWatchSubmit = vi.fn(async () => undefined)
+    render(<WalletButton onWatchSubmit={onWatchSubmit} />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+    fireEvent.click(screen.getByRole('button', { name: /view another address/i }))
+
+    expect(screen.getByPlaceholderText(/0x/i)).toBeInTheDocument()
   })
 })
 
@@ -124,8 +156,18 @@ describe('WalletButton — watch mode connected', () => {
   })
 
   it('does not render green dot (uses Eye instead)', () => {
-    render(<WalletButton />)
+    const { container } = render(<WalletButton />)
     const trigger = screen.getByLabelText(/viewing/i)
-    expect(trigger.querySelector('.bg-emerald-500')).not.toBeInTheDocument()
+    expect(trigger.querySelector('[class*="bg-emerald"]')).not.toBeTruthy()
+  })
+
+  it('shows unified popover menu identical to wallet connected state', () => {
+    render(<WalletButton onWatchSubmit={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/viewing/i))
+
+    expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /view another address/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
   })
 })

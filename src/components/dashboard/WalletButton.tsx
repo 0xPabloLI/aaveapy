@@ -60,7 +60,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     {isWatchMode ? (
                       <Eye className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden />
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden />
                     )}
                     {!mobile && <span>{truncateAddress(address)}</span>}
                     {!mobile && (
@@ -72,24 +72,22 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
-                  {!isWatchMode && onWatchSubmit && (
+                  <button
+                    type="button"
+                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
+                    onClick={openConnectModal}
+                  >
+                    <Wallet className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                    Switch wallet
+                  </button>
+                  {onWatchSubmit && (
                     <button
                       type="button"
                       className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
                       onClick={() => setShowWatchInput(true)}
                     >
-                      <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
-                      Switch to watch mode
-                    </button>
-                  )}
-                  {isWatchMode && (
-                    <button
-                      type="button"
-                      className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                      onClick={() => setShowWatchInput(true)}
-                    >
-                      <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
-                      Switch address
+                      <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                      View another address
                     </button>
                   )}
                   <button
@@ -97,7 +95,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     className={cn(HEADER_CONTROL_POPOVER_ITEM_CLASS, 'text-destructive')}
                     onClick={() => disconnect()}
                   >
-                    <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
+                    <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
                     Disconnect
                   </button>
                 </PopoverContent>
