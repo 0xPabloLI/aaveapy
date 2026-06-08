@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AssetActionMenu from './AssetActionMenu';
 
@@ -294,5 +294,41 @@ describe('AssetActionMenu (explorer icon stack)', () => {
     expect(chainIcon).toBeInTheDocument();
     expect(explorerIcon).toBeInTheDocument();
     expect(explorerIcon?.getAttribute('src')).toBe('/icons/explorers/etherscan.svg');
+  });
+
+  it('renders the Routescan brand icon for the Metis market', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV3Metis' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const tokenItem = screen.getByText('View token on explorer').closest('a');
+    const explorerIcon = tokenItem?.querySelector('img[src^="/icons/explorers/"]');
+    expect(explorerIcon?.getAttribute('src')).toBe('/icons/explorers/routescan.svg');
+  });
+
+  it('renders the Blockscout brand icon for the Scroll market', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV3Scroll' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const tokenItem = screen.getByText('View token on explorer').closest('a');
+    const explorerIcon = tokenItem?.querySelector('img[src^="/icons/explorers/"]');
+    expect(explorerIcon?.getAttribute('src')).toBe('/icons/explorers/blockscout.svg');
+  });
+
+  it('renders the OKLink brand icon for the XLayer market', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV3XLayer' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const tokenItem = screen.getByText('View token on explorer').closest('a');
+    const explorerIcon = tokenItem?.querySelector('img[src^="/icons/explorers/"]');
+    expect(explorerIcon?.getAttribute('src')).toBe('/icons/explorers/oklink.svg');
   });
 });

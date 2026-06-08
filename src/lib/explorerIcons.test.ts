@@ -14,11 +14,22 @@ describe('getExplorerIconSrc', () => {
     expect(getExplorerIconSrc('https://totally-unknown-explorer.example')).toBeUndefined();
   });
 
-  it('returns undefined when a known base has no on-disk asset yet', () => {
-    // BlockScout/Routescan/OKLink bases are mapped but only `etherscan.svg`
-    // has landed on disk in this slice. The two-layer map+manifest design
-    // must short-circuit to undefined for not-yet-illustrated explorers.
-    expect(getExplorerIconSrc('https://www.oklink.com')).toBeUndefined();
+  it('resolves every mapped brand to a public path (Slice 2 complete)', () => {
+    // After Slice 2 all 4 brands (etherscan/routescan/blockscout/oklink)
+    // have landed on disk. The two-layer map+manifest must resolve every
+    // base URL exposed in poolExplorerLinks → explorerIconMap to a path.
+    expect(getExplorerIconSrc('https://etherscan.io')).toBe(
+      '/icons/explorers/etherscan.svg',
+    );
+    expect(getExplorerIconSrc('https://metisscan.info')).toBe(
+      '/icons/explorers/routescan.svg',
+    );
+    expect(getExplorerIconSrc('https://scrollscan.com')).toBe(
+      '/icons/explorers/blockscout.svg',
+    );
+    expect(getExplorerIconSrc('https://www.oklink.com')).toBe(
+      '/icons/explorers/oklink.svg',
+    );
   });
 });
 

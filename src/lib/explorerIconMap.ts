@@ -26,7 +26,7 @@ export const explorerIconMap: Record<string, string> = {
   'zksync.blockscout.com': 'blockscout',
   'soneium.blockscout.com': 'blockscout',
   'explorer.inkonchain.com': 'blockscout',
-  'www.oklink.com': 'oklink',
+  'oklink.com': 'oklink',
 };
 
 /**
