@@ -59,7 +59,7 @@ import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import type { PortfolioPosition } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import type { WalletLoadState } from '@/hooks/useUserPositions';
+import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
@@ -81,6 +81,7 @@ interface ReservesTableProps {
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
   portfolioPositions?: PortfolioPosition[];
+  portfolioEntries?: import('@/types/portfolio').PortfolioReserveEntry[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
   onWalletSync?: () => void;
@@ -113,6 +114,7 @@ const ReservesTable = ({
   simulationMode = 'single',
   onSimulationModeChange,
   portfolioPositions,
+  portfolioEntries,
   portfolioActions,
   portfolioSnapshots,
   onWalletSync,
@@ -833,6 +835,7 @@ const ReservesTable = ({
   } = usePortfolioToggle({
     isPortfolioMode,
     reserves,
+    entries: portfolioEntries,
     portfolioPositions,
     portfolioActions,
     simulationContext: portfolioSimulationContext,

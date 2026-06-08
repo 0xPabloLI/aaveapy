@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import type { WalletLoadState } from '@/hooks/useUserPositions';
+import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';

@@ -57,11 +57,9 @@
 - Hook: `useWatchModeConnect` → 调用 wagmi `connect({ connector: watchModeConnector })`
 - 地址输入：`WatchAddressInput`（支持 0x 地址 + ENS 解析）
 - 与真实钱包互斥：同一时刻只有一个 active account
-- **AAV-643 fix（2026-06-08，状态：PARTIAL）**: Watch Mode 已激活时用户再提交一次地址（页面刷新后 wagmi 从 localStorage 自动恢复 connector 是典型触发场景）需要主动 invalidate positions cache。`setWatchAddress` 同地址 no-op，wagmi 不会发 'change' 事件，否则 positions 静默卡住。详见 [`useWatchModeConnect.ts`](../../src/hooks/useWatchModeConnect.ts) 注释与 `useWatchModeConnect.test.ts` 回归测试。
-  - **已修（React Query fallback 路径）**：`useWatchModeConnect` 在 isReentry 路径上 `queryClient.invalidateQueries({ queryKey: ['user-positions', address] })` + 回归测试覆盖同地址/异地址。
-  - **未修（生产主路径）⚠**：上一步 invalidate 的 key `['user-positions', address]` 来自 [`useUserPositions.ts:82`](../../src/hooks/useUserPositions.ts#L82)，但 `useUserPositions` hook 函数本身在 `src/pages/Index.tsx:292` 等生产路径**没有任何 import**（只有 `WalletLoadState` 这个 type 被引用），是死代码。生产真实数据源是 [`useUserPositionsSdk`](../../src/hooks/useUserPositionsSdk.ts#L179)，走 `@aave/react` / `@aave/react-v3` 的 urql hooks（`useUserSupplies/Borrows`），不走 React Query；RQ 上挂着的 key 实际是 `['user-positions-onchain-fallback', address, v3SdkFailed, v4SdkFailed]`（仅在 SDK 失败时启用，[`useUserPositionsSdk.ts:224`](../../src/hooks/useUserPositionsSdk.ts#L224)）。
-  - **影响**：re-submit 同一地址时，React Query 路径会 refetch（但没有 observer，cache 写了没人读），urql 主路径 cache **完全不动**，所以用户实际看到的 positions 仍然 stale。回归测试通过了（mock 了 RQ）但生产行为未修复。
-  - **Follow-up**：已开 [AAV-679](https://linear.app/aaveapy/issue/AAV-679) 跟踪 urql 生产路径（priority High, state Todo, parent = AAV-643）。三个方向（urql refetch / key 依赖 / `location.reload()` 兜底）见 AAV-679 描述。AAV-643 已通过 MCP 切到 Done state，PARTIAL 限制以 doc + Linear comment 形式留档。
+- **AAV-643 fix（2026-06-08，状态：已闭环）**: Watch Mode 已激活时用户再提交一次地址（页面刷新后 wagmi 从 localStorage 自动恢复 connector 是典型触发场景）需要主动 invalidate positions cache。`setWatchAddress` 同地址 no-op，wagmi 不会发 'change' 事件，否则 positions 静默卡住。详见 [`useWatchModeConnect.ts`](../../src/hooks/useWatchModeConnect.ts) 注释与 `useWatchModeConnect.test.ts` 回归测试。
+  - **方案**：`useWatchModeConnect` 在 isReentry 路径上 `bumpRefetch('watch-reentry')` → `refetchEvent` 抽象统一刷新信号 → `useUserPositionsSdk` 订阅 `subscribeRefetch` 后 (a) `queryClient.invalidateQueries` RQ fallback key (b) `gapFallbackQuery.refetch()` (c) `v3Client.refreshQueryWhere` / `v4Client.refreshQueryWhere` 传入 `UserSuppliesQuery` / `UserBorrowsQuery` 文档 + 谓词匹配当前 `address`。详见 ADR-0015。
+  - **覆盖路径**：RQ fallback key `['user-positions-onchain-fallback', address, v3SdkFailed, v4SdkFailed]`、gap fallback、urql V3 + V4 全覆盖（生产主路径）。三路径与 F5 / Refresh 按钮共用同一个 `refetchEvent` 通道。
 
 ## 钱包自动导入
 
@@ -99,7 +97,6 @@
 | `src/lib/userData/sdkPositionConverter.ts` | SDK position → WalletPosition 转换（双 map 查找） |
 | `src/lib/userData/onchainPositionConverter.ts` | Onchain position → WalletPosition 转换 |
 | `src/hooks/useUserPositionsSdk.ts` | SDK hooks + enrich 函数 + fallback 编排 |
-| `src/hooks/useUserPositions.ts` | Onchain fallback hook |
 | `src/hooks/useWalletAutoImport.ts` | 自动导入逻辑 |
 | `src/lib/walletPositionToPortfolio.ts` | WalletPosition → PortfolioPosition 转换 |
 
@@ -143,7 +140,9 @@
 | AAV-62 | 支持导入现有portfolio | ❌ Canceled | 手动导入按钮不做，用自动导入替代 |
 | AAV-488 | WatchMode 入口不可用 | ✅ Done | Header 已传 onWatchSubmit，WalletButton 自定义渲染已提供入口 |
 | AAV-641 | Watch mode 地址刷新后消失且无法重输 (中文 original) | ⛔ Canceled | 与 AAV-643 是同一 bug 的两份报告（641 早 11 分钟创建，描述几乎逐字相同），fix 实际在 [AAV-643](https://linear.app/aaveapy/issue/AAV-643) 上完成（commit `9198da23` + `28618fee`）。Linear MCP 缺 `duplicateOf` 字段，改用 Canceled state；closing comment 引用 AAV-643 + AAV-679。 |
-| AAV-643 | Watch Mode 重复提交地址 positions 不刷新 | ✅ Done (PARTIAL) | 2026-06-08, RQ fallback 路径已修（`useWatchModeConnect` isReentry 分支 invalidate `['user-positions', address]`），**生产主路径未修** — `useUserPositions` 是死代码，生产走 `useUserPositionsSdk`/urql，cache key 不匹配；AAV-643 已切到 Done state，follow-up → [AAV-679](https://linear.app/aaveapy/issue/AAV-679) (High, Todo, parent=AAV-643; 推荐 c. `location.reload()` 兜底) |
+| AAV-643 | Watch Mode 重复提交地址 positions 不刷新 | ✅ Done | 2026-06-08, fix 实际在 AAV-643 上完成（commit `9198da23` + `28618fee`）。**2026-06-08 follow-up (AAV-697, AAV-679) 已完成**：A. `useUserPositions` 死代码已删除 (AAV-697)，生产 urql 主路径通过 `refetchEvent` 抽象 (`src/lib/userData/refetchEvent.ts`) + `useUserPositionsSdk` 中订阅 `subscribeRefetch` 并调用 `v3Client.refreshQueryWhere` / `v4Client.refreshQueryWhere` 实现统一刷新（F5 / Refresh 按钮 / Watch Mode re-submit），B. `useWatchModeConnect` 在 re-entry 分支 `bumpRefetch('watch-reentry')`。详见 ADR-0015。 |
+| AAV-679 | urql 主路径未刷新（AAV-643 follow-up） | ✅ Done (S4) | S1-S3 通过 `refetchEvent` 抽象统一刷新信号源；S4 集成 urql refetch：`useUserPositionsSdk` 订阅 `subscribeRefetch` 后调用 V3/V4 AaveClient 的 `refreshQueryWhere`，传入 `UserSuppliesQuery` / `UserBorrowsQuery` 文档 + 谓词匹配当前 `address`。V3 文档通过 Vite alias `@aave/react-v3/graphql-queries` 解决嵌套 `node_modules` 路径。E2E 跟踪 → [AAV-699](https://linear.app/aaveapy/issue/AAV-699)。 |
+| AAV-697 | 删除死代码 useUserPositions | ✅ Done | `src/hooks/useUserPositions.ts` + `useUserPositions.test.ts` 已删除；`WalletLoadState` type 改由 `useUserPositionsSdk` 导出（被 `ReservesTable.tsx` / `PortfolioPanel.tsx` / `useWalletAutoImport.ts` 等引用）。Archive 索引同步移除该文件。 |
 | AAV-597 | PRD: classifyRpcError 集成 RPC rotation | ✅ Done | ADR-0004 follow-up, per-URL error-type metrics |
 | AAV-598 | TDD: catch 路径集成测试 | ✅ Done | 3 个 catch path 测试 (network/contract/unknown) |
 | AAV-599 | 实现: catch 块集成 + 删 TODO | ✅ Done | rpcResilience.ts catch 块调用 classifyRpcError |
