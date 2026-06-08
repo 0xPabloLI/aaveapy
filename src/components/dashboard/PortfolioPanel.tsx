@@ -7,6 +7,7 @@
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
 import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, Gift } from 'lucide-react';
+import { features } from '@/config/features';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatUsd } from '@/lib/formatters';
@@ -536,7 +537,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             <WalletButton mobile onWatchSubmit={connectWatchAddress} />
             {/* Save snapshot */}
-            {positions.length > 0 && summary && (
+            {features.snapshot && positions.length > 0 && summary && (
               <button
                 type="button"
                 onClick={() => setShowSaveInput((p) => !p)}
@@ -639,7 +640,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         )}
 
         {/* Save snapshot input */}
-        {showSaveInput && (
+        {features.snapshot && showSaveInput && (
           <div className="flex items-center gap-2 mb-2.5">
             <input
               value={snapshotName}
@@ -818,7 +819,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       </div>
 
       {/* Saved Snapshots */}
-      {snapshots.length > 0 && (
+      {features.snapshot && snapshots.length > 0 && (
         <div className={cn(
           'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
           isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
@@ -856,7 +857,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       )}
 
       {/* Compare view */}
-      {showCompare && compareSnapshots && (
+      {features.snapshot && showCompare && compareSnapshots && (
         <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
           <PortfolioCompareView
             snapshotA={compareSnapshots.a}

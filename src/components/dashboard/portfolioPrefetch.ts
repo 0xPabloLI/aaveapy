@@ -1,3 +1,5 @@
+import { features } from '@/config/features';
+
 /**
  * Idempotent prefetch helpers for the Portfolio experience.
  *
@@ -6,14 +8,18 @@
  * deferred work is the `PortfolioCompareView` lazy chunk. Trigger it ahead
  * of time (e.g. on hover/focus of the Portfolio toggle, or right after the user
  * enters Portfolio mode) so opening the compare view never waits on the network.
+ *
+ * When the snapshot feature flag is off, prefetch is skipped entirely to avoid
+ * an unnecessary chunk download.
  */
 
-let compareViewPromise: Promise<unknown> | null = null;
+let compareViewPromise: Promise<unknown> | null | undefined = null;
 
-export function prefetchPortfolioCompareView(): Promise<unknown> {
+export function prefetchPortfolioCompareView(): Promise<unknown> | undefined {
+  if (!features.snapshot) return undefined;
+
   if (!compareViewPromise) {
     compareViewPromise = import('./PortfolioCompareView').catch((err) => {
-      // Reset so a later attempt can retry after a transient failure.
       compareViewPromise = null;
       throw err;
     });
