@@ -3,13 +3,16 @@ import type {
   PortfolioPosition,
   PortfolioPositionResult,
   PortfolioSummary,
+  PortfolioSimulationMetric,
 } from '@/types/portfolio';
-import type { ScenarioInputMode } from '@/lib/rateSimulationCalculator';
+import type { ScenarioInputMode, SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
   aggregatePortfolioSummary,
+  computePositionUsdPerDay,
+  type BuildPositionResultMetrics,
 } from '@/lib/portfolioCalculator';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -49,6 +52,50 @@ interface PositionGroup {
   borrowUsd: number;
   supplyDeltaUsd: number;
   borrowDeltaUsd: number;
+}
+
+const DAYS_PER_YEAR = 365;
+
+function buildMetricsFromLane(
+  lane: SimulationLane,
+  side: 'supply' | 'borrow',
+  amountUsd: number,
+): BuildPositionResultMetrics {
+  const nativeMetric: PortfolioSimulationMetric = {
+    current: lane.currentNative,
+    after: lane.afterNative,
+    delta: lane.deltaNative,
+  };
+  const incentiveMetric: PortfolioSimulationMetric = {
+    current: lane.currentIncentive,
+    after: lane.afterIncentive,
+    delta: lane.deltaIncentive,
+  };
+  const totalMetric: PortfolioSimulationMetric = {
+    current: lane.currentTotal,
+    after: lane.afterTotal,
+    delta: lane.deltaTotal,
+  };
+
+  const currentUsdPerDay = computePositionUsdPerDay(
+    side,
+    amountUsd,
+    lane.currentNative ?? 0,
+    lane.currentIncentive,
+  );
+  const afterUsdPerDay = computePositionUsdPerDay(
+    side,
+    amountUsd,
+    lane.afterNative ?? 0,
+    lane.afterIncentive ?? 0,
+  );
+  const usdPerDayMetric: PortfolioSimulationMetric = {
+    current: currentUsdPerDay,
+    after: afterUsdPerDay,
+    delta: afterUsdPerDay - currentUsdPerDay,
+  };
+
+  return { nativeMetric, incentiveMetric, totalMetric, usdPerDayMetric };
 }
 
 export function simulatePortfolioPositions(
@@ -172,8 +219,9 @@ export function simulatePortfolioPositions(
           simResult.supply.afterIncentive ??
           simResult.supply.currentIncentive ??
           0;
+        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent, metrics),
         );
       }
 
@@ -188,8 +236,9 @@ export function simulatePortfolioPositions(
           simResult.borrow.afterIncentive ??
           simResult.borrow.currentIncentive ??
           0;
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent, metrics),
         );
       }
     } else {

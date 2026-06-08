@@ -3,6 +3,13 @@
 export type PortfolioSide = 'supply' | 'borrow';
 export type PortfolioInputMode = 'usd' | 'token';
 
+/** Current / After / Delta triple — mirrors SimulationMetric from rateSimulationCalculator. */
+export interface PortfolioSimulationMetric {
+  current: number | null;
+  after: number | null;
+  delta: number | null;
+}
+
 /** Wallet sync visual tri-state for a position row. */
 export type WalletSyncState = 'synced' | 'modified' | 'manual';
 
@@ -88,6 +95,14 @@ export interface PortfolioPositionResult {
   totalPercent: number;
   /** Estimated USD earned (supply) or paid (borrow) per day. */
   usdPerDay: number;
+  /** Native rate current/after/delta. When absent, derive from flat fields with current=null. */
+  nativeMetric?: PortfolioSimulationMetric;
+  /** Incentive rate current/after/delta. */
+  incentiveMetric?: PortfolioSimulationMetric;
+  /** Total rate current/after/delta. */
+  totalMetric?: PortfolioSimulationMetric;
+  /** USD/day current/after/delta. */
+  usdPerDayMetric?: PortfolioSimulationMetric;
 }
 
 /** Aggregated portfolio summary. */
@@ -102,6 +117,13 @@ export interface PortfolioSummary {
   netUsdPerDay: number;
   /** Annualized: netUsdPerDay × 365 / totalSupplyUsd (or 0 when no supply). */
   netEffectiveApy: number;
+  /** Delta-aware metrics for summary card inline deltas. */
+  totalSupplyUsdMetric?: PortfolioSimulationMetric;
+  totalBorrowUsdMetric?: PortfolioSimulationMetric;
+  supplyUsdPerDayMetric?: PortfolioSimulationMetric;
+  borrowUsdPerDayMetric?: PortfolioSimulationMetric;
+  netUsdPerDayMetric?: PortfolioSimulationMetric;
+  netEffectiveApyMetric?: PortfolioSimulationMetric;
 }
 
 /** A saved snapshot for comparison. */

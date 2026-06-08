@@ -1,13 +1,14 @@
 /**
  * PortfolioSummaryCard — displays aggregated portfolio metrics:
  * Total Supply, Total Borrow, Net Daily Earn, Net Effective APY.
+ * When delta metrics are available, inline delta is shown after the value.
  */
 import { memo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { PortfolioSummary } from '@/types/portfolio';
+import type { PortfolioSummary, PortfolioSimulationMetric } from '@/types/portfolio';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary;
@@ -29,16 +30,34 @@ function formatUsdPerDay(value: number): string {
   return `${prefix}$${Math.abs(value).toFixed(2)}/day`;
 }
 
+const formatDeltaPercent = (value: number | null | undefined): string | null => {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  if (Math.abs(value) < 0.005) return null;
+  const prefix = value > 0 ? '+' : '';
+  return `${prefix}${value.toFixed(2)}%`;
+};
+
+const formatDeltaUsd = (value: number | null | undefined): string | null => {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  if (Math.abs(value) < 0.005) return null;
+  const prefix = value > 0 ? '+' : '';
+  return `${prefix}$${Math.abs(value).toFixed(2)}`;
+};
+
 const MetricCell = memo(function MetricCell({
   label,
   value,
+  delta,
   icon,
   valueClass,
+  deltaClass,
 }: {
   label: string;
   value: string;
+  delta?: string | null;
   icon: React.ReactNode;
   valueClass?: string;
+  deltaClass?: string;
 }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -53,6 +72,11 @@ const MetricCell = memo(function MetricCell({
         )}
       >
         {value}
+        {delta && (
+          <span className={cn('ds-text-11 font-semibold tabular-nums ml-1.5', deltaClass ?? valueClass ?? 'text-foreground')}>
+            {delta}
+          </span>
+        )}
       </span>
     </div>
   );
@@ -65,29 +89,46 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   const netColor = netPositive ? 'ds-text-emerald-600' : 'text-destructive';
   const isMobile = useIsMobile();
 
+  const supplyDelta = summary.totalSupplyUsdMetric
+    ? formatDeltaUsd(summary.totalSupplyUsdMetric.delta)
+    : null;
+  const borrowDelta = summary.totalBorrowUsdMetric
+    ? formatDeltaUsd(summary.totalBorrowUsdMetric.delta)
+    : null;
+  const netDailyDelta = summary.netUsdPerDayMetric
+    ? formatDeltaUsd(summary.netUsdPerDayMetric.delta)
+    : null;
+  const netApyDelta = summary.netEffectiveApyMetric
+    ? formatDeltaPercent(summary.netEffectiveApyMetric.delta)
+    : null;
+
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
       <MetricCell
         label="Total Supply"
         value={formatUsd(summary.totalSupplyUsd)}
+        delta={supplyDelta}
         icon={<TrendingUp className="size-3 ds-text-emerald-600" aria-hidden />}
         valueClass="ds-text-emerald-600"
       />
       <MetricCell
         label="Total Borrow"
         value={formatUsd(summary.totalBorrowUsd)}
+        delta={borrowDelta}
         icon={<TrendingDown className="size-3 ds-text-brand-cyan" aria-hidden />}
         valueClass="ds-text-brand-cyan"
       />
       <MetricCell
         label="Net Daily Earn"
         value={formatUsdPerDay(summary.netUsdPerDay)}
+        delta={netDailyDelta}
         icon={<DollarSign className="size-3" aria-hidden />}
         valueClass={netColor}
       />
       <MetricCell
         label="Net Effective APY"
         value={formatPercent(summary.netEffectiveApy)}
+        delta={netApyDelta}
         icon={<Percent className="size-3" aria-hidden />}
         valueClass={netColor}
       />

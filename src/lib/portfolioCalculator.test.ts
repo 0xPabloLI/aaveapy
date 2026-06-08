@@ -99,6 +99,42 @@ describe('aggregatePortfolioSummary', () => {
     expect(summary.netUsdPerDay).toBeCloseTo(results.reduce((s, r) => s + r.usdPerDay, 0), 2);
     expect(summary.netEffectiveApy).toBeGreaterThan(0);
   });
+
+  it('computes delta summary metrics from position metrics', () => {
+    const results: PortfolioPositionResult[] = [
+      {
+        positionId: 's1', reserveId: 'r1', side: 'supply', amountUsd: 10000,
+        nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1,
+        usdPerDayMetric: { current: 0.9, after: 1.1, delta: 0.2 },
+      },
+      {
+        positionId: 'b1', reserveId: 'r2', side: 'borrow', amountUsd: 5000,
+        nativePercent: 5, incentivePercent: 0, totalPercent: 5, usdPerDay: -0.68,
+        usdPerDayMetric: { current: -0.5, after: -0.68, delta: -0.18 },
+      },
+    ];
+    const summary = aggregatePortfolioSummary(results);
+    expect(summary.supplyUsdPerDayMetric).toBeDefined();
+    expect(summary.supplyUsdPerDayMetric!.current).toBeCloseTo(0.9, 6);
+    expect(summary.supplyUsdPerDayMetric!.after).toBeCloseTo(1.1, 6);
+    expect(summary.supplyUsdPerDayMetric!.delta).toBeCloseTo(0.2, 6);
+    expect(summary.borrowUsdPerDayMetric).toBeDefined();
+    expect(summary.borrowUsdPerDayMetric!.current).toBeCloseTo(-0.5, 6);
+    expect(summary.borrowUsdPerDayMetric!.delta).toBeCloseTo(-0.18, 6);
+    expect(summary.netUsdPerDayMetric).toBeDefined();
+    expect(summary.netUsdPerDayMetric!.current).toBeCloseTo(0.4, 6);
+    expect(summary.netUsdPerDayMetric!.after).toBeCloseTo(0.42, 2);
+  });
+
+  it('omits summary metrics when no position has metrics', () => {
+    const results: PortfolioPositionResult[] = [
+      { positionId: 's1', reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+    ];
+    const summary = aggregatePortfolioSummary(results);
+    expect(summary.supplyUsdPerDayMetric).toBeUndefined();
+    expect(summary.netUsdPerDayMetric).toBeUndefined();
+    expect(summary.netEffectiveApyMetric).toBeUndefined();
+  });
 });
 
 describe('resolvePositionAmountUsd', () => {
@@ -177,6 +213,28 @@ describe('buildPortfolioPositionResult', () => {
     const result = buildPortfolioPositionResult(pos, 10000, 3.65, 0);
     const expected = computePositionUsdPerDay('supply', 10000, 3.65, 0);
     expect(result.usdPerDay).toBeCloseTo(expected, 10);
+  });
+
+  it('accepts optional metrics and includes them in result', () => {
+    const metrics = {
+      nativeMetric: { current: 2.8, after: 3, delta: 0.2 },
+      incentiveMetric: { current: 0.9, after: 1, delta: 0.1 },
+      totalMetric: { current: 3.7, after: 4, delta: 0.3 },
+      usdPerDayMetric: { current: 1.01, after: 1.1, delta: 0.09 },
+    };
+    const result = buildPortfolioPositionResult(pos, 10000, 3, 1, metrics);
+    expect(result.nativeMetric).toEqual(metrics.nativeMetric);
+    expect(result.incentiveMetric).toEqual(metrics.incentiveMetric);
+    expect(result.totalMetric).toEqual(metrics.totalMetric);
+    expect(result.usdPerDayMetric).toEqual(metrics.usdPerDayMetric);
+  });
+
+  it('result without metrics has undefined metric fields', () => {
+    const result = buildPortfolioPositionResult(pos, 10000, 3, 1);
+    expect(result.nativeMetric).toBeUndefined();
+    expect(result.incentiveMetric).toBeUndefined();
+    expect(result.totalMetric).toBeUndefined();
+    expect(result.usdPerDayMetric).toBeUndefined();
   });
 });
 

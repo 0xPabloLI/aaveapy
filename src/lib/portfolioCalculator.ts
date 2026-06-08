@@ -12,6 +12,7 @@ import type {
   PortfolioPositionResult,
   PortfolioSummary,
   PortfolioInputMode,
+  PortfolioSimulationMetric,
 } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -29,23 +30,64 @@ export function aggregatePortfolioSummary(
   let supplyUsdPerDay = 0;
   let borrowUsdPerDay = 0;
 
+  let currentTotalSupplyUsd: number | null = null;
+  let currentTotalBorrowUsd: number | null = null;
+  let currentSupplyUsdPerDay: number | null = null;
+  let currentBorrowUsdPerDay: number | null = null;
+  let hasAnyMetrics = false;
+
   for (const r of results) {
+    const hasMetric = r.usdPerDayMetric !== undefined;
+    if (hasMetric) hasAnyMetrics = true;
+
     if (r.side === 'supply') {
       totalSupplyUsd += r.amountUsd;
-      supplyUsdPerDay += r.usdPerDay; // positive = earnings
+      supplyUsdPerDay += r.usdPerDay;
+      if (hasMetric && r.usdPerDayMetric!.current !== null) {
+        currentSupplyUsdPerDay = (currentSupplyUsdPerDay ?? 0) + r.usdPerDayMetric!.current;
+      }
     } else {
       totalBorrowUsd += r.amountUsd;
-      borrowUsdPerDay += r.usdPerDay; // negative = cost (caller signs it)
+      borrowUsdPerDay += r.usdPerDay;
+      if (hasMetric && r.usdPerDayMetric!.current !== null) {
+        currentBorrowUsdPerDay = (currentBorrowUsdPerDay ?? 0) + r.usdPerDayMetric!.current;
+      }
+    }
+
+    if (r.totalMetric && r.totalMetric.current !== null) {
+      if (r.side === 'supply') {
+        currentTotalSupplyUsd = (currentTotalSupplyUsd ?? 0) + r.amountUsd;
+      } else {
+        currentTotalBorrowUsd = (currentTotalBorrowUsd ?? 0) + r.amountUsd;
+      }
     }
   }
 
   const netUsdPerDay = supplyUsdPerDay + borrowUsdPerDay;
 
-  // Net effective APY based on supply principal
   const netEffectiveApy =
     totalSupplyUsd > 0
       ? (netUsdPerDay * DAYS_PER_YEAR) / totalSupplyUsd * 100
       : 0;
+
+  const buildMetric = (
+    currentVal: number | null,
+    afterVal: number,
+  ): PortfolioSimulationMetric | undefined => {
+    if (currentVal === null) return undefined;
+    return {
+      current: currentVal,
+      after: afterVal,
+      delta: afterVal - currentVal,
+    };
+  };
+
+  const currentNetUsdPerDay = currentSupplyUsdPerDay !== null && currentBorrowUsdPerDay !== null
+    ? currentSupplyUsdPerDay + currentBorrowUsdPerDay
+    : null;
+  const currentNetEffectiveApy = currentNetUsdPerDay !== null && currentTotalSupplyUsd !== null && currentTotalSupplyUsd > 0
+    ? (currentNetUsdPerDay * DAYS_PER_YEAR) / currentTotalSupplyUsd * 100
+    : null;
 
   return {
     totalSupplyUsd,
@@ -54,6 +96,14 @@ export function aggregatePortfolioSummary(
     borrowUsdPerDay,
     netUsdPerDay,
     netEffectiveApy,
+    ...(hasAnyMetrics ? {
+      totalSupplyUsdMetric: buildMetric(currentTotalSupplyUsd, totalSupplyUsd),
+      totalBorrowUsdMetric: buildMetric(currentTotalBorrowUsd, totalBorrowUsd),
+      supplyUsdPerDayMetric: buildMetric(currentSupplyUsdPerDay, supplyUsdPerDay),
+      borrowUsdPerDayMetric: buildMetric(currentBorrowUsdPerDay, borrowUsdPerDay),
+      netUsdPerDayMetric: buildMetric(currentNetUsdPerDay, netUsdPerDay),
+      netEffectiveApyMetric: buildMetric(currentNetEffectiveApy, netEffectiveApy),
+    } : {}),
   };
 }
 
@@ -94,11 +144,19 @@ export function resolvePositionAmountUsd(
   return raw * price;
 }
 
+export interface BuildPositionResultMetrics {
+  nativeMetric?: PortfolioSimulationMetric;
+  incentiveMetric?: PortfolioSimulationMetric;
+  totalMetric?: PortfolioSimulationMetric;
+  usdPerDayMetric?: PortfolioSimulationMetric;
+}
+
 export function buildPortfolioPositionResult(
   position: PortfolioPosition,
   amountUsd: number,
   nativeAprPercent: number,
-  incentiveAprPercent: number
+  incentiveAprPercent: number,
+  metrics?: BuildPositionResultMetrics,
 ): PortfolioPositionResult {
   const totalPercent = nativeAprPercent + incentiveAprPercent;
   const usdPerDay = computePositionUsdPerDay(
@@ -117,6 +175,10 @@ export function buildPortfolioPositionResult(
     incentivePercent: incentiveAprPercent,
     totalPercent,
     usdPerDay,
+    nativeMetric: metrics?.nativeMetric,
+    incentiveMetric: metrics?.incentiveMetric,
+    totalMetric: metrics?.totalMetric,
+    usdPerDayMetric: metrics?.usdPerDayMetric,
   };
 }
 
