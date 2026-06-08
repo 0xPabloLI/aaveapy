@@ -31,7 +31,7 @@ Placement: **Variant C** of the prototype (`/prototype/portfolio-disclaimer?vari
 | B | Dedicated band above ResultsTable thead | Rejected — adds visual mass between card and table; invites "I can dismiss this" reading |
 | C | Full-width italic line flush against SummaryCard bottom | **Chosen** — visually attached to the card so it reads as a "card footnote", cannot be missed when looking at the card, no extra structural element |
 
-Prototype artifacts: `src/components/prototype/PortfolioDisclaimerProto.tsx`, `src/pages/PortfolioDisclaimerProto.tsx`, route registered in `src/App.tsx`. To be deleted in the production fold-in commit (per `docs/conventions/throwaway-prototypes.md`).
+Prototype artifacts (deleted): `src/components/prototype/PortfolioDisclaimerProto.tsx`, `src/pages/PortfolioDisclaimerProto.tsx`, route registered in `src/App.tsx`. Deleted after production fold-in.
 
 ### i18n / locale
 

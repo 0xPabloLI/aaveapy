@@ -241,12 +241,11 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 - wagmi / viem / rainbowkit **已安装** ✅
 - 项目：React + TypeScript + Vite + npm
 
-## Prototype 文件
+## Prototype 文件 (已删除 — 决策已捕获到 CONTEXT.md 和正式代码)
 
-- `src/components/prototype/PortfolioMergeProto.tsx` — 核心 prototype（merge 策略 + 三态 + soft delete + Sync 按钮）
-- `src/pages/PortfolioMergeProto.tsx` — 场景演示页面
-- `src/components/prototype/PrototypeSwitcher.tsx` — 浮动切换 bar
-- **访问 URL**：`http://localhost:8080/prototype/portfolio-merge?scenario=1` （scenario 参数 1-9b）
+- ~~`src/components/prototype/PortfolioMergeProto.tsx`~~ — 已删除 (commit 9198da23)
+- ~~`src/pages/PortfolioMergeProto.tsx`~~ — 已删除
+- ~~`src/components/prototype/PrototypeSwitcher.tsx`~~ — 已删除
 
 ## 主文档
 
