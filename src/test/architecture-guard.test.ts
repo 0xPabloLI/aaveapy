@@ -273,4 +273,14 @@ describe('Architecture guard: PortfolioReserveEntry is primary data model', () =
     const src = readFile('lib/walletPositionToPortfolio.ts');
     expect(src).not.toMatch(/export function convertWalletPositionsToPortfolio/);
   });
+
+  it('simulatePortfolioPositions does not exist', () => {
+    const src = readFile('lib/portfolioSimulator.ts');
+    expect(src).not.toMatch(/export function simulatePortfolioPositions/);
+  });
+
+  it('entriesToPositions does not exist in usePortfolioSimulation', () => {
+    const src = readFile('hooks/usePortfolioSimulation.ts');
+    expect(src).not.toMatch(/entriesToPositions/);
+  });
 });
