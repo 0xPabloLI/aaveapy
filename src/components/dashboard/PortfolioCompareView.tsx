@@ -151,7 +151,7 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+          className="rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
           aria-label="Close comparison"
         >
           <X className="size-3.5" aria-hidden />

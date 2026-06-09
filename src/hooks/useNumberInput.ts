@@ -1,42 +1,33 @@
-import { useState, useCallback } from 'react';
-import { sanitizeNumberInput, formatNumberInput } from '@/lib/numberFormat';
+/**
+ * @deprecated Use `useDebouncedInput` instead. This module is kept as a
+ * compatibility shim and will be removed in a future release.
+ *
+ * Migration note: replace `initialValue` with `value`. The returned
+ * `handleKeyDown` and `handleClear` from `useDebouncedInput` are new
+ * and optional to use.
+ */
+import { useDebouncedInput } from './useDebouncedInput';
+import type { UseDebouncedInputParams, UseDebouncedInputReturn } from './useDebouncedInput';
 
-interface UseNumberInputParams {
+/** @deprecated Use UseDebouncedInputParams instead */
+export type UseNumberInputParams = Omit<UseDebouncedInputParams, 'debounceMs'> & {
   initialValue?: string;
-  onCommit: (formattedValue: string) => void;
-}
+};
 
-interface UseNumberInputReturn {
-  displayValue: string;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-  handleFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
-}
+/** @deprecated Use UseDebouncedInputReturn instead */
+export type UseNumberInputReturn = Pick<
+  UseDebouncedInputReturn,
+  'displayValue' | 'handleChange' | 'handleBlur' | 'handleFocus'
+>;
 
-export function useNumberInput({ initialValue = '', onCommit }: UseNumberInputParams): UseNumberInputReturn {
-  const [displayValue, setDisplayValue] = useState(initialValue);
-  const [isFocused, setIsFocused] = useState(false);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitized = sanitizeNumberInput(e.target.value);
-    setDisplayValue(sanitized);
-  }, []);
-
-  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(false);
-    const formatted = formatNumberInput(e.target.value);
-    setDisplayValue(formatted);
-    onCommit(formatted);
-  }, [onCommit]);
-
-  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
-    const raw = e.target.value.replace(/,/g, '');
-    setDisplayValue(raw);
-    e.target.select();
-  }, []);
-
+/** @deprecated Use useDebouncedInput instead */
+export function useNumberInput({
+  initialValue,
+  onCommit,
+}: UseNumberInputParams): UseNumberInputReturn {
+  const { displayValue, handleChange, handleBlur, handleFocus } = useDebouncedInput({
+    value: initialValue,
+    onCommit,
+  });
   return { displayValue, handleChange, handleBlur, handleFocus };
 }
-
-export type { UseNumberInputParams, UseNumberInputReturn };

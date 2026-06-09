@@ -170,10 +170,10 @@ const SnapshotItem = memo(function SnapshotItem({
       <button
         type="button"
         onClick={() => onDelete(snapshot.id)}
-        className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+        className="rounded p-0.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
         aria-label={`Delete snapshot ${snapshot.label}`}
       >
-        <X className="size-3" aria-hidden />
+        <X className="size-3.5" aria-hidden />
       </button>
     </div>
   );

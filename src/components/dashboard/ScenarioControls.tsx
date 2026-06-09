@@ -114,8 +114,8 @@ function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onK
   const wrapperGap = compact ? 'gap-1' : 'gap-[var(--ds-space-1-5)]';
   const wrapperExtras = compact ? 'min-w-0' : 'flex-1';
   const clearPr = compact ? 'pr-7' : 'pr-8';
-  const clearBtnRounded = compact ? 'rounded' : 'rounded-md';
-  const clearIconSize = compact ? 'size-3' : 'size-3.5';
+  const clearBtnRounded = 'rounded';
+  const clearIconSize = 'size-3.5';
 
   const placeholder = side === 'supply'
     ? (inputMode === 'usd' ? '100,000' : '50')
@@ -147,7 +147,7 @@ function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onK
           <button
             type="button"
             onClick={onClear}
-            className={`absolute right-1 top-1/2 -translate-y-1/2 ${clearBtnRounded} p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors`}
+            className={`absolute right-1 top-1/2 -translate-y-1/2 ${clearBtnRounded} p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors`}
             aria-label={`Clear ${label.toLowerCase()} amount`}
           >
             <Eraser className={clearIconSize} aria-hidden />
