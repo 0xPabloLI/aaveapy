@@ -171,10 +171,10 @@ describe('PortfolioTokenRow callbacks', () => {
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '' });
+    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
   });
 
-  describe('delta mode (walletValue present)', () => {
+    describe('delta mode (walletValue present)', () => {
     it('shows delta input with aria-label containing "delta"', () => {
       render(
         <PortfolioTokenRow
@@ -234,7 +234,7 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '' });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
     });
 
     it('toggles delta sign from positive to negative and calls actions.updateReserve', () => {
@@ -314,6 +314,36 @@ describe('PortfolioTokenRow callbacks', () => {
       );
       fireEvent.click(screen.getByRole('button', { name: /reducing position/i }));
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: 1 });
+    });
+
+    it('toggles borrow delta sign even when delta is zero (patches sign only)', () => {
+      const actions = makeActions();
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ borrow: { amount: '2000', inputMode: 'usd', walletValue: 2000, deltaSign: 1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          onRemove={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowDeltaSign: -1 });
+    });
+
+    it('resets deltaSign to 1 when clearing supply delta', () => {
+      const actions = makeActions();
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: -1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          onRemove={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
     });
   });
 });

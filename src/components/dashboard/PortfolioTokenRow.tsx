@@ -10,7 +10,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
-import { useNumberInput } from '@/hooks/useNumberInput';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
@@ -90,8 +90,8 @@ function SideInput({
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
   }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
 
-  const numberInput = useNumberInput({
-    initialValue: deltaDisplay,
+  const numberInput = useDebouncedInput({
+    value: deltaDisplay,
     onCommit: handleDeltaCommit,
   });
 
@@ -100,24 +100,26 @@ function SideInput({
     const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
     const absDeltaUsd = parseNumberInput(deltaDisplay);
     if (!absDeltaUsd) {
-      const signPatch = side === 'supply'
+      const signOnly = side === 'supply'
         ? { supplyDeltaSign: newSign }
         : { borrowDeltaSign: newSign };
-      actions.updateReserve(reserveId, signPatch);
+      actions.updateReserve(reserveId, signOnly);
       return;
     }
-    const deltaSignPatch = side === 'supply'
+    const signPatch = side === 'supply'
       ? { supplyDeltaSign: newSign }
       : { borrowDeltaSign: newSign };
     const effectiveUsd = Math.max(sideData.walletValue! + newSign * absDeltaUsd, 0);
     const amountPatch = side === 'supply'
       ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
       : { borrowAmount: formatConvertedAmount(effectiveUsd) };
-    actions.updateReserve(reserveId, { ...deltaSignPatch, ...amountPatch });
+    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
   }, [hasWallet, isPositiveDelta, deltaDisplay, actions, reserveId, side, sideData.walletValue]);
 
   const handleClearDelta = useCallback(() => {
-    const patch = side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' };
+    const patch = side === 'supply'
+      ? { supplyAmount: '', supplyDeltaSign: 1 as DeltaSign }
+      : { borrowAmount: '', borrowDeltaSign: 1 as DeltaSign };
     actions.updateReserve(reserveId, patch);
   }, [actions, reserveId, side]);
 
