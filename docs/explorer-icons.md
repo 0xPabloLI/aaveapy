@@ -24,11 +24,11 @@
 | File | Size | Source / Status | 备注 |
 |------|------|-----------------|------|
 | `etherscan.svg` | 32×32 viewBox | https://etherscan.io/brandassets（AAV-660 Slice 1 交付） | 官方 brand kit（蓝底白字抽象图形）|
-| `routescan.svg` | 32×32 viewBox | Simplified placeholder（AAV-661 Slice 2 交付）| 蓝色背景 + 风格化 "R"。**待替换为官方 brand kit**——目前公开渠道未提供稳定可引用的 SVG 资产 |
-| `blockscout.svg` | 32×32 viewBox | Simplified placeholder（AAV-661 Slice 2 交付）| 青色背景 + 风格化 "B"。**待替换**为 https://github.com/blockscout/blockscout 仓库 `apps/block_scout_web/assets/static/images/blockscout_logo.svg` |
-| `oklink.svg` | 32×32 viewBox | Simplified placeholder（AAV-661 Slice 2 交付）| 深色背景 + "OK" 复合字。**待替换**为 https://www.oklink.com/about brand assets |
+| `routescan.svg` | 48×48 viewBox | https://routescan.io brand assets（已替换为官方 SVG）| 彩色立方体风格 logo |
+| `blockscout.svg` | 32×32 viewBox | Hand-fetched from official brand kit（已替换为官方 SVG）| Embedded PNG base64 |
+| `oklink.svg` | 32×32 viewBox | Hand-fetched from official brand kit（已替换为官方 SVG）| Embedded PNG base64（296×296 OG Logo 缩放） |
 
-> **Placeholder 策略说明**：因官方 brand kit 在生产环境需手动 fetch + 版权审查，当前 3 个新 SVG 是**简化抽象图**（letterform + brand 配色）。视觉效果与 Etherscan.svg 一致（32×32 viewBox、圆形底色、白色字形）。替换时直接覆盖同名文件即可，无需改代码。
+> ~~**Placeholder 策略说明**：因官方 brand kit 在生产环境需手动 fetch + 版权审查，当前 3 个新 SVG 是**简化抽象图**（letterform + brand 配色）。视觉效果与 Etherscan.svg 一致（32×32 viewBox、圆形底色、白色字形）。替换时直接覆盖同名文件即可，无需改代码。~~ → 所有 4 个 family SVG 均为官方品牌资产，placeholder 策略已不再适用。
 
 ## 3. 资产管道 (Pipeline)
 
@@ -49,14 +49,14 @@
                                      ▼
                         ┌──────────────────────────────┐
   Static asset          │  public/icons/explorers/     │  4 SVG files
-                        │  (32×32, brand-themed)        │
+                        │  (brand-themed)               │
                         └────────────┬─────────────────┘
                                      │
                                      │ <img src=...>
                                      ▼
                         ┌──────────────────────────────┐
   React component       │  ExplorerIconStack.tsx       │  chain icon + explorer
-                        │                              │  icon 12×12, 1/3 overlap
+                        │                              │  icon 14×14, 22px wide container, 6px overlap
                         └────────────┬─────────────────┘
                                      │
                                      │ trailing slot
@@ -85,7 +85,7 @@
 
 | chainIconSrc | explorerIconSrc | 渲染 |
 |--------------|------------------|------|
-| ✓ | ✓ | 两者并排叠放（12×12，1/3 overlap）|
+| ✓ | ✓ | 两者并排叠放（14×14，22px 容器 6px 重叠）|
 | ✓ | ✗ | 只显示 chain icon |
 | ✗ | ✓ | 只显示 explorer icon |
 | ✗ | ✗ | 隐藏整个 trailing slot（无空白） |
@@ -180,9 +180,11 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - `docs/pool-explorer-links.md` 的"各链 Explorer 类型确认"表 + "完整市场链接列表"对应 family 表加新行，Icon 列填 ✅
 - `CONTEXT.md`（如新增 family）追加术语条目；多数情况 brand key 已存在则无需改
 
-## 6. 替换 Placeholder 为官方 Brand Kit 的 Runbook
+## 6. 替换 Placeholder 为官方 Brand Kit 的 Runbook ~~（已完成）~~
 
-针对 `routescan.svg` / `blockscout.svg` / `oklink.svg` 三个 placeholder 状态。
+~~针对 `routescan.svg` / `blockscout.svg` / `oklink.svg` 三个 placeholder 状态。~~
+
+> 所有 4 个 family SVG 均已替换为官方品牌资产，此 runbook 保留作为未来参考。
 
 ### Step 1: 拿到官方 SVG
 
@@ -192,7 +194,7 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 ### Step 2: 调整 viewBox + 尺寸
 
-确保 SVG 是 32×32 viewBox（与 Etherscan.svg 对齐），保持透明度、单一颜色、清晰边缘。如官方 kit 不是 32×32：
+确保 SVG 保持原始 viewBox，CSS 端通过 `h-3.5 w-3.5`（14×14）统一缩放。如官方 kit 尺寸差异巨大：
 
 ```bash
 # 用 Inkscape / svgo 调整
@@ -218,7 +220,7 @@ manifest 不会变化（已注册），但保险起见跑一次。
 - 旧 placeholder：letterform（"R" / "B" / "OK"）在 brand 配色圆底
 - 新官方：品牌实际 logo
 
-如视觉差异巨大（颜色、圆角、边框），可能需要微调 `ExplorerIconStack.tsx` 的 overlap 比例。当前 12×12 + 1/3 overlap 是按 placeholder 的视觉重量调的。
+如视觉差异巨大（颜色、圆角、边框），可能需要微调 `ExplorerIconStack.tsx` 的 overlap 比例。当前 14×14 + 22px 容器 6px 重叠是按实际 logo 视觉重量调的。
 
 ### Step 5: 更新本文档
 
@@ -231,7 +233,7 @@ manifest 不会变化（已注册），但保险起见跑一次。
 | AssetActionMenu 上 explorer item 只显示 chain icon，无 explorer icon | `explorerIconMap` 漏注册 / brand key 拼错 / SVG 未生成 manifest | 1. 确认 base URL 归一化后存在于 `explorerIconMap`<br>2. 跑 `node scripts/generate-explorer-icon-manifest.mjs`<br>3. 检查 `EXPLORER_ICON_MANIFEST` 含该 brand |
 | `getExplorerIconSrc('https://www.oklink.com')` 返回 `undefined` | `www.` 未被 strip → key 不匹配 | 确认 map key 是 `oklink.com` 不是 `www.oklink.com`（见 Slice 2 修复历史）|
 | 浏览器 console 报 404 on `/icons/explorers/X.svg` | SVG 文件缺失 / manifest 未更新 | 1. 确认 `public/icons/explorers/{brand}.svg` 存在<br>2. 跑 manifest 生成器<br>3. 重启 Vite dev server（清缓存）|
-| 视觉叠放错位 | `ExplorerIconStack` 的尺寸参数改坏了 | 检查 `src/components/ui/ExplorerIconStack.tsx` 的 `h-3.5 w-[22px]` + 偏移 class |
+| 视觉叠放错位 | `ExplorerIconStack` 的尺寸参数改坏了 | 检查 `src/components/ui/ExplorerIconStack.tsx` 的 `h-3.5 w-[22px]` + 定位 class |
 
 ## 8. 相关文件索引
 
