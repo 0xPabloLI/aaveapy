@@ -68,6 +68,58 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       expect(result.current.entries).toHaveLength(1)
     })
+
+    it('stores restrictedStatus when provided', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-frozen',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          tokenSymbol: 'FROZ',
+          restrictedStatus: 'frozen',
+        })
+      })
+
+      expect(result.current.entries).toHaveLength(1)
+      expect(result.current.entries[0].restrictedStatus).toBe('frozen')
+    })
+
+    it('defaults restrictedStatus to null when not provided', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-weth',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          tokenSymbol: 'WETH',
+        })
+      })
+
+      expect(result.current.entries[0].restrictedStatus).toBeNull()
+    })
+
+    it('sets hidden=true for restricted entries', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-paused',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          tokenSymbol: 'PAUS',
+          restrictedStatus: 'paused',
+        })
+      })
+
+      expect(result.current.entries[0].hidden).toBe(true)
+      expect(result.current.entries[0].restrictedStatus).toBe('paused')
+    })
   })
 
   describe('removeReserve', () => {

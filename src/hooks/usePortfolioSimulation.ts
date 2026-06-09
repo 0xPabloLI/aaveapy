@@ -144,6 +144,7 @@ export interface PortfolioSimulationActions {
     marketName: string;
     chainName: string;
     tokenSymbol: string;
+    restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
   }) => void;
   removeReserve: (reserveId: string) => void;
   updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
@@ -180,7 +181,14 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   entriesRef.current = entries;
 
   const addReserve = useCallback(
-    (params: { reserveId: string; marketName: string; chainName: string; tokenSymbol: string }) => {
+    (params: {
+      reserveId: string;
+      marketName: string;
+      chainName: string;
+      tokenSymbol: string;
+      restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
+    }) => {
+      const status = params.restrictedStatus ?? null;
       setEntries((prev) => {
         if (prev.some((e) => e.reserveId === params.reserveId)) return prev;
         return [
@@ -192,9 +200,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
             tokenSymbol: params.tokenSymbol,
             supply: { ...EMPTY_SIDE },
             borrow: { ...EMPTY_SIDE },
-            hidden: false,
+            hidden: status !== null,
             isOrphan: false,
-            restrictedStatus: null,
+            restrictedStatus: status,
           },
         ];
       });

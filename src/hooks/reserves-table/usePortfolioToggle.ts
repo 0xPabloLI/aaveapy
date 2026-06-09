@@ -15,6 +15,7 @@ import {
 import { getReserveKey } from '@/lib/reserveKey';
 import { simulatePortfolioFromEntries } from '@/lib/portfolioSimulator';
 import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
+import { isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
 
 export interface PortfolioSimulationContext {
   isApy: boolean;
@@ -69,12 +70,13 @@ export const usePortfolioToggle = ({
             portfolioActions.removeReserve(reserveId);
           }
         } else {
-          const oppositeSide = side === 'supply' ? 'borrow' : 'supply';
+          if (isRestrictedReserve(reserve)) return;
           portfolioActions.addReserve({
             reserveId: reserve.reserveId,
             marketName: reserve.marketName,
             chainName: reserve.chainName,
             tokenSymbol: reserve.tokenSymbol,
+            restrictedStatus: getPrimaryReserveStatus(reserve),
           });
         }
       } else {
@@ -89,11 +91,13 @@ export const usePortfolioToggle = ({
             }
           }
         } else {
+          if (isRestrictedReserve(reserve)) return;
           portfolioActions.addReserve({
             reserveId: reserve.reserveId,
             marketName: reserve.marketName,
             chainName: reserve.chainName,
             tokenSymbol: reserve.tokenSymbol,
+            restrictedStatus: getPrimaryReserveStatus(reserve),
           });
         }
       }

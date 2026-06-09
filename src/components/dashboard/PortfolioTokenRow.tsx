@@ -92,20 +92,17 @@ function SideInput({
 
   const toggleDeltaSign = useCallback(() => {
     if (!hasWallet) return;
+    if (!deltaDisplay.trim()) return;
     const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
     const deltaSignPatch = side === 'supply'
       ? { supplyDeltaSign: newSign }
       : { borrowDeltaSign: newSign };
-    if (deltaDisplay.trim()) {
-      const absDeltaUsd = parseNumberInput(deltaDisplay);
-      const effectiveUsd = Math.max(sideData.walletValue! + newSign * absDeltaUsd, 0);
-      const amountPatch = side === 'supply'
-        ? { supplyAmount: formatNumberInput(String(effectiveUsd)) }
-        : { borrowAmount: formatNumberInput(String(effectiveUsd)) };
-      actions.updateReserve(reserveId, { ...deltaSignPatch, ...amountPatch });
-    } else {
-      actions.updateReserve(reserveId, deltaSignPatch);
-    }
+    const absDeltaUsd = parseNumberInput(deltaDisplay);
+    const effectiveUsd = Math.max(sideData.walletValue! + newSign * absDeltaUsd, 0);
+    const amountPatch = side === 'supply'
+      ? { supplyAmount: formatNumberInput(String(effectiveUsd)) }
+      : { borrowAmount: formatNumberInput(String(effectiveUsd)) };
+    actions.updateReserve(reserveId, { ...deltaSignPatch, ...amountPatch });
   }, [hasWallet, isPositiveDelta, deltaDisplay, actions, reserveId, side, sideData.walletValue]);
 
   const handleClearDelta = useCallback(() => {

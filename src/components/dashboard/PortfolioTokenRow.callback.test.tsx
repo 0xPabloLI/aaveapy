@@ -252,7 +252,7 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
     });
 
-    it('toggles delta sign when input is empty (Bug 1 fix)', () => {
+    it('does not toggle delta sign when input is empty (no meaningful delta)', () => {
       const actions = makeActions();
       render(
         <PortfolioTokenRow
@@ -264,7 +264,8 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
+      // No meaningful delta (amount === walletValue), so toggle should be a no-op
+      expect(actions.updateReserve).not.toHaveBeenCalled();
     });
   });
 });
