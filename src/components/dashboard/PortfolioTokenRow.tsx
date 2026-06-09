@@ -10,7 +10,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
-import { useDebouncedInput } from '@/hooks/useDebouncedInput';
+import { useNumberInput } from '@/hooks/useNumberInput';
 
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
@@ -70,13 +70,10 @@ function SideInput({
   const isPositiveDelta = hasWallet ? (sideData.deltaSign ?? 1) === 1 : true;
 
   const handleDeltaCommit = useCallback((formattedValue: string) => {
+    if (!formattedValue.trim()) return;
     const patch = side === 'supply'
       ? { supplyAmount: formattedValue }
       : { borrowAmount: formattedValue };
-    if (!formattedValue.trim()) {
-      actions.updateReserve(reserveId, patch);
-      return;
-    }
     if (!hasWallet) {
       actions.updateReserve(reserveId, patch);
       return;
@@ -90,8 +87,8 @@ function SideInput({
     actions.updateReserve(reserveId, finalPatch);
   }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
 
-  const debouncedInput = useDebouncedInput({
-    value: deltaDisplay,
+  const numberInput = useNumberInput({
+    initialValue: deltaDisplay,
     onCommit: handleDeltaCommit,
   });
 
@@ -109,6 +106,11 @@ function SideInput({
       : { borrowAmount: formatConvertedAmount(effectiveUsd) };
     actions.updateReserve(reserveId, { ...deltaSignPatch, ...amountPatch });
   }, [hasWallet, isPositiveDelta, deltaDisplay, actions, reserveId, side, sideData.walletValue]);
+
+  const handleClearDelta = useCallback(() => {
+    const patch = side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' };
+    actions.updateReserve(reserveId, patch);
+  }, [actions, reserveId, side]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
@@ -222,11 +224,10 @@ function SideInput({
           </button>
         )}
         <input
-          value={debouncedInput.displayValue}
-          onChange={debouncedInput.handleChange}
-          onFocus={debouncedInput.handleFocus}
-          onBlur={debouncedInput.handleBlur}
-          onKeyDown={debouncedInput.handleKeyDown}
+          value={numberInput.displayValue}
+          onChange={numberInput.handleChange}
+          onFocus={numberInput.handleFocus}
+          onBlur={numberInput.handleBlur}
           inputMode="decimal"
           placeholder={hasWallet ? '' : (sideData.inputMode === 'usd' ? '10,000' : '100')}
           className={cn(
@@ -239,7 +240,7 @@ function SideInput({
         {hasValue && (
           <button
             type="button"
-            onClick={debouncedInput.handleClear}
+            onClick={handleClearDelta}
             className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
             aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
           >

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -56,11 +56,7 @@ function makeActions(): PortfolioSimulationActions {
 }
 
 describe('PortfolioTokenRow callbacks', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    cleanup();
-  });
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => cleanup());
 
   it('calls onRemove with reserveId when minus button is clicked for manual entry', () => {
     const onRemove = vi.fn();
@@ -95,7 +91,7 @@ describe('PortfolioTokenRow callbacks', () => {
     expect(onRemove).not.toHaveBeenCalled();
   });
 
-  it('calls actions.updateReserve on supply input blur', () => {
+  it('calls actions.updateReserve on supply input blur (committed via useNumberInput)', () => {
     const actions = makeActions();
     render(
       <PortfolioTokenRow
@@ -127,87 +123,6 @@ describe('PortfolioTokenRow callbacks', () => {
     fireEvent.change(input, { target: { value: '3000' } });
     fireEvent.blur(input);
     expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowAmount: '3,000' });
-  });
-
-  it('debounces updateReserve on supply input change (300ms)', () => {
-    const actions = makeActions();
-    render(
-      <PortfolioTokenRow
-        entry={makeEntry()}
-        actions={actions}
-        reserveId="reserve-1"
-        onRemove={vi.fn()}
-      />,
-      { wrapper: Wrapper },
-    );
-    const input = screen.getByRole('textbox', { name: /supply.*USDC/i });
-    fireEvent.change(input, { target: { value: '10000' } });
-    expect(actions.updateReserve).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(300);
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '10,000' });
-  });
-
-  it('blurring before debounce fires commits immediately and cancels timer', () => {
-    const actions = makeActions();
-    render(
-      <PortfolioTokenRow
-        entry={makeEntry()}
-        actions={actions}
-        reserveId="reserve-1"
-        onRemove={vi.fn()}
-      />,
-      { wrapper: Wrapper },
-    );
-    const input = screen.getByRole('textbox', { name: /supply.*USDC/i });
-    fireEvent.change(input, { target: { value: '10000' } });
-    fireEvent.blur(input);
-    expect(actions.updateReserve).toHaveBeenCalledTimes(1);
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '10,000' });
-    vi.advanceTimersByTime(300);
-    expect(actions.updateReserve).toHaveBeenCalledTimes(1);
-  });
-
-  it('commits immediately on Enter key and cancels debounce', () => {
-    const actions = makeActions();
-    render(
-      <PortfolioTokenRow
-        entry={makeEntry()}
-        actions={actions}
-        reserveId="reserve-1"
-        onRemove={vi.fn()}
-      />,
-      { wrapper: Wrapper },
-    );
-    const input = screen.getByRole('textbox', { name: /supply.*USDC/i });
-    fireEvent.change(input, { target: { value: '9999' } });
-    expect(actions.updateReserve).not.toHaveBeenCalled();
-    fireEvent.keyDown(input, { key: 'Enter' });
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '9,999' });
-    vi.advanceTimersByTime(300);
-    expect(actions.updateReserve).toHaveBeenCalledTimes(1);
-  });
-
-  it('only commits the last value on rapid consecutive input', () => {
-    const actions = makeActions();
-    render(
-      <PortfolioTokenRow
-        entry={makeEntry()}
-        actions={actions}
-        reserveId="reserve-1"
-        onRemove={vi.fn()}
-      />,
-      { wrapper: Wrapper },
-    );
-    const input = screen.getByRole('textbox', { name: /supply.*USDC/i });
-    fireEvent.change(input, { target: { value: '1000' } });
-    vi.advanceTimersByTime(150);
-    fireEvent.change(input, { target: { value: '2000' } });
-    vi.advanceTimersByTime(150);
-    fireEvent.change(input, { target: { value: '3000' } });
-    expect(actions.updateReserve).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(300);
-    expect(actions.updateReserve).toHaveBeenCalledTimes(1);
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3,000' });
   });
 
   it('calls actions.updateReserve when switching supply input mode from USD to token', () => {
@@ -307,43 +222,6 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000' });
     });
 
-    it('debounces delta input and commits with effective amount', () => {
-      const actions = makeActions();
-      render(
-        <PortfolioTokenRow
-          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
-          actions={actions}
-          reserveId="reserve-1"
-          onRemove={vi.fn()}
-        />,
-        { wrapper: Wrapper },
-      );
-      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
-      fireEvent.change(input, { target: { value: '4000' } });
-      expect(actions.updateReserve).not.toHaveBeenCalled();
-      vi.advanceTimersByTime(300);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7000' });
-    });
-
-    it('commits delta immediately on Enter key', () => {
-      const actions = makeActions();
-      render(
-        <PortfolioTokenRow
-          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
-          actions={actions}
-          reserveId="reserve-1"
-          onRemove={vi.fn()}
-        />,
-        { wrapper: Wrapper },
-      );
-      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
-      fireEvent.change(input, { target: { value: '4000' } });
-      fireEvent.keyDown(input, { key: 'Enter' });
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7000' });
-      vi.advanceTimersByTime(300);
-      expect(actions.updateReserve).toHaveBeenCalledTimes(1);
-    });
-
     it('clears delta to empty string (does not restore to walletValue)', () => {
       const actions = makeActions();
       render(
@@ -386,6 +264,7 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+      // No meaningful delta (amount === walletValue), so toggle should be a no-op
       expect(actions.updateReserve).not.toHaveBeenCalled();
     });
   });
