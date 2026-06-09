@@ -382,6 +382,86 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('hub-core');
   });
 
+  describe('restricted reserve portfolio button', () => {
+    const renderPortfolioRow = (reserveOverrides: Partial<ReserveWithSpread> = {}, isInPortfolio = false) => {
+      const queryClient = new QueryClient();
+      const html = renderToString(
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Table>
+              <TableBody>
+                <DesktopReserveRow
+                  reserve={{ ...reserve, ...reserveOverrides }}
+                  reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                  isExpanded={false}
+                  onToggleExpand={() => {}}
+                  onIncentiveClick={() => {}}
+                  displaySupplyTotal={2.9}
+                  displaySupplyNative={2.5}
+                  displaySupplyIncentive={0.4}
+                  displayBorrowTotal={3.3}
+                  displayBorrowNative={3.4}
+                  displayBorrowIncentive={0.1}
+                  displayUtilization={52}
+                  spread={-0.4}
+                  simulation={simulation}
+                  supplyInput="1000"
+                  borrowInput="500"
+                  inputMode="usd"
+                  isApy
+                  isMobile={false}
+                  sortActions={stubSortActions}
+                  isPortfolioMode
+                  isInPortfolio={isInPortfolio}
+                  onPortfolioToggle={() => {}}
+                />
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      return html;
+    };
+
+    it('paused reserve shows disabled button with opacity-40 and cursor-not-allowed', () => {
+      const html = renderPortfolioRow({ isPaused: true });
+      expect(html).toContain('disabled');
+      expect(html).toContain('opacity-40');
+      expect(html).toContain('cursor-not-allowed');
+    });
+
+    it('paused reserve shows "Paused" tooltip text', () => {
+      const html = renderPortfolioRow({ isPaused: true });
+      expect(html).toContain('Paused');
+    });
+
+    it('frozen reserve shows disabled button with "Frozen" tooltip text', () => {
+      const html = renderPortfolioRow({ isFrozen: true });
+      expect(html).toContain('disabled');
+      expect(html).toContain('Frozen');
+    });
+
+    it('inactive reserve shows disabled button with "Inactive" tooltip text', () => {
+      const html = renderPortfolioRow({ isActive: false });
+      expect(html).toContain('disabled');
+      expect(html).toContain('Inactive');
+    });
+
+    it('non-restricted reserve shows normal add button (no disabled attribute)', () => {
+      const html = renderPortfolioRow();
+      expect(html).not.toContain('disabled');
+      expect(html).toContain('text-muted-foreground/40');
+    });
+
+    it('restricted reserve already in portfolio shows disabled checkmark with tooltip', () => {
+      const html = renderPortfolioRow({ isPaused: true }, true);
+      expect(html).toContain('disabled');
+      expect(html).toContain('opacity-40');
+      expect(html).toContain('Paused');
+      expect(html).toContain('✓');
+    });
+  });
+
   describe('field-name regression gates', () => {
     it('renders supply size from reserve.supplied, not a non-existent field', () => {
       const html = renderToString(

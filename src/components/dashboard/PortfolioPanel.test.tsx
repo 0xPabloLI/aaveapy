@@ -192,6 +192,41 @@ describe('PortfolioPanel', () => {
     expect(container.innerHTML).not.toContain('position-results');
   });
 
+  describe('restricted reserve add guard', () => {
+    const restrictedVariants = [
+      { name: 'frozen', override: { isFrozen: true } },
+      { name: 'paused', override: { isPaused: true } },
+      { name: 'inactive', override: { isActive: false } },
+    ] as const;
+
+    restrictedVariants.forEach(({ name, override }) => {
+      it(`blocks addReserve for ${name} reserve via search`, () => {
+        const reserves = [{ ...makeReserve('stETH'), ...override }];
+        const actions = makeActions();
+        render(
+          <WagmiProvider config={testWagmiConfig}>
+            <QueryClientProvider client={new QueryClient()}>
+              <RainbowKitProvider>
+                <TooltipProvider>
+                <PortfolioPanel
+                  entries={[]}
+                  actions={actions}
+                  reserves={reserves}
+                />
+                </TooltipProvider>
+              </RainbowKitProvider>
+            </QueryClientProvider>
+          </WagmiProvider>,
+        );
+        const searchInput = screen.getByPlaceholderText(/search/i);
+        fireEvent.change(searchInput, { target: { value: 'stETH' } });
+        const addButtons = screen.getAllByRole('button', { name: /add.*stETH/i });
+        fireEvent.click(addButtons[0]);
+        expect(actions.addReserve).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('input surface compliance (DESIGN.md §4)', () => {
     it('search input uses cnDsInputSurface neutral/magenta classes', () => {
       const reserves = [makeReserve('USDC')];
