@@ -49,6 +49,7 @@ describe('convertWalletPositionsToEntries', () => {
       borrow: { amount: '', inputMode: 'usd', walletValue: null },
       hidden: false,
       isOrphan: false,
+      restrictedStatus: null,
     })
   })
 

@@ -41,6 +41,12 @@ describe('canUnhide', () => {
     const entry = makeEntry({ reserveId: 'a', restrictedStatus: 'inactive' })
     expect(canUnhide(entry)).toBe(false)
   })
+
+  it('returns true for entry with restrictedStatus: undefined (defensive)', () => {
+    const entry = makeEntry({ reserveId: 'a' })
+    delete (entry as Record<string, unknown>).restrictedStatus
+    expect(canUnhide(entry)).toBe(true)
+  })
 })
 
 describe('applyRestrictedHidden', () => {
@@ -110,5 +116,12 @@ describe('applyRestrictedHidden', () => {
     expect(result[0].hidden).toBe(false)
     expect(result[1].hidden).toBe(true)
     expect(result[2].hidden).toBe(true)
+  })
+
+  it('does not force hidden for entry with restrictedStatus: undefined (defensive)', () => {
+    const entry = makeEntry({ reserveId: 'a' })
+    delete (entry as Record<string, unknown>).restrictedStatus
+    const result = applyRestrictedHidden([entry])
+    expect(result[0].hidden).toBe(false)
   })
 })

@@ -33,6 +33,7 @@ export function convertWalletPositionsToEntries(
         borrow: { ...EMPTY_SIDE },
         hidden: false,
         isOrphan: wp.isOrphan,
+        restrictedStatus: null,
       }
     }
     const source = walletSourceToPositionSource(wp.source)
