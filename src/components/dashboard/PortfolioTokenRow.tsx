@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Eraser, Minus, Wallet, EyeOff, Plus } from 'lucide-react';
+import { Eraser, Minus, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -7,7 +7,6 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
-import { getSideSyncState } from '@/lib/portfolioWalletSync';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
 import { useNumberInput } from '@/hooks/useNumberInput';
@@ -23,45 +22,6 @@ interface PortfolioTokenRowProps {
   onRemove: (reserveId: string) => void;
   tokenPriceInUsd?: number;
   disabledNotice?: { supply?: string | null; borrow?: string | null };
-}
-
-function WalletSyncIndicator({ entry, onRestoreReserve, reserveId }: {
-  entry: PortfolioReserveEntry;
-  onRestoreReserve?: (reserveId: string) => void;
-  reserveId: string;
-}) {
-  const supplyState = getSideSyncState(entry.supply);
-  const borrowState = getSideSyncState(entry.borrow);
-  const states = [supplyState, borrowState];
-  const aggregate: 'modified' | 'synced' | 'manual' = states.includes('modified')
-    ? 'modified'
-    : states.includes('synced')
-      ? 'synced'
-      : 'manual';
-
-  if (aggregate === 'manual') {
-    return <div className="size-3.5 shrink-0" aria-hidden="true" />;
-  }
-
-  if (aggregate === 'synced') {
-    return (
-      <div className="shrink-0">
-        <Wallet className="size-3.5 text-emerald-500" aria-label="Synced from wallet" />
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onRestoreReserve ? () => onRestoreReserve(reserveId) : undefined}
-      className="group relative shrink-0"
-      aria-label="Modified — click to restore amounts to wallet values"
-      title="Restore to wallet value"
-    >
-      <Wallet className="size-3.5 text-amber-500" />
-    </button>
-  );
 }
 
 interface SideInputProps {
@@ -343,27 +303,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     </button>
   );
 
-  const walletIndicator = (
-    <div className="flex w-4 justify-center shrink-0">
-      <WalletSyncIndicator
-        entry={entry}
-        onRestoreReserve={(id) => actions.restoreToWallet(id)}
-        reserveId={reserveId}
-      />
-    </div>
-  );
-
-  const anySideHasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
-  const anySideSyncedOrModified = anySideHasWallet;
-
-  const hiddenSuffix = isHidden ? (
-    <div className="flex items-center gap-1 shrink-0 text-muted-foreground/60">
-      {anySideSyncedOrModified && (
-        <Wallet className="size-3 text-emerald-500/60 shrink-0" aria-hidden />
-      )}
-    </div>
-  ) : null;
-
   const tokenSymbol = entry.tokenSymbol;
 
   if (isMobile) {
@@ -400,10 +339,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         <div className="flex flex-col items-stretch gap-1">
           <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} />
           <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} />
-        </div>
-        <div className="flex items-center gap-1 self-center justify-self-end">
-          {!isHidden && walletIndicator}
-          {hiddenSuffix}
         </div>
       </div>
     );
@@ -446,12 +381,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       <div className="flex items-center gap-2">
         <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} />
         <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} />
-        {!isHidden && (
-          <div className="flex items-center justify-end shrink-0 w-4">
-            {walletIndicator}
-          </div>
-        )}
-        {hiddenSuffix}
       </div>
     </div>
   );

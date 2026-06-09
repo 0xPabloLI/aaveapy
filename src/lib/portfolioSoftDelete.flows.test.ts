@@ -40,4 +40,28 @@ describe('sortEntriesByHidden + soft-delete interaction', () => {
     const sorted = sortEntriesByHidden(next)
     expect(sorted.map(e => e.reserveId)).toEqual(['b', 'a'])
   })
+
+  it('wallet positions sort above manual positions', () => {
+    const wallet = makeEntry({ reserveId: 'wallet', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 } })
+    const manual = makeEntry({ reserveId: 'manual', supply: { amount: '500', inputMode: 'usd', walletValue: null } })
+    const sorted = sortEntriesByHidden([manual, wallet])
+    expect(sorted.map(e => e.reserveId)).toEqual(['wallet', 'manual'])
+  })
+
+  it('hidden entries always sort to the bottom regardless of wallet source', () => {
+    const wallet = makeEntry({ reserveId: 'wallet', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 } })
+    const manual = makeEntry({ reserveId: 'manual', supply: { amount: '500', inputMode: 'usd', walletValue: null } })
+    const hiddenWallet = makeEntry({ reserveId: 'hiddenWallet', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, hidden: true })
+    const hiddenManual = makeEntry({ reserveId: 'hiddenManual', supply: { amount: '500', inputMode: 'usd', walletValue: null }, hidden: true })
+    const sorted = sortEntriesByHidden([hiddenManual, manual, hiddenWallet, wallet])
+    // hidden entries stay in their original relative order
+    expect(sorted.map(e => e.reserveId)).toEqual(['wallet', 'manual', 'hiddenManual', 'hiddenWallet'])
+  })
+
+  it('borrow-side walletValue counts as wallet position', () => {
+    const borrowWallet = makeEntry({ reserveId: 'borrowWallet', supply: { amount: '', inputMode: 'usd', walletValue: null }, borrow: { amount: '100', inputMode: 'usd', walletValue: 100 } })
+    const manual = makeEntry({ reserveId: 'manual', supply: { amount: '', inputMode: 'usd', walletValue: null }, borrow: { amount: '', inputMode: 'usd', walletValue: null } })
+    const sorted = sortEntriesByHidden([manual, borrowWallet])
+    expect(sorted.map(e => e.reserveId)).toEqual(['borrowWallet', 'manual'])
+  })
 })

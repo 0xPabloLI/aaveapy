@@ -264,9 +264,9 @@ describe('Architecture guard: PortfolioReserveEntry is primary data model', () =
     expect(() => readFileSync(filePath, 'utf8')).toThrow();
   });
 
-  it('getWalletSyncState does not exist in portfolioWalletSync', () => {
-    const src = readFile('lib/portfolioWalletSync.ts');
-    expect(src).not.toMatch(/export function getWalletSyncState/);
+  it('portfolioWalletSync.ts does not exist', () => {
+    const filePath = resolve(__dirname, '..', 'lib', 'portfolioWalletSync.ts');
+    expect(() => readFileSync(filePath, 'utf8')).toThrow();
   });
 
   it('convertWalletPositionsToPortfolio does not exist', () => {
