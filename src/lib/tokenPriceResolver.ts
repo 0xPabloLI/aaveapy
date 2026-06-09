@@ -37,6 +37,8 @@ const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   196: 'x-layer',
   250: 'fantom',
   324: 'zksync',
+  1088: 'metis-andromeda',
+  1868: 'soneium',
   4326: 'megaeth',
   5000: 'mantle',
   8453: 'base',

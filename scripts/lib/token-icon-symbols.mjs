@@ -92,7 +92,7 @@ function extractAssignedObjectLiteral(content, marker) {
 
 function parseNamedAddressBookImports(reservePatchesContent) {
   const importMatch = reservePatchesContent.match(
-    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@bgd-labs\/aave-address-book['"]/m
+    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/m
   );
   if (!importMatch) return [];
 

@@ -188,6 +188,48 @@ function alignEntryIndent(entry) {
     .join('\n');
 }
 
+/**
+ * Extract address-book namespace names (e.g. AaveV3EthereumHorizon) used as
+ * computed keys `[Namespace.ASSETS.XXX.UNDERLYING.toLowerCase()]` in the file,
+ * and inject missing names into the `@aave-dao/aave-address-book` import.
+ */
+function injectMissingAddressBookImports(content) {
+  // All namespace names referenced in computed keys
+  const usedNames = new Set();
+  const keyRe = /\[([A-Za-z0-9_]+)\.ASSETS\./g;
+  let m;
+  while ((m = keyRe.exec(content)) !== null) {
+    usedNames.add(m[1]);
+  }
+
+  if (usedNames.size === 0) {
+    return { content, changed: false, addedNames: [] };
+  }
+
+  // Parse existing import (support both @aave-dao and @bgd-labs)
+  const importRe = /import\s*\{([\s\S]*?)\}\s*from\s*['"]@(aave-dao|bgd-labs)\/aave-address-book['"]/m;
+  const importMatch = content.match(importRe);
+  if (!importMatch) return { content, changed: false, addedNames: [] };
+
+  const existingNames = importMatch[1]
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((n) => n.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim())
+    .filter(Boolean);
+
+  const missing = [...usedNames].filter((n) => !existingNames.includes(n));
+  if (missing.length === 0) {
+    return { content, changed: false, addedNames: [] };
+  }
+
+  // Rebuild import with new names inserted, always normalize to @aave-dao
+  const fullImport = [...existingNames, ...missing].sort().join(',\n  ');
+  const newImportStmt = `import {\n  ${fullImport},\n} from '@aave-dao/aave-address-book'`;
+  const next = content.slice(0, importMatch.index) + newImportStmt + content.slice(importMatch.index + importMatch[0].length);
+  return { content: next, changed: true, addedNames: missing };
+}
+
 function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
   const localBounds = findUnderlyingAssetMapBounds(localContent);
   const upstreamBounds = findUnderlyingAssetMapBounds(upstreamContent);
@@ -243,7 +285,14 @@ async function main() {
     notes.push(`underlyingAssetMap: added ${underlyingMerge.addedCount} missing entr(y/ies)`);
   }
 
-  if (!symbolMerge.changed && !underlyingMerge.changed) {
+  // Auto-inject any new address-book namespace imports referenced in underlyingAssetMap
+  const importUpdate = injectMissingAddressBookImports(next);
+  if (importUpdate.changed) {
+    next = importUpdate.content;
+    notes.push(`address-book import: added ${importUpdate.addedNames.join(', ')}`);
+  }
+
+  if (!symbolMerge.changed && !underlyingMerge.changed && !importUpdate.changed) {
     console.log('reservePatches is already aligned (SYMBOL_MAP + underlyingAssetMap).');
     return;
   }

@@ -1,12 +1,13 @@
 import {
   AaveV3Arbitrum,
   AaveV3Ethereum,
+  AaveV3EthereumHorizon,
   AaveV3Gnosis,
   AaveV3Optimism,
   AaveV3Plasma,
   AaveV3Polygon,
-} from '@bgd-labs/aave-address-book';
-import tokenlist from '@bgd-labs/aave-address-book/tokenlist';
+} from '@aave-dao/aave-address-book';
+import tokenlist from '@aave-dao/aave-address-book/tokenlist';
 import { unPrefixSymbol } from '@/lib/tokenUtils';
 
 /**
@@ -305,6 +306,16 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       iconSymbol: 'FBTC',
       name: 'Function Bitcoin',
       symbol: 'FBTC',
+    },
+    [AaveV3EthereumHorizon.ASSETS.USCC.UNDERLYING.toLowerCase()]: {
+      symbol: 'USCC',
+      name: 'Bitwise Crypto Carry Fund',
+      iconSymbol: 'uscc',
+    },
+    [AaveV3EthereumHorizon.ASSETS.USTB.UNDERLYING.toLowerCase()]: {
+      symbol: 'USTB',
+      name: 'Invesco Short Duration US Government Securities Fund',
+      iconSymbol: 'ustb',
     },
 };
 

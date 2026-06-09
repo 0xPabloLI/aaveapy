@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import * as addressBook from '@bgd-labs/aave-address-book';
+import * as addressBook from '@aave-dao/aave-address-book';
 import { collectIconSymbolLogoHints, collectRequiredIconSymbols } from './token-icon-symbols.mjs';
 
 const reservePatchesPath = path.resolve(process.cwd(), 'src/ui-config/reservePatches.ts');
