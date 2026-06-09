@@ -319,6 +319,66 @@ describe('ScenarioControls', () => {
       expect(borrowInput.value).toBe('');
     });
 
+    describe('handleModeChange clears inputs (AAV-746)', () => {
+      it('calls onDebouncedChange with empty values and new mode', () => {
+        const onDebouncedChange = vi.fn();
+        renderControls({ onDebouncedChange });
+        const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+        fireEvent.change(supplyInput, { target: { value: '5000' } });
+        fireEvent.blur(supplyInput);
+        expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+        onDebouncedChange.mockClear();
+        fireEvent.click(screen.getByText('Token'));
+        expect(onDebouncedChange).toHaveBeenCalledWith('', '', 'usd');
+      });
+
+      it('clears only supply when borrow is empty', () => {
+        renderControls();
+        const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+        const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+        fireEvent.change(supplyInput, { target: { value: '3000' } });
+        expect(supplyInput.value).toBe('3000');
+        expect(borrowInput.value).toBe('');
+        fireEvent.click(screen.getByText('Token'));
+        expect(supplyInput.value).toBe('');
+        expect(borrowInput.value).toBe('');
+      });
+
+      it('clears only borrow when supply is empty', () => {
+        renderControls();
+        const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+        const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+        fireEvent.change(borrowInput, { target: { value: '1500' } });
+        expect(supplyInput.value).toBe('');
+        expect(borrowInput.value).toBe('1500');
+        fireEvent.click(screen.getByText('Token'));
+        expect(supplyInput.value).toBe('');
+        expect(borrowInput.value).toBe('');
+      });
+
+      it('does nothing when clicking the already active mode', () => {
+        const onDebouncedChange = vi.fn();
+        renderControls({ onDebouncedChange });
+        const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+        fireEvent.change(supplyInput, { target: { value: '5000' } });
+        fireEvent.blur(supplyInput);
+        onDebouncedChange.mockClear();
+        fireEvent.click(screen.getByText('USD'));
+        expect(onDebouncedChange).not.toHaveBeenCalled();
+        expect(supplyInput.value).toBe('5,000');
+      });
+
+      it('clears inputs when switching from Token back to USD', () => {
+        renderControls();
+        const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+        fireEvent.click(screen.getByText('Token'));
+        fireEvent.change(supplyInput, { target: { value: '2.5' } });
+        expect(supplyInput.value).toBe('2.5');
+        fireEvent.click(screen.getByText('USD'));
+        expect(supplyInput.value).toBe('');
+      });
+    });
+
     it('renders Net lending checkbox when onMeritMerklNetPositionChange is provided', () => {
       const onMeritMerklNetPositionChange = vi.fn();
       renderControls({ onMeritMerklNetPositionChange });
