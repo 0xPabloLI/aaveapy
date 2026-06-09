@@ -340,3 +340,105 @@ describe('principalSupplyUsd / principalBorrowUsd', () => {
       .toBe(withoutPrincipal.supply.afterTotal);
   });
 });
+
+const MERIT_SELF_CAP_RESERVE: ReserveWithSpread = {
+  ...BASE_RESERVE,
+  meritSupplys: [
+    {
+      apr: 10,
+      selfApr: 8,
+      selfMessage: 'Self authentication. Cap: $1,000',
+      link: 'https://example.com',
+      name: 'Merit Test',
+      message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
+      startDate: '2024-01-01',
+      endDate: '2030-12-31',
+      lastRoundRewardUsd: 100,
+    },
+  ],
+  meritBorrows: [
+    {
+      apr: 5,
+      selfApr: 4,
+      selfMessage: 'Self authentication. Cap: $500',
+      link: 'https://example.com',
+      name: 'Merit Borrow Test',
+      message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $500' }],
+      startDate: '2024-01-01',
+      endDate: '2030-12-31',
+      lastRoundRewardUsd: 50,
+    },
+  ],
+};
+
+describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after sources', () => {
+  it('Bug 2: campaign detail self-cap after should be diluted when principalSupplyUsd exists', () => {
+    const withoutPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      principalSupplyUsd: 1000,
+    });
+
+    const noPrincipalCampaigns = withoutPrincipal.supply.sources.merit?.campaigns ?? [];
+    const withPrincipalCampaigns = withPrincipal.supply.sources.merit?.campaigns ?? [];
+
+    const selfCapRowNoPrincipal = noPrincipalCampaigns.find((r) => r.id.includes('self'));
+    const selfCapRowWithPrincipal = withPrincipalCampaigns.find((r) => r.id.includes('self'));
+
+    expect(selfCapRowNoPrincipal?.after).not.toBeNull();
+    expect(selfCapRowWithPrincipal?.after).not.toBeNull();
+
+    // With principalSupplyUsd=1000 + input=1000, totalPosition=2000, cap=1000
+    // dilution = 1000/2000 = 0.5, so self-cap after should be half of no-principal case
+    expect(selfCapRowWithPrincipal!.after!).toBeLessThan(selfCapRowNoPrincipal!.after!);
+  });
+
+  it('Bug 3: supply after sources merit should reflect self-cap dilution with principalSupplyUsd', () => {
+    const withoutPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      principalSupplyUsd: 1000,
+    });
+
+    // When principalSupplyUsd is provided, self-cap dilution reduces merit after
+    // so the aggregate merit after value should also decrease
+    expect(withPrincipal.supply.sources.merit!.after)
+      .toBeLessThan(withoutPrincipal.supply.sources.merit!.after);
+  });
+
+  it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
+    const withoutPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+    const withPrincipal = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+      principalBorrowUsd: 500,
+    });
+
+    // Same logic as Bug 3 but for borrow side
+    expect(withPrincipal.borrow.sources.merit!.after)
+      .toBeLessThan(withoutPrincipal.borrow.sources.merit!.after);
+  });
+});

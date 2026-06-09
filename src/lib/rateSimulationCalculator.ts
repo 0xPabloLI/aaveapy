@@ -595,6 +595,7 @@ export const buildMeritCampaignDetails = (
   meritAnchorTvlUsd?: number,
   eligibilityRatio = 1,
   grossInputUsd?: number,
+  totalPositionUsd?: number,
 ): SimulationCampaignDetail[] => {
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
@@ -669,6 +670,7 @@ export const buildMeritCampaignDetails = (
           baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
           baseLastRoundRewardUsd: merit.lastRoundRewardUsd,
           anchorTvlUsd: meritAnchorTvlUsd,
+          totalPositionUsd,
         });
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
@@ -1154,6 +1156,12 @@ export function buildRateSimulationResult({
   // Gross amounts are used by incentive sources that reward both sides independently.
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
   const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
+  const supplyTotalPositionUsd = principalSupplyUsd != null && principalSupplyUsd > 0
+    ? principalSupplyUsd + supplyNetInputUsd
+    : undefined;
+  const borrowTotalPositionUsd = principalBorrowUsd != null && principalBorrowUsd > 0
+    ? principalBorrowUsd + borrowNetInputUsd
+    : undefined;
   // Eligibility ratio: fraction of gross capital that is net-eligible.
   // Pool-level APR applies only to the eligible portion; scale to effective APR on gross capital.
   const supplyEligibilityRatio = supplyInputUsd > 0 ? supplyNetInputUsd / supplyInputUsd : 1;
@@ -1334,7 +1342,7 @@ export function buildRateSimulationResult({
   const supplyAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
-          sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd) * supplyMeritMerklEligibilityRatio;
+          sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd, undefined, supplyTotalPositionUsd) * supplyMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
@@ -1368,7 +1376,7 @@ export function buildRateSimulationResult({
   const borrowAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
-          sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd) * borrowMeritMerklEligibilityRatio;
+          sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd, undefined, borrowTotalPositionUsd) * borrowMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
@@ -1407,6 +1415,7 @@ export function buildRateSimulationResult({
     getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
+    supplyTotalPositionUsd,
   );
   const supplyMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklSupplys,
@@ -1437,6 +1446,7 @@ export function buildRateSimulationResult({
     getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
+    borrowTotalPositionUsd,
   );
   const borrowMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklBorrows,
