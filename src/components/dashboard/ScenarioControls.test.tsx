@@ -50,9 +50,187 @@ describe('ScenarioControls', () => {
     vi.clearAllMocks();
   });
 
+  describe('useDebouncedInput migration (AAV-745)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      mockUseIsMobile.mockReturnValue(false);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should NOT call onDebouncedChange immediately on input', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      expect(onDebouncedChange).not.toHaveBeenCalled();
+    });
+
+    it('should call onDebouncedChange after 300ms debounce', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+    });
+
+    it('should reset debounce timer on consecutive inputs, committing only last value', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '1000' } });
+      vi.advanceTimersByTime(150);
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      vi.advanceTimersByTime(150);
+      expect(onDebouncedChange).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(150);
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+    });
+
+    it('should commit immediately on blur without waiting for debounce', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.blur(supplyInput);
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+    });
+
+    it('should cancel pending debounce timer on blur', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.blur(supplyInput);
+      expect(onDebouncedChange).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(500);
+      expect(onDebouncedChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show formatted value (with commas) after blur', () => {
+      renderControls();
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '10000' } });
+      fireEvent.blur(supplyInput);
+      expect(supplyInput.value).toBe('10,000');
+    });
+
+    it('should remove commas on focus', () => {
+      renderControls();
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '10000' } });
+      fireEvent.blur(supplyInput);
+      fireEvent.focus(supplyInput);
+      expect(supplyInput.value).toBe('10000');
+    });
+
+    it('should select all text on focus', () => {
+      renderControls();
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.blur(supplyInput);
+      const selectSpy = vi.spyOn(supplyInput, 'select');
+      fireEvent.focus(supplyInput);
+      expect(selectSpy).toHaveBeenCalled();
+      selectSpy.mockRestore();
+    });
+
+    it('should commit immediately on Enter key', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.keyDown(supplyInput, { key: 'Enter' });
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+    });
+
+    it('should clear supply and immediately commit empty string on clear button', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.change(borrowInput, { target: { value: '2000' } });
+      vi.advanceTimersByTime(300);
+      onDebouncedChange.mockClear();
+      const clearBtn = screen.getByLabelText('Clear supply amount');
+      fireEvent.click(clearBtn);
+      expect(supplyInput.value).toBe('');
+      expect(onDebouncedChange).toHaveBeenCalledWith('', '2,000', 'usd');
+    });
+
+    it('should clear borrow and immediately commit empty string on clear button', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      fireEvent.change(borrowInput, { target: { value: '2000' } });
+      vi.advanceTimersByTime(300);
+      onDebouncedChange.mockClear();
+      const clearBtn = screen.getByLabelText('Clear borrow amount');
+      fireEvent.click(clearBtn);
+      expect(borrowInput.value).toBe('');
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
+    });
+
+    it('should show raw value without commas during editing', () => {
+      renderControls();
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '10000' } });
+      expect(supplyInput.value).toBe('10000');
+    });
+
+    it('should pass current borrow value when committing supply', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+      fireEvent.change(borrowInput, { target: { value: '2000' } });
+      vi.advanceTimersByTime(300);
+      onDebouncedChange.mockClear();
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '2,000', 'usd');
+    });
+
+    it('should pass current supply value when committing borrow', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
+      fireEvent.change(supplyInput, { target: { value: '5000' } });
+      vi.advanceTimersByTime(300);
+      onDebouncedChange.mockClear();
+      fireEvent.change(borrowInput, { target: { value: '2000' } });
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '2,000', 'usd');
+    });
+
+    it('should pass current mode in onDebouncedChange when committing', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
+      fireEvent.click(screen.getByText('Token'));
+      vi.advanceTimersByTime(300);
+      onDebouncedChange.mockClear();
+      fireEvent.change(supplyInput, { target: { value: '50' } });
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalledWith('50', '', 'token');
+    });
+  });
+
   describe('Desktop', () => {
     beforeEach(() => {
+      vi.useFakeTimers();
       mockUseIsMobile.mockReturnValue(false);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
     it('renders USD/Token SegmentedToggle', () => {
@@ -91,32 +269,24 @@ describe('ScenarioControls', () => {
       expect(borrowInput.placeholder).toBe('20,000');
     });
 
-    it('updates Supply input value and calls debounced callback', async () => {
+    it('updates Supply input value and calls debounced callback', () => {
       const onDebouncedChange = vi.fn();
       renderControls({ onDebouncedChange });
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '5000' } });
-      expect(supplyInput.value).toBe('5,000');
-      await waitFor(
-        () => {
-          expect(onDebouncedChange).toHaveBeenCalled();
-        },
-        { timeout: 500 },
-      );
+      expect(supplyInput.value).toBe('5000');
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalled();
     });
 
-    it('updates Borrow input value and calls debounced callback', async () => {
+    it('updates Borrow input value and calls debounced callback', () => {
       const onDebouncedChange = vi.fn();
       renderControls({ onDebouncedChange });
       const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
       fireEvent.change(borrowInput, { target: { value: '2000' } });
-      expect(borrowInput.value).toBe('2,000');
-      await waitFor(
-        () => {
-          expect(onDebouncedChange).toHaveBeenCalled();
-        },
-        { timeout: 500 },
-      );
+      expect(borrowInput.value).toBe('2000');
+      vi.advanceTimersByTime(300);
+      expect(onDebouncedChange).toHaveBeenCalled();
     });
 
     it('shows clear button when input has value', () => {
@@ -142,8 +312,8 @@ describe('ScenarioControls', () => {
       const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '5000' } });
       fireEvent.change(borrowInput, { target: { value: '2000' } });
-      expect(supplyInput.value).toBe('5,000');
-      expect(borrowInput.value).toBe('2,000');
+      expect(supplyInput.value).toBe('5000');
+      expect(borrowInput.value).toBe('2000');
       fireEvent.click(screen.getByText('Token'));
       expect(supplyInput.value).toBe('');
       expect(borrowInput.value).toBe('');
@@ -210,7 +380,7 @@ describe('ScenarioControls', () => {
       renderControls();
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '1000' } });
-      expect(supplyInput.value).toBe('1,000');
+      expect(supplyInput.value).toBe('1000');
       const clearBtn = screen.getByLabelText('Clear supply amount');
       expect(clearBtn).toBeInTheDocument();
     });

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { cn } from '@/lib/utils';
@@ -88,13 +89,17 @@ interface ScenarioControlsProps {
 
 interface ScenarioInputFieldProps {
   side: 'supply' | 'borrow';
-  value: string;
-  onChange: (value: string) => void;
+  displayValue: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onClear: () => void;
   inputMode: ScenarioInputMode;
   compact: boolean;
 }
 
-function ScenarioInputField({ side, value, onChange, inputMode, compact }: ScenarioInputFieldProps) {
+function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onKeyDown, onClear, inputMode, compact }: ScenarioInputFieldProps) {
   const label = side === 'supply' ? 'Supply' : 'Borrow';
   const accentClass = side === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan';
   const labelFontSize = compact ? 'ds-text-11' : 'ds-text-12';
@@ -116,15 +121,18 @@ function ScenarioInputField({ side, value, onChange, inputMode, compact }: Scena
     ? (inputMode === 'usd' ? '100,000' : '50')
     : (inputMode === 'usd' ? '20,000' : '10');
 
-  const hasValue = Boolean(value.trim());
+  const hasValue = Boolean(displayValue.trim());
 
   return (
     <div className={`flex items-center ${wrapperGap} ${wrapperExtras}`}>
       <span className={labelClass}>{label}</span>
       <div className="relative flex-1 min-w-0">
         <input
-          value={value}
-          onChange={(event) => onChange(formatNumberInput(event.target.value))}
+          value={displayValue}
+          onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          onKeyDown={onKeyDown}
           inputMode="decimal"
           placeholder={placeholder}
           className={cn(
@@ -138,7 +146,7 @@ function ScenarioInputField({ side, value, onChange, inputMode, compact }: Scena
         {hasValue && (
           <button
             type="button"
-            onClick={() => onChange('')}
+            onClick={onClear}
             className={`absolute right-1 top-1/2 -translate-y-1/2 ${clearBtnRounded} p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors`}
             aria-label={`Clear ${label.toLowerCase()} amount`}
           >
@@ -158,14 +166,48 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   onMobileNetToggle,
 }, ref) => {
   const isMobile = useIsMobile();
-  const [supplyInput, setSupplyInput] = useState('');
-  const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
   const [internalMobileNetOpen, setInternalMobileNetOpen] = useState(false);
   const mobileNetOpen = controlledMobileNetOpen ?? internalMobileNetOpen;
   const isMobileNetOpenControlled = controlledMobileNetOpen !== undefined;
   const desktopRowRef = useRef<HTMLDivElement>(null);
 
+  const supplyRef = useRef('');
+  const borrowRef = useRef('');
+  const modeRef = useRef(inputMode);
+  const [externalSupplyValue, setExternalSupplyValue] = useState<string | undefined>(undefined);
+  const [externalBorrowValue, setExternalBorrowValue] = useState<string | undefined>(undefined);
+
+  const batchCommit = useCallback((side: 'supply' | 'borrow', formattedValue: string) => {
+    if (side === 'supply') {
+      supplyRef.current = formattedValue;
+    } else {
+      borrowRef.current = formattedValue;
+    }
+    onDebouncedChange(supplyRef.current, borrowRef.current, modeRef.current);
+  }, [onDebouncedChange]);
+
+  useEffect(() => {
+    modeRef.current = inputMode;
+  }, [inputMode]);
+
+  const supplyInput = useDebouncedInput({
+    value: externalSupplyValue,
+    onCommit: useCallback((v: string) => {
+      setExternalSupplyValue(undefined);
+      batchCommit('supply', v);
+    }, [batchCommit]),
+    debounceMs: INPUT_DEBOUNCE_MS,
+  });
+
+  const borrowInput = useDebouncedInput({
+    value: externalBorrowValue,
+    onCommit: useCallback((v: string) => {
+      setExternalBorrowValue(undefined);
+      batchCommit('borrow', v);
+    }, [batchCommit]),
+    debounceMs: INPUT_DEBOUNCE_MS,
+  });
 
   const handleMeritMerklNetPositionChange = useCallback(
     (next: boolean) => {
@@ -183,24 +225,27 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   );
 
   useImperativeHandle(ref, () => ({
-    setSupplyInput: (value: string) => setSupplyInput(formatNumberInput(value)),
-    setBorrowInput: (value: string) => setBorrowInput(formatNumberInput(value)),
-  }), []);
+    setSupplyInput: (value: string) => {
+      const formatted = formatNumberInput(value);
+      supplyRef.current = formatted;
+      setExternalSupplyValue(formatted);
+    },
+    setBorrowInput: (value: string) => {
+      const formatted = formatNumberInput(value);
+      borrowRef.current = formatted;
+      setExternalBorrowValue(formatted);
+    },
+  }));
 
   const handleModeChange = (newMode: ScenarioInputMode) => {
     if (newMode !== inputMode) {
-      setSupplyInput('');
-      setBorrowInput('');
+      supplyInput.handleClear();
+      borrowInput.handleClear();
+      supplyRef.current = '';
+      borrowRef.current = '';
       setInputMode(newMode);
     }
   };
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      onDebouncedChange(supplyInput, borrowInput, inputMode);
-    }, INPUT_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [supplyInput, borrowInput, inputMode, onDebouncedChange]);
 
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
   const segmentedActiveTextClass = 'text-foreground';
@@ -226,15 +271,23 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <ScenarioInputField
               side="supply"
-              value={supplyInput}
-              onChange={setSupplyInput}
+              displayValue={supplyInput.displayValue}
+              onChange={supplyInput.handleChange}
+              onBlur={supplyInput.handleBlur}
+              onFocus={supplyInput.handleFocus}
+              onKeyDown={supplyInput.handleKeyDown}
+              onClear={supplyInput.handleClear}
               inputMode={inputMode}
               compact
             />
             <ScenarioInputField
               side="borrow"
-              value={borrowInput}
-              onChange={setBorrowInput}
+              displayValue={borrowInput.displayValue}
+              onChange={borrowInput.handleChange}
+              onBlur={borrowInput.handleBlur}
+              onFocus={borrowInput.handleFocus}
+              onKeyDown={borrowInput.handleKeyDown}
+              onClear={borrowInput.handleClear}
               inputMode={inputMode}
               compact
             />
@@ -312,15 +365,23 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
           <ScenarioInputField
             side="supply"
-            value={supplyInput}
-            onChange={setSupplyInput}
+            displayValue={supplyInput.displayValue}
+            onChange={supplyInput.handleChange}
+            onBlur={supplyInput.handleBlur}
+            onFocus={supplyInput.handleFocus}
+            onKeyDown={supplyInput.handleKeyDown}
+            onClear={supplyInput.handleClear}
             inputMode={inputMode}
             compact={false}
           />
           <ScenarioInputField
             side="borrow"
-            value={borrowInput}
-            onChange={setBorrowInput}
+            displayValue={borrowInput.displayValue}
+            onChange={borrowInput.handleChange}
+            onBlur={borrowInput.handleBlur}
+            onFocus={borrowInput.handleFocus}
+            onKeyDown={borrowInput.handleKeyDown}
+            onClear={borrowInput.handleClear}
             inputMode={inputMode}
             compact={false}
           />

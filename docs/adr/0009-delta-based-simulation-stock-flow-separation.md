@@ -64,6 +64,10 @@ This is what we do — but we also need `principalUsd` for yield. Without the pr
 ### C: Track walletValue in PortfolioPosition type
 Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a computed property (`amount - walletValue`), not a persisted field. No type change needed.
 
+### Inline Delta Display (AAV-635)
+
+`PortfolioSimulationMetric` type carries `{ current, after, delta }` triples for each position and summary metric. `buildMetricsFromLane(simResult, side, amountUsd)` extracts metrics from `SimulationLane`. Positions render inline delta badge (after value + small delta); `PortfolioSummaryCard` renders delta for Total Supply/Borrow, Net Daily Earn, Net APY.
+
 ## Related Issues
 
-AAV-563 (wallet import double-count), AAV-468 (parent portfolio epic)
+AAV-563 (wallet import double-count), AAV-635 (inline delta display), AAV-468 (parent portfolio epic)

@@ -331,8 +331,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const handleRemoveToken = useCallback((reserveId: string) => {
     const affected = entries.find((e) => e.reserveId === reserveId);
     actions.removeReserve(reserveId);
-    toast('Removed', {
-      description: affected?.tokenSymbol ? `${affected.tokenSymbol} removed` : undefined,
+    toast(affected?.tokenSymbol ? `${affected.tokenSymbol} removed` : 'Removed', {
+      className: '[--width:fit-content]',
       action: {
         label: 'Undo',
         onClick: () => {
