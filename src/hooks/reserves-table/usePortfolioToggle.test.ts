@@ -94,6 +94,7 @@ describe('usePortfolioToggle', () => {
         marketName: 'Ethereum-Core',
         chainName: 'Ethereum',
         tokenSymbol: 'WETH',
+        restrictedStatus: null,
       });
       expect(actions.removeReserve).not.toHaveBeenCalled();
     });
@@ -162,6 +163,7 @@ describe('usePortfolioToggle', () => {
         marketName: 'Ethereum-Core',
         chainName: 'Ethereum',
         tokenSymbol: 'WETH',
+        restrictedStatus: null,
       });
     });
 
