@@ -32,7 +32,7 @@ import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
-import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
+import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 
@@ -249,6 +249,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
     (reserveId: string) => {
       const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
       if (!reserve) return;
+      if (isRestrictedReserve(reserve)) {
+        toast.info(`${reserve.tokenSymbol} is restricted and cannot be added manually`);
+        return;
+      }
       if (entries.some((e) => e.reserveId === reserveId)) {
         toast.info(`${reserve.tokenSymbol} is already in the portfolio`);
         return;
@@ -325,19 +329,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
 
   const handleRemoveToken = useCallback((reserveId: string) => {
-    // Capture the affected token symbol for the toast label before mutating.
     const affected = entries.find((e) => e.reserveId === reserveId);
-    const hasWalletPosition =
-      (affected?.supply.walletValue != null) || (affected?.borrow.walletValue != null);
     actions.removeReserve(reserveId);
-    toast(hasWalletPosition ? 'Reset to wallet' : 'Removed', {
-      description: hasWalletPosition
-        ? (affected?.tokenSymbol
-          ? `${affected.tokenSymbol} reset to wallet amounts. Manual edits dropped.`
-          : 'Row reset to wallet amounts. Manual edits dropped.')
-        : (affected?.tokenSymbol
-          ? `${affected.tokenSymbol} removed from simulation.`
-          : 'Row removed from simulation.'),
+    toast('Removed', {
+      description: affected?.tokenSymbol ? `${affected.tokenSymbol} removed` : undefined,
       action: {
         label: 'Undo',
         onClick: () => {
