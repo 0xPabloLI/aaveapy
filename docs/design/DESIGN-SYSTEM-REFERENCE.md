@@ -59,7 +59,7 @@
 | 图标+文字 | `-500` / `-600` | 标准正文强度 |
 | 背景 | `-50` ~ `-500/10` | 淡，不抢前景 |
 
-**示例**：WalletButton 连接圆点 `bg-emerald-400`，WalletSyncIndicator 图标 `text-emerald-500`，刷新按钮新鲜度圆点 `bg-emerald-400`/`bg-amber-400`/`bg-red-400`。
+**示例**：WalletButton 连接圆点 `bg-emerald-400`，刷新按钮新鲜度圆点 `bg-emerald-400`/`bg-amber-400`/`bg-red-400`。
 
 ### 2.1 颜色档位规范（告警色分级）
 

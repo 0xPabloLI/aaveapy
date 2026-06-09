@@ -205,7 +205,7 @@ describe('PortfolioTokenRow render', () => {
       ).toBeNull();
     });
 
-    it('renders no small EyeOff icon in hiddenSuffix (only the Restore button EyeOff)', () => {
+    it('renders no small standalone EyeOff icon (only the Restore button EyeOff)', () => {
       renderHiddenRow();
       const restoreBtn = screen.getByRole('button', { name: /restore/i });
       const svgInBtn = restoreBtn.querySelector('svg');

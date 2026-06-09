@@ -109,7 +109,7 @@ interface PortfolioSimulationActions {
 | PortfolioTokenRow | `PortfolioTokenRow.tsx` | `entry: PortfolioReserveEntry` + `actions` prop |
 | PortfolioResultsTable | `PortfolioResultsTable.tsx` | `entries` map 按 reserveId 查找 |
 | ReservesTable | `ReservesTable.tsx` | `portfolioEntries` |
-| `getSideSyncState` | `portfolioWalletSync.ts` | 新增 entry 级 sync state |
+| ~~`getSideSyncState`~~ | ~~`portfolioWalletSync.ts`~~ | ~~新增 entry 级 sync state~~ — 已删除，wallet sync indicator 移除 |
 | `sortEntriesByHidden` / `getEntrySoftDeleteAction` | `portfolioSoftDelete.ts` | 新增 entry 级函数 |
 | `buildPerReserveInputsFromEntries` | `portfolioSimulator.ts` | 新增 entry 级 per-reserve input 构建 |
 
@@ -129,7 +129,7 @@ interface PortfolioSimulationActions {
 | 迁移 `usePortfolioToggle` | `usePortfolioToggle.ts` | 删除 `entriesToPositionsForToggle`，改调 `simulatePortfolioFromEntries` |
 | 删除 `portfolioMerger.ts` | — | 文件 + 2 个测试文件删除 |
 | 删除废弃函数 | `portfolioSoftDelete.ts` | sortPositionsByHidden/getSoftDeleteAction/getGroupSoftDeleteAction/hideOrRemoveReserve/unhideReserve |
-| 删除 `getWalletSyncState` | `portfolioWalletSync.ts` | 被 `getSideSyncState` 取代 |
+| ~~`getWalletSyncState`~~ | ~~`portfolioWalletSync.ts`~~ | ~~被 `getSideSyncState` 取代~~ — 整个文件已删除 |
 | 删除 `convertWalletPositionsToPortfolio` | `walletPositionToPortfolio.ts` | 被 `convertWalletPositionsToEntries` 取代 |
 | 更新 architecture-guard | `architecture-guard.test.ts` | 10 条 guard 确保旧 API 不会回归 |
 | 更新 ADR-014 status | `0014-*.md` | Accepted → Completed |
@@ -154,7 +154,7 @@ interface PortfolioSimulationActions {
 - `src/pages/Index.tsx` — convertWalletPositionsToEntries + importReserves
 - `src/lib/portfolioCalculator.ts` — resolvePositionAmountUsd(PortfolioSideData) + buildPortfolioPositionResult(reserveId, side, ...)
 - `src/lib/portfolioSimulator.ts` — simulatePortfolioFromEntries + buildPerReserveInputsFromEntries
-- `src/lib/portfolioWalletSync.ts` — getSideSyncState
+- ~~`src/lib/portfolioWalletSync.ts`~~ — ~~getSideSyncState~~ — 已删除
 - `src/lib/portfolioSoftDelete.ts` — sortEntriesByHidden / getEntrySoftDeleteAction
 
 ### ❌ 已删除文件/类型
@@ -163,6 +163,7 @@ interface PortfolioSimulationActions {
 - `portfolioMerger.ts` + `portfolioMerger.test.ts` + `portfolioMerger.actions.test.ts`
 - `PortfolioPositionRow.tsx`
 - `convertWalletPositionsToPortfolio` / `getWalletSyncState` / `sortPositionsByHidden` / `getSoftDeleteAction` / `getGroupSoftDeleteAction` / `hideOrRemoveReserve`(旧) / `unhideReserve`(旧)
+- `getSideSyncState` / `portfolioWalletSync.ts` — wallet sync indicator 已删除
 - `buildPerReserveInputs`(旧, position-based) / `simulatePortfolioPositions` / `SimulatePortfolioPositionsArgs`
 - `entriesToPositions` / `positions` 派生 / 10 个 deprecated actions
 
@@ -176,7 +177,7 @@ interface PortfolioSimulationActions {
 4. PortfolioSnapshot.entries is required (`positions` field removed)
 5. `PortfolioPosition` interface does not exist in non-test source
 6. `portfolioMerger.ts` file does not exist
-7. `getWalletSyncState` does not exist in portfolioWalletSync
+7. ~~`getWalletSyncState` does not exist in portfolioWalletSync~~ — `portfolioWalletSync.ts` does not exist
 8. `convertWalletPositionsToPortfolio` does not exist
 9. `simulatePortfolioPositions` does not exist
 10. `entriesToPositions` does not exist in usePortfolioSimulation

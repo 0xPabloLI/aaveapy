@@ -192,7 +192,7 @@ reserveId 作为仓位匹配的唯一 key（方案 A）。reserveId 本身已编
 _Avoid_: 组合 key 做主匹配（方案 B）——冗余且易漏 side
 
 **Dual-Value Tracking**:
-`walletValue: number | null`（链上值，null = 钱包无/断连）+ `currentValue: number`（Simulator 当前值）+ `hidden: boolean`（soft delete）。三态视觉：🟢 钱包同步未改、🟡 钱包同步已改（可恢复）、⚪ 纯手动。
+`walletValue: number | null`（链上值，null = 钱包无/断连）+ `currentValue: number`（Simulator 当前值）+ `hidden: boolean`（soft delete）。列表排序：钱包仓位（至少一侧 `walletValue !== null`）排最上面，纯手动仓位排中间，hidden 仓位沉底。无钱包图标显示——Eraser 按钮承担"恢复到钱包值"功能。
 
 **Wallet Disconnect Behavior**:
 断连时自动清除所有钱包来源的 entry（任一侧 `walletValue !== null` 的 entry 整条删除），手动添加的 entry（两侧 `walletValue` 均为 `null`）保留不动。无钱包 entry 可清时静默（不 toast）。有钱包 entry 被清除时 toast "Removed N wallet position(s)"。实现位置：`usePortfolioSimulation` 新增 `removeWalletEntries()` action，`useWalletAutoImport` 在 `!isConnected` 时调用。
