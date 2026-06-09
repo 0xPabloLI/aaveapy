@@ -14,10 +14,10 @@ export interface ExplorerIconStackProps {
 }
 
 /**
- * Side-by-side icons: chain icon and explorer-family icon displayed
- * horizontally with a small gap. Renders nothing when both sources
- * are missing so it can be dropped into trailing-icon slots without
- * leaving empty space.
+ * Side-by-side icons with overlap: chain icon and explorer-family icon
+ * displayed horizontally with the two 14px icons overlapping in a 22px-wide
+ * container (6px overlap). Renders nothing when both sources are missing
+ * so it can be dropped into trailing-icon slots without leaving empty space.
  */
 export function ExplorerIconStack({
   chainIconSrc,
@@ -54,19 +54,19 @@ export function ExplorerIconStack({
 
   return (
     <span
-      className={cn('inline-flex items-center gap-1', className)}
+      className={cn('relative inline-flex h-3.5 w-[22px] items-center', className)}
       title={`${chainName} · ${explorerName}`}
     >
       <img
         src={chainIconSrc}
         alt={chainName}
-        className="h-3.5 w-3.5 rounded-full opacity-80"
+        className="absolute left-0 top-0 h-3.5 w-3.5 rounded-full opacity-80"
         loading="lazy"
       />
       <img
         src={explorerIconSrc}
         alt={explorerName}
-        className="h-3.5 w-3.5 rounded-full opacity-80"
+        className="absolute right-0 top-0 h-3.5 w-3.5 rounded-full opacity-80"
         loading="lazy"
       />
     </span>
