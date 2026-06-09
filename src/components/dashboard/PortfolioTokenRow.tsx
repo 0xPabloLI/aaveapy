@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
+import { formatConvertedAmount } from '@/lib/portfolioCalculator';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -9,7 +10,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
-import { useNumberInput } from '@/hooks/useNumberInput';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
@@ -72,6 +73,10 @@ function SideInput({
     const patch = side === 'supply'
       ? { supplyAmount: formattedValue }
       : { borrowAmount: formattedValue };
+    if (!formattedValue.trim()) {
+      actions.updateReserve(reserveId, patch);
+      return;
+    }
     if (!hasWallet) {
       actions.updateReserve(reserveId, patch);
       return;
@@ -80,13 +85,13 @@ function SideInput({
     const sign = isPositiveDelta ? 1 : -1;
     const effectiveUsd = Math.max(sideData.walletValue! + sign * absDeltaUsd, 0);
     const finalPatch = side === 'supply'
-      ? { supplyAmount: formatNumberInput(String(effectiveUsd)) }
-      : { borrowAmount: formatNumberInput(String(effectiveUsd)) };
+      ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
+      : { borrowAmount: formatConvertedAmount(effectiveUsd) };
     actions.updateReserve(reserveId, finalPatch);
   }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
 
-  const numberInput = useNumberInput({
-    initialValue: deltaDisplay,
+  const debouncedInput = useDebouncedInput({
+    value: deltaDisplay,
     onCommit: handleDeltaCommit,
   });
 
@@ -100,22 +105,10 @@ function SideInput({
     const absDeltaUsd = parseNumberInput(deltaDisplay);
     const effectiveUsd = Math.max(sideData.walletValue! + newSign * absDeltaUsd, 0);
     const amountPatch = side === 'supply'
-      ? { supplyAmount: formatNumberInput(String(effectiveUsd)) }
-      : { borrowAmount: formatNumberInput(String(effectiveUsd)) };
+      ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
+      : { borrowAmount: formatConvertedAmount(effectiveUsd) };
     actions.updateReserve(reserveId, { ...deltaSignPatch, ...amountPatch });
   }, [hasWallet, isPositiveDelta, deltaDisplay, actions, reserveId, side, sideData.walletValue]);
-
-  const handleClearDelta = useCallback(() => {
-    if (!hasWallet) {
-      const patch = side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' };
-      actions.updateReserve(reserveId, patch);
-      return;
-    }
-    const patch = side === 'supply'
-      ? { supplyAmount: formatNumberInput(String(sideData.walletValue!)) }
-      : { borrowAmount: formatNumberInput(String(sideData.walletValue!)) };
-    actions.updateReserve(reserveId, patch);
-  }, [hasWallet, actions, reserveId, side, sideData.walletValue]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
@@ -229,10 +222,11 @@ function SideInput({
           </button>
         )}
         <input
-          value={numberInput.displayValue}
-          onChange={numberInput.handleChange}
-          onFocus={numberInput.handleFocus}
-          onBlur={numberInput.handleBlur}
+          value={debouncedInput.displayValue}
+          onChange={debouncedInput.handleChange}
+          onFocus={debouncedInput.handleFocus}
+          onBlur={debouncedInput.handleBlur}
+          onKeyDown={debouncedInput.handleKeyDown}
           inputMode="decimal"
           placeholder={hasWallet ? '' : (sideData.inputMode === 'usd' ? '10,000' : '100')}
           className={cn(
@@ -245,7 +239,7 @@ function SideInput({
         {hasValue && (
           <button
             type="button"
-            onClick={handleClearDelta}
+            onClick={debouncedInput.handleClear}
             className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
             aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
           >
