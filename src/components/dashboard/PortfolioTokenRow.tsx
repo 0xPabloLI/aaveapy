@@ -93,35 +93,25 @@ function SideInput({
   const numberInput = useDebouncedInput({
     value: deltaDisplay,
     onCommit: handleDeltaCommit,
+    debounceMs: 0,
   });
 
   const toggleDeltaSign = useCallback(() => {
     if (!hasWallet) return;
     const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
-    const absDeltaUsd = parseNumberInput(deltaDisplay);
-    if (!absDeltaUsd) {
-      const signOnly = side === 'supply'
-        ? { supplyDeltaSign: newSign }
-        : { borrowDeltaSign: newSign };
-      actions.updateReserve(reserveId, signOnly);
-      return;
-    }
     const signPatch = side === 'supply'
       ? { supplyDeltaSign: newSign }
       : { borrowDeltaSign: newSign };
-    const effectiveUsd = Math.max(sideData.walletValue! + newSign * absDeltaUsd, 0);
-    const amountPatch = side === 'supply'
-      ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
-      : { borrowAmount: formatConvertedAmount(effectiveUsd) };
-    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
-  }, [hasWallet, isPositiveDelta, deltaDisplay, actions, reserveId, side, sideData.walletValue]);
+    actions.updateReserve(reserveId, signPatch);
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side]);
 
   const handleClearDelta = useCallback(() => {
+    const resetAmount = hasWallet ? formatConvertedAmount(sideData.walletValue!) : '';
     const patch = side === 'supply'
-      ? { supplyAmount: '', supplyDeltaSign: 1 as DeltaSign }
-      : { borrowAmount: '', borrowDeltaSign: 1 as DeltaSign };
+      ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
+      : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
     actions.updateReserve(reserveId, patch);
-  }, [actions, reserveId, side]);
+  }, [hasWallet, sideData.walletValue, actions, reserveId, side]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';

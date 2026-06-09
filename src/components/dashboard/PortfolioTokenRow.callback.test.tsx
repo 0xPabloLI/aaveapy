@@ -222,7 +222,7 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: -1 });
     });
 
-    it('clears delta to empty string (does not restore to walletValue)', () => {
+    it('clears delta by resetting amount to walletValue so deltaDisplay becomes empty', () => {
       const actions = makeActions();
       render(
         <PortfolioTokenRow
@@ -234,10 +234,10 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
     });
 
-    it('toggles delta sign from positive to negative and calls actions.updateReserve', () => {
+    it('toggles delta sign without changing amount (patches sign only)', () => {
       const actions = makeActions();
       render(
         <PortfolioTokenRow
@@ -249,7 +249,7 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
     });
 
     it('toggles delta sign even when delta is zero (patches sign only)', () => {
@@ -343,7 +343,75 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
+    });
+
+    describe('regression: delta input bugs (AAV-736 follow-up)', () => {
+      it('Bug A: clear button should result in empty deltaDisplay, not walletValue', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+        expect(input).toHaveValue('4,000');
+        fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
+      });
+
+      it('Bug B: toggle sign should preserve delta magnitude, not recalculate via effectiveUsd clamp', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
+      });
+
+      it('Bug C: delta input commits immediately without debounce delay', () => {
+        vi.useFakeTimers();
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+        fireEvent.change(input, { target: { value: '5' } });
+        vi.advanceTimersByTime(0);
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3005', supplyDeltaSign: 1 });
+        vi.useRealTimers();
+      });
+
+      it('Bug B (borrow): toggle borrow sign with delta should patch sign only', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ borrow: { amount: '5000', inputMode: 'usd', walletValue: 2000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowDeltaSign: -1 });
+      });
     });
   });
 });
