@@ -311,9 +311,9 @@ const Index = () => {
         toast.info('Wallet has no positions');
         return;
       }
-      portfolio.actions.importReserves(incoming);
+      portfolio.actions.forceSyncReserves(incoming);
       setSimulationMode('portfolio');
-      toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
+      toast.success(`Synced ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
     } else if (walletResult.status === 'error') {
       toast.error('Failed to load wallet positions');
     }

@@ -203,6 +203,9 @@ _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）、断连时
 切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
 **Watch Mode 重新提交地址（同地址或新地址）也按 refresh 处理**——这是 user-initiated 的 "我想看最新数据" 意图，与 F5、Refresh 按钮走同一条 refresh 通道（详见 [Refresh Action](#refresh-action)）。_Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）、把 re-submit 当成独立 case 走特殊代码路径
 
+**Force Sync Action**:
+Portfolio 面板中的 Force sync 按钮（`CloudDownload` 图标，`data-testid="wallet-sync-button"`）。行为：对钱包来源仓位（`walletValue !== null`）直接覆盖为最新链上值（delta 归零），手动仓位（`walletValue === null`）不动。与自动导入（`useWalletAutoImport`，走 `mergeEntriesWithDelta` 保留 delta）不同——Force sync 是用户主动"我要放弃修改、复位到链上"的意图。图标：idle=`CloudDownload`（云+下载箭头，语义：从云端/链上拉取），loading=`RefreshCw`（旋转）。文案：title=`Force sync`，aria-label=`Force sync wallet positions`，loading 时 `Syncing…`。toast 成功=`Synced N positions from wallet`。
+
 **Refresh Action**:
 一个 user-initiated 或 user-equivalent 的 "强制重新拉取仓位数据" 信号。**三条触发路径走同一个 module-scope emitter**（`refetchEvent`）：
 1. F5 / 整页 reload — React tree 重新 mount，所有 query hook 走初始 fetch

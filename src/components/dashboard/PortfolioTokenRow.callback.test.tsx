@@ -47,6 +47,7 @@ function makeActions(): PortfolioSimulationActions {
     unhideReserve: vi.fn(),
     importReserves: vi.fn(),
     restoreToWallet: vi.fn(),
+    removeHiddenEntries: vi.fn(() => 0),
     clearAll: vi.fn(),
     saveSnapshot: vi.fn(),
     deleteSnapshot: vi.fn(),

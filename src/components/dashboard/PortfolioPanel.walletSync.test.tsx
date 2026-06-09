@@ -70,6 +70,7 @@ const actions: PortfolioSimulationActions = {
   unhideReserve: vi.fn(),
   importReserves: vi.fn(),
   restoreToWallet: vi.fn(),
+  removeHiddenEntries: vi.fn(() => 0),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
@@ -111,19 +112,19 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
   });
   afterEach(() => cleanup());
 
-  it('idle: button enabled with Download icon, no spinner', () => {
+  it('idle: button enabled with CloudDownload icon, no spinner', () => {
     renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'idle' });
     const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
-    expect(btn.getAttribute('title')).toBe('Import from wallet');
+    expect(btn.getAttribute('title')).toBe('Force sync');
     expect(btn.querySelector('.animate-spin')).toBeNull();
   });
 
-  it('loading: disabled, spinner visible, title says Importing', () => {
+  it('loading: disabled, spinner visible, title says Syncing', () => {
     renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'loading' });
     const btn = screen.getByTestId('wallet-sync-button') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
-    expect(btn.getAttribute('title')).toBe('Importing…');
+    expect(btn.getAttribute('title')).toBe('Syncing…');
     expect(btn.querySelector('.animate-spin')).not.toBeNull();
   });
 
