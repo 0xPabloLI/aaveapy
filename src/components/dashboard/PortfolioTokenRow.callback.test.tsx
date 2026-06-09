@@ -202,7 +202,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '4000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7000' });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7000', supplyDeltaSign: 1 });
     });
 
     it('calls actions.updateReserve with effective amount on blur in negative delta mode', () => {
@@ -219,7 +219,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '2000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000' });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: -1 });
     });
 
     it('clears delta to empty string (does not restore to walletValue)', () => {
@@ -252,7 +252,7 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
     });
 
-    it('does not toggle delta sign when input is empty (no meaningful delta)', () => {
+    it('toggles delta sign even when delta is zero (patches sign only)', () => {
       const actions = makeActions();
       render(
         <PortfolioTokenRow
@@ -264,8 +264,56 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-      // No meaningful delta (amount === walletValue), so toggle should be a no-op
-      expect(actions.updateReserve).not.toHaveBeenCalled();
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
+    });
+
+    it('patches deltaSign alongside amount in handleDeltaCommit (positive delta)', () => {
+      const actions = makeActions();
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          onRemove={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '5000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '8000', supplyDeltaSign: 1 });
+    });
+
+    it('patches deltaSign alongside amount in handleDeltaCommit (negative delta)', () => {
+      const actions = makeActions();
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '2000', inputMode: 'usd', walletValue: 5000, deltaSign: -1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          onRemove={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '3000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '2000', supplyDeltaSign: -1 });
+    });
+
+    it('allows toggling from negative to positive even when deltaDisplay is empty', () => {
+      const actions = makeActions();
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: -1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          onRemove={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /reducing position/i }));
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: 1 });
     });
   });
 });
