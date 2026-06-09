@@ -143,7 +143,7 @@ function SideInput({
             <input
               value={sideData.amount}
               readOnly
-              placeholder="b  "
+              placeholder="—"
               className={cn(
                 'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md ds-text-12 tabular-nums placeholder:italic cursor-not-allowed',
                 'border border-border/30 bg-muted/30 text-muted-foreground',
