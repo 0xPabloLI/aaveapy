@@ -264,6 +264,63 @@ describe('usePortfolioToggle', () => {
     });
   });
 
+  describe('restricted reserve removal guard', () => {
+    it('blocks hideReserve for restricted (paused) reserve without side', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({ isPaused: true });
+      const entries = [
+        makeEntry({ reserveId: 'r-1', restrictedStatus: 'paused', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.hideReserve).not.toHaveBeenCalled();
+      expect(actions.removeReserve).not.toHaveBeenCalled();
+    });
+
+    it('blocks removeReserve for restricted (frozen) reserve without side', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({ isFrozen: true });
+      const entries = [
+        makeEntry({ reserveId: 'r-1', restrictedStatus: 'frozen', supply: { amount: '100', inputMode: 'usd', walletValue: null } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.removeReserve).not.toHaveBeenCalled();
+      expect(actions.hideReserve).not.toHaveBeenCalled();
+    });
+
+    it('blocks removal for restricted reserve with explicit side', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({ isActive: false });
+      const entries = [
+        makeEntry({ reserveId: 'r-1', restrictedStatus: 'inactive', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
+      expect(actions.hideReserve).not.toHaveBeenCalled();
+      expect(actions.removeReserve).not.toHaveBeenCalled();
+    });
+
+    it('allows removal of non-restricted reserve', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [
+        makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+    });
+  });
+
   describe('simulationContext (Phase 2)', () => {
     const makeRateCalcReserve = (
       overrides: Partial<ReserveWithSpread> = {},

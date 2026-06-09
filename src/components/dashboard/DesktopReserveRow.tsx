@@ -15,7 +15,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
+import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
@@ -278,29 +278,53 @@ const DesktopReserveRow = memo(({
         {/* Token */}
         <TableCell className="ds-reserves-cell-td-edge-l ds-row-pad text-left overflow-hidden">
           <div className="flex w-full min-w-0 items-center justify-start gap-[var(--ds-space-2)]">
-          {isPortfolioMode && onPortfolioToggle && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPortfolioToggle(reserveId, reserve);
-              }}
-              className={cn(
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
-                isInPortfolio
-                  ? PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.selected
-                  : PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.unselected,
-              )}
-              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
-              title={isInPortfolio ? 'Remove from portfolio' : 'Add to portfolio'}
-            >
-              {isInPortfolio ? (
-                <span className="ds-text-11 font-bold leading-none">✓</span>
-              ) : (
-                <Plus className="h-3 w-3" />
-              )}
-            </button>
-          )}
+          {isPortfolioMode && onPortfolioToggle && (() => {
+            const isRestricted = isRestrictedReserve(reserve);
+            const restrictedLabel = isRestricted
+              ? getPrimaryReserveStatus(reserve) === 'paused'
+                ? 'Paused'
+                : getPrimaryReserveStatus(reserve) === 'frozen'
+                  ? 'Frozen'
+                  : 'Inactive'
+              : null;
+            const btn = (
+              <button
+                type="button"
+                disabled={isRestricted}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPortfolioToggle(reserveId, reserve);
+                }}
+                className={cn(
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
+                  isRestricted
+                    ? PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.disabled
+                    : isInPortfolio
+                      ? PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.selected
+                      : PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.unselected,
+                )}
+                aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+              >
+                {isInPortfolio ? (
+                  <span className="ds-text-11 font-bold leading-none">✓</span>
+                ) : (
+                  <Plus className="h-3 w-3" />
+                )}
+              </button>
+            );
+            if (isRestricted && restrictedLabel) {
+              return (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                  <TooltipContent side="right" align="center" className="max-w-[12rem]">
+                    <TooltipCalloutArrow />
+                    <p className="ds-text-11">{restrictedLabel}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+            return btn;
+          })()}
           <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">

@@ -18,4 +18,5 @@ export const PORTFOLIO_THEME = {
 export const PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES = {
   selected: `${PORTFOLIO_THEME.bgSoft} ${PORTFOLIO_THEME.border} ${PORTFOLIO_THEME.text}`,
   unselected: `border-border/60 text-muted-foreground/40 hover:${PORTFOLIO_THEME.border} hover:${PORTFOLIO_THEME.text}`,
+  disabled: `opacity-40 cursor-not-allowed border-border/30 text-muted-foreground/30`,
 } as const;

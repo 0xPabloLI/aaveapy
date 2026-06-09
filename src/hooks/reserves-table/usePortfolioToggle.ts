@@ -63,6 +63,7 @@ export const usePortfolioToggle = ({
         const entry = effectiveEntries.find((e) => e.reserveId === reserveId);
         const sideData = entry?.[side];
         if (entry && sideData) {
+          if (isRestrictedReserve(reserve)) return;
           const action = getEntrySoftDeleteAction(entry);
           if (action === 'toggleHidden') {
             portfolioActions.hideReserve(reserveId);
@@ -83,6 +84,7 @@ export const usePortfolioToggle = ({
         if (portfolioReserveIds.has(reserveId)) {
           const entry = effectiveEntries.find((e) => e.reserveId === reserveId);
           if (entry) {
+            if (isRestrictedReserve(reserve)) return;
             const action = getEntrySoftDeleteAction(entry);
             if (action === 'toggleHidden') {
               portfolioActions.hideReserve(reserveId);
