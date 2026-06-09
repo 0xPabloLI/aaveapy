@@ -25,6 +25,7 @@ import {
   formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
 import { computeDelta } from '@/lib/deltaCalculator';
+import { canUnhide, applyRestrictedHidden } from '@/lib/portfolioRestricted';
 
 let nextSnapshotId = 1;
 const generateSnapshotId = (): string => `snap-${nextSnapshotId++}`;
@@ -61,7 +62,7 @@ function mergeEntriesWithDelta(
     }
   }
 
-  return Array.from(result.values());
+  return applyRestrictedHidden(Array.from(result.values()));
 }
 
 function forceSyncEntries(
@@ -79,7 +80,12 @@ function forceSyncEntries(
         incomingSide: PortfolioReserveEntry['supply'],
       ): PortfolioReserveEntry['supply'] => {
         if (existing.walletValue === null) return existing;
-        return { ...incomingSide };
+        return {
+          ...existing,
+          walletValue: incomingSide.walletValue,
+          source: incomingSide.source ?? existing.source,
+          deltaSign: incomingSide.deltaSign ?? existing.deltaSign,
+        };
       };
       result.push({
         ...cur,
@@ -101,7 +107,7 @@ function forceSyncEntries(
     result.push({ ...entry });
   }
 
-  return result;
+  return applyRestrictedHidden(result);
 }
 
 function mergeSideWithDelta(
@@ -188,6 +194,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
             borrow: { ...EMPTY_SIDE },
             hidden: false,
             isOrphan: false,
+            restrictedStatus: null,
           },
         ];
       });
@@ -266,7 +273,11 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
 
   const unhideReserve = useCallback((reserveId: string) => {
     setEntries((prev) =>
-      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: false } : e)),
+      prev.map((e) => {
+        if (e.reserveId !== reserveId) return e;
+        if (!canUnhide(e)) return e;
+        return { ...e, hidden: false };
+      }),
     );
   }, []);
 
@@ -279,8 +290,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const restoreToWallet = useCallback((reserveId: string, side?: PortfolioSide) => {
-    setEntries((prev) =>
-      prev.map((e) => {
+    setEntries((prev) => {
+      const updated = prev.map((e) => {
         if (e.reserveId !== reserveId) return e;
         const restoreSide = (
           s: PortfolioReserveEntry['supply'],
@@ -294,8 +305,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
           supply: side === undefined || side === 'supply' ? restoreSide(e.supply) : e.supply,
           borrow: side === undefined || side === 'borrow' ? restoreSide(e.borrow) : e.borrow,
         };
-      }),
-    );
+      });
+      return applyRestrictedHidden(updated);
+    });
   }, []);
 
   const removeHiddenEntries = useCallback((): number => {

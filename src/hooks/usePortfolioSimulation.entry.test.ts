@@ -15,6 +15,7 @@ function makeEntry(overrides: Partial<PortfolioReserveEntry> & { reserveId: stri
     borrow: { ...emptySide },
     hidden: false,
     isOrphan: false,
+    restrictedStatus: null,
     ...overrides,
   }
 }
@@ -227,7 +228,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
   })
 
   describe('forceSyncReserves', () => {
-    it('overwrites wallet-sourced entries with incoming values (delta zeroed)', () => {
+    it('updates walletValue but preserves user amount/inputMode', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
 
@@ -236,21 +237,21 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           makeEntry({
             reserveId: 'r-weth',
             tokenSymbol: 'WETH',
-            supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, source: 'sdk' },
+            supply: { amount: '2', inputMode: 'token', walletValue: 3000, source: 'sdk' },
             borrow: { amount: '', inputMode: 'usd', walletValue: null },
           }),
         ])
       })
 
       const before = result.current.entries.find(e => e.reserveId === 'r-weth')!
-      expect(Number(before.supply.amount)).toBeCloseTo(5000, -1)
+      expect(before.supply.inputMode).toBe('token')
 
       act(() => {
         result.current.actions.forceSyncReserves([
           makeEntry({
             reserveId: 'r-weth',
             tokenSymbol: 'WETH',
-            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk' },
+            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk', deltaSign: 'positive' },
             borrow: { amount: '', inputMode: 'usd', walletValue: null },
           }),
         ])
@@ -258,7 +259,10 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       const after = result.current.entries.find(e => e.reserveId === 'r-weth')!
       expect(after.supply.walletValue).toBe(4000)
-      expect(Number(after.supply.amount)).toBeCloseTo(4000, -1)
+      expect(after.supply.amount).toBe('2')
+      expect(after.supply.inputMode).toBe('token')
+      expect(after.supply.source).toBe('sdk')
+      expect(after.supply.deltaSign).toBe('positive')
     })
 
     it('preserves manual entries (walletValue === null) untouched', () => {

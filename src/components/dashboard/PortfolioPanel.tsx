@@ -31,7 +31,7 @@ import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
-import { ConfirmPopover } from '@/components/ui/confirm-popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
@@ -441,25 +441,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {entries.length > 0 && (
-              <ConfirmPopover
-                onConfirm={() => actions.clearAll()}
-                title="Clear all positions?"
-                description={`This will remove all ${entries.length} entries from the portfolio.`}
-                confirmLabel="Clear all"
-              >
-                <button
-                  type="button"
-                  className={cn(
-                    HEADER_CONTROL_ICON_BUTTON_CLASS,
-                    PORTFOLIO_THEME.trashHoverBg,
-                    PORTFOLIO_THEME.trashHoverText,
-                  )}
-                  aria-label="Clear all positions"
-                  title="Clear all positions"
-                >
-                  <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
-                </button>
-              </ConfirmPopover>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => actions.clearAll()}
+                    className={cn(
+                      HEADER_CONTROL_ICON_BUTTON_CLASS,
+                      PORTFOLIO_THEME.trashHoverBg,
+                      PORTFOLIO_THEME.trashHoverText,
+                    )}
+                    aria-label="Clear all positions"
+                  >
+                    <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="ds-text-11">
+                  Clear all
+                </TooltipContent>
+              </Tooltip>
             )}
             {simulationMode && onSimulationModeChange && (
               <PortfolioModeToggle
