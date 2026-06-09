@@ -68,8 +68,10 @@ interface PortfolioSimulationActions {
 interface ReservePatch {
   supplyAmount?: string;
   supplyInputMode?: PortfolioInputMode;
+  supplyDeltaSign?: DeltaSign;
   borrowAmount?: string;
   borrowInputMode?: PortfolioInputMode;
+  borrowDeltaSign?: DeltaSign;
 }
 ```
 
