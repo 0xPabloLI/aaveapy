@@ -31,7 +31,6 @@ import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
@@ -328,11 +327,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const handleRemoveToken = useCallback((reserveId: string) => {
     // Capture the affected token symbol for the toast label before mutating.
     const affected = entries.find((e) => e.reserveId === reserveId);
+    const hasWalletPosition =
+      (affected?.supply.walletValue != null) || (affected?.borrow.walletValue != null);
     actions.removeReserve(reserveId);
-    toast('Reset to wallet', {
-      description: affected?.tokenSymbol
-        ? `${affected.tokenSymbol} reset to wallet amounts. Manual edits dropped.`
-        : 'Row reset to wallet amounts. Manual edits dropped.',
+    toast(hasWalletPosition ? 'Reset to wallet' : 'Removed', {
+      description: hasWalletPosition
+        ? (affected?.tokenSymbol
+          ? `${affected.tokenSymbol} reset to wallet amounts. Manual edits dropped.`
+          : 'Row reset to wallet amounts. Manual edits dropped.')
+        : (affected?.tokenSymbol
+          ? `${affected.tokenSymbol} removed from simulation.`
+          : 'Row removed from simulation.'),
       action: {
         label: 'Undo',
         onClick: () => {
@@ -441,11 +446,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {entries.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={() => actions.clearAll()}
+                    title="Clear all"
                     className={cn(
                       HEADER_CONTROL_ICON_BUTTON_CLASS,
                       PORTFOLIO_THEME.trashHoverBg,
@@ -455,11 +459,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   >
                     <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="ds-text-11">
-                  Clear all
-                </TooltipContent>
-              </Tooltip>
             )}
             {simulationMode && onSimulationModeChange && (
               <PortfolioModeToggle
