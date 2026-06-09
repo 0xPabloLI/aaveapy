@@ -53,6 +53,8 @@ export interface PortfolioReserveEntry {
   hidden: boolean;
   /** Whether this entry is an orphan (reserveId not found in market data). */
   isOrphan: boolean;
+  /** Restricted reserve status — frozen/paused/inactive reserves are forced hidden and cannot be unhidden. */
+  restrictedStatus: 'frozen' | 'paused' | 'inactive' | null;
 }
 
 /** Computed result for a single side after simulation. */

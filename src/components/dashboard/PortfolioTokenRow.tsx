@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Eraser, Minus, EyeOff } from 'lucide-react';
+import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -130,33 +130,33 @@ function SideInput({
 
   if (disabled) {
     return (
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 opacity-40">
-        <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
-          {sideLabel}
-        </span>
-        <Tooltip>
-          <TooltipTrigger asChild>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 opacity-40 cursor-not-allowed">
+            <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
+              {sideLabel}
+            </span>
             <span className="shrink-0 rounded border border-border/40 bg-muted/60 px-1.5 py-0.5 ds-text-10 font-semibold text-muted-foreground">
               {sideData.inputMode === 'usd' ? '$' : 'T'}
             </span>
-          </TooltipTrigger>
-          {disabledNotice && (
-            <TooltipContent side="top" className="ds-text-11">
-              {disabledNotice}
-            </TooltipContent>
-          )}
-        </Tooltip>
-        <input
-          value={sideData.amount}
-          readOnly
-          placeholder="—"
-          className={cn(
-            'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md ds-text-12 tabular-nums placeholder:italic cursor-not-allowed',
-            'border border-border/30 bg-muted/30 text-muted-foreground',
-          )}
-          aria-label={`${sideLabel} (disabled) for ${tokenSymbol}`}
-        />
-      </div>
+            <input
+              value={sideData.amount}
+              readOnly
+              placeholder="b  "
+              className={cn(
+                'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md ds-text-12 tabular-nums placeholder:italic cursor-not-allowed',
+                'border border-border/30 bg-muted/30 text-muted-foreground',
+              )}
+              aria-label={`${sideLabel} (disabled) for ${tokenSymbol}`}
+            />
+          </div>
+        </TooltipTrigger>
+        {disabledNotice && (
+          <TooltipContent side="top" className="ds-text-11">
+            {disabledNotice}
+          </TooltipContent>
+        )}
+      </Tooltip>
     );
   }
 
@@ -288,18 +288,29 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     }
   }, [isHidden, entry, actions, onRemove, reserveId]);
 
+  const isRestricted = entry.restrictedStatus != null;
+
+  const restrictedIcon = (() => {
+    switch (entry.restrictedStatus) {
+      case 'frozen': return <Snowflake className="size-3.5 text-sky-500" aria-hidden />;
+      case 'paused': return <PauseCircle className="size-3.5 ds-text-paused" aria-hidden />;
+      case 'inactive': return <Ban className="size-3.5 ds-text-paused" aria-hidden />;
+      default: return null;
+    }
+  })();
+
   const minusBtn = (
     <button
       type="button"
-      onClick={handleMinusClick}
+      onClick={isRestricted ? undefined : handleMinusClick}
       className={cn(
         'shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors',
-        PORTFOLIO_THEME.trashHoverBg,
-        PORTFOLIO_THEME.trashHoverText,
+        !isRestricted && PORTFOLIO_THEME.trashHoverBg,
+        !isRestricted && PORTFOLIO_THEME.trashHoverText,
       )}
-      aria-label={isHidden ? `Restore ${entry.tokenSymbol}` : `Remove ${entry.tokenSymbol} from portfolio`}
+      aria-label={isRestricted ? `${entry.tokenSymbol} is restricted` : isHidden ? `Restore ${entry.tokenSymbol}` : `Remove ${entry.tokenSymbol} from portfolio`}
     >
-      {isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
+      {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
     </button>
   );
 
@@ -313,9 +324,9 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           isHidden
             ? 'border-border/20 bg-muted/5 opacity-40 hover:opacity-60'
             : 'border-border/50 bg-card/80 hover:border-border',
-          isHidden && 'cursor-pointer',
+          isHidden && !isRestricted && 'cursor-pointer',
         )}
-        onClick={isHidden ? () => actions.unhideReserve(reserveId) : undefined}
+        onClick={isHidden && !isRestricted ? () => actions.unhideReserve(reserveId) : undefined}
       >
         <div className="flex min-w-0 items-center gap-1">
           {minusBtn}
@@ -354,9 +365,9 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           : entry.isOrphan
             ? 'border-border/20 bg-muted/5 opacity-60'
             : 'border-border/50 bg-card/80 hover:border-border',
-        isHidden && 'cursor-pointer',
+        isHidden && !isRestricted && 'cursor-pointer',
       )}
-      onClick={isHidden ? () => actions.unhideReserve(reserveId) : undefined}
+      onClick={isHidden && !isRestricted ? () => actions.unhideReserve(reserveId) : undefined}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         {minusBtn}
