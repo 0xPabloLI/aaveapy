@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react'
 import { Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { cnDsInputSurface } from '@/lib/dsInputSurface'
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_ERROR_CLASS,
-  HEADER_CONTROL_FOCUS_RING_CLASS,
   HEADER_CONTROL_ICON_BUTTON_CLASS,
-  HEADER_CONTROL_INPUT_CLASS,
   HEADER_CONTROL_STATUS_ACTION_CLASS,
 } from '@/lib/headerControlStyles'
 import { toast } from 'sonner'
@@ -32,6 +31,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
   const [statusMessage, setStatusMessage] = useState('')
   const [lastSubmittedAddress, setLastSubmittedAddress] = useState<`0x${string}` | null>(null)
 
+  const hasValue = input.trim().length > 0
   const isValidAddress = ETH_ADDRESS_RE.test(input)
   const resolvedAddress = isValidAddress ? (input as `0x${string}`) : null
   const canSubmit = !!resolvedAddress
@@ -116,8 +116,8 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
         aria-invalid={error || undefined}
         aria-label="Watch wallet address"
         className={cn(
-          HEADER_CONTROL_INPUT_CLASS,
-          'w-52 sm:w-56 text-foreground',
+          'h-[var(--ds-control-h)] w-52 sm:w-56 ds-text-14 px-[var(--ds-space-3)]',
+          cnDsInputSurface(hasValue, 'neutral'),
           error && HEADER_CONTROL_ERROR_CLASS,
         )}
       />

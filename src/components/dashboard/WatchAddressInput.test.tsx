@@ -4,7 +4,6 @@ import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/re
 import { WatchAddressInput } from './WatchAddressInput'
 import {
   HEADER_CONTROL_FOCUS_RING_CLASS,
-  HEADER_CONTROL_INPUT_CLASS,
   HEADER_CONTROL_ICON_BUTTON_CLASS,
 } from '@/lib/headerControlStyles'
 
@@ -127,24 +126,39 @@ describe('WatchAddressInput', () => {
     expect(helpIcon).toBeInTheDocument()
   })
 
-  it('reuses header-control border and focus tokens for input and actions', () => {
+  it('uses cnDsInputSurface neutral variant classes (DESIGN.md §4)', () => {
     render(<WatchAddressInput onSubmit={vi.fn()} onCancel={vi.fn()} />)
     const input = screen.getByLabelText(/watch wallet address/i)
+
+    // Empty state: transparent bg, border-border/60, no card/muted tint
+    expect(input.className).toContain('border-border/60')
+    expect(input.className).toContain('!bg-transparent')
+    expect(input.className).not.toContain('bg-card')
+    expect(input.className).not.toContain('bg-muted')
+    expect(input.className).not.toContain('border-border/40')
+    expect(input.className).not.toContain('border-border/50')
+    expect(input.className).not.toContain('rounded-full')
+    expect(input.className).toContain('rounded-md')
+
+    // Focus ring uses brand magenta
+    expect(input.className).toContain('focus-visible:ring-2')
+    expect(input.className).toContain('focus-visible:ring-offset-0')
+  })
+
+  it('reuses header-control focus tokens for confirm and cancel buttons', () => {
+    render(<WatchAddressInput onSubmit={vi.fn()} onCancel={vi.fn()} />)
     const confirm = screen.getByRole('button', { name: /confirm watch address/i })
     const cancel = screen.getByRole('button', { name: /cancel/i })
 
-    for (const token of HEADER_CONTROL_INPUT_CLASS.split(' ')) {
-      expect(input.className).toContain(token)
+    for (const token of HEADER_CONTROL_FOCUS_RING_CLASS.split(' ')) {
+      expect(confirm.className).toContain(token)
     }
     for (const token of HEADER_CONTROL_FOCUS_RING_CLASS.split(' ')) {
-      expect(input.className).toContain(token)
+      expect(cancel.className).toContain(token)
     }
     for (const token of HEADER_CONTROL_ICON_BUTTON_CLASS.split(' ')) {
       expect(confirm.className).toContain(token)
       expect(cancel.className).toContain(token)
     }
-
-    expect(input.className).toContain('border-border/40')
-    expect(input.className).not.toContain('rounded-md')
   })
 })

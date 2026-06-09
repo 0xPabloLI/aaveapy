@@ -6,11 +6,12 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, Download } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, CloudDownload } from 'lucide-react';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import { features } from '@/config/features';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { formatUsd } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -392,14 +393,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 onClick={handleWalletSyncClick}
                 disabled={walletLoadState === 'loading'}
                 className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
-                aria-label={walletLoadState === 'loading' ? 'Importing wallet positions' : 'Import wallet positions'}
-                title={walletLoadState === 'loading' ? 'Importing…' : 'Import from wallet'}
+                aria-label={walletLoadState === 'loading' ? 'Syncing wallet positions' : 'Force sync wallet positions'}
+                title={walletLoadState === 'loading' ? 'Syncing…' : 'Force sync'}
                 data-testid="wallet-sync-button"
               >
                 {walletLoadState === 'loading' ? (
                   <RefreshCw className={cn(HEADER_CONTROL_ICON_CLASS, 'animate-spin')} aria-hidden />
                 ) : (
-                  <Download className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
+                  <CloudDownload className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                 )}
               </button>
             )}
@@ -494,8 +495,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
               className={cn(
-                'h-[var(--ds-chip-h)] flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
-                `focus:${PORTFOLIO_THEME.border} focus:outline-none focus:ring-1 focus:${PORTFOLIO_THEME.ringSoft}`,
+                'h-[var(--ds-chip-h)] flex-1 rounded-md border px-2.5 ds-text-11 text-foreground transition-colors',
+                cnDsInputSurface(snapshotName.trim().length > 0, 'neutral'),
               )}
               aria-label="Snapshot name"
             />
@@ -519,8 +520,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
               placeholder="Search token…"
               autoFocus
               className={cn(
-                'h-[var(--ds-control-h)] w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
-                `focus:${PORTFOLIO_THEME.border} focus:outline-none focus:ring-1 focus:${PORTFOLIO_THEME.ringSoft}`,
+                'h-[var(--ds-control-h)] w-full rounded-md border px-3 ds-text-12 text-foreground transition-colors',
+                cnDsInputSurface(searchQuery.trim().length > 0, 'magenta'),
               )}
               aria-label="Search tokens to add"
             />
