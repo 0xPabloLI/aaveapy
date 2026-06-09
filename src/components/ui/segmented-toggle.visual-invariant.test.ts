@@ -126,7 +126,7 @@ describe('SegmentedToggle visual invariant regression guard', () => {
       expect(
         cssSrc,
         `${varName} must be defined in index.css`,
-      ).toMatch(new RegExp(varName.replace(/([$.])/g, '\\$1') + '\\s*:'));
+      ).toMatch(new RegExp(varName.replace(/([$.\\])/g, '\\$1') + '\\s*:'));
     }
   });
 

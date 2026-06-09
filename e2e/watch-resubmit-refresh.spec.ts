@@ -26,10 +26,15 @@ const AAVE_GRAPHQL_HOST_STAGING = 'api.staging.aave.com';
 const USER_POSITION_OPS = ['UserSupplies', 'UserBorrows'];
 
 function isUserPositionGraphqlRequest(url: string): boolean {
-  return (
-    (url.includes(AAVE_GRAPHQL_HOST) || url.includes(AAVE_GRAPHQL_HOST_STAGING)) &&
-    url.includes('/graphql')
-  );
+  try {
+    const hostname = new URL(url).hostname;
+    return (
+      (hostname === AAVE_GRAPHQL_HOST || hostname === AAVE_GRAPHQL_HOST_STAGING) &&
+      url.includes('/graphql')
+    );
+  } catch {
+    return false;
+  }
 }
 
 function extractOperationName(body: unknown): string | null {

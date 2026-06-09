@@ -73,8 +73,9 @@ Deno.serve(async (req) => {
       },
     });
   } catch (err) {
+    console.error("seo-proxy upstream fetch failed:", err);
     return new Response(
-      JSON.stringify({ error: "upstream_fetch_failed", details: String(err) }),
+      JSON.stringify({ error: "upstream_fetch_failed" }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
