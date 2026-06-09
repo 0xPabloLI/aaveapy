@@ -14,10 +14,10 @@ export interface ExplorerIconStackProps {
 }
 
 /**
- * Stacked badge that overlays the chain icon and explorer icon when both
- * are available, with the explorer icon offset to the bottom-right. The
- * component renders nothing when both sources are missing so it can be
- * dropped into trailing-icon slots without leaving empty space.
+ * Side-by-side icons: chain icon and explorer-family icon displayed
+ * horizontally with a small gap. Renders nothing when both sources
+ * are missing so it can be dropped into trailing-icon slots without
+ * leaving empty space.
  */
 export function ExplorerIconStack({
   chainIconSrc,
@@ -53,24 +53,20 @@ export function ExplorerIconStack({
   }
 
   return (
-    // 22px-wide container, intentionally shorter than the two 14px icons
-    // combined: the explorer icon visually overflows the bottom-right by
-    // `top-1.5` to produce the stacked-badge look (Slack/Discord style).
-    // Do NOT add `overflow: hidden` to a future parent without revisiting.
     <span
-      className={cn('relative inline-flex h-3.5 w-[22px] items-center', className)}
+      className={cn('inline-flex items-center gap-1', className)}
       title={`${chainName} · ${explorerName}`}
     >
       <img
         src={chainIconSrc}
         alt={chainName}
-        className="absolute left-0 top-0 h-3.5 w-3.5 rounded-full ring-1 ring-background opacity-80"
+        className="h-3.5 w-3.5 rounded-full opacity-80"
         loading="lazy"
       />
       <img
         src={explorerIconSrc}
         alt={explorerName}
-        className="absolute right-0 top-1.5 h-3.5 w-3.5 rounded-full ring-1 ring-background opacity-80"
+        className="h-3.5 w-3.5 rounded-full opacity-80"
         loading="lazy"
       />
     </span>

@@ -3,10 +3,16 @@
  * (e.g. `etherscan`). The icon base resolves to
  * `/icons/explorers/{base}.{ext}` via the generated manifest.
  *
+ * Grouped by explorer family — all Etherscan-family sites share the
+ * `etherscan` icon, all Blockscout-family sites share the `blockscout`
+ * icon, etc. The chain icon + explorer-family icon are rendered side-by-side
+ * in a stacked-badge by `ExplorerIconStack`.
+ *
  * The map only references base names; the actual file presence check happens
  * at runtime in `getExplorerIconSrc` against the generated manifest.
  */
 export const explorerIconMap: Record<string, string> = {
+  // Etherscan family (all share the same brand icon)
   'etherscan.io': 'etherscan',
   'arbiscan.io': 'etherscan',
   'optimistic.etherscan.io': 'etherscan',
@@ -21,11 +27,14 @@ export const explorerIconMap: Record<string, string> = {
   'plasmascan.to': 'etherscan',
   'mantlescan.xyz': 'etherscan',
   'snowscan.xyz': 'etherscan',
+  // Routescan family
   'metisscan.info': 'routescan',
+  // Blockscout family
   'scrollscan.com': 'blockscout',
   'zksync.blockscout.com': 'blockscout',
   'soneium.blockscout.com': 'blockscout',
   'explorer.inkonchain.com': 'blockscout',
+  // OKLink family
   'oklink.com': 'oklink',
 };
 
