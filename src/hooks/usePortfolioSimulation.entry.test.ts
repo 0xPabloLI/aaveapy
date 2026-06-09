@@ -226,6 +226,104 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
     })
   })
 
+  describe('forceSyncReserves', () => {
+    it('overwrites wallet-sourced entries with incoming values (delta zeroed)', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.importReserves([
+          makeEntry({
+            reserveId: 'r-weth',
+            tokenSymbol: 'WETH',
+            supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, source: 'sdk' },
+            borrow: { amount: '', inputMode: 'usd', walletValue: null },
+          }),
+        ])
+      })
+
+      const before = result.current.entries.find(e => e.reserveId === 'r-weth')!
+      expect(Number(before.supply.amount)).toBeCloseTo(5000, -1)
+
+      act(() => {
+        result.current.actions.forceSyncReserves([
+          makeEntry({
+            reserveId: 'r-weth',
+            tokenSymbol: 'WETH',
+            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk' },
+            borrow: { amount: '', inputMode: 'usd', walletValue: null },
+          }),
+        ])
+      })
+
+      const after = result.current.entries.find(e => e.reserveId === 'r-weth')!
+      expect(after.supply.walletValue).toBe(4000)
+      expect(Number(after.supply.amount)).toBeCloseTo(4000, -1)
+    })
+
+    it('preserves manual entries (walletValue === null) untouched', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-manual',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          tokenSymbol: 'MANUAL',
+        })
+      })
+      act(() => {
+        result.current.actions.updateReserve('r-manual', {
+          supplyAmount: '999',
+          supplyInputMode: 'usd',
+        })
+      })
+
+      act(() => {
+        result.current.actions.forceSyncReserves([
+          makeEntry({
+            reserveId: 'r-weth',
+            tokenSymbol: 'WETH',
+            supply: { amount: '2000', inputMode: 'usd', walletValue: 2000, source: 'sdk' },
+            borrow: { amount: '', inputMode: 'usd', walletValue: null },
+          }),
+        ])
+      })
+
+      const manual = result.current.entries.find(e => e.reserveId === 'r-manual')
+      expect(manual?.supply.amount).toBe('999')
+      expect(manual?.supply.walletValue).toBeNull()
+    })
+
+    it('does not discard entries absent from incoming if they have no wallet data', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-manual',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          tokenSymbol: 'MANUAL',
+        })
+      })
+      act(() => {
+        result.current.actions.updateReserve('r-manual', {
+          supplyAmount: '500',
+          supplyInputMode: 'usd',
+        })
+      })
+
+      act(() => {
+        result.current.actions.forceSyncReserves([])
+      })
+
+      const manual = result.current.entries.find(e => e.reserveId === 'r-manual')
+      expect(manual).toBeDefined()
+    })
+  })
+
   describe('restoreToWallet', () => {
     it('restores both sides to their wallet values', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
@@ -338,6 +436,34 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       expect(removedCount).toBe(2)
       expect(result.current.entries).toHaveLength(1)
       expect(result.current.entries[0].reserveId).toBe('r-usdc')
+    })
+
+    it('preserves non-hidden entries untouched in mixed scenario', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+      })
+
+      // Set different amounts to verify non-hidden entries keep their data
+      act(() => { result.current.actions.updateReserve('r-weth', { supplyAmount: '1000' }) })
+      act(() => { result.current.actions.updateReserve('r-gho', { supplyAmount: '2000' }) })
+
+      // Hide only r-weth
+      act(() => { result.current.actions.hideReserve('r-weth') })
+
+      let removedCount = 0
+      act(() => { removedCount = result.current.actions.removeHiddenEntries() })
+
+      expect(removedCount).toBe(1)
+      expect(result.current.entries).toHaveLength(1)
+      // r-gho preserved with its amount
+      const remaining = result.current.entries[0]
+      expect(remaining.reserveId).toBe('r-gho')
+      expect(remaining.supply.amount).toBe('2000')
+      expect(remaining.hidden).toBe(false)
     })
 
     it('returns 0 when no hidden entries exist', () => {
