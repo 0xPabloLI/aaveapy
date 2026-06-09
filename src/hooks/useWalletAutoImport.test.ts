@@ -26,6 +26,7 @@ import type { ReserveWithSpread } from '@/types/aave'
 
 const mockImportReserves = vi.fn()
 const mockRemoveHiddenEntries = vi.fn(() => 0)
+const mockRemoveWalletEntries = vi.fn(() => 0)
 const mockPortfolioActions: PortfolioSimulationActions = {
   setActive: vi.fn(),
   addReserve: vi.fn(),
@@ -36,6 +37,7 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   importReserves: mockImportReserves,
   restoreToWallet: vi.fn(),
   removeHiddenEntries: mockRemoveHiddenEntries,
+  removeWalletEntries: mockRemoveWalletEntries,
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
@@ -272,7 +274,7 @@ describe('useWalletAutoImport', () => {
   })
 
   describe('disconnect cleanup', () => {
-    it('calls removeHiddenEntries when wallet disconnects', () => {
+    it('calls removeWalletEntries when wallet disconnects', () => {
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
           useWalletAutoImport({
@@ -288,15 +290,15 @@ describe('useWalletAutoImport', () => {
         { initialProps: { isConnected: true } },
       )
 
-      mockRemoveHiddenEntries.mockClear()
+      mockRemoveWalletEntries.mockClear()
 
       rerender({ isConnected: false })
 
-      expect(mockRemoveHiddenEntries).toHaveBeenCalledTimes(1)
+      expect(mockRemoveWalletEntries).toHaveBeenCalledTimes(1)
     })
 
-    it('shows toast when hidden entries are removed', () => {
-      mockRemoveHiddenEntries.mockReturnValue(3)
+    it('shows toast when wallet entries are removed', () => {
+      mockRemoveWalletEntries.mockReturnValue(2)
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -315,11 +317,11 @@ describe('useWalletAutoImport', () => {
 
       rerender({ isConnected: false })
 
-      expect(toast.info).toHaveBeenCalledWith('Removed 3 hidden positions')
+      expect(toast.info).toHaveBeenCalledWith('Removed 2 wallet positions')
     })
 
-    it('does not show toast when zero hidden entries removed', () => {
-      mockRemoveHiddenEntries.mockReturnValue(0)
+    it('does not show toast when zero wallet entries removed', () => {
+      mockRemoveWalletEntries.mockReturnValue(0)
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -338,7 +340,7 @@ describe('useWalletAutoImport', () => {
 
       rerender({ isConnected: false })
 
-      expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('hidden'))
+      expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('wallet position'))
     })
   })
 })

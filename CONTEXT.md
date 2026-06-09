@@ -195,9 +195,8 @@ _Avoid_: 组合 key 做主匹配（方案 B）——冗余且易漏 side
 `walletValue: number | null`（链上值，null = 钱包无/断连）+ `currentValue: number`（Simulator 当前值）+ `hidden: boolean`（soft delete）。三态视觉：🟢 钱包同步未改、🟡 钱包同步已改（可恢复）、⚪ 纯手动。
 
 **Wallet Disconnect Behavior**:
-断连时 `walletValue → null`，`currentValue` 保持不变。重连时重新 sync 刷新 walletValue。
-**Disconnect Cleanup**: 断连时自动删除所有 `hidden: true` 的 entry（不管是钱包来源还是手动来源）。`hidden: false` 的 entry 保留不动，用户手写内容不被清空。无 hidden entry 时静默（不 toast）。有 hidden entry 被删除时 toast "Removed N hidden position(s)"。实现位置：`usePortfolioSimulation` 新增 `removeHiddenEntries()` action，`useWalletAutoImport` 在 `!isConnected` 时调用。
-_Avoid_: 清空 currentValue（用户可能还在操作 Simulator）、断连时清空全部 entry（包括非 hidden 的）
+断连时自动清除所有钱包来源的 entry（任一侧 `walletValue !== null` 的 entry 整条删除），手动添加的 entry（两侧 `walletValue` 均为 `null`）保留不动。无钱包 entry 可清时静默（不 toast）。有钱包 entry 被清除时 toast "Removed N wallet position(s)"。实现位置：`usePortfolioSimulation` 新增 `removeWalletEntries()` action，`useWalletAutoImport` 在 `!isConnected` 时调用。
+_Avoid_: 清空全部 entry（包括纯手动的）、按 side 分别清除（破坏 Supply-Borrow Inseparability）、不清除钱包 entry
 
 **Wallet Address Switch Behavior**:
 切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。

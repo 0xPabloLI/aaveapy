@@ -9,6 +9,11 @@
  * automatically.
  *
  * See `docs/design/header-controls.md` for token → pixel mapping.
+ *
+ * Note: `HEADER_CONTROL_INPUT_CLASS` was removed in favour of
+ * `cnDsInputSurface` (from `src/lib/dsInputSurface.ts`), which
+ * centralises input styling with proper error/focus handling.
+ * The guard test now checks for `cnDsInputSurface` instead.
  */
 
 /** Icon size used inside every header control (matches `ds-text-14`). */

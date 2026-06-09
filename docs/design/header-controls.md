@@ -104,6 +104,12 @@ Header 区域内所有可展开/折叠控件的 chevron 图标（`ChevronDown`�
 - **其余组件**：使用 JS 布尔条件驱动 `rotate-180`（如 `data-[state=open]:rotate-180` 或条件 className）。
 - **禁止**在不同组件间"统一"旋转驱动方式；两种模式各有语义，不应强行对齐。
 
+### 次级装饰图标
+
+除 chevron 外，header 区域内部分控件含**次级装饰图标**（非交互 affordance，仅视觉提示），同样使用 `HEADER_CONTROL_AFFORDANCE_ICON_CLASS`（14px）：
+
+- `IncentiveTooltip` 的 Clock 图标（`Clock`）：使用 `HEADER_CONTROL_AFFORDANCE_ICON_CLASS`，语义为"时间/倒计时提示"，与 chevron 共享尺寸但不参与旋转过渡。
+
 ### 消费者清单
 
 | 组件 | 尺寸 token | 时长 token | 旋转驱动 |
@@ -111,7 +117,7 @@ Header 区域内所有可展开/折叠控件的 chevron 图标（`ChevronDown`�
 | `WalletButton` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | CSS `group-data-[state=open]` |
 | `accordion.tsx` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | JS 条件 |
 | `InkAprCalculator` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | JS 条件 |
-| `IncentiveTooltip` | ✅ `AFFORDANCE_ICON` | ⏭ `duration-150`（例外） | JS 条件 |
+| `IncentiveTooltip` | ✅ `AFFORDANCE_ICON`（chevron + clock） | ⏭ `duration-150`（例外） | JS 条件 |
 
 ### 否定条款（守卫测试强制）
 

@@ -147,6 +147,7 @@ export interface PortfolioSimulationActions {
   forceSyncReserves: (incoming: PortfolioReserveEntry[]) => void;
   restoreToWallet: (reserveId: string, side?: PortfolioSide) => void;
   removeHiddenEntries: () => number;
+  removeWalletEntries: () => number;
   clearAll: () => void;
   saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
   deleteSnapshot: (snapshotId: string) => void;
@@ -307,6 +308,19 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     return hiddenCount;
   }, []);
 
+  const removeWalletEntries = useCallback((): number => {
+    const walletCount = entriesRef.current.filter(
+      (e) => e.supply.walletValue !== null || e.borrow.walletValue !== null,
+    ).length;
+    if (walletCount === 0) return 0;
+    setEntries((prev) =>
+      prev.filter(
+        (e) => e.supply.walletValue === null && e.borrow.walletValue === null,
+      ),
+    );
+    return walletCount;
+  }, []);
+
   const clearAll = useCallback(() => {
     setEntries([]);
   }, []);
@@ -350,6 +364,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       forceSyncReserves,
       restoreToWallet,
       removeHiddenEntries,
+      removeWalletEntries,
       clearAll,
       saveSnapshot,
       deleteSnapshot,
@@ -357,7 +372,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     }),
     [
       addReserve, removeReserve, updateReserve, hideReserve, unhideReserve,
-      importReserves, forceSyncReserves, restoreToWallet, removeHiddenEntries, clearAll, saveSnapshot, deleteSnapshot,
+      importReserves, forceSyncReserves, restoreToWallet, removeHiddenEntries, removeWalletEntries, clearAll, saveSnapshot, deleteSnapshot,
       undoLastRemove,
     ],
   );

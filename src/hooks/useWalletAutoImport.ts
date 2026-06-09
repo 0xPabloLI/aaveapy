@@ -65,9 +65,9 @@ export function useWalletAutoImport({
 
   useEffect(() => {
     if (!isConnected || !address) {
-      const removed = portfolioActions.removeHiddenEntries()
+      const removed = portfolioActions.removeWalletEntries()
       if (removed > 0) {
-        toast.info(`Removed ${removed} hidden position${removed > 1 ? 's' : ''}`)
+        toast.info(`Removed ${removed} wallet position${removed > 1 ? 's' : ''}`)
       }
       lastImportedAddress.current = null
       lastDegradedShown.current = false

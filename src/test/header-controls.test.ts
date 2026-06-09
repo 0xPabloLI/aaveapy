@@ -105,6 +105,10 @@ describe('Header controls: no hardcoded geometry regressions', () => {
     { name: 'inline gap-1 on header controls (use ds-space-1)', re: /className="[^"]*\bgap-1\b[^"]*"/ },
     { name: 'hardcoded h-4 w-4 chevron (use HEADER_CONTROL_AFFORDANCE_ICON_CLASS)', re: /\bh-4\s+w-4\b/ },
     { name: 'hardcoded opacity-60 on chevron (chevron inherits parent color)', re: /opacity-60/ },
+    // Note: this regex matches any `duration-200` in HEADER_CONTROL_FILES only
+    // (Header, WalletButton, WatchAddressInput, accordion). Files outside that
+    // set (InkAprCalculator, IncentiveTooltip) are covered by the line-level
+    // chevron guard below, which is stricter — it only checks ChevronDown lines.
     { name: 'hardcoded duration-200 (use HEADER_CONTROL_TRANSITION_DURATION)', re: /duration-200/ },
   ]
 

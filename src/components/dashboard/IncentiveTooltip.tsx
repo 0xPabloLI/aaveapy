@@ -152,7 +152,7 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
         className="flex items-center justify-between w-full px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground hover:text-foreground/80 transition-colors"
       >
         <span className="flex items-center gap-[var(--ds-space-1-5)]">
-          <Clock className="w-3.5 h-3.5" />
+          <Clock className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
           <span>Recently Ended ({sources.length})</span>
         </span>
         <ChevronDown
