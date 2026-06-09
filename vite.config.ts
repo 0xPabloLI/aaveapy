@@ -115,7 +115,7 @@ export default defineConfig(({ mode }) => ({
               return 'vendor-date';
             }
             // Aave protocol
-            if (id.includes('@bgd-labs')) {
+            if (id.includes('@aave-dao')) {
               return 'vendor-aave';
             }
             // UI libraries
