@@ -386,7 +386,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1)]">
+          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px] -mr-[27px]">
             {walletConnected && (
               <button
                 type="button"
@@ -455,7 +455,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                   </button>
             )}
+            {onSimulationModeChange && simulationMode && (
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={entries.length}
+              />
+            )}
           </div>
+
         </div>
         {walletLoadState && walletLoadState !== 'idle' && (
           <div className="flex items-center gap-1.5 mb-2.5 ds-text-11 text-muted-foreground">
