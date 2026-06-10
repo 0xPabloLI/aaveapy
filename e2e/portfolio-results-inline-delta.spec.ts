@@ -35,7 +35,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
     await addBtn.click();
 
     // Enter a supply amount to trigger simulation.
-    const supplyInput = page.getByRole('textbox', { name: /Supply.*delta.*USDC/i }).first();
+    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
     await expect(supplyInput).toBeVisible();
     await supplyInput.fill('10000');
 
@@ -66,7 +66,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
     await expect(addBtn).toBeVisible();
     await addBtn.click();
 
-    const supplyInput = page.getByRole('textbox', { name: /Supply.*delta.*USDC/i }).first();
+    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
     await expect(supplyInput).toBeVisible();
     await supplyInput.fill('10000');
 
@@ -96,7 +96,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
     await expect(addBtn).toBeVisible();
     await addBtn.click();
 
-    const supplyInput = page.getByRole('textbox', { name: /Supply.*delta.*USDC/i }).first();
+    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
     await expect(supplyInput).toBeVisible();
     await supplyInput.fill('10000');
 
