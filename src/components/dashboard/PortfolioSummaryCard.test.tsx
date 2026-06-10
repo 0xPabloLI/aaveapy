@@ -12,6 +12,8 @@ const makeSummary = () => ({
   totalBorrowUsd: 5000,
   netUsdPerDay: 1.5,
   netEffectiveApy: 3.2,
+  supplyWeightedApy: 4.5,
+  borrowWeightedApy: 6.1,
 });
 
 describe('PortfolioSummaryCard', () => {
@@ -22,7 +24,7 @@ describe('PortfolioSummaryCard', () => {
     expect(screen.getByText('Total Supply')).toBeInTheDocument();
     expect(screen.getByText('Total Borrow')).toBeInTheDocument();
     expect(screen.getByText('Net Daily Earn')).toBeInTheDocument();
-    expect(screen.getByText('Net Effective APY')).toBeInTheDocument();
+    expect(screen.getByText('Supply / Borrow APY')).toBeInTheDocument();
   });
 
   it('no longer renders simulation disclaimer (moved to PortfolioPanel header)', () => {

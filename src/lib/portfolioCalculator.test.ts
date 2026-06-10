@@ -24,6 +24,29 @@ describe('computePositionUsdPerDay', () => {
   it('returns 0 for zero amount', () => {
     expect(computePositionUsdPerDay('supply', 0, 5, 2)).toBe(0);
   });
+
+  it('uses compounding formula when isApy=true', () => {
+    // 200% APY: daily fraction = (1 + 2)^(1/365) - 1 ≈ 0.003016
+    const result = computePositionUsdPerDay('supply', 10000, 200, 0, true);
+    const expectedDaily = (Math.pow(1 + 200 / 100, 1 / 365) - 1) * 10000;
+    expect(result).toBeCloseTo(expectedDaily, 6);
+  });
+
+  it('uses APR formula when isApy=false (default)', () => {
+    // 200% APR: daily = 200 / 100 / 365 ≈ 0.005479
+    const result = computePositionUsdPerDay('supply', 10000, 200, 0);
+    const expectedDaily = (200 / 100 / 365) * 10000;
+    expect(result).toBeCloseTo(expectedDaily, 6);
+  });
+
+  it('borrow with isApy=true uses compounding for both native and incentive', () => {
+    const result = computePositionUsdPerDay('borrow', 100000, 5, 2, true);
+    const nativeDaily = (Math.pow(1 + 5 / 100, 1 / 365) - 1) * 100000;
+    const incentiveDaily = (Math.pow(1 + 2 / 100, 1 / 365) - 1) * 100000;
+    // Borrow: -native + incentive
+    const expected = -nativeDaily + incentiveDaily;
+    expect(result).toBeCloseTo(expected, 6);
+  });
 });
 
 describe('aggregatePortfolioSummary', () => {
@@ -72,6 +95,8 @@ describe('aggregatePortfolioSummary', () => {
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.netEffectiveApy).toBe(0);
+    expect(summary.supplyWeightedApy).toBe(0);
+    expect(summary.borrowWeightedApy).toBe(6);
   });
 
   it('borrow with large incentive rebate exceeds cost', () => {
@@ -84,14 +109,33 @@ describe('aggregatePortfolioSummary', () => {
       { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
       { reserveId: 'r2', side: 'supply', amountUsd: 20000, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
       { reserveId: 'r3', side: 'supply', amountUsd: 5000, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
-      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, nativePercent: 4, incentivePercent: 1, totalPercent: -3, usdPerDay: -0.6575 },
-      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, nativePercent: 6, incentivePercent: 0, totalPercent: -6, usdPerDay: -0.4932 },
+      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, nativePercent: 4, incentivePercent: 1, totalPercent: 3, usdPerDay: -0.6575 },
+      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, nativePercent: 6, incentivePercent: 0, totalPercent: 6, usdPerDay: -0.4932 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.totalSupplyUsd).toBe(35000);
     expect(summary.totalBorrowUsd).toBe(11000);
     expect(summary.netUsdPerDay).toBeCloseTo(results.reduce((s, r) => s + r.usdPerDay, 0), 2);
     expect(summary.netEffectiveApy).toBeGreaterThan(0);
+    // Weighted supply APY: (10000*4 + 20000*2.5 + 5000*7) / 35000 = (40000+50000+35000)/35000 = 3.5714
+    expect(summary.supplyWeightedApy).toBeCloseTo(3.5714, 2);
+    // Weighted borrow APY: (8000*3 + 3000*6) / 11000 = (24000+18000)/11000 = 3.8182
+    expect(summary.borrowWeightedApy).toBeCloseTo(3.8182, 2);
+  });
+
+  it('weighted APY with single supply position returns that position totalPercent', () => {
+    const results: PortfolioPositionResult[] = [
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+    ];
+    const summary = aggregatePortfolioSummary(results);
+    expect(summary.supplyWeightedApy).toBe(4);
+    expect(summary.borrowWeightedApy).toBe(0);
+  });
+
+  it('weighted APY with no positions returns 0', () => {
+    const summary = aggregatePortfolioSummary([]);
+    expect(summary.supplyWeightedApy).toBe(0);
+    expect(summary.borrowWeightedApy).toBe(0);
   });
 
   it('computes delta summary metrics from position metrics', () => {
@@ -177,6 +221,17 @@ describe('buildPortfolioPositionResult', () => {
     const result = buildPortfolioPositionResult('r1', 'borrow', 10000, 5, 0);
     expect(result.side).toBe('borrow');
     expect(result.usdPerDay).toBeLessThan(0);
+  });
+
+  it('borrow totalPercent = native - incentive (not native + incentive)', () => {
+    const result = buildPortfolioPositionResult('r1', 'borrow', 100000, 5, 2);
+    // Bug was: totalPercent = 5 + 2 = 7, correct is 5 - 2 = 3
+    expect(result.totalPercent).toBe(3);
+  });
+
+  it('supply totalPercent = native + incentive (unchanged)', () => {
+    const result = buildPortfolioPositionResult('r1', 'supply', 100000, 5, 2);
+    expect(result.totalPercent).toBe(7);
   });
 
   it('computes usdPerDay via computePositionUsdPerDay', () => {

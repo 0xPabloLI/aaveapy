@@ -93,6 +93,10 @@ export interface PortfolioSummary {
   netUsdPerDay: number;
   /** Annualized: netUsdPerDay × 365 / totalSupplyUsd (or 0 when no supply). */
   netEffectiveApy: number;
+  /** Supply-side weighted APY: Σ(supplyUsd × supplyApy) / Σ(supplyUsd). */
+  supplyWeightedApy: number;
+  /** Borrow-side weighted APY: Σ(borrowUsd × borrowApy) / Σ(borrowUsd). */
+  borrowWeightedApy: number;
   /** Delta-aware metrics for summary card inline deltas. */
   totalSupplyUsdMetric?: PortfolioSimulationMetric;
   totalBorrowUsdMetric?: PortfolioSimulationMetric;
@@ -100,6 +104,8 @@ export interface PortfolioSummary {
   borrowUsdPerDayMetric?: PortfolioSimulationMetric;
   netUsdPerDayMetric?: PortfolioSimulationMetric;
   netEffectiveApyMetric?: PortfolioSimulationMetric;
+  supplyWeightedApyMetric?: PortfolioSimulationMetric;
+  borrowWeightedApyMetric?: PortfolioSimulationMetric;
 }
 
 /** A saved snapshot for comparison. */

@@ -1,6 +1,6 @@
 /**
  * PortfolioSummaryCard — displays aggregated portfolio metrics:
- * Total Supply, Total Borrow, Net Daily Earn, Net Effective APY.
+ * Total Supply, Total Borrow, Net Daily Earn, Supply/Borrow Weighted APY.
  * When delta metrics are available, inline delta is shown after the value.
  */
 import { memo } from 'react';
@@ -29,13 +29,6 @@ function formatUsdPerDay(value: number): string {
   const prefix = value > 0 ? '+' : '';
   return `${prefix}$${Math.abs(value).toFixed(2)}/day`;
 }
-
-const formatDeltaPercent = (value: number | null | undefined): string | null => {
-  if (value === null || value === undefined || Number.isNaN(value)) return null;
-  if (Math.abs(value) < 0.005) return null;
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}${value.toFixed(2)}%`;
-};
 
 const formatDeltaUsd = (value: number | null | undefined): string | null => {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
@@ -98,9 +91,6 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   const netDailyDelta = summary.netUsdPerDayMetric
     ? formatDeltaUsd(summary.netUsdPerDayMetric.delta)
     : null;
-  const netApyDelta = summary.netEffectiveApyMetric
-    ? formatDeltaPercent(summary.netEffectiveApyMetric.delta)
-    : null;
 
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
@@ -125,13 +115,17 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
         icon={<DollarSign className="size-3" aria-hidden />}
         valueClass={netColor}
       />
-      <MetricCell
-        label="Net Effective APY"
-        value={formatPercent(summary.netEffectiveApy)}
-        delta={netApyDelta}
-        icon={<Percent className="size-3" aria-hidden />}
-        valueClass={netColor}
-      />
+      <div className="flex flex-col gap-0.5">
+        <span className="ds-text-10 text-muted-foreground font-medium flex items-center gap-1">
+          <Percent className="size-3" aria-hidden />
+          Supply / Borrow APY
+        </span>
+        <span className="ds-text-14 font-bold tabular-nums">
+          <span className="ds-text-emerald-600">{formatPercent(summary.supplyWeightedApy)}</span>
+          <span className="text-muted-foreground"> / </span>
+          <span className="ds-text-brand-cyan">{formatPercent(summary.borrowWeightedApy)}</span>
+        </span>
+      </div>
     </div>
   );
 });

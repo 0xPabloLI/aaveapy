@@ -70,6 +70,7 @@ export function buildMetricsFromLane(
   lane: SimulationLane,
   side: 'supply' | 'borrow',
   amountUsd: number,
+  isApy: boolean = false,
 ): BuildPositionResultMetrics {
   const nativeMetric: PortfolioSimulationMetric = {
     current: lane.currentNative,
@@ -92,12 +93,14 @@ export function buildMetricsFromLane(
     amountUsd,
     lane.currentNative ?? 0,
     lane.currentIncentive,
+    isApy,
   );
   const afterUsdPerDay = computePositionUsdPerDay(
     side,
     amountUsd,
     lane.afterNative ?? 0,
     lane.afterIncentive ?? 0,
+    isApy,
   );
   const usdPerDayMetric: PortfolioSimulationMetric = {
     current: currentUsdPerDay,
@@ -224,9 +227,9 @@ function computeResultsFromGroups(
           simResult.supply.afterIncentive ??
           simResult.supply.currentIncentive ??
           0;
-        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd);
+        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy),
         );
       }
 
@@ -241,9 +244,9 @@ function computeResultsFromGroups(
           simResult.borrow.afterIncentive ??
           simResult.borrow.currentIncentive ??
           0;
-        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd);
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy),
         );
       }
     } else {
@@ -253,7 +256,7 @@ function computeResultsFromGroups(
         const incentiveArr = reserve.supplyIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, undefined, isApy),
         );
       }
 
@@ -263,7 +266,7 @@ function computeResultsFromGroups(
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, undefined, isApy),
         );
       }
     }

@@ -16,6 +16,7 @@ import type {
 } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 import { parseNumberInput } from '@/lib/numberFormat';
+import { annualPercentToDailyFraction } from '@/lib/rateCalculations';
 
 const DAYS_PER_YEAR = 365;
 
@@ -36,6 +37,10 @@ export function aggregatePortfolioSummary(
   let currentBorrowUsdPerDay: number | null = null;
   let hasAnyMetrics = false;
 
+  // Weighted APY accumulators: Σ(amountUsd × totalPercent)
+  let supplyWeightedSum = 0;
+  let borrowWeightedSum = 0;
+
   for (const r of results) {
     const hasMetric = r.usdPerDayMetric !== undefined;
     if (hasMetric) hasAnyMetrics = true;
@@ -43,12 +48,14 @@ export function aggregatePortfolioSummary(
     if (r.side === 'supply') {
       totalSupplyUsd += r.amountUsd;
       supplyUsdPerDay += r.usdPerDay;
+      supplyWeightedSum += r.amountUsd * r.totalPercent;
       if (hasMetric && r.usdPerDayMetric!.current !== null) {
         currentSupplyUsdPerDay = (currentSupplyUsdPerDay ?? 0) + r.usdPerDayMetric!.current;
       }
     } else {
       totalBorrowUsd += r.amountUsd;
       borrowUsdPerDay += r.usdPerDay;
+      borrowWeightedSum += r.amountUsd * r.totalPercent;
       if (hasMetric && r.usdPerDayMetric!.current !== null) {
         currentBorrowUsdPerDay = (currentBorrowUsdPerDay ?? 0) + r.usdPerDayMetric!.current;
       }
@@ -69,6 +76,13 @@ export function aggregatePortfolioSummary(
     totalSupplyUsd > 0
       ? (netUsdPerDay * DAYS_PER_YEAR) / totalSupplyUsd * 100
       : 0;
+
+  const supplyWeightedApy = totalSupplyUsd > 0
+    ? supplyWeightedSum / totalSupplyUsd
+    : 0;
+  const borrowWeightedApy = totalBorrowUsd > 0
+    ? borrowWeightedSum / totalBorrowUsd
+    : 0;
 
   const buildMetric = (
     currentVal: number | null,
@@ -96,6 +110,8 @@ export function aggregatePortfolioSummary(
     borrowUsdPerDay,
     netUsdPerDay,
     netEffectiveApy,
+    supplyWeightedApy,
+    borrowWeightedApy,
     ...(hasAnyMetrics ? {
       totalSupplyUsdMetric: buildMetric(currentTotalSupplyUsd, totalSupplyUsd),
       totalBorrowUsdMetric: buildMetric(currentTotalBorrowUsd, totalBorrowUsd),
@@ -118,11 +134,12 @@ export function computePositionUsdPerDay(
   side: 'supply' | 'borrow',
   amountUsd: number,
   nativeAprPercent: number,
-  incentiveAprPercent: number
+  incentiveAprPercent: number,
+  isApy: boolean = false,
 ): number {
   if (amountUsd <= 0) return 0;
-  const nativeDaily = (amountUsd * nativeAprPercent) / 100 / DAYS_PER_YEAR;
-  const incentiveDaily = (amountUsd * incentiveAprPercent) / 100 / DAYS_PER_YEAR;
+  const nativeDaily = amountUsd * annualPercentToDailyFraction(nativeAprPercent, isApy);
+  const incentiveDaily = amountUsd * annualPercentToDailyFraction(incentiveAprPercent, isApy);
 
   if (side === 'supply') {
     // Supply: native yield + incentive rebate, both positive
@@ -158,13 +175,17 @@ export function buildPortfolioPositionResult(
   nativeAprPercent: number,
   incentiveAprPercent: number,
   metrics?: BuildPositionResultMetrics,
+  isApy: boolean = false,
 ): PortfolioPositionResult {
-  const totalPercent = nativeAprPercent + incentiveAprPercent;
+  const totalPercent = side === 'supply'
+    ? nativeAprPercent + incentiveAprPercent
+    : nativeAprPercent - incentiveAprPercent;
   const usdPerDay = computePositionUsdPerDay(
     side,
     amountUsd,
     nativeAprPercent,
-    incentiveAprPercent
+    incentiveAprPercent,
+    isApy,
   );
 
   return {
