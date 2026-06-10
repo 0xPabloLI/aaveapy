@@ -125,7 +125,8 @@ export function useDebouncedInput({
     clearTimer();
     const raw = e.target.value.replace(/,/g, '');
     setDisplayValue(raw);
-    e.target.select();
+    const len = raw.length;
+    e.target.setSelectionRange(len, len);
   }, [clearTimer]);
 
   const handleKeyDown = useCallback(
