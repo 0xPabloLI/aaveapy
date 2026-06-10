@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
@@ -63,7 +63,7 @@ function SideInput({
           ? parseNumberInput(sideData.amount)
           : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
         const deltaUsd = effectiveUsd - sideData.walletValue!;
-        if (Math.abs(deltaUsd) < 0.005) return '';
+        if (Math.abs(deltaUsd) < DELTA_EPSILON) return '';
         return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
       })()
     : sideData.amount;
@@ -71,17 +71,25 @@ function SideInput({
   const hasValue = Boolean(deltaDisplay.trim());
   const isPositiveDelta = hasWallet ? (sideData.deltaSign ?? 1) === 1 : true;
 
-  const handleClearDelta = useCallback(() => {
-    const resetAmount = hasWallet ? formatConvertedAmount(sideData.walletValue!) : '';
-    const patch = side === 'supply'
-      ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
-      : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
-    actions.updateReserve(reserveId, patch);
-  }, [hasWallet, sideData.walletValue, actions, reserveId, side]);
+  const deltaCommitRef = useRef({ initialHasValue: hasValue });
+  if (deltaCommitRef.current.initialHasValue !== hasValue) {
+    deltaCommitRef.current = { initialHasValue: hasValue };
+  }
 
   const handleDeltaCommit = useCallback((formattedValue: string) => {
     if (!formattedValue.trim()) {
-      handleClearDelta();
+      // If deltaDisplay was already empty before the user started editing,
+      // the user never entered a delta — blur should be a no-op.
+      if (!deltaCommitRef.current.initialHasValue) return;
+      if (!hasWallet) {
+        actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
+        return;
+      }
+      const resetAmount = formatConvertedAmount(sideData.walletValue!);
+      const clearPatch = side === 'supply'
+        ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
+        : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
+      actions.updateReserve(reserveId, clearPatch);
       return;
     }
     const patch = side === 'supply'
@@ -101,7 +109,7 @@ function SideInput({
       ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
       : { borrowAmount: formatConvertedAmount(effectiveUsd) };
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, handleClearDelta]);
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
 
   const numberInput = useDebouncedInput({
     value: deltaDisplay,
@@ -260,7 +268,7 @@ function SideInput({
         {hasValue && (
           <button
             type="button"
-            onClick={handleClearDelta}
+            onClick={() => handleDeltaCommit('')}
             className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
             aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
           >

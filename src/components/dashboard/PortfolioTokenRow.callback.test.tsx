@@ -171,7 +171,7 @@ describe('PortfolioTokenRow callbacks', () => {
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
-    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '', supplyDeltaSign: 1 });
+    expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '' });
   });
 
     describe('delta mode (walletValue present)', () => {
@@ -471,6 +471,39 @@ describe('PortfolioTokenRow callbacks', () => {
         vi.useRealTimers();
       });
 
+      it('X button and keyboard delete produce identical patches (single semantic path)', () => {
+        const xActions = makeActions();
+        const { unmount } = render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={xActions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
+        const xCall = xActions.updateReserve.mock.calls[0];
+        unmount();
+
+        const kbActions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={kbActions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+        fireEvent.change(input, { target: { value: '' } });
+        fireEvent.blur(input);
+        const kbCall = kbActions.updateReserve.mock.calls[0];
+
+        expect(xCall).toEqual(kbCall);
+      });
+
       it('Bug D: clearing delta input and blurring should reset delta to zero (same as eraser)', () => {
         const actions = makeActions();
         render(
@@ -519,6 +552,37 @@ describe('PortfolioTokenRow callbacks', () => {
         );
         fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
         expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowDeltaSign: -1, borrowAmount: '0' });
+      });
+
+      it('token mode: toggle sign recalculates amount using tokenPriceInUsd', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7', inputMode: 'token', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+            tokenPriceInUsd={1000}
+          />,
+          { wrapper: Wrapper },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
+      });
+
+      it('token mode: toggle sign is no-op when tokenPriceInUsd is missing', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7', inputMode: 'token', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+        expect(actions.updateReserve).not.toHaveBeenCalled();
       });
     });
   });
