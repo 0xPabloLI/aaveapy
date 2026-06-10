@@ -919,20 +919,10 @@ const ReservesTable = ({
               onSimulationModeChange={onSimulationModeChange}
             />
           ) : null}
-              </div>
-              {onSimulationModeChange && (
-                <div className="ml-auto shrink-0 pt-2">
-                  <PortfolioModeToggle
-                    mode={simulationMode}
-                    onModeChange={onSimulationModeChange}
-                    positionCount={portfolioEntries?.length ?? 0}
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </>
       )}
+    </div>
+  );
     </div>
   );
 
