@@ -79,13 +79,13 @@ export function buildMetricsFromLane(
   };
   const incentiveMetric: PortfolioSimulationMetric = {
     current: lane.currentIncentive,
-    after: lane.afterIncentive,
-    delta: lane.deltaIncentive,
+    after: lane.hasInput ? lane.afterIncentive : null,
+    delta: lane.hasInput ? lane.deltaIncentive : null,
   };
   const totalMetric: PortfolioSimulationMetric = {
     current: lane.currentTotal,
-    after: lane.afterTotal,
-    delta: lane.deltaTotal,
+    after: lane.hasInput ? lane.afterTotal : null,
+    delta: lane.hasInput ? lane.deltaTotal : null,
   };
 
   const currentUsdPerDay = computePositionUsdPerDay(
@@ -95,17 +95,19 @@ export function buildMetricsFromLane(
     lane.currentIncentive,
     isApy,
   );
-  const afterUsdPerDay = computePositionUsdPerDay(
-    side,
-    amountUsd,
-    lane.afterNative ?? 0,
-    lane.afterIncentive ?? 0,
-    isApy,
-  );
+  const afterUsdPerDay = lane.hasInput
+    ? computePositionUsdPerDay(
+        side,
+        amountUsd,
+        lane.afterNative ?? 0,
+        lane.afterIncentive ?? 0,
+        isApy,
+      )
+    : null;
   const usdPerDayMetric: PortfolioSimulationMetric = {
     current: currentUsdPerDay,
     after: afterUsdPerDay,
-    delta: afterUsdPerDay - currentUsdPerDay,
+    delta: afterUsdPerDay !== null ? afterUsdPerDay - currentUsdPerDay : null,
   };
 
   return { nativeMetric, incentiveMetric, totalMetric, usdPerDayMetric };
@@ -218,15 +220,12 @@ function computeResultsFromGroups(
 
       for (const slot of group.supplySlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const nativePercent =
-          simResult.supply.afterNative ??
-          simResult.supply.currentNative ??
-          reserve.supplyApy ??
-          0;
-        const incentivePercent =
-          simResult.supply.afterIncentive ??
-          simResult.supply.currentIncentive ??
-          0;
+        const nativePercent = simResult.supply.hasInput
+          ? (simResult.supply.afterNative ?? simResult.supply.currentNative ?? reserve.supplyApy ?? 0)
+          : (simResult.supply.currentNative ?? reserve.supplyApy ?? 0);
+        const incentivePercent = simResult.supply.hasInput
+          ? (simResult.supply.afterIncentive ?? simResult.supply.currentIncentive ?? 0)
+          : (simResult.supply.currentIncentive ?? 0);
         const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy);
         results.push(
           buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy),
@@ -235,15 +234,12 @@ function computeResultsFromGroups(
 
       for (const slot of group.borrowSlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const nativePercent =
-          simResult.borrow.afterNative ??
-          simResult.borrow.currentNative ??
-          reserve.borrowApy ??
-          0;
-        const incentivePercent =
-          simResult.borrow.afterIncentive ??
-          simResult.borrow.currentIncentive ??
-          0;
+        const nativePercent = simResult.borrow.hasInput
+          ? (simResult.borrow.afterNative ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0)
+          : (simResult.borrow.currentNative ?? reserve.borrowApy ?? 0);
+        const incentivePercent = simResult.borrow.hasInput
+          ? (simResult.borrow.afterIncentive ?? simResult.borrow.currentIncentive ?? 0)
+          : (simResult.borrow.currentIncentive ?? 0);
         const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy);
         results.push(
           buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy),

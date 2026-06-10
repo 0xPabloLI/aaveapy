@@ -775,4 +775,25 @@ describe('buildMetricsFromLane', () => {
     expect(metrics.nativeMetric!.current).toBeNull();
     expect(metrics.usdPerDayMetric).toBeDefined();
   });
+
+  it('returns null after/delta for incentive and total when hasInput=false (AAV-761)', () => {
+    const lane = makeLane({
+      hasInput: false,
+      currentIncentive: 0.9,
+      afterIncentive: 0,
+      deltaIncentive: -0.9,
+      currentTotal: 3.7,
+      afterTotal: 2.8,
+      deltaTotal: -0.9,
+    });
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.incentiveMetric.current).toBe(0.9);
+    expect(metrics.incentiveMetric.after).toBeNull();
+    expect(metrics.incentiveMetric.delta).toBeNull();
+    expect(metrics.totalMetric.current).toBe(3.7);
+    expect(metrics.totalMetric.after).toBeNull();
+    expect(metrics.totalMetric.delta).toBeNull();
+    expect(metrics.usdPerDayMetric.after).toBeNull();
+    expect(metrics.usdPerDayMetric.delta).toBeNull();
+  });
 });

@@ -800,3 +800,24 @@ The fallback path is **user-visible** when a reserve lacks on-chain rate model d
 ### Hub aggregation (v4)
 
 Portfolio simulation uses the same `hubAggregationMap` as single-reserve simulation. Per-reserve `reserveRateInput` is a shallow copy (`{ ...reserve }`) with `hubBorrowed`/`hubSupplied` overwritten. Multiple positions on the same reserve share one Hub-overwritten copy — no double-counting.
+
+### Portfolio Toggle 交互统一 (AAV-752)
+
+**原则**：同一业务操作存在多个触发入口时，所有入口共享同一语义层（`usePortfolioToggle`）、同一反馈层（Undo toast）、同一视觉层（三态图标）。
+
+**三态行为矩阵**：
+
+| 入口 | 不在 portfolio | 在 portfolio + 非 hidden | 在 portfolio + hidden | Restricted |
+| -- | -- | -- | -- | -- |
+| ReservesTable checkbox | + → addReserve + Undo toast | ✓ → hide/remove + Undo toast | EyeOff → unhideReserve | 灰显 + Tooltip |
+| PortfolioPanel Minus | N/A | Minus → hide/remove + Undo toast | EyeOff → unhideReserve | 限制图标 |
+
+**规则**：
+- **Toast 统一**：`addReserve` 和 `removeReserve` 由 `usePortfolioToggle.handlePortfolioToggle` 内部发 Undo toast；`hideReserve`/`unhideReserve` 不发 toast（原地可逆）
+- **图标统一**：hidden 条目在任何入口都显示 `EyeOff` 图标（不显示 ✓）
+- **语义层集中**：toggle 逻辑（hidden 检测、soft-delete 路由、toast）全部在 `usePortfolioToggle` 中实现，调用方只传参不重复实现
+- **禁止新入口自建语义**：新增 portfolio toggle 入口时，必须通过 `usePortfolioToggle` 或 `PortfolioSimulationActions` 操作，禁止在组件中直接 wrap toast
+
+**反模式**：ReservesTable checkbox 和 PortfolioPanel Minus 各自独立实现 toggle + toast → 反馈不一致、hidden 状态处理缺失。
+
+详见 `docs/conventions/design-principles.md` §8（入口与语义统一）。
