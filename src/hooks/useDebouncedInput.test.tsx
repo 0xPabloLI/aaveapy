@@ -324,6 +324,33 @@ describe('useDebouncedInput', () => {
     });
   });
 
+  describe('select-all-then-type replacement', () => {
+    it('selecting all then typing new value replaces entire content', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('5000');
+      act(() => {
+        result.current.handleChange({ target: { value: '7', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('7');
+    });
+
+    it('selecting all then typing dot replaces with "0."', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleChange({ target: { value: '.', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('0.');
+    });
+  });
+
   describe('Backspace behavior (no value jumping)', () => {
     it('deleting last char from "10000" yields "1000"', () => {
       const onCommit = vi.fn();
