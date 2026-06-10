@@ -531,6 +531,30 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(result.borrow.sources.protocol?.after).toBeNull();
   });
 
+  it('AAV-770 layer-2: supply.afterIncentive=null (not 0) when only borrow has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    expect(result.supply.afterIncentive).toBeNull();
+    expect(result.supply.deltaIncentive).toBeNull();
+  });
+
+  it('AAV-770 layer-2: borrow.afterIncentive=null (not 0) when only supply has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+
+    expect(result.borrow.afterIncentive).toBeNull();
+    expect(result.borrow.deltaIncentive).toBeNull();
+  });
+
   it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,

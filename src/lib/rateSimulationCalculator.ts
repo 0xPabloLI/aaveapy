@@ -1216,7 +1216,7 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: Incentive after (hasAnyInput → 有值, 否则 null) ───
 
-  const supplyAfterIncentiveRaw = hasAnyInput
+  const supplyAfterIncentiveRaw = hasSupplyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
@@ -1236,7 +1236,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const borrowAfterIncentiveRaw = hasAnyInput
+  const borrowAfterIncentiveRaw = hasBorrowInput
     ? buildIncentiveAfter(
         reserve,
         'borrow',
@@ -1256,7 +1256,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const supplyAfterIncentiveAprRaw = hasAnyInput
+  const supplyAfterIncentiveAprRaw = hasSupplyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
@@ -1276,7 +1276,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const borrowAfterIncentiveAprRaw = hasAnyInput
+  const borrowAfterIncentiveAprRaw = hasBorrowInput
     ? buildIncentiveAfter(
         reserve,
         'borrow',
