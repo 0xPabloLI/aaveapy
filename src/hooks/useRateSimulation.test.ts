@@ -968,7 +968,7 @@ describe('buildRateSimulationResult', () => {
       'Reward capped at $5,000.00/user · supply + borrow',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
-    expect(result.supply.sources.brevis.after).toBeNull();
+    expect(result.supply.sources.brevis.after).not.toBeNull();
     expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
   });
 

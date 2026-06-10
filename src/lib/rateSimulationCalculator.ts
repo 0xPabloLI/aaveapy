@@ -1216,7 +1216,7 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: Incentive after (hasAnyInput → 有值, 否则 null) ───
 
-  const supplyAfterIncentiveRaw = hasSupplyInput
+  const supplyAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
@@ -1236,7 +1236,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const borrowAfterIncentiveRaw = hasBorrowInput
+  const borrowAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'borrow',
@@ -1256,7 +1256,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const supplyAfterIncentiveAprRaw = hasSupplyInput
+  const supplyAfterIncentiveAprRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
@@ -1276,7 +1276,7 @@ export function buildRateSimulationResult({
         principalBorrowUsd,
       )
     : null;
-  const borrowAfterIncentiveAprRaw = hasBorrowInput
+  const borrowAfterIncentiveAprRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'borrow',
@@ -1340,7 +1340,7 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: After sources (hasAnyInput → 有值, 否则 null) ───
 
-  const supplyAfterSources = hasSupplyInput
+  const supplyAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd, undefined, supplyTotalPositionUsd) * supplyMeritMerklEligibilityRatio;
@@ -1374,7 +1374,7 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  const borrowAfterSources = hasBorrowInput
+  const borrowAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd, undefined, borrowTotalPositionUsd) * borrowMeritMerklEligibilityRatio;
