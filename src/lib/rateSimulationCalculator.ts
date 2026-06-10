@@ -639,7 +639,7 @@ export const buildMeritCampaignDetails = (
           baseAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
         }
       } else if (hasAnyInput) {
-        baseAfter = 0;
+        baseAfter = null;
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
       rows.push({
@@ -686,7 +686,7 @@ export const buildMeritCampaignDetails = (
           selfAfter = selfCurrent;
         }
       } else if (hasAnyInput) {
-        selfAfter = 0;
+        selfAfter = null;
       }
       const delta = selfAfter !== null ? selfAfter - selfCurrent : null;
       rows.push({
@@ -768,8 +768,7 @@ export const buildMerklCampaignDetails = (
           }
         }
       } else if (hasAnyInput) {
-        // Net-eligible USD is 0 on this lane but the user entered a scenario: show 0% after (matches aggregate Merkl), not em dash.
-        after = 0;
+        after = null;
       }
 
       const delta = after !== null ? after - current : null;

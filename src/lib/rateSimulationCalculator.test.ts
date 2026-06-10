@@ -422,6 +422,63 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       .toBeLessThan(withoutPrincipal.supply.sources.merit!.after);
   });
 
+  it('Bug AAV-761: supply incentive campaign detail after=null (not 0) when only borrow has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    const campaigns = result.supply.sources.merit?.campaigns ?? [];
+    const baseRow = campaigns.find((r) => r.id.includes('base'));
+    const selfRow = campaigns.find((r) => r.id.includes('self'));
+
+    expect(baseRow?.after).toBeNull();
+    expect(selfRow?.after).toBeNull();
+  });
+
+  it('Bug AAV-761: merkl supply campaign detail after=null (not 0) when only borrow has input', () => {
+    const merklReserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      merklSupplys: [{
+        name: 'Merkl Supply',
+        breakdowns: [{
+          campaignApr: 2.5,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2027-12-31',
+          campaignId: 'merkl-supply-1',
+        }],
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve: merklReserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    const campaigns = result.supply.sources.merkl?.campaigns ?? [];
+    const row = campaigns[0];
+    expect(row?.after).toBeNull();
+  });
+
+  it('Bug AAV-761: borrow incentive campaign detail after=null (not 0) when only supply has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+
+    const campaigns = result.borrow.sources.merit?.campaigns ?? [];
+    const baseRow = campaigns.find((r) => r.id.includes('base'));
+    const selfRow = campaigns.find((r) => r.id.includes('self'));
+
+    expect(baseRow?.after).toBeNull();
+    expect(selfRow?.after).toBeNull();
+  });
+
   it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
