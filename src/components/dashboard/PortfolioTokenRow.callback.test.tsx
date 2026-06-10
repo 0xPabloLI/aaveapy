@@ -471,6 +471,41 @@ describe('PortfolioTokenRow callbacks', () => {
         vi.useRealTimers();
       });
 
+      it('Bug D: clearing delta input and blurring should reset delta to zero (same as eraser)', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+        expect(input).toHaveValue('4,000');
+        fireEvent.change(input, { target: { value: '' } });
+        fireEvent.blur(input);
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
+      });
+
+      it('Bug D (borrow): clearing borrow delta input and blurring should reset delta', () => {
+        const actions = makeActions();
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ borrow: { amount: '5000', inputMode: 'usd', walletValue: 2000, deltaSign: -1 } })}
+            actions={actions}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /borrow.*delta.*USDC/i });
+        fireEvent.change(input, { target: { value: '' } });
+        fireEvent.blur(input);
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowAmount: '2000', borrowDeltaSign: 1 });
+      });
+
       it('Bug B (borrow): toggle borrow sign with delta should patch sign only', () => {
         const actions = makeActions();
         render(

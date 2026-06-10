@@ -69,8 +69,19 @@ function SideInput({
   const hasValue = Boolean(deltaDisplay.trim());
   const isPositiveDelta = hasWallet ? (sideData.deltaSign ?? 1) === 1 : true;
 
+  const handleClearDelta = useCallback(() => {
+    const resetAmount = hasWallet ? formatConvertedAmount(sideData.walletValue!) : '';
+    const patch = side === 'supply'
+      ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
+      : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
+    actions.updateReserve(reserveId, patch);
+  }, [hasWallet, sideData.walletValue, actions, reserveId, side]);
+
   const handleDeltaCommit = useCallback((formattedValue: string) => {
-    if (!formattedValue.trim()) return;
+    if (!formattedValue.trim()) {
+      handleClearDelta();
+      return;
+    }
     const patch = side === 'supply'
       ? { supplyAmount: formattedValue }
       : { borrowAmount: formattedValue };
@@ -88,7 +99,7 @@ function SideInput({
       ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
       : { borrowAmount: formatConvertedAmount(effectiveUsd) };
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, handleClearDelta]);
 
   const numberInput = useDebouncedInput({
     value: deltaDisplay,
@@ -104,14 +115,6 @@ function SideInput({
       : { borrowDeltaSign: newSign };
     actions.updateReserve(reserveId, signPatch);
   }, [hasWallet, isPositiveDelta, actions, reserveId, side]);
-
-  const handleClearDelta = useCallback(() => {
-    const resetAmount = hasWallet ? formatConvertedAmount(sideData.walletValue!) : '';
-    const patch = side === 'supply'
-      ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
-      : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
-    actions.updateReserve(reserveId, patch);
-  }, [hasWallet, sideData.walletValue, actions, reserveId, side]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
