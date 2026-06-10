@@ -98,6 +98,8 @@ Summary 卡片四个指标：
 
 `src/components/dashboard/PortfolioSummaryCard.tsx`:
 - 第四个 MetricCell 从 "Net Effective APY" 改为 "Supply / Borrow APY"
+- 语义色: Supply APY = `ds-text-emerald-600` (绿), Borrow APY = `ds-text-brand-cyan` (青)
+- 独立布局: Supply 值和 Borrow 值分别显示颜色，不使用 `netColor` (net 正负决定的动态颜色)
 - 显示格式：`supplyApy / borrowApy`（如 `3.2% / 5.1%`）
 
 ## Phase 2 (AAV-756): LTV 约束 + Health Factor
