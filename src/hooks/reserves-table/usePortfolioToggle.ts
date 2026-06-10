@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 
 import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import type {
@@ -34,6 +35,7 @@ export interface UsePortfolioToggleArgs {
 
 export interface UsePortfolioToggleResult {
   portfolioReserveIds: Set<string>;
+  hiddenReserveIds: Set<string>;
   handlePortfolioToggle: (
     reserveId: string,
     reserve: ReserveWithSpread,
@@ -55,6 +57,10 @@ export const usePortfolioToggle = ({
     return new Set(effectiveEntries.map((e) => e.reserveId));
   }, [effectiveEntries]);
 
+  const hiddenReserveIds = useMemo(() => {
+    return new Set(effectiveEntries.filter((e) => e.hidden).map((e) => e.reserveId));
+  }, [effectiveEntries]);
+
   const handlePortfolioToggle = useCallback(
     (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => {
       if (!portfolioActions) return;
@@ -63,12 +69,21 @@ export const usePortfolioToggle = ({
         const entry = effectiveEntries.find((e) => e.reserveId === reserveId);
         const sideData = entry?.[side];
         if (entry && sideData) {
+          if (entry.hidden) {
+            portfolioActions.unhideReserve(reserveId);
+            return;
+          }
           if (isRestrictedReserve(reserve)) return;
           const action = getEntrySoftDeleteAction(entry);
           if (action === 'toggleHidden') {
             portfolioActions.hideReserve(reserveId);
           } else {
+            const symbol = entry.tokenSymbol;
             portfolioActions.removeReserve(reserveId);
+            toast(`${symbol} removed`, {
+              className: '[--width:fit-content]',
+              action: { label: 'Undo', onClick: () => { portfolioActions.undoLastRemove(); } },
+            });
           }
         } else {
           if (isRestrictedReserve(reserve)) return;
@@ -79,17 +94,30 @@ export const usePortfolioToggle = ({
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
           });
+          toast(`${reserve.tokenSymbol} added`, {
+            className: '[--width:fit-content]',
+            action: { label: 'Undo', onClick: () => { portfolioActions.removeReserve(reserveId); } },
+          });
         }
       } else {
         if (portfolioReserveIds.has(reserveId)) {
           const entry = effectiveEntries.find((e) => e.reserveId === reserveId);
           if (entry) {
+            if (entry.hidden) {
+              portfolioActions.unhideReserve(reserveId);
+              return;
+            }
             if (isRestrictedReserve(reserve)) return;
             const action = getEntrySoftDeleteAction(entry);
             if (action === 'toggleHidden') {
               portfolioActions.hideReserve(reserveId);
             } else {
+              const symbol = entry.tokenSymbol;
               portfolioActions.removeReserve(reserveId);
+              toast(`${symbol} removed`, {
+                className: '[--width:fit-content]',
+                action: { label: 'Undo', onClick: () => { portfolioActions.undoLastRemove(); } },
+              });
             }
           }
         } else {
@@ -100,6 +128,10 @@ export const usePortfolioToggle = ({
             chainName: reserve.chainName,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
+          });
+          toast(`${reserve.tokenSymbol} added`, {
+            className: '[--width:fit-content]',
+            action: { label: 'Undo', onClick: () => { portfolioActions.removeReserve(reserveId); } },
           });
         }
       }
@@ -157,6 +189,7 @@ export const usePortfolioToggle = ({
 
   return {
     portfolioReserveIds,
+    hiddenReserveIds,
     handlePortfolioToggle,
     portfolioResults,
     portfolioSummary,

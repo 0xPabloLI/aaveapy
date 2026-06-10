@@ -1,6 +1,6 @@
 import { memo, Fragment, useEffect, useState, useCallback, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { ExternalLink, Plus, ArrowDown, ArrowUp } from 'lucide-react';
+import { ExternalLink, Plus, ArrowDown, ArrowUp, EyeOff } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -95,6 +95,8 @@ interface DesktopReserveRowProps {
   isPortfolioMode?: boolean;
   /** Whether this reserve is already in the portfolio. */
   isInPortfolio?: boolean;
+  /** Whether this portfolio entry is hidden (show EyeOff icon instead of checkmark). */
+  isHidden?: boolean;
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
   sortActions: SortActions;
 }
@@ -153,6 +155,7 @@ const DesktopReserveRow = memo(({
   onCorrectBorrowInput,
   isPortfolioMode,
   isInPortfolio,
+  isHidden,
   onPortfolioToggle,
   sortActions,
 }: DesktopReserveRowProps) => {
@@ -303,10 +306,14 @@ const DesktopReserveRow = memo(({
                       ? PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.selected
                       : PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.unselected,
                 )}
-                aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+                aria-label={isInPortfolio ? (isHidden ? `Restore ${reserve.tokenSymbol} to portfolio` : `Remove ${reserve.tokenSymbol} from portfolio`) : `Add ${reserve.tokenSymbol} to portfolio`}
               >
                 {isInPortfolio ? (
-                  <span className="ds-text-11 font-bold leading-none">✓</span>
+                  isHidden ? (
+                    <EyeOff className="h-3 w-3" />
+                  ) : (
+                    <span className="ds-text-11 font-bold leading-none">✓</span>
+                  )
                 ) : (
                   <Plus className="h-3 w-3" />
                 )}

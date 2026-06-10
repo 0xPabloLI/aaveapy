@@ -460,6 +460,54 @@ describe('DesktopReserveRow', () => {
       expect(html).toContain('Paused');
       expect(html).toContain('✓');
     });
+
+    it('hidden portfolio entry shows EyeOff icon instead of checkmark', () => {
+      const queryClient = new QueryClient();
+      const html = renderToString(
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Table>
+              <TableBody>
+                <DesktopReserveRow
+                  reserve={reserve}
+                  reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                  isExpanded={false}
+                  onToggleExpand={() => {}}
+                  onIncentiveClick={() => {}}
+                  displaySupplyTotal={2.9}
+                  displaySupplyNative={2.5}
+                  displaySupplyIncentive={0.4}
+                  displayBorrowTotal={3.3}
+                  displayBorrowNative={3.4}
+                  displayBorrowIncentive={0.1}
+                  displayUtilization={52}
+                  spread={-0.4}
+                  simulation={simulation}
+                  supplyInput="1000"
+                  borrowInput="500"
+                  inputMode="usd"
+                  isApy
+                  isMobile={false}
+                  sortActions={stubSortActions}
+                  isPortfolioMode
+                  isInPortfolio
+                  isHidden
+                  onPortfolioToggle={() => {}}
+                />
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(html).not.toContain('✓');
+      expect(html).toContain('lucide-eye-off');
+    });
+
+    it('non-hidden portfolio entry still shows checkmark', () => {
+      const html = renderPortfolioRow({}, true);
+      expect(html).toContain('✓');
+      expect(html).not.toContain('lucide-eye-off');
+    });
   });
 
   describe('field-name regression gates', () => {

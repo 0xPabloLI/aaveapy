@@ -829,6 +829,7 @@ const ReservesTable = ({
 
   const {
     portfolioReserveIds,
+    hiddenReserveIds,
     handlePortfolioToggle,
     portfolioResults,
     portfolioSummary,
@@ -1217,6 +1218,7 @@ const ReservesTable = ({
                   onCorrectBorrowInput={handleCorrectBorrowInput}
                   isPortfolioMode={isPortfolioMode}
                   isInPortfolio={portfolioReserveIds.has(reserveId)}
+                  isHidden={hiddenReserveIds.has(reserveId)}
                   onPortfolioToggle={handlePortfolioToggle}
                   sortActions={sortActions}
                 />

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { usePortfolioToggle } from './usePortfolioToggle';
 import type { PortfolioSimulationContext } from './usePortfolioToggle';
@@ -8,6 +8,14 @@ import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+
+const { mockToast } = vi.hoisted(() => ({
+  mockToast: vi.fn(),
+}));
+
+vi.mock('sonner', () => ({
+  toast: (...args: unknown[]) => mockToast(...args),
+}));
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
@@ -70,6 +78,19 @@ describe('usePortfolioToggle', () => {
         usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }),
       );
       expect(Array.from(result.current.portfolioReserveIds).sort()).toEqual(['r-1', 'r-2']);
+    });
+
+    it('hiddenReserveIds contains only hidden entries', () => {
+      const entries = [
+        makeEntry({ reserveId: 'r-1', hidden: false }),
+        makeEntry({ reserveId: 'r-2', hidden: true }),
+        makeEntry({ reserveId: 'r-3', hidden: true }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }),
+      );
+      expect(Array.from(result.current.hiddenReserveIds).sort()).toEqual(['r-2', 'r-3']);
+      expect(Array.from(result.current.portfolioReserveIds).sort()).toEqual(['r-1', 'r-2', 'r-3']);
     });
   });
 
@@ -318,6 +339,152 @@ describe('usePortfolioToggle', () => {
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
       expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+    });
+  });
+
+  describe('hidden entries', () => {
+    it('calls unhideReserve for hidden entry without side', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [
+        makeEntry({ reserveId: 'r-1', hidden: true, supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.unhideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).not.toHaveBeenCalled();
+      expect(actions.removeReserve).not.toHaveBeenCalled();
+    });
+
+    it('calls unhideReserve for hidden entry with explicit side', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [
+        makeEntry({ reserveId: 'r-1', hidden: true, supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
+      expect(actions.unhideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).not.toHaveBeenCalled();
+      expect(actions.removeReserve).not.toHaveBeenCalled();
+    });
+
+    it('still calls hideReserve for non-hidden wallet entry', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [
+        makeEntry({ reserveId: 'r-1', hidden: false, supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.unhideReserve).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toast behavior', () => {
+    beforeEach(() => {
+      mockToast.mockReset();
+    });
+
+    it('emits toast with Undo when addReserve is called (no side)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries: [], portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.addReserve).toHaveBeenCalledTimes(1);
+      expect(mockToast).toHaveBeenCalledTimes(1);
+      const [msg, opts] = mockToast.mock.calls[0];
+      expect(msg).toContain('added');
+      expect(opts.action.label).toBe('Undo');
+      act(() => { opts.action.onClick(); });
+      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
+    });
+
+    it('emits toast with Undo when addReserve is called (explicit side)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries: [], portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
+      expect(actions.addReserve).toHaveBeenCalledTimes(1);
+      expect(mockToast).toHaveBeenCalledTimes(1);
+    });
+
+    it('emits toast with Undo when removeReserve is called (no side)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.removeReserve).toHaveBeenCalledTimes(1);
+      expect(mockToast).toHaveBeenCalledTimes(1);
+      const [msg, opts] = mockToast.mock.calls[0];
+      expect(msg).toContain('removed');
+      expect(opts.action.label).toBe('Undo');
+      act(() => { opts.action.onClick(); });
+      expect(actions.undoLastRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it('emits toast when removeReserve through explicit side path', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [makeEntry({
+        supply: { amount: '100', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '', inputMode: 'usd', walletValue: null },
+      })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'borrow'));
+      expect(actions.removeReserve).toHaveBeenCalledTimes(1);
+      expect(mockToast).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT emit toast for hideReserve (wallet entry)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: 100 } })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(mockToast).not.toHaveBeenCalled();
+    });
+
+    it('does NOT emit toast for unhideReserve (hidden entry)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [makeEntry({ hidden: true, supply: { amount: '100', inputMode: 'usd', walletValue: 100 } })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.unhideReserve).toHaveBeenCalledWith('r-1');
+      expect(mockToast).not.toHaveBeenCalled();
+    });
+
+    it('does NOT emit toast for restricted reserve', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({ isPaused: true });
+      const entries = [makeEntry({ restrictedStatus: 'paused', supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(mockToast).not.toHaveBeenCalled();
     });
   });
 
