@@ -1,54 +1,71 @@
-# Align Portfolio Toggle Across Modes
+# 对齐 Portfolio Toggle 的位置（保留 panel header 同层结构）
 
-## 问题
-当前 `Portfolio` 开关在两种模式下的水平位置不一致：
+## 目标
+切换 Single ⇄ Portfolio 时 `PortfolioModeToggle` 的右边缘 X 坐标完全一致（≤1px 浮动）；toggle 仍渲染在 `PortfolioPanel` header 内部，与图标按钮 cluster 同一行同一层；PortfolioPanel 整体外观/布局不变。
 
-- **Single 模式**：开关位于 `ReservesTable` 的 scenario 行（外层 `flex items-center gap-2`），`ml-auto shrink-0`，紧贴 scenario 容器最右边缘。
-- **Portfolio 模式**：开关被搬进 `PortfolioPanel` 的 header 内部，与一组图标按钮（同步、保存、搜索、清空）放在同一个 cluster 中。该 cluster 用 `pr-[11px] -mr-[27px]` 做了硬补偿，header 又有自己的 `px-4 py-3`，导致开关相对页面/卡片右边缘比 Single 模式的位置**整体向左偏移**几像素，切换模式时视觉上会"跳一下"。
+## 现状（为什么需要改）
 
-目标：两种模式下 Portfolio 开关的右边缘 X 坐标完全一致，切换无位移。
+两种模式 toggle 都落在 `ReservesTable` 的 scenario 包装器内（`p-[var(--ds-space-3)]`，12px padding）：
 
-## 方案：把开关提到 PortfolioPanel 外层、与 Single 模式共用同一插槽
+- **Single**：`<div className="flex items-center gap-2"> <ScenarioControls /> <div className="ml-auto shrink-0"><PortfolioModeToggle /></div> </div>` → toggle 右边缘 = 包装器内边缘 = 卡片外边缘 − 12px。
+- **Portfolio**：`<PortfolioPanel>` 根 `<div className="space-y-3">` 无 padding，header 内层 `<div className="px-4 py-3">`（16px），右侧 cluster 用 `pr-[11px] -mr-[27px]`（净 −16px）硬补偿 `px-4`。理论上 toggle 右边缘也应等于卡片外边缘 − 12px。
 
-让 `ReservesTable` 的 scenario 行始终是同一个 flex 容器：
+实际仍有偏移，因为：
+1. `-mr-[27px] pr-[11px]` 把整个 cluster（Wallet/Save/Search/Trash + Toggle）一起外推 16px，让所有图标按钮都越过了 header 的 `px-4` 自然边界，靠 trash/save 等图标自身的内 padding 才"看起来"差不多对齐 —— 实际 toggle 的 Switch 控件比图标按钮窄、右侧无 padding，所以右边缘比 Single 模式更往里 1–3px。
+2. 这组负 margin 是为旧布局凑出来的魔法值，没有跟随 `--ds-space-3` 这个 token，token 一旦变（如改成 14px）就漂。
+
+## 方案：去掉 cluster 整体外推，让 toggle 单独对齐到 12px 内边距
+
+让 PortfolioPanel header 的右内边距与 scenario 包装器一致（12px），这样 toggle 的右边缘自然落在与 Single 模式相同的 X，不再依赖魔法值。
+
+### 改动点（一处文件）
+
+`src/components/dashboard/PortfolioPanel.tsx` 的 header 区域（当前 line 371–467）：
+
+1. 外层 header 容器把右内边距从 `px-4` 改成左右非对称：`pl-4 pr-[var(--ds-space-3)]`（移动端同理：`pl-2.5 pr-[var(--ds-space-3)]`）。
+   - 左侧 16px 保留标题（Layers icon + "Portfolio" + italic 提示）的呼吸空间不变。
+   - 右侧降到 12px，与 scenario 包装器的内边距对齐。
+2. 删除右侧 cluster 的 `pr-[11px] -mr-[27px]` 硬补偿，改回 `className="flex items-center gap-[var(--ds-space-1)]"`。
+3. Toggle 仍作为 cluster 的最后一个子节点渲染在 header 内（保持 `simulationMode` / `onSimulationModeChange` 走 panel 内部）—— 不动 toggle 自身的 props 和 DOM 位置。
+
+### 数学验证
 
 ```text
-[ 左侧内容 ............................................ ] [ Portfolio 开关 ]
-  Single  : ScenarioControls (flex-1)                      PortfolioModeToggle
-  Portfolio: PortfolioPanel (flex-1，去掉自带开关 + 负 margin) PortfolioModeToggle
+Single:    toggle.right = wrapper.right − 12px (scenario p-3 右内边距)
+Portfolio: toggle.right = panel.right − 0  (cluster 无补偿)
+                       = header.right − 0
+                       = wrapper.right − 12px (新的 pr-[var(--ds-space-3)])
+=> 完全相等
 ```
 
-这样开关在两种模式下都是同一棵 DOM 节点的同一个位置，X 坐标天然一致。
+### 副作用与处理
 
-### 改动点
+- Wallet/Save/Search/Trash 四个图标按钮也会跟随 cluster 一起回退到 12px 内边距（不再外推 4px）。视觉上这些图标会向左挪约 4px —— 这是合理的：原先 cluster 外推到 panel root 是为了对齐 toggle，现在 toggle 自然对齐了，图标也回到正常的 padding 区内，反而和 PortfolioPanel 下方的 token rows 对齐更整齐。
+- Snapshots 区域（line 468+）、token rows、summary 都不在 header 内，零影响。
+- 移动端：`px-2.5` 拆成 `pl-2.5 pr-[var(--ds-space-3)]` 同理对齐；移动 scenario 包装器同样用 `var(--ds-space-3)` padding（line 940-953 mobile 分支无 p-3，需在改动时再确认是否也需要做相同处理）。
+- ADR-0013（portfolio 模式禁用 desktop sticky）不受影响：toggle 高度变化为 0。
 
-1. `src/components/dashboard/ReservesTable.tsx`
-   - 在桌面与移动两段渲染中，**移除 `!isPortfolioMode` 分支差异**对 toggle 的影响：始终渲染外层 `flex items-center gap-2` + 末尾 `PortfolioModeToggle`。
-   - 左侧 slot 根据模式渲染 `ScenarioControls` 或 `PortfolioPanel`。
-   - 向 `PortfolioPanel` 传入 `simulationMode={undefined}` / 不传 `onSimulationModeChange`，让它不再渲染自己那个 toggle。
+## 不做的事
 
-2. `src/components/dashboard/PortfolioPanel.tsx`
-   - header 右侧 cluster 去掉 `pr-[11px] -mr-[27px]` 这组硬补偿（这组 hack 原本是为了让内嵌的 toggle 对齐外层；现在 toggle 移走，hack 同步移除，避免图标按钮再向右溢出）。
-   - 保留同步/保存/搜索/清空四个图标按钮的相对排布，整体右内边距回到 header 的 `px-4`（移动端 `px-2.5`），与卡片其它内容一致。
-   - `PortfolioModeToggle` 引入与渲染分支删除（props 仍保留以兼容现有调用方／测试，但 panel 内部不再使用）。
+- 不动 `ReservesTable.tsx`（toggle 渲染位置不变，仍由 `PortfolioPanel` 内部根据 `simulationMode` 渲染）。
+- 不动 `PortfolioModeToggle` 自身样式与 props。
+- 不改 ScenarioControls 或 Single 模式分支（887–905 / 857–865）。
+- 不改 scenario 包装器（line 1046–1055）的 padding。
 
-3. 移动端
-   - 同样把 toggle 提到外层。Single 模式的 `flex items-center gap-2` 已经存在；Portfolio 模式新增一个一行 flex 容器，把 `PortfolioPanel` 放左、toggle 放右，间距用 `gap-2` 与 Single 模式一致。
-   - 移动端 toggle 在 `PortfolioModeToggle` 内部已有 `flex-col` 紧凑样式，无需改动。
+## 验证
 
-### 验证
+1. `npm run lint && npm test && npm run build && npx tsc --noEmit`
+2. 浏览器在桌面 1280 / 1440 与移动 390 三种宽度下：
+   - 截图 Single 模式 toggle 的右边缘像素坐标。
+   - 切到 Portfolio 模式，截图 toggle 右边缘像素坐标。
+   - 两者差值 ≤ 1px。
+3. 同时观察 Wallet/Save/Search/Trash 四个图标按钮没有溢出 panel 边界、与 token rows 视觉对齐。
+4. `src/test/header-controls.test.ts` 和 `PortfolioPanel.layout.test.tsx` 应继续通过；若有断言魔法值 `-mr-[27px]` 的测试，更新断言。
 
-- 桌面 1280 与 1440 宽度：切换 Single ⇄ Portfolio，截图对比 `PortfolioModeToggle` 右边缘 X 坐标一致（≤1px 浮动）。
-- 移动 390 宽度：同样对比，开关不与卡片边缘重叠。
-- `npm run lint && npm test && npm run build && npx tsc --noEmit`
-- 已有相关测试：`ReservesTable.test.tsx`、`src/test/header-controls.test.ts` 必须仍通过；如果有断言 toggle 在 PortfolioPanel 内的测试，调整为断言 toggle 在 scenario 行内。
+## 备选方案（更轻量，但不彻底）
 
-### 不做的事
-
-- 不动 PortfolioPanel 的其它布局（搜索框、suggested chips、summary）。
-- 不改 `PortfolioModeToggle` 自身样式。
-- 不改 sticky / pin-scroll 逻辑（ADR-0013 不受影响：toggle 高度可忽略，仍由 `useReservesLayoutRefs` 测量）。
+如果觉得整列图标按钮一起左移视觉上接受不了，可以只调 toggle 一个：保留 cluster 的 `pr-[11px] -mr-[27px]`，在 toggle 外再单独包一层 `<div className="-mr-[5px]">`（或精确测出的 px 数）让 toggle 的 Switch 控件右边缘对齐到 12px。代价是又多一个魔法值；不推荐，除非有视觉上必须的理由。
 
 ## 确认点
 
-切换模式时 toggle 应**完全不动**——这是验收标准。请确认这是你想要的"在同一位置"的含义；如果你的意思是别的（例如让 Portfolio 模式里 toggle 仍嵌在 panel header 内、只是把整个 panel 的右内边距改成与 ScenarioControls 一致），我可以改成更轻量的方案：仅删除 `-mr-[27px]/pr-[11px]` 那组负 margin，让 toggle 自然落在 `px-4` 内边缘。
+请确认主方案（让整组右侧图标按钮回归 12px 内边距，toggle 自然对齐）符合你说的"整个 portfolio 层跟现在的格局都一致" —— 严格说图标按钮位置会有约 4px 左移；如果要求图标按钮也"完全不动"，那就只能走备选方案，再叠一层 toggle 专属的负 margin。

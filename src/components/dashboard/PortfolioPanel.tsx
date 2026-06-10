@@ -370,7 +370,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
     <div className="space-y-3">
       <div
         className={cn(
-          isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
+          isMobile ? 'pl-2.5 pr-[var(--ds-space-3)] py-2.5' : 'pl-4 pr-[var(--ds-space-3)] py-3',
         )}
       >
         {/* Header */}
@@ -386,7 +386,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px] -mr-[27px]">
+          <div className="flex items-center gap-[var(--ds-space-1)]">
+
             {walletConnected && (
               <button
                 type="button"
