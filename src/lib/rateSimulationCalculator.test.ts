@@ -479,6 +479,58 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(selfRow?.after).toBeNull();
   });
 
+  it('AAV-771: brevis supply campaign detail after=null when only borrow has input (explicit hasAnyInput guard)', () => {
+    const brevisReserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      brevisSupplys: [{
+        campaignApr: 5,
+        link: 'https://example.com/brevis',
+        campaignStartedAt: '2024-01-01',
+        campaignEndedAt: '2030-12-31',
+        campaignId: 'brevis-supply-1',
+        message: 'Brevis Supply',
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve: brevisReserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    const campaigns = result.supply.sources.brevis?.campaigns ?? [];
+    const row = campaigns[0];
+    expect(row?.after).toBeNull();
+  });
+
+  it('AAV-770: supply.sources.merit.after=null (not 0) when only borrow has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    expect(result.supply.sources.merit?.after).toBeNull();
+    expect(result.supply.sources.merkl?.after).toBeNull();
+    expect(result.supply.sources.brevis?.after).toBeNull();
+    expect(result.supply.sources.protocol?.after).toBeNull();
+  });
+
+  it('AAV-770: borrow.sources.merit.after=null (not 0) when only supply has input', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+
+    expect(result.borrow.sources.merit?.after).toBeNull();
+    expect(result.borrow.sources.merkl?.after).toBeNull();
+    expect(result.borrow.sources.brevis?.after).toBeNull();
+    expect(result.borrow.sources.protocol?.after).toBeNull();
+  });
+
   it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,

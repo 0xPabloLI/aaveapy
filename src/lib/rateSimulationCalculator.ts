@@ -816,6 +816,8 @@ export const buildBrevisCampaignDetails = (
     if (inputUsd > 0) {
       const aprPercent = forecastBrevisAprPercent({ ...source, ...breakdown }, inputUsd, Date.now(), combined);
       after = isApy ? convertAprToApy(aprPercent) : aprPercent;
+    } else if (hasAnyInput) {
+      after = null;
     }
 
     if (hasAnyInput && noteDepositUsd > 0) {
@@ -1338,7 +1340,7 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: After sources (hasAnyInput → 有值, 否则 null) ───
 
-  const supplyAfterSources = hasAnyInput
+  const supplyAfterSources = hasSupplyInput
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd, undefined, supplyTotalPositionUsd) * supplyMeritMerklEligibilityRatio;
@@ -1372,7 +1374,7 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  const borrowAfterSources = hasAnyInput
+  const borrowAfterSources = hasBorrowInput
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd, undefined, borrowTotalPositionUsd) * borrowMeritMerklEligibilityRatio;
