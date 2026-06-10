@@ -33,6 +33,8 @@ import PortfolioResultsTable from './PortfolioResultsTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve } from '@/lib/reserveStatus';
+
+const RESERVE_UNAVAILABLE_NOTICE = { supply: 'Reserve unavailable' as const, borrow: 'Reserve unavailable' as const };
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 
@@ -639,7 +641,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     disabledNotice={reserve ? {
                       supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
                       borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
-                    } : undefined}
+                    } : RESERVE_UNAVAILABLE_NOTICE}
                   />
                 );
               })}

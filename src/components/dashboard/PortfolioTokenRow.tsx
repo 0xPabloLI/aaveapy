@@ -16,6 +16,8 @@ import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
+const DELTA_EPSILON = 0.005;
+
 interface PortfolioTokenRowProps {
   entry: PortfolioReserveEntry;
   actions: PortfolioSimulationActions;
@@ -109,12 +111,26 @@ function SideInput({
 
   const toggleDeltaSign = useCallback(() => {
     if (!hasWallet) return;
+    if (sideData.inputMode === 'token' && tokenPriceInUsd == null) return;
     const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
     const signPatch = side === 'supply'
       ? { supplyDeltaSign: newSign }
       : { borrowDeltaSign: newSign };
-    actions.updateReserve(reserveId, signPatch);
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side]);
+    const currentEffectiveUsd = sideData.inputMode === 'usd'
+      ? parseNumberInput(sideData.amount)
+      : parseNumberInput(sideData.amount) * tokenPriceInUsd!;
+    const walletValue = sideData.walletValue ?? 0;
+    const absDeltaUsd = Math.abs(currentEffectiveUsd - walletValue);
+    if (absDeltaUsd < DELTA_EPSILON) {
+      actions.updateReserve(reserveId, signPatch);
+      return;
+    }
+    const newEffectiveUsd = Math.max(walletValue + newSign * absDeltaUsd, 0);
+    const amountPatch = side === 'supply'
+      ? { supplyAmount: formatConvertedAmount(newEffectiveUsd) }
+      : { borrowAmount: formatConvertedAmount(newEffectiveUsd) };
+    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.amount, sideData.inputMode, tokenPriceInUsd]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';

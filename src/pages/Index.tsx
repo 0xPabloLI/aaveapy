@@ -612,6 +612,7 @@ const Index = () => {
 
             <ReservesTable
               reserves={filteredReserves}
+              allReserves={stableReserves}
               sortField={sortField}
               sortOrder={sortOrder}
               onSort={handleSort}

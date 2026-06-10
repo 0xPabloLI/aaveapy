@@ -65,6 +65,7 @@ import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
+  allReserves?: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -98,6 +99,7 @@ const EMPTY_SIMULATIONS_GATE: Readonly<Record<string, unknown>> = Object.freeze(
 
 const ReservesTable = ({
   reserves,
+  allReserves,
   sortField,
   sortOrder,
   onSort,
@@ -864,22 +866,26 @@ const ReservesTable = ({
                 </div>
               )}
             </div>
-          ) : isLoading && reserves.length === 0 ? (
-            <PortfolioPanelSkeleton />
-          ) : portfolioEntries && portfolioActions ? (
-            <PortfolioPanel
-              entries={portfolioEntries}
-              actions={portfolioActions}
-              reserves={reserves}
-              positionResults={portfolioResults}
-              summary={portfolioSummary}
-              snapshots={portfolioSnapshots}
-              onWalletSync={onWalletSync}
-              walletLoadState={walletLoadState}
-              simulationMode={simulationMode}
-              onSimulationModeChange={onSimulationModeChange}
-            />
-          ) : null}
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={allReserves ?? reserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                />
+              ) : null}
+            </>
+          )}
         </>
       ) : (
         <>
@@ -903,22 +909,26 @@ const ReservesTable = ({
                 </div>
               )}
             </div>
-          ) : isLoading && reserves.length === 0 ? (
-            <PortfolioPanelSkeleton />
-          ) : portfolioEntries && portfolioActions ? (
-            <PortfolioPanel
-              entries={portfolioEntries}
-              actions={portfolioActions}
-              reserves={reserves}
-              positionResults={portfolioResults}
-              summary={portfolioSummary}
-              snapshots={portfolioSnapshots}
-              onWalletSync={onWalletSync}
-              walletLoadState={walletLoadState}
-              simulationMode={simulationMode}
-              onSimulationModeChange={onSimulationModeChange}
-            />
-          ) : null}
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={allReserves ?? reserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                />
+              ) : null}
+            </>
+          )}
         </>
       )}
     </div>

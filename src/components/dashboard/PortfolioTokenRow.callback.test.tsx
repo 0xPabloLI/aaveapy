@@ -237,7 +237,7 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
     });
 
-    it('toggles delta sign without changing amount (patches sign only)', () => {
+    it('toggles delta sign and recalculates amount when delta is non-zero', () => {
       const actions = makeActions();
       render(
         <PortfolioTokenRow
@@ -249,7 +249,7 @@ describe('PortfolioTokenRow callbacks', () => {
         { wrapper: Wrapper },
       );
       fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
     });
 
     it('toggles delta sign even when delta is zero (patches sign only)', () => {
@@ -437,7 +437,7 @@ describe('PortfolioTokenRow callbacks', () => {
         expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
       });
 
-      it('Bug B: toggle sign should preserve delta magnitude, not recalculate via effectiveUsd clamp', () => {
+      it('Bug B: toggle sign recalculates amount via effectiveUsd with new sign', () => {
         const actions = makeActions();
         render(
           <PortfolioTokenRow
@@ -449,7 +449,7 @@ describe('PortfolioTokenRow callbacks', () => {
           { wrapper: Wrapper },
         );
         fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1 });
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyDeltaSign: -1, supplyAmount: '0' });
       });
 
       it('Bug C: delta input commits immediately without debounce delay', () => {
@@ -506,7 +506,7 @@ describe('PortfolioTokenRow callbacks', () => {
         expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowAmount: '2000', borrowDeltaSign: 1 });
       });
 
-      it('Bug B (borrow): toggle borrow sign with delta should patch sign only', () => {
+      it('Bug B (borrow): toggle borrow sign with delta recalculates amount', () => {
         const actions = makeActions();
         render(
           <PortfolioTokenRow
@@ -518,7 +518,7 @@ describe('PortfolioTokenRow callbacks', () => {
           { wrapper: Wrapper },
         );
         fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
-        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowDeltaSign: -1 });
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { borrowDeltaSign: -1, borrowAmount: '0' });
       });
     });
   });

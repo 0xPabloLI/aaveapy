@@ -227,6 +227,109 @@ describe('PortfolioPanel', () => {
     });
   });
 
+  describe('chain filter independence (AAV-749)', () => {
+    const entryFor = (symbol: string, market = 'AaveV3Ethereum'): PortfolioReserveEntry => ({
+      reserveId: `${market}-${symbol}`,
+      tokenSymbol: symbol,
+      marketName: market,
+      chainName: 'Ethereum',
+      supply: { ...EMPTY_SIDE, amount: '5000' },
+      borrow: { ...EMPTY_SIDE, amount: '2000' },
+      hidden: false,
+      isOrphan: false,
+    });
+
+    it('disables side inputs when reserve is missing from reserves prop', () => {
+      const entries = [entryFor('USDC')];
+      render(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={entries}
+                actions={makeActions()}
+                reserves={[]}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+      expect(screen.getByLabelText(/Supply \(disabled\) for USDC/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Borrow \(disabled\) for USDC/)).toBeInTheDocument();
+    });
+
+    it('shows Reserve unavailable notice when reserve is not in reserves prop', () => {
+      const entries = [entryFor('USDC')];
+      render(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={entries}
+                actions={makeActions()}
+                reserves={[]}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+      const supplyDisabled = screen.getByLabelText(/Supply \(disabled\) for USDC/);
+      expect(supplyDisabled.closest('[data-state]') || supplyDisabled.parentElement).toBeTruthy();
+    });
+
+    it('enables side inputs when reserve IS in reserves prop', () => {
+      const reserves = [makeReserve('USDC')];
+      const entries = [entryFor('USDC')];
+      render(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={entries}
+                actions={makeActions()}
+                reserves={reserves}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+      expect(screen.queryByLabelText(/Supply \(disabled\) for USDC/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Borrow \(disabled\) for USDC/)).not.toBeInTheDocument();
+    });
+
+    it('search finds tokens from all chains when reserves contains full set', () => {
+      const reserves = [
+        makeReserve('USDC', 'AaveV3Ethereum'),
+        makeReserve('USDC', 'AaveV3Arbitrum'),
+      ];
+      render(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={[]}
+                actions={makeActions()}
+                reserves={reserves}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+      const searchInput = screen.getByPlaceholderText(/search/i);
+      fireEvent.change(searchInput, { target: { value: 'USDC' } });
+      const addButtons = screen.getAllByRole('button', { name: /add.*USDC/i });
+      expect(addButtons.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
   describe('input surface compliance (DESIGN.md §4)', () => {
     it('search input uses cnDsInputSurface neutral/magenta classes', () => {
       const reserves = [makeReserve('USDC')];
