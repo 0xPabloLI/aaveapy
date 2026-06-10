@@ -33,13 +33,6 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-const formatDeltaUsdDay = (value: number | null | undefined): string | null => {
-  if (value === null || value === undefined || Number.isNaN(value)) return null;
-  if (Math.abs(value) < 0.005) return null;
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}`;
-};
-
 const InlineDelta = memo(function InlineDelta({
   value,
   accentClass,
@@ -140,7 +133,6 @@ const ResultRow = memo(function ResultRow({
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
-  const usdPerDayDelta = formatDeltaUsdDay(row.usdPerDayMetric?.delta ?? null);
 
   return (
     <tr className="border-t border-border/30 transition-colors hover:bg-muted/20">
@@ -161,7 +153,7 @@ const ResultRow = memo(function ResultRow({
         <InlineDelta value={nativeDelta} accentClass={accentClass} />
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
-        {row.incentivePercent > 0 ? formatPercent(row.incentivePercent) : '-'}
+        {formatPercent(row.incentivePercent)}
         <InlineDelta value={incentiveDelta} accentClass={accentClass} />
       </td>
       <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600')}>
@@ -170,7 +162,6 @@ const ResultRow = memo(function ResultRow({
       </td>
       <td className={cn('px-2.5 py-1.5 text-right tabular-nums font-semibold whitespace-nowrap', dayColor)}>
         {formatUsdDay(row.usdPerDay)}
-        <InlineDelta value={usdPerDayDelta} accentClass={accentClass} />
       </td>
     </tr>
   );
