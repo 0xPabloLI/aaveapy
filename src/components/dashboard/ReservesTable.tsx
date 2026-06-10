@@ -923,8 +923,7 @@ const ReservesTable = ({
       )}
     </div>
   );
-    </div>
-  );
+
 
   const {
     mobileTableRef,
