@@ -29,6 +29,10 @@ export interface PortfolioSideData {
   source?: PositionSource;
   /** Explicit delta sign for wallet-synced positions: 1 = positive (adding), -1 = negative (reducing). Default 1. */
   deltaSign?: DeltaSign;
+  /** Raw delta USD — eliminates reverse calculation from amount.
+   *  Set by handleDeltaCommit/toggleDeltaSign, read by deltaDisplay.
+   *  undefined = no delta (wallet sync or cleared). */
+  deltaRawUsd?: number;
 }
 
 /** Patch object for updateReserve — only specified fields are changed. */
@@ -36,9 +40,13 @@ export interface ReservePatch {
   supplyAmount?: string;
   supplyInputMode?: PortfolioInputMode;
   supplyDeltaSign?: DeltaSign;
+  /** null = clear deltaRawUsd (set to undefined), number = set value. */
+  supplyDeltaRawUsd?: number | null;
   borrowAmount?: string;
   borrowInputMode?: PortfolioInputMode;
   borrowDeltaSign?: DeltaSign;
+  /** null = clear deltaRawUsd (set to undefined), number = set value. */
+  borrowDeltaRawUsd?: number | null;
 }
 
 /** A reserve-level portfolio entry (one token, supply + borrow together). */

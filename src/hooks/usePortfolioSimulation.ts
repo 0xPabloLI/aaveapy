@@ -85,6 +85,7 @@ function forceSyncEntries(
           walletValue: incomingSide.walletValue,
           source: incomingSide.source ?? existing.source,
           deltaSign: incomingSide.deltaSign ?? existing.deltaSign,
+          deltaRawUsd: existing.deltaRawUsd,
         };
       };
       result.push({
@@ -130,6 +131,7 @@ function mergeSideWithDelta(
     ...incoming,
     amount: formatConvertedAmount(newEffective),
     inputMode: 'usd',
+    deltaRawUsd: deltaUsd,
   };
 }
 
@@ -265,6 +267,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
           }
           if (patch.supplyDeltaSign !== undefined) supply = { ...supply, deltaSign: patch.supplyDeltaSign };
           if (patch.borrowDeltaSign !== undefined) borrow = { ...borrow, deltaSign: patch.borrowDeltaSign };
+          if (patch.supplyDeltaRawUsd !== undefined) supply = { ...supply, deltaRawUsd: patch.supplyDeltaRawUsd === null ? undefined : patch.supplyDeltaRawUsd };
+          if (patch.borrowDeltaRawUsd !== undefined) borrow = { ...borrow, deltaRawUsd: patch.borrowDeltaRawUsd === null ? undefined : patch.borrowDeltaRawUsd };
 
           return { ...e, supply, borrow };
         }),
@@ -305,7 +309,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
           s: PortfolioReserveEntry['supply'],
         ): PortfolioReserveEntry['supply'] => {
           if (s.walletValue === null) return s;
-          return { ...s, amount: formatConvertedAmount(s.walletValue), inputMode: 'usd' };
+          return { ...s, amount: formatConvertedAmount(s.walletValue), inputMode: 'usd', deltaRawUsd: undefined };
         };
         return {
           ...e,

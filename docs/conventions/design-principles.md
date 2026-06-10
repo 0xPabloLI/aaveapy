@@ -56,3 +56,26 @@
 **根因教训（c788618f）：** `usePortfolioToggle.handlePortfolioToggle(reserveId, reserve, side?)` 的 `side` 分支曾只添加单 side，导致 `PortfolioTokenRow` 中该 token 只渲染一个 side，与"一体化"设计矛盾。修复：在添加指定 side 时检查并补全另一侧。
 
 **长期方向：** 将"添加 token"提升为一等公民 API（如 `addReserve`），内部保证双 side，避免每个调用方各自实现补全逻辑。`addPosition` 降级为内部实现细节，不对外暴露。
+
+## 8. 入口与语义统一（Entry Point & Semantic Unification）
+
+同一业务操作存在多个触发入口（UI 入口、代码路径、事件来源）时，所有入口必须共享**同一条语义路径**——同一个函数、同一个状态机、同一个用户反馈（toast/动画/状态变化）。禁止多条路径各自实现相同操作。
+
+**规则：**
+
+- **语义层统一**：操作的核心逻辑（add/remove/hide/restore + toast）集中在一个 hook/函数中，调用方只传参不重复实现
+- **反馈层统一**：同一操作从任何入口触发，用户看到的 toast、状态变化、视觉动画必须一致
+- **视觉层统一**：同一状态的视觉标识（图标、颜色、标签）在所有入口中保持一致（如 hidden 条目在表格和面板中都显示 EyeOff 图标）
+- **新增入口时**：先找到已有的语义路径，在其上叠加而非新建；如果找不到，说明该操作尚不存在，应先实现语义路径再添加入口
+
+**反例（违反此原则 → A 路径正确、B 路径错误）：**
+
+- ReservesTable ✓ 按钮直接 `removeReserve` 无 toast，PortfolioPanel Minus 按钮 `removeReserve` + Undo toast——同一操作两条路径，用户感受不一致
+- Portfolio Delta Input 中 `handleClearDelta`（X 按钮）和 `handleDeltaCommit`（键盘删除）曾各自实现清空语义，键盘删除走了 early return 丢掉了"归零"语义——`handleDeltaCommit` 对空值未委托给 `handleClearDelta`
+
+**正例（符合此原则）：**
+
+- Refresh 操作三条触发路径（F5 / Refresh 按钮 / Watch Mode reentry）共享同一个 `refetchEvent` emitter（ADR-0015）
+- `usePortfolioToggle.handlePortfolioToggle` 统一 add/hide/remove 逻辑，ReservesTable 和 PortfolioPanel 都通过它操作
+
+**根因教训（AAV-752）：** ReservesTable checkbox 和 PortfolioPanel Minus 按钮各自独立实现 toggle 交互——checkbox 缺少 Undo toast、缺少 hidden 状态处理、图标不反映 hidden 状态。修复：将 toast + hidden 处理下沉到共享的 `usePortfolioToggle`，两边组件只传参不重复实现。

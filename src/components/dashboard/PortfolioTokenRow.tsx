@@ -58,14 +58,16 @@ function SideInput({
   const hasWallet = sideData.walletValue !== null;
 
   const deltaDisplay = hasWallet
-    ? (() => {
-        const effectiveUsd = sideData.inputMode === 'usd'
-          ? parseNumberInput(sideData.amount)
-          : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
-        const deltaUsd = effectiveUsd - sideData.walletValue!;
-        if (Math.abs(deltaUsd) < DELTA_EPSILON) return '';
-        return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
-      })()
+    ? (sideData.deltaRawUsd !== undefined
+      ? formatNumberInput(formatConvertedAmount(Math.abs(sideData.deltaRawUsd)))
+      : (() => {
+          const effectiveUsd = sideData.inputMode === 'usd'
+            ? parseNumberInput(sideData.amount)
+            : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
+          const deltaUsd = effectiveUsd - sideData.walletValue!;
+          if (Math.abs(deltaUsd) < DELTA_EPSILON) return '';
+          return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
+        })())
     : sideData.amount;
 
   const hasValue = Boolean(deltaDisplay.trim());
@@ -78,8 +80,6 @@ function SideInput({
 
   const handleDeltaCommit = useCallback((formattedValue: string) => {
     if (!formattedValue.trim()) {
-      // If deltaDisplay was already empty before the user started editing,
-      // the user never entered a delta — blur should be a no-op.
       if (!deltaCommitRef.current.initialHasValue) return;
       if (!hasWallet) {
         actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
@@ -87,8 +87,8 @@ function SideInput({
       }
       const resetAmount = formatConvertedAmount(sideData.walletValue!);
       const clearPatch = side === 'supply'
-        ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign }
-        : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign };
+        ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
+        : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
       actions.updateReserve(reserveId, clearPatch);
       return;
     }
@@ -105,11 +105,17 @@ function SideInput({
     const signPatch = side === 'supply'
       ? { supplyDeltaSign: sign as DeltaSign }
       : { borrowDeltaSign: sign as DeltaSign };
+    const amountValue = sideData.inputMode === 'usd'
+      ? formatConvertedAmount(effectiveUsd)
+      : (tokenPriceInUsd != null ? formatConvertedAmount(effectiveUsd / tokenPriceInUsd) : formatConvertedAmount(effectiveUsd));
     const amountPatch = side === 'supply'
-      ? { supplyAmount: formatConvertedAmount(effectiveUsd) }
-      : { borrowAmount: formatConvertedAmount(effectiveUsd) };
-    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue]);
+      ? { supplyAmount: amountValue }
+      : { borrowAmount: amountValue };
+    const deltaRawUsdPatch = side === 'supply'
+      ? { supplyDeltaRawUsd: sign * absDeltaUsd as number | null }
+      : { borrowDeltaRawUsd: sign * absDeltaUsd as number | null };
+    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd]);
 
   const numberInput = useDebouncedInput({
     value: deltaDisplay,
@@ -134,11 +140,18 @@ function SideInput({
       return;
     }
     const newEffectiveUsd = Math.max(walletValue + newSign * absDeltaUsd, 0);
+    const amountValue = sideData.inputMode === 'usd'
+      ? formatConvertedAmount(newEffectiveUsd)
+      : formatConvertedAmount(newEffectiveUsd / tokenPriceInUsd!);
     const amountPatch = side === 'supply'
-      ? { supplyAmount: formatConvertedAmount(newEffectiveUsd) }
-      : { borrowAmount: formatConvertedAmount(newEffectiveUsd) };
-    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.amount, sideData.inputMode, tokenPriceInUsd]);
+      ? { supplyAmount: amountValue }
+      : { borrowAmount: amountValue };
+    const newDeltaRawUsd = sideData.deltaRawUsd !== undefined ? -sideData.deltaRawUsd : newSign * absDeltaUsd;
+    const deltaRawUsdPatch = side === 'supply'
+      ? { supplyDeltaRawUsd: newDeltaRawUsd as number | null }
+      : { borrowDeltaRawUsd: newDeltaRawUsd as number | null };
+    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.amount, sideData.inputMode, tokenPriceInUsd, sideData.deltaRawUsd]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
@@ -207,9 +220,11 @@ function SideInput({
         )}
       </Tooltip>
       {hasWallet && (() => {
-        const effectiveUsdForSign = sideData.inputMode === 'usd'
-          ? parseNumberInput(sideData.amount)
-          : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
+        const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
+          ? sideData.walletValue! + sideData.deltaRawUsd
+          : (sideData.inputMode === 'usd'
+              ? parseNumberInput(sideData.amount)
+              : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0));
         const effectiveDisplay = sideData.inputMode === 'usd'
           ? formatNumberInput(formatConvertedAmount(effectiveUsdForSign))
           : sideData.amount;
