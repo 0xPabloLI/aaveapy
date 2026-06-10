@@ -62,7 +62,7 @@ function SideInput({
           : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
         const deltaUsd = effectiveUsd - sideData.walletValue!;
         if (Math.abs(deltaUsd) < 0.005) return '';
-        return formatNumberInput(String(Math.abs(deltaUsd)));
+        return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
       })()
     : sideData.amount;
 
@@ -184,7 +184,7 @@ function SideInput({
           ? parseNumberInput(sideData.amount)
           : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
         const effectiveDisplay = sideData.inputMode === 'usd'
-          ? formatNumberInput(String(effectiveUsdForSign))
+          ? formatNumberInput(formatConvertedAmount(effectiveUsdForSign))
           : sideData.amount;
         const deltaUsdForSign = effectiveUsdForSign - sideData.walletValue!;
         const priceUnavailable = sideData.inputMode !== 'usd' && tokenPriceInUsd === undefined;
@@ -197,13 +197,13 @@ function SideInput({
                   'shrink-0 ds-text-10 tabular-nums',
                   isModified ? 'text-foreground' : 'text-muted-foreground/70',
                 )}
-                aria-label={`Effective amount, wallet: ${formatNumberInput(String(sideData.walletValue!))}`}
+                aria-label={`Effective amount, wallet: ${formatNumberInput(formatConvertedAmount(sideData.walletValue!))}`}
               >
                 {effectiveDisplay}
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="ds-text-11">
-              Wallet: {formatNumberInput(String(sideData.walletValue!))}
+              Wallet: {formatNumberInput(formatConvertedAmount(sideData.walletValue!))}
             </TooltipContent>
           </Tooltip>
         );

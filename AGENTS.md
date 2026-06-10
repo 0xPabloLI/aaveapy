@@ -100,3 +100,11 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
+
+## Learned Lessons: Portfolio Delta Input
+
+- **Controlled ↔ Uncontrolled 迁移风险**: `useNumberInput`（uncontrolled, initialValue）→ `useDebouncedInput`（controlled, value prop）迁移会引入双向同步反馈循环。迁移前必须分析双向数据流。
+- **Delta 空语义 ≠ 空字符串**: Portfolio 中 clear delta 的正确语义是"使 delta=0"，即设 `amount = walletValue`，而非设 `amount = ''`。空字符串经 parseNumberInput→0 后与 walletValue 做差反而产生非零 delta。
+- **Toggle sign 不应重算 amount**: `effectiveUsd = walletValue + deltaSign × delta` 中，toggle sign 只需翻转 deltaSign，不应重走 effectiveUsd→clamp→重算 delta 流程，否则 clamp(0) 会吃掉 delta magnitude。
+- **Debounce 对 delta 输入有害**: 用户逐字输入 delta 时 300ms debounce 会在输入中途 commit 不完整值。对即时计算的派生字段传 `debounceMs: 0`。
+- **if/else 两分支结果一致是死代码**: review 时注意简化，减少认知负担。

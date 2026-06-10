@@ -346,6 +346,79 @@ describe('PortfolioTokenRow callbacks', () => {
       expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: 1 });
     });
 
+    describe('regression: floating-point noise in effectiveDisplay and deltaDisplay', () => {
+      it('effectiveDisplay does not leak raw float noise when inputMode=usd', () => {
+        const walletValue = 2999.995379612;
+        const amount = String(walletValue + 1000.004620388);
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount, inputMode: 'usd', walletValue, deltaSign: 1 } })}
+            actions={makeActions()}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+            tokenPriceInUsd={1}
+          />,
+          { wrapper: Wrapper },
+        );
+        const effectiveSpan = screen.getByLabelText(/Effective amount/);
+        const text = effectiveSpan.textContent ?? '';
+        const cleaned = text.replace(/,/g, '');
+        if (cleaned.includes('.')) {
+          const sigDigits = (cleaned.replace(/^0+/, '').replace('.', '').replace(/0+$/, '')).length;
+          expect(sigDigits).toBeLessThanOrEqual(8);
+        }
+        expect(text).not.toMatch(/\d{9,}/);
+      });
+
+      it('effectiveDisplay does not leak raw float noise when inputMode=token with non-integer price', () => {
+        const walletValue = 3000;
+        const tokenAmount = '5';
+        const tokenPrice = 1999.9990273412;
+        const expectedUsd = 5 * tokenPrice;
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: tokenAmount, inputMode: 'token', walletValue, deltaSign: 1 } })}
+            actions={makeActions()}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+            tokenPriceInUsd={tokenPrice}
+          />,
+          { wrapper: Wrapper },
+        );
+        const effectiveSpan = screen.getByLabelText(/Effective amount/);
+        const text = effectiveSpan.textContent ?? '';
+        const cleaned = text.replace(/,/g, '');
+        if (cleaned.includes('.')) {
+          const sigDigits = (cleaned.replace(/^0+/, '').replace('.', '').replace(/0+$/, '')).length;
+          expect(sigDigits).toBeLessThanOrEqual(8);
+        }
+        expect(text).not.toMatch(/\d{9,}/);
+      });
+
+      it('deltaDisplay does not leak raw float noise when inputMode=token with non-integer price', () => {
+        const walletValue = 3000;
+        const tokenAmount = '5';
+        const tokenPrice = 1999.9990273412;
+        render(
+          <PortfolioTokenRow
+            entry={makeEntry({ supply: { amount: tokenAmount, inputMode: 'token', walletValue, deltaSign: 1 } })}
+            actions={makeActions()}
+            reserveId="reserve-1"
+            onRemove={vi.fn()}
+            tokenPriceInUsd={tokenPrice}
+          />,
+          { wrapper: Wrapper },
+        );
+        const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+        const text = (input as HTMLInputElement).value;
+        const cleaned = text.replace(/,/g, '');
+        if (cleaned.includes('.')) {
+          const sigDigits = (cleaned.replace(/^0+/, '').replace('.', '').replace(/0+$/, '')).length;
+          expect(sigDigits).toBeLessThanOrEqual(8);
+        }
+      });
+    });
+
     describe('regression: delta input bugs (AAV-736 follow-up)', () => {
       it('Bug A: clear button should result in empty deltaDisplay, not walletValue', () => {
         const actions = makeActions();
