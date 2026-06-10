@@ -127,15 +127,15 @@ describe('ScenarioControls', () => {
       expect(supplyInput.value).toBe('10000');
     });
 
-    it('should select all text on focus', () => {
+    it('should place cursor at end on focus (allows direct decimal point input)', () => {
       renderControls();
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '5000' } });
       fireEvent.blur(supplyInput);
-      const selectSpy = vi.spyOn(supplyInput, 'select');
+      const setSelectionRangeSpy = vi.spyOn(supplyInput, 'setSelectionRange');
       fireEvent.focus(supplyInput);
-      expect(selectSpy).toHaveBeenCalled();
-      selectSpy.mockRestore();
+      expect(setSelectionRangeSpy).toHaveBeenCalledWith(4, 4);
+      setSelectionRangeSpy.mockRestore();
     });
 
     it('should commit immediately on Enter key', () => {
