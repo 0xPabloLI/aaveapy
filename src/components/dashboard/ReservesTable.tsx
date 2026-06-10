@@ -864,35 +864,22 @@ const ReservesTable = ({
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                {isLoading && reserves.length === 0 ? (
-                  <PortfolioPanelSkeleton />
-                ) : portfolioEntries && portfolioActions ? (
-                  <PortfolioPanel
-                    entries={portfolioEntries}
-                    actions={portfolioActions}
-                    reserves={reserves}
-                    positionResults={portfolioResults}
-                    summary={portfolioSummary}
-                    snapshots={portfolioSnapshots}
-                    onWalletSync={onWalletSync}
-                    walletLoadState={walletLoadState}
-                  />
-                ) : null}
-              </div>
-              {onSimulationModeChange && (
-                <div className="ml-auto shrink-0 pt-2">
-                  <PortfolioModeToggle
-                    mode={simulationMode}
-                    onModeChange={onSimulationModeChange}
-                    positionCount={portfolioEntries?.length ?? 0}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          ) : isLoading && reserves.length === 0 ? (
+            <PortfolioPanelSkeleton />
+          ) : portfolioEntries && portfolioActions ? (
+            <PortfolioPanel
+              entries={portfolioEntries}
+              actions={portfolioActions}
+              reserves={reserves}
+              positionResults={portfolioResults}
+              summary={portfolioSummary}
+              snapshots={portfolioSnapshots}
+              onWalletSync={onWalletSync}
+              walletLoadState={walletLoadState}
+              simulationMode={simulationMode}
+              onSimulationModeChange={onSimulationModeChange}
+            />
+          ) : null}
         </>
       ) : (
         <>
@@ -916,39 +903,27 @@ const ReservesTable = ({
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                {isLoading && reserves.length === 0 ? (
-                  <PortfolioPanelSkeleton />
-                ) : portfolioEntries && portfolioActions ? (
-                  <PortfolioPanel
-                    entries={portfolioEntries}
-                    actions={portfolioActions}
-                    reserves={reserves}
-                    positionResults={portfolioResults}
-                    summary={portfolioSummary}
-                    snapshots={portfolioSnapshots}
-                    onWalletSync={onWalletSync}
-                    walletLoadState={walletLoadState}
-                  />
-                ) : null}
-              </div>
-              {onSimulationModeChange && (
-                <div className="ml-auto shrink-0 pt-2">
-                  <PortfolioModeToggle
-                    mode={simulationMode}
-                    onModeChange={onSimulationModeChange}
-                    positionCount={portfolioEntries?.length ?? 0}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          ) : isLoading && reserves.length === 0 ? (
+            <PortfolioPanelSkeleton />
+          ) : portfolioEntries && portfolioActions ? (
+            <PortfolioPanel
+              entries={portfolioEntries}
+              actions={portfolioActions}
+              reserves={reserves}
+              positionResults={portfolioResults}
+              summary={portfolioSummary}
+              snapshots={portfolioSnapshots}
+              onWalletSync={onWalletSync}
+              walletLoadState={walletLoadState}
+              simulationMode={simulationMode}
+              onSimulationModeChange={onSimulationModeChange}
+            />
+          ) : null}
         </>
       )}
     </div>
   );
+
 
   const {
     mobileTableRef,
