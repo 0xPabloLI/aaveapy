@@ -1486,11 +1486,11 @@ export function buildRateSimulationResult({
     afterIncentive: supplyBlocked ? null : supplyAfterIncentive,
     afterTotal: supplyBlocked ? null : supplyAfterTotal,
     deltaNative:
-      supplyBlocked ? null : (supplyAfterNative !== null && supplyCurrentNative !== null ? supplyAfterNative - supplyCurrentNative : null),
+      supplyBlocked || !hasSupplyInput ? null : (supplyAfterNative !== null && supplyCurrentNative !== null ? supplyAfterNative - supplyCurrentNative : null),
     deltaIncentive:
-      supplyBlocked ? null : (supplyAfterIncentive !== null ? supplyAfterIncentive - supplyCurrentIncentive : null),
+      supplyBlocked || !hasSupplyInput ? null : (supplyAfterIncentive !== null ? supplyAfterIncentive - supplyCurrentIncentive : null),
     deltaTotal:
-      supplyBlocked ? null : (supplyAfterTotal !== null && supplyCurrentTotal !== null ? supplyAfterTotal - supplyCurrentTotal : null),
+      supplyBlocked || !hasSupplyInput ? null : (supplyAfterTotal !== null && supplyCurrentTotal !== null ? supplyAfterTotal - supplyCurrentTotal : null),
     sources: {
       protocol: attachCampaigns(buildMetric(supplyCurrentSources.protocol, supplyAfterSources?.protocol ?? null), []),
       merit: attachCampaigns(
@@ -1523,11 +1523,11 @@ export function buildRateSimulationResult({
     afterIncentive: borrowBlocked ? null : borrowAfterIncentive,
     afterTotal: borrowBlocked ? null : borrowAfterTotal,
     deltaNative:
-      borrowBlocked ? null : (borrowAfterNative !== null && borrowCurrentNative !== null ? borrowAfterNative - borrowCurrentNative : null),
+      borrowBlocked || !hasBorrowInput ? null : (borrowAfterNative !== null && borrowCurrentNative !== null ? borrowAfterNative - borrowCurrentNative : null),
     deltaIncentive:
-      borrowBlocked ? null : (borrowAfterIncentive !== null ? borrowAfterIncentive - borrowCurrentIncentive : null),
+      borrowBlocked || !hasBorrowInput ? null : (borrowAfterIncentive !== null ? borrowAfterIncentive - borrowCurrentIncentive : null),
     deltaTotal:
-      borrowBlocked ? null : (borrowAfterTotal !== null && borrowCurrentTotal !== null ? borrowAfterTotal - borrowCurrentTotal : null),
+      borrowBlocked || !hasBorrowInput ? null : (borrowAfterTotal !== null && borrowCurrentTotal !== null ? borrowAfterTotal - borrowCurrentTotal : null),
     sources: {
       protocol: attachCampaigns(buildMetric(borrowCurrentSources.protocol, borrowAfterSources?.protocol ?? null), []),
       merit: attachCampaigns(

@@ -538,7 +538,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     expect(result.supply.afterIncentive).not.toBeNull();
-    expect(result.supply.deltaIncentive).not.toBeNull();
+    expect(result.supply.deltaIncentive).toBeNull();
   });
 
   it('AAV-770 regression fix: borrow.afterIncentive is not null when only supply has input (cross-side preservation)', () => {
@@ -550,7 +550,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     expect(result.borrow.afterIncentive).not.toBeNull();
-    expect(result.borrow.deltaIncentive).not.toBeNull();
+    expect(result.borrow.deltaIncentive).toBeNull();
   });
 
   it('cross-side: supply.after equals supply.current when only borrow has input (no supply change)', () => {
@@ -562,7 +562,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     expect(result.supply.afterTotal).not.toBeNull();
-    expect(result.supply.deltaTotal).not.toBeNull();
+    expect(result.supply.deltaTotal).toBeNull();
   });
 
   it('cross-side: borrow.afterTotal is not null when only supply has input (cross-side influence preserved)', () => {
@@ -574,7 +574,35 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     expect(result.borrow.afterTotal).not.toBeNull();
-    expect(result.borrow.deltaTotal).not.toBeNull();
+    expect(result.borrow.deltaTotal).toBeNull();
+  });
+
+  it('AAV-761 layer-3: supply delta is null when only borrow has input (hasInput=false side)', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.deltaNative).toBeNull();
+    expect(result.supply.deltaIncentive).toBeNull();
+    expect(result.supply.deltaTotal).toBeNull();
+  });
+
+  it('AAV-761 layer-3: borrow delta is null when only supply has input (hasInput=false side)', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+
+    expect(result.borrow.hasInput).toBe(false);
+    expect(result.borrow.deltaNative).toBeNull();
+    expect(result.borrow.deltaIncentive).toBeNull();
+    expect(result.borrow.deltaTotal).toBeNull();
   });
 
   it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
