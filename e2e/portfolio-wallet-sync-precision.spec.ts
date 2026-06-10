@@ -15,7 +15,7 @@ import { expect, test } from '@playwright/test';
  *   E2E_WATCH_ADDRESS=0x...    (skips otherwise)
  */
 
-const WATCH_ADDRESS = process.env.E2E_WATCH_ADDRESS;
+import { WATCH_ADDRESS } from './test-wallets';
 
 /** Max significant digits emitted by `formatConvertedAmount`. */
 const MAX_SIG_DIGITS = 8;

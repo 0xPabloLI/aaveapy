@@ -18,7 +18,7 @@ import { expect, test } from '@playwright/test';
  * 4. Clearing wagmi store + refresh yields clean disconnected state
  */
 
-const WATCH_ADDRESS = process.env.E2E_WATCH_ADDRESS;
+import { WATCH_ADDRESS } from './test-wallets';
 const WAGMI_STORE_KEY = 'wagmi.store';
 const WAGMI_WATCH_KEY = 'wagmi.watchAddress';
 

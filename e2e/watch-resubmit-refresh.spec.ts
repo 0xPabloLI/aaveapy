@@ -20,7 +20,7 @@ import { expect, test } from '@playwright/test';
  * `UserSupplies` / `UserBorrows` request count, proving the urql refetch fires.
  */
 
-const WATCH_ADDRESS = process.env.E2E_WATCH_ADDRESS;
+import { WATCH_ADDRESS } from './test-wallets';
 const AAVE_GRAPHQL_HOST = 'api.aave.com';
 const AAVE_GRAPHQL_HOST_STAGING = 'api.staging.aave.com';
 const USER_POSITION_OPS = ['UserSupplies', 'UserBorrows'];
