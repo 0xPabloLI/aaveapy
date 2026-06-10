@@ -386,7 +386,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px] -mr-[27px]">
+          <div className="flex items-center gap-[var(--ds-space-1)]">
             {walletConnected && (
               <button
                 type="button"
