@@ -4,15 +4,15 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
 const BASE_RESERVE: ReserveWithSpread = {
-  reserveId: 'Core-0xTEST',
+  reserveId: '1:0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   marketName: 'Core',
   chainName: 'Ethereum',
   chainId: 1,
   tokenName: 'USDC',
   tokenSymbol: 'USDC',
-  tokenAddress: '0x0000000000000000000000000000000000000001',
-  aTokenAddress: '0x0000000000000000000000000000000000000002',
-  vTokenAddress: '0x0000000000000000000000000000000000000003',
+  tokenAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+  aTokenAddress: '0x23878914efe38d27c4d67ab83ed1b93a74fc4075',
+  vTokenAddress: '0x625e7708f30ca75bfd92586e17077590c60eb4cd',
   supplyApy: 3.0,
   borrowApy: 5.0,
   supplyIncentives: [],
