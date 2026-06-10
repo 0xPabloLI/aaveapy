@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { usePortfolioToggle } from './usePortfolioToggle';
 import type { PortfolioSimulationContext } from './usePortfolioToggle';
