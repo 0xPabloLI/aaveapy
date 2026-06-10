@@ -1,121 +1,54 @@
-# 本地化 SEO + Analytics 方案
+# Align Portfolio Toggle Across Modes
 
-基于你的选择：**子路径 `/pt-br` `/fr` `/tr`** · **落地页 + 关键 UI i18n** · **Lovable AI 生成文案** · **GSC API + 手工 Semrush 快照**。
+## 问题
+当前 `Portfolio` 开关在两种模式下的水平位置不一致：
 
----
+- **Single 模式**：开关位于 `ReservesTable` 的 scenario 行（外层 `flex items-center gap-2`），`ml-auto shrink-0`，紧贴 scenario 容器最右边缘。
+- **Portfolio 模式**：开关被搬进 `PortfolioPanel` 的 header 内部，与一组图标按钮（同步、保存、搜索、清空）放在同一个 cluster 中。该 cluster 用 `pr-[11px] -mr-[27px]` 做了硬补偿，header 又有自己的 `px-4 py-3`，导致开关相对页面/卡片右边缘比 Single 模式的位置**整体向左偏移**几像素，切换模式时视觉上会"跳一下"。
 
-## 1. 关键词与 FAQ 文案生成（一次性脚本）
+目标：两种模式下 Portfolio 开关的右边缘 X 坐标完全一致，切换无位移。
 
-用 Lovable AI（Gemini 2.5 Pro）跑 `scripts/gen-locale-content.ts`，按市场生成结构化 JSON：
+## 方案：把开关提到 PortfolioPanel 外层、与 Single 模式共用同一插槽
 
-| 市场 | 主关键词 | 落地页 | FAQ |
-|---|---|---|---|
-| 🇧🇷 BR (pt-BR) | aave hoje, aave criptomoeda, defi rendimento | ✅ 路由 | ✅ |
-| 🇫🇷 FR | cours aave, analyse technique aave, defi rendement | ✅ 路由 | ✅ |
-| 🇹🇷 TR | aave coin fiyat, aave yorum, defi getiri | ✅ 路由 | ✅ |
-| 🇺🇸 US / 🇩🇪 DE / 🇮🇳 IN | aave price, aave kurs, aave price india | ❌ 仅文档 `docs/seo/keyword-plan.md` | — |
+让 `ReservesTable` 的 scenario 行始终是同一个 flex 容器：
 
-输出落地到 `src/locales/{pt-BR,fr,tr}/landing.json` 与 `faqs.json`，主 App 关键 UI 字符串落到 `src/locales/*/ui.json`（Header / Filter / Sort / Tooltip 标题，约 60 个 key）。
-
-## 2. i18n 框架
-
-- 安装 `react-i18next` + `i18next-browser-languagedetector`
-- `src/i18n/index.ts` 初始化，按路由前缀强制 locale（不靠浏览器语言覆盖明确的 URL）
-- 默认 `en`（无前缀），`/pt-br` `/fr` `/tr` 切换语言并在 `<html lang>` 标记
-- 表格数据（链名/代币）保持英文，符合你「数据本身就是英文」的约束
-
-## 3. 路由与落地页
-
-```
-/                Index (en)
-/pt-br           LandingPT  (Brazil 落地页 + CTA → /)
-/fr              LandingFR
-/tr              LandingTR
-/chain/:slug     ChainPage  (已有，保持英文)
+```text
+[ 左侧内容 ............................................ ] [ Portfolio 开关 ]
+  Single  : ScenarioControls (flex-1)                      PortfolioModeToggle
+  Portfolio: PortfolioPanel (flex-1，去掉自带开关 + 负 margin) PortfolioModeToggle
 ```
 
-落地页结构（每个市场一致，复用 `LocalizedLanding` 组件）：
+这样开关在两种模式下都是同一棵 DOM 节点的同一个位置，X 坐标天然一致。
 
-```
-[Hero] 本地化 H1 + 副标题 + "Open Dashboard" CTA → /
-[Live Snapshot] 复用 TopOpportunitiesCarousel（数据英文，标题本地化）
-[Why aaveapy] 4 张 feature 卡（本地化）
-[FAQ] 6–8 题，输出 FAQPage JSON-LD
-[Footer CTA] 跳转主面板
-```
+### 改动点
 
-## 4. Hreflang + Helmet
+1. `src/components/dashboard/ReservesTable.tsx`
+   - 在桌面与移动两段渲染中，**移除 `!isPortfolioMode` 分支差异**对 toggle 的影响：始终渲染外层 `flex items-center gap-2` + 末尾 `PortfolioModeToggle`。
+   - 左侧 slot 根据模式渲染 `ScenarioControls` 或 `PortfolioPanel`。
+   - 向 `PortfolioPanel` 传入 `simulationMode={undefined}` / 不传 `onSimulationModeChange`，让它不再渲染自己那个 toggle。
 
-- `npm install react-helmet-async`，在 `main.tsx` 包 `<HelmetProvider>`
-- **移除** `index.html` 里的 `<link rel="canonical">`（否则会和 Helmet 重复）
-- 新建 `src/components/seo/LocaleHead.tsx`：每个页面渲染
-  ```
-  <link rel="canonical" href=".../{path}">
-  <link rel="alternate" hreflang="en"    href=".../">
-  <link rel="alternate" hreflang="pt-BR" href=".../pt-br">
-  <link rel="alternate" hreflang="fr"    href=".../fr">
-  <link rel="alternate" hreflang="tr"    href=".../tr">
-  <link rel="alternate" hreflang="x-default" href=".../">
-  ```
-- 各落地页注入本地化 `<title>` `<meta description>` `og:locale`
-- `sitemap.xml` 追加三个新路径，并为每个 URL 加 `xhtml:link` hreflang 标签（生成器小幅扩展）
+2. `src/components/dashboard/PortfolioPanel.tsx`
+   - header 右侧 cluster 去掉 `pr-[11px] -mr-[27px]` 这组硬补偿（这组 hack 原本是为了让内嵌的 toggle 对齐外层；现在 toggle 移走，hack 同步移除，避免图标按钮再向右溢出）。
+   - 保留同步/保存/搜索/清空四个图标按钮的相对排布，整体右内边距回到 header 的 `px-4`（移动端 `px-2.5`），与卡片其它内容一致。
+   - `PortfolioModeToggle` 引入与渲染分支删除（props 仍保留以兼容现有调用方／测试，但 panel 内部不再使用）。
 
-## 5. Analytics Dashboard（`/admin/seo`）
+3. 移动端
+   - 同样把 toggle 提到外层。Single 模式的 `flex items-center gap-2` 已经存在；Portfolio 模式新增一个一行 flex 容器，把 `PortfolioPanel` 放左、toggle 放右，间距用 `gap-2` 与 Single 模式一致。
+   - 移动端 toggle 在 `PortfolioModeToggle` 内部已有 `flex-col` 紧凑样式，无需改动。
 
-仅本地查看用，不做身份系统（你是单人开发）。**用 IP 简单 gating 不靠谱**——建议靠**"不在 sitemap + robots disallow + 不公开链接"** 隐藏路径，足够当前阶段。
+### 验证
 
-数据源：
-- **GSC API**（已连）：edge function `gsc-search-analytics` 每天拉一次 `searchanalytics/query`，按 `country` + `page` 维度，缓存到 Lovable Cloud 表 `gsc_daily`
-- **Semrush 快照**：表 `semrush_snapshots`，UI 提供手动「新增快照」表单（输入市场 / 关键词 / volume / position / date），由我把上次跑的 10 国数据预填一份种子
+- 桌面 1280 与 1440 宽度：切换 Single ⇄ Portfolio，截图对比 `PortfolioModeToggle` 右边缘 X 坐标一致（≤1px 浮动）。
+- 移动 390 宽度：同样对比，开关不与卡片边缘重叠。
+- `npm run lint && npm test && npm run build && npx tsc --noEmit`
+- 已有相关测试：`ReservesTable.test.tsx`、`src/test/header-controls.test.ts` 必须仍通过；如果有断言 toggle 在 PortfolioPanel 内的测试，调整为断言 toggle 在 scenario 行内。
 
-Dashboard 视图：
-1. **地区点击趋势**：折线，按国家分组，30/90 天
-2. **本地路由表现**：表格 `/pt-br | /fr | /tr` 的 impressions / clicks / CTR / avg position（来自 GSC）
-3. **关键词热度 vs 流量相关性**：左侧 Semrush 关键词 volume，右侧同市场点击量，散点
-4. **手动 Semrush 快照管理**：增删改
+### 不做的事
 
-## 6. 文件改动总览
+- 不动 PortfolioPanel 的其它布局（搜索框、suggested chips、summary）。
+- 不改 `PortfolioModeToggle` 自身样式。
+- 不改 sticky / pin-scroll 逻辑（ADR-0013 不受影响：toggle 高度可忽略，仍由 `useReservesLayoutRefs` 测量）。
 
-```
-新增  src/i18n/index.ts
-新增  src/locales/{en,pt-BR,fr,tr}/{ui,landing,faqs}.json
-新增  src/pages/LandingPT.tsx  LandingFR.tsx  LandingTR.tsx
-新增  src/components/landing/LocalizedLanding.tsx
-新增  src/components/seo/LocaleHead.tsx
-新增  src/pages/admin/SeoDashboard.tsx + 子组件
-新增  supabase/functions/gsc-search-analytics/index.ts
-新增  scripts/gen-locale-content.ts       (一次性)
-迁移  index.html (移除 canonical)
-改   src/main.tsx (HelmetProvider)
-改   src/App.tsx (新路由 + i18n init)
-改   public/sitemap.xml (+hreflang)
-改   关键 UI 组件用 t() 包字符串（约 10–15 个文件，最小侵入）
-DB   表 gsc_daily, semrush_snapshots
-```
+## 确认点
 
-## 7. 执行顺序与可交付里程碑
-
-1. **M1 — 内容生成**：跑 AI 脚本产出 3 套 locale JSON（你审一遍文案）
-2. **M2 — i18n + 落地页 + hreflang**：可见 `/pt-br` `/fr` `/tr`，sitemap 更新
-3. **M3 — Analytics 后端**：Cloud 建表 + GSC edge function + 每日 cron
-4. **M4 — Dashboard UI**：`/admin/seo` 三视图 + Semrush 录入表单
-
-每个里程碑跑 `npm run lint && npm test && npm run build && npx tsc --noEmit` 全验证。
-
-## 8. 风险与边界
-
-- **Lovable AI 文案质量**：金融/DeFi 术语在 PT-BR/TR 容易翻译失真，落地后建议你扫一遍标题和 FAQ 前两题
-- **GSC 数据延迟**：新路由部署后 GSC 通常 2–7 天才有数据，Dashboard 初期会是空的——这是正常的
-- **不动业务逻辑**：表格、模拟器、激励计算全部保留英文且不动，符合项目「数据是英文」的约束
-- **Vercel 部署**：你需要手动 merge 到 main 才会上线；我会在每个 M 完成后提醒
-
-## 技术细节
-
-- i18n key 命名：`landing.br.hero.title` / `ui.header.search`
-- FAQ JSON-LD：`@type: FAQPage`，每个落地页注入
-- `og:locale`：`pt_BR` / `fr_FR` / `tr_TR`
-- 默认 lang fallback：缺 key 时 fall back 到 en，避免空白
-- GSC edge function 用 cron 触发（pg_cron + http extension），每天 06:00 UTC 拉前一日数据
-- Dashboard 表使用 RLS：仅 service role 写，所有人读（你的项目约束允许）
-
-确认这个方案就开工，从 M1 开始。
+切换模式时 toggle 应**完全不动**——这是验收标准。请确认这是你想要的"在同一位置"的含义；如果你的意思是别的（例如让 Portfolio 模式里 toggle 仍嵌在 panel header 内、只是把整个 panel 的右内边距改成与 ScenarioControls 一致），我可以改成更轻量的方案：仅删除 `-mr-[27px]/pr-[11px]` 那组负 margin，让 toggle 自然落在 `px-4` 内边缘。
