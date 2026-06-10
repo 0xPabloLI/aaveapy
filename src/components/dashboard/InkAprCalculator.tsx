@@ -482,11 +482,8 @@ const InkAprCalculator = ({
               <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">$</span>
               <Input
                 ref={fdvInputRef}
-                type="number"
+                type="text"
                 disableSurface
-                min="0"
-                max="120"
-                step="0.01"
                 inputMode="decimal"
                 value={fdvInputValue}
                 onChange={handleFdvInputChange}
@@ -739,11 +736,8 @@ const InkAprCalculator = ({
         <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
           ref={fdvInputRef}
-          type="number"
+          type="text"
           disableSurface
-          min="0"
-          max="120"
-          step="0.01"
           inputMode="decimal"
           value={fdvInputValue}
           onChange={handleFdvInputChange}
