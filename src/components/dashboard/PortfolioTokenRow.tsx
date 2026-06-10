@@ -267,6 +267,7 @@ function SideInput({
           </button>
         )}
         <input
+          ref={numberInput.inputRef}
           value={numberInput.displayValue}
           onChange={numberInput.handleChange}
           onFocus={numberInput.handleFocus}

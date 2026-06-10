@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useDebouncedInput } from './useDebouncedInput';
+import { useDebouncedInput, computeCursorAfterSanitize } from './useDebouncedInput';
 
 const DEBOUNCE_MS = 300;
 
@@ -369,5 +369,63 @@ describe('useDebouncedInput', () => {
       });
       expect(onCommit).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('computeCursorAfterSanitize (AAV-775 pure logic)', () => {
+  it('cursor after decimal stays after decimal when leading zero added', () => {
+    expect(computeCursorAfterSanitize('.', '0.', 1, false)).toBe(2);
+  });
+
+  it('cursor at end of number stays at end', () => {
+    expect(computeCursorAfterSanitize('15', '15', 2, false)).toBe(2);
+  });
+
+  it('cursor in middle of number preserved after sanitize (insert at pos 1)', () => {
+    expect(computeCursorAfterSanitize('15', '105', 1, false)).toBe(1);
+  });
+
+  it('cursor after decimal point preserved', () => {
+    expect(computeCursorAfterSanitize('1.', '1.5', 2, false)).toBe(2);
+  });
+
+  it('cursor after full decimal preserved', () => {
+    expect(computeCursorAfterSanitize('1.5', '1.55', 3, false)).toBe(3);
+  });
+
+  it('cursor at start of number stays at start', () => {
+    expect(computeCursorAfterSanitize('5', '5', 0, false)).toBe(0);
+  });
+
+  it('negative input cursor goes to position 1 (after zero)', () => {
+    expect(computeCursorAfterSanitize('5', '0', 1, true)).toBe(1);
+  });
+
+  it('cursor clamped to sanitized length', () => {
+    expect(computeCursorAfterSanitize('123', '12', 3, false)).toBe(2);
+  });
+});
+
+describe('useDebouncedInput cursor position preservation (AAV-775 integration)', () => {
+  it('handleChange computes cursor and useLayoutEffect restores it via inputRef', () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() => useDebouncedInput({ onCommit, debounceMs: 0 }));
+    act(() => {
+      result.current.handleChange({
+        target: { value: '.', selectionStart: 1 },
+      } as React.ChangeEvent<HTMLInputElement>);
+    });
+    expect(result.current.displayValue).toBe('0.');
+  });
+
+  it('handleChange with middle cursor does not reset displayValue', () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() => useDebouncedInput({ onCommit, debounceMs: 0 }));
+    act(() => {
+      result.current.handleChange({
+        target: { value: '15', selectionStart: 2 },
+      } as React.ChangeEvent<HTMLInputElement>);
+    });
+    expect(result.current.displayValue).toBe('15');
   });
 });

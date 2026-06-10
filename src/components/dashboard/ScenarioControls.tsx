@@ -97,9 +97,10 @@ interface ScenarioInputFieldProps {
   onClear: () => void;
   inputMode: ScenarioInputMode;
   compact: boolean;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
-function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onKeyDown, onClear, inputMode, compact }: ScenarioInputFieldProps) {
+function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onKeyDown, onClear, inputMode, compact, inputRef }: ScenarioInputFieldProps) {
   const label = side === 'supply' ? 'Supply' : 'Borrow';
   const accentClass = side === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan';
   const labelFontSize = compact ? 'ds-text-11' : 'ds-text-12';
@@ -128,6 +129,7 @@ function ScenarioInputField({ side, displayValue, onChange, onBlur, onFocus, onK
       <span className={labelClass}>{label}</span>
       <div className="relative flex-1 min-w-0">
         <input
+          ref={inputRef}
           value={displayValue}
           onChange={onChange}
           onBlur={onBlur}
@@ -278,6 +280,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onKeyDown={supplyInput.handleKeyDown}
               onClear={supplyInput.handleClear}
               inputMode={inputMode}
+              inputRef={supplyInput.inputRef}
               compact
             />
             <ScenarioInputField
@@ -289,6 +292,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onKeyDown={borrowInput.handleKeyDown}
               onClear={borrowInput.handleClear}
               inputMode={inputMode}
+              inputRef={borrowInput.inputRef}
               compact
             />
           </div>
@@ -372,6 +376,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             onKeyDown={supplyInput.handleKeyDown}
             onClear={supplyInput.handleClear}
             inputMode={inputMode}
+            inputRef={supplyInput.inputRef}
             compact={false}
           />
           <ScenarioInputField
@@ -383,6 +388,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             onKeyDown={borrowInput.handleKeyDown}
             onClear={borrowInput.handleClear}
             inputMode={inputMode}
+            inputRef={borrowInput.inputRef}
             compact={false}
           />
 
