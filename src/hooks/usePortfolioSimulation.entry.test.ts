@@ -441,7 +441,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
   })
 
   describe('undoLastRemove', () => {
-    it('restores entries after hideReserve', () => {
+    it('unhides the last hidden entry', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
 
@@ -460,6 +460,24 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       expect(restored).toBe(true)
       expect(result.current.entries.find(e => e.reserveId === 'r-weth')?.hidden).toBe(false)
+    })
+
+    it('only unhides the last hidden entry when multiple are hidden', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+      })
+
+      act(() => { result.current.actions.hideReserve('r-weth') })
+      act(() => { result.current.actions.hideReserve('r-gho') })
+
+      act(() => { result.current.actions.undoLastRemove() })
+
+      expect(result.current.entries.find(e => e.reserveId === 'r-weth')?.hidden).toBe(true)
+      expect(result.current.entries.find(e => e.reserveId === 'r-gho')?.hidden).toBe(false)
     })
 
     it('returns false when nothing to undo', () => {

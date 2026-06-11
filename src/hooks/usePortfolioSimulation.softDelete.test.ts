@@ -79,7 +79,7 @@ describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
     expect(unhidden.hidden).toBe(false)
   })
 
-  it('undoLastRemove restores entries after hideReserve', () => {
+  it('undoLastRemove restores the last hidden entry', () => {
     const { result } = renderHook(() => usePortfolioSimulation())
     act(() => {
       result.current.actions.importReserves([
@@ -98,6 +98,26 @@ describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
 
     expect(restored).toBe(true)
     expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(false)
+  })
+
+  it('undoLastRemove only unhides the last hidden entry, not earlier ones', () => {
+    const { result } = renderHook(() => usePortfolioSimulation())
+    act(() => {
+      result.current.actions.importReserves([
+        baseEntry({ reserveId: 'r-weth' }),
+        baseEntry({ reserveId: 'r-gho' }),
+      ])
+    })
+
+    act(() => result.current.actions.hideReserve('r-weth'))
+    act(() => result.current.actions.hideReserve('r-gho'))
+    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(true)
+    expect(result.current.entries.find((e) => e.reserveId === 'r-gho')?.hidden).toBe(true)
+
+    act(() => { result.current.actions.undoLastRemove() })
+
+    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(true)
+    expect(result.current.entries.find((e) => e.reserveId === 'r-gho')?.hidden).toBe(false)
   })
 
   it('undoLastRemove returns false when nothing to undo', () => {

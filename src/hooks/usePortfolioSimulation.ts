@@ -174,7 +174,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
   const [entries, setEntries] = useState<PortfolioReserveEntry[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
-  const lastRemoveSnapshotRef = useRef<PortfolioReserveEntry[] | null>(null);
+  const lastHiddenReserveIdRef = useRef<string | null>(null);
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
 
@@ -275,10 +275,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   );
 
   const hideReserve = useCallback((reserveId: string) => {
-    setEntries((prev) => {
-      lastRemoveSnapshotRef.current = prev;
-      return prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e));
-    });
+    setEntries((prev) =>
+      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)),
+    );
+    lastHiddenReserveIdRef.current = reserveId;
   }, []);
 
   const unhideReserve = useCallback((reserveId: string) => {
@@ -367,10 +367,12 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const undoLastRemove = useCallback((): boolean => {
-    const snapshot = lastRemoveSnapshotRef.current;
-    if (!snapshot) return false;
-    lastRemoveSnapshotRef.current = null;
-    setEntries(snapshot);
+    const reserveId = lastHiddenReserveIdRef.current;
+    if (!reserveId) return false;
+    lastHiddenReserveIdRef.current = null;
+    setEntries((prev) =>
+      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: false } : e)),
+    );
     return true;
   }, []);
 
