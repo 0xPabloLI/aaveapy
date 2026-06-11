@@ -47,12 +47,23 @@ match the wrapper's effective right padding.
 
 ## Enforcement
 
-- `scripts/check-portfolio-panel-spacing.sh` greps PortfolioPanel for
-  any `(p|m)(l|r|x)-[Npx|Nrem]` magic value and fails. Run with
-  `--strict` in CI.
-- `e2e/portfolio-toggle-alignment.spec.ts` measures the toggle's bounding
-  box in Single mode and Portfolio mode at desktop and mobile widths and
-  asserts the right edge difference stays within 1px.
+Four layers protect the spacing contract:
+
+1. **ESLint** (`eslint.config.js`) — `no-restricted-syntax` rule scoped to
+   `src/components/dashboard/Portfolio*.{ts,tsx}`. Any literal or template
+   string containing `pl|pr|px|ml|mr|mx-[Npx|Nrem]` fails the lint step,
+   so regressions are caught during development before commit.
+2. **Shell guard** (`scripts/check-portfolio-panel-spacing.sh`) — greps
+   every `Portfolio*.tsx` file (not just `PortfolioPanel.tsx`) under
+   `src/components/dashboard` for the same pattern. Run with `--strict`
+   in CI.
+3. **Playwright bounding-box** (`e2e/portfolio-toggle-alignment.spec.ts`)
+   — measures the toggle's right edge in Single vs Portfolio mode at
+   1280 / 768 / 640 / 390 / 360 px and asserts drift ≤ 1px.
+4. **Playwright screenshot** (`e2e/portfolio-panel-header-visual.spec.ts`)
+   — pixel-diff snapshot of both header variants at desktop and mobile
+   to catch subtle padding/typography drift that the bounding-box check
+   misses.
 
 ## Reference files
 

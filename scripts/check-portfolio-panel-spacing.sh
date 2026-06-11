@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # check-portfolio-panel-spacing.sh
 #
-# Guards PortfolioPanel.tsx against arbitrary pr-[Npx] / mr-[Npx] /
-# pl-[Npx] / ml-[Npx] / px-[Npx] / mx-[Npx] magic values. All horizontal
-# padding and margin must reference --ds-space-* tokens so the Portfolio-
-# mode header toggle stays X-aligned with the Single-mode toggle.
+# Guards every Portfolio*.tsx file in src/components/dashboard against
+# arbitrary horizontal-spacing magic values:
+#   pl-[Npx] pr-[Npx] px-[Npx] ml-[Npx] mr-[Npx] mx-[Npx]
+# (and the same with `rem` units). All horizontal padding and margin must
+# reference a --ds-space-* token so the Portfolio-mode header toggle stays
+# X-aligned with the Single-mode toggle.
 #
 # See: docs/design/portfolio-panel-spacing.md
 #
@@ -20,21 +22,34 @@ if [[ "${1:-}" == "--strict" ]]; then
 fi
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET="$ROOT_DIR/src/components/dashboard/PortfolioPanel.tsx"
+TARGET_DIR="$ROOT_DIR/src/components/dashboard"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-# Match (p|m)(l|r|x)-[<anything-with-px-or-rem>]. Token usage like
-# pr-[var(--ds-space-3)] is intentionally NOT matched.
+# Match (p|m)(l|r|x)-[<starts-with-digit ... ends with px|rem>]. Token
+# usage like pr-[var(--ds-space-3)] is intentionally NOT matched.
 PATTERN='\b[pm][lrx]-\[[0-9][^]]*(px|rem)\]'
 
-MATCHES=$(grep -nE "$PATTERN" "$TARGET" || true)
+FILES=$(find "$TARGET_DIR" -maxdepth 1 -type f -name 'Portfolio*.tsx' | sort)
+
+if [[ -z "$FILES" ]]; then
+  echo -e "${RED}FAIL${NC}: no Portfolio*.tsx files found under $TARGET_DIR"
+  exit 1
+fi
+
+MATCHES=""
+while IFS= read -r file; do
+  HITS=$(grep -nE "$PATTERN" "$file" || true)
+  if [[ -n "$HITS" ]]; then
+    MATCHES+="── ${file#$ROOT_DIR/} ──"$'\n'"$HITS"$'\n'
+  fi
+done <<< "$FILES"
 
 if [[ -n "$MATCHES" ]]; then
-  echo -e "${RED}FAIL${NC}: PortfolioPanel.tsx contains arbitrary horizontal spacing values."
-  echo "Use pr-[var(--ds-space-N)] / mr-[var(--ds-space-N)] etc. instead."
+  echo -e "${RED}FAIL${NC}: Portfolio*.tsx contains arbitrary horizontal spacing values."
+  echo "Use pl/pr/px/ml/mr/mx-[var(--ds-space-N)] tokens instead."
   echo "See docs/design/portfolio-panel-spacing.md"
   echo ""
   echo "$MATCHES"
@@ -42,4 +57,4 @@ if [[ -n "$MATCHES" ]]; then
   exit 0
 fi
 
-echo -e "${GREEN}PASS${NC}: PortfolioPanel.tsx uses only token-based horizontal spacing."
+echo -e "${GREEN}PASS${NC}: all Portfolio*.tsx files use token-based horizontal spacing."
