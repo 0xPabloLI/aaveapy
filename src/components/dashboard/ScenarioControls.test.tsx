@@ -118,13 +118,13 @@ describe('ScenarioControls', () => {
       expect(supplyInput.value).toBe('10,000');
     });
 
-    it('should remove commas on focus', () => {
+    it('should keep commas on focus', () => {
       renderControls();
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '10000' } });
       fireEvent.blur(supplyInput);
       fireEvent.focus(supplyInput);
-      expect(supplyInput.value).toBe('10000');
+      expect(supplyInput.value).toBe('10,000');
     });
 
     it('should place cursor at end on focus (allows direct decimal point input)', () => {
@@ -134,7 +134,7 @@ describe('ScenarioControls', () => {
       fireEvent.blur(supplyInput);
       const setSelectionRangeSpy = vi.spyOn(supplyInput, 'setSelectionRange');
       fireEvent.focus(supplyInput);
-      expect(setSelectionRangeSpy).toHaveBeenCalledWith(4, 4);
+      expect(setSelectionRangeSpy).toHaveBeenCalledWith(5, 5);
       setSelectionRangeSpy.mockRestore();
     });
 
@@ -177,11 +177,11 @@ describe('ScenarioControls', () => {
       expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
     });
 
-    it('should show raw value without commas during editing', () => {
+    it('should show formatted value with commas during editing', () => {
       renderControls();
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '10000' } });
-      expect(supplyInput.value).toBe('10000');
+      expect(supplyInput.value).toBe('10,000');
     });
 
     it('should pass current borrow value when committing supply', () => {
@@ -274,7 +274,7 @@ describe('ScenarioControls', () => {
       renderControls({ onDebouncedChange });
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '5000' } });
-      expect(supplyInput.value).toBe('5000');
+      expect(supplyInput.value).toBe('5,000');
       vi.advanceTimersByTime(300);
       expect(onDebouncedChange).toHaveBeenCalled();
     });
@@ -284,7 +284,7 @@ describe('ScenarioControls', () => {
       renderControls({ onDebouncedChange });
       const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
       fireEvent.change(borrowInput, { target: { value: '2000' } });
-      expect(borrowInput.value).toBe('2000');
+      expect(borrowInput.value).toBe('2,000');
       vi.advanceTimersByTime(300);
       expect(onDebouncedChange).toHaveBeenCalled();
     });
@@ -312,8 +312,8 @@ describe('ScenarioControls', () => {
       const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '5000' } });
       fireEvent.change(borrowInput, { target: { value: '2000' } });
-      expect(supplyInput.value).toBe('5000');
-      expect(borrowInput.value).toBe('2000');
+      expect(supplyInput.value).toBe('5,000');
+      expect(borrowInput.value).toBe('2,000');
       fireEvent.click(screen.getByText('Token'));
       expect(supplyInput.value).toBe('');
       expect(borrowInput.value).toBe('');
@@ -337,7 +337,7 @@ describe('ScenarioControls', () => {
         const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
         const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
         fireEvent.change(supplyInput, { target: { value: '3000' } });
-        expect(supplyInput.value).toBe('3000');
+        expect(supplyInput.value).toBe('3,000');
         expect(borrowInput.value).toBe('');
         fireEvent.click(screen.getByText('Token'));
         expect(supplyInput.value).toBe('');
@@ -350,7 +350,7 @@ describe('ScenarioControls', () => {
         const borrowInput = screen.getByLabelText('Borrow amount') as HTMLInputElement;
         fireEvent.change(borrowInput, { target: { value: '1500' } });
         expect(supplyInput.value).toBe('');
-        expect(borrowInput.value).toBe('1500');
+        expect(borrowInput.value).toBe('1,500');
         fireEvent.click(screen.getByText('Token'));
         expect(supplyInput.value).toBe('');
         expect(borrowInput.value).toBe('');
@@ -440,7 +440,7 @@ describe('ScenarioControls', () => {
       renderControls();
       const supplyInput = screen.getByLabelText('Supply amount') as HTMLInputElement;
       fireEvent.change(supplyInput, { target: { value: '1000' } });
-      expect(supplyInput.value).toBe('1000');
+      expect(supplyInput.value).toBe('1,000');
       const clearBtn = screen.getByLabelText('Clear supply amount');
       expect(clearBtn).toBeInTheDocument();
     });

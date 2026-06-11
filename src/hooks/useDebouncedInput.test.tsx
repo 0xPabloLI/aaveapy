@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useDebouncedInput, computeCursorAfterSanitize } from './useDebouncedInput';
+import { useDebouncedInput, computeCursorAfterSanitize, computeCursorAfterFormat } from './useDebouncedInput';
 
 const DEBOUNCE_MS = 300;
 
@@ -14,14 +14,14 @@ describe('useDebouncedInput', () => {
     vi.useRealTimers();
   });
 
-  describe('onChange (sanitize only, no thousands separators)', () => {
-    it('accepts numeric input', () => {
+  describe('onChange (sanitize and format with thousands separators)', () => {
+    it('accepts numeric input and formats with thousands separators', () => {
       const onCommit = vi.fn();
       const { result } = renderHook(() => useDebouncedInput({ onCommit }));
       act(() => {
         result.current.handleChange({ target: { value: '12345' } } as React.ChangeEvent<HTMLInputElement>);
       });
-      expect(result.current.displayValue).toBe('12345');
+      expect(result.current.displayValue).toBe('12,345');
     });
 
     it('accepts decimal input', () => {
@@ -42,13 +42,34 @@ describe('useDebouncedInput', () => {
       expect(result.current.displayValue).toBe('12');
     });
 
-    it('does not add thousands separators during typing', () => {
+    it('adds thousands separators during typing', () => {
       const onCommit = vi.fn();
       const { result } = renderHook(() => useDebouncedInput({ onCommit }));
       act(() => {
         result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
       });
-      expect(result.current.displayValue).toBe('10000');
+      expect(result.current.displayValue).toBe('10,000');
+    });
+
+    it('formats numbers with thousands separators in real-time', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '100000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('100,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '1000000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000,000');
     });
 
     it('handles leading dot as "0."', () => {
@@ -67,6 +88,24 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '5.' } } as React.ChangeEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('5.');
+    });
+
+    it('preserves trailing dot with thousands separators', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000.' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000.');
+    });
+
+    it('preserves decimal part with thousands separators', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1234.5' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,234.5');
     });
 
     it('allows empty string (Backspace to clear)', () => {
@@ -158,7 +197,7 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleBlur({ target: { value: '10000' } } as React.FocusEvent<HTMLInputElement>);
+        result.current.handleBlur({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       expect(onCommit).toHaveBeenCalledTimes(1);
       expect(onCommit).toHaveBeenCalledWith('10,000');
@@ -171,7 +210,7 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleBlur({ target: { value: '10000' } } as React.FocusEvent<HTMLInputElement>);
+        result.current.handleBlur({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       act(() => {
         vi.advanceTimersByTime(DEBOUNCE_MS);
@@ -186,7 +225,7 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '1234.5' } } as React.ChangeEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleBlur({ target: { value: '1234.5' } } as React.FocusEvent<HTMLInputElement>);
+        result.current.handleBlur({ target: { value: '1,234.5' } } as React.FocusEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('1,234.5');
       expect(onCommit).toHaveBeenCalledWith('1,234.5');
@@ -213,8 +252,8 @@ describe('useDebouncedInput', () => {
     });
   });
 
-  describe('onFocus (strip thousands separators + select)', () => {
-    it('strips thousands separators on focus for clean editing', () => {
+  describe('onFocus (preserve thousands separators)', () => {
+    it('keeps thousands separators on focus', () => {
       const onCommit = vi.fn();
       const { result } = renderHook(() => useDebouncedInput({ onCommit }));
       act(() => {
@@ -224,7 +263,7 @@ describe('useDebouncedInput', () => {
       act(() => {
         result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
-      expect(result.current.displayValue).toBe('10000');
+      expect(result.current.displayValue).toBe('10,000');
     });
 
     it('places cursor at end on focus (allows direct decimal point input)', () => {
@@ -235,7 +274,7 @@ describe('useDebouncedInput', () => {
         result.current.inputRef.current = { setSelectionRange } as unknown as HTMLInputElement;
         result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
-      expect(setSelectionRange).toHaveBeenCalledWith(5, 5);
+      expect(setSelectionRange).toHaveBeenCalledWith(6, 6);
     });
   });
 
@@ -306,7 +345,7 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
       });
       rerender({ value: '1,000' });
-      expect(result.current.displayValue).toBe('5000');
+      expect(result.current.displayValue).toBe('5,000');
     });
   });
 
@@ -332,7 +371,7 @@ describe('useDebouncedInput', () => {
       act(() => {
         result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
       });
-      expect(result.current.displayValue).toBe('5000');
+      expect(result.current.displayValue).toBe('5,000');
       act(() => {
         result.current.handleChange({ target: { value: '7', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
       });
@@ -353,16 +392,17 @@ describe('useDebouncedInput', () => {
   });
 
   describe('Backspace behavior (no value jumping)', () => {
-    it('deleting last char from "10000" yields "1000"', () => {
+    it('deleting last char from "10,000" yields "1,000"', () => {
       const onCommit = vi.fn();
       const { result } = renderHook(() => useDebouncedInput({ onCommit }));
       act(() => {
         result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
       });
+      expect(result.current.displayValue).toBe('10,000');
       act(() => {
         result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
       });
-      expect(result.current.displayValue).toBe('1000');
+      expect(result.current.displayValue).toBe('1,000');
     });
 
     it('deleting from "1,000" (after blur+focus+backspace) yields "100"', () => {
@@ -372,7 +412,7 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleBlur({ target: { value: '1000' } } as React.FocusEvent<HTMLInputElement>);
+        result.current.handleBlur({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       act(() => {
         result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
@@ -421,11 +461,6 @@ describe('computeCursorAfterSanitize (AAV-775 pure logic)', () => {
     expect(computeCursorAfterSanitize('1.5', '1.55', 3, false)).toBe(3);
   });
 
-  it('fullwidth decimal cursor stays after dot (AAV-739)', () => {
-    expect(computeCursorAfterSanitize('1000。', '1000.', 5, false)).toBe(5);
-    expect(computeCursorAfterSanitize('。', '0.', 1, false)).toBe(1);
-  });
-
   it('cursor at start of number stays at start', () => {
     expect(computeCursorAfterSanitize('5', '5', 0, false)).toBe(0);
   });
@@ -436,6 +471,72 @@ describe('computeCursorAfterSanitize (AAV-775 pure logic)', () => {
 
   it('cursor clamped to sanitized length', () => {
     expect(computeCursorAfterSanitize('123', '12', 3, false)).toBe(2);
+  });
+
+  it('fullwidth decimal 。 normalized to . and cursor stays after dot (AAV-739)', () => {
+    expect(computeCursorAfterSanitize('1000。', '1000.', 5, false)).toBe(5);
+  });
+
+  it('lone fullwidth decimal 。 becomes 0. and cursor after dot (AAV-739)', () => {
+    expect(computeCursorAfterSanitize('。', '0.', 1, false)).toBe(1);
+  });
+});
+
+describe('computeCursorAfterFormat (thousands separator cursor)', () => {
+  it('cursor at end of "10000" → end of "10,000" (pos 6)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 5)).toBe(6);
+  });
+
+  it('cursor at pos 1 in "10000" → pos 1 in "10,000"', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 1)).toBe(1);
+  });
+
+  it('cursor at pos 3 in "10000" → pos 4 in "10,000" (before comma)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 3)).toBe(4);
+  });
+
+  it('cursor at pos 4 in "10000" → pos 5 in "10,000" (after comma)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 4)).toBe(5);
+  });
+
+  it('cursor at end of "1000000" → end of "1,000,000" (pos 9)', () => {
+    expect(computeCursorAfterFormat('1000000', '1,000,000', 7)).toBe(9);
+  });
+
+  it('cursor at pos 4 in "1000000" → pos 5 in "1,000,000" (after first comma)', () => {
+    expect(computeCursorAfterFormat('1000000', '1,000,000', 4)).toBe(5);
+  });
+
+  it('cursor at decimal point position preserved', () => {
+    expect(computeCursorAfterFormat('1234.', '1,234.', 5)).toBe(6);
+  });
+
+  it('cursor after decimal digit preserved', () => {
+    expect(computeCursorAfterFormat('1234.5', '1,234.5', 6)).toBe(7);
+  });
+
+  it('cursor at pos 0 stays at pos 0', () => {
+    expect(computeCursorAfterFormat('12345', '12,345', 0)).toBe(0);
+  });
+
+  it('cursor in decimal part unaffected by thousands separators', () => {
+    expect(computeCursorAfterFormat('1234.56', '1,234.56', 7)).toBe(8);
+  });
+
+  it('CJK fullwidth decimal + thousands separator: cursor after decimal in "1,000."', () => {
+    expect(computeCursorAfterFormat('1000.', '1,000.', 5)).toBe(6);
+  });
+
+  it('CJK fullwidth decimal + thousands separator: cursor in decimal part', () => {
+    expect(computeCursorAfterFormat('1000.5', '1,000.5', 6)).toBe(7);
+  });
+
+  it('short number without comma: cursor preserved as-is (123, pos 2 → 2)', () => {
+    expect(computeCursorAfterFormat('123', '123', 2)).toBe(2);
+  });
+
+  it('short number without comma: cursor at end (12, pos 2 → 2)', () => {
+    expect(computeCursorAfterFormat('12', '12', 2)).toBe(2);
   });
 });
 

@@ -37,6 +37,35 @@ export function computeCursorAfterSanitize(
   return Math.min(prefixBeforeCursor.length, sanitized.length);
 }
 
+export function computeCursorAfterFormat(
+  sanitized: string,
+  formatted: string,
+  cursorInSanitized: number,
+): number {
+  if (cursorInSanitized === 0) return 0;
+  cursorInSanitized = Math.min(cursorInSanitized, sanitized.length);
+  const dotIndex = sanitized.indexOf('.');
+  const hasDecimal = dotIndex !== -1;
+  const digitsBeforeCursorInInt = hasDecimal
+    ? Math.min(cursorInSanitized, dotIndex)
+    : cursorInSanitized;
+  const formattedDotIndex = formatted.indexOf('.');
+  const formattedIntPart = formattedDotIndex !== -1 ? formatted.slice(0, formattedDotIndex) : formatted;
+  let posInFormattedInt = 0;
+  let digitCount = 0;
+  for (let i = 0; i < formattedIntPart.length; i++) {
+    posInFormattedInt = i + 1;
+    if (formattedIntPart[i] !== ',') {
+      digitCount++;
+      if (digitCount === digitsBeforeCursorInInt) break;
+    }
+  }
+  if (!hasDecimal || cursorInSanitized <= dotIndex) {
+    return posInFormattedInt;
+  }
+  return posInFormattedInt + (cursorInSanitized - dotIndex);
+}
+
 function commitFormatted(rawValue: string, onCommit: (v: string) => void): string {
   const formatted = formatNumberInput(rawValue);
   onCommit(formatted);
@@ -99,14 +128,16 @@ export function useDebouncedInput({
     const wasNegative = /^-/.test(e.target.value);
     const raw = e.target.value.replace(/^-/, '');
     const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw);
+    const formatted = formatNumberInput(sanitized);
     const cursorPos = e.target.selectionStart ?? e.target.value.length;
-    pendingCursorRef.current = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
-    setDisplayValue(sanitized);
+    const cursorInSanitized = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
+    pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
+    setDisplayValue(formatted);
     clearTimer();
-    if (formatNumberInput(sanitized) !== lastCommittedRef.current) {
+    if (formatted !== lastCommittedRef.current) {
       timerRef.current = setTimeout(() => {
-        const formatted = commitFormatted(sanitized, onCommit);
-        lastCommittedRef.current = formatted;
+        const committed = commitFormatted(sanitized, onCommit);
+        lastCommittedRef.current = committed;
         timerRef.current = null;
       }, debounceMs);
     }
@@ -123,9 +154,16 @@ export function useDebouncedInput({
   const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(true);
     clearTimer();
-    const raw = e.target.value.replace(/,/g, '');
-    pendingCursorRef.current = raw.length;
-    setDisplayValue(raw);
+    // Direct setSelectionRange is safe here because handleFocus does NOT change displayValue,
+    // so no re-render will override cursor position. Unlike handleChange (which updates
+    // displayValue and triggers re-render needing pendingCursorRef + useLayoutEffect),
+    // focus only sets isFocused flag — React won't reset cursor on a re-render with
+    // unchanged value. If a future change makes handleFocus modify displayValue, this
+    // must be migrated to pendingCursorRef pattern.
+    const len = e.target.value.length;
+    if (inputRef.current) {
+      inputRef.current.setSelectionRange(len, len);
+    }
   }, [clearTimer]);
 
   const handleKeyDown = useCallback(
