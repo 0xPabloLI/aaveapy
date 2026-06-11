@@ -530,7 +530,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(result.borrow.sources.protocol?.after).not.toBeNull();
   });
 
-  it('AAV-770 regression fix: supply.afterIncentive is not null when only borrow has input (cross-side preservation)', () => {
+  it('AAV-770 regression fix: supply.afterIncentive is null when only borrow has input (no false-zero)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -538,11 +538,14 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       borrowInput: '500',
     });
 
-    expect(result.supply.afterIncentive).not.toBeNull();
+    // Per-side guard: no supply input → afterIncentive is null (not 0), UI falls back to current
+    expect(result.supply.afterIncentive).toBeNull();
     expect(result.supply.deltaIncentive).toBeNull();
+    // Native rate still preserves cross-side influence (utilization change)
+    expect(result.supply.afterNative).not.toBeNull();
   });
 
-  it('AAV-770 regression fix: borrow.afterIncentive is not null when only supply has input (cross-side preservation)', () => {
+  it('AAV-770 regression fix: borrow.afterIncentive is null when only supply has input (no false-zero)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -550,11 +553,13 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       supplyInput: '1000',
     });
 
-    expect(result.borrow.afterIncentive).not.toBeNull();
+    // Per-side guard: no borrow input → afterIncentive is null (not 0), UI falls back to current
+    expect(result.borrow.afterIncentive).toBeNull();
     expect(result.borrow.deltaIncentive).toBeNull();
+    expect(result.borrow.afterNative).not.toBeNull();
   });
 
-  it('cross-side: supply.after equals supply.current when only borrow has input (no supply change)', () => {
+  it('cross-side: supply.afterNative is not null when only borrow has input (no supply change)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -562,11 +567,16 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       borrowInput: '500',
     });
 
-    expect(result.supply.afterTotal).not.toBeNull();
+    // Native rate still preserves cross-side influence (utilization change from borrow input)
+    expect(result.supply.afterNative).not.toBeNull();
+    // Incentive and total are null when no supply input
+    expect(result.supply.afterIncentive).toBeNull();
+    expect(result.supply.afterTotal).toBeNull();
+    expect(result.supply.deltaNative).toBeNull();
     expect(result.supply.deltaTotal).toBeNull();
   });
 
-  it('cross-side: borrow.afterTotal is not null when only supply has input (cross-side influence preserved)', () => {
+  it('cross-side: borrow.afterNative is not null when only supply has input (cross-side influence preserved)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -574,7 +584,12 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       supplyInput: '1000',
     });
 
-    expect(result.borrow.afterTotal).not.toBeNull();
+    // Native rate still preserves cross-side influence (utilization change from supply input)
+    expect(result.borrow.afterNative).not.toBeNull();
+    // Incentive and total are null when no borrow input
+    expect(result.borrow.afterIncentive).toBeNull();
+    expect(result.borrow.afterTotal).toBeNull();
+    expect(result.borrow.deltaNative).toBeNull();
     expect(result.borrow.deltaTotal).toBeNull();
   });
 
@@ -705,5 +720,92 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     // With total position $800 > cap $500, self-cap should be diluted
     expect(withPrincipal.borrow.sources.merit!.after)
       .toBeLessThan(withoutPrincipal.borrow.sources.merit!.after);
+  });
+});
+
+describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => {
+  // Fixture: MERIT_SELF_CAP_RESERVE has supply self-cap = $1,000 (from selfMessage)
+  it('current incentive should be diluted when wallet position exceeds self-cap', () => {
+    // Wallet=$1500 > self-cap=$1000 → dilution ratio = 1000/1500 ≈ 0.667
+    // current incentive (with wallet) should be LOWER than undiluted headline rate
+    const noWallet = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+    });
+
+    // With wallet position that exceeds cap
+    const withWallet = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+    });
+
+    // current incentive WITH wallet should be LOWER than undiluted (wallet exceeds cap)
+    expect(withWallet.supply.currentIncentive)
+      .toBeLessThan(noWallet.supply.currentIncentive);
+  });
+
+  it('current incentive delta should reflect only the delta change, not wallet dilution artifact', () => {
+    // Wallet=$1500, delta=$500, self-cap=$1000
+    // current = diluted(wallet=1500) → ratio = 1000/1500 ≈ 0.667
+    // after = diluted(wallet+delta=2000) → ratio = 1000/2000 = 0.5
+    // delta = after - current (should be the actual impact of adding $500)
+    const withWalletAndDelta = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      walletSupplyUsd: 1500,
+      totalSupplyUsd: 2000,
+    });
+
+    // With wallet=1500 > cap=1000, current should already be diluted
+    expect(withWalletAndDelta.supply.currentIncentive)
+      .toBeLessThan(18); // 10 (base) + 8 (self) = 18 undiluted
+
+    // delta should be negative (adding position further dilutes self-cap)
+    const deltaIncentive = withWalletAndDelta.supply.deltaIncentive!;
+    expect(deltaIncentive).toBeLessThan(0);
+    expect(deltaIncentive).toBeGreaterThan(-3); // small negative, not a huge jump
+  });
+
+  it('portfolio: current and after should both be diluted when wallet exceeds cap', () => {
+    // Simulates portfolio mode: wallet=1500, delta=500, cap=1000
+    // Both current (wallet only) and after (wallet+delta) should be diluted
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      walletSupplyUsd: 1500,
+      totalSupplyUsd: 2000,
+    });
+
+    const currentIncentive = result.supply.currentIncentive;
+    const afterIncentive = result.supply.afterIncentive!;
+
+    // Both should be diluted (cap=$1000)
+    // current dilution: min(1500, 1000) / 1500 = 1000/1500 ≈ 0.667
+    // after dilution: min(2000, 1000) / 2000 = 1000/2000 = 0.5
+    expect(currentIncentive).toBeLessThan(18);
+    expect(afterIncentive).toBeLessThan(currentIncentive);
+    expect(afterIncentive).toBeGreaterThan(0);
+  });
+
+  it('single simulation: current incentive should NOT be diluted (no wallet)', () => {
+    // Single simulation has no wallet position, so current incentive should be undiluted
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      // NO walletSupplyUsd, NO totalSupplyUsd — single simulation
+    });
+
+    // currentIncentive should be the undiluted headline rate (10 + 8 = 18)
+    // With self-cap $1000 and no wallet, there's nothing to dilute
+    expect(result.supply.currentIncentive).toBeGreaterThanOrEqual(17);
   });
 });

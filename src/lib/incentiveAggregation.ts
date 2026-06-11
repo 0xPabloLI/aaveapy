@@ -30,7 +30,7 @@ const sumNumberArray = (arr?: number[]): number => {
   }, 0);
 };
 
-const sumMeritIncentives = (meritIncentives?: MeritIncentive[]): number => {
+export const sumMeritIncentives = (meritIncentives?: MeritIncentive[]): number => {
   if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
   return meritIncentives.reduce((sum, incentive) => {
     if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;

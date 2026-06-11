@@ -22,7 +22,7 @@ import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
-import { computeDelta } from '@/lib/deltaCalculator';
+import { parseNumberInput } from '@/lib/numberFormat';
 
 export interface PerReserveInput {
   supplyInput: string;
@@ -63,8 +63,6 @@ interface EntryGroup {
   supplyDeltaUsd: number;
   borrowDeltaUsd: number;
 }
-
-const DAYS_PER_YEAR = 365;
 
 export function buildMetricsFromLane(
   lane: SimulationLane,
@@ -122,15 +120,20 @@ function buildGroupMapFromSlots(
   for (const slot of slots) {
     const key = getReserveKey({ reserveId: slot.reserveId });
     const reserve = reserveMap.get(key);
-    const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-    if (amountUsd <= 0 || !reserve) continue;
+    if (!reserve) continue;
 
-    const delta = computeDelta({
-      amount: slot.sideData.amount,
-      walletValue: slot.sideData.walletValue,
-      inputMode: slot.sideData.inputMode,
-      tokenPrice: reserve.tokenPrice,
-    });
+    const s = slot.sideData;
+    const hasWalletPosition = s.walletValue !== null && s.walletValue > 0;
+    const rawAmount = parseNumberInput(s.amount);
+    const hasUserInput = rawAmount > 0;
+
+    // Skip only when there's truly no position (no user input AND no wallet value)
+    if (!hasUserInput && !hasWalletPosition) continue;
+
+    const effectiveAmountUsd = hasUserInput
+      ? resolvePositionAmountUsd(s, reserve)
+      : (s.walletValue ?? 0);
+    const deltaUsd = hasUserInput ? (effectiveAmountUsd - (s.walletValue ?? 0)) : 0;
 
     const existing = groupMap.get(key) ?? {
       supplySlots: [],
@@ -143,12 +146,12 @@ function buildGroupMapFromSlots(
 
     if (side === 'supply') {
       existing.supplySlots.push(slot);
-      existing.supplyUsd += delta.effectiveAmountUsd;
-      existing.supplyDeltaUsd += delta.deltaUsd;
+      existing.supplyUsd += effectiveAmountUsd;
+      existing.supplyDeltaUsd += deltaUsd;
     } else {
       existing.borrowSlots.push(slot);
-      existing.borrowUsd += delta.effectiveAmountUsd;
-      existing.borrowDeltaUsd += delta.deltaUsd;
+      existing.borrowUsd += effectiveAmountUsd;
+      existing.borrowDeltaUsd += deltaUsd;
     }
     groupMap.set(key, existing);
   }
@@ -340,15 +343,21 @@ export function buildPerReserveInputsFromEntries(
 
     for (const side of ['supply', 'borrow'] as const) {
       const s = entry[side];
-      const amountUsd = resolvePositionAmountUsd(s, reserve);
-      if (amountUsd <= 0) continue;
 
-      const delta = computeDelta({
-        amount: s.amount,
-        walletValue: s.walletValue,
-        inputMode: s.inputMode,
-        tokenPrice: reserve.tokenPrice,
-      });
+      // When amount is empty but walletValue exists, the user hasn't changed
+      // anything — effectiveAmount = walletValue, delta = 0.
+      // This ensures totalSupplyUsd/totalBorrowUsd are recorded even when
+      // delta is zero, so incentive current values can be displayed.
+      const hasWalletPosition = s.walletValue !== null && s.walletValue > 0;
+      const rawAmount = parseNumberInput(s.amount);
+      const hasUserInput = rawAmount > 0;
+
+      if (!hasUserInput && !hasWalletPosition) continue;
+
+      const effectiveAmountUsd = hasUserInput
+        ? resolvePositionAmountUsd(s, reserve)
+        : (s.walletValue ?? 0);
+      const deltaUsd = hasUserInput ? (effectiveAmountUsd - (s.walletValue ?? 0)) : 0;
 
       const existing = grouped.get(entry.reserveId) ?? {
         supplyUsd: 0,
@@ -357,11 +366,11 @@ export function buildPerReserveInputsFromEntries(
         borrowDeltaUsd: 0,
       };
       if (side === 'supply') {
-        existing.supplyUsd += delta.effectiveAmountUsd;
-        existing.supplyDeltaUsd += delta.deltaUsd;
+        existing.supplyUsd += effectiveAmountUsd;
+        existing.supplyDeltaUsd += deltaUsd;
       } else {
-        existing.borrowUsd += delta.effectiveAmountUsd;
-        existing.borrowDeltaUsd += delta.deltaUsd;
+        existing.borrowUsd += effectiveAmountUsd;
+        existing.borrowDeltaUsd += deltaUsd;
       }
       grouped.set(entry.reserveId, existing);
     }

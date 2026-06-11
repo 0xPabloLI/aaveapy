@@ -285,6 +285,16 @@ export interface BuildRateSimulationResultParams {
    * Same semantics as totalSupplyUsd but for the borrow side.
    */
   totalBorrowUsd?: number;
+  /**
+   * Wallet-only supply position (USD) for self-cap dilution in current incentive.
+   * If not provided, derived from totalSupplyUsd - supplyInputUsd.
+   */
+  walletSupplyUsd?: number;
+  /**
+   * Wallet-only borrow position (USD) for self-cap dilution in current incentive.
+   * If not provided, derived from totalBorrowUsd - borrowInputUsd.
+   */
+  walletBorrowUsd?: number;
 }
 
 export const buildIncentiveCurrent = (
@@ -293,14 +303,43 @@ export const buildIncentiveCurrent = (
   isApy: boolean,
   tydroPointToUsdRate: number,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  forecastStates?: Record<string, MerklForecastWireItem>,
+  forecastStates: Record<string, MerklForecastWireItem> | undefined,
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
+  /**
+   * Wallet-only position (USD) for self-cap dilution.
+   * When set, Merit self-cap campaigns are diluted based on wallet position,
+   * matching the semantics of buildIncentiveAfter (which uses wallet + delta).
+   * When unset, raw selfApr from the API is used (no dilution).
+   */
+  walletSupplyUsd?: number,
+  walletBorrowUsd?: number,
+  hubSupplied?: string,
+  hubBorrowed?: string,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   const brevis = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   const protocol = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
   const options = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses };
+
+  const walletPositionUsd = side === 'supply' ? walletSupplyUsd : walletBorrowUsd;
+
+  // When wallet position is provided, apply self-cap dilution to Merit campaigns
+  // using sumForecastMeritValues (same logic as buildIncentiveAfter).
+  // For non-Merit incentives (protocol, Merkl, Brevis), use the existing aggregation
+  // functions but with an empty merit array so they don't double-count.
+  if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
+    const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
+    const meritPercent = sumForecastMeritValues(merit, isApy, walletPositionUsd, anchorTvlUsd, walletPositionUsd);
+
+    // Get non-Merit incentives using the existing aggregation (empty merit = 0 contribution)
+    const otherPercent = isApy
+      ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, options)
+      : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, options);
+
+    return meritPercent + otherPercent;
+  }
+
   return isApy
     ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, options)
     : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, options);
@@ -1007,6 +1046,8 @@ export function buildRateSimulationResult({
   hubBorrowed,
   totalSupplyUsd,
   totalBorrowUsd,
+  walletSupplyUsd: explicitWalletSupplyUsd,
+  walletBorrowUsd: explicitWalletBorrowUsd,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1122,17 +1163,33 @@ export function buildRateSimulationResult({
 
   const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
   const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
+
+  // Wallet-only position for self-cap dilution in buildIncentiveCurrent.
+  // Priority: explicit wallet param > derived from totalSupplyUsd - delta.
+  // In portfolio mode: totalSupplyUsd = wallet + delta, so wallet = total - delta.
+  // In single simulation: totalSupplyUsd is undefined, so wallet is undefined (no dilution).
+  const walletSupplyUsd = explicitWalletSupplyUsd ?? (totalSupplyUsd != null && supplyInputUsd > 0
+    ? totalSupplyUsd - supplyInputUsd
+    : totalSupplyUsd ?? undefined);
+  const walletBorrowUsd = explicitWalletBorrowUsd ?? (totalBorrowUsd != null && borrowInputUsd > 0
+    ? totalBorrowUsd - borrowInputUsd
+    : totalBorrowUsd ?? undefined);
+
   const supplyCurrentIncentive = buildIncentiveCurrent(
     reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed,
   );
   const borrowCurrentIncentive = buildIncentiveCurrent(
     reserve, 'borrow', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed,
   );
   const supplyCurrentIncentiveApr = buildIncentiveCurrent(
     reserve, 'supply', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed,
   );
   const borrowCurrentIncentiveApr = buildIncentiveCurrent(
     reserve, 'borrow', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed,
   );
 
   const supplyCurrentTotal = isApy

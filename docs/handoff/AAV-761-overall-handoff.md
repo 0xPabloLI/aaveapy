@@ -161,13 +161,47 @@ supplyTotalPositionUsd = principalSupplyUsd + supplyNetInputUsd
 
 **修复**：从 `perReserve?.principalSupplyUsd`/`principalBorrowUsd` 传入。
 
-### 6.4 修复总结
+### 6.3 Phase 3: Portfolio Mode — incentive after false-zero（主 bug 根因）
+
+**用户报 bug**（截图确认）：Supply side 有钱包仓位（$1,042）但 delta=0，Borrow side 输入 $1。Supply Incentive 显示 `0.00%`（错误），应 fallback 到当前值 `0.17%`。
+
+**根因**：`buildRateSimulationResult` 中 `supplyAfterIncentive` 用 `hasAnyInput` 守卫（L1265）。当 borrow 有 input 时 `hasAnyInput=true`，所以 supply 侧的 incentive after 被计算：`buildIncentiveAfter` 用 `netInputUsd=0` forecast Merit/Merkl → 返回 0。结果 `supply.afterIncentive = 0`（不是 null）。`portfolioSimulator.ts` L226-228 用 `??` fallback：`0 ?? currentIncentive → 0`，UI 显示 `0.00%`。
+
+**修复**：在 `supplyAfterIncentive`/`borrowAfterIncentive`/`supplyAfterIncentiveApr`/`borrowAfterIncentiveApr` 4 处增加 per-side 守卫。当 `hasSupplyInput=false` 时，`supplyAfterIncentive = null`（而非计算后的 0），让 `??` 正确 fallback 到 current。
+
+**跨侧影响保留**：`afterNative` 仍用 `hasAnyInput` 守卫，保留对侧 input 通过 utilization 变化的跨侧影响。Incentive 用 per-side 守卫（依赖用户 position，无 input = 无模拟）。Native 和 Incentive 的守卫策略不同——这是正确的权衡。
+
+### 6.4 Phase 4: `buildGroupMapFromSlots` + `buildPerReserveInputsFromEntries` 跳过 wallet-only positions（AAV-761 回归）
+
+**用户报 bug**（截图确认）：WETH supply 有钱包仓位（$1,042）但 delta=0，borrow side 输入 $1。**两个界面**（Reserve Table + Portfolio Results Table）的 Supply Incentive 都显示 `0.00%`（错误）。
+
+**根因**：两条计算路径都用了 `if (amountUsd <= 0) continue` 跳过 delta=0 的 side，导致 `totalSupplyUsd` 没有累加 wallet value。
+
+**受影响的两条路径**：
+1. **`buildGroupMapFromSlots`**（L126-127）— `simulatePortfolioFromEntries` 主路径，用于 Portfolio Results Table
+2. **`buildPerReserveInputsFromEntries`**（L343-344）— `useSharedRateSimulations` 路径，用于 Reserve Table
+
+两条路径都用了 `resolvePositionAmountUsd` 判断是否跳过，当 `amount=''` 但 `walletValue > 0` 时，该函数返回 0 → 整个 side 被跳过 → `totalSupplyUsd = 0`。
+
+**后果**：`buildRateSimulationResult` 中 `totalSupplyUsd = 0`，calculator 层认为无 total position，incentive 计算受影响。
+
+**修复**：两条路径统一改为：先判断 `hasUserInput`（`parseNumberInput(s.amount) > 0`）和 `hasWalletPosition`（`walletValue > 0`），两者都不满足才跳过。当 `hasWalletPosition` 但 `!hasUserInput` 时，`effectiveAmountUsd = walletValue`，`deltaUsd = 0`。
+
+**文件**：`src/lib/portfolioSimulator.ts` `buildGroupMapFromSlots` (L117-161) 和 `buildPerReserveInputsFromEntries` (L326-394)
+
+**测试**：新增 2 个测试用例（`portfolioSimulator.test.ts`）：
+- `wallet position with empty amount: delta=0, totalSupplyUsd=walletValue`
+- `wallet supply + borrow delta on same reserve: totalSupplyUsd and totalBorrowUsd both recorded`
+
+### 6.5 修复总结
 
 | Phase | 位置 | 修改 |
 |---|---|---|
 | 1 | `useRateSimulation.ts` L274-275 | 不再从 `reservePositions` 传 principal |
 | 2a | `rateSimulationCalculator.ts` L894-900, L1163-1171 | `totalPositionUsd = principalUsd`（移除 `+ netInputUsd`） |
 | 2b | `useRateSimulation.ts` L274-279 | 从 `perReserve` 读取 principal |
+| 3 | `rateSimulationCalculator.ts` L1307-1318 | 4 处 per-side 守卫（incentive after） |
+| 4 | `portfolioSimulator.ts` L341-372 | 不再跳过 wallet-only positions |
 
 ### 6.5 影响矩阵
 
