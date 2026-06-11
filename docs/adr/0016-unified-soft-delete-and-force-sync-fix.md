@@ -50,6 +50,10 @@ Semantics: "if incoming has no wallet data for this side, don't update" instead 
 
 `unhideReserve` only sets `hidden: false`. No data reset. If user wants to reset to wallet state, use `restoreToWallet`.
 
+### 5. undoLastRemove LIFO semantics
+
+`undoLastRemove` unhides only the last hidden reserve (LIFO), not a full-snapshot rollback. Uses `lastHiddenReserveIdRef` (single reserveId) instead of `lastRemoveSnapshotRef` (full array snapshot). This ensures that hiding A → hiding B → undo only restores B, not both A and B.
+
 ## Consequences
 
 ### Positive
