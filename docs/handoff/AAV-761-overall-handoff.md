@@ -16,7 +16,7 @@ AAV-761 修复 Simulation 模式下 incentive APR 计算的语义 bug：当 Port
 - 三层 hasInput 守卫修复
 - Merit/Merkl/Brevis campaign detail row 的 after 语义统一
 - Aggregate 层 `hasAnyInput` vs per-side 守卫的语义边界
-- Merit Deposit Ceiling Dilution Bug 根因诊断（Shared Scenario 已修复，Portfolio Mode 待跟进）
+- Merit Deposit Ceiling Dilution Bug 根因诊断（Shared Scenario + Portfolio Mode 双模式均已修复，详见 §6）
 
 ---
 
