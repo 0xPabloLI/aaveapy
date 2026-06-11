@@ -43,6 +43,30 @@ export default tseslint.config(
     },
   },
   {
+    // Portfolio spacing guardrail — see docs/design/portfolio-panel-spacing.md.
+    // Block pl/pr/px/ml/mr/mx-[Npx|Nrem] magic values; always use
+    // var(--ds-space-*) tokens so the Portfolio toggle stays aligned with
+    // the Single-mode toggle.
+    files: ["src/components/dashboard/Portfolio*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Literal[value=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]",
+          message:
+            "Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]",
+          message:
+            "Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.",
+        },
+      ],
+    },
+  },
+  {
     files: ["src/**/*.test.tsx"],
     languageOptions: {
       parserOptions: {
