@@ -1,7 +1,8 @@
 /**
  * @vitest-environment happy-dom
  *
- * Tests for hideReserve, unhideReserve, undoLastRemove, and addReserve auto-unhide.
+ * Tests for conditional soft delete: hideReserve (wallet) vs removeReserve (manual),
+ * unhideReserve, and addReserve auto-unhide.
  */
 import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
@@ -20,7 +21,7 @@ const baseEntry = (o: Partial<PortfolioReserveEntry> & { reserveId: string }): P
   ...o,
 })
 
-describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
+describe('usePortfolioSimulation conditional soft delete', () => {
   it('hideReserve marks wallet entry as hidden without resetting amounts', () => {
     const { result } = renderHook(() => usePortfolioSimulation())
 
@@ -42,7 +43,7 @@ describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
     expect(entry.hidden).toBe(true)
   })
 
-  it('hideReserve marks manual entry as hidden (unified soft delete)', () => {
+  it('removeReserve removes manual entry from entries array', () => {
     const { result } = renderHook(() => usePortfolioSimulation())
     act(() => {
       result.current.actions.importReserves([
@@ -52,10 +53,8 @@ describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
         }),
       ])
     })
-    act(() => result.current.actions.hideReserve('reserve-weth'))
-    const entry = result.current.entries.find((e) => e.reserveId === 'reserve-weth')!
-    expect(entry.hidden).toBe(true)
-    expect(entry.supply.amount).toBe('500')
+    act(() => result.current.actions.removeReserve('reserve-weth'))
+    expect(result.current.entries.find((e) => e.reserveId === 'reserve-weth')).toBeUndefined()
   })
 
   it('unhideReserve restores visibility after hideReserve', () => {
@@ -77,54 +76,6 @@ describe('usePortfolioSimulation.hideReserve (unified soft delete)', () => {
     act(() => result.current.actions.unhideReserve('reserve-weth'))
     const unhidden = result.current.entries.find((e) => e.reserveId === 'reserve-weth')!
     expect(unhidden.hidden).toBe(false)
-  })
-
-  it('undoLastRemove restores the last hidden entry', () => {
-    const { result } = renderHook(() => usePortfolioSimulation())
-    act(() => {
-      result.current.actions.importReserves([
-        baseEntry({ reserveId: 'r-weth' }),
-        baseEntry({ reserveId: 'r-gho' }),
-      ])
-    })
-
-    expect(result.current.entries).toHaveLength(2)
-
-    act(() => result.current.actions.hideReserve('r-weth'))
-    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(true)
-
-    let restored: boolean | undefined
-    act(() => { restored = result.current.actions.undoLastRemove() })
-
-    expect(restored).toBe(true)
-    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(false)
-  })
-
-  it('undoLastRemove only unhides the last hidden entry, not earlier ones', () => {
-    const { result } = renderHook(() => usePortfolioSimulation())
-    act(() => {
-      result.current.actions.importReserves([
-        baseEntry({ reserveId: 'r-weth' }),
-        baseEntry({ reserveId: 'r-gho' }),
-      ])
-    })
-
-    act(() => result.current.actions.hideReserve('r-weth'))
-    act(() => result.current.actions.hideReserve('r-gho'))
-    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(true)
-    expect(result.current.entries.find((e) => e.reserveId === 'r-gho')?.hidden).toBe(true)
-
-    act(() => { result.current.actions.undoLastRemove() })
-
-    expect(result.current.entries.find((e) => e.reserveId === 'r-weth')?.hidden).toBe(true)
-    expect(result.current.entries.find((e) => e.reserveId === 'r-gho')?.hidden).toBe(false)
-  })
-
-  it('undoLastRemove returns false when nothing to undo', () => {
-    const { result } = renderHook(() => usePortfolioSimulation())
-    let restored = true
-    act(() => { restored = result.current.actions.undoLastRemove() })
-    expect(restored).toBe(false)
   })
 })
 

@@ -38,12 +38,11 @@ const makeActions = (): PortfolioSimulationActions => ({
   importReserves: vi.fn(),
   forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
-  removeHiddenEntries: vi.fn(() => 0),
+  removeReserve: vi.fn(),
   removeWalletEntries: vi.fn(() => 0),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
-  undoLastRemove: vi.fn(),
 });
 
 function makeEntry(overrides: Partial<PortfolioReserveEntry> = {}): PortfolioReserveEntry {

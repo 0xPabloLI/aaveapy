@@ -308,13 +308,17 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   const hubChipClass = getHubChipClass(showV4);
   const isHidden = entry.hidden;
 
+  const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
+
   const handleMinusClick = useCallback(() => {
     if (isHidden) {
       actions.unhideReserve(reserveId);
-    } else {
+    } else if (hasWallet) {
       actions.hideReserve(reserveId);
+    } else {
+      actions.removeReserve(reserveId);
     }
-  }, [isHidden, actions, reserveId]);
+  }, [isHidden, hasWallet, actions, reserveId]);
 
   const isRestricted = entry.restrictedStatus != null;
 

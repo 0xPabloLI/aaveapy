@@ -146,17 +146,18 @@ export interface PortfolioSimulationActions {
     restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
   }) => void;
   updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
+  /** Soft-delete: sets `hidden: true`. Use for entries with wallet positions. */
   hideReserve: (reserveId: string) => void;
   unhideReserve: (reserveId: string) => void;
+  /** Hard-delete: removes entry from array. @remarks Only call for entries without wallet positions. */
+  removeReserve: (reserveId: string) => void;
   importReserves: (incoming: PortfolioReserveEntry[]) => void;
   forceSyncReserves: (incoming: PortfolioReserveEntry[]) => void;
   restoreToWallet: (reserveId: string, side?: PortfolioSide) => void;
-  removeHiddenEntries: () => number;
   removeWalletEntries: () => number;
   clearAll: () => void;
   saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
   deleteSnapshot: (snapshotId: string) => void;
-  undoLastRemove: () => boolean;
 }
 
 export interface UsePortfolioSimulationReturn {
@@ -174,7 +175,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
   const [entries, setEntries] = useState<PortfolioReserveEntry[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
-  const lastHiddenReserveIdRef = useRef<string | null>(null);
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
 
@@ -278,7 +278,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     setEntries((prev) =>
       prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)),
     );
-    lastHiddenReserveIdRef.current = reserveId;
   }, []);
 
   const unhideReserve = useCallback((reserveId: string) => {
@@ -289,6 +288,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
         return { ...e, hidden: false };
       }),
     );
+  }, []);
+
+  const removeReserve = useCallback((reserveId: string) => {
+    setEntries((prev) => prev.filter((e) => e.reserveId !== reserveId));
   }, []);
 
   const importReserves = useCallback((incoming: PortfolioReserveEntry[]) => {
@@ -320,16 +323,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     });
   }, []);
 
-  const removeHiddenEntries = useCallback((): number => {
-    // Use entriesRef for count (always up-to-date after render).
-    // The setEntries callback uses prev which should match entriesRef
-    // in single-update scenarios like wallet disconnect.
-    const hiddenCount = entriesRef.current.filter((e) => e.hidden).length;
-    if (hiddenCount === 0) return 0;
-    setEntries((prev) => prev.filter((e) => !e.hidden));
-    return hiddenCount;
-  }, []);
-
   const removeWalletEntries = useCallback((): number => {
     const walletCount = entriesRef.current.filter(
       (e) => e.supply.walletValue !== null || e.borrow.walletValue !== null,
@@ -344,7 +337,13 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const clearAll = useCallback(() => {
-    setEntries([]);
+    setEntries((prev) =>
+      prev.map((e) => {
+        const hasWallet = e.supply.walletValue !== null || e.borrow.walletValue !== null;
+        if (hasWallet) return { ...e, hidden: true };
+        return e;
+      }).filter((e) => e.hidden || e.supply.walletValue !== null || e.borrow.walletValue !== null),
+    );
   }, []);
 
   const saveSnapshot = useCallback(
@@ -366,16 +365,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     setSnapshots((prev) => prev.filter((s) => s.id !== snapshotId));
   }, []);
 
-  const undoLastRemove = useCallback((): boolean => {
-    const reserveId = lastHiddenReserveIdRef.current;
-    if (!reserveId) return false;
-    lastHiddenReserveIdRef.current = null;
-    setEntries((prev) =>
-      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: false } : e)),
-    );
-    return true;
-  }, []);
-
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -383,20 +372,18 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       updateReserve,
       hideReserve,
       unhideReserve,
+      removeReserve,
       importReserves,
       forceSyncReserves,
       restoreToWallet,
-      removeHiddenEntries,
       removeWalletEntries,
       clearAll,
       saveSnapshot,
       deleteSnapshot,
-      undoLastRemove,
     }),
     [
-      addReserve, updateReserve, hideReserve, unhideReserve,
-      importReserves, forceSyncReserves, restoreToWallet, removeHiddenEntries, removeWalletEntries, clearAll, saveSnapshot, deleteSnapshot,
-      undoLastRemove,
+      addReserve, updateReserve, hideReserve, unhideReserve, removeReserve,
+      importReserves, forceSyncReserves, restoreToWallet, removeWalletEntries, clearAll, saveSnapshot, deleteSnapshot,
     ],
   );
 

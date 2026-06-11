@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { toast } from 'sonner';
 
 import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import type {
@@ -73,7 +72,12 @@ export const usePortfolioToggle = ({
             return;
           }
           if (isRestrictedReserve(reserve)) return;
-          portfolioActions.hideReserve(reserveId);
+          const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
+          if (hasWallet) {
+            portfolioActions.hideReserve(reserveId);
+          } else {
+            portfolioActions.removeReserve(reserveId);
+          }
         } else {
           if (isRestrictedReserve(reserve)) return;
           portfolioActions.addReserve({
@@ -82,10 +86,6 @@ export const usePortfolioToggle = ({
             chainName: reserve.chainName,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
-          });
-          toast(`${reserve.tokenSymbol} added`, {
-            className: '[--width:fit-content]',
-            action: { label: 'Undo', onClick: () => { portfolioActions.hideReserve(reserveId); } },
           });
         }
       } else {
@@ -97,7 +97,12 @@ export const usePortfolioToggle = ({
               return;
             }
             if (isRestrictedReserve(reserve)) return;
-            portfolioActions.hideReserve(reserveId);
+            const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
+            if (hasWallet) {
+              portfolioActions.hideReserve(reserveId);
+            } else {
+              portfolioActions.removeReserve(reserveId);
+            }
           }
         } else {
           if (isRestrictedReserve(reserve)) return;
@@ -107,10 +112,6 @@ export const usePortfolioToggle = ({
             chainName: reserve.chainName,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
-          });
-          toast(`${reserve.tokenSymbol} added`, {
-            className: '[--width:fit-content]',
-            action: { label: 'Undo', onClick: () => { portfolioActions.hideReserve(reserveId); } },
           });
         }
       }

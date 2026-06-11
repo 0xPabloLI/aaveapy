@@ -47,19 +47,18 @@ function makeActions(): PortfolioSimulationActions {
     importReserves: vi.fn(),
     forceSyncReserves: vi.fn(),
     restoreToWallet: vi.fn(),
-    removeHiddenEntries: vi.fn(() => 0),
+    removeReserve: vi.fn(),
     removeWalletEntries: vi.fn(() => 0),
     clearAll: vi.fn(),
     saveSnapshot: vi.fn(),
     deleteSnapshot: vi.fn(),
-    undoLastRemove: vi.fn(),
   };
 }
 
 describe('PortfolioTokenRow callbacks', () => {
   beforeEach(() => cleanup());
 
-  it('calls actions.hideReserve when minus button is clicked for manual entry (unified soft delete)', () => {
+  it('calls actions.removeReserve when minus button is clicked for manual entry', () => {
     const actions = makeActions();
     render(
       <PortfolioTokenRow
@@ -70,7 +69,7 @@ describe('PortfolioTokenRow callbacks', () => {
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /remove.*USDC/i }));
-    expect(actions.hideReserve).toHaveBeenCalledWith('reserve-1');
+    expect(actions.removeReserve).toHaveBeenCalledWith('reserve-1');
   });
 
   it('calls actions.hideReserve when minus button is clicked for wallet-synced entry', () => {

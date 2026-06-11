@@ -25,7 +25,6 @@ import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 
 const mockImportReserves = vi.fn()
-const mockRemoveHiddenEntries = vi.fn(() => 0)
 const mockRemoveWalletEntries = vi.fn(() => 0)
 const mockPortfolioActions: PortfolioSimulationActions = {
   setActive: vi.fn(),
@@ -33,14 +32,13 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   updateReserve: vi.fn(),
   hideReserve: vi.fn(),
   unhideReserve: vi.fn(),
+  removeReserve: vi.fn(),
   importReserves: mockImportReserves,
   restoreToWallet: vi.fn(),
-  removeHiddenEntries: mockRemoveHiddenEntries,
   removeWalletEntries: mockRemoveWalletEntries,
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
-  undoLastRemove: vi.fn(),
 }
 
 function makeSuccessResult(positions: WalletPosition[] = []): DegradedResult {

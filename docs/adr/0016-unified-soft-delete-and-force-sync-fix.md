@@ -1,8 +1,8 @@
-# ADR-016: Unified soft delete & force sync guard fix
+# ADR-016: Conditional soft delete & force sync guard fix
 
 ## Status
 
-Completed
+Superseded by AAV-803 (conditional soft delete v2)
 
 ## Context
 
@@ -10,30 +10,28 @@ AAV-769: When a user deletes a reserve with wallet position (hidden=true), then 
 
 Root cause: `forceSyncEntries` → `forceSide` guard `if (existing.walletValue === null) return existing` skips wallet data sync for manually-added entries. Since `addReserve` creates entries with `walletValue: null`, any manually re-added reserve that actually has a wallet position will never get its `walletValue` updated by force sync.
 
-Additionally, the current delete strategy is mixed:
-- Has wallet position → soft delete (hidden=true, entry preserved)
-- No wallet position → hard delete (removed from array)
-
-This creates two delete semantics for the same user action, making the mental model inconsistent.
-
 ## Decision
 
-### 1. Unified soft delete
+### 1. Conditional soft delete
 
-All entry deletion → `hidden: true`. Remove `removeReserve` (hard delete) from the API surface. Remove `getEntrySoftDeleteAction` (no longer needed).
+Delete behavior depends on whether the entry has a wallet position:
 
-When user clicks delete on any entry:
-- Call `hideReserve(reserveId)` — always soft delete
-- Entry becomes gray + sunk to bottom, with unhide button
-- All position data (walletValue, delta, amount) preserved
+- **Has wallet position** (any side `walletValue !== null`) → `hideReserve` (soft delete, `hidden: true`)
+  - Entry becomes gray + sunk to bottom, with eye-off icon for restore
+  - All position data preserved — force sync / addReserve auto-unhide can recover
+- **Pure manual** (both sides `walletValue === null`) → `removeReserve` (hard delete, removed from array)
+  - No data loss risk — entry has only user-typed amounts, no wallet data
+  - User can re-add via search panel in 2 seconds
 
-### 2. addReserve auto-unhide
+This replaces the original "unified soft delete" that applied `hideReserve` to all entries regardless of wallet status. Pure manual entries have nothing to recover, so soft-deleting them wastes memory and confuses users with eye-off icons on empty entries.
+
+### 2. addReserve auto-unhide (unchanged)
 
 When `addReserve` encounters an existing hidden entry with the same `reserveId`:
 - Unhide the entry (`hidden: false`) instead of returning early
 - Preserve existing position data — user gets their data back
 
-### 3. Force sync guard fix
+### 3. Force sync guard fix (unchanged)
 
 Change `forceSide` guard from:
 ```ts
@@ -44,28 +42,33 @@ to:
 if (incoming.walletValue === null) return existing;
 ```
 
-Semantics: "if incoming has no wallet data for this side, don't update" instead of "if existing is a manual entry, don't update". This allows force sync to correctly populate `walletValue`/`source` for manually-added entries that match a wallet position.
-
-### 4. Unhide preserves all data
+### 4. Unhide preserves all data (unchanged)
 
 `unhideReserve` only sets `hidden: false`. No data reset. If user wants to reset to wallet state, use `restoreToWallet`.
 
-### 5. undoLastRemove LIFO semantics
+### 5. clearAll conditional behavior
 
-`undoLastRemove` unhides only the last hidden reserve (LIFO), not a full-snapshot rollback. Uses `lastHiddenReserveIdRef` (single reserveId) instead of `lastRemoveSnapshotRef` (full array snapshot). This ensures that hiding A → hiding B → undo only restores B, not both A and B.
+`clearAll` applies the same conditional logic:
+- Wallet entries → `hidden: true` (preserved for force sync recovery)
+- Manual entries → removed from array
+
+### 6. Removed: undoLastRemove, removeHiddenEntries, added toast
+
+- `undoLastRemove` removed — hide has eye-off one-click restore, remove is empty data
+- `removeHiddenEntries` removed — no consumers
+- Added toast with Undo button removed — Undo called `hideReserve` which was wrong for manual entries; toast no longer needed
 
 ## Consequences
 
 ### Positive
 - **Bug fix**: Force sync correctly updates manually re-added entries with wallet position data
-- **Consistent semantics**: One delete action (hidden=true) for all entries
-- **No data loss**: All position data preserved through delete/re-add cycle
-- **Simpler API**: `removeReserve` and `getEntrySoftDeleteAction` removed
+- **Correct semantics**: Wallet entries preserve data through hide/unhide cycle; manual entries are truly removed
+- **No wasted memory**: Manual entries don't linger as hidden empty shells
+- **Simpler UX**: No eye-off icon on empty entries that have nothing to "restore"
 
 ### Negative
-- **Hidden entries accumulate**: Pure manual entries deleted via soft delete remain in array (hidden). Mitigated: `removeHiddenEntries()` exists for cleanup.
-- **Memory**: Hidden entries consume memory. Low risk: typical user has <50 entries.
+- **Two delete paths**: Callers must check `hasWallet` before choosing `hideReserve` vs `removeReserve`. Mitigated: this is a simple boolean check and the UI layer (PortfolioTokenRow, usePortfolioToggle) handles it centrally.
 
 ## Related Issues
 
-AAV-769
+AAV-769, AAV-803

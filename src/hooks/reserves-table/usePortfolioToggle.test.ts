@@ -53,12 +53,11 @@ const makeActions = (): PortfolioSimulationActions => ({
   importReserves: vi.fn(),
   forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
-  removeHiddenEntries: vi.fn(() => 0),
+  removeReserve: vi.fn(),
   removeWalletEntries: vi.fn(() => 0),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
-  undoLastRemove: vi.fn(),
 });
 
 describe('usePortfolioToggle', () => {
@@ -120,7 +119,7 @@ describe('usePortfolioToggle', () => {
       });
     });
 
-    it('adds when entry does not exist and opposite side missing', () => {
+    it('calls removeReserve when the entry is manual (no wallet data)', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [
@@ -137,7 +136,7 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
-      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
     });
 
     it('calls hideReserve when the matching side is wallet-owned', () => {
@@ -388,7 +387,7 @@ describe('usePortfolioToggle', () => {
       mockToast.mockReset();
     });
 
-    it('emits toast with Undo when addReserve is called (no side)', () => {
+    it('addReserve is called without toast (no side)', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const { result } = renderHook(() =>
@@ -396,15 +395,9 @@ describe('usePortfolioToggle', () => {
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
       expect(actions.addReserve).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledTimes(1);
-      const [msg, opts] = mockToast.mock.calls[0];
-      expect(msg).toContain('added');
-      expect(opts.action.label).toBe('Undo');
-      act(() => { opts.action.onClick(); });
-      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
     });
 
-    it('emits toast with Undo when addReserve is called (explicit side)', () => {
+    it('addReserve is called without toast (explicit side)', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const { result } = renderHook(() =>
@@ -412,7 +405,6 @@ describe('usePortfolioToggle', () => {
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
       expect(actions.addReserve).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledTimes(1);
     });
 
     it('does NOT emit toast for hideReserve (wallet entry)', () => {
@@ -427,7 +419,7 @@ describe('usePortfolioToggle', () => {
       expect(mockToast).not.toHaveBeenCalled();
     });
 
-    it('does NOT emit toast for hideReserve (manual entry, unified soft delete)', () => {
+    it('does NOT emit toast for removeReserve (manual entry, no wallet data)', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
@@ -435,7 +427,7 @@ describe('usePortfolioToggle', () => {
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
-      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
       expect(mockToast).not.toHaveBeenCalled();
     });
 

@@ -87,11 +87,10 @@ const makeActions = (): PortfolioSimulationActions => ({
   forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
   removeWalletEntries: vi.fn(() => 0),
-  removeHiddenEntries: vi.fn(() => 0),
+  removeReserve: vi.fn(),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
-  undoLastRemove: vi.fn(),
 });
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
