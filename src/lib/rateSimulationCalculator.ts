@@ -260,27 +260,31 @@ export interface BuildRateSimulationResultParams {
    */
   meritMerklNetPosition?: boolean;
   /** Cross-reserve positions for merkl per-group net eligibility ratio computation. */
-  reservePositions?: Map<string, ReservePositions>;
+  crossReservePositions?: Map<string, ReservePositions>;
   /** reserveId b symbol lookup for cross-reserve note (offset reserve symbols). */
   reserveSymbolById?: Map<string, string>;
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
   hubSupplied?: string;
   hubBorrowed?: string;
   /**
-   * Principal USD for supply-side USD accrual calculation.
-   * When provided, used instead of supplyInputUsd as the principal
-   * in buildSupplyUsdAccrualSide (earnings = principal × rate).
-   * This decouples "what moves the rate curve" (supplyInputUsd = delta)
-   * from "what earns interest" (principalSupplyUsd = effective amount after rebalance).
-   * Defaults to supplyInputUsd for backward compatibility.
+   * Total supply position in USD (wallet + delta) for accrual & cap dilution.
+   * Used as the principal in buildSupplyUsdAccrualSide and for Merit self-cap
+   * dilution (eligibleDepositUsd = min(effectiveTotalPosition, cap)).
+   *
+   * This decouples "what moves the rate curve" (supplyInput = delta) from
+   * "what earns interest / what determines cap eligibility" (totalSupplyUsd).
+   *
+   * Callers MUST resolve the appropriate value before calling:
+   * - Portfolio mode: totalSupplyUsd = wallet + delta (from PerReserveInput)
+   * - Single simulation: totalSupplyUsd = supplyInputUsd (input IS total)
+   * - No input: undefined (no position to dilute)
    */
-  principalSupplyUsd?: number;
+  totalSupplyUsd?: number;
   /**
-   * Principal USD for borrow-side USD accrual calculation.
-   * Same semantics as principalSupplyUsd but for the borrow side.
-   * Defaults to borrowInputUsd for backward compatibility.
+   * Total borrow position in USD (wallet + delta) for accrual & cap dilution.
+   * Same semantics as totalSupplyUsd but for the borrow side.
    */
-  principalBorrowUsd?: number;
+  totalBorrowUsd?: number;
 }
 
 export const buildIncentiveCurrent = (
@@ -876,8 +880,8 @@ export const buildIncentiveAfter = (
   hubBorrowed?: string,
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
-  principalSupplyUsd?: number,
-  principalBorrowUsd?: number,
+  totalSupplyUsd?: number,
+  totalBorrowUsd?: number,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -891,10 +895,10 @@ export const buildIncentiveAfter = (
     tydroPointToUsdRate,
   });
 
-  const principalUsd = side === 'supply' ? principalSupplyUsd : principalBorrowUsd;
-  // principalUsd already represents the total position (wallet + delta),
-  // so we use it directly as totalPositionUsd without adding netInputUsd again.
-  // Adding netInputUsd would double-count the delta portion.
+  const principalUsd = side === 'supply' ? totalSupplyUsd : totalBorrowUsd;
+  // totalXxxUsd is already resolved by the caller. If the caller provides a
+  // value, it IS the full position (wallet + delta); if undefined, there is no
+  // total position to use for cap dilution.
   const totalPositionUsd = principalUsd != null && principalUsd > 0
     ? principalUsd
     : undefined;
@@ -996,13 +1000,13 @@ export function buildRateSimulationResult({
   inputMode = 'token',
   forecastStates,
   meritMerklNetPosition = true,
-  reservePositions,
+  crossReservePositions,
   reserveSymbolById,
   campaignAccessStatuses,
   hubSupplied,
   hubBorrowed,
-  principalSupplyUsd,
-  principalBorrowUsd,
+  totalSupplyUsd,
+  totalBorrowUsd,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1160,15 +1164,11 @@ export function buildRateSimulationResult({
   // Gross amounts are used by incentive sources that reward both sides independently.
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
   const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
-  // principalSupplyUsd/principalBorrowUsd already represent total position (wallet + delta),
-  // so we use them directly as totalPositionUsd without adding netInputUsd again.
-  // Adding netInputUsd would double-count the delta portion.
-  const supplyTotalPositionUsd = principalSupplyUsd != null && principalSupplyUsd > 0
-    ? principalSupplyUsd
-    : undefined;
-  const borrowTotalPositionUsd = principalBorrowUsd != null && principalBorrowUsd > 0
-    ? principalBorrowUsd
-    : undefined;
+  // totalSupplyUsd/totalBorrowUsd are already resolved by the caller.
+  // Callers are responsible for providing the correct total position:
+  // - Portfolio mode: wallet + delta (from PerReserveInput)
+  // - Single simulation: input USD (caller resolves: input IS total)
+  // - No input: undefined (no position to dilute/accrue)
   // Eligibility ratio: fraction of gross capital that is net-eligible.
   // Pool-level APR applies only to the eligible portion; scale to effective APR on gross capital.
   const supplyEligibilityRatio = supplyInputUsd > 0 ? supplyNetInputUsd / supplyInputUsd : 1;
@@ -1184,12 +1184,12 @@ export function buildRateSimulationResult({
     const sameReserveRatio = side === 'supply' ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio;
     return (group) => {
       const constraint = group.netPositionConstraint;
-      const crossReserveRatio = constraint && reservePositions && reservePositions.size > 0
+      const crossReserveRatio = constraint && crossReservePositions && crossReservePositions.size > 0
         ? computeCrossReserveEligibilityRatio({
             sourceSide: constraint.sourceSide,
             sourceGrossUsd: grossUsd,
             constraint,
-            reservePositions,
+            crossReservePositions,
           })
         : 1;
       const sameReserveFactor = constraint ? sameReserveRatio : 1;
@@ -1201,12 +1201,12 @@ export function buildRateSimulationResult({
     const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;
     return (group) => {
       const constraint = group.netPositionConstraint;
-      if (!constraint || !reservePositions || reservePositions.size === 0 || !reserveSymbolById) return null;
+      if (!constraint || !crossReservePositions || crossReservePositions.size === 0 || !reserveSymbolById) return null;
       const netUsd = computeCrossReserveNetEligible({
         sourceSide: constraint.sourceSide,
         sourceGrossUsd: grossUsd,
         constraint,
-        reservePositions,
+        crossReservePositions,
       });
       const offsetSymbols = constraint.offsetReserveIds
         .map((id) => reserveSymbolById?.get(id) ?? id)
@@ -1238,8 +1238,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
-        principalSupplyUsd,
-        principalBorrowUsd,
+        totalSupplyUsd,
+        totalBorrowUsd,
       )
     : null;
   const borrowAfterIncentiveRaw = hasAnyInput
@@ -1258,8 +1258,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
-        principalSupplyUsd,
-        principalBorrowUsd,
+        totalSupplyUsd,
+        totalBorrowUsd,
       )
     : null;
   const supplyAfterIncentiveAprRaw = hasAnyInput
@@ -1278,8 +1278,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
-        principalSupplyUsd,
-        principalBorrowUsd,
+        totalSupplyUsd,
+        totalBorrowUsd,
       )
     : null;
   const borrowAfterIncentiveAprRaw = hasAnyInput
@@ -1298,8 +1298,8 @@ export function buildRateSimulationResult({
         hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
-        principalSupplyUsd,
-        principalBorrowUsd,
+        totalSupplyUsd,
+        totalBorrowUsd,
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
@@ -1349,7 +1349,7 @@ export function buildRateSimulationResult({
   const supplyAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
-          sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd, undefined, supplyTotalPositionUsd) * supplyMeritMerklEligibilityRatio;
+          sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd, undefined, totalSupplyUsd) * supplyMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
@@ -1383,7 +1383,7 @@ export function buildRateSimulationResult({
   const borrowAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
-          sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd, undefined, borrowTotalPositionUsd) * borrowMeritMerklEligibilityRatio;
+          sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd, undefined, totalBorrowUsd) * borrowMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
@@ -1422,7 +1422,7 @@ export function buildRateSimulationResult({
     getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
-    supplyTotalPositionUsd,
+    totalSupplyUsd,
   );
   const supplyMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklSupplys,
@@ -1453,7 +1453,7 @@ export function buildRateSimulationResult({
     getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
-    borrowTotalPositionUsd,
+    totalBorrowUsd,
   );
   const borrowMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklBorrows,
@@ -1553,8 +1553,11 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: scenarioUsdAccrual (仅在有模拟输入时才有值) ───
 
-  const effectiveSupplyPrincipalUsd = principalSupplyUsd ?? supplyLane.inputUsd;
-  const effectiveBorrowPrincipalUsd = principalBorrowUsd ?? borrowLane.inputUsd;
+  // For accrual: if we have an explicit total position, use it. Otherwise fall back
+  // to the input USD (this happens when no explicit total was provided, i.e.
+  // single simulation with no input provided to this lane).
+  const effectiveSupplyPrincipalUsd = totalSupplyUsd ?? supplyLane.inputUsd;
+  const effectiveBorrowPrincipalUsd = totalBorrowUsd ?? borrowLane.inputUsd;
 
   const supplyUsdAccrualSide =
     supplyLane.hasInput && effectiveSupplyPrincipalUsd > 0

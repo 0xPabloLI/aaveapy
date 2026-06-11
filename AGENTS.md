@@ -127,7 +127,21 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-self-cap-dilution)
 
-- **变量复用比命名错误更危险**: `principalSupplyUsd` 在 AAV-610 被设计为"收益本金（含 delta 的有效仓位）"，在 AAV-675 被复用为"钱包已有仓位（不含 delta）"。同一变量在同一函数调用链中被迫承载两种互斥语义：含 delta（accrual 用）和不含 delta（cap dilution 用）。`totalPositionUsd = principalSupplyUsd + supplyNetInputUsd` 在 portfolio 模式下正确（principal = 钱包, netInput = delta），但在 single simulation 下 double-count（principal = supplyInput = netInput → 2× input）。**教训：当一个变量被第二次借用时，必须创建新变量而非复用**。正确的拆分是 `principalSupplyUsd`（accrual 含 delta）+ `walletSupplyUsd`（cap dilution 不含 delta）。
+- **变量命名直接决定代码能否自文档化**: 旧名 `principalSupplyUsd` 暗示"已有本金（不含 delta）"，实际值 = wallet + delta（含 delta 的总仓位）。这导致 `totalPositionUsd = principal + netInput` 公式在设计时引入了 double-count。改名 `totalSupplyUsd` 后（见下方 § 重命名），语义自明：`totalPositionUsd = totalSupplyUsd`（无需加任何东西）。**教训：变量名必须精确反映值的构成（wallet + delta），不能只取其中一部分（principal）暗示另一种语义。**
 - **数据源语义必须显式文档化**: `reservePositions` 在 single simulation 下存的是 shared simulation input（`parseNumberInput(debouncedSharedSupplyInput)`），不是钱包仓位。代码中用 `reservePositions` 这个名字暗示"仓位"，构建处的注释只说"用于 cross-reserve eligibility"——没有说明在 single simulation 下这些值就是 simulation input 本身。**教训：数据容器名称应与数据源语义一致；如果同一容器在不同模式下承载不同语义，必须在类型或注释中显式标注。**
-- **`principalSupplyUsd + supplyNetInputUsd` 这类公式需要验证两项是否同源**: 当两个加项可能来自同一数据源时（如 single simulation 中二者都来自 shared input），`A + A = 2A` 就是 double-count。**教训：做 `X + Y` 计算时，TDD 必须覆盖"X 和 Y 相等时结果是否符合预期"的边界用例。** 恰好漏掉这类测试会导致回归测试通过但逻辑错误。
-- **Calculator 层无法保护调用层传错误值**: `buildRateSimulationResult` 正确实现了 `totalPositionUsd = principal + netInput` 的合约——它在 portfolio 模式下语义正确。bug 源于调用层 (`useRateSimulation.ts`) 把错误的 `reservePositions` 值假扮成 `principal` 传入。**教训：Calculator 的参数名暗示了合约（principal = 钱包仓位），但调用侧绕过了这个合约。如果合约约束是"principal ≠ supplyInput when both present"，应在 calculator 层加断言而非依赖注释。**
+- **`X + Y` 计算必须覆盖 `X === Y` 的边界用例**: 当两个加项可能来自同一数据源时（如 single simulation 中二者都来自 shared input），`A + A = 2A` 就是 double-count。**教训：做 `X + Y` 计算时，TDD 必须覆盖"X 和 Y 相等时结果是否符合预期"的边界用例。** 恰好漏掉这类测试会导致回归测试通过但逻辑错误。
+- **Calculator 层无法保护调用层传错误值**: `buildRateSimulationResult` 的参数合约需要调用侧保证 `totalSupplyUsd ≥ supplyNetInputUsd`，但调用侧可能 `totalSupplyUsd = supplyNetInputUsd = simulationInput`（single simulation）。**教训：关键合约约束应在 calculator 层加断言，而非依赖注释和调用侧的"自觉"遵守。**
+
+## Learned Lessons: 重命名 `principalSupplyUsd` → `totalSupplyUsd` (AAV-761 refactor)
+
+- **`totalSupplyUsd` = 总仓位 (wallet + delta)**：用于 USD accrual 收益计算和 Merit self-cap 稀释公式。名字"total"即自说明：它就是总数，不要再加。
+- **`supplyNetInputUsd` = 净 delta (max(supplyInput - borrowInput, 0))**：推动利率曲线的量，不包含已有仓位。新旧都叫delta，不变。
+- **公式 `totalPositionUsd = totalSupplyUsd`**（直接取用，不做加法）：因为 total 本身已含 delta，加 netInput 即 double-count。
+- **入口统一**：Single simulation 和 Portfolio simulation 通过同一个 `perReserveInputs` Map 分发，只在 single 模式下为 undefined（不含 total），portfolio 模式下有值。两者统一调 `useSharedRateSimulations`，只有数据不同，没有代码路径分支。
+
+## Learned Lessons: Fallback 上移到调用层 + 命名统一 (AAV-761 refactor v3)
+
+- **隐式 fallback 分散在 calculator 层导致语义不可见**：旧方案 `buildRateSimulationResult` 内部 `effectiveTotalSupplyUsd = totalSupplyUsd ?? (hasSupplyInput ? supplyInputUsd : undefined)` 让单模拟模式下 `totalSupplyUsd` 的语义（"输入即总仓位"）隐藏在 calculator 内部，不读源码无法知道。
+- **上移方案**：fallback 逻辑移到 `useSharedRateSimulations`（唯一调用入口），`buildRateSimulationResult` 直接使用传入的 `totalSupplyUsd`/`totalBorrowUsd`，不做任何 `??` 回退。calculator 的合约变简单：调用方负责提供正确的 total position，不提供 = 无 total。
+- **`reservePositions` → `crossReservePositions`（8 个文件）**：旧名 `reservePositions` 暗示"仓位"，但在 single simulation 下存的是 simulation inputs。新名 `crossReservePositions` 准确描述用途（跨 reserve 的 net eligibility 计算），不暗示具体存的是什么。
+- **contract 从隐式变显式**：`buildRateSimulationResult` 的 JSDoc 明确列出三种调用方合约——Portfolio 传 wallet+delta、Single 传 inputUsd、无输入传 undefined。未来新增调用方不会因"不知道 calculator 内部有 fallback"而传错值。

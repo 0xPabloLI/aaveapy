@@ -9,11 +9,11 @@ export interface CrossReserveNetInput {
   sourceSide: 'supply' | 'borrow';
   sourceGrossUsd: number;
   constraint: NetPositionConstraint | undefined | null;
-  reservePositions: Map<string, ReservePositions>;
+  crossReservePositions: Map<string, ReservePositions>;
 }
 
 export function computeCrossReserveNetEligible(input: CrossReserveNetInput): number {
-  const { sourceSide, sourceGrossUsd, constraint, reservePositions } = input;
+  const { sourceSide, sourceGrossUsd, constraint, crossReservePositions } = input;
 
   if (!constraint || constraint.offsetReserveIds.length === 0) {
     return sourceGrossUsd;
@@ -21,7 +21,7 @@ export function computeCrossReserveNetEligible(input: CrossReserveNetInput): num
 
   let offsetTotal = 0;
   for (const reserveId of constraint.offsetReserveIds) {
-    const pos = reservePositions.get(reserveId);
+    const pos = crossReservePositions.get(reserveId);
     if (!pos) continue;
     offsetTotal += sourceSide === 'supply' ? pos.borrowUsd : pos.supplyUsd;
   }

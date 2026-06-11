@@ -61,7 +61,7 @@ interface UseRateSimulationParams {
   borrowInput: string;
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
-  reservePositions?: Map<string, ReservePositions>;
+  crossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
 }
 
@@ -76,7 +76,7 @@ interface UseSharedRateSimulationsParams {
   borrowInput: string;
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
-  reservePositions?: Map<string, ReservePositions>;
+  crossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
   perReserveInputs?: Map<string, PerReserveInput>;
 }
@@ -92,7 +92,7 @@ export const useSharedRateSimulations = ({
   borrowInput,
   inputMode = 'token',
   meritMerklNetPosition = true,
-  reservePositions,
+  crossReservePositions,
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
@@ -254,6 +254,16 @@ export const useSharedRateSimulations = ({
       }
       const hasEffectiveInput =
         parseNumberInput(effectiveSupplyInput) > 0 || parseNumberInput(effectiveBorrowInput) > 0;
+
+      // totalSupplyUsd/totalBorrowUsd: total position (wallet + delta) for cap dilution & accrual.
+      // In portfolio mode, perReserve carries the full position.
+      // In single simulation mode (no perReserve), the input IS the total position
+      // — there is no separate wallet, so total = delta = input.
+      // The fallback is resolved HERE, not in buildRateSimulationResult, so the calculator
+      // always receives an explicit total position (or undefined when no input).
+      const effectiveTotalSupplyUsd = perReserve?.totalSupplyUsd;
+      const effectiveTotalBorrowUsd = perReserve?.totalBorrowUsd;
+
       acc[reserveId] = {
         ...buildRateSimulationResult({
           reserve,
@@ -267,16 +277,12 @@ export const useSharedRateSimulations = ({
           inputMode: effectiveInputMode,
           forecastStates,
           meritMerklNetPosition,
-          reservePositions,
+          crossReservePositions,
           reserveSymbolById,
           hubSupplied,
           hubBorrowed,
-          // In portfolio mode, perReserve carries principalSupplyUsd/principalBorrowUsd
-          // from buildPerReserveInputsFromEntries (effective amount = wallet + delta).
-          // In single simulation mode (no perReserve), these will be undefined,
-          // correctly falling back to depositUsd-only cap dilution.
-          principalSupplyUsd: perReserve?.principalSupplyUsd,
-          principalBorrowUsd: perReserve?.principalBorrowUsd,
+          totalSupplyUsd: effectiveTotalSupplyUsd,
+          totalBorrowUsd: effectiveTotalBorrowUsd,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasEffectiveInput && forecastLoading,
@@ -300,7 +306,7 @@ export const useSharedRateSimulations = ({
     tokenPriceById,
     tokenPriceLoadingById,
     tydroPointToUsdRate,
-    reservePositions,
+    crossReservePositions,
     reserveSymbolById,
   ]);
 
@@ -322,7 +328,7 @@ export const useRateSimulation = ({
   borrowInput,
   inputMode = 'token',
   meritMerklNetPosition = true,
-  reservePositions,
+  crossReservePositions,
   reserveSymbolById,
 }: UseRateSimulationParams): RateSimulationResult => {
   const reserveId = getReserveSimulationId(reserve);
@@ -337,7 +343,7 @@ export const useRateSimulation = ({
     borrowInput,
     inputMode,
     meritMerklNetPosition,
-    reservePositions,
+    crossReservePositions,
     reserveSymbolById,
   });
 

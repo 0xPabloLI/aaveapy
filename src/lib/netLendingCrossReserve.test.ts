@@ -6,7 +6,7 @@ import {
 import type { NetPositionConstraint } from '@/types/aave';
 
 describe('computeCrossReserveNetEligible', () => {
-  const reservePositions = new Map<string, { supplyUsd: number; borrowUsd: number }>([
+  const crossReservePositions = new Map<string, { supplyUsd: number; borrowUsd: number }>([
     ['r-usdt0', { supplyUsd: 100, borrowUsd: 0 }],
     ['r-usde', { supplyUsd: 0, borrowUsd: 40 }],
     ['r-gho', { supplyUsd: 0, borrowUsd: 30 }],
@@ -21,7 +21,7 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result).toBe(30); // 100 - (40 + 30)
   });
@@ -40,7 +40,7 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'borrow',
       sourceGrossUsd: 100,
       constraint,
-      reservePositions: borrowPositions,
+      crossReservePositions: borrowPositions,
     });
     expect(result).toBe(20); // 100 - (60 + 20)
   });
@@ -54,7 +54,7 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 50,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result).toBe(0); // max(50 - 70, 0) = 0
   });
@@ -68,7 +68,7 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result).toBe(60); // 100 - 40 (r-unknown skipped)
   });
@@ -78,7 +78,7 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint: undefined,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result).toBe(100);
   });
@@ -92,14 +92,14 @@ describe('computeCrossReserveNetEligible', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result).toBe(100);
   });
 });
 
 describe('computeCrossReserveEligibilityRatio', () => {
-  const reservePositions = new Map<string, { supplyUsd: number; borrowUsd: number }>([
+  const crossReservePositions = new Map<string, { supplyUsd: number; borrowUsd: number }>([
     ['r-usdt0', { supplyUsd: 100, borrowUsd: 0 }],
     ['r-usde', { supplyUsd: 0, borrowUsd: 40 }],
   ]);
@@ -113,7 +113,7 @@ describe('computeCrossReserveEligibilityRatio', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(ratio).toBe(0.6); // (100 - 40) / 100
   });
@@ -127,7 +127,7 @@ describe('computeCrossReserveEligibilityRatio', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 30,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(ratio).toBe(0);
   });
@@ -137,7 +137,7 @@ describe('computeCrossReserveEligibilityRatio', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 100,
       constraint: undefined,
-      reservePositions,
+      crossReservePositions,
     });
     expect(ratio).toBe(1);
   });
@@ -151,7 +151,7 @@ describe('computeCrossReserveEligibilityRatio', () => {
       sourceSide: 'supply',
       sourceGrossUsd: 0,
       constraint,
-      reservePositions,
+      crossReservePositions,
     });
     expect(ratio).toBe(1);
   });

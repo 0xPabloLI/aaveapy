@@ -28,8 +28,8 @@ export interface PerReserveInput {
   supplyInput: string;
   borrowInput: string;
   inputMode: ScenarioInputMode;
-  principalSupplyUsd?: number;
-  principalBorrowUsd?: number;
+  totalSupplyUsd?: number;
+  totalBorrowUsd?: number;
 }
 
 interface SimulateCommonArgs {
@@ -165,13 +165,13 @@ function computeResultsFromGroups(
 ): PortfolioPositionResult[] {
   const results: PortfolioPositionResult[] = [];
 
-  const reservePositions = new Map<string, ReservePositions>();
+  const crossReservePositions = new Map<string, ReservePositions>();
   const reserveSymbolById = new Map<string, string>();
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
     if (!reserve) continue;
     if (group.supplyUsd > 0 || group.borrowUsd > 0) {
-      reservePositions.set(reserve.reserveId, {
+      crossReservePositions.set(reserve.reserveId, {
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
       });
@@ -209,10 +209,10 @@ function computeResultsFromGroups(
         supplyInput: String(group.supplyDeltaUsd),
         borrowInput: String(group.borrowDeltaUsd),
         inputMode: 'usd',
-        principalSupplyUsd: group.supplyUsd,
-        principalBorrowUsd: group.borrowUsd,
+        totalSupplyUsd: group.supplyUsd,
+        totalBorrowUsd: group.borrowUsd,
         forecastStates,
-        reservePositions,
+        crossReservePositions,
         reserveSymbolById,
         hubSupplied: hubAgg?.hubSupplied,
         hubBorrowed: hubAgg?.hubBorrowed,
@@ -373,8 +373,8 @@ export function buildPerReserveInputsFromEntries(
       supplyInput: String(group.supplyDeltaUsd),
       borrowInput: String(group.borrowDeltaUsd),
       inputMode: 'usd',
-      principalSupplyUsd: group.supplyUsd,
-      principalBorrowUsd: group.borrowUsd,
+      totalSupplyUsd: group.supplyUsd,
+      totalBorrowUsd: group.borrowUsd,
     });
   }
   return result;

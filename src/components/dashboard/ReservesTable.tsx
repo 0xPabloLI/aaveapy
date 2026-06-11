@@ -236,7 +236,7 @@ const ReservesTable = ({
     closeTooltip,
   } = useReservesTooltip();
 
-  const reservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
+  const crossReservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
     const rawSupply = parseNumberInput(debouncedSharedSupplyInput);
     const rawBorrow = parseNumberInput(debouncedSharedBorrowInput);
     if (rawSupply === 0 && rawBorrow === 0) return undefined;
@@ -253,13 +253,13 @@ const ReservesTable = ({
   }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode]);
 
   const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
-    if (!reservePositions) return undefined;
+    if (!crossReservePositions) return undefined;
     const map = new Map<string, string>();
     for (const r of reserves) {
       if (r.tokenSymbol) map.set(r.reserveId, r.tokenSymbol);
     }
     return map.size > 0 ? map : undefined;
-  }, [reserves, reservePositions]);
+  }, [reserves, crossReservePositions]);
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
@@ -278,7 +278,7 @@ const ReservesTable = ({
     borrowInput: isPortfolioMode ? '' : debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
     meritMerklNetPosition,
-    reservePositions,
+    crossReservePositions,
     reserveSymbolById,
     perReserveInputs,
   });

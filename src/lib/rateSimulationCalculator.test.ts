@@ -260,8 +260,8 @@ describe('A/B category: availableBorrowRoomUsd boundary', () => {
   });
 });
 
-describe('principalSupplyUsd / principalBorrowUsd', () => {
-  it('defaults to supplyInputUsd when principalSupplyUsd is omitted', () => {
+describe('totalSupplyUsd / totalBorrowUsd', () => {
+  it('defaults to supplyInputUsd when totalSupplyUsd is omitted', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: BASE_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -273,13 +273,13 @@ describe('principalSupplyUsd / principalBorrowUsd', () => {
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
-      principalSupplyUsd: 1000,
+      totalSupplyUsd: 1000,
     });
     expect(withPrincipalExplicit.scenarioUsdAccrual?.supply.totalUsdPerDay)
       .toBe(withoutPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay);
   });
 
-  it('uses principalSupplyUsd for accrual instead of supplyInputUsd', () => {
+  it('uses totalSupplyUsd for accrual instead of supplyInputUsd', () => {
     const base = buildRateSimulationResult({
       reserve: BASE_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -291,13 +291,13 @@ describe('principalSupplyUsd / principalBorrowUsd', () => {
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
-      principalSupplyUsd: 2000,
+      totalSupplyUsd: 2000,
     });
     expect(withLargerPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay)
       .toBeGreaterThan(base.scenarioUsdAccrual?.supply.totalUsdPerDay ?? 0);
   });
 
-  it('uses principalBorrowUsd for accrual instead of borrowInputUsd', () => {
+  it('uses totalBorrowUsd for accrual instead of borrowInputUsd', () => {
     const base = buildRateSimulationResult({
       reserve: BASE_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -309,7 +309,7 @@ describe('principalSupplyUsd / principalBorrowUsd', () => {
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
-      principalBorrowUsd: 1000,
+      totalBorrowUsd: 1000,
     });
     expect(
       Math.abs(
@@ -332,7 +332,7 @@ describe('principalSupplyUsd / principalBorrowUsd', () => {
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
-      principalSupplyUsd: 5000,
+      totalSupplyUsd: 5000,
     });
     expect(withPrincipal.supply.afterNative)
       .toBe(withoutPrincipal.supply.afterNative);
@@ -387,7 +387,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
-      principalSupplyUsd: 1500, // wallet=$1000 + delta=$500 → total=$1500 > cap=$1000
+      totalSupplyUsd: 1500, // wallet=$1000 + delta=$500 → total=$1500 > cap=$1000
     });
 
     const noPrincipalCampaigns = withoutPrincipal.supply.sources.merit?.campaigns ?? [];
@@ -403,7 +403,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(selfCapRowWithPrincipal!.after!).toBeLessThan(selfCapRowNoPrincipal!.after!);
   });
 
-  it('Bug 3: supply after sources merit should reflect self-cap dilution with principalSupplyUsd', () => {
+  it('Bug 3: supply after sources merit should reflect self-cap dilution with totalSupplyUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -415,7 +415,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
-      principalSupplyUsd: 1500,
+      totalSupplyUsd: 1500,
     });
 
     // When total position (principal=$1500) exceeds cap ($1000), dilution reduces merit after
@@ -607,16 +607,16 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
   });
 
   it('single simulation: self-cap should NOT double-count when supplyInput used alone (no principal)', () => {
-    // In single simulation mode, reservePositions stores the shared simulation input,
-    // not a wallet position. principalSupplyUsd should NOT be passed.
-    // This test guards against the regression where principalSupplyUsd = supplyInput
+    // In single simulation mode, crossReservePositions stores the shared simulation input,
+    // not a wallet position. totalSupplyUsd should NOT be passed.
+    // This test guards against the regression where totalSupplyUsd = supplyInput
     // caused totalPositionUsd = 2× input (double-count) in merit self-cap dilution.
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
-      // NO principalSupplyUsd — correct for single simulation (no wallet position)
+      // NO totalSupplyUsd — correct for single simulation (no wallet position)
     });
 
     const campaigns = result.supply.sources.merit?.campaigns ?? [];
@@ -637,12 +637,12 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(result.supply.sources.merit!.after).toBeGreaterThan(0);
   });
 
-  it('portfolio: principalSupplyUsd > supplyInput should NOT double-count (wallet + delta scenario)', () => {
-    // This test verifies the fix: principalSupplyUsd already includes delta,
-    // so totalPositionUsd = principalSupplyUsd (NOT principal + netInput).
+  it('portfolio: totalSupplyUsd > supplyInput should NOT double-count (wallet + delta scenario)', () => {
+    // This test verifies the fix: totalSupplyUsd already includes delta,
+    // so totalPositionUsd = totalSupplyUsd (NOT principal + netInput).
     //
     // Scenario: wallet=$500, delta=$500 → effective=$1000
-    // principalSupplyUsd=1000, supplyInput=500
+    // totalSupplyUsd=1000, supplyInput=500
     // Old (buggy): totalPosition = 1000+500 = 1500 (double-count)
     // New (fixed): totalPosition = 1000
     //
@@ -673,7 +673,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
-      principalSupplyUsd: 1000, // wallet=$500 + delta=$500 = effective=$1000
+      totalSupplyUsd: 1000, // wallet=$500 + delta=$500 = effective=$1000
     });
 
     const noWalletSelf = (noWallet.supply.sources.merit?.campaigns ?? [])
@@ -687,7 +687,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(withWalletSelf!.after!).toBeLessThan(noWalletSelf!.after!);
   });
 
-  it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
+  it('Bug 4: borrow after sources merit should reflect self-cap dilution with totalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -699,7 +699,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '300',
-      principalBorrowUsd: 800, // wallet=$500 + delta=$300 → total=$800 > cap=$500
+      totalBorrowUsd: 800, // wallet=$500 + delta=$300 → total=$800 > cap=$500
     });
 
     // With total position $800 > cap $500, self-cap should be diluted

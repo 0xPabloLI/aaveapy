@@ -1613,7 +1613,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
     },
   };
 
-  it('no reservePositions → full merkl APR (backward compat)', () => {
+  it('no crossReservePositions → full merkl APR (backward compat)', () => {
     const reserve: ReserveWithSpread = {
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
@@ -1641,7 +1641,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions: new Map(),
+      crossReservePositions: new Map(),
     });
     expect(withoutPositions.supply.afterIncentive).toBe(withEmptyPositions.supply.afterIncentive);
     expect(withoutPositions.supply.afterIncentive).toBeCloseTo(10, 1);
@@ -1652,7 +1652,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
@@ -1666,7 +1666,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(4, 1);
   });
@@ -1676,7 +1676,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 500, borrowUsd: 0 }],
     ]);
     const result = buildRateSimulationResult({
@@ -1690,7 +1690,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
   });
@@ -1700,7 +1700,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 1200 }],
     ]);
     const result = buildRateSimulationResult({
@@ -1714,7 +1714,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(0, 1);
   });
@@ -1735,7 +1735,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint, unconstrainedGroup],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 500 }],
     ]);
     const result = buildRateSimulationResult({
@@ -1749,7 +1749,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
   });
@@ -1781,7 +1781,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const reserveSymbolById = new Map([
@@ -1798,7 +1798,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
       reserveSymbolById,
     });
     const merklCampaigns = result.supply.sources.merkl.campaigns;
@@ -1812,7 +1812,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
@@ -1826,7 +1826,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
     });
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
@@ -1850,7 +1850,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [unconstrainedGroup],
     };
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const reserveSymbolById = new Map([
@@ -1867,7 +1867,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       borrowInput: '0',
       forecastStates: {},
       meritMerklNetPosition: false,
-      reservePositions,
+      crossReservePositions,
       reserveSymbolById,
     });
     const merklCampaigns = result.supply.sources.merkl.campaigns;
@@ -2089,7 +2089,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     // supply=1000, borrow=600 → sameReserveRatio = 400/1000 = 0.4
     // offset reserve borrow=500 → crossReserveRatio = (1000-500)/1000 = 0.5
     // combined: 12 * 0.5 * 0.4 = 2.4
-    const reservePositions = new Map([
+    const crossReservePositions = new Map([
       [offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }],
     ]);
     const result = buildRateSimulationResult({
@@ -2103,7 +2103,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '600',
       forecastStates: {},
       meritMerklNetPosition: true,
-      reservePositions,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(2.4, 1);
   });
