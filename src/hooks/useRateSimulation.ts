@@ -271,8 +271,12 @@ export const useSharedRateSimulations = ({
           reserveSymbolById,
           hubSupplied,
           hubBorrowed,
-          principalSupplyUsd: reservePositions?.get(reserveId)?.supplyUsd,
-          principalBorrowUsd: reservePositions?.get(reserveId)?.borrowUsd,
+          // In portfolio mode, perReserve carries principalSupplyUsd/principalBorrowUsd
+          // from buildPerReserveInputsFromEntries (effective amount = wallet + delta).
+          // In single simulation mode (no perReserve), these will be undefined,
+          // correctly falling back to depositUsd-only cap dilution.
+          principalSupplyUsd: perReserve?.principalSupplyUsd,
+          principalBorrowUsd: perReserve?.principalBorrowUsd,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasEffectiveInput && forecastLoading,

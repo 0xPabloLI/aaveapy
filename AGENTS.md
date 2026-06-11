@@ -124,3 +124,10 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`SimulationLane.hasInput` 保持 per-side 不改**: Portfolio 消费端（`buildMetricsFromLane`）用 `lane.hasInput` 做二次守卫实现 em dash，per-side 语义正确。aggregate 层用 `hasAnyInput` 保留跨侧影响，消费端用 `hasInput` 做显示控制——两层守卫各司其职。
 - **cross-side 测试断言不是 `after === current`**: 跨側影响保留后，无输入侧的 after 值可以因对侧输入而变化（如 Brevis 共享 cap），正确断言是 `after !== null`（有值可显示），而非 `after === current`（值不变）。
 - **`SimulationLane` 没有 `after`/`delta` 字段**: 只有 `afterTotal`/`deltaTotal`、`afterNative`/`deltaNative`、`afterIncentive`/`deltaIncentive`。测试中不要用 `lane.after`/`lane.delta`。
+
+## Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-self-cap-dilution)
+
+- **变量复用比命名错误更危险**: `principalSupplyUsd` 在 AAV-610 被设计为"收益本金（含 delta 的有效仓位）"，在 AAV-675 被复用为"钱包已有仓位（不含 delta）"。同一变量在同一函数调用链中被迫承载两种互斥语义：含 delta（accrual 用）和不含 delta（cap dilution 用）。`totalPositionUsd = principalSupplyUsd + supplyNetInputUsd` 在 portfolio 模式下正确（principal = 钱包, netInput = delta），但在 single simulation 下 double-count（principal = supplyInput = netInput → 2× input）。**教训：当一个变量被第二次借用时，必须创建新变量而非复用**。正确的拆分是 `principalSupplyUsd`（accrual 含 delta）+ `walletSupplyUsd`（cap dilution 不含 delta）。
+- **数据源语义必须显式文档化**: `reservePositions` 在 single simulation 下存的是 shared simulation input（`parseNumberInput(debouncedSharedSupplyInput)`），不是钱包仓位。代码中用 `reservePositions` 这个名字暗示"仓位"，构建处的注释只说"用于 cross-reserve eligibility"——没有说明在 single simulation 下这些值就是 simulation input 本身。**教训：数据容器名称应与数据源语义一致；如果同一容器在不同模式下承载不同语义，必须在类型或注释中显式标注。**
+- **`principalSupplyUsd + supplyNetInputUsd` 这类公式需要验证两项是否同源**: 当两个加项可能来自同一数据源时（如 single simulation 中二者都来自 shared input），`A + A = 2A` 就是 double-count。**教训：做 `X + Y` 计算时，TDD 必须覆盖"X 和 Y 相等时结果是否符合预期"的边界用例。** 恰好漏掉这类测试会导致回归测试通过但逻辑错误。
+- **Calculator 层无法保护调用层传错误值**: `buildRateSimulationResult` 正确实现了 `totalPositionUsd = principal + netInput` 的合约——它在 portfolio 模式下语义正确。bug 源于调用层 (`useRateSimulation.ts`) 把错误的 `reservePositions` 值假扮成 `principal` 传入。**教训：Calculator 的参数名暗示了合约（principal = 钱包仓位），但调用侧绕过了这个合约。如果合约约束是"principal ≠ supplyInput when both present"，应在 calculator 层加断言而非依赖注释。**

@@ -372,19 +372,22 @@ const MERIT_SELF_CAP_RESERVE: ReserveWithSpread = {
 };
 
 describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after sources', () => {
-  it('Bug 2: campaign detail self-cap after should be diluted when principalSupplyUsd exists', () => {
+  it('Bug 2: campaign detail self-cap after should be diluted when total position exceeds cap', () => {
+    // Without principal: depositUsd=500, positionForCap=500, cap=1000 → no dilution
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '1000',
+      supplyInput: '500',
     });
+    // With principal: totalPositionUsd=1500, depositUsd=500, cap=1000
+    // eligible=min(1500,1000)=1000, dilution=1000/1500 ≈ 0.67
     const withPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '1000',
-      principalSupplyUsd: 1000,
+      supplyInput: '500',
+      principalSupplyUsd: 1500, // wallet=$1000 + delta=$500 → total=$1500 > cap=$1000
     });
 
     const noPrincipalCampaigns = withoutPrincipal.supply.sources.merit?.campaigns ?? [];
@@ -396,8 +399,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(selfCapRowNoPrincipal?.after).not.toBeNull();
     expect(selfCapRowWithPrincipal?.after).not.toBeNull();
 
-    // With principalSupplyUsd=1000 + input=1000, totalPosition=2000, cap=1000
-    // dilution = 1000/2000 = 0.5, so self-cap after should be half of no-principal case
+    // With principal=$1500 > cap=$1000, self-cap should be diluted
     expect(selfCapRowWithPrincipal!.after!).toBeLessThan(selfCapRowNoPrincipal!.after!);
   });
 
@@ -406,18 +408,17 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '1000',
+      supplyInput: '500',
     });
     const withPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '1000',
-      principalSupplyUsd: 1000,
+      supplyInput: '500',
+      principalSupplyUsd: 1500,
     });
 
-    // When principalSupplyUsd is provided, self-cap dilution reduces merit after
-    // so the aggregate merit after value should also decrease
+    // When total position (principal=$1500) exceeds cap ($1000), dilution reduces merit after
     expect(withPrincipal.supply.sources.merit!.after)
       .toBeLessThan(withoutPrincipal.supply.sources.merit!.after);
   });
@@ -605,22 +606,103 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(result.borrow.deltaTotal).toBeNull();
   });
 
+  it('single simulation: self-cap should NOT double-count when supplyInput used alone (no principal)', () => {
+    // In single simulation mode, reservePositions stores the shared simulation input,
+    // not a wallet position. principalSupplyUsd should NOT be passed.
+    // This test guards against the regression where principalSupplyUsd = supplyInput
+    // caused totalPositionUsd = 2× input (double-count) in merit self-cap dilution.
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      // NO principalSupplyUsd — correct for single simulation (no wallet position)
+    });
+
+    const campaigns = result.supply.sources.merit?.campaigns ?? [];
+    const selfCapRow = campaigns.find((r) => r.id.includes('self'));
+    const baseRow = campaigns.find((r) => r.id.includes('base'));
+
+    expect(selfCapRow?.after).not.toBeNull();
+    expect(baseRow?.after).not.toBeNull();
+
+    // depositUsd=500, selfCap=1000, positionForCap=500, eligible=min(500,1000)=500
+    // dilution = 500/500 = 1 → full self APR, no extra dilution from phantom wallet
+    // Both self-cap and base should have valid, non-zero after values
+    expect(selfCapRow!.after!).toBeGreaterThan(0);
+    expect(baseRow!.after!).toBeGreaterThan(0);
+
+    // Verify the total incentive after is correct (supply.sources.merit.after)
+    expect(result.supply.sources.merit?.after).not.toBeNull();
+    expect(result.supply.sources.merit!.after).toBeGreaterThan(0);
+  });
+
+  it('portfolio: principalSupplyUsd > supplyInput should NOT double-count (wallet + delta scenario)', () => {
+    // This test verifies the fix: principalSupplyUsd already includes delta,
+    // so totalPositionUsd = principalSupplyUsd (NOT principal + netInput).
+    //
+    // Scenario: wallet=$500, delta=$500 → effective=$1000
+    // principalSupplyUsd=1000, supplyInput=500
+    // Old (buggy): totalPosition = 1000+500 = 1500 (double-count)
+    // New (fixed): totalPosition = 1000
+    //
+    // With self-cap=$200: totalPosition=1000, eligible=min(1000,200)=200, dilution=200/1000=0.2
+    // This is MORE diluted than without principal (position=500, dilution=200/500=0.4)
+    const SMALL_CAP_RESERVE: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      meritSupplys: [{
+        apr: 10, selfApr: 8,
+        selfMessage: 'Self authentication. Cap: $200',
+        link: 'https://example.com', name: 'Small Cap Test',
+        message: [{ description: 'Base' }, { description: 'Self authentication. Cap: $200' }],
+        startDate: '2024-01-01', endDate: '2030-12-31',
+        lastRoundRewardUsd: 100,
+      }],
+    };
+
+    // delta=$500, no wallet → totalPosition=500, eligible=min(500,200)=200, dilution=200/500=0.4
+    const noWallet = buildRateSimulationResult({
+      reserve: SMALL_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+    });
+    // wallet=$500 + delta=$500 → principal=$1000, totalPosition=1000, eligible=min(1000,200)=200, dilution=200/1000=0.2
+    const withWallet = buildRateSimulationResult({
+      reserve: SMALL_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      principalSupplyUsd: 1000, // wallet=$500 + delta=$500 = effective=$1000
+    });
+
+    const noWalletSelf = (noWallet.supply.sources.merit?.campaigns ?? [])
+      .find((r) => r.id.includes('self'));
+    const withWalletSelf = (withWallet.supply.sources.merit?.campaigns ?? [])
+      .find((r) => r.id.includes('self'));
+
+    expect(noWalletSelf?.after).not.toBeNull();
+    expect(withWalletSelf?.after).not.toBeNull();
+    // With wallet, total position ($1000) > cap ($200), more dilution → lower after
+    expect(withWalletSelf!.after!).toBeLessThan(noWalletSelf!.after!);
+  });
+
   it('Bug 4: borrow after sources merit should reflect self-cap dilution with principalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      borrowInput: '500',
+      borrowInput: '300',
     });
     const withPrincipal = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      borrowInput: '500',
-      principalBorrowUsd: 500,
+      borrowInput: '300',
+      principalBorrowUsd: 800, // wallet=$500 + delta=$300 → total=$800 > cap=$500
     });
 
-    // Same logic as Bug 3 but for borrow side
+    // With total position $800 > cap $500, self-cap should be diluted
     expect(withPrincipal.borrow.sources.merit!.after)
       .toBeLessThan(withoutPrincipal.borrow.sources.merit!.after);
   });

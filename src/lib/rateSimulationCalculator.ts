@@ -892,8 +892,11 @@ export const buildIncentiveAfter = (
   });
 
   const principalUsd = side === 'supply' ? principalSupplyUsd : principalBorrowUsd;
+  // principalUsd already represents the total position (wallet + delta),
+  // so we use it directly as totalPositionUsd without adding netInputUsd again.
+  // Adding netInputUsd would double-count the delta portion.
   const totalPositionUsd = principalUsd != null && principalUsd > 0
-    ? principalUsd + netInputUsd
+    ? principalUsd
     : undefined;
 
   return (
@@ -1157,11 +1160,14 @@ export function buildRateSimulationResult({
   // Gross amounts are used by incentive sources that reward both sides independently.
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
   const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
+  // principalSupplyUsd/principalBorrowUsd already represent total position (wallet + delta),
+  // so we use them directly as totalPositionUsd without adding netInputUsd again.
+  // Adding netInputUsd would double-count the delta portion.
   const supplyTotalPositionUsd = principalSupplyUsd != null && principalSupplyUsd > 0
-    ? principalSupplyUsd + supplyNetInputUsd
+    ? principalSupplyUsd
     : undefined;
   const borrowTotalPositionUsd = principalBorrowUsd != null && principalBorrowUsd > 0
-    ? principalBorrowUsd + borrowNetInputUsd
+    ? principalBorrowUsd
     : undefined;
   // Eligibility ratio: fraction of gross capital that is net-eligible.
   // Pool-level APR applies only to the eligible portion; scale to effective APR on gross capital.
