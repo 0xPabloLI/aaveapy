@@ -222,17 +222,18 @@ describe('useDebouncedInput', () => {
       });
       expect(result.current.displayValue).toBe('10,000');
       act(() => {
-        result.current.handleFocus({ target: { value: '10,000', setSelectionRange: vi.fn() } } as unknown as React.FocusEvent<HTMLInputElement>);
+        result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('10000');
     });
 
     it('places cursor at end on focus (allows direct decimal point input)', () => {
       const onCommit = vi.fn();
-      const setSelectionRange = vi.fn();
       const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      const setSelectionRange = vi.fn();
       act(() => {
-        result.current.handleFocus({ target: { value: '10,000', setSelectionRange } } as unknown as React.FocusEvent<HTMLInputElement>);
+        result.current.inputRef.current = { setSelectionRange } as unknown as HTMLInputElement;
+        result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       expect(setSelectionRange).toHaveBeenCalledWith(5, 5);
     });

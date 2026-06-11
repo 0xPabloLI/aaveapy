@@ -124,9 +124,8 @@ export function useDebouncedInput({
     setIsFocused(true);
     clearTimer();
     const raw = e.target.value.replace(/,/g, '');
+    pendingCursorRef.current = raw.length;
     setDisplayValue(raw);
-    const len = raw.length;
-    e.target.setSelectionRange(len, len);
   }, [clearTimer]);
 
   const handleKeyDown = useCallback(
