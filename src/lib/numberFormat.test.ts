@@ -21,6 +21,15 @@ describe('numberFormat', () => {
     expect(sanitizeNumberInput('abc1,23x.4y')).toBe('123.4');
   });
 
+  it('normalizes fullwidth decimal to ASCII dot', () => {
+    expect(sanitizeNumberInput('1000。')).toBe('1000.');
+    expect(sanitizeNumberInput('1000．')).toBe('1000.');
+    expect(sanitizeNumberInput('1000。5')).toBe('1000.5');
+    expect(sanitizeNumberInput('。5')).toBe('0.5');
+    expect(sanitizeNumberInput('1000｡')).toBe('1000.');
+    expect(sanitizeNumberInput('1。2。3')).toBe('1.23');
+  });
+
   it('parses formatted values into numbers', () => {
     expect(parseNumberInput('1,234.56')).toBeCloseTo(1234.56, 6);
     expect(parseNumberInput('')).toBe(0);

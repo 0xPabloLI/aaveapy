@@ -300,7 +300,7 @@ describe('useDebouncedInput', () => {
         { initialProps: { value: '1,000' } },
       );
       act(() => {
-        result.current.handleFocus({ target: { value: '1,000', setSelectionRange: vi.fn() } } as unknown as React.FocusEvent<HTMLInputElement>);
+        result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       act(() => {
         result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
@@ -375,7 +375,7 @@ describe('useDebouncedInput', () => {
         result.current.handleBlur({ target: { value: '1000' } } as React.FocusEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleFocus({ target: { value: '1,000', setSelectionRange: vi.fn() } } as unknown as React.FocusEvent<HTMLInputElement>);
+        result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
       });
       act(() => {
         result.current.handleChange({ target: { value: '100' } } as React.ChangeEvent<HTMLInputElement>);

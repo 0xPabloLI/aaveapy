@@ -1,5 +1,6 @@
 export const sanitizeNumberInput = (value: string): string => {
-  const cleaned = value.replace(/,/g, '').replace(/[^\d.]/g, '');
+  const normalized = value.replace(/[。．｡]/g, '.');
+  const cleaned = normalized.replace(/,/g, '').replace(/[^\d.]/g, '');
   if (!cleaned) return '';
 
   const parts = cleaned.split('.');
