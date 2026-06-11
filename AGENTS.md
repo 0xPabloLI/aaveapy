@@ -86,6 +86,8 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 ## Learned Lessons
 - Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
+- **CJK 全角小数点归一化 (AAV-739)**：中文/日文输入法在非数字上下文按 `.` 出 `。`(U+3002)/`．`(U+FF0E)/`｡`(U+FF61) 而非 ASCII `.`(U+002E)。`sanitizeNumberInput` 必须先归一化全角小数点，否则被 `[^\d.]` 正则当非法字符删掉。归一化放在 sanitizer 最前面，先于逗号去除和数字过滤。
+- **handleFocus cursor 修复走 pendingCursorRef (AAV-739)**：`handleFocus` 中 `setDisplayValue` 触发 React re-render 会覆盖同步 `setSelectionRange`。必须用 `pendingCursorRef` + `useLayoutEffect`（与 `handleChange` 一致），在 re-render 后恢复 cursor。
 
 ## Agent skills
 
@@ -120,12 +122,12 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: AAV-761 回归修复 — per-side 守卫 vs 跨側影响
 
-- **`hasSupplyInput`/`hasBorrowInput` 守卫切断跨侧影响**: aggregate 层（`supplyAfterSources`/`borrowAfterSources`、4 个 `afterIncentiveRaw`/`afterIncentiveAprRaw`）从 `hasAnyInput` 改为 per-side 守卫后，single simulation 下无输入侧的 after 变为 null，导致 UI 显示错误。修复：6 处守卫改回 `hasAnyInput`。
+- **`hasSupplyInput`/`hasBorrowInput` 守卫切断跨侧影响（中间尝试，已回退）**: aggregate 层（`supplyAfterSources`/`borrowAfterSources`、4 个 `afterIncentiveRaw`/`afterIncentiveAprRaw`）曾从 `hasAnyInput` 改为 per-side 守卫，导致 Shared Scenario 下无输入侧的 after 变为 null，UI 显示错误。修复：6 处守卫改回 `hasAnyInput`。
 - **`SimulationLane.hasInput` 保持 per-side 不改**: Portfolio 消费端（`buildMetricsFromLane`）用 `lane.hasInput` 做二次守卫实现 em dash，per-side 语义正确。aggregate 层用 `hasAnyInput` 保留跨侧影响，消费端用 `hasInput` 做显示控制——两层守卫各司其职。
 - **cross-side 测试断言不是 `after === current`**: 跨側影响保留后，无输入侧的 after 值可以因对侧输入而变化（如 Brevis 共享 cap），正确断言是 `after !== null`（有值可显示），而非 `after === current`（值不变）。
 - **`SimulationLane` 没有 `after`/`delta` 字段**: 只有 `afterTotal`/`deltaTotal`、`afterNative`/`deltaNative`、`afterIncentive`/`deltaIncentive`。测试中不要用 `lane.after`/`lane.delta`。
 
-## Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-self-cap-dilution)
+## Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-deposit-ceiling-dilution)
 
 - **变量命名直接决定代码能否自文档化**: 旧名 `principalSupplyUsd` 暗示"已有本金（不含 delta）"，实际值 = wallet + delta（含 delta 的总仓位）。这导致 `totalPositionUsd = principal + netInput` 公式在设计时引入了 double-count。改名 `totalSupplyUsd` 后（见下方 § 重命名），语义自明：`totalPositionUsd = totalSupplyUsd`（无需加任何东西）。**教训：变量名必须精确反映值的构成（wallet + delta），不能只取其中一部分（principal）暗示另一种语义。**
 - **数据源语义必须显式文档化**: `reservePositions` 在 single simulation 下存的是 shared simulation input（`parseNumberInput(debouncedSharedSupplyInput)`），不是钱包仓位。代码中用 `reservePositions` 这个名字暗示"仓位"，构建处的注释只说"用于 cross-reserve eligibility"——没有说明在 single simulation 下这些值就是 simulation input 本身。**教训：数据容器名称应与数据源语义一致；如果同一容器在不同模式下承载不同语义，必须在类型或注释中显式标注。**
