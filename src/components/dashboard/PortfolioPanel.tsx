@@ -368,9 +368,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
   return (
     <div className="space-y-3">
+      {/*
+        Header spacing — see docs/design/portfolio-panel-spacing.md.
+        Padding/gap use --ds-space-* tokens so the toggle's right edge
+        matches the Single-mode toggle (ml-auto against the scenario
+        wrapper). Do NOT introduce arbitrary pr-[Npx] / mr-[Npx] values
+        here; the check in scripts/check-portfolio-panel-spacing.sh
+        enforces this.
+      */}
       <div
         className={cn(
-          isMobile ? 'pl-2.5 pr-[var(--ds-space-3)] py-2.5' : 'pl-4 pr-[var(--ds-space-3)] py-3',
+          'pr-[var(--ds-space-3)]',
+          isMobile
+            ? 'pl-[var(--ds-space-2-5)] py-[var(--ds-space-2-5)]'
+            : 'pl-[var(--ds-space-4)] py-[var(--ds-space-3)]',
         )}
       >
         {/* Header */}
