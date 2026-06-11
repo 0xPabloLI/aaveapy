@@ -15,7 +15,6 @@ import {
 } from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import { simulatePortfolioFromEntries } from '@/lib/portfolioSimulator';
-import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
 import { isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
 
 export interface PortfolioSimulationContext {
@@ -74,17 +73,7 @@ export const usePortfolioToggle = ({
             return;
           }
           if (isRestrictedReserve(reserve)) return;
-          const action = getEntrySoftDeleteAction(entry);
-          if (action === 'toggleHidden') {
-            portfolioActions.hideReserve(reserveId);
-          } else {
-            const symbol = entry.tokenSymbol;
-            portfolioActions.removeReserve(reserveId);
-            toast(`${symbol} removed`, {
-              className: '[--width:fit-content]',
-              action: { label: 'Undo', onClick: () => { portfolioActions.undoLastRemove(); } },
-            });
-          }
+          portfolioActions.hideReserve(reserveId);
         } else {
           if (isRestrictedReserve(reserve)) return;
           portfolioActions.addReserve({
@@ -96,7 +85,7 @@ export const usePortfolioToggle = ({
           });
           toast(`${reserve.tokenSymbol} added`, {
             className: '[--width:fit-content]',
-            action: { label: 'Undo', onClick: () => { portfolioActions.removeReserve(reserveId); } },
+            action: { label: 'Undo', onClick: () => { portfolioActions.hideReserve(reserveId); } },
           });
         }
       } else {
@@ -108,17 +97,7 @@ export const usePortfolioToggle = ({
               return;
             }
             if (isRestrictedReserve(reserve)) return;
-            const action = getEntrySoftDeleteAction(entry);
-            if (action === 'toggleHidden') {
-              portfolioActions.hideReserve(reserveId);
-            } else {
-              const symbol = entry.tokenSymbol;
-              portfolioActions.removeReserve(reserveId);
-              toast(`${symbol} removed`, {
-                className: '[--width:fit-content]',
-                action: { label: 'Undo', onClick: () => { portfolioActions.undoLastRemove(); } },
-              });
-            }
+            portfolioActions.hideReserve(reserveId);
           }
         } else {
           if (isRestrictedReserve(reserve)) return;
@@ -131,7 +110,7 @@ export const usePortfolioToggle = ({
           });
           toast(`${reserve.tokenSymbol} added`, {
             className: '[--width:fit-content]',
-            action: { label: 'Undo', onClick: () => { portfolioActions.removeReserve(reserveId); } },
+            action: { label: 'Undo', onClick: () => { portfolioActions.hideReserve(reserveId); } },
           });
         }
       }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sortEntriesByHidden, getEntrySoftDeleteAction } from './portfolioSoftDelete'
+import { sortEntriesByHidden } from './portfolioSoftDelete'
 import type { PortfolioReserveEntry } from '@/types/portfolio'
 
 const makeEntry = (overrides: Partial<PortfolioReserveEntry> & { reserveId: string }): PortfolioReserveEntry => ({
@@ -45,27 +45,5 @@ describe('sortEntriesByHidden', () => {
     const sorted = sortEntriesByHidden(original)
     expect(original.map(e => e.reserveId)).toEqual(['a', 'b'])
     expect(sorted.map(e => e.reserveId)).toEqual(['a', 'b'])
-  })
-})
-
-describe('getEntrySoftDeleteAction', () => {
-  it('returns "toggleHidden" for wallet-synced entry', () => {
-    const entry = makeEntry({ reserveId: 'a', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 } })
-    expect(getEntrySoftDeleteAction(entry)).toBe('toggleHidden')
-  })
-
-  it('returns "toggleHidden" for wallet-modified entry', () => {
-    const entry = makeEntry({ reserveId: 'a', supply: { amount: '2000', inputMode: 'usd', walletValue: 1000 } })
-    expect(getEntrySoftDeleteAction(entry)).toBe('toggleHidden')
-  })
-
-  it('returns "remove" for manual entry (walletValue null on both sides)', () => {
-    const entry = makeEntry({ reserveId: 'a', supply: { amount: '500', inputMode: 'usd', walletValue: null } })
-    expect(getEntrySoftDeleteAction(entry)).toBe('remove')
-  })
-
-  it('returns "remove" for manual entry with empty amounts', () => {
-    const entry = makeEntry({ reserveId: 'a', supply: { amount: '', inputMode: 'usd', walletValue: null } })
-    expect(getEntrySoftDeleteAction(entry)).toBe('remove')
   })
 })

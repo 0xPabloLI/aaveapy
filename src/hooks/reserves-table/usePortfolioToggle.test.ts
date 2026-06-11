@@ -47,13 +47,14 @@ const makeEntry = (overrides: Partial<PortfolioReserveEntry> = {}): PortfolioRes
 const makeActions = (): PortfolioSimulationActions => ({
   setActive: vi.fn(),
   addReserve: vi.fn(),
-  removeReserve: vi.fn(),
   updateReserve: vi.fn(),
   hideReserve: vi.fn(),
   unhideReserve: vi.fn(),
   importReserves: vi.fn(),
+  forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
   removeHiddenEntries: vi.fn(() => 0),
+  removeWalletEntries: vi.fn(() => 0),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
@@ -117,7 +118,6 @@ describe('usePortfolioToggle', () => {
         tokenSymbol: 'WETH',
         restrictedStatus: null,
       });
-      expect(actions.removeReserve).not.toHaveBeenCalled();
     });
 
     it('adds when entry does not exist and opposite side missing', () => {
@@ -137,7 +137,7 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
-      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
     });
 
     it('calls hideReserve when the matching side is wallet-owned', () => {
@@ -297,10 +297,9 @@ describe('usePortfolioToggle', () => {
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
       expect(actions.hideReserve).not.toHaveBeenCalled();
-      expect(actions.removeReserve).not.toHaveBeenCalled();
     });
 
-    it('blocks removeReserve for restricted (frozen) reserve without side', () => {
+    it('blocks hideReserve for restricted (frozen) reserve without side', () => {
       const actions = makeActions();
       const reserve = makeReserve({ isFrozen: true });
       const entries = [
@@ -310,7 +309,6 @@ describe('usePortfolioToggle', () => {
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
-      expect(actions.removeReserve).not.toHaveBeenCalled();
       expect(actions.hideReserve).not.toHaveBeenCalled();
     });
 
@@ -325,7 +323,6 @@ describe('usePortfolioToggle', () => {
       );
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
       expect(actions.hideReserve).not.toHaveBeenCalled();
-      expect(actions.removeReserve).not.toHaveBeenCalled();
     });
 
     it('allows removal of non-restricted reserve', () => {
@@ -355,7 +352,6 @@ describe('usePortfolioToggle', () => {
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
       expect(actions.unhideReserve).toHaveBeenCalledWith('r-1');
       expect(actions.hideReserve).not.toHaveBeenCalled();
-      expect(actions.removeReserve).not.toHaveBeenCalled();
     });
 
     it('calls unhideReserve for hidden entry with explicit side', () => {
@@ -370,7 +366,6 @@ describe('usePortfolioToggle', () => {
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
       expect(actions.unhideReserve).toHaveBeenCalledWith('r-1');
       expect(actions.hideReserve).not.toHaveBeenCalled();
-      expect(actions.removeReserve).not.toHaveBeenCalled();
     });
 
     it('still calls hideReserve for non-hidden wallet entry', () => {
@@ -406,7 +401,7 @@ describe('usePortfolioToggle', () => {
       expect(msg).toContain('added');
       expect(opts.action.label).toBe('Undo');
       act(() => { opts.action.onClick(); });
-      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
     });
 
     it('emits toast with Undo when addReserve is called (explicit side)', () => {
@@ -420,42 +415,22 @@ describe('usePortfolioToggle', () => {
       expect(mockToast).toHaveBeenCalledTimes(1);
     });
 
-    it('emits toast with Undo when removeReserve is called (no side)', () => {
-      const actions = makeActions();
-      const reserve = makeReserve();
-      const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
-      const { result } = renderHook(() =>
-        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
-      );
-      act(() => result.current.handlePortfolioToggle('r-1', reserve));
-      expect(actions.removeReserve).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledTimes(1);
-      const [msg, opts] = mockToast.mock.calls[0];
-      expect(msg).toContain('removed');
-      expect(opts.action.label).toBe('Undo');
-      act(() => { opts.action.onClick(); });
-      expect(actions.undoLastRemove).toHaveBeenCalledTimes(1);
-    });
-
-    it('emits toast when removeReserve through explicit side path', () => {
-      const actions = makeActions();
-      const reserve = makeReserve();
-      const entries = [makeEntry({
-        supply: { amount: '100', inputMode: 'usd', walletValue: null },
-        borrow: { amount: '', inputMode: 'usd', walletValue: null },
-      })];
-      const { result } = renderHook(() =>
-        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
-      );
-      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'borrow'));
-      expect(actions.removeReserve).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledTimes(1);
-    });
-
     it('does NOT emit toast for hideReserve (wallet entry)', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: 100 } })];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
+      );
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(mockToast).not.toHaveBeenCalled();
+    });
+
+    it('does NOT emit toast for hideReserve (manual entry, unified soft delete)', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const entries = [makeEntry({ supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
       );

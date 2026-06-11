@@ -29,18 +29,17 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 
 const EMPTY_SIDE: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
 
-const noop = () => {};
-
 const makeActions = (): PortfolioSimulationActions => ({
   setActive: vi.fn(),
   addReserve: vi.fn(),
-  removeReserve: vi.fn(),
   updateReserve: vi.fn(),
   hideReserve: vi.fn(),
   unhideReserve: vi.fn(),
   importReserves: vi.fn(),
+  forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
   removeHiddenEntries: vi.fn(() => 0),
+  removeWalletEntries: vi.fn(() => 0),
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
@@ -73,7 +72,6 @@ function renderRow(opts?: { isMobile?: boolean; supplyOverrides?: Partial<Portfo
       entry={entry}
       actions={makeActions()}
       reserveId="reserve-1"
-      onRemove={noop}
       tokenPriceInUsd={opts?.tokenPriceInUsd}
     />,
     { wrapper: Wrapper },

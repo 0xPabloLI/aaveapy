@@ -9,7 +9,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { getEntrySoftDeleteAction } from '@/lib/portfolioSoftDelete';
 import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 
 import { PORTFOLIO_THEME } from './portfolioTheme';
@@ -22,7 +21,6 @@ interface PortfolioTokenRowProps {
   entry: PortfolioReserveEntry;
   actions: PortfolioSimulationActions;
   reserveId: string;
-  onRemove: (reserveId: string) => void;
   tokenPriceInUsd?: number;
   disabledNotice?: { supply?: string | null; borrow?: string | null };
 }
@@ -300,7 +298,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   entry,
   actions,
   reserveId,
-  onRemove,
   tokenPriceInUsd,
   disabledNotice,
 }: PortfolioTokenRowProps) {
@@ -315,14 +312,9 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     if (isHidden) {
       actions.unhideReserve(reserveId);
     } else {
-      const action = getEntrySoftDeleteAction(entry);
-      if (action === 'toggleHidden') {
-        actions.hideReserve(reserveId);
-      } else {
-        onRemove(reserveId);
-      }
+      actions.hideReserve(reserveId);
     }
-  }, [isHidden, entry, actions, onRemove, reserveId]);
+  }, [isHidden, actions, reserveId]);
 
   const isRestricted = entry.restrictedStatus != null;
 

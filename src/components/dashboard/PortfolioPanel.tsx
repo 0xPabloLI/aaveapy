@@ -330,21 +330,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [reserves, entries]);
 
 
-  const handleRemoveToken = useCallback((reserveId: string) => {
-    const affected = entries.find((e) => e.reserveId === reserveId);
-    actions.removeReserve(reserveId);
-    toast(affected?.tokenSymbol ? `${affected.tokenSymbol} removed` : 'Removed', {
-      className: '[--width:fit-content]',
-      action: {
-        label: 'Undo',
-        onClick: () => {
-          const restored = actions.undoLastRemove();
-          if (restored) toast.success('Restored previous edits');
-        },
-      },
-    });
-  }, [actions, entries]);
-
   const handleWalletSyncClick = useCallback(() => {
     onWalletSync?.();
   }, [onWalletSync]);
@@ -636,7 +621,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     entry={entry}
                     actions={actions}
                     reserveId={entry.reserveId}
-                    onRemove={handleRemoveToken}
                     tokenPriceInUsd={reserve?.tokenPrice}
                     disabledNotice={reserve ? {
                       supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,

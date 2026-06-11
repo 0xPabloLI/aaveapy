@@ -66,7 +66,8 @@ _Avoid_: Blocklist
 
 **Deposit Ceiling**:
 Per-user 存款上限。Merit 自有模型中限制单个用户能存入的金额。
-_Avoid_: Per-User Deposit Cap, Self Cap
+外部源（Merit API）字段名为 `selfCapUsd`，在代码中保留原字段名不做重命名。领域文档/讨论中统一用 Deposit Ceiling。
+_Avoid_: Per-User Deposit Cap, Self Cap（作为领域术语；引用外部源字段名时可用 `selfCapUsd`）
 
 **Reward Ceiling**:
 Per-user 奖励上限。Brevis 模型中限制单个用户能获得的奖励金额。
@@ -203,7 +204,7 @@ _Avoid_: 清空全部 entry（包括纯手动的）、按 side 分别清除（�
 **Watch Mode 重新提交地址（同地址或新地址）也按 refresh 处理**——这是 user-initiated 的 "我想看最新数据" 意图，与 F5、Refresh 按钮走同一条 refresh 通道（详见 [Refresh Action](#refresh-action)）。_Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）、把 re-submit 当成独立 case 走特殊代码路径
 
 **Force Sync Action**:
-Portfolio 面板中的 Force sync 按钮（`CloudDownload` 图标，`data-testid="wallet-sync-button"`）。行为：对钱包来源仓位（`walletValue !== null`）直接覆盖为最新链上值（delta 归零），手动仓位（`walletValue === null`）不动。与自动导入（`useWalletAutoImport`，走 `mergeEntriesWithDelta` 保留 delta）不同——Force sync 是用户主动"我要放弃修改、复位到链上"的意图。图标：idle=`CloudDownload`（云+下载箭头，语义：从云端/链上拉取），loading=`RefreshCw`（旋转）。文案：title=`Force sync`，aria-label=`Force sync wallet positions`，loading 时 `Syncing…`。toast 成功=`Synced N positions from wallet`。
+Portfolio 面板中的 Force sync 按钮（`CloudDownload` 图标，`data-testid="wallet-sync-button"`）。行为：对钱包来源仓位（`walletValue !== null`）直接覆盖为最新链上值（delta 归零），手动仓位中如果 incoming 有对应 reserveId 的钱包仓位数据（`incomingSide.walletValue !== null`），也更新 `walletValue`/`source`（保留用户已输入的 amount/delta）。与自动导入（`useWalletAutoImport`，走 `mergeEntriesWithDelta` 保留 delta）不同——Force sync 是用户主动"我要放弃修改、复位到链上"的意图。图标：idle=`CloudDownload`（云+下载箭头，语义：从云端/链上拉取），loading=`RefreshCw`（旋转）。文案：title=`Force sync`，aria-label=`Force sync wallet positions`，loading 时 `Syncing…`。toast 成功=`Synced N positions from wallet`。
 
 **Refresh Action**:
 一个 user-initiated 或 user-equivalent 的 "强制重新拉取仓位数据" 信号。**三条触发路径走同一个 module-scope emitter**（`refetchEvent`）：
@@ -226,8 +227,8 @@ Portfolio 面板中的 Force sync 按钮（`CloudDownload` 图标，`data-testid
 _Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）、per-side 数据模型（允许单 side 缺失）
 
 **Soft Delete**:
-方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。
-_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制、只 hidden 一个 side
+统一软删除：所有 entry 删除 → `hidden: true`，不区分有无钱包仓位。灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。`removeReserve`（硬删除）已移除，所有删除走 `hideReserve`。`addReserve` 在遇到已 hidden 的 entry 时自动 unhide 而非跳过。
+_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制、只 hidden 一个 side、硬删除（丢失 position 数据）
 
 **Watch Mode UI**:
 Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。Disconnected 状态入口文案统一为 "View address"。Connected 状态 popover 统一三项菜单：Switch wallet（Wallet 图标，打开 RainbowKit 钱包选择）、View another address（Eye 图标，跳到地址输入）、Disconnect（X 图标，断开）。无论当前是钱包连接还是 View address，菜单结构完全一致。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。

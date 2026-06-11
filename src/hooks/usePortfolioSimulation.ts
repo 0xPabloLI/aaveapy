@@ -79,7 +79,7 @@ function forceSyncEntries(
         existing: PortfolioReserveEntry['supply'],
         incomingSide: PortfolioReserveEntry['supply'],
       ): PortfolioReserveEntry['supply'] => {
-        if (existing.walletValue === null) return existing;
+        if (incomingSide.walletValue === null) return existing;
         return {
           ...existing,
           walletValue: incomingSide.walletValue,
@@ -97,10 +97,7 @@ function forceSyncEntries(
       });
       incomingMap.delete(cur.reserveId);
     } else {
-      const anyWallet = cur.supply.walletValue !== null || cur.borrow.walletValue !== null;
-      if (!anyWallet) {
-        result.push(cur);
-      }
+      result.push(cur);
     }
   }
 
@@ -148,7 +145,6 @@ export interface PortfolioSimulationActions {
     tokenSymbol: string;
     restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
   }) => void;
-  removeReserve: (reserveId: string) => void;
   updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
   hideReserve: (reserveId: string) => void;
   unhideReserve: (reserveId: string) => void;
@@ -192,7 +188,15 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     }) => {
       const status = params.restrictedStatus ?? null;
       setEntries((prev) => {
-        if (prev.some((e) => e.reserveId === params.reserveId)) return prev;
+        const existing = prev.find((e) => e.reserveId === params.reserveId);
+        if (existing) {
+          if (existing.hidden && canUnhide(existing)) {
+            return prev.map((e) =>
+              e.reserveId === params.reserveId ? { ...e, hidden: false } : e,
+            );
+          }
+          return prev;
+        }
         return [
           ...prev,
           {
@@ -211,13 +215,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     },
     [],
   );
-
-  const removeReserve = useCallback((reserveId: string) => {
-    setEntries((prev) => {
-      lastRemoveSnapshotRef.current = prev;
-      return prev.filter((e) => e.reserveId !== reserveId);
-    });
-  }, []);
 
   const updateReserve = useCallback(
     (reserveId: string, patch: ReservePatch, priceInUsd?: number) => {
@@ -278,9 +275,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   );
 
   const hideReserve = useCallback((reserveId: string) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)),
-    );
+    setEntries((prev) => {
+      lastRemoveSnapshotRef.current = prev;
+      return prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e));
+    });
   }, []);
 
   const unhideReserve = useCallback((reserveId: string) => {
@@ -380,7 +378,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     () => ({
       setActive,
       addReserve,
-      removeReserve,
       updateReserve,
       hideReserve,
       unhideReserve,
@@ -395,7 +392,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       undoLastRemove,
     }),
     [
-      addReserve, removeReserve, updateReserve, hideReserve, unhideReserve,
+      addReserve, updateReserve, hideReserve, unhideReserve,
       importReserves, forceSyncReserves, restoreToWallet, removeHiddenEntries, removeWalletEntries, clearAll, saveSnapshot, deleteSnapshot,
       undoLastRemove,
     ],

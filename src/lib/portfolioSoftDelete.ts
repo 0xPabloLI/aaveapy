@@ -10,8 +10,3 @@ export function sortEntriesByHidden(entries: PortfolioReserveEntry[]): Portfolio
   const hidden = entries.filter(e => e.hidden)
   return [...walletVisible, ...manualVisible, ...hidden]
 }
-
-export function getEntrySoftDeleteAction(entry: PortfolioReserveEntry): 'toggleHidden' | 'remove' {
-  const anyWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null
-  return anyWallet ? 'toggleHidden' : 'remove'
-}

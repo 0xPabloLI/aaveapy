@@ -122,8 +122,8 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
     })
   })
 
-  describe('removeReserve', () => {
-    it('removes the entire entry by reserveId', () => {
+  describe('hideReserve', () => {
+    it('hides the entire entry by reserveId', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
 
@@ -134,10 +134,11 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       expect(result.current.entries).toHaveLength(2)
 
-      act(() => { result.current.actions.removeReserve('r-weth') })
+      act(() => { result.current.actions.hideReserve('r-weth') })
 
-      expect(result.current.entries).toHaveLength(1)
-      expect(result.current.entries[0].reserveId).toBe('r-gho')
+      expect(result.current.entries).toHaveLength(2)
+      expect(result.current.entries.find(e => e.reserveId === 'r-weth')?.hidden).toBe(true)
+      expect(result.current.entries.find(e => e.reserveId === 'r-gho')?.hidden).toBe(false)
     })
   })
 
@@ -440,7 +441,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
   })
 
   describe('undoLastRemove', () => {
-    it('restores entries after removeReserve', () => {
+    it('restores entries after hideReserve', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
 
@@ -451,14 +452,14 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
 
       expect(result.current.entries).toHaveLength(2)
 
-      act(() => { result.current.actions.removeReserve('r-weth') })
-      expect(result.current.entries).toHaveLength(1)
+      act(() => { result.current.actions.hideReserve('r-weth') })
+      expect(result.current.entries.find(e => e.reserveId === 'r-weth')?.hidden).toBe(true)
 
       let restored: boolean | undefined
       act(() => { restored = result.current.actions.undoLastRemove() })
 
       expect(restored).toBe(true)
-      expect(result.current.entries).toHaveLength(2)
+      expect(result.current.entries.find(e => e.reserveId === 'r-weth')?.hidden).toBe(false)
     })
 
     it('returns false when nothing to undo', () => {

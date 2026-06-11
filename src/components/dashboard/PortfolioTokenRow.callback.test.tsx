@@ -41,13 +41,14 @@ function makeActions(): PortfolioSimulationActions {
   return {
     setActive: vi.fn(),
     addReserve: vi.fn(),
-    removeReserve: vi.fn(),
     updateReserve: vi.fn(),
     hideReserve: vi.fn(),
     unhideReserve: vi.fn(),
     importReserves: vi.fn(),
+    forceSyncReserves: vi.fn(),
     restoreToWallet: vi.fn(),
     removeHiddenEntries: vi.fn(() => 0),
+    removeWalletEntries: vi.fn(() => 0),
     clearAll: vi.fn(),
     saveSnapshot: vi.fn(),
     deleteSnapshot: vi.fn(),
@@ -58,37 +59,32 @@ function makeActions(): PortfolioSimulationActions {
 describe('PortfolioTokenRow callbacks', () => {
   beforeEach(() => cleanup());
 
-  it('calls onRemove with reserveId when minus button is clicked for manual entry', () => {
-    const onRemove = vi.fn();
+  it('calls actions.hideReserve when minus button is clicked for manual entry (unified soft delete)', () => {
     const actions = makeActions();
     render(
       <PortfolioTokenRow
         entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '', inputMode: 'usd', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={onRemove}
       />,
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /remove.*USDC/i }));
-    expect(onRemove).toHaveBeenCalledWith('reserve-1');
+    expect(actions.hideReserve).toHaveBeenCalledWith('reserve-1');
   });
 
   it('calls actions.hideReserve when minus button is clicked for wallet-synced entry', () => {
-    const onRemove = vi.fn();
     const actions = makeActions();
     render(
       <PortfolioTokenRow
         entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000 }, borrow: { amount: '', inputMode: 'usd', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={onRemove}
       />,
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /remove.*USDC/i }));
     expect(actions.hideReserve).toHaveBeenCalledWith('reserve-1');
-    expect(onRemove).not.toHaveBeenCalled();
   });
 
   it('calls actions.updateReserve on supply input blur (committed via useNumberInput)', () => {
@@ -98,7 +94,7 @@ describe('PortfolioTokenRow callbacks', () => {
         entry={makeEntry()}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={vi.fn()}
+        
       />,
       { wrapper: Wrapper },
     );
@@ -115,7 +111,7 @@ describe('PortfolioTokenRow callbacks', () => {
         entry={makeEntry({ borrow: { amount: '2000', inputMode: 'usd', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={vi.fn()}
+        
       />,
       { wrapper: Wrapper },
     );
@@ -132,7 +128,7 @@ describe('PortfolioTokenRow callbacks', () => {
         entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={vi.fn()}
+        
         tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
@@ -149,7 +145,7 @@ describe('PortfolioTokenRow callbacks', () => {
         entry={makeEntry({ supply: { amount: '5000', inputMode: 'token', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={vi.fn()}
+        
         tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
@@ -166,7 +162,7 @@ describe('PortfolioTokenRow callbacks', () => {
         entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null } })}
         actions={actions}
         reserveId="reserve-1"
-        onRemove={vi.fn()}
+        
       />,
       { wrapper: Wrapper },
     );
@@ -181,7 +177,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={makeActions()}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -195,7 +191,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -212,7 +208,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '2000', inputMode: 'usd', walletValue: 5000, deltaSign: -1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -229,7 +225,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -244,7 +240,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -259,7 +255,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -274,7 +270,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -291,7 +287,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '2000', inputMode: 'usd', walletValue: 5000, deltaSign: -1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -308,7 +304,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: -1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -323,7 +319,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ borrow: { amount: '2000', inputMode: 'usd', walletValue: 2000, deltaSign: 1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -338,7 +334,7 @@ describe('PortfolioTokenRow callbacks', () => {
           entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: -1 } })}
           actions={actions}
           reserveId="reserve-1"
-          onRemove={vi.fn()}
+          
         />,
         { wrapper: Wrapper },
       );
@@ -355,7 +351,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount, inputMode: 'usd', walletValue, deltaSign: 1 } })}
             actions={makeActions()}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={1}
           />,
           { wrapper: Wrapper },
@@ -380,7 +376,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: tokenAmount, inputMode: 'token', walletValue, deltaSign: 1 } })}
             actions={makeActions()}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={tokenPrice}
           />,
           { wrapper: Wrapper },
@@ -404,7 +400,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: tokenAmount, inputMode: 'token', walletValue, deltaSign: 1 } })}
             actions={makeActions()}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={tokenPrice}
           />,
           { wrapper: Wrapper },
@@ -427,7 +423,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -444,7 +440,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -460,7 +456,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -478,7 +474,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={xActions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -492,7 +488,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={kbActions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -511,7 +507,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -529,7 +525,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ borrow: { amount: '5000', inputMode: 'usd', walletValue: 2000, deltaSign: -1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -546,7 +542,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ borrow: { amount: '5000', inputMode: 'usd', walletValue: 2000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -561,7 +557,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7', inputMode: 'token', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={1000}
           />,
           { wrapper: Wrapper },
@@ -577,7 +573,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7', inputMode: 'token', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -597,7 +593,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: String(effectiveUsd), inputMode: 'usd', walletValue, deltaSign: 1, deltaRawUsd: deltaUsd } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -616,7 +612,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: String(tokenAmount), inputMode: 'token', walletValue, deltaSign: 1, deltaRawUsd: deltaUsd } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={tokenPrice}
           />,
           { wrapper: Wrapper },
@@ -635,7 +631,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: String(walletValue + deltaUsd), inputMode: 'usd', walletValue, deltaSign: 1, deltaRawUsd: deltaUsd } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -654,7 +650,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '3000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -673,7 +669,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '1000', inputMode: 'usd', walletValue: 3000, deltaSign: -1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -691,7 +687,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -708,7 +704,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '7000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
           />,
           { wrapper: Wrapper },
         );
@@ -728,7 +724,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ supply: { amount: '1.5', inputMode: 'token', walletValue, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={tokenPrice}
           />,
           { wrapper: Wrapper },
@@ -757,7 +753,7 @@ describe('PortfolioTokenRow callbacks', () => {
             entry={makeEntry({ borrow: { amount: '1', inputMode: 'token', walletValue, deltaSign: 1 } })}
             actions={actions}
             reserveId="reserve-1"
-            onRemove={vi.fn()}
+            
             tokenPriceInUsd={tokenPrice}
           />,
           { wrapper: Wrapper },

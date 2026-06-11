@@ -30,7 +30,6 @@ const mockRemoveWalletEntries = vi.fn(() => 0)
 const mockPortfolioActions: PortfolioSimulationActions = {
   setActive: vi.fn(),
   addReserve: vi.fn(),
-  removeReserve: vi.fn(),
   updateReserve: vi.fn(),
   hideReserve: vi.fn(),
   unhideReserve: vi.fn(),
