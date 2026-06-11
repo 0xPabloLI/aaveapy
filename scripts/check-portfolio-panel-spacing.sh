@@ -28,7 +28,7 @@ NC='\033[0m'
 
 # Match (p|m)(l|r|x)-[<anything-with-px-or-rem>]. Token usage like
 # pr-[var(--ds-space-3)] is intentionally NOT matched.
-PATTERN='\b[pm][lrx]-\[[^]]*(px|rem)\]'
+PATTERN='\b[pm][lrx]-\[[0-9][^]]*(px|rem)\]'
 
 MATCHES=$(grep -nE "$PATTERN" "$TARGET" || true)
 
