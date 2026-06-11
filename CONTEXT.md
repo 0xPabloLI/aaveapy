@@ -227,8 +227,8 @@ Portfolio 面板中的 Force sync 按钮（`CloudDownload` 图标，`data-testid
 _Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）、per-side 数据模型（允许单 side 缺失）
 
 **Soft Delete**:
-统一软删除：所有 entry 删除 → `hidden: true`，不区分有无钱包仓位。灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。`removeReserve`（硬删除）已移除，所有删除走 `hideReserve`。`addReserve` 在遇到已 hidden 的 entry 时自动 unhide 而非跳过。
-_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制、只 hidden 一个 side、硬删除（丢失 position 数据）
+条件软删除：删除行为根据 entry 是否有 wallet position 分叉。有 wallet position（任一侧 `walletValue !== null`）→ `hideReserve`（软删除，`hidden: true`，灰+沉底+EyeOff 图标+点击恢复）。纯手动 entry（两侧 `walletValue === null`）→ `removeReserve`（硬删除，直接从 entries 移除，无数据损失风险）。`clearAll` 同理：有 wallet entry → hidden，纯手动 → 硬删除。Resync/merge 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。`addReserve` 在遇到已 hidden 的 entry 时自动 unhide 而非跳过。`undoLastRemove` 已移除（hide 有 eye-off 一键恢复，remove 是空数据无需 undo）。`removeHiddenEntries` 已移除（无消费者）。
+_Avoid_: 对纯手动 entry 软删除（没有恢复价值，白占内存）、Undo toast 机制、只 hidden 一个 side
 
 **Watch Mode UI**:
 Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。Disconnected 状态入口文案统一为 "View address"。Connected 状态 popover 统一三项菜单：Switch wallet（Wallet 图标，打开 RainbowKit 钱包选择）、View another address（Eye 图标，跳到地址输入）、Disconnect（X 图标，断开）。无论当前是钱包连接还是 View address，菜单结构完全一致。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。

@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-11
 **Linear:** AAV-761 (主线), AAV-770, AAV-771, AAV-780
-**Status:** 三层修复已完成并 merge；Merit Self Cap Dilution（single simulation + portfolio 双模式）已修复
+**Status:** 三层修复已完成并 merge；Merit Deposit Ceiling Dilution（Shared Scenario + Portfolio Mode 均已修复）
 
 ---
 
@@ -16,7 +16,7 @@ AAV-761 修复 Simulation 模式下 incentive APR 计算的语义 bug：当 Port
 - 三层 hasInput 守卫修复
 - Merit/Merkl/Brevis campaign detail row 的 after 语义统一
 - Aggregate 层 `hasAnyInput` vs per-side 守卫的语义边界
-- Merit Self Cap Dilution Bug 根因诊断（single simulation 已修复，Portfolio 模式待跟进）
+- Merit Deposit Ceiling Dilution Bug 根因诊断（Shared Scenario 已修复，Portfolio Mode 待跟进）
 
 ---
 
@@ -95,17 +95,15 @@ Portfolio 消费端用 `lane.hasInput` 做二次守卫，实现 em dash 显示�
 | AAV-761 | Simulation after 语义修复（主线） | Done | 三层修复 + delta null 语义 |
 | AAV-770 | Aggregate 层 + Lane 层 hasInput 守卫 | Done | Layer 1 + Layer 2 |
 | AAV-771 | Brevis 缺少显式 hasAnyInput 分支 | Done | 防御性分支，功能靠初始 null 兜底 |
-| AAV-780 | Merit Self Cap Dilution Bug | Closed（预期行为） | 用户确认稀释语义正确：position > cap 后 APR 按比例下降是设计意图，非 bug |
+| AAV-780 | Merit Deposit Ceiling Dilution Bug | Closed（预期行为） | 用户确认稀释语义正确：position > Deposit Ceiling 后 APR 按比例下降是设计意图，非 bug |
 
 ---
 
 ## 5. 已知副作用/待解决
 
-### 5.1 Brevis 与 Merit/Merkl 代码结构不一致
+### 5.1 Brevis 与 Merit/Merkl 代码结构不一致（已解决）
 
-Brevis 无 `else if (hasAnyInput)` 分支（靠初始 `let after = null` 兜底），Merit/Merkl 有显式分支。运行时行为一致（都是 after=null），但代码风格不统一。
-
-**建议**：统一为 Brevis 的模式——删除 `else if (hasAnyInput)` 分支，让 after 保持初始 null。语义更清晰："无 input = 不参与模拟 = after 未定义"。
+Brevis 在 commit `114167df` 补上了 `else if (hasAnyInput)` 分支后，四个 campaign（Merit base/self、Merkl、Brevis）结构已统一：均用 `let after = null` 初始声明 + 显式 `else if (hasAnyInput) { after = null }` 分支。无遗留不一致。
 
 ### 5.2 Native vs Incentive After 不一致（设计意图）
 
@@ -119,21 +117,21 @@ Brevis 无 `else if (hasAnyInput)` 分支（靠初始 `let after = null` 兜底�
 
 ### 5.4 Brevis Forecast 分母问题（已否决）
 
-> **已否决**：Brevis per-user reward cap 限制的是累计 USD 奖励总额（perUserRewardCapUsd），不是 position 大小。与 Merit self-cap（Deposit Ceiling，限制 position）语义完全不同。Brevis 不需要 `totalPositionUsd` 参数。详见 `docs/handoff/AAV-761-interim-fix-analysis.md`。
+> **已否决**：Brevis Reward Ceiling 限制的是累计 USD 奖励总额（perUserRewardCapUsd），不是 position 大小。与 Merit Deposit Ceiling（限制 position，外部源字段名 `selfCapUsd`）语义完全不同。Brevis 不需要 `totalPositionUsd` 参数。详见 `docs/handoff/AAV-761-interim-fix-analysis.md`。
 
 ---
 
-## 6. Merit Self Cap Dilution Bug（已修复 — Single Simulation + Portfolio）
+## 6. Merit Deposit Ceiling Dilution Bug（已修复 — Shared Scenario + Portfolio Mode）
 
 **详细 handoff**: `docs/handoff/merit-self-cap-dilution-bug.md`
 
 ### 6.1 问题描述
 
-Celo USDT 的 Merit Self Cap incentive APR 被提前稀释——即使用户仓位未超过 self cap，incentive APR 也显示偏低的稀释值。问题同时存在于 single simulation 和 portfolio 模式，根因不同。
+Celo USDT 的 Merit Deposit Ceiling incentive APR 被提前稀释——即使用户仓位未超过 Deposit Ceiling，incentive APR 也显示偏低的稀释值。问题同时存在于 Shared Scenario 和 Portfolio Mode，根因不同。
 
-### 6.2 Phase 1: Single Simulation — 变量语义混淆
+### 6.2 Phase 1: Shared Scenario — 变量语义混淆
 
-**根因**：`reservePositions` 在 single simulation 模式下存的是 shared simulation input，不是钱包已有仓位。`principalSupplyUsd` 变量名含"principal"暗示"已有本金"，实际值 = simulation input。导致 `totalPositionUsd = simulationInput + netInput` 产生 double-counting。
+**根因**：`reservePositions` 在 Shared Scenario 下存的是 shared simulation input，不是钱包已有仓位。`principalSupplyUsd` 变量名含"principal"暗示"已有本金"，实际值 = simulation input。导致 `totalPositionUsd = simulationInput + netInput` 产生 double-counting。
 
 更深层原因：`principalSupplyUsd` 被 AAV-610 设计为"收益本金（含 delta 的有效仓位）"，在 AAV-675 被复用为"钱包已有仓位（不含 delta）"。同一变量承载两种互斥语义。
 
@@ -175,13 +173,13 @@ supplyTotalPositionUsd = principalSupplyUsd + supplyNetInputUsd
 
 | 模式 | 修复前 | 修复后 |
 |---|---|---|
-| Single simulation (hook) | `totalPositionUsd = 2× input`（double-count） | `totalPositionUsd = undefined` → fallback `depositUsd` |
+| Shared Scenario (hook) | `totalPositionUsd = 2× input`（double-count） | `totalPositionUsd = undefined` → fallback `depositUsd` |
 | Portfolio (hook → ReservesTable) | `totalPositionUsd = undefined`（Phase 2b 未传参） | `totalPositionUsd = wallet + delta` |
 | Portfolio (standalone → PortfolioPanel) | `totalPositionUsd = wallet + 2×delta`（Phase 2a double-count） | `totalPositionUsd = wallet + delta` |
 
 ### 6.6 统一性分析
 
-Single simulation 和 portfolio simulation 的数据流已通过 `perReserveInputs` 统一——两者都调用 `useSharedRateSimulations`，只是输入数据不同：
+Shared Scenario 和 Portfolio Mode 的数据流已通过 `perReserveInputs` 统一——两者都调用 `useSharedRateSimulations`，只是输入数据不同：
 
 ```typescript
 // ReservesTable.tsx L266-283
@@ -193,19 +191,19 @@ const perReserveInputs = useMemo(
 const { simulationsById } = useSharedRateSimulations({
   supplyInput: isPortfolioMode ? '' : debouncedSharedSupplyInput,
   borrowInput: isPortfolioMode ? '' : debouncedSharedBorrowInput,
-  perReserveInputs,  // ← 统一入口：single=undefined, portfolio=Map
+  perReserveInputs,  // ← 统一入口：Shared Scenario=undefined, Portfolio Mode=Map
 });
 
 // useRateSimulation.ts L235-237 — 统一的分发逻辑
 const effectiveSupplyInput = perReserve?.supplyInput ?? supplyInput;
-const principalSupplyUsd = perReserve?.principalSupplyUsd;  // undefined in single
+const principalSupplyUsd = perReserve?.principalSupplyUsd;  // undefined in Shared Scenario
 ```
 
 **仍存在重复的路径**：`computeResultsFromGroups`（PortfolioPanel 独立路径）重复调用了 `buildRateSimulationResult`，而 hook 的 `simulationsById` 已经算好了相同结果。这个重复源于 PortfolioPanel 需要 per-slot 结果而非 per-reserve 结果，属于架构层面的取舍，短期内不值得重构。
 
 ### 6.7 相关 Lessons Learned
 
-参见 `AGENTS.md` § "Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-self-cap-dilution)"：
+参见 `AGENTS.md` § "Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-deposit-ceiling-dilution)"：
 - 变量复用比命名错误更危险 —— 同一变量承载两种互斥语义
 - 数据源语义必须显式文档化 —— `reservePositions` 名字暗示"仓位"但实际是 simulation input
 - `X + Y` 计算必须覆盖 `X === Y` 的边界用例
@@ -219,12 +217,12 @@ const principalSupplyUsd = perReserve?.principalSupplyUsd;  // undefined in sing
 
 - **`after=0` 与 `after=null` 语义不同，`??` 运算符下行为迥异**: `0 ?? fallback` → `0`（不 fallback），`null ?? fallback` → `fallback`。当 `hasInput=false` 时，after 必须为 `null`（表示"未参与模拟，使用 current 值"），不能为 `0`（表示"模拟后为 0%"）。
 - **多层计算链路需逐层统一语义**: campaign row 层、`buildMetricsFromLane` 层、aggregate 层需一致使用 `hasInput` 分支，否则会出现某层 `after=null` 而另一层 `after=0` 的矛盾。修改某一层时必须检查上下游所有层级。
-- **Portfolio 模式传 delta 而非 total position，导致 hasInput 判断需特别小心**: `hasAnyInput` 为 true 不代表每个 side 都有 input——必须用 per-side `hasInput` 决定 per-side after 语义。
+- **Portfolio Mode 传 delta 而非 total position，导致 hasInput 判断需特别小心**: `hasAnyInput` 为 true 不代表每个 side 都有 input——必须用 per-side `hasInput` 决定 per-side after 语义。
 - **Per-campaign detail row 的 `else if (hasAnyInput)` 分支必须显式设 `after=null`**: Merit base/self、Merkl 三处原先设 `after=0`，导致 `pickScenarioValue` 不 fallback。
 
 ### 7.2 AAV-761 回归修复 — per-side 守卫 vs 跨侧影响
 
-- **`hasSupplyInput`/`hasBorrowInput` 守卫切断跨侧影响**: aggregate 层从 `hasAnyInput` 改为 per-side 守卫后，single simulation 下无输入侧的 after 变为 null，UI 显示错误。修复：6 处守卫改回 `hasAnyInput`。
+- **`hasSupplyInput`/`hasBorrowInput` 守卫切断跨侧影响（中间尝试，已回退）**: aggregate 层曾从 `hasAnyInput` 改为 per-side 守卫，导致 Shared Scenario 下无输入侧的 after 变为 null，UI 显示错误。修复：6 处守卫改回 `hasAnyInput`（当前最终状态见 §2 Layer 1）。
 - **`SimulationLane.hasInput` 保持 per-side 不改**: Portfolio 消费端用 `lane.hasInput` 做二次守卫实现 em dash，per-side 语义正确。aggregate 层用 `hasAnyInput` 保留跨侧影响，消费端用 `hasInput` 做显示控制——两层守卫各司其职。
 - **cross-side 测试断言不是 `after === current`**: 跨侧影响保留后，无输入侧的 after 值可以因对侧输入而变化，正确断言是 `after !== null`，而非 `after === current`。
 - **`SimulationLane` 没有 `after`/`delta` 字段**: 只有 `afterTotal`/`deltaTotal`、`afterNative`/`deltaNative`、`afterIncentive`/`deltaIncentive`。
@@ -249,21 +247,21 @@ const principalSupplyUsd = perReserve?.principalSupplyUsd;  // undefined in sing
 | `src/lib/rateSimulationCalculator.ts` | Merit/Merkl after=null 修复；Brevis defensive branch；aggregate 6 处 hasAnyInput 守卫 |
 | `src/lib/portfolioSimulator.ts` | hasInput 守卫；delta null 语义；native/incentive percent fallback |
 | `src/hooks/useRateSimulation.ts` | principalSupplyUsd/principalBorrowUsd 传入控制（Phase 1 不传, Phase 2b 从 perReserve 传）；effective input 计算 |
-| `src/lib/meritForecast.ts` | positionForCap = totalPositionUsd ?? depositUsd（Self Cap Dilution 相关） |
+| `src/lib/meritForecast.ts` | positionForCap = totalPositionUsd ?? depositUsd（Deposit Ceiling Dilution 相关） |
 | `src/lib/deltaCalculator.ts` | `computeDelta` → `effectiveAmountUsd` = wallet + delta（principal 语义来源） |
 
 ### 测试文件
 
 | 文件 | 说明 |
 |---|---|
-| `src/lib/rateSimulationCalculator.test.ts` | 三层守卫 + 跨侧影响 + after=null 语义 + single simulation self-cap 回归守卫 |
+| `src/lib/rateSimulationCalculator.test.ts` | 三层守卫 + 跨侧影响 + after=null 语义 + Shared Scenario deposit-ceiling 回归守卫 |
 | `src/lib/portfolioSimulator.test.ts` | hasInput 守卫 + delta null 语义 |
 
 ### 相关文档
 
 | 文件 | 说明 |
 |---|---|
-| `docs/handoff/merit-self-cap-dilution-bug.md` | Merit Self Cap 独立 handoff |
+| `docs/handoff/merit-self-cap-dilution-bug.md` | Merit Deposit Ceiling 独立 handoff |
 | `docs/handoff/AAV-761-interim-fix-analysis.md` | Interim fix 副作用分析 |
 | `AGENTS.md` | Learned Lessons（3 个 AAV-761 相关 block） |
 
