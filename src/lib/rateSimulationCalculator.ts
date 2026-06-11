@@ -1303,18 +1303,19 @@ export function buildRateSimulationResult({
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
-  const supplyAfterIncentive =
-    supplyAfterIncentiveRaw !== null ? Math.min(supplyAfterIncentiveRaw, supplyCurrentIncentive) : null;
-  const borrowAfterIncentive =
-    borrowAfterIncentiveRaw !== null ? Math.min(borrowAfterIncentiveRaw, borrowCurrentIncentive) : null;
-  const supplyAfterIncentiveApr =
-    supplyAfterIncentiveAprRaw !== null
-      ? Math.min(supplyAfterIncentiveAprRaw, supplyCurrentIncentiveApr)
-      : null;
-  const borrowAfterIncentiveApr =
-    borrowAfterIncentiveAprRaw !== null
-      ? Math.min(borrowAfterIncentiveAprRaw, borrowCurrentIncentiveApr)
-      : null;
+  // Per-side guard: when this side has no input, incentive after should be null (show current), not 0.
+  const supplyAfterIncentive = hasSupplyInput
+    ? (supplyAfterIncentiveRaw !== null ? Math.min(supplyAfterIncentiveRaw, supplyCurrentIncentive) : null)
+    : null;
+  const borrowAfterIncentive = hasBorrowInput
+    ? (borrowAfterIncentiveRaw !== null ? Math.min(borrowAfterIncentiveRaw, borrowCurrentIncentive) : null)
+    : null;
+  const supplyAfterIncentiveApr = hasSupplyInput
+    ? (supplyAfterIncentiveAprRaw !== null ? Math.min(supplyAfterIncentiveAprRaw, supplyCurrentIncentiveApr) : null)
+    : null;
+  const borrowAfterIncentiveApr = hasBorrowInput
+    ? (borrowAfterIncentiveAprRaw !== null ? Math.min(borrowAfterIncentiveAprRaw, borrowCurrentIncentiveApr) : null)
+    : null;
 
   const supplyAfterTotal =
     hasAnyInput && supplyAfterNative !== null && supplyAfterIncentive !== null
