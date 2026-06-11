@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,9 +10,11 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { cn } from '@/lib/utils';
 import { cnDsInputNeutralWell } from '@/lib/dsInputSurface';
+import { formatNumberInput } from '@/lib/numberFormat';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -190,15 +192,13 @@ const InkAprCalculator = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [isAprTooltipOpen, setIsAprTooltipOpen] = useState(false);
   const [isFdvTooltipOpen, setIsFdvTooltipOpen] = useState(false);
-  const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const [isFdvInputFocused, setIsFdvInputFocused] = useState(false);
-  const fdvInputRef = useRef<HTMLInputElement>(null);
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [fdvJustChanged, setFdvJustChanged] = useState(false);
   const prevFdvRef = useRef(DEFAULT_FDV);
-  const fdvFieldHasValue = fdvInputValue.trim() !== '';
+  const sliderActiveRef = useRef(false);
 
   const fdvBySymbol = useMemo(() => {
     return new Map(
@@ -245,14 +245,9 @@ const InkAprCalculator = ({
     : DEFAULT_FDV;
   const sliderPosition = fdvToPosition(currentFdvBillions, referencePointsWithLiveFdv);
 
-  // Sync slider/data → input only when input is not focused (so editing is not overwritten)
-  useEffect(() => {
-    if (isFdvInputFocused) return;
-    const formatted = currentFdvBillions.toFixed(2);
-    if (Math.abs(parseFloat(fdvInputValue) - currentFdvBillions) > 0.01) {
-      setFdvInputValue(formatted);
-    }
-  }, [currentFdvBillions, fdvInputValue, isFdvInputFocused]);
+  // Sync slider/data → input is handled by useDebouncedInput's value prop.
+  // The color hint and value sync are separate: color hint fires on slider change,
+  // value sync is handled by useDebouncedInput internally.
 
   // Brief color hint when FDV changes (slider/pill, not from typing)
   useEffect(() => {
@@ -279,51 +274,23 @@ const InkAprCalculator = ({
     onRateChange?.(price);
   }, [setRateInput, onRateChange]);
 
-  const fdvPendingCursorRef = useRef<number | null>(null);
-
-  useLayoutEffect(() => {
-    if (fdvPendingCursorRef.current !== null && fdvInputRef.current !== null) {
-      const pos = fdvPendingCursorRef.current;
-      fdvPendingCursorRef.current = null;
-      fdvInputRef.current.setSelectionRange(pos, pos);
-    }
-  }, [fdvInputValue]);
-
-  const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const cursorPos = e.target.selectionStart ?? raw.length;
-    fdvPendingCursorRef.current = cursorPos;
-    setFdvInputValue(raw);
-  }, []);
-
-  const commitFdvInput = useCallback(() => {
-    const trimmed = fdvInputValue.trim();
-    const parsed = parseFloat(fdvInputValue);
-    if (trimmed === '' || Number.isNaN(parsed) || parsed < MIN_FDV) {
-      setFdvInputValue(currentFdvBillions.toFixed(2));
-      return;
-    }
-    const clamped = Math.min(MAX_FDV, parsed);
-    setFdvInputValue(clamped.toFixed(2));
-    updateFromFdv(clamped);
-  }, [fdvInputValue, currentFdvBillions, updateFromFdv]);
-
-  const handleFdvInputBlur = useCallback(() => {
-    setIsFdvInputFocused(false);
-    commitFdvInput();
-  }, [commitFdvInput]);
-
-  const handleFdvInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        e.currentTarget.blur();
-      }
+  const fdvInput = useDebouncedInput({
+    value: formatNumberInput(String(currentFdvBillions)),
+    onCommit: (formatted) => {
+      if (sliderActiveRef.current) return;
+      const parsed = parseFloat(formatted.replace(/,/g, ''));
+      if (Number.isNaN(parsed) || parsed < MIN_FDV) return;
+      updateFromFdv(Math.min(MAX_FDV, parsed));
     },
-    []
-  );
+    debounceMs: 300,
+  });
+
+  const fdvFieldHasValue = fdvInput.displayValue.trim() !== '';
 
   const handlePointClick = useCallback((fdv: number) => {
+    sliderActiveRef.current = true;
     updateFromFdv(fdv);
+    setTimeout(() => { sliderActiveRef.current = false; }, 0);
   }, [updateFromFdv]);
 
   const handleKeyDown = useCallback(
@@ -345,7 +312,9 @@ const InkAprCalculator = ({
     const rect = trackRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
     const fdv = positionToFdv(position, referencePointsWithLiveFdv);
+    sliderActiveRef.current = true;
     updateFromFdv(fdv);
+    setTimeout(() => { sliderActiveRef.current = false; }, 0);
   }, [updateFromFdv, referencePointsWithLiveFdv]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -488,19 +457,21 @@ const InkAprCalculator = ({
             >
               <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">$</span>
               <Input
-                ref={fdvInputRef}
+                ref={fdvInput.inputRef}
                 type="text"
                 disableSurface
                 inputMode="decimal"
-                value={fdvInputValue}
-                onChange={handleFdvInputChange}
+                value={fdvInput.displayValue}
+                onChange={fdvInput.handleChange}
                 onFocus={(e) => {
-                  const len = e.target.value.length;
-                  e.target.setSelectionRange(len, len);
                   setIsFdvInputFocused(true);
+                  fdvInput.handleFocus(e);
                 }}
-                onBlur={handleFdvInputBlur}
-                onKeyDown={handleFdvInputKeyDown}
+                onBlur={(e) => {
+                  setIsFdvInputFocused(false);
+                  fdvInput.handleBlur(e);
+                }}
+                onKeyDown={fdvInput.handleKeyDown}
                 placeholder={isFdvInputFocused ? '' : '1.00'}
                 className={`w-8 min-w-0 px-0.5 ![font-size:var(--ds-text-11)] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
@@ -743,19 +714,21 @@ const InkAprCalculator = ({
       >
         <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
-          ref={fdvInputRef}
+          ref={fdvInput.inputRef}
           type="text"
           disableSurface
           inputMode="decimal"
-          value={fdvInputValue}
-          onChange={handleFdvInputChange}
+          value={fdvInput.displayValue}
+          onChange={fdvInput.handleChange}
           onFocus={(e) => {
-            const len = e.target.value.length;
-            e.target.setSelectionRange(len, len);
             setIsFdvInputFocused(true);
+            fdvInput.handleFocus(e);
           }}
-          onBlur={handleFdvInputBlur}
-          onKeyDown={handleFdvInputKeyDown}
+          onBlur={(e) => {
+            setIsFdvInputFocused(false);
+            fdvInput.handleBlur(e);
+          }}
+          onKeyDown={fdvInput.handleKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
           className={`w-9 min-w-0 px-1 ![font-size:var(--ds-text-11)] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
           aria-label="Estimated $INK FDV in billions"
