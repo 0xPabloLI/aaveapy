@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -279,15 +279,22 @@ const InkAprCalculator = ({
     onRateChange?.(price);
   }, [setRateInput, onRateChange]);
 
+  const fdvPendingCursorRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (fdvPendingCursorRef.current !== null && fdvInputRef.current !== null) {
+      const pos = fdvPendingCursorRef.current;
+      fdvPendingCursorRef.current = null;
+      fdvInputRef.current.setSelectionRange(pos, pos);
+    }
+  }, [fdvInputValue]);
+
   const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
+    const cursorPos = e.target.selectionStart ?? raw.length;
+    fdvPendingCursorRef.current = cursorPos;
     setFdvInputValue(raw);
-    const parsed = parseFloat(raw);
-    if (raw.trim() !== '' && !Number.isNaN(parsed) && parsed >= MIN_FDV) {
-      const clamped = Math.min(MAX_FDV, parsed);
-      updateFromFdv(clamped);
-    }
-  }, [updateFromFdv]);
+  }, []);
 
   const commitFdvInput = useCallback(() => {
     const trimmed = fdvInputValue.trim();
@@ -487,9 +494,10 @@ const InkAprCalculator = ({
                 inputMode="decimal"
                 value={fdvInputValue}
                 onChange={handleFdvInputChange}
-                onFocus={() => {
+                onFocus={(e) => {
+                  const len = e.target.value.length;
+                  e.target.setSelectionRange(len, len);
                   setIsFdvInputFocused(true);
-                  requestAnimationFrame(() => fdvInputRef.current?.select());
                 }}
                 onBlur={handleFdvInputBlur}
                 onKeyDown={handleFdvInputKeyDown}
@@ -741,9 +749,10 @@ const InkAprCalculator = ({
           inputMode="decimal"
           value={fdvInputValue}
           onChange={handleFdvInputChange}
-          onFocus={() => {
+          onFocus={(e) => {
+            const len = e.target.value.length;
+            e.target.setSelectionRange(len, len);
             setIsFdvInputFocused(true);
-            requestAnimationFrame(() => fdvInputRef.current?.select());
           }}
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
