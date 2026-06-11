@@ -10,8 +10,11 @@ import { expect, test } from '@playwright/test';
  */
 
 const BREAKPOINTS = [
-  { name: 'desktop', width: 1280, height: 800 },
-  { name: 'mobile', width: 390, height: 844 },
+  { name: 'desktop-1280', width: 1280, height: 800 },
+  { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'tablet-640', width: 640, height: 900 },
+  { name: 'mobile-390', width: 390, height: 844 },
+  { name: 'mobile-360', width: 360, height: 800 },
 ] as const;
 
 for (const bp of BREAKPOINTS) {
@@ -21,12 +24,10 @@ for (const bp of BREAKPOINTS) {
     await page.setViewportSize({ width: bp.width, height: bp.height });
     await page.goto('/');
 
-    // Wait for the reserves grid to render.
     await expect(
       page.getByRole('textbox', { name: 'Borrow amount' }),
     ).toBeVisible();
 
-    // Single-mode toggle: located by its visible "Portfolio" label.
     const singleToggle = page.getByText('Portfolio', { exact: true }).first();
     await expect(singleToggle).toBeVisible();
     const singleBox = await singleToggle.boundingBox();
@@ -34,10 +35,8 @@ for (const bp of BREAKPOINTS) {
     if (!singleBox) return;
     const singleRight = singleBox.x + singleBox.width;
 
-    // Switch to Portfolio mode.
     await singleToggle.click();
 
-    // Portfolio-mode toggle lives in PortfolioPanel header.
     const portfolioToggle = page
       .getByText('Portfolio', { exact: true })
       .first();
@@ -47,7 +46,6 @@ for (const bp of BREAKPOINTS) {
     if (!portfolioBox) return;
     const portfolioRight = portfolioBox.x + portfolioBox.width;
 
-    // Allow 1px tolerance for subpixel rounding.
     expect(
       Math.abs(singleRight - portfolioRight),
       `toggle right-edge drift at ${bp.name}: single=${singleRight}px portfolio=${portfolioRight}px`,
