@@ -26,7 +26,7 @@ export function computeCursorAfterSanitize(
   wasNegative: boolean,
 ): number {
   if (wasNegative) return 1;
-  const prefixBeforeCursor = oldRaw.slice(0, cursorPos).replace(/,/g, '').replace(/[^\d.]/g, '');
+  const prefixBeforeCursor = oldRaw.slice(0, cursorPos).replace(/,/g, '').replace(/[。．｡]/g, '.').replace(/[^\d.]/g, '');
   if (oldRaw.startsWith('.') && cursorPos <= 1) {
     return sanitized.startsWith('0.') ? Math.min(cursorPos + 1, sanitized.length) : cursorPos;
   }

@@ -421,6 +421,11 @@ describe('computeCursorAfterSanitize (AAV-775 pure logic)', () => {
     expect(computeCursorAfterSanitize('1.5', '1.55', 3, false)).toBe(3);
   });
 
+  it('fullwidth decimal cursor stays after dot (AAV-739)', () => {
+    expect(computeCursorAfterSanitize('1000。', '1000.', 5, false)).toBe(5);
+    expect(computeCursorAfterSanitize('。', '0.', 1, false)).toBe(1);
+  });
+
   it('cursor at start of number stays at start', () => {
     expect(computeCursorAfterSanitize('5', '5', 0, false)).toBe(0);
   });
