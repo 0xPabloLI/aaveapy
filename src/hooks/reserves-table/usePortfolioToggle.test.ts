@@ -282,6 +282,69 @@ describe('usePortfolioToggle', () => {
       );
       expect(result.current.portfolioResults).toEqual([]);
     });
+
+    it('AAV-749: cross-chain entry missing results when reserves is filtered subset (bug scenario)', () => {
+      const inkReserve = makeReserve({
+        reserveId: 'ink-usdc',
+        chainName: 'Ink',
+        supplyApy: 0.03,
+        borrowApy: 0.05,
+      });
+      const celoReserve = makeReserve({
+        reserveId: 'celo-usdt',
+        chainName: 'Celo',
+        supplyApy: 0.04,
+        borrowApy: 0.06,
+      });
+      const filteredReserves = [inkReserve];
+      const entries = [
+        makeEntry({
+          reserveId: 'celo-usdt',
+          supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: filteredReserves,
+          entries,
+        }),
+      );
+      expect(result.current.portfolioResults).toEqual([]);
+      expect(result.current.portfolioSummary.totalSupplyUsd).toBe(0);
+    });
+
+    it('AAV-749: cross-chain entry has results when reserves includes all chains (fixed scenario)', () => {
+      const inkReserve = makeReserve({
+        reserveId: 'ink-usdc',
+        chainName: 'Ink',
+        supplyApy: 0.03,
+        borrowApy: 0.05,
+      });
+      const celoReserve = makeReserve({
+        reserveId: 'celo-usdt',
+        chainName: 'Celo',
+        supplyApy: 0.04,
+        borrowApy: 0.06,
+      });
+      const allReserves = [inkReserve, celoReserve];
+      const entries = [
+        makeEntry({
+          reserveId: 'celo-usdt',
+          supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: allReserves,
+          entries,
+        }),
+      );
+      expect(result.current.portfolioResults).toHaveLength(1);
+      expect(result.current.portfolioResults[0].nativePercent).toBe(0.04);
+      expect(result.current.portfolioSummary.totalSupplyUsd).toBeGreaterThan(0);
+    });
   });
 
   describe('restricted reserve removal guard', () => {

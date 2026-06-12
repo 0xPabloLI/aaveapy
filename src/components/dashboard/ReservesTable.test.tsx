@@ -169,6 +169,7 @@ function MarketFilteredTable() {
   return (
     <ReservesTable
       reserves={filteredReserves}
+      allReserves={reserves}
       sortField={null}
       sortOrder="desc"
       onSort={() => {}}
@@ -331,6 +332,7 @@ describe('ReservesTable expand/collapse interaction', () => {
     renderWithQueryClient(
       <ReservesTable
         reserves={reserves}
+        allReserves={reserves}
         sortField={null}
         sortOrder="desc"
         onSort={() => {}}
@@ -352,6 +354,7 @@ describe('ReservesTable expand/collapse interaction', () => {
     renderWithQueryClient(
       <ReservesTable
         reserves={reserves}
+        allReserves={reserves}
         sortField={null}
         sortOrder="desc"
         onSort={() => {}}

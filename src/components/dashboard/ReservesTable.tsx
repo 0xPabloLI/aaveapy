@@ -65,7 +65,7 @@ import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
-  allReserves?: ReserveWithSpread[];
+  allReserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -835,7 +835,7 @@ const ReservesTable = ({
     portfolioSummary,
   } = usePortfolioToggle({
     isPortfolioMode,
-    reserves,
+    reserves: allReserves,
     entries: portfolioEntries,
     portfolioActions,
     simulationContext: portfolioSimulationContext,
