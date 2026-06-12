@@ -275,7 +275,7 @@ const InkAprCalculator = ({
   }, [setRateInput, onRateChange]);
 
   const fdvInput = useDebouncedInput({
-    value: formatNumberInput(String(currentFdvBillions)),
+    value: formatNumberInput(String((Math.round(currentFdvBillions * 100) / 100))),
     onCommit: (formatted) => {
       if (sliderActiveRef.current) return;
       const parsed = parseFloat(formatted.replace(/,/g, ''));
@@ -283,6 +283,7 @@ const InkAprCalculator = ({
       updateFromFdv(Math.min(MAX_FDV, parsed));
     },
     debounceMs: 300,
+    maxDecimalPlaces: 2,
   });
 
   const fdvFieldHasValue = fdvInput.displayValue.trim() !== '';
@@ -951,7 +952,7 @@ const InkAprCalculator = ({
   return (
     <Card className="group border-border/60 bg-card transition-[border-color,box-shadow] hover:border-border hover:shadow-md">
       <CardContent className="p-[var(--ds-space-3)] md:p-[var(--ds-space-4)]">
-        {isXl ? <FullLayout /> : compactLayoutJsx}
+        {isXl ? FullLayout() : compactLayoutJsx}
       </CardContent>
     </Card>
   );

@@ -7,6 +7,8 @@ interface UseDebouncedInputParams {
   value?: string;
   onCommit: (formattedValue: string) => void;
   debounceMs?: number;
+  /** Truncate decimal part to at most N digits during typing. */
+  maxDecimalPlaces?: number;
 }
 
 interface UseDebouncedInputReturn {
@@ -76,6 +78,7 @@ export function useDebouncedInput({
   value,
   onCommit,
   debounceMs = DEFAULT_DEBOUNCE_MS,
+  maxDecimalPlaces,
 }: UseDebouncedInputParams): UseDebouncedInputReturn {
   const [displayValue, setDisplayValue] = useState(value ?? '');
   const [isFocused, setIsFocused] = useState(false);
@@ -127,7 +130,7 @@ export function useDebouncedInput({
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const wasNegative = /^-/.test(e.target.value);
     const raw = e.target.value.replace(/^-/, '');
-    const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw);
+    const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw, maxDecimalPlaces);
     const formatted = formatNumberInput(sanitized);
     const cursorPos = e.target.selectionStart ?? e.target.value.length;
     const cursorInSanitized = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
@@ -141,7 +144,7 @@ export function useDebouncedInput({
         timerRef.current = null;
       }, debounceMs);
     }
-  }, [onCommit, debounceMs, clearTimer]);
+  }, [onCommit, debounceMs, clearTimer, maxDecimalPlaces]);
 
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {

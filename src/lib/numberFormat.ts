@@ -1,11 +1,15 @@
-export const sanitizeNumberInput = (value: string): string => {
+export const sanitizeNumberInput = (value: string, maxDecimalPlaces?: number): string => {
   const normalized = value.replace(/[。．｡]/g, '.');
   const cleaned = normalized.replace(/,/g, '').replace(/[^\d.]/g, '');
   if (!cleaned) return '';
 
   const parts = cleaned.split('.');
   const intPart = parts[0];
-  const decimalPart = parts.slice(1).join('');
+  let decimalPart = parts.slice(1).join('');
+
+  if (maxDecimalPlaces !== undefined && decimalPart.length > maxDecimalPlaces) {
+    decimalPart = decimalPart.slice(0, maxDecimalPlaces);
+  }
 
   if (cleaned.startsWith('.')) {
     return decimalPart.length > 0 ? `0.${decimalPart}` : '0.';
