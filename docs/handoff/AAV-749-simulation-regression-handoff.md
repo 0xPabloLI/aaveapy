@@ -12,7 +12,7 @@
 
 **关键代码路径**：
 
-1. `src/components/dashboard/ReservesTable.tsx` L836-842:
+1. `src/components/dashboard/ReservesTable.tsx`:
 ```typescript
 } = usePortfolioToggle({
   isPortfolioMode,
@@ -22,7 +22,7 @@
 });
 ```
 
-2. `src/hooks/reserves-table/usePortfolioToggle.ts` L132:
+2. `src/hooks/reserves-table/usePortfolioToggle.ts`:
 ```typescript
 const { results, summary } = simulatePortfolioFromEntries({
   entries: effectiveEntries,
@@ -31,7 +31,7 @@ const { results, summary } = simulatePortfolioFromEntries({
 });
 ```
 
-3. `src/hooks/reserves-table/usePortfolioToggle.ts` L140:
+3. `src/hooks/reserves-table/usePortfolioToggle.ts`:
 ```typescript
 const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 // ← filtered reserves → 非 Ink 链的 reserve 查不到
@@ -41,48 +41,55 @@ const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
 AAV-749 原始修复（commit `8be56015`）只修了 PortfolioPanel 的 `disabledNotice` 兜底和 `reserves` prop 来源（改用 `allReserves`），**但 `usePortfolioToggle` 的 simulation 计算从未修过** — 从一开始就用的是 `filteredReserves`。
 
-用户之前可能没遇到，是因为测试时可能：
-- 用了 "All chains" 模式（filteredReserves = allReserves）
-- Portfolio 中只添加了当前 chain filter 下的 token
+## 已实施的修复 (commit d9fb2733)
 
-## 修复方案
+### 设计决策（grill-with-docs 确认）
 
-跟 PortfolioPanel 同样的模式：`usePortfolioToggle` 新增 `allReserves` 参数，simulation 和 reserveMap 使用全量 reserves。
+1. **Portfolio 完全独立于 chain filter** — 两者正交，chain filter 是数据视角切换，Portfolio 是跨链资产组合管理
+2. **`allReserves` required 而非 optional** — filtered reserves 依赖 all reserves 存在，TypeScript required 参数保证不可漏传，消除"忘记传就静默 fallback 到 filtered"的风险
+3. **删除冗余参数** — 修复后 `reserves`（filtered）在 `usePortfolioToggle` 中零用途，直接让 `reserves` 参数承载全量语义
 
-### 修改文件清单
+### 实际修改
 
-1. **`src/hooks/reserves-table/usePortfolioToggle.ts`**
-   - 接口新增 `allReserves?: ReserveWithSpread[]`
-   - L132: `simulatePortfolioFromEntries` 的 `reserves` 改为 `allReserves ?? reserves`
-   - L140: `reserveMap` 改为 `new Map((allReserves ?? reserves).map(...))`
-   - L168: `useMemo` deps 加 `allReserves`
+1. **`src/components/dashboard/ReservesTable.tsx`**
+   - `ReservesTableProps.allReserves`: `optional` → `required`
+   - `usePortfolioToggle({ reserves: allReserves })` — 传全量而非 filtered
 
-2. **`src/components/dashboard/ReservesTable.tsx`**
-   - L836-842: `usePortfolioToggle` 调用处新增 `allReserves` prop
+2. **`src/hooks/reserves-table/usePortfolioToggle.ts`** — **零修改**
+   - hook 内部代码不变，`reserves` 参数名不变但调用方语义从 filtered 变为全量
 
-### 对应测试
+3. **`src/hooks/reserves-table/usePortfolioToggle.test.ts`** — 新增 2 个 regression test:
+   - `AAV-749: cross-chain entry missing results when reserves is filtered subset (bug scenario)` — 验证 filtered 场景下跨链 entry 无结果（bug 行为）
+   - `AAV-749: cross-chain entry has results when reserves includes all chains (fixed scenario)` — 验证全量 reserves 下跨链 entry 有结果（修复后行为）
 
-- `src/hooks/reserves-table/usePortfolioToggle.test.ts` — 需要新增测试：chain filter 过滤后，portfolio 中非当前链 entry 仍能计算出 simulation result
-- 可能还需要检查 `simulatePortfolioFromEntries` 的测试
+4. **`src/components/dashboard/ReservesTable.test.tsx`** — 3 处 `<ReservesTable>` 加 `allReserves` prop（required 后必须传）
 
-## 设计决策参考
-
-grill-with-docs Q1 确认：**Portfolio 完全独立于 chain filter**。Chain filter = "数据视角"切换（我看哪条链的数据），Portfolio = "资产组合"管理（我持有什么，跨链的），两者应该正交。
-
-## 当前代码中 AAV-749 修复状态
+## 修复后状态
 
 | 组件 | 用的 reserves | 状态 |
 |------|-------------|------|
 | PortfolioPanel (disabledNotice) | `allReserves` | ✅ 已修复 |
 | PortfolioPanel (search pool) | `allReserves` (via reserves prop) | ✅ 已修复 |
 | PortfolioPanel (popular tokens) | `allReserves` (via reserves prop) | ✅ 已修复 |
-| **usePortfolioToggle (simulation)** | **`reserves` (filtered)** | ❌ 未修复 |
-| **usePortfolioToggle (reserveMap fallback)** | **`reserves` (filtered)** | ❌ 未修复 |
-| **simulatePortfolioFromEntries** | **`reserves` (from toggle, filtered)** | ❌ 未修复 |
+| usePortfolioToggle (simulation) | `allReserves` (via ReservesTable) | ✅ 已修复 (d9fb2733) |
+| usePortfolioToggle (reserveMap fallback) | `allReserves` (via ReservesTable) | ✅ 已修复 (d9fb2733) |
+| simulatePortfolioFromEntries | `allReserves` (from toggle) | ✅ 已修复 (d9fb2733) |
 
-## TDD Red→Green 清单
+## 验证 gate
 
-1. **RED**: 写测试 — usePortfolioToggle 在 `reserves` 为 filtered 子集、`allReserves` 为全量时，非当前链 entry 的 simulation result 不为空
-2. **GREEN**: 实现 — 传入 `allReserves`，simulation/reserveMap 用 `allReserves ?? reserves`
-3. 验证 gate: `npm run lint && npm test && npm run build && npx tsc --noEmit`
-4. 浏览器验证：Ink chain filter 下，Celo USDT entry 有 simulation result
+- `npm run lint` ✅ (0 errors, 1 pre-existing warning)
+- `npx tsc --noEmit` ✅
+- `npm test` ✅ (31/31 usePortfolioToggle, 4/4 ReservesTable)
+- `npm run build` ✅
+
+## Linear Issues
+
+- **AAV-817**: PRD (parent)
+- **AAV-818**: TDD RED test
+- **AAV-819**: TDD GREEN fix
+- **AAV-820**: Browser verification (deferred — needs live chain environment)
+
+## 经验教训
+
+- **required > optional + fallback**: 当 optional 参数的 fallback 恰好是 bug 行为（filtered 而非全量），optional 反而掩盖了问题。TypeScript required 参数在编译时拦截，比运行时 fallback 更安全。
+- **调用方语义比 hook 接口更重要**: `usePortfolioToggle` 的 `reserves` 参数名不变，但调用方从传 filtered 改为传全量，bug 就修了。hook 内部代码零修改。

@@ -275,7 +275,7 @@ const InkAprCalculator = ({
   }, [setRateInput, onRateChange]);
 
   const fdvInput = useDebouncedInput({
-    value: formatNumberInput(String((Math.round(currentFdvBillions * 100) / 100))),
+    value: formatNumberInput(String(Number(currentFdvBillions.toFixed(2)))),
     onCommit: (formatted) => {
       if (sliderActiveRef.current) return;
       const parsed = parseFloat(formatted.replace(/,/g, ''));
@@ -952,6 +952,9 @@ const InkAprCalculator = ({
   return (
     <Card className="group border-border/60 bg-card transition-[border-color,box-shadow] hover:border-border hover:shadow-md">
       <CardContent className="p-[var(--ds-space-3)] md:p-[var(--ds-space-4)]">
+        {/* FullLayout() called as function (not <FullLayout />) to prevent React
+            from unmounting/remounting the input DOM on every re-render.
+            Do NOT add hooks inside FullLayout — it is not a React component. */}
         {isXl ? FullLayout() : compactLayoutJsx}
       </CardContent>
     </Card>

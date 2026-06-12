@@ -146,6 +146,8 @@ export function useDebouncedInput({
     }
   }, [onCommit, debounceMs, clearTimer, maxDecimalPlaces]);
 
+  // handleBlur commits the current displayValue (which is already truncated
+  // by maxDecimalPlaces in handleChange). No need to re-apply maxDecimalPlaces here.
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
@@ -169,6 +171,8 @@ export function useDebouncedInput({
     }
   }, [clearTimer]);
 
+  // handleKeyDown (Enter) commits displayValue which is already truncated
+  // by maxDecimalPlaces in handleChange. No need to re-apply here.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
