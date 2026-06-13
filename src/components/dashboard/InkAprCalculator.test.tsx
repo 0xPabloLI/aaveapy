@@ -9,8 +9,10 @@ vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
+const mockCoingecko = { data: null as Record<string, unknown> | null };
+
 vi.mock('@/hooks/useCoingeckoFdv', () => ({
-  useCoingeckoFdv: () => ({ data: null, isLoading: false, error: null }),
+  useCoingeckoFdv: () => ({ data: mockCoingecko.data, isLoading: false, error: null }),
 }));
 
 vi.mock('@/components/ui/tooltip', () => ({
@@ -44,6 +46,7 @@ describe('InkAprCalculator', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mockCoingecko.data = null;
   });
 
   describe('FDV input', () => {
@@ -117,7 +120,7 @@ describe('InkAprCalculator', () => {
       expect(fdvInput).toHaveValue('1');
     });
 
-    it('clamps out-of-range value to MAX_FDV', async () => {
+    it('clamps out-of-range value to MAX_FDV (dynamic from reference points)', async () => {
       vi.useFakeTimers();
       const setRateInput = vi.fn();
       renderCalculator({ setRateInput });
@@ -129,9 +132,64 @@ describe('InkAprCalculator', () => {
 
       await act(() => vi.advanceTimersByTime(350));
 
-      // MAX_FDV = 115.8, clamped to 115.8, price = (115.8 * 1e9) / 1e9 = 115.8
+      // MAX_FDV = max of REFERENCE_POINTS fdv (115.8 binance) when no live data
+      // clamped to 115.8, price = (115.8 * 1e9) / 1e9 = 115.8
       expect(setRateInput).toHaveBeenCalledWith('115.8000');
       vi.useRealTimers();
+    });
+
+    it('MAX_FDV uses live CoinGecko data when available', async () => {
+      vi.useFakeTimers();
+
+      // Set live BNB FDV = 120B
+      mockCoingecko.data = {
+        items: [{ symbol: 'BNB', fdvUsd: 120_000_000_000 }],
+        fetchedAt: '2026-06-12T00:00:00Z',
+      };
+
+      const setRateInput = vi.fn();
+      render(
+        <InkAprCalculator rateInput="1.0000" setRateInput={setRateInput} />,
+      );
+
+      const fdvInput = screen.getByLabelText('Estimated $INK FDV in billions');
+      fireEvent.focus(fdvInput);
+      fireEvent.change(fdvInput, { target: { value: '150' } });
+
+      await act(() => vi.advanceTimersByTime(350));
+
+      // MAX_FDV = 120 (live BNB), 150 > 120 → clamped to 120
+      expect(setRateInput).toHaveBeenCalledWith('120.0000');
+
+      vi.useRealTimers();
+      mockCoingecko.data = null;
+    });
+
+    it('slider handles max boundary correctly (clamp to MAX_FDV)', () => {
+      const setRateInput = vi.fn();
+      renderCalculator({ setRateInput });
+
+      const slider = screen.getByRole('slider', { name: 'FDV slider' });
+
+      // Click at far right (position 100 → max FDV)
+      fireEvent.mouseDown(slider, { clientX: 9999 });
+
+      // Should call setRateInput with the max FDV from reference points
+      // MAX_FDV = 115.8 (binance hardcoded, no live data)
+      expect(setRateInput).toHaveBeenCalledWith('115.8000');
+    });
+
+    it('slider handles min boundary correctly (clamp to MIN_FDV)', () => {
+      const setRateInput = vi.fn();
+      renderCalculator({ setRateInput });
+
+      const slider = screen.getByRole('slider', { name: 'FDV slider' });
+
+      // Click at far left (position 0 → min FDV)
+      fireEvent.mouseDown(slider, { clientX: -9999 });
+
+      // Should call setRateInput with MIN_FDV = 0
+      expect(setRateInput).toHaveBeenCalledWith('0.0000');
     });
 
     it('commits value on Enter key immediately', async () => {

@@ -26,7 +26,7 @@ interface InkAprCalculatorProps {
 const TOTAL_SUPPLY = 1_000_000_000;
 const DEFAULT_FDV = 1.0;
 const MIN_FDV = 0;
-const MAX_FDV = 115.8; // Binance as max
+const MAX_FDV_FALLBACK = 200; // fallback when no live FDV data from CoinGecko
 
 interface ReferencePoint {
   id: string;
@@ -227,6 +227,16 @@ const InkAprCalculator = ({
       position: positionById.get(point.id) ?? point.position,
     }));
   }, [fdvBySymbol]);
+
+  // MAX_FDV is the max live FDV across all reference points. Falls back to 200
+  // when no live data is available. Input clamp and slider endpoint both use this.
+  const MAX_FDV = useMemo(() => {
+    const maxLiveFdv = referencePointsWithLiveFdv.reduce(
+      (max, p) => Math.max(max, p.fdv),
+      0
+    );
+    return maxLiveFdv > 0 ? maxLiveFdv : MAX_FDV_FALLBACK;
+  }, [referencePointsWithLiveFdv]);
   
   // Filter out the zero point for display but keep for calculation, always ascending by FDV.
   const displayPoints = useMemo(() => {
@@ -272,7 +282,7 @@ const InkAprCalculator = ({
     const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
     setRateInput(price.toFixed(4));
     onRateChange?.(price);
-  }, [setRateInput, onRateChange]);
+  }, [setRateInput, onRateChange, MAX_FDV]);
 
   const fdvInput = useDebouncedInput({
     value: formatNumberInput(String(Number(currentFdvBillions.toFixed(2)))),
@@ -305,7 +315,7 @@ const InkAprCalculator = ({
         updateFromFdv(Math.min(MAX_FDV, currentFdvBillions + step * 0.5));
       }
     },
-    [updateFromFdv, currentFdvBillions]
+    [updateFromFdv, currentFdvBillions, MAX_FDV]
   );
 
   const handleTrackInteraction = useCallback((clientX: number) => {
