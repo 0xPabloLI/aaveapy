@@ -65,7 +65,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start dev server |
+| `npm run dev` | Start dev server (auto-clears Vite dep cache) |
 | `npm run build` | Production build |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |

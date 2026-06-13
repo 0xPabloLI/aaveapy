@@ -7,7 +7,7 @@
 - **技术架构**: `docs/ARCHITECTURE.md`（目录结构、数据流、shared schema、simulation、错误处理模式）。
 
 ## Core Commands
-- `npm run dev` — local development
+- `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
 - `npm run lint` — ESLint
 - `npm test` — Vitest
 - `npm run build` — production build
@@ -148,3 +148,10 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **上移方案**：fallback 逻辑移到 `useSharedRateSimulations`（唯一调用入口），`buildRateSimulationResult` 直接使用传入的 `totalSupplyUsd`/`totalBorrowUsd`，不做任何 `??` 回退。calculator 的合约变简单：调用方负责提供正确的 total position，不提供 = 无 total。
 - **`reservePositions` → `crossReservePositions`（8 个文件）**：旧名 `reservePositions` 暗示"仓位"，但在 single simulation 下存的是 simulation inputs。新名 `crossReservePositions` 准确描述用途（跨 reserve 的 net eligibility 计算），不暗示具体存的是什么。
 - **contract 从隐式变显式**：`buildRateSimulationResult` 的 JSDoc 明确列出三种调用方合约——Portfolio 传 wallet+delta、Single 传 inputUsd、无输入传 undefined。未来新增调用方不会因"不知道 calculator 内部有 fallback"而传错值。
+
+## Learned Lessons: Wallet-only incentive delta 不显示 (AAV-771)
+
+- **`buildIncentiveCurrent` 需区分"稀释计算"和"headline 展示"两种用途**：旧版只有一个 `depositUsd` 参数，`hasInput=false` 时传 0 导致 self-cap 稀释被跳过。修复：新增 `walletSupplyUsd`/`walletBorrowUsd` 参数，与 `depositUsd`（input 用）语义分离。wallet-only 场景下 wallet 有值、depositUsd=0，仍然正确计算稀释。
+- **`totalSupplyUsd = wallet + delta` 公式可直接推导 wallet**：portfolio 模式下 `wallet = totalSupplyUsd - supplyInputUsd`，single simulation 下 `totalSupplyUsd` 未定义所以 wallet 为 undefined。这个推导避免了调用方额外传 wallet 参数。
+- **`portfolioSimulator.ts` 跳过 wallet-only positions 导致 totalSupplyUsd 丢失**：`buildGroupMapFromSlots` 和 `buildPerReserveInputsFromEntries` 原来用 `if (amountUsd <= 0) continue` 跳过 delta=0 的 side，导致 wallet value 没被累加。修复：先判断 `hasWalletPosition` 和 `hasUserInput`，两者都不满足才跳过。
+- **`formatDeltaPercent` 阈值过滤可能掩盖逻辑 bug**：delta=0 被过滤掉后 UI 不显示，用户看不到 delta 但也不知道是"无稀释"还是"计算错误"。threshold 过滤不能替代正确的空语义——null 表示"无 delta 概念"，0 表示"有 delta 但值为零"。
