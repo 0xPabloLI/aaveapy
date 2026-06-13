@@ -151,4 +151,63 @@ test.describe('FDV input — continuous typing', () => {
     const formattedValue = await fdvInput.inputValue();
     expect(formattedValue).toBe('3.14');
   });
+
+  test('focus selects all text in the input', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(3000);
+
+    const fdvInput = page.locator('input[aria-label="Estimated $INK FDV in billions"]').first();
+    await expect(fdvInput).toBeVisible();
+
+    // The input starts with a default value (e.g. "1")
+    const initialValue = await fdvInput.inputValue();
+    expect(initialValue.length).toBeGreaterThan(0);
+
+    // Click to focus — should select all
+    await fdvInput.click();
+    await page.waitForTimeout(100);
+
+    const selection = await fdvInput.evaluate((el: HTMLInputElement) => ({
+      start: el.selectionStart,
+      end: el.selectionEnd,
+      value: el.value,
+    }));
+
+    expect(selection.start).toBe(0);
+    expect(selection.end).toBe(selection.value.length);
+  });
+
+  test('cursor stays after decimal point when typing 1.5', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(3000);
+
+    const fdvInput = page.locator('input[aria-label="Estimated $INK FDV in billions"]').first();
+    await expect(fdvInput).toBeVisible();
+
+    await fdvInput.click({ clickCount: 3 });
+    await page.waitForTimeout(100);
+
+    // Type "1" first
+    await fdvInput.press('1', { delay: 30 });
+    await page.waitForTimeout(50);
+
+    // Type "." (decimal point)
+    await fdvInput.press('.', { delay: 30 });
+    await page.waitForTimeout(50);
+
+    // Cursor should be at position 2 (after "1.")
+    const cursorAfterDot = await fdvInput.evaluate((el: HTMLInputElement) => el.selectionStart);
+    expect(cursorAfterDot).toBe(2);
+
+    // Type "5" after the decimal
+    await fdvInput.press('5', { delay: 30 });
+    await page.waitForTimeout(50);
+
+    // Cursor should now be at position 3 (after "1.5")
+    const cursorAfterFive = await fdvInput.evaluate((el: HTMLInputElement) => el.selectionStart);
+    expect(cursorAfterFive).toBe(3);
+
+    const rawValue = await fdvInput.inputValue();
+    expect(rawValue).toBe('1.5');
+  });
 });
