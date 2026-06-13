@@ -561,24 +561,24 @@ When `eligibilityRatio < 1`, rows show a net eligibility hint via `capNote`.
 
 ---
 
-## Part 4: Incentive Reward Cap Reference
+## Part 4: Incentive Cap Reference
 
-This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
+This section groups cap semantics for Merit, Merkl, and Brevis.
 
 ### Naming layers
 
 | Layer | Role | Examples |
 |-------|------|----------|
 | API | Backend field names stay stable | `perUserRewardCapUsd` |
-| Domain | Prefer `ceiling` vocabulary | `depositCeilingUsd`, `rewardCeilingUsd` |
+| Domain | Prefer `cap` vocabulary | `eligibleDepositCapUsd`, `rewardCapUsd` |
 | UI | Stable row diagnostics | `capNote`, `capWarning` |
 
 ### Field mapping
 
 | Source | Domain meaning | Notes |
 |--------|----------------|-------|
-| Brevis `perUserRewardCapUsd` | Per-user reward ceiling | Keep API name |
-| Merit `selfCapUsd` | Deposit ceiling | Eligible deposit only |
+| Brevis `perUserRewardCapUsd` | Per-user reward cap | Keep API name |
+| Merit `selfEligibleDepositCapUsd` | Eligible deposit cap | Only eligible portion earns incentive |
 | Simulation UI | Same diagnostics | Keep `cap*` props stable |
 
 ### Unified simulation `capNote` strings
@@ -589,7 +589,7 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 | Merkl MAX | APR capped for low TVL | `APR capped for low TVL` |
 | Brevis | Per-user cap exists | `Reward capped at $X/user` |
 | Brevis no cap | No per-user cap, time remaining exists | `~Nd to end` |
-| Merit Self | Deposit ceiling applies | `Eligible supply capped at $Z` |
+| Merit Self | Eligible deposit cap applies | `Incentive on first $Z` |
 | Merit Base | Net note only | `Net eligible $X of $Y` |
 | Merkl DUTCH_AUCTION | Net note only | `Net eligible $X of $Y` |
 
@@ -598,12 +598,12 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Deposit ceiling | Per-user | `eligibleDeposit = min(deposit, selfCapUsd)` | `meritForecast.ts` |
-| Per-user reward ceiling | Per-user | cap by reward / remaining horizon | `brevisForecast.ts` |
+| Eligible deposit cap | Per-user | `eligibleDeposit = min(deposit, selfEligibleDepositCapUsd)` | `meritForecast.ts` |
+| Per-user reward cap | Per-user | cap by reward / remaining horizon | `brevisForecast.ts` |
 
 ### Brevis per-user reward cap
 
-- `perUserRewardCapUsd` is a cumulative USD reward ceiling.
+- `perUserRewardCapUsd` is a cumulative USD reward cap.
 - Missing `endDate` degrades gracefully to nominal APR.
 - Missing `distributedSoFar` means budget exhaustion timing is uncertain.
 - Shared cap across supply/borrow requires the same `campaignId` and matching metadata.
@@ -616,7 +616,7 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 ### Merit Base / Merit Self
 
 - Merit Base anchors to reserve TVL when available.
-- Merit Self uses `selfCapUsd` as an eligible deposit ceiling.
+- Merit Self uses `selfEligibleDepositCapUsd` as an eligible deposit cap — only the first `eligibleDepositCapUsd` of deposit earns incentive.
 - Merit Base intentionally emits no per-row `capNote`.
 
 ### UI surfaces
@@ -630,8 +630,8 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
-- `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
-- `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`
+- `src/lib/meritForecast.ts` – Merit forecast (base + self-auth eligible deposit cap)
+- `src/lib/incentiveCaps.ts` – Domain-layer cap effects → simulation `capNote` / `capWarning`
 - `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
 - `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
@@ -684,3 +684,122 @@ This matches the pre-Phase-2 behavior exactly.
 ### Hub aggregation in Portfolio
 
 Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed`/`hubSupplied` replace per-Spoke `borrowed`/`supplied` on the deep-copy, affecting both `simulateNativeRatesAfterActions` (utilization denominator) and `getMeritAnchorTvlUsd` (Merit anchor TVL). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
+
+---
+
+## Part 6: Ink Price Reference (FDV-Based)
+
+Source: `src/components/dashboard/InkAprCalculator.tsx`, `src/hooks/useCoingeckoFdv.ts`.
+
+The Ink APR calculator uses a FDV-based price model: the user estimates INK token FDV in billions USD, and the calculator derives a token price from `FDV / TOTAL_SUPPLY`. A slider with CEX benchmark reference points provides visual context.
+
+### Price Derivation
+
+```text
+tokenPrice = (FDV_billions × 10^9) / TOTAL_SUPPLY
+```
+
+Where `TOTAL_SUPPLY = 1_000_000_000` (1B INK tokens).
+
+### MAX_FDV: Dynamic from CoinGecko Reference Points
+
+`MAX_FDV` is the slider endpoint and input clamp ceiling. It is derived dynamically from live CoinGecko data, not hardcoded.
+
+**Data Flow:**
+
+```mermaid
+flowchart LR
+    A[CoinGecko API] --> B[useCoingeckoFdv hook]
+    B --> C[fdvBySymbol: Map&lt;symbol, fdvUsd&gt;]
+    C --> D[referencePointsWithLiveFdv<br/>useMemo: merge live FDV]
+    D --> E[MAX_FDV<br/>useMemo: max of all points]
+    E --> F{maxLiveFdv > 0?}
+    F -->|Yes| G[MAX_FDV = maxLiveFdv]
+    F -->|No| H[MAX_FDV = 200 fallback]
+    G --> I[updateFromFdv clamp]
+    G --> J[handleKeyDown clamp]
+    G --> K[aria-valuemax on slider]
+    H --> I
+    H --> J
+    H --> K
+    style E fill:#bbdefb,color:#0d47a1
+    style F fill:#fff3e0,color:#e65100
+    style G fill:#c8e6c9,color:#1a5e20
+    style H fill:#f3e5f5,color:#7b1fa2
+```
+
+**Technical Call Chain:**
+
+```mermaid
+sequenceDiagram
+    participant Component as InkAprCalculator
+    participant Hook as useCoingeckoFdv
+    participant Memo1 as referencePointsWithLiveFdv
+    participant Memo2 as MAX_FDV useMemo
+    Component->>Hook: fdvBySymbol
+    Note over Hook: Returns Map&lt;symbol, fdvUsd&gt;
+    Hook-->>Memo1: live FDV data
+    Memo1->>Memo1: Merge live FDV into REFERENCE_POINTS
+    Memo1-->>Memo2: referencePointsWithLiveFdv
+    Memo2->>Memo2: Reduce: max of all point fdvs
+    alt Has live data
+        Memo2-->>Component: MAX_FDV = maxLiveFdv (e.g. 120)
+    else No live data
+        Memo2-->>Component: MAX_FDV = 200 (fallback)
+    end
+    Component->>Component: updateFromFdv / handleKeyDown<br/>use Math.min(MAX_FDV, value)
+```
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| MAX_FDV = max of all reference point live FDVs | Slider endpoint and input clamp always in sync. No distinction between full/partial availability — as long as at least one live FDV exists, use the max. |
+| Fallback = 200 (billions) | When no live CoinGecko data at all. Conservative ceiling above typical CEX FDVs. |
+| No input limit when no data | If all reference points return null, the fallback 200 serves as the slider endpoint and input clamp. The slider and input are always unified. |
+| `useMemo` dependency on `referencePointsWithLiveFdv` | Automatically recomputes when CoinGecko data updates. Dependency chain: `fdvBySymbol` → `referencePointsWithLiveFdv` → `MAX_FDV`. |
+
+### Reference Points
+
+`REFERENCE_POINTS` is a hardcoded array of CEX benchmark tokens with their FDV values and slider positions:
+
+| Token | Exchange | Hardcoded FDV (B) | Position | Live Source |
+|-------|----------|-------------------|----------|-------------|
+| GT | Gate | 1.0 | 0 | CoinGecko |
+| OKB | OKX | 2.1 | 3 | CoinGecko |
+| BGB | Bitget | 4.5 | 8 | CoinGecko |
+| MNT | Mantle | 5.0 | 10 | CoinGecko |
+| CRO | Crypto.com | 8.5 | 25 | CoinGecko |
+| BNB | Binance | 115.8 | 100 | CoinGecko |
+
+Each reference point's `fdv` is replaced by live CoinGecko data when available. The `default` point (fdv=1.0, isDefault=true) is never replaced — it acts as a floor ensuring `maxLiveFdv > 0` always holds.
+
+### CoinGecko Integration
+
+Source: `src/hooks/useCoingeckoFdv.ts`.
+
+- Uses React Query with staleTime and cache persistence.
+- Fetches FDV data for a predefined list of token IDs.
+- Returns `fdvBySymbol: Map<string, number>` (symbol → fdvUsd).
+- `InkAprCalculator` calls `useCoingeckoFdv()` and passes `fdvBySymbol` to `referencePointsWithLiveFdv`.
+
+### Input Behavior
+
+The FDV input uses `useDebouncedInput` (300ms debounce, 2 decimal places). On commit:
+
+```text
+clampedFdv = Math.max(MIN_FDV, Math.min(MAX_FDV, parsedFdv))
+tokenPrice = (clampedFdv × 1e9) / TOTAL_SUPPLY
+setRateInput(tokenPrice.toFixed(4))
+```
+
+- `MIN_FDV = 0` (zero FDV = zero price)
+- `MAX_FDV` = dynamic from reference points (see above)
+- Slider interaction uses `sliderActiveRef` guard to prevent blur events from overwriting slider updates
+
+### Related Files
+
+- `src/components/dashboard/InkAprCalculator.tsx` — Calculator component with FDV slider and input
+- `src/hooks/useCoingeckoFdv.ts` — CoinGecko FDV data fetching hook
+- `src/hooks/useDebouncedInput.ts` — Debounced controlled input hook (shared with simulation inputs)
+- `src/lib/numberFormat.ts` — `sanitizeNumberInput` with `maxDecimalPlaces` parameter
