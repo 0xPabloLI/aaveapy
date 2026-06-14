@@ -11,6 +11,7 @@ Frontend rate simulation documentation — consolidated from the former multi-fi
 | Merkl incentive forecast | [Part 2: Merkl Incentive Forecast](#part-2-merkl-incentive-forecast) |
 | APR/APY display, USD/day, net eligibility | [Part 3: APR / APY Display Semantics](#part-3-apr--apy-display-semantics) |
 | Incentive cap / ceiling reference | [Part 4: Incentive Reward Cap Reference](#part-4-incentive-reward-cap-reference) |
+| Simulation null semantics & totalSupplyUsd | [Part 7: Simulation Null Semantics](#part-7-simulation-null-semantics) |
 
 ---
 
@@ -570,15 +571,15 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Layer | Role | Examples |
 |-------|------|----------|
 | API | Backend field names stay stable | `perUserRewardCapUsd` |
-| Domain | Prefer `cap` vocabulary | `eligibleDepositCapUsd`, `rewardCapUsd` |
+| Domain | Prefer `cap` vocabulary | `positionCapUsd`, `eligibleUsd` |
 | UI | Stable row diagnostics | `capNote`, `capWarning` |
 
 ### Field mapping
 
 | Source | Domain meaning | Notes |
 |--------|----------------|-------|
-| Brevis `perUserRewardCapUsd` | Per-user reward cap | Keep API name |
-| Merit `selfEligibleDepositCapUsd` | Eligible deposit cap | Only eligible portion earns incentive |
+| Brevis `perUserRewardCapUsd` | Position cap | Keep API name; domain uses `positionCapUsd` |
+| Merit `selfEligibleDepositCapUsd` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive |
 | Simulation UI | Same diagnostics | Keep `cap*` props stable |
 
 ### Unified simulation `capNote` strings
@@ -587,7 +588,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 |--------------------|------------|-------------------|
 | Merkl FIX | Scenario input exists and rewardable days resolved | `~Nd earn` |
 | Merkl MAX | APR capped for low TVL | `APR capped for low TVL` |
-| Brevis | Per-user cap exists | `Reward capped at $X/user` |
+| Brevis | Position cap exists | `Incentive on first $X` |
 | Brevis no cap | No per-user cap, time remaining exists | `~Nd to end` |
 | Merit Self | Eligible deposit cap applies | `Incentive on first $Z` |
 | Merit Base | Net note only | `Net eligible $X of $Y` |
@@ -598,14 +599,14 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Eligible deposit cap | Per-user | `eligibleDeposit = min(deposit, selfEligibleDepositCapUsd)` | `meritForecast.ts` |
-| Per-user reward cap | Per-user | cap by reward / remaining horizon | `brevisForecast.ts` |
+| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts`, `brevisForecast.ts` |
 
-### Brevis per-user reward cap
+### Brevis position cap
 
-- `perUserRewardCapUsd` is a cumulative USD reward cap.
+- `perUserRewardCapUsd` is a **position cap** — only the first `$X` of deposit/debt earns incentive.
+- `positionCapUsd` = API `perUserRewardCapUsd`; `eligibleUsd = min(deposit, positionCapUsd)`.
+- Effective APR: `nominalApr × eligibleUsd / deposit` (when cap binds, APR is diluted).
 - Missing `endDate` degrades gracefully to nominal APR.
-- Missing `distributedSoFar` means budget exhaustion timing is uncertain.
 - Shared cap across supply/borrow requires the same `campaignId` and matching metadata.
 
 ### Merkl FIX reward cap
@@ -616,7 +617,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 ### Merit Base / Merit Self
 
 - Merit Base anchors to reserve TVL when available.
-- Merit Self uses `selfEligibleDepositCapUsd` as an eligible deposit cap — only the first `eligibleDepositCapUsd` of deposit earns incentive.
+- Merit Self uses `positionCapUsd` as a position cap — only the first `positionCapUsd` of deposit earns incentive.
 - Merit Base intentionally emits no per-row `capNote`.
 
 ### UI surfaces
@@ -630,9 +631,9 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
-- `src/lib/meritForecast.ts` – Merit forecast (base + self-auth eligible deposit cap)
+- `src/lib/meritForecast.ts` – Merit forecast (base + self position cap)
 - `src/lib/incentiveCaps.ts` – Domain-layer cap effects → simulation `capNote` / `capWarning`
-- `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
+- `src/lib/brevisForecast.ts` – Brevis position cap forecast
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
 - `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
 - `src/lib/portfolioSimulator.ts` – Portfolio mode: groups positions by reserve, calls buildRateSimulationResult per group with supply+borrow USD, Hub aggregation, fallback to static APY
@@ -797,9 +798,129 @@ setRateInput(tokenPrice.toFixed(4))
 - `MAX_FDV` = dynamic from reference points (see above)
 - Slider interaction uses `sliderActiveRef` guard to prevent blur events from overwriting slider updates
 
+### FDV vs Simulation Input Behavioral Differences
+
+Both FDV input and simulation input use `useDebouncedInput` (300ms debounce) but differ in control mode, external correction, and UI components due to different business requirements.
+
+| | FDV input | Simulation input |
+|---|---|---|
+| File | `InkAprCalculator.tsx` | `ScenarioControls.tsx` |
+| Hook | `useDebouncedInput` | `useDebouncedInput` |
+| Debounce | 300ms | 300ms |
+| Value source | Direct `value` prop (derived from `rateInput`) | `externalSupplyValue` state (initial `undefined`) |
+| External correction | None (clamp in onCommit) | `ref.setSupplyInput` via `useImperativeHandle` |
+| Slider | `sliderActiveRef` guard | None |
+| UI component | shadcn `Input` | Native `<input>` |
+| Decimal limit | 2 places | None |
+| Reason | Bounded value 0–MAX_FDV, no external correction needed | External imperative write-back for corrected values |
+
+#### 1. Direct value prop vs externalSupplyValue
+
+- **FDV**: `value` always derives from `currentFdvBillions` (i.e. `rateInput`), always controlled mode. The "true value" lives in parent `rateInput`; `useDebouncedInput` is purely the display/edit layer.
+- **Simulation**: `externalSupplyValue` starts as `undefined`. When `undefined`, the hook enters uncontrolled mode (free user input). When external correction is needed (e.g. max button, shared scenario switch), `ref.setSupplyInput` sets a value making it controlled; on next onCommit, `setExternalSupplyValue(undefined)` returns to uncontrolled.
+- **Why this difference**: FDV's value source is deterministic (rateInput → currentFdvBillions), no external correction needed. Simulation can be imperatively modified by various external operations (max, shared scenario, mode switch), requiring `useImperativeHandle` to expose `setSupplyInput`/`setBorrowInput`.
+
+#### 2. shadcn Input vs native input
+
+shadcn `Input` is a native `<input>` wrapper with Tailwind style tokens (border, focus ring, padding). Both are functionally equivalent — same standard props (`ref`, `value`, `onChange`, `onBlur`, `onFocus`, `onKeyDown`). FDV uses shadcn for design-system styles (`disableSurface`, `cnDsInputNeutralWell`); Simulation uses native for historical reasons. Switching has no functional difference.
+
+#### 3. Slider guard (sliderActiveRef)
+
+Only FDV has a slider. During drag, mousedown triggers `updateFromFdv` → `setRateInput` → `currentFdvBillions` changes → `value` prop changes → `useDebouncedInput` syncs to `displayValue`. But during drag, `handleBlur` also fires (input loses focus), and `doCommit` would overwrite the slider update. `sliderActiveRef` checks at onCommit start — if slider is active, skip the commit.
+
+#### 4. Shared core logic
+
+All numeric inputs use `useDebouncedInput`, sharing:
+
+- `sanitizeNumberInput` (CJK full-width decimal normalization, illegal character filtering)
+- `formatNumberInput` (real-time thousands separator formatting)
+- `computeCursorAfterFormat` (cursor position after formatting)
+- `pendingCursorRef` + `useLayoutEffect` (cursor restoration after re-render)
+- `maxDecimalPlaces` (optional; FDV uses 2)
+
+**Conclusion**: Core logic is unified in `useDebouncedInput`. FDV and Simulation differences are driven by business requirements (bounded slider vs unbounded input + external correction), not code duplication — no further unification needed.
+
 ### Related Files
 
 - `src/components/dashboard/InkAprCalculator.tsx` — Calculator component with FDV slider and input
 - `src/hooks/useCoingeckoFdv.ts` — CoinGecko FDV data fetching hook
 - `src/hooks/useDebouncedInput.ts` — Debounced controlled input hook (shared with simulation inputs)
 - `src/lib/numberFormat.ts` — `sanitizeNumberInput` with `maxDecimalPlaces` parameter
+
+---
+
+## Part 7: Simulation Null Semantics
+
+Consolidated from AAV-761 handoff docs. Covers `after`/`delta` null semantics, `hasInput` guard architecture, `totalSupplyUsd` naming, and calculator fallback contracts.
+
+### 7.1 `after=0` vs `after=null` — `??` Operator Pitfall
+
+| Value | `?? fallback` result | Semantics |
+|---|---|---|
+| `0` | `0` (no fallback) | "Simulated, result is 0%" |
+| `null` | `fallback` | "Not simulated, use current" |
+
+**Rule**: When `hasInput=false`, `after` must be `null` (not `0`). Applies to all `SimulationLane` after/delta fields and per-campaign detail rows.
+
+Source: `src/lib/rateSimulationCalculator.ts`, `src/lib/portfolioSimulator.ts`.
+
+### 7.2 Two-Layer Guard Architecture
+
+| Layer | Guard | Purpose |
+|---|---|---|
+| Aggregate (6 places) | `hasAnyInput` | Preserve cross-side influence (e.g. Brevis shared cap where borrow input affects supply after) |
+| Lane / display | per-side `hasInput` | Em dash for sides without input — `null` means "not simulated" |
+
+**Why not per-side everywhere**: Per-side guards at aggregate layer cut cross-side influence. Commit `d1cbfe1c` reverted 6 aggregate guards from per-side back to `hasAnyInput` after regression.
+
+**Native vs Incentive asymmetry**: Native after has no `hasInput` guard (native rate driven by utilization, not user position). Incentive after has per-side guard (incentive depends on user position). This is intentional.
+
+### 7.3 `totalSupplyUsd` Semantics
+
+| Term | Definition | Source |
+|---|---|---|
+| `totalSupplyUsd` | Total position = wallet + delta | `perReserveInputs` Map (portfolio mode) |
+| `supplyNetInputUsd` | Net delta = max(supplyInput - borrowInput, 0) | Always from simulation input |
+| `totalPositionUsd` | **= `totalSupplyUsd`** (no addition) | If you add `netInputUsd` again → double-count |
+
+**Key formula**: `totalPositionUsd = totalSupplyUsd` (direct use, no addition). Because `total` already includes delta.
+
+**Renaming history**: `principalSupplyUsd` → `totalSupplyUsd` (AAV-761). Old name "principal" implied "existing capital (excl. delta)" but value was wallet+delta. New name "total" is self-documenting.
+
+**`reservePositions` → `crossReservePositions`** (8 files): Old name implied "positions" but stored simulation inputs in single-simulation mode. New name describes purpose (cross-reserve eligibility) without implying content.
+
+### 7.4 Calculator Fallback Contract
+
+`buildRateSimulationResult` does **no** `??` fallback on `totalSupplyUsd`/`totalBorrowUsd`. Caller (`useSharedRateSimulations`) provides correct values:
+
+| Mode | `totalSupplyUsd` | `totalBorrowUsd` |
+|---|---|---|
+| Portfolio | wallet + delta (from `perReserveInputs`) | wallet + delta |
+| Single simulation | `undefined` (fallback to `supplyInputUsd` in caller) | `undefined` |
+| No input | `undefined` | `undefined` |
+
+JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
+
+### 7.5 Brevis Cap ≠ Merit Deposit Ceiling
+
+**Brevis `perUserRewardCapUsd`** limits cumulative USD reward total, not position size. **Merit `selfCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
+
+### 7.6 Wallet-Only Incentive Delta
+
+`buildIncentiveCurrent` accepts `walletSupplyUsd`/`walletBorrowUsd` (wallet position) separate from `depositUsd` (simulation input). When wallet exists but no manual input:
+
+- `walletSupplyUsd` > 0 → Merit self-cap dilution still computed → `currentIncentive` is diluted value
+- `deltaIncentive = currentIncentive - headlineIncentive` (typically negative, showing dilution)
+- Without `walletSupplyUsd`: `currentIncentive = headlineIncentive` → `deltaIncentive = 0` → filtered by `formatDeltaPercent` threshold → delta not displayed
+
+**Wallet derivation**: Portfolio mode: `wallet = totalSupplyUsd - supplyInputUsd`. Single simulation: wallet undefined (no `totalSupplyUsd`).
+
+**`portfolioSimulator.ts` must not skip wallet-only positions**: `buildGroupMapFromSlots` and `buildPerReserveInputsFromEntries` check both `hasWalletPosition` and `hasUserInput` — skip only when both are absent. When only wallet: `effectiveAmountUsd = walletValue`, `deltaUsd = 0`.
+
+### 7.7 Per-Campaign Detail Row
+
+`buildMeritCampaignDetails`, `buildMerklCampaignDetails`, `buildBrevisCampaignDetails` all use `let after = null` initial declaration + explicit `else if (hasAnyInput) { after = null; }` branch. Brevis was missing this branch initially (AAV-771) — functionally correct due to initial `null`, but explicit branch is more defensive.
+
+### 7.8 `SimulationLane` Field Names
+
+`SimulationLane` has no `after`/`delta` fields. Only: `afterTotal`/`deltaTotal`, `afterNative`/`deltaNative`, `afterIncentive`/`deltaIncentive`.
