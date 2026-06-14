@@ -875,7 +875,7 @@ const ReservesTable = ({
                 <PortfolioPanel
                   entries={portfolioEntries}
                   actions={portfolioActions}
-                  reserves={allReserves ?? reserves}
+                  reserves={allReserves}
                   positionResults={portfolioResults}
                   summary={portfolioSummary}
                   snapshots={portfolioSnapshots}
@@ -918,7 +918,7 @@ const ReservesTable = ({
                 <PortfolioPanel
                   entries={portfolioEntries}
                   actions={portfolioActions}
-                  reserves={allReserves ?? reserves}
+                  reserves={allReserves}
                   positionResults={portfolioResults}
                   summary={portfolioSummary}
                   snapshots={portfolioSnapshots}
