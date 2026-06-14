@@ -162,7 +162,7 @@ useRateSimulation
     ├── interestRateCalculator.ts    # Aave 两斜率模型（V3/V4 统一）
     ├── merklForecast.ts            # MAX/FIX/DUTCH forecast
     ├── meritForecast.ts            # Merit self-cap forecast
-    ├── brevisForecast.ts           # Brevis per-user cap forecast
+    ├── brevisForecast.ts           # Brevis position cap forecast
     ├── incentiveCaps.ts              # cap 效应模型
     ├── hubAggregation.ts           # V4 Hub 跨 spoke 聚合
     ├── scenarioSize.ts             # USD 换算

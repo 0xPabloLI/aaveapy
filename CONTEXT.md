@@ -70,14 +70,18 @@ Per-user 存款中可获 incentive 的金额上限。只有前 `eligibleDepositC
 UI 显示 `"Incentive on first $X"`。
 _Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfEligibleDepositCapUsd`）
 
-**Reward Cap**:
-Per-user 累计奖励上限。Brevis 模型中限制单个用户在整个 campaign 期间能获得的奖励金额（`perUserRewardCapUsd`）。
-UI 显示 `"Reward capped at $X/user"`。
+**Position Cap (Brevis)**:
+Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单个用户能获得 incentive 的最大仓位金额（API 字段 `perUserRewardCapUsd`，domain 层 `positionCapUsd`）。
+UI 显示 `"Incentive on first $X"`（与 Merit Eligible Deposit Cap 统一文案）。可能 shared（supply + borrow 共享）。
 _Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `perUserRewardCapUsd`）
 
 **Supply Cap / Borrow Cap**:
-Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Eligible Deposit Cap / Reward Cap）是不同概念。
+Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Eligible Deposit Cap / Position Cap）是不同概念。
 _Avoid_: Supply Ceiling, Borrow Ceiling
+
+**Portfolio Cap Warning**:
+Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`；API 字段 `perUserRewardCapUsd`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
+_Avoid_: Cap Error, Cap Alert（这不是错误/警告，是提醒）；red/danger 色（用 amber）
 
 ## Identity
 

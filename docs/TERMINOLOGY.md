@@ -133,7 +133,7 @@ src/hooks/useRateSimulation.ts
 |----------|-------|-----------|--------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
 | Eligible deposit cap | Per-user | `eligibleDeposit = min(deposit, selfEligibleDepositCapUsd)` | `meritForecast.ts` |
-| Per-user reward cap | Per-user | Cap by reward / remaining horizon | `brevisForecast.ts` |
+| Position cap (Brevis) | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，API 字段 `perUserRewardCapUsd` | `brevisForecast.ts` |
 
 ### Tydro Points
 
