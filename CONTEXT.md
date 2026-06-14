@@ -140,6 +140,10 @@ Multi-reserve simulation mode where users manage aggregate positions across mult
 **Sticky behavior**: In Portfolio mode, the scenario bar (containing PortfolioPanel) is **not sticky** on both desktop and mobile — it scrolls naturally with the page. This prevents the panel from trapping content when it exceeds viewport height. Single mode keeps the scenario bar sticky at viewport top. See ADR-0013.
 _Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
 
+**Filter-Portfolio Independence**:
+Token filter 和 chain filter 不影响 Portfolio simulation 的数据。`ReservesTable` 接收两个 reserve 列表：`reserves`（filtered，用于表格行显示）和 `allReserves`（完整，用于 Portfolio 模拟）。Portfolio 模式下两条独立路径：`usePortfolioToggle({ reserves: allReserves })` 生成模拟结果，`PortfolioPanel reserves={allReserves}` 渲染 entries 和搜索——两者都不受 filter 影响。表格行的 `simulationsById`（来自 `useSharedRateSimulations({ reserves })`）用 filtered reserves 是正确的性能优化：被过滤掉的行不可见，不需要模拟数据。见 AAV-749。
+_Avoid_: 让 Portfolio 模拟路径使用 filteredReserves（AAV-749 已修复）
+
 **Snapshot Feature Flag**:
 `features.snapshot` (`src/config/features.ts`) 控制 Snapshot UI 的渲染：Save 按钮、Saved Snapshots 列表、Compare 按钮、Compare 视图、prefetch。当前为 `false`（功能暂时下线，详见 ADR-0012）。Hook 层和类型不变。恢复：改一行 flag 为 `true`。
 _Avoid_: 删除代码、移到 dead code 目录、环境变量方式
