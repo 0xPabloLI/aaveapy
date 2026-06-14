@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
@@ -61,6 +62,8 @@ interface PortfolioPanelProps {
   walletLoadState?: WalletLoadState;
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
+  /** Per-reserve cap warnings for portfolio input fields. */
+  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
 }
 
 /**
@@ -192,6 +195,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   walletLoadState,
   simulationMode,
   onSimulationModeChange,
+  capWarningsMap,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const { isConnected: walletConnected } = useWallet();
@@ -632,6 +636,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       reserveId={entry.reserveId}
                       tokenPriceInUsd={reserveIdToReserve.get(entry.reserveId)?.tokenPrice}
                       disabledNotice={getDisabledNotice(entry)}
+                      capWarnings={capWarningsMap?.get(entry.reserveId)}
                     />
                   ))}
                 </div>

@@ -25,15 +25,29 @@ export interface IncentiveCapEffect {
     positionCapUsd?: number;
     eligibleUsd?: number;
     remainingDays?: number | null;
+    isSharedSupplyBorrow?: boolean;
   };
+}
+
+export interface SimulationCapMetrics {
+  positionCapUsd?: number;
+  isSharedSupplyBorrow?: boolean;
 }
 
 export function capEffectToSimulationFields(
   effect: IncentiveCapEffect,
-): { capNote: string; capWarning: boolean } {
+): { capNote: string; capWarning: boolean; capMetrics?: SimulationCapMetrics } {
+  let capMetrics: SimulationCapMetrics | undefined;
+  if (effect.kind === 'position_cap' && effect.metrics?.positionCapUsd != null) {
+    capMetrics = { positionCapUsd: effect.metrics.positionCapUsd };
+    if (effect.metrics.isSharedSupplyBorrow) {
+      capMetrics.isSharedSupplyBorrow = true;
+    }
+  }
   return {
     capNote: effect.noteParts.join(' · '),
     capWarning: effect.warning,
+    capMetrics,
   };
 }
 
@@ -89,6 +103,7 @@ export function buildBrevisPositionCapEffect(input: {
     metrics: {
       positionCapUsd: input.positionCapUsd,
       remainingDays: input.remainingDays,
+      isSharedSupplyBorrow: input.isSharedSupplyBorrow || undefined,
     },
   };
 }

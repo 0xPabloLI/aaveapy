@@ -144,6 +144,7 @@ export interface SimulationCampaignDetail {
   delta: number | null;
   capNote?: string;
   capWarning?: boolean;
+  capMetrics?: import('./incentiveCaps').SimulationCapMetrics;
   /** Optional deep-link (Merit incentive, Merkl opportunity, or Brevis campaign). */
   href?: string | null;
 }
@@ -705,6 +706,7 @@ export const buildMeritCampaignDetails = (
       let selfAfter: number | null = null;
       let capNote: string | undefined;
       let capWarning = false;
+      let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
       if (inputUsd > 0) {
         const fp = forecastMeritCampaign({
           mode: 'MERIT_SELF_CAP',
@@ -726,7 +728,7 @@ export const buildMeritCampaignDetails = (
               eligibleUsd: fp.selfEligibleUsd,
               positionCapUsd: fp.selfPositionCapUsd,
             });
-            ({ capNote, capWarning } = capEffectToSimulationFields(capEffect));
+            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(capEffect));
           }
         } else {
           selfAfter = selfCurrent;
@@ -743,6 +745,7 @@ export const buildMeritCampaignDetails = (
         delta,
         capNote: appendNetNote(capNote, null),
         capWarning,
+        capMetrics,
         href: meritHref,
       });
     }
@@ -790,6 +793,7 @@ export const buildMerklCampaignDetails = (
       let after: number | null = null;
       let capNote: string | undefined;
       let capWarning = false;
+      let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
 
       if (inputUsd > 0) {
         const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, tydroPointToUsdRate);
@@ -806,11 +810,11 @@ export const buildMerklCampaignDetails = (
           const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
           const forecast = forecastWithTVL(merged, hypotheticalTvl);
           if (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && typeof forecast.fixRewardableDays === 'number') {
-            ({ capNote, capWarning } = capEffectToSimulationFields(
+            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
               buildMerklFixPoolBudgetEffect(forecast.fixRewardableDays),
             ));
           } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
-            ({ capNote, capWarning } = capEffectToSimulationFields(buildMerklAprCapEffect()));
+            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(buildMerklAprCapEffect()));
           }
         }
       } else if (hasAnyInput) {
@@ -828,6 +832,7 @@ export const buildMerklCampaignDetails = (
         delta,
         capNote: appendNetNote(capNote, merklCrossReserveNote ? merklCrossReserveNote(opportunity) : null),
         capWarning,
+        capMetrics,
         href: oppLink ?? null,
       });
     });
@@ -856,6 +861,7 @@ export const buildBrevisCampaignDetails = (
     let after: number | null = null;
     let capNote: string | undefined;
     let capWarning = false;
+    let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
     const combined = getBrevisCombinedDepositUsd(source, breakdown, sharedDepositsByCampaignId);
     const noteDepositUsd = combined ?? inputUsd;
 
@@ -870,7 +876,7 @@ export const buildBrevisCampaignDetails = (
       const det = forecastBrevisDetailed({ ...source, ...breakdown }, noteDepositUsd, Date.now(), combined);
       const perUserRewardCapUsd = resolved.perUserRewardCapUsd;
       if (perUserRewardCapUsd !== undefined && perUserRewardCapUsd > 0) {
-        ({ capNote, capWarning } = capEffectToSimulationFields(
+        ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
           buildBrevisPositionCapEffect({
             positionCapUsd: perUserRewardCapUsd,
             isSharedSupplyBorrow: combined !== undefined,
@@ -880,7 +886,7 @@ export const buildBrevisCampaignDetails = (
           }),
         ));
       } else if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
-        ({ capNote, capWarning } = capEffectToSimulationFields(
+        ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
           buildBrevisCalendarEndOnlyEffect(det.remainingDays),
         ));
       }
@@ -895,6 +901,7 @@ export const buildBrevisCampaignDetails = (
       delta,
       capNote,
       capWarning,
+      capMetrics,
     });
   });
 

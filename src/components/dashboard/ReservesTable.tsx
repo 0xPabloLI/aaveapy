@@ -60,6 +60,7 @@ import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle'
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import { extractCapWarnings, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
@@ -841,6 +842,31 @@ const ReservesTable = ({
     simulationContext: portfolioSimulationContext,
   });
 
+  const portfolioCapWarningsMap = useMemo(() => {
+    if (!isPortfolioMode || !portfolioEntries) return undefined;
+    const map = new Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>();
+    const priceById = new Map(reserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
+    const otherSideEntries = portfolioEntries.map(e => ({
+      reserveId: e.reserveId,
+      borrowAmountUsd: parseNumberInput(e.borrow.amount) * (e.borrow.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
+      supplyAmountUsd: parseNumberInput(e.supply.amount) * (e.supply.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
+    }));
+    for (const entry of portfolioEntries) {
+      const rid = entry.reserveId;
+      const sim = simulationsById[rid];
+      if (!sim) continue;
+      const supplyWarnings = extractCapWarnings(rid, 'supply', sim, otherSideEntries);
+      const borrowWarnings = extractCapWarnings(rid, 'borrow', sim, otherSideEntries);
+      if (supplyWarnings.length > 0 || borrowWarnings.length > 0) {
+        map.set(rid, {
+          supply: supplyWarnings.length > 0 ? supplyWarnings : undefined,
+          borrow: borrowWarnings.length > 0 ? borrowWarnings : undefined,
+        });
+      }
+    }
+    return map.size > 0 ? map : undefined;
+  }, [isPortfolioMode, portfolioEntries, simulationsById, reserves]);
+
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
       {isMobile ? (
@@ -883,6 +909,7 @@ const ReservesTable = ({
                   walletLoadState={walletLoadState}
                   simulationMode={simulationMode}
                   onSimulationModeChange={onSimulationModeChange}
+                  capWarningsMap={portfolioCapWarningsMap}
                 />
               ) : null}
             </>
@@ -926,6 +953,7 @@ const ReservesTable = ({
                   walletLoadState={walletLoadState}
                   simulationMode={simulationMode}
                   onSimulationModeChange={onSimulationModeChange}
+                  capWarningsMap={portfolioCapWarningsMap}
                 />
               ) : null}
             </>

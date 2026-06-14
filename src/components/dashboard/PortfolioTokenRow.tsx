@@ -1,9 +1,10 @@
 import { memo, useCallback, useRef } from 'react';
-import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
+import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { formatConvertedAmount } from '@/lib/portfolioCalculator';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
+import { formatUsd } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -14,6 +15,7 @@ import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 const DELTA_EPSILON = 0.005;
 
@@ -23,6 +25,7 @@ interface PortfolioTokenRowProps {
   reserveId: string;
   tokenPriceInUsd?: number;
   disabledNotice?: { supply?: string | null; borrow?: string | null };
+  capWarnings?: { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] };
 }
 
 interface SideInputProps {
@@ -36,6 +39,7 @@ interface SideInputProps {
   actions: PortfolioSimulationActions;
   disabled?: boolean;
   disabledNotice?: string | null;
+  capWarnings?: PortfolioCapWarning[];
 }
 
 function SideInput({
@@ -49,6 +53,7 @@ function SideInput({
   actions,
   disabled,
   disabledNotice,
+  capWarnings,
 }: SideInputProps) {
   const isBorrow = side === 'borrow';
   const labelColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
@@ -159,6 +164,23 @@ function SideInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
+  const handleAdjustToMax = useCallback((warning: PortfolioCapWarning) => {
+    const adjustedUsd = warning.adjustToUsd;
+    if (sideData.inputMode === 'usd') {
+      const amountValue = formatConvertedAmount(adjustedUsd);
+      const patch = side === 'supply'
+        ? { supplyAmount: amountValue, supplyDeltaSign: 1 as DeltaSign }
+        : { borrowAmount: amountValue, borrowDeltaSign: 1 as DeltaSign };
+      actions.updateReserve(reserveId, patch);
+    } else if (tokenPriceInUsd != null && tokenPriceInUsd > 0) {
+      const amountValue = formatConvertedAmount(adjustedUsd / tokenPriceInUsd);
+      const patch = side === 'supply'
+        ? { supplyAmount: amountValue, supplyDeltaSign: 1 as DeltaSign }
+        : { borrowAmount: amountValue, borrowDeltaSign: 1 as DeltaSign };
+      actions.updateReserve(reserveId, patch);
+    }
+  }, [sideData.inputMode, tokenPriceInUsd, actions, reserveId, side]);
+
   if (disabled) {
     return (
       <Tooltip>
@@ -191,8 +213,34 @@ function SideInput({
     );
   }
 
+  const capWarningElements = capWarnings && capWarnings.length > 0 && (
+    <div className={cn('flex flex-col gap-0.5 mt-0.5', isMobile ? 'pl-11' : 'pl-12')}>
+      {capWarnings.map((w, i) => {
+        const label = w.kind === 'protocol_cap'
+          ? `${side === 'supply' ? 'Supply' : 'Borrow'} cap exceeded by ${formatUsd(w.exceededByUsd)}`
+          : w.source === 'brevis'
+            ? `Brevis incentive cap: ${formatUsd(w.capUsd)}${w.isSharedSupplyBorrow ? ' (supply + borrow)' : ''}`
+            : `Merit incentive cap: ${formatUsd(w.capUsd)}`;
+        return (
+          <div key={`${w.kind}-${i}`} className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="size-3 shrink-0" aria-hidden />
+            <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11')}>{label}</span>
+            <button
+              type="button"
+              onClick={() => handleAdjustToMax(w)}
+              className="shrink-0 underline decoration-dotted underline-offset-2 ds-text-11 hover:text-foreground transition-colors"
+            >
+              Adjust
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+    <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
       <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
         {sideLabel}
       </span>
@@ -290,6 +338,8 @@ function SideInput({
           </button>
         )}
       </div>
+      </div>
+      {capWarningElements}
     </div>
   );
 }
@@ -300,6 +350,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   reserveId,
   tokenPriceInUsd,
   disabledNotice,
+  capWarnings,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
   const chainSrc = getChainIconSrc(entry.chainName);
@@ -381,8 +432,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </div>
         </div>
         <div className="flex flex-col items-stretch gap-1">
-          <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} />
-          <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} />
+          <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} capWarnings={capWarnings?.supply} />
+          <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} capWarnings={capWarnings?.borrow} />
         </div>
       </div>
     );
