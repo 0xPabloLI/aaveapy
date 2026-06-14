@@ -18,9 +18,9 @@ This does not affect ReservesTable Shared Scenario, where inputs are pure increm
 
 1. `delta = parseNumberInput(position.amount) - (position.walletValue ?? 0)` — only the change relative to onchain stock enters the rate model
 2. `effectiveAmount = walletValue + delta` (= `position.amount`) — the full position after adjustment is the principal for yield
-3. `buildRateSimulationResult` gains a new `principalUsd` parameter, independent from `supplyInputUsd`
-4. Portfolio path: `supplyInputUsd = delta`, `principalUsd = effectiveAmount`
-5. Shared Scenario path: `principalUsd = supplyInputUsd` (pure increment, no stock, backward compatible)
+3. `buildRateSimulationResult` gains a new `totalSupplyUsd`/`totalBorrowUsd` parameter (formerly `principalUsd`), independent from `supplyInputUsd`
+4. Portfolio path: `supplyInputUsd = delta`, `totalSupplyUsd = effectiveAmount`
+5. Shared Scenario path: `totalSupplyUsd = supplyInputUsd` (pure increment, no stock, backward compatible)
 
 ### Scenario Table
 
@@ -48,7 +48,7 @@ When `walletValue` changes (chain re-sync), **delta is held constant** — user 
 - Delta sync policy is intuitive: "add $500" stays "add $500" even if chain value drifts
 
 ### Negative
-- `buildRateSimulationResult` signature change: all callers must supply `principalUsd`
+- `buildRateSimulationResult` signature change: all callers must supply `totalSupplyUsd`/`totalBorrowUsd`
 - UI must display delta (increment input) alongside effective amount, adding complexity
 - Effective amount now shown directly in delta input row (replacing 🔒walletValue): muted when synced, foreground when modified, tooltip for wallet value (AAV-626)
 - Incentive APRs use stale data for wallet positions (known limitation, not fixed here — data source timeliness, not calculation logic)
@@ -59,7 +59,7 @@ When `walletValue` changes (chain re-sync), **delta is held constant** — user 
 Rejected. The function would need to know about wallet context, breaking its purity. The caller (portfolio path) has the domain knowledge to compute delta; the calculator should remain a pure math function.
 
 ### B: Set supplyInput = 0 for wallet positions, only simulate deltas
-This is what we do — but we also need `principalUsd` for yield. Without the principal parameter, after-rate yield would be calculated on delta only (e.g. $500 yield on a $1500 position), which is wrong.
+This is what we do — but we also need `totalSupplyUsd` for yield. Without the total position parameter, after-rate yield would be calculated on delta only (e.g. $500 yield on a $1500 position), which is wrong.
 
 ### C: Track walletValue in PortfolioPosition type
 Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a computed property (`amount - walletValue`), not a persisted field. No type change needed.

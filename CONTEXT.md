@@ -64,18 +64,20 @@ _Avoid_: Blocklist
 
 ## Limits
 
-**Deposit Ceiling**:
-Per-user 存款上限。Merit 自有模型中限制单个用户能存入的金额。
-外部源（Merit API）字段名为 `selfCapUsd`，在代码中保留原字段名不做重命名。领域文档/讨论中统一用 Deposit Ceiling。
-_Avoid_: Per-User Deposit Cap, Self Cap（作为领域术语；引用外部源字段名时可用 `selfCapUsd`）
+**Eligible Deposit Cap**:
+Per-user 存款中可获 incentive 的金额上限。只有前 `eligibleDepositCapUsd` 部分的存款能获得 incentive，超出部分仍可存入但不获 incentive。
+提取层字段名 `selfEligibleDepositCapUsd`（从 Merit Self Auth message 解析），域名 `eligibleDepositCapUsd`。
+UI 显示 `"Incentive on first $X"`。
+_Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfEligibleDepositCapUsd`）
 
-**Reward Ceiling**:
-Per-user 奖励上限。Brevis 模型中限制单个用户能获得的奖励金额。
-_Avoid_: Per-User Reward Cap
+**Reward Cap**:
+Per-user 累计奖励上限。Brevis 模型中限制单个用户在整个 campaign 期间能获得的奖励金额（`perUserRewardCapUsd`）。
+UI 显示 `"Reward capped at $X/user"`。
+_Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `perUserRewardCapUsd`）
 
 **Supply Cap / Borrow Cap**:
-Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 Ceiling（per-user）是不同概念。
-_Avoid_: Supply Ceiling, Borrow Ceiling（Ceiling 保留给 per-user 语义）
+Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Eligible Deposit Cap / Reward Cap）是不同概念。
+_Avoid_: Supply Ceiling, Borrow Ceiling
 
 ## Identity
 
@@ -247,7 +249,7 @@ _Avoid_: 把 position.amount 整体当 simulation input（导致链上存量 dou
 _Avoid_: 用 delta 算收益（只算增量部分利息，遗漏存量部分）
 
 **Stock-Flow Separation**:
-Rate simulation 内部将 stock（链上存量）和 flow（用户增量）分开处理：flow 进入 utilization 计算改变 after rate，stock + flow 合并作为收益计算的 principal。`buildRateSimulationResult` 新增 `principalUsd` 参数与 `supplyInputUsd` 分开。Shared Scenario（纯增量）传 `principalUsd = supplyInputUsd` 保持原行为。
+Rate simulation 内部将 stock（链上存量）和 flow（用户增量）分开处理：flow 进入 utilization 计算改变 after rate，stock + flow 合并作为收益计算的 principal。`buildRateSimulationResult` 新增 `totalSupplyUsd`/`totalBorrowUsd` 参数（旧名 `principalUsd`）与 `supplyInputUsd` 分开。Shared Scenario（纯增量）传 `totalSupplyUsd = supplyInputUsd` 保持原行为。
 _Avoid_: 单一值既当 simulation input 又当 principal（Shared Scenario 可以，Portfolio 不行）
 
 **Delta Sync Policy**:

@@ -284,3 +284,60 @@ describe('Architecture guard: PortfolioReserveEntry is primary data model', () =
     expect(src).not.toMatch(/entriesToPositions/);
   });
 });
+
+describe('Architecture guard: docs/plans directory structure', () => {
+  const DOCS_PLANS = resolve(__dirname, '../../docs/plans');
+
+  it('no "Completed" (capital C) directory exists anywhere under docs/plans', () => {
+    const forbiddenPatterns = ['Completed', 'completed'];
+    const subdirs: string[] = [];
+    try {
+      const entries = readdirSync(DOCS_PLANS, { recursive: true });
+      for (const entry of entries) {
+        const full = resolve(DOCS_PLANS, entry.toString());
+        if (statSync(full).isDirectory()) {
+          subdirs.push(entry.toString());
+        }
+      }
+    } catch {
+      return;
+    }
+    const violations = subdirs.filter(d => {
+      const base = d.split('/').pop()!;
+      return forbiddenPatterns.includes(base) && d !== 'completed';
+    });
+    expect(violations, `Found forbidden completed directories: ${violations.join(', ')}. Only docs/plans/completed/ (lowercase) is allowed.`).toEqual([]);
+  });
+
+  it('no nested "linear-issues" or "phase-2" directory exists under docs/plans', () => {
+    const forbiddenDirs = ['linear-issues', 'phase-2'];
+    const subdirs: string[] = [];
+    try {
+      const entries = readdirSync(DOCS_PLANS, { recursive: true });
+      for (const entry of entries) {
+        const full = resolve(DOCS_PLANS, entry.toString());
+        if (statSync(full).isDirectory()) {
+          subdirs.push(entry.toString());
+        }
+      }
+    } catch {
+      return;
+    }
+    const violations = subdirs.filter(d => {
+      const base = d.split('/').pop()!;
+      return forbiddenDirs.includes(base);
+    });
+    expect(violations, `Found forbidden directory names: ${violations.join(', ')}. All plans go flat in docs/plans/completed/.`).toEqual([]);
+  });
+
+  it('no "handoff" directory exists under docs/', () => {
+    const DOCS_DIR = resolve(__dirname, '../../docs');
+    let entries: string[] = [];
+    try {
+      entries = readdirSync(DOCS_DIR);
+    } catch {
+      return;
+    }
+    expect(entries).not.toContain('handoff');
+  });
+});
