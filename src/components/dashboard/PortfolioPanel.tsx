@@ -612,31 +612,46 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
-            <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
-              {sortedEntries.map((entry) => {
+            {(() => {
+              const visibleEntries = sortedEntries.filter(e => !e.hidden);
+              const hiddenEntries = sortedEntries.filter(e => e.hidden);
+              const getDisabledNotice = (entry: PortfolioReserveEntry) => {
                 const reserve = reserveIdToReserve.get(entry.reserveId);
-                return (
-                  <PortfolioTokenRow
-                    key={entry.reserveId}
-                    entry={entry}
-                    actions={actions}
-                    reserveId={entry.reserveId}
-                    tokenPriceInUsd={reserve?.tokenPrice}
-                    disabledNotice={reserve ? {
-                      supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
-                      borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
-                    } : RESERVE_UNAVAILABLE_NOTICE}
-                  />
-                );
-              })}
-            </div>
-            {entries.some(e => e.hidden) && (
-              <div className="flex items-center gap-2 ds-text-10 text-muted-foreground/60 pt-1">
-                <div className="flex-1 h-px bg-border/20" />
-                <span>{entries.filter(e => e.hidden).length} hidden</span>
-                <div className="flex-1 h-px bg-border/20" />
-              </div>
-            )}
+                return reserve ? {
+                  supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
+                  borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
+                } : RESERVE_UNAVAILABLE_NOTICE;
+              };
+              const renderRows = (entries: PortfolioReserveEntry[]) => (
+                <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
+                  {entries.map((entry) => (
+                    <PortfolioTokenRow
+                      key={entry.reserveId}
+                      entry={entry}
+                      actions={actions}
+                      reserveId={entry.reserveId}
+                      tokenPriceInUsd={reserveIdToReserve.get(entry.reserveId)?.tokenPrice}
+                      disabledNotice={getDisabledNotice(entry)}
+                    />
+                  ))}
+                </div>
+              );
+              return (
+                <>
+                  {visibleEntries.length > 0 && renderRows(visibleEntries)}
+                  {hiddenEntries.length > 0 && (
+                    <>
+                      <div data-hidden-divider className="flex items-center gap-2 ds-text-10 text-muted-foreground/60 pt-1">
+                        <div className="flex-1 h-px bg-border/20" />
+                        <span>{hiddenEntries.length} hidden</span>
+                        <div className="flex-1 h-px bg-border/20" />
+                      </div>
+                      {renderRows(hiddenEntries)}
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

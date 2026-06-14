@@ -474,18 +474,26 @@ import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 ### 5.9 分隔线（Divider）
 
-用于 chip 行内相邻元素或逻辑分组之间的视觉分隔。统一使用竖向小竖线。
+分为两种：**行内竖线**（同一行内元素间）和**行间横线**（不同行/section 间）。
 
 | 场景 | Tailwind class | 说明 |
 |------|----------------|------|
-| **内联分隔**（chip 内部元素之间）| `w-px h-3.5 bg-current opacity-20 shrink-0` | 颜色跟随父元素 `currentColor`，与 chip 文字同色系 |
-| **分组分隔**（展开子项列表与后续组之间）| `w-px h-3.5 bg-current opacity-20 shrink-0` | 与内联分隔同款，保持行内视觉节奏一致 |
+| **行内竖线**（chip 内部元素之间）| `w-px h-3.5 bg-current opacity-20 shrink-0` | 颜色跟随父元素 `currentColor`，与 chip 文字同色系 |
+| **行内竖线**（展开子项列表与后续组之间）| `w-px h-3.5 bg-current opacity-20 shrink-0` | 与内联分隔同款，保持行内视觉节奏一致 |
+| **行间横线 + 标签**（可见区与隐藏区之间）| `flex items-center gap-2 ds-text-10 text-muted-foreground/60` + 两侧 `flex-1 h-px bg-border/20` | 文本居中，左右各一条水平短线 |
 
-**规范要点**：
+**行内竖线规范要点**：
 - 分组分隔仅出现在**展开内容结束、下一组 chip 开始**的位置，不在每个 chip 后都加。
 - 高度 `h-3.5`（14px）与 chip 内部分隔线一致，不单独调大或调小。
 - 透明度 20% 不可随意增减：过重会与 chip 边框抢视觉权重；过轻则不起分隔作用。
 - 若后续新增其他可展开分组（如 Arbitrum 多 market），同样使用此竖线，保持一致。
+
+**行间横线规范要点**：
+- 用于**不同逻辑区域之间的视觉分界**（如可见行 vs 隐藏行），不用于同行内元素分隔。
+- 必须放置在**分界区域的上方**（即后一区第一个行之前），不可放在最后一区行之后。
+- 标签文本格式：`{count} hidden`，使用 `ds-text-10 text-muted-foreground/60`。
+- 横线样式 `h-px bg-border/20`，与行内竖线视觉权重对齐（低存在感、辅助分组）。
+- 若后续新增其他行间分区场景（如分组标题行），同样使用此横线 + 标签模式。
 
 ---
 

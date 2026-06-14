@@ -384,4 +384,77 @@ describe('PortfolioPanel', () => {
     })
   })
 
+  describe('hidden divider position (AAV-773)', () => {
+    const renderPanel = (entries: PortfolioReserveEntry[], reserves: ReserveWithSpread[] = []) => {
+      return render(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={entries}
+                actions={makeActions()}
+                reserves={reserves}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+    };
+
+    it('renders "N hidden" divider before hidden rows', () => {
+      const entries: PortfolioReserveEntry[] = [
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+      ];
+      const { container } = renderPanel(entries);
+
+      const divider = screen.getByText('1 hidden');
+      const hiddenRow = container.querySelector('[data-reserve-id="AaveV3Ethereum-DAI"]');
+      const visibleRow = container.querySelector('[data-reserve-id="AaveV3Ethereum-USDC"]');
+
+      expect(divider).toBeInTheDocument();
+      expect(hiddenRow).toBeInTheDocument();
+      expect(visibleRow).toBeInTheDocument();
+
+      const allNodes = Array.from(container.querySelectorAll('[data-reserve-id], [data-hidden-divider]'));
+      const visibleIdx = allNodes.findIndex(n => n.getAttribute('data-reserve-id') === 'AaveV3Ethereum-USDC');
+      const dividerIdx = allNodes.findIndex(n => n.hasAttribute('data-hidden-divider'));
+      const hiddenIdx = allNodes.findIndex(n => n.getAttribute('data-reserve-id') === 'AaveV3Ethereum-DAI');
+
+      expect(visibleIdx).toBeLessThan(dividerIdx);
+      expect(dividerIdx).toBeLessThan(hiddenIdx);
+    });
+
+    it('does not render divider when no hidden entries', () => {
+      const entries: PortfolioReserveEntry[] = [
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
+      ];
+      renderPanel(entries);
+      expect(screen.queryByText(/hidden/)).not.toBeInTheDocument();
+    });
+
+    it('shows correct count in divider text', () => {
+      const entries: PortfolioReserveEntry[] = [
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+      ];
+      renderPanel(entries);
+      expect(screen.getByText('2 hidden')).toBeInTheDocument();
+    });
+
+    it('renders divider when all entries are hidden', () => {
+      const entries: PortfolioReserveEntry[] = [
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+      ];
+      const { container } = renderPanel(entries);
+
+      expect(screen.getByText('2 hidden')).toBeInTheDocument();
+      expect(container.querySelector('[data-hidden-divider]')).toBeInTheDocument();
+    });
+  });
+
 });

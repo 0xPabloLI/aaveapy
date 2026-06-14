@@ -351,6 +351,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   if (isMobile) {
     return (
       <div
+        data-reserve-id={reserveId}
         className={cn(
           'grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border transition-colors',
           isHidden
@@ -390,6 +391,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   // Desktop
   return (
     <div
+      data-reserve-id={reserveId}
       className={cn(
         'grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border transition-colors',
         isHidden
