@@ -809,3 +809,122 @@ describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => 
     expect(result.supply.currentIncentive).toBeGreaterThanOrEqual(17);
   });
 });
+
+describe('deltaIncentive shows dilution gap when hasInput=false but wallet exists', () => {
+  it('deltaIncentive is null when no wallet position (no dilution)', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      // No supplyInput, no wallet — delta should be null
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.deltaIncentive).toBeNull();
+  });
+
+  it('deltaIncentive = currentIncentive - headlineIncentive when wallet exceeds cap', () => {
+    // Wallet=$1500 > self-cap=$1000 → current is diluted
+    // deltaIncentive should show the dilution gap (negative value)
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+      // No supplyInput → hasInput=false
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    // deltaIncentive should NOT be null — it should show the dilution gap
+    expect(result.supply.deltaIncentive).not.toBeNull();
+    // deltaIncentive should be negative (current < headline due to dilution)
+    expect(result.supply.deltaIncentive!).toBeLessThan(0);
+    // deltaIncentive = currentIncentive - headlineIncentive
+    expect(result.supply.deltaIncentive).toBeCloseTo(
+      result.supply.currentIncentive - result.supply.headlineIncentive,
+      4,
+    );
+  });
+
+  it('deltaIncentive for borrow side also shows dilution gap', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletBorrowUsd: 2000,
+      // No borrowInput → hasInput=false
+    });
+
+    expect(result.borrow.hasInput).toBe(false);
+    expect(result.borrow.deltaIncentive).not.toBeNull();
+    expect(result.borrow.deltaIncentive!).toBeLessThan(0);
+  });
+
+  it('derives wallet from totalSupplyUsd - supplyInputUsd when hasInput=true', () => {
+    // When hasInput=true and totalSupplyUsd is provided, wallet = total - delta
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',   // delta=$500
+      totalSupplyUsd: 1500, // wallet=$1000 + delta=$500
+    });
+
+    expect(result.supply.hasInput).toBe(true);
+    // wallet=$1000 = cap=$1000 → no dilution on current (1000/1000=1.0)
+    // but after IS diluted (1500 > 1000 → 1000/1500)
+    // deltaIncentive = currentIncentive - headlineIncentive = 0 (no wallet dilution)
+    expect(result.supply.deltaIncentive).not.toBeNull();
+    expect(result.supply.deltaIncentive!).toBe(0);
+  });
+
+  it('AAV-761: wallet-only position shows headline rates when hasInput=false (no dilution)', () => {
+    // When hasInput=false but totalSupplyUsd is provided (wallet position),
+    // walletSupplyUsd is set to undefined so currentIncentive shows headline
+    // (undiluted) rates. The user hasn't changed anything, so the current
+    // incentive should reflect the undiluted rate.
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '0',     // no supply delta
+      borrowInput: '1',     // borrow delta=$1 (hasAnyInput=true)
+      totalSupplyUsd: 1042, // wallet position > cap=$1000
+      totalBorrowUsd: 1,
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    // No dilution when hasInput=false: deltaIncentive is null
+    expect(result.supply.deltaIncentive).toBeNull();
+    // Current incentive should be headline (undiluted)
+    expect(result.supply.currentIncentive).toBe(result.supply.headlineIncentive);
+    // After incentive should be null (per-side guard, no supply input)
+    expect(result.supply.afterIncentive).toBeNull();
+  });
+
+  it('derives wallet correctly when both totalSupplyUsd and supplyInputUsd are present', () => {
+    // totalSupplyUsd = wallet(1500) + delta(500) = 2000
+    // walletSupplyUsd should be derived as 2000 - 500 = 1500
+    const result = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      totalSupplyUsd: 2000,
+      // No walletSupplyUsd passed explicitly
+    });
+
+    expect(result.supply.hasInput).toBe(true);
+    // Wallet derivation should match explicit walletSupplyUsd=1500 result
+    const withExplicitWallet = buildRateSimulationResult({
+      reserve: MERIT_SELF_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      totalSupplyUsd: 2000,
+      walletSupplyUsd: 1500,
+    });
+
+    expect(result.supply.currentIncentive).toBeCloseTo(withExplicitWallet.supply.currentIncentive, 6);
+  });
+});

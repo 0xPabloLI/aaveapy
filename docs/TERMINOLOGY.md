@@ -132,8 +132,8 @@ src/hooks/useRateSimulation.ts
 | Cap Type | Scope | Mechanism | Source |
 |----------|-------|-----------|--------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Deposit ceiling | Per-user | `eligibleDeposit = min(deposit, selfCapUsd)` | `meritForecast.ts` |
-| Per-user reward ceiling | Per-user | Cap by reward / remaining horizon | `brevisForecast.ts` |
+| Eligible deposit cap | Per-user | `eligibleDeposit = min(deposit, selfEligibleDepositCapUsd)` | `meritForecast.ts` |
+| Per-user reward cap | Per-user | Cap by reward / remaining horizon | `brevisForecast.ts` |
 
 ### Tydro Points
 
@@ -153,7 +153,7 @@ src/hooks/useRateSimulation.ts
 | Layer | Naming Style | Example |
 |-------|--------------|---------|
 | API (backend) | Stable field names | `perUserRewardCapUsd` |
-| Domain (frontend) | Ceiling vocabulary | `depositCeilingUsd`, `rewardCeilingUsd` |
+| Domain (frontend) | Cap vocabulary | `positionCapUsd`, `eligibleUsd` |
 | UI (display) | Stable diagnostics | `capNote`, `capWarning` |
 
 ### Unit Conventions

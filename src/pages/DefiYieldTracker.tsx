@@ -314,7 +314,7 @@ const DefiYieldTracker = () => {
               Aave analytics
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, incentive ceilings, and per-user reward caps. Use the{' '}
+              Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, eligible deposit caps, and per-user reward caps. Use the{' '}
               <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
               to filter and sort across every chain, or drill into deployments like{' '}
               <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}

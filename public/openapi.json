@@ -726,6 +726,9 @@
                                 "perUserRewardCapUsd": {
                                   "type": "number"
                                 },
+                                "distributedSoFarUsd": {
+                                  "type": "number"
+                                },
                                 "campaignId": {
                                   "type": "string"
                                 }
@@ -780,6 +783,9 @@
                                 "perUserRewardCapUsd": {
                                   "type": "number"
                                 },
+                                "distributedSoFarUsd": {
+                                  "type": "number"
+                                },
                                 "campaignId": {
                                   "type": "string"
                                 }
@@ -808,6 +814,9 @@
                             "type": "number"
                           },
                           "perUserRewardCapUsd": {
+                            "type": "number"
+                          },
+                          "distributedSoFarUsd": {
                             "type": "number"
                           },
                           "campaignId": {
@@ -861,6 +870,9 @@
                                 "perUserRewardCapUsd": {
                                   "type": "number"
                                 },
+                                "distributedSoFarUsd": {
+                                  "type": "number"
+                                },
                                 "campaignId": {
                                   "type": "string"
                                 }
@@ -915,6 +927,9 @@
                                 "perUserRewardCapUsd": {
                                   "type": "number"
                                 },
+                                "distributedSoFarUsd": {
+                                  "type": "number"
+                                },
                                 "campaignId": {
                                   "type": "string"
                                 }
@@ -943,6 +958,9 @@
                             "type": "number"
                           },
                           "perUserRewardCapUsd": {
+                            "type": "number"
+                          },
+                          "distributedSoFarUsd": {
                             "type": "number"
                           },
                           "campaignId": {
@@ -1854,6 +1872,9 @@
                           "perUserRewardCapUsd": {
                             "type": "number"
                           },
+                          "distributedSoFarUsd": {
+                            "type": "number"
+                          },
                           "campaignId": {
                             "type": "string"
                           }
@@ -1908,6 +1929,9 @@
                           "perUserRewardCapUsd": {
                             "type": "number"
                           },
+                          "distributedSoFarUsd": {
+                            "type": "number"
+                          },
                           "campaignId": {
                             "type": "string"
                           }
@@ -1936,6 +1960,9 @@
                       "type": "number"
                     },
                     "perUserRewardCapUsd": {
+                      "type": "number"
+                    },
+                    "distributedSoFarUsd": {
                       "type": "number"
                     },
                     "campaignId": {
@@ -1989,6 +2016,9 @@
                           "perUserRewardCapUsd": {
                             "type": "number"
                           },
+                          "distributedSoFarUsd": {
+                            "type": "number"
+                          },
                           "campaignId": {
                             "type": "string"
                           }
@@ -2043,6 +2073,9 @@
                           "perUserRewardCapUsd": {
                             "type": "number"
                           },
+                          "distributedSoFarUsd": {
+                            "type": "number"
+                          },
                           "campaignId": {
                             "type": "string"
                           }
@@ -2071,6 +2104,9 @@
                       "type": "number"
                     },
                     "perUserRewardCapUsd": {
+                      "type": "number"
+                    },
+                    "distributedSoFarUsd": {
                       "type": "number"
                     },
                     "campaignId": {
@@ -2403,6 +2439,9 @@
           "perUserRewardCapUsd": {
             "type": "number"
           },
+          "distributedSoFarUsd": {
+            "type": "number"
+          },
           "campaignId": {
             "type": "string"
           }
@@ -2450,6 +2489,9 @@
                 "perUserRewardCapUsd": {
                   "type": "number"
                 },
+                "distributedSoFarUsd": {
+                  "type": "number"
+                },
                 "campaignId": {
                   "type": "string"
                 }
@@ -2478,6 +2520,9 @@
             "type": "number"
           },
           "perUserRewardCapUsd": {
+            "type": "number"
+          },
+          "distributedSoFarUsd": {
             "type": "number"
           },
           "campaignId": {

@@ -816,6 +816,55 @@ describe('simulatePortfolioFromEntries', () => {
       expect(supplyResult.incentivePercent).toBeCloseTo(expectedCurrent, 2);
       expect(supplyResult.incentivePercent).toBeGreaterThan(0);
     });
+
+    it('wallet-only with self-cap Merit: incentiveMetric.delta is null when hasInput=false (AAV-761 fix)', () => {
+      const reserveId = 'r-selfcap';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      // selfCap = $1,000, wallet = $1,500 → current is diluted
+      const reserve = makeRateCalcReserve({
+        reserveId,
+        tokenPrice: 1,
+        tokenSymbol: 'USDT',
+        chainName: 'Celo',
+        supplied: '1000000000', // 1000 tokens
+        meritSupplys: [
+          {
+            apr: 10,
+            selfApr: 8,
+            link: 'https://merit.example/campaign',
+            name: 'Merit Self Cap',
+            message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
+            startDate: recentPast,
+            endDate: farFuture,
+            lastRoundRewardUsd: 100,
+          },
+        ],
+      });
+
+      // Wallet-only entry: amount='', walletValue=1500
+      const entries = [
+        makeEntry({
+          reserveId,
+          tokenSymbol: 'USDT',
+          chainName: 'Celo',
+          supply: { amount: '', inputMode: 'usd', walletValue: 1500 },
+          borrow: { ...emptySide },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
+      expect(supplyResult).toBeDefined();
+
+      // No dilution when hasInput=false: delta should be null (AAV-761 fix)
+      expect(supplyResult.incentiveMetric).toBeDefined();
+      expect(supplyResult.incentiveMetric!.delta).toBeNull();
+    });
   });
 });
 
@@ -825,6 +874,7 @@ const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
   inputUsd: 10000,
   currentNative: 2.8,
   currentIncentive: 0.9,
+  headlineIncentive: 0.9,
   currentTotal: 3.7,
   afterNative: 3.0,
   afterIncentive: 1.0,
@@ -888,12 +938,12 @@ describe('buildMetricsFromLane', () => {
     expect(metrics.usdPerDayMetric).toBeDefined();
   });
 
-  it('returns null after/delta for incentive and total when hasInput=false (AAV-761)', () => {
+  it('passes through deltaIncentive even when hasInput=false (AAV-761 dilution gap)', () => {
     const lane = makeLane({
       hasInput: false,
       currentIncentive: 0.9,
       afterIncentive: 0,
-      deltaIncentive: -0.9,
+      deltaIncentive: -0.3,
       currentTotal: 3.7,
       afterTotal: 2.8,
       deltaTotal: -0.9,
@@ -901,9 +951,11 @@ describe('buildMetricsFromLane', () => {
     const metrics = buildMetricsFromLane(lane, 'supply', 10000);
     expect(metrics.incentiveMetric.current).toBe(0.9);
     expect(metrics.incentiveMetric.after).toBeNull();
-    expect(metrics.incentiveMetric.delta).toBeNull();
+    // deltaIncentive is passed through even when hasInput=false — shows wallet dilution gap
+    expect(metrics.incentiveMetric.delta).toBe(-0.3);
     expect(metrics.totalMetric.current).toBe(3.7);
     expect(metrics.totalMetric.after).toBeNull();
+    // total delta is still gated by hasInput (no user input = no total delta)
     expect(metrics.totalMetric.delta).toBeNull();
     expect(metrics.usdPerDayMetric.after).toBeNull();
     expect(metrics.usdPerDayMetric.delta).toBeNull();

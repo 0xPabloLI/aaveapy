@@ -668,11 +668,11 @@ describe('buildRateSimulationResult', () => {
 
     expect(result.supply.sources.brevis.current).toBe(10);
     expect(result.supply.sources.brevis.after).toBeLessThan(10);
-    expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.supply.afterIncentive).toBeLessThan(result.supply.currentIncentive);
   });
 
-  it('brevis capNote uses min(daysToHitCap, remainingDays) as ~Nd earn when both exist', () => {
+  it('brevis capNote shows ~Nd to end when no budget data, ~Nd earn when budget data present', () => {
     const nowMs = Date.now();
     const endDate = new Date(nowMs + 50 * 86_400_000).toISOString();
     const reserve: ReserveWithSpread = {
@@ -715,11 +715,10 @@ describe('buildRateSimulationResult', () => {
 
     const capNote = result.supply.sources.brevis.campaigns?.[0]?.capNote;
     expect(capNote).toBeDefined();
-    expect(capNote).toMatch(/~\d+d earn/);
-    const m = capNote!.match(/~(\d+)d earn/);
+    expect(capNote).toMatch(/~\d+d to end/);
+    const m = capNote!.match(/~(\d+)d to end/);
     expect(m).not.toBeNull();
     const n = Number(m![1]);
-    // remainingDays ≈ 50; daysToHitCap at 100k × 10% is much larger → min is calendar window
     expect(n).toBeGreaterThanOrEqual(48);
     expect(n).toBeLessThanOrEqual(52);
   });
@@ -821,9 +820,9 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.borrow.sources.brevis.current).toBe(8);
-    // cap implied = 5000/200000/1 * 100 = 2.5%
+    // position cap: nominalApr × min(position, cap) / position = 8 × 5000/200000 = 0.2%
     expect(result.borrow.sources.brevis.after).toBeLessThan(8);
-    expect(result.borrow.sources.brevis.after).toBeCloseTo(2.5, 0);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(0.2, 1);
   });
 
   it('includes brevis incentive when endDate is absent (open-ended campaign)', () => {
@@ -856,7 +855,7 @@ describe('buildRateSimulationResult', () => {
 
     // Campaign counted as active; cap can't bind without endDate → nominal APR
     expect(result.supply.sources.brevis.current).toBe(10);
-    expect(result.supply.sources.brevis.after).toBe(10);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
   });
 
   it('uses combined supply+borrow deposit for shared campaignId', () => {
@@ -905,12 +904,12 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    // Combined deposit = 100k. Cap implied = 5000/100000/1 * 100 = 5%
+    // Combined deposit = 100k. Position cap: 10 × min(100k, 5k) / 100k = 0.5%
     // Both sides should see the reduced APR
-    expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
-    expect(result.borrow.sources.brevis.after).toBeCloseTo(5, 0);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Reward capped at $5,000.00/user · supply + borrow',
+      'Incentive on first $5,000.00 · supply + borrow',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
   });
@@ -962,14 +961,14 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Reward capped at $5,000.00/user · supply + borrow',
+      'Incentive on first $5,000.00 · supply + borrow',
     );
     expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Reward capped at $5,000.00/user · supply + borrow',
+      'Incentive on first $5,000.00 · supply + borrow',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
     expect(result.supply.sources.brevis.after).not.toBeNull();
-    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(1, 0);
   });
 
   it('does not share cap when campaignId is absent', () => {
@@ -1013,9 +1012,9 @@ describe('buildRateSimulationResult', () => {
     });
 
     // No shared group → each side evaluated independently
-    // 50k deposit per side, cap implied = 5000/50000/1 * 100 = 10% = nominal, so cap not binding
-    expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
-    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+    // 50k deposit per side, position cap: 10 × min(50k, 5k) / 50k = 1%
+    expect(result.supply.sources.brevis.after).toBeCloseTo(1, 0);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(1, 0);
   });
 
   it('does not share cap when supply and borrow metadata differ for the same campaignId', () => {
@@ -1065,8 +1064,8 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
-    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(1, 0);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(1.2, 1);
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).not.toContain('supply + borrow');
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();

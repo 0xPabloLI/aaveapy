@@ -19,7 +19,7 @@ import {
 } from '@/lib/merklForecast';
 import { getProtocolVersion, type ProtocolVersion } from '@/lib/protocolVersion';
 import {
-  extractMeritSelfCapUsd,
+  extractMeritSelfPositionCapUsd,
   forecastMeritAprPercent,
   forecastMeritCampaign,
   splitMeritMessageBySelfAuth,
@@ -27,14 +27,14 @@ import {
 import { forecastBrevisAprPercent, forecastBrevisDetailed } from '@/lib/brevisForecast';
 import {
   buildBrevisCalendarEndOnlyEffect,
-  buildBrevisRewardCeilingEffect,
-  buildMeritSelfDepositCeilingEffect,
-  buildMerklAprCeilingEffect,
+  buildBrevisPositionCapEffect,
+  buildMeritPositionCapEffect,
+  buildMerklAprCapEffect,
   buildMerklFixPoolBudgetEffect,
   buildNetEligibilityNote,
   buildCrossReserveNetEligibilityNote,
-  ceilingEffectToSimulationFields,
-} from '@/lib/incentiveCeilings';
+  capEffectToSimulationFields,
+} from '@/lib/incentiveCaps';
 import {
   getBrevisCampaignBreakdowns,
   getBrevisCampaignId,
@@ -158,6 +158,8 @@ export interface SimulationLane {
   inputUsd: number;
   currentNative: number | null;
   currentIncentive: number;
+  /** Undiluted headline incentive rate (no wallet position). */
+  headlineIncentive: number;
   currentTotal: number | null;
   afterNative: number | null;
   afterIncentive: number | null;
@@ -324,22 +326,23 @@ export const buildIncentiveCurrent = (
 
   const walletPositionUsd = side === 'supply' ? walletSupplyUsd : walletBorrowUsd;
 
-  // When wallet position is provided, apply self-cap dilution to Merit campaigns
-  // using sumForecastMeritValues (same logic as buildIncentiveAfter).
-  // For non-Merit incentives (protocol, Merkl, Brevis), use the existing aggregation
-  // functions but with an empty merit array so they don't double-count.
-  if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
-    const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
-    const meritPercent = sumForecastMeritValues(merit, isApy, walletPositionUsd, anchorTvlUsd, walletPositionUsd);
+  // Always use sumForecastMeritValues for Merit — consistent calculation path.
+  // When walletPositionUsd is set, applies TVL-based forecast with self-cap dilution.
+  // When unset, uses static headline rates (no forecast, no dilution).
+  const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
 
-    // Get non-Merit incentives using the existing aggregation (empty merit = 0 contribution)
+  if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
+    // Wallet-based: apply self-cap dilution using totalPositionUsd, but
+    // inputUsd=0 because wallet is an existing position — not a new deposit
+    // that would dilute TVL.
+    const meritPercent = sumForecastMeritValues(merit, isApy, 0, anchorTvlUsd, walletPositionUsd);
     const otherPercent = isApy
       ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, options)
       : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, options);
-
     return meritPercent + otherPercent;
   }
 
+  // Headline: static rates, no dilution
   return isApy
     ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, options)
     : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, options);
@@ -656,7 +659,7 @@ export const buildMeritCampaignDetails = (
 
   activeMerits.forEach((merit, meritIndex) => {
     const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
-    const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
+    const selfPositionCapUsd = extractMeritSelfPositionCapUsd(selfMessage);
     const baseAprPercent = sanitizePercent(merit.apr);
     const selfAprPercent = sanitizePercent(merit.selfApr ?? 0);
     const meritName = (merit.name?.trim() || 'Merit');
@@ -707,7 +710,7 @@ export const buildMeritCampaignDetails = (
           mode: 'MERIT_SELF_CAP',
           depositUsd: inputUsd,
           forecastAprPercent: selfAprPercent,
-          selfCapUsd: selfCapUsd ?? undefined,
+          selfPositionCapUsd: selfPositionCapUsd ?? undefined,
           startDate: merit.startDate,
           endDate: merit.endDate,
           baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
@@ -717,13 +720,13 @@ export const buildMeritCampaignDetails = (
         });
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
-          if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
-            const ceiling = buildMeritSelfDepositCeilingEffect({
+          if (typeof fp.selfPositionCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
+            const capEffect = buildMeritPositionCapEffect({
               inputUsd,
-              selfEligibleUsd: fp.selfEligibleUsd,
-              depositCeilingUsd: fp.selfCapUsd,
+              eligibleUsd: fp.selfEligibleUsd,
+              positionCapUsd: fp.selfPositionCapUsd,
             });
-            ({ capNote, capWarning } = ceilingEffectToSimulationFields(ceiling));
+            ({ capNote, capWarning } = capEffectToSimulationFields(capEffect));
           }
         } else {
           selfAfter = selfCurrent;
@@ -803,11 +806,11 @@ export const buildMerklCampaignDetails = (
           const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
           const forecast = forecastWithTVL(merged, hypotheticalTvl);
           if (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && typeof forecast.fixRewardableDays === 'number') {
-            ({ capNote, capWarning } = ceilingEffectToSimulationFields(
+            ({ capNote, capWarning } = capEffectToSimulationFields(
               buildMerklFixPoolBudgetEffect(forecast.fixRewardableDays),
             ));
           } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
-            ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
+            ({ capNote, capWarning } = capEffectToSimulationFields(buildMerklAprCapEffect()));
           }
         }
       } else if (hasAnyInput) {
@@ -867,9 +870,9 @@ export const buildBrevisCampaignDetails = (
       const det = forecastBrevisDetailed({ ...source, ...breakdown }, noteDepositUsd, Date.now(), combined);
       const perUserRewardCapUsd = resolved.perUserRewardCapUsd;
       if (perUserRewardCapUsd !== undefined && perUserRewardCapUsd > 0) {
-        ({ capNote, capWarning } = ceilingEffectToSimulationFields(
-          buildBrevisRewardCeilingEffect({
-            rewardCeilingUsd: perUserRewardCapUsd,
+        ({ capNote, capWarning } = capEffectToSimulationFields(
+          buildBrevisPositionCapEffect({
+            positionCapUsd: perUserRewardCapUsd,
             isSharedSupplyBorrow: combined !== undefined,
             isCapBinding: det.isCapBinding,
             daysToHitCap: det.daysToHitCap,
@@ -877,7 +880,7 @@ export const buildBrevisCampaignDetails = (
           }),
         ));
       } else if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
-        ({ capNote, capWarning } = ceilingEffectToSimulationFields(
+        ({ capNote, capWarning } = capEffectToSimulationFields(
           buildBrevisCalendarEndOnlyEffect(det.remainingDays),
         ));
       }
@@ -1164,17 +1167,27 @@ export function buildRateSimulationResult({
   const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
   const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
 
-  // Wallet-only position for self-cap dilution in buildIncentiveCurrent.
+  // Wallet position for self-cap dilution in buildIncentiveCurrent.
   // Priority: explicit wallet param > derived from totalSupplyUsd - delta.
   // In portfolio mode: totalSupplyUsd = wallet + delta, so wallet = total - delta.
-  // In single simulation: totalSupplyUsd is undefined, so wallet is undefined (no dilution).
-  const walletSupplyUsd = explicitWalletSupplyUsd ?? (totalSupplyUsd != null && supplyInputUsd > 0
+  // Only pass wallet position when hasInput=true; when hasInput=false (no delta),
+  // use undefined to get headline rates (no dilution). The user hasn't changed
+  // anything, so the current incentive should show the undiluted rate.
+  const walletSupplyUsd = explicitWalletSupplyUsd ?? (hasSupplyInput && totalSupplyUsd != null
     ? totalSupplyUsd - supplyInputUsd
-    : totalSupplyUsd ?? undefined);
-  const walletBorrowUsd = explicitWalletBorrowUsd ?? (totalBorrowUsd != null && borrowInputUsd > 0
+    : undefined);
+  const walletBorrowUsd = explicitWalletBorrowUsd ?? (hasBorrowInput && totalBorrowUsd != null
     ? totalBorrowUsd - borrowInputUsd
-    : totalBorrowUsd ?? undefined);
+    : undefined);
 
+  // Headline (undiluted, static) incentives — raw API values, no TVL forecast, no dilution.
+  // Used as reference for deltaIncentive when wallet position exists (dilution gap).
+  const supplyHeadlineIncentive = isApy
+    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses })
+    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses });
+  const borrowHeadlineIncentive = isApy
+    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses })
+    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses });
   const supplyCurrentIncentive = buildIncentiveCurrent(
     reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
     walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed,
@@ -1544,6 +1557,7 @@ export function buildRateSimulationResult({
     inputUsd: supplyBlocked ? 0 : supplyInputUsd,
     currentNative: supplyCurrentNative,
     currentIncentive: supplyCurrentIncentive,
+    headlineIncentive: supplyHeadlineIncentive,
     currentTotal: supplyCurrentTotal,
     // ─── B 类: After/Delta (随 simulation input 变化, 无模拟 → null) ───
     afterNative: supplyBlocked ? null : supplyAfterNative,
@@ -1552,7 +1566,7 @@ export function buildRateSimulationResult({
     deltaNative:
       supplyBlocked || !hasSupplyInput ? null : (supplyAfterNative !== null && supplyCurrentNative !== null ? supplyAfterNative - supplyCurrentNative : null),
     deltaIncentive:
-      supplyBlocked || !hasSupplyInput ? null : (supplyAfterIncentive !== null ? supplyAfterIncentive - supplyCurrentIncentive : null),
+      supplyBlocked ? null : (walletSupplyUsd != null ? supplyCurrentIncentive - supplyHeadlineIncentive : null),
     deltaTotal:
       supplyBlocked || !hasSupplyInput ? null : (supplyAfterTotal !== null && supplyCurrentTotal !== null ? supplyAfterTotal - supplyCurrentTotal : null),
     sources: {
@@ -1581,6 +1595,7 @@ export function buildRateSimulationResult({
     inputUsd: borrowBlocked ? 0 : borrowInputUsd,
     currentNative: borrowCurrentNative,
     currentIncentive: borrowCurrentIncentive,
+    headlineIncentive: borrowHeadlineIncentive,
     currentTotal: borrowCurrentTotal,
     // ─── B 类: After/Delta (随 simulation input 变化, 无模拟 → null) ───
     afterNative: borrowBlocked ? null : borrowAfterNative,
@@ -1589,7 +1604,7 @@ export function buildRateSimulationResult({
     deltaNative:
       borrowBlocked || !hasBorrowInput ? null : (borrowAfterNative !== null && borrowCurrentNative !== null ? borrowAfterNative - borrowCurrentNative : null),
     deltaIncentive:
-      borrowBlocked || !hasBorrowInput ? null : (borrowAfterIncentive !== null ? borrowAfterIncentive - borrowCurrentIncentive : null),
+      borrowBlocked ? null : (walletBorrowUsd != null ? borrowCurrentIncentive - borrowHeadlineIncentive : null),
     deltaTotal:
       borrowBlocked || !hasBorrowInput ? null : (borrowAfterTotal !== null && borrowCurrentTotal !== null ? borrowAfterTotal - borrowCurrentTotal : null),
     sources: {

@@ -13,6 +13,7 @@ export type BrevisResolvedBreakdown = {
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
+  distributedSoFarUsd?: number;
   campaignId?: string;
 };
 
@@ -41,6 +42,7 @@ const makeSingleBreakdown = (brevis: BrevisIncentive): BrevisCampaignBreakdown =
   latestTvl: brevis.latestTvl,
   totalBudget: brevis.totalBudget,
   perUserRewardCapUsd: brevis.perUserRewardCapUsd,
+  distributedSoFarUsd: brevis.distributedSoFarUsd,
   campaignId: brevis.campaignId,
 });
 
@@ -73,6 +75,9 @@ export const getBrevisTotalBudget = (brevis: BrevisIncentive): number | undefine
 export const getBrevisPerUserRewardCapUsd = (brevis: BrevisIncentive): number | undefined =>
   brevis.perUserRewardCapUsd;
 
+export const getBrevisDistributedSoFarUsd = (brevis: BrevisIncentive): number | undefined =>
+  brevis.distributedSoFarUsd;
+
 export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined =>
   brevis.campaignId;
 
@@ -92,6 +97,7 @@ export const getBrevisResolvedBreakdown = (
   latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
   totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
   perUserRewardCapUsd: firstFiniteNumber(breakdown?.perUserRewardCapUsd, brevis.perUserRewardCapUsd),
+  distributedSoFarUsd: firstFiniteNumber(breakdown?.distributedSoFarUsd, brevis.distributedSoFarUsd),
   campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
 });
 

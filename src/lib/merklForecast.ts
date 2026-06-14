@@ -7,6 +7,7 @@ import {
   isMerklPointsCampaign,
   convertMerklPointsAmountToUsd,
 } from '@/lib/tydro';
+import { computeBudgetRemainingDays } from '@/lib/incentiveMath';
 
 const DAYS_PER_YEAR = 365;
 const SECONDS_PER_DAY = 86400;
@@ -87,8 +88,7 @@ export const forecastWithTVL = (
   if (isFixAprCampaign) {
     const dailyRewards = Math.min(aprBasedDaily, remainingBudget);
     const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
-    const rewardableDaysByBudget = aprBasedDaily > EPSILON ? remainingBudget / aprBasedDaily : remainingDays;
-    const fixRewardableDays = Math.max(Math.min(remainingDays, rewardableDaysByBudget), 0);
+    const fixRewardableDays = computeBudgetRemainingDays(remainingBudget, aprBasedDaily, remainingDays);
     const fixRewardableUntilTs = Math.floor(
       Math.min(
         safe(forecastState.endTimestamp),

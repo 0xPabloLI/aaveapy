@@ -163,7 +163,7 @@ useRateSimulation
     ├── merklForecast.ts            # MAX/FIX/DUTCH forecast
     ├── meritForecast.ts            # Merit self-cap forecast
     ├── brevisForecast.ts           # Brevis per-user cap forecast
-    ├── incentiveCeilings.ts        # ceiling 效应模型
+    ├── incentiveCaps.ts              # cap 效应模型
     ├── hubAggregation.ts           # V4 Hub 跨 spoke 聚合
     ├── scenarioSize.ts             # USD 换算
     └── formatters.ts               # APR→APY + 格式化

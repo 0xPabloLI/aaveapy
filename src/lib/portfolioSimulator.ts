@@ -78,7 +78,7 @@ export function buildMetricsFromLane(
   const incentiveMetric: PortfolioSimulationMetric = {
     current: lane.currentIncentive,
     after: lane.hasInput ? lane.afterIncentive : null,
-    delta: lane.hasInput ? lane.deltaIncentive : null,
+    delta: lane.deltaIncentive,
   };
   const totalMetric: PortfolioSimulationMetric = {
     current: lane.currentTotal,

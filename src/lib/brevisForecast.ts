@@ -1,5 +1,6 @@
 import type { BrevisIncentive } from '@/types/aave';
 import { getBrevisCampaignApr, getBrevisCampaignEndedAt, getBrevisPerUserRewardCapUsd } from '@/lib/brevis';
+import { computePositionCapEligibility } from '@/lib/incentiveMath';
 
 const DAYS_PER_YEAR = 365;
 const MS_PER_DAY = 86_400_000;
@@ -8,9 +9,9 @@ const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export interface BrevisForecastResult {
   aprPercent: number;
   isCapBinding: boolean;
-  /** Remaining reward the user can earn under the cap (null when cap is absent). */
-  rewardHeadroomUsd: number | null;
-  /** At the nominal APR, how many days until the per-user cap is reached (null when not computable). */
+  /** Eligible portion of the position under the cap (null when cap is absent). */
+  eligibleUsd: number | null;
+  /** Informational: at the nominal APR, how many days to earn rewards equal to the cap amount (null when not computable). */
   daysToHitCap: number | null;
   /** Calendar days from now until campaign endDate (null when endDate is absent/unparseable). */
   remainingDays: number | null;
@@ -31,22 +32,24 @@ const parseBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): 
 };
 
 /**
- * Compute the effective Brevis APR after applying the per-user cumulative reward cap.
+ * Compute the effective Brevis APR after applying the per-user position cap.
  *
- * When a valid `perUserRewardCapUsd` and future `endDate` are both available the
- * returned APR is `min(nominalApr, capUsd / depositUsd / remainingYearFraction × 100)`.
- * Otherwise the nominal APR is returned unchanged (graceful degradation).
+ * When a valid `perUserRewardCapUsd` is available the returned APR is
+ * `nominalApr × min(position, capUsd) / position` — the nominal APR is
+ * diluted by the eligible fraction of the position, exactly like Merit Self.
+ * The position cap does NOT depend on `endDate`; only the cap amount and the
+ * user's position matter.
  *
  * @param combinedDepositUsd — When supply and borrow rows on the same reserve
  *   represent one shared Brevis campaign (same `campaignId`), pass the **total**
- *   deposit across both sides. The cap headroom is then evaluated against the
+ *   deposit across both sides. The cap eligibility is then evaluated against the
  *   canonical shared campaign instead of one side in isolation.
  *   When absent, defaults to `depositUsd` (single-campaign behaviour).
  */
 export function forecastBrevisAprPercent(
   brevis: BrevisIncentive,
   depositUsd: number,
-  nowMs = Date.now(),
+  _nowMs = Date.now(),
   combinedDepositUsd?: number,
 ): number {
   const nominalApr = sanitizePercent(getBrevisCampaignApr(brevis));
@@ -56,27 +59,21 @@ export function forecastBrevisAprPercent(
   const capUsd = getBrevisPerUserRewardCapUsd(brevis);
   if (capUsd === undefined || !Number.isFinite(capUsd) || capUsd <= 0) return nominalApr;
 
-  const endMs = parseBoundaryMs(getBrevisCampaignEndedAt(brevis), 'end');
-  if (endMs === null || endMs <= nowMs) return nominalApr;
-
-  const remainingDays = (endMs - nowMs) / MS_PER_DAY;
-  if (remainingDays <= 0) return nominalApr;
-
   const totalDeposit = (combinedDepositUsd !== undefined && Number.isFinite(combinedDepositUsd) && combinedDepositUsd > 0)
     ? combinedDepositUsd
     : depositUsd;
 
-  const remainingYearFraction = remainingDays / DAYS_PER_YEAR;
-  const capImpliedAprPercent = (capUsd / totalDeposit / remainingYearFraction) * 100;
-  return Math.min(nominalApr, capImpliedAprPercent);
+  const { eligibleUsd, isCapBinding } = computePositionCapEligibility(totalDeposit, capUsd!);
+  return nominalApr * (eligibleUsd / totalDeposit);
 }
 
 /**
  * Extended forecast with diagnostic fields for tooltip display.
  *
- * `daysToHitCap` is always computable when the cap and deposit are valid
- * (it does not require endDate). `isCapBinding` requires endDate to determine
- * whether the cap actually constrains the effective APR over the remaining period.
+ * `isCapBinding` is true when the total position exceeds the cap (position dilution applies).
+ * `daysToHitCap` is informational: at the nominal APR, the number of days to earn rewards
+ * equal to the cap amount. It does not imply the user will be "capped out" — position caps
+ * are static eligibility thresholds, not cumulative reward limits.
  * `remainingDays` is derived from endDate and exposed for UI display (null when
  * endDate is absent — Brevis campaigns may not have an explicit end).
  */
@@ -101,7 +98,7 @@ export function forecastBrevisDetailed(
     return {
       aprPercent: effectiveApr,
       isCapBinding: false,
-      rewardHeadroomUsd: hasValidCap ? capUsd! : null,
+      eligibleUsd: hasValidCap ? capUsd! : null,
       daysToHitCap: null,
       remainingDays,
     };
@@ -111,13 +108,14 @@ export function forecastBrevisDetailed(
     ? combinedDepositUsd
     : depositUsd;
 
+  const { eligibleUsd, isCapBinding } = computePositionCapEligibility(totalDeposit, capUsd!);
   const dailyRewardUsd = totalDeposit * (nominalApr / 100) / DAYS_PER_YEAR;
   const daysToHitCap = dailyRewardUsd > 0 ? capUsd! / dailyRewardUsd : null;
 
   return {
     aprPercent: effectiveApr,
-    isCapBinding: effectiveApr < nominalApr,
-    rewardHeadroomUsd: capUsd!,
+    isCapBinding,
+    eligibleUsd,
     daysToHitCap,
     remainingDays,
   };

@@ -106,7 +106,7 @@ _Last inventory pass: 2026-05-19._
 | `docs/PR_ANALYSIS.md` | PR batching / automerge / when to split PRs | 2026-04-05 | Canonical | `docs/dependabot-behavior.md`; merge execution + review-thread rules live in `AGENTS.md` / `.claude/commands/merge.md` | keep |
 | `docs/dependabot-behavior.md` | Dependabot summary | 2026-04-01 | Derivative pointer | `.github/dependabot.yml`, `docs/PR_ANALYSIS.md` | keep |
 | `docs/frontend-data-loading-matrix.md` | Data-loading architecture | 2026-04-27 | Canonical | `README.md` freshness notes | keep |
-| `docs/rate-calculation.md` | Unified rate simulation formulas (native, Merkl, display, cap/ceiling) | 2026-04-28 | Canonical | none (consolidated) | keep |
+| `docs/rate-calculation.md` | Unified rate simulation formulas (native, Merkl, display, incentive caps) | 2026-04-28 | Canonical | none (consolidated) | keep |
 | `docs/fallback-reference.md` | Frontend variable fallback chains | 2026-04-28 | Canonical | `docs/rate-calculation.md` | keep |
 | `docs/TERMINOLOGY.md` | Variable / field naming reference | 2026-04-28 | Canonical | `aaveapy-doc/v3-v4-sdk-field-mapping.md` | keep |
 | `aaveapy-doc/v3-v4-sdk-field-mapping.md` | Aave V3 vs V4 SDK field mapping | 2026-04-28 | Canonical | `docs/TERMINOLOGY.md`, `docs/fallback-reference.md` | keep |

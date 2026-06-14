@@ -55,6 +55,7 @@ export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
+  distributedSoFarUsd?: number;
 }
 
 export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {
@@ -66,6 +67,7 @@ export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakd
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
+  distributedSoFarUsd?: number;
   campaignId?: string;
 }
 

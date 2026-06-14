@@ -23,14 +23,8 @@ describe('forecastBrevisAprPercent', () => {
   });
 
   it('cap is binding when perUserRewardCapUsd is set and deposit is large', () => {
-    const nowMs = Date.now();
-    const brevis = makeBrevis({
-      campaignApr: 10,
-      campaignStartedAt: new Date(nowMs - 30 * MS_PER_DAY).toISOString(),
-      campaignEndedAt: new Date(nowMs + 335 * MS_PER_DAY).toISOString(),
-      perUserRewardCapUsd: 5000,
-    });
-    expect(forecastBrevisAprPercent(brevis, 100_000, nowMs)).toBeCloseTo(5, 0);
+    const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevis, 100_000)).toBeCloseTo(0.5, 1);
   });
 
   it('returns nominal APR when deposit is zero', () => {
@@ -49,73 +43,38 @@ describe('forecastBrevisAprPercent', () => {
   });
 
   it('returns nominal APR when cap is not binding (small deposit)', () => {
-    const nowMs = Date.now();
-    const endMs = nowMs + 365 * MS_PER_DAY;
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: new Date(endMs).toISOString(),
-    });
-    expect(forecastBrevisAprPercent(brevis, 1000, nowMs)).toBeCloseTo(10, 0);
+    const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevis, 1000)).toBeCloseTo(10, 0);
   });
 
-  it('reduces APR when cap is binding (large deposit)', () => {
-    const nowMs = Date.now();
-    const endMs = nowMs + 365 * MS_PER_DAY;
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: new Date(endMs).toISOString(),
-    });
-    const result = forecastBrevisAprPercent(brevis, 100_000, nowMs);
-    expect(result).toBeCloseTo(5, 0);
-    expect(result).toBeLessThan(10);
+  it('reduces APR proportionally when cap is binding (large deposit)', () => {
+    const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevis, 100_000)).toBeCloseTo(0.5, 1);
   });
 
-  it('handles exactly-half-year remaining correctly', () => {
-    const nowMs = Date.now();
-    const endMs = nowMs + (365 / 2) * MS_PER_DAY;
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: new Date(endMs).toISOString(),
-    });
-    const result = forecastBrevisAprPercent(brevis, 200_000, nowMs);
-    expect(result).toBeCloseTo(5, 0);
+  it('position cap does not depend on endDate', () => {
+    const brevisNoEnd = makeBrevis({ perUserRewardCapUsd: 5000, campaignEndedAt: '' });
+    const brevisWithEnd = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevisNoEnd, 100_000)).toBeCloseTo(0.5, 1);
+    expect(forecastBrevisAprPercent(brevisNoEnd, 100_000)).toBeCloseTo(
+      forecastBrevisAprPercent(brevisWithEnd, 100_000), 10,
+    );
   });
 
-  it('returns nominal APR when endDate is in the past', () => {
+  it('returns nominal APR when endDate is in the past (position cap is static)', () => {
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
       campaignEndedAt: new Date(daysFromNowMs(-1)).toISOString(),
     });
-    expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
+    expect(forecastBrevisAprPercent(brevis, 100_000)).toBeCloseTo(0.5, 1);
   });
 
-  it('returns nominal APR when endDate is empty string (no endDate)', () => {
+  it('returns nominal APR when endDate is empty string', () => {
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
       campaignEndedAt: '',
     });
-    expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
-  });
-
-  it('returns nominal APR when endDate is unparseable', () => {
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: 'not-a-date',
-    });
-    expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
-  });
-
-  it('handles date-only endDate format', () => {
-    const nowMs = Date.now();
-    const futureDate = new Date(nowMs + 365 * MS_PER_DAY);
-    const dateOnly = futureDate.toISOString().slice(0, 10);
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: dateOnly,
-    });
-    const result = forecastBrevisAprPercent(brevis, 100_000, nowMs);
-    expect(result).toBeLessThan(10);
-    expect(result).toBeGreaterThan(0);
+    expect(forecastBrevisAprPercent(brevis, 100_000)).toBeCloseTo(0.5, 1);
   });
 
   it('returns nominal APR when perUserRewardCapUsd is negative', () => {
@@ -123,7 +82,7 @@ describe('forecastBrevisAprPercent', () => {
     expect(forecastBrevisAprPercent(brevis, 50_000)).toBe(10);
   });
 
-  it('cap becomes less binding as remaining time shrinks', () => {
+  it('position cap APR is independent of campaign duration', () => {
     const nowMs = Date.now();
     const brevisLong = makeBrevis({
       perUserRewardCapUsd: 5000,
@@ -134,17 +93,19 @@ describe('forecastBrevisAprPercent', () => {
       campaignEndedAt: new Date(nowMs + 30 * MS_PER_DAY).toISOString(),
     });
     const deposit = 100_000;
-    const aprLong = forecastBrevisAprPercent(brevisLong, deposit, nowMs);
-    const aprShort = forecastBrevisAprPercent(brevisShort, deposit, nowMs);
-    expect(aprShort).toBeGreaterThanOrEqual(aprLong);
+    expect(forecastBrevisAprPercent(brevisLong, deposit, nowMs)).toBeCloseTo(
+      forecastBrevisAprPercent(brevisShort, deposit, nowMs), 10,
+    );
   });
 
-  it('returns nominal APR when no endDate and cap set (graceful degradation)', () => {
-    const brevis = makeBrevis({
-      perUserRewardCapUsd: 5000,
-      campaignEndedAt: '',
-    });
-    expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
+  it('exactly at cap boundary returns nominal APR', () => {
+    const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevis, 5000)).toBeCloseTo(10, 10);
+  });
+
+  it('combined deposit reduces APR for shared campaign', () => {
+    const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
+    expect(forecastBrevisAprPercent(brevis, 50_000, Date.now(), 100_000)).toBeCloseTo(0.5, 1);
   });
 });
 
@@ -154,7 +115,7 @@ describe('forecastBrevisDetailed', () => {
     const result = forecastBrevisDetailed(brevis, 50_000);
     expect(result.aprPercent).toBe(10);
     expect(result.isCapBinding).toBe(false);
-    expect(result.rewardHeadroomUsd).toBeNull();
+    expect(result.eligibleUsd).toBeNull();
     expect(result.daysToHitCap).toBeNull();
     expect(result.remainingDays).toBeGreaterThan(0);
   });
@@ -166,12 +127,12 @@ describe('forecastBrevisDetailed', () => {
     });
     const result = forecastBrevisDetailed(brevis, 50_000);
     expect(result.daysToHitCap).toBeCloseTo(365, 0);
-    expect(result.rewardHeadroomUsd).toBe(5000);
-    expect(result.isCapBinding).toBe(false);
+    expect(result.eligibleUsd).toBe(5000);
+    expect(result.isCapBinding).toBe(true);
     expect(result.remainingDays).toBeNull();
   });
 
-  it('reports cap binding when large deposit exceeds cap over campaign', () => {
+  it('reports cap binding when deposit exceeds cap (position cap)', () => {
     const nowMs = Date.now();
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
@@ -179,8 +140,8 @@ describe('forecastBrevisDetailed', () => {
     });
     const result = forecastBrevisDetailed(brevis, 100_000, nowMs);
     expect(result.isCapBinding).toBe(true);
-    expect(result.aprPercent).toBeCloseTo(5, 0);
-    expect(result.rewardHeadroomUsd).toBe(5000);
+    expect(result.aprPercent).toBeCloseTo(0.5, 1);
+    expect(result.eligibleUsd).toBe(5000);
     expect(result.daysToHitCap).toBeCloseTo(182.5, 0);
     expect(result.remainingDays).toBeCloseTo(365, 0);
   });
@@ -194,7 +155,7 @@ describe('forecastBrevisDetailed', () => {
     const result = forecastBrevisDetailed(brevis, 1000, nowMs);
     expect(result.isCapBinding).toBe(false);
     expect(result.aprPercent).toBeCloseTo(10, 0);
-    expect(result.rewardHeadroomUsd).toBe(5000);
+    expect(result.eligibleUsd).toBe(1000);
     expect(result.remainingDays).toBeCloseTo(365, 0);
   });
 
@@ -213,7 +174,7 @@ describe('forecastBrevisDetailed', () => {
     expect(result.aprPercent).toBe(10);
     expect(result.isCapBinding).toBe(false);
     expect(result.daysToHitCap).toBeNull();
-    expect(result.rewardHeadroomUsd).toBe(5000);
+    expect(result.eligibleUsd).toBe(5000);
     expect(result.remainingDays).toBeGreaterThan(0);
   });
 
@@ -224,8 +185,19 @@ describe('forecastBrevisDetailed', () => {
     });
     const result = forecastBrevisDetailed(brevis, 100_000);
     expect(result.remainingDays).toBeNull();
-    expect(result.aprPercent).toBe(10);
-    expect(result.isCapBinding).toBe(false);
+    expect(result.aprPercent).toBeCloseTo(0.5, 1);
+    expect(result.isCapBinding).toBe(true);
     expect(result.daysToHitCap).toBeCloseTo(182.5, 0);
+  });
+
+  it('position cap binds even when endDate is past', () => {
+    const brevis = makeBrevis({
+      perUserRewardCapUsd: 5000,
+      campaignEndedAt: new Date(daysFromNowMs(-1)).toISOString(),
+    });
+    const result = forecastBrevisDetailed(brevis, 100_000);
+    expect(result.isCapBinding).toBe(true);
+    expect(result.aprPercent).toBeCloseTo(0.5, 1);
+    expect(result.eligibleUsd).toBe(5000);
   });
 });
