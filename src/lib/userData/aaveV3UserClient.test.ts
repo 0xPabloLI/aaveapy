@@ -28,8 +28,8 @@ describe('V3_POOL_ADDRESSES', () => {
     }
   })
 
-  it('has exactly 18 entries', () => {
-    expect(Object.keys(V3_POOL_ADDRESSES)).toHaveLength(18)
+  it('has exactly 20 entries', () => {
+    expect(Object.keys(V3_POOL_ADDRESSES)).toHaveLength(20)
   })
 })
 

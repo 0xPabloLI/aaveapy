@@ -5,7 +5,7 @@ import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 
 export const useTokenCategories = () => {
   const cachedEntry = getCachedTokenCategoriesEntry<TokenCategoryOverrides>();
-  const query = useSideDataMeta(QUERY_STALE_TIMES.tokenCategories, 1);
+  const query = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta, 1);
 
   return {
     ...query,

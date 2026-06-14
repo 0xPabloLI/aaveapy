@@ -29,7 +29,7 @@ describe('computeGapChainIds', () => {
   })
 
   it('detects V3 gap: chain in reserves but not in SDK V3 coverage', () => {
-    const gapChain = 4326
+    const gapChain = 99999
     const reserves = [...AAVE_V3_CHAIN_IDS.map(v3Entry), v3Entry(gapChain)]
     const result = computeGapChainIds(reserves, fullSdkCoverage())
     expect(result.v3Gap).toContain(gapChain)
@@ -37,7 +37,7 @@ describe('computeGapChainIds', () => {
   })
 
   it('detects V4 gap: chain in reserves but not in SDK V4 coverage', () => {
-    const gapChain = 9745
+    const gapChain = 88888
     const reserves = [...AAVE_V4_CHAIN_IDS.map(v4Entry), v4Entry(gapChain)]
     const result = computeGapChainIds(reserves, fullSdkCoverage())
     expect(result.v4Gap).toContain(gapChain)
@@ -45,8 +45,8 @@ describe('computeGapChainIds', () => {
   })
 
   it('returns both V3 and V4 gaps when applicable', () => {
-    const v3GapChain = 4326
-    const v4GapChain = 9745
+    const v3GapChain = 99999
+    const v4GapChain = 88888
     const reserves = [
       ...AAVE_V3_CHAIN_IDS.map(v3Entry),
       ...AAVE_V4_CHAIN_IDS.map(v4Entry),

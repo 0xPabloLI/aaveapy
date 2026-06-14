@@ -49,3 +49,6 @@ jobs:
 
       - name: Check pool address drift against aave-address-book
         run: npm run check:pool-addresses-upstream
+
+      - name: Check chain registry drift against aave-address-book
+        run: npm run check:chain-registry-upstream

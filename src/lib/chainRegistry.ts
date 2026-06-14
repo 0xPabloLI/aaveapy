@@ -27,6 +27,8 @@ import {
   avalanche,
   scroll,
   ink,
+  megaeth,
+  plasma,
 } from 'wagmi/chains'
 import {
   AaveV3Ethereum,
@@ -47,9 +49,11 @@ import {
   AaveV3Arbitrum,
   AaveV3Avalanche,
   AaveV3Scroll,
+  AaveV3MegaEth,
+  AaveV3Plasma,
   AaveV4Ethereum,
 } from '@aave-dao/aave-address-book'
-import { setRegistryChecker, setStaticRpcUrlGetter } from './userData/chainDiscovery'
+import { setRegistryChecker, setStaticRpcUrlGetter, setWagmiChainRpcUrlGetter } from './userData/chainDiscovery'
 
 interface AbModule {
   CHAIN_ID: number
@@ -92,6 +96,8 @@ const ENTRIES: readonly ChainEntry[] = [
   { abModule: AaveV3Arbitrum, wagmiChain: arbitrum, publicRpcUrls: ['https://arb1.arbitrum.io/rpc', 'https://1rpc.io/arb', 'https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com'] },
   { abModule: AaveV3Avalanche, wagmiChain: avalanche, publicRpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche.drpc.org', 'https://1rpc.io/avax/c', 'https://avalanche-c-chain-rpc.publicnode.com'] },
   { abModule: AaveV3Scroll, wagmiChain: scroll, publicRpcUrls: ['https://rpc.scroll.io', 'https://scroll-rpc.publicnode.com', 'https://scroll.drpc.org', 'https://1rpc.io/scroll'] },
+  { abModule: AaveV3MegaEth, wagmiChain: megaeth, publicRpcUrls: ['https://mainnet.megaeth.com/rpc', 'https://megaeth.drpc.org'] },
+  { abModule: AaveV3Plasma, wagmiChain: plasma, publicRpcUrls: ['https://rpc.plasma.to', 'https://plasma.drpc.org', 'https://plasma.api.onfinality.io/public'] },
   { abModule: AaveV4Ethereum, wagmiChain: mainnet, publicRpcUrls: [] },
 ] as const
 
@@ -160,3 +166,10 @@ export const WALLET_SUPPORTED_CHAINS = ENTRIES
 const registryChainSetForDiscovery = new Set<number>(AAVE_CHAIN_IDS)
 setRegistryChecker((chainId: number) => registryChainSetForDiscovery.has(chainId))
 setStaticRpcUrlGetter((chainId: number) => PUBLIC_RPC_URLS[chainId] ?? [])
+setWagmiChainRpcUrlGetter((chainId: number) => {
+  const chain = WALLET_SUPPORTED_CHAINS.find((c) => c.id === chainId)
+  if (!chain) return []
+  const httpUrls = (chain as { rpcUrls?: { default?: { http?: readonly string[] } } }).rpcUrls?.default?.http
+  if (!httpUrls) return []
+  return [...httpUrls]
+})

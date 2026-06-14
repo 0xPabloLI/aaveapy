@@ -15,6 +15,11 @@ import {
 } from './aaveV4UserClient'
 import { createPublicClient } from 'viem'
 import { createClientWithRpcRotation } from './rpcResilience'
+import { getAllRpcUrls } from './chainDiscovery'
+
+vi.mock('./chainDiscovery', () => ({
+  getAllRpcUrls: vi.fn().mockReturnValue([]),
+}))
 
 describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
   it('V4_SPOKE_ADDRESSES has only chain ID 1 (Ethereum mainnet)', () => {
@@ -320,11 +325,13 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
 describe('createClientWithRpcRotation', () => {
   it('returns null for chain with no RPC URLs', async () => {
+    vi.mocked(getAllRpcUrls).mockReturnValue([])
     const result = await createClientWithRpcRotation(999991)
     expect(result).toBeNull()
   })
 
   it('returns a client for a known chain', async () => {
+    vi.mocked(getAllRpcUrls).mockReturnValue(['https://eth.drpc.org'])
     const result = await createClientWithRpcRotation(1)
     expect(result).not.toBeNull()
   })
