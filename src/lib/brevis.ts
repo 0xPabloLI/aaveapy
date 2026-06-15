@@ -1,5 +1,6 @@
-import type { BrevisIncentive } from '@/types/aave';
+import type { BrevisIncentive, MerklCampaignBreakdown, MerklForecastWireItem } from '@/types/aave';
 import { isCampaignActive } from '@/lib/campaignGroups';
+import { mergeForecastState, forecastWithTVL, sanitizePercent } from '@/lib/merklForecast';
 
 type BrevisBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
 
@@ -10,10 +11,11 @@ export type BrevisResolvedBreakdown = {
   campaignApr: number;
   campaignStartedAt?: string;
   campaignEndedAt?: string;
+  campaignType?: string;
+  aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
-  distributedSoFarUsd?: number;
   campaignId?: string;
 };
 
@@ -39,11 +41,12 @@ const makeSingleBreakdown = (brevis: BrevisIncentive): BrevisCampaignBreakdown =
   campaignApr: brevis.campaignApr ?? 0,
   campaignStartedAt: brevis.campaignStartedAt ?? '',
   campaignEndedAt: brevis.campaignEndedAt ?? '',
+  campaignType: brevis.campaignType,
+  aprCap: brevis.aprCap,
   latestTvl: brevis.latestTvl,
   totalBudget: brevis.totalBudget,
   perUserRewardCapUsd: brevis.perUserRewardCapUsd,
-  distributedSoFarUsd: brevis.distributedSoFarUsd,
-  campaignId: brevis.campaignId,
+  campaignId: brevis.campaignId ?? '',
 });
 
 type BrevisCampaignBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
@@ -75,9 +78,6 @@ export const getBrevisTotalBudget = (brevis: BrevisIncentive): number | undefine
 export const getBrevisPerUserRewardCapUsd = (brevis: BrevisIncentive): number | undefined =>
   brevis.perUserRewardCapUsd;
 
-export const getBrevisDistributedSoFarUsd = (brevis: BrevisIncentive): number | undefined =>
-  brevis.distributedSoFarUsd;
-
 export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined =>
   brevis.campaignId;
 
@@ -94,10 +94,11 @@ export const getBrevisResolvedBreakdown = (
   campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
   campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt),
   campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt),
+  campaignType: firstNonEmptyString(breakdown?.campaignType, brevis.campaignType),
+  aprCap: breakdown?.aprCap ?? brevis.aprCap,
   latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
   totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
   perUserRewardCapUsd: firstFiniteNumber(breakdown?.perUserRewardCapUsd, brevis.perUserRewardCapUsd),
-  distributedSoFarUsd: firstFiniteNumber(breakdown?.distributedSoFarUsd, brevis.distributedSoFarUsd),
   campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
 });
 
@@ -124,4 +125,42 @@ export const getFirstActiveBrevisLink = (
     }
   }
   return null;
+};
+
+const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+
+export const resolveBrevisForecastApr = (
+  resolved: BrevisResolvedBreakdown,
+  forecastStates: Record<string, MerklForecastWireItem> | undefined,
+  inputUsd: number,
+): number => {
+  const nominal = sanitizePercent(resolved.campaignApr);
+  const campaignId = resolved.campaignId;
+  const campaignType = resolved.campaignType;
+  if (!campaignId || !campaignType) return nominal;
+
+  const effectiveAprCap = campaignType === BREVIS_FIX_TYPE
+    ? (resolved.aprCap ?? resolved.campaignApr)
+    : resolved.aprCap;
+
+  if (campaignType !== BREVIS_FIX_TYPE && effectiveAprCap == null) return nominal;
+
+  const merged = mergeForecastState(
+    {
+      ...resolved,
+      campaignId,
+      campaignType,
+      aprCap: effectiveAprCap,
+      campaignStartedAt: resolved.campaignStartedAt ?? '',
+      campaignEndedAt: resolved.campaignEndedAt ?? '',
+    } as MerklCampaignBreakdown,
+    forecastStates ?? {},
+    0,
+  );
+  if (!merged || merged.latestTvl === undefined) return nominal;
+
+  const tvl = Math.max(merged.latestTvl + inputUsd, 0);
+  if (tvl <= 0) return nominal;
+  const forecastApr = sanitizePercent(forecastWithTVL(merged, tvl).apr * 100);
+  return forecastApr;
 };

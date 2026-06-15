@@ -52,10 +52,12 @@ export interface MerklCampaignBreakdown extends BaseCampaignBreakdown {
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;
 
 export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
+  campaignId: string;
+  campaignType?: string;
+  aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
-  distributedSoFarUsd?: number;
 }
 
 export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {
@@ -64,10 +66,11 @@ export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakd
   campaignApr?: number;
   campaignStartedAt?: string;
   campaignEndedAt?: string;
+  campaignType?: string;
+  aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
   perUserRewardCapUsd?: number;
-  distributedSoFarUsd?: number;
   campaignId?: string;
 }
 

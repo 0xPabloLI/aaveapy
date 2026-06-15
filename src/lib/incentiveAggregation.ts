@@ -8,6 +8,7 @@ import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campai
 import {
   getBrevisCampaignBreakdowns,
   getBrevisResolvedBreakdown,
+  resolveBrevisForecastApr,
 } from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
@@ -96,27 +97,29 @@ const sumMerklOpportunitiesApy = (
   });
 };
 
-const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
+const sumBrevisIncentives = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
     getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
-      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
+      const resolved = getBrevisResolvedBreakdown(group, breakdown);
+      const apr = resolveBrevisForecastApr(resolved, forecastStates, 0);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
   });
 };
 
-const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
+const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
     getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
-      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
+      const resolved = getBrevisResolvedBreakdown(group, breakdown);
+      const apr = resolveBrevisForecastApr(resolved, forecastStates, 0);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
   });
@@ -133,7 +136,7 @@ export const calculateTotalIncentiveApr = (
   const meritApr = sumMeritIncentives(meritIncentives);
   const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate, options);
   const protocolApr = sumNumberArray(protocolIncentives);
-  const brevisAprValue = sumBrevisIncentives(brevisIncentives);
+  const brevisAprValue = sumBrevisIncentives(brevisIncentives, options.forecastStates);
 
   return meritApr + merklApr + protocolApr + brevisAprValue;
 };
@@ -158,7 +161,7 @@ export const calculateTotalIncentiveApy = (
     });
   }
 
-  const brevisApy = sumBrevisIncentivesApy(brevisIncentives);
+  const brevisApy = sumBrevisIncentivesApy(brevisIncentives, options.forecastStates);
 
   return meritApy + merklApy + protocolApy + brevisApy;
 };
