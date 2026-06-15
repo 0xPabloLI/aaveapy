@@ -1,6 +1,5 @@
-import type { BrevisIncentive, MerklCampaignBreakdown, MerklForecastWireItem } from '@/types/aave';
+import type { BrevisIncentive, MerklCampaignBreakdown } from '@/types/aave';
 import { isCampaignActive } from '@/lib/campaignGroups';
-import { mergeForecastState, forecastWithTVL, sanitizePercent } from '@/lib/merklForecast';
 
 type BrevisBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
 
@@ -9,8 +8,8 @@ export type BrevisResolvedBreakdown = {
   message?: string;
   link: string;
   campaignApr: number;
-  campaignStartedAt?: string;
-  campaignEndedAt?: string;
+  campaignStartedAt: string;
+  campaignEndedAt: string;
   campaignType?: string;
   aprCap?: number | null;
   latestTvl?: number;
@@ -92,8 +91,8 @@ export const getBrevisResolvedBreakdown = (
   message: getBrevisCampaignMessage(brevis),
   link: brevis.link,
   campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
-  campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt),
-  campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt),
+  campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt) ?? '',
+  campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt) ?? '',
   campaignType: firstNonEmptyString(breakdown?.campaignType, brevis.campaignType),
   aprCap: breakdown?.aprCap ?? brevis.aprCap,
   latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
@@ -129,38 +128,15 @@ export const getFirstActiveBrevisLink = (
 
 const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
 
-export const resolveBrevisForecastApr = (
-  resolved: BrevisResolvedBreakdown,
-  forecastStates: Record<string, MerklForecastWireItem> | undefined,
-  inputUsd: number,
-): number => {
-  const nominal = sanitizePercent(resolved.campaignApr);
-  const campaignId = resolved.campaignId;
-  const campaignType = resolved.campaignType;
-  if (!campaignId || !campaignType) return nominal;
-
-  const effectiveAprCap = campaignType === BREVIS_FIX_TYPE
+export const toMerklBreakdown = (resolved: BrevisResolvedBreakdown): MerklCampaignBreakdown => ({
+  campaignApr: resolved.campaignApr,
+  campaignStartedAt: resolved.campaignStartedAt,
+  campaignEndedAt: resolved.campaignEndedAt,
+  campaignId: resolved.campaignId ?? '',
+  campaignType: resolved.campaignType,
+  aprCap: resolved.campaignType === BREVIS_FIX_TYPE
     ? (resolved.aprCap ?? resolved.campaignApr)
-    : resolved.aprCap;
-
-  if (campaignType !== BREVIS_FIX_TYPE && effectiveAprCap == null) return nominal;
-
-  const merged = mergeForecastState(
-    {
-      ...resolved,
-      campaignId,
-      campaignType,
-      aprCap: effectiveAprCap,
-      campaignStartedAt: resolved.campaignStartedAt ?? '',
-      campaignEndedAt: resolved.campaignEndedAt ?? '',
-    } as MerklCampaignBreakdown,
-    forecastStates ?? {},
-    0,
-  );
-  if (!merged || merged.latestTvl === undefined) return nominal;
-
-  const tvl = Math.max(merged.latestTvl + inputUsd, 0);
-  if (tvl <= 0) return nominal;
-  const forecastApr = sanitizePercent(forecastWithTVL(merged, tvl).apr * 100);
-  return forecastApr;
-};
+    : resolved.aprCap,
+  latestTvl: resolved.latestTvl,
+  totalBudget: resolved.totalBudget,
+});

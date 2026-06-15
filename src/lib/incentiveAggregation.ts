@@ -8,7 +8,7 @@ import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campai
 import {
   getBrevisCampaignBreakdowns,
   getBrevisResolvedBreakdown,
-  resolveBrevisForecastApr,
+  toMerklBreakdown,
 } from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
@@ -105,7 +105,10 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[], forecastStates?: Record
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
       const resolved = getBrevisResolvedBreakdown(group, breakdown);
-      const apr = resolveBrevisForecastApr(resolved, forecastStates, 0);
+      const merkl = toMerklBreakdown(resolved);
+      const apr = forecastStates
+        ? sanitizePercent(forecastBreakdownApr(merkl, 0, forecastStates, 0))
+        : sanitizePercent(resolved.campaignApr);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
   });
@@ -119,7 +122,10 @@ const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[], forecastStates?: Rec
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
       const resolved = getBrevisResolvedBreakdown(group, breakdown);
-      const apr = resolveBrevisForecastApr(resolved, forecastStates, 0);
+      const merkl = toMerklBreakdown(resolved);
+      const apr = forecastStates
+        ? sanitizePercent(forecastBreakdownApr(merkl, 0, forecastStates, 0))
+        : sanitizePercent(resolved.campaignApr);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
   });
