@@ -36,7 +36,7 @@ src/
 │   ├── apiBase.ts
 │   ├── cache.ts                   # 版本化 localStorage 缓存
 │   ├── interestRateCalculator.ts  # Aave 两斜率利率模型
-│   ├── merklForecast.ts / meritForecast.ts / brevisForecast.ts
+│   ├── merklForecast.ts / meritForecast.ts
 │   ├── scenarioSize.ts / formatters.ts / sorters.ts
 │   └── portfolioCalculator.ts
 ├── types/            # TypeScript 类型
@@ -160,9 +160,8 @@ src/shared/market-contract/schemas.ts   ← 权威 Zod schema（单一真相源�
 ```
 useRateSimulation
     ├── interestRateCalculator.ts    # Aave 两斜率模型（V3/V4 统一）
-    ├── merklForecast.ts            # MAX/FIX/DUTCH forecast
+    ├── merklForecast.ts            # MAX/FIX/DUTCH forecast (Merkl + Brevis unified)
     ├── meritForecast.ts            # Merit self-cap forecast
-    ├── brevisForecast.ts           # Brevis position cap forecast
     ├── incentiveCaps.ts              # cap 效应模型
     ├── hubAggregation.ts           # V4 Hub 跨 spoke 聚合
     ├── scenarioSize.ts             # USD 换算

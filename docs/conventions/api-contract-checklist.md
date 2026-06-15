@@ -74,7 +74,7 @@ grep -rn 'payload\.reserves\|\.reserves\b' src/ scripts/ --include='*.ts' --incl
 | Incentives | `reserves[].supplyIncentives[]`、`borrowIncentives[]` |
 | Merit | `reserves[].meritSupplys[]`、`meritBorrows[]` 中的 `apr`、`selfApr`（若有） |
 | Merkl | `reserves[].merkl*[]`（各 Merkl 数组）中 `breakdowns[]` 的 `campaignApr`、`aprCap`（若有；`null` 仍为 `null`） |
-| Brevis | `reserves[].brevisSupplys`、`brevisBorrows` 中的 `campaignApr` |
+| Brevis | `reserves[].brevisSupplys`、`brevisBorrows` 中的 `campaignApr`、`campaignType`（=FIX）、`aprCap`（=campaignApr） |
 
 **前端自检**
 

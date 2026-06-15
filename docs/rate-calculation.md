@@ -311,6 +311,76 @@ hypotheticalTvl = max(0, latestTvl + inputUsd)
 | `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` | Capped by APR, then catch-up via required daily emission | Yes | `plannedDaily` | `dailyRewards`, `apr`, `regime` |
 | `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` | Fixed APR budget path | No | N/A | `dailyRewards`, `apr`, `regime`, `fixRewardableDays`, `fixRewardableUntilTs` |
 
+### FIX Mode Variables by Distribution Variant
+
+FIX 模式的完整变量链，按 `distributionType` 区分单位。
+
+#### 变量来源表
+
+| 变量 | 来源 | VALUE (USD) | AMOUNT_PER_VALUE | AMOUNT_PER_AMOUNT |
+|---|---|---|---|---|
+| `campaign.amount` | Merkl API | raw tokens (有 price) | raw tokens (无 price) | raw tokens (无 price) |
+| `totalBudget` | Backend | USD (amount × price) | reward tokens | reward tokens |
+| `distributedSoFar` | Backend (metrics 累加) | USD | reward tokens (`totalInToken`) | reward tokens (`totalInToken`) |
+| `aprCap` | Backend (`distributionSettings.apr`) | decimal (USD/USD/yr) | tokens/USD/yr | tokens/token/yr |
+| `latestTvl` | Backend (metrics) | USD | USD | **无** (API 返回 0) |
+| `plannedDaily` | Backend = `totalBudget / totalDays` | USD/day | tokens/day | tokens/day |
+| `requiredDaily` | Backend = `remainingBudget / remainingDays` | USD/day | tokens/day | tokens/day |
+| `remainingBudget` | Frontend = `totalBudget - distributedSoFar` | USD | tokens | tokens |
+| `aprBasedDaily` | Frontend = `tvl × aprCap / 365` | USD/day | tokens/day ✅ | **无法计算** (tvl=0) |
+| `dailyRewards` | Frontend = `min(aprBasedDaily, remainingBudget)` | USD/day | tokens/day | **0** |
+| `apr` | Frontend = `dailyRewards × 365 / tvl` | 百分比 | tokens/USD/yr | **0** |
+| `fixRewardableDays` | Frontend = `remainingBudget / aprBasedDaily` | days | days | **∞** (aprBasedDaily=0) |
+
+#### 单位一致性验证
+
+**AMOUNT_PER_VALUE**:
+- `aprCap = 18.25 tokens/USD/yr`
+- `tvl = USD`
+- `aprBasedDaily = tvl(USD) × 18.25 / 365 = tokens/day` ✓
+- `dailyRewards = min(tokens/day, tokens) = tokens/day` ✓
+- `apr = tokens/day × 365 / tvl(USD) = tokens/USD/yr` ✓
+- **结论**：单位链自洽，但 `apr` 不是百分比 USD APR
+
+**AMOUNT_PER_AMOUNT**:
+- `aprCap = 3650 tokens/token/yr`
+- `tvl = 0` (API 无数据)
+- `aprBasedDaily = 0 × 3650 / 365 = 0`
+- `dailyRewards = 0`
+- `apr = 0`
+- **结论**：forecast 完全不可用
+
+#### API vs Frontend 计算
+
+| 变量 | 谁计算 | 公式 |
+|---|---|---|
+| `totalBudget` | Backend | `campaign.amount / 10^decimals × (price ?? 1)` |
+| `distributedSoFar` | Backend | `sum(metrics.dailyRewardsRecords[].totalInToken)` for AMOUNT |
+| `aprCap` | Backend | `distributionSettings.apr` (decimal) |
+| `latestTvl` | Backend | `metrics.tvlRecords[].total` (VALUE) / `.totalInToken` (AMOUNT) |
+| `plannedDaily` | Backend | `totalBudget / ((endTs - startTs) / 86400)` |
+| `requiredDaily` | Backend | `(totalBudget - distributedSoFar) / remainingDays` |
+| `remainingBudget` | Frontend | `totalBudget - distributedSoFar` |
+| `aprBasedDaily` | Frontend | `tvl × aprCap / 365` |
+| `dailyRewards` | Frontend | `min(aprBasedDaily, remainingBudget)` |
+| `apr` | Frontend | `dailyRewards × 365 / tvl` |
+| `fixRewardableDays` | Frontend | `remainingBudget / aprBasedDaily` |
+| `fixRewardableUntilTs` | Frontend | `min(endTs, nowTs + fixRewardableDays × 86400)` |
+
+#### AMOUNT 变体的 USD APR 问题
+
+**AMOUNT 变体没有 USD APR 概念**（`rewardToken.price = null`）。当前代码路径：
+1. Backend `campaignApr = distributionSettings.apr`（token 利率）
+2. Frontend 显示为"百分比 APR"（错误）
+
+**正确处理**：
+1. Backend 尝试获取 `rewardToken.price`（已有 → 用；无 → CoinGecko）
+2. 若无 price → `campaignApr = 0` + `campaignAprUnavailable = true`
+3. 若有 price：
+   - AMOUNT_PER_VALUE: `usdApr = tokenApr × price`
+   - AMOUNT_PER_AMOUNT: `usdApr = tokenApr × rewardPrice / targetPrice`（需两个价格）
+4. Frontend 检查 `campaignAprUnavailable` → em dash + tooltip
+
 Current source wiring:
 
 - `src/hooks/useRateSimulation.ts` and `src/components/dashboard/MerklForecastPanel.tsx` both merge `requiredDaily` from `/meta/side-data` into the forecast state.
@@ -599,7 +669,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts`, `brevisForecast.ts` |
+| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts`, `rateSimulationCalculator.ts` |
 
 ### Brevis position cap
 
@@ -630,10 +700,9 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
-- `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
+- `src/lib/merklForecast.ts` – Merkl + Brevis unified `forecastWithTVL` and progress flags
 - `src/lib/meritForecast.ts` – Merit forecast (base + self position cap)
 - `src/lib/incentiveCaps.ts` – Domain-layer cap effects → simulation `capNote` / `capWarning`
-- `src/lib/brevisForecast.ts` – Brevis position cap forecast
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
 - `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
 - `src/lib/portfolioSimulator.ts` – Portfolio mode: groups positions by reserve, calls buildRateSimulationResult per group with supply+borrow USD, Hub aggregation, fallback to static APY

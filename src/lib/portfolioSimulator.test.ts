@@ -817,7 +817,7 @@ describe('simulatePortfolioFromEntries', () => {
       expect(supplyResult.incentivePercent).toBeGreaterThan(0);
     });
 
-    it('wallet-only with self-cap Merit: incentiveMetric.delta is null when hasInput=false (AAV-761 fix)', () => {
+    it('wallet-only with self-cap Merit: incentiveMetric.delta shows wallet dilution (AAV-771)', () => {
       const reserveId = 'r-selfcap';
       const now = new Date();
       const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
@@ -861,9 +861,10 @@ describe('simulatePortfolioFromEntries', () => {
       const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
       expect(supplyResult).toBeDefined();
 
-      // No dilution when hasInput=false: delta should be null (AAV-761 fix)
+      // Wallet dilution: deltaIncentive = currentIncentive - headlineIncentive < 0
       expect(supplyResult.incentiveMetric).toBeDefined();
-      expect(supplyResult.incentiveMetric!.delta).toBeNull();
+      expect(supplyResult.incentiveMetric!.delta).not.toBeNull();
+      expect(supplyResult.incentiveMetric!.delta!).toBeLessThan(0);
     });
   });
 });
