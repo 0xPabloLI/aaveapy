@@ -47,7 +47,7 @@ APY 汇总 / IncentiveTooltip 渲染 / 模拟面板 → 只展示活跃的
 
 | 文件 | 作用 |
 |------|------|
-| `formatters.ts` — `sumMeritIncentives` / `sumMerklOpportunities` / `sumBrevisIncentives` | 过期不计入 Composite APY |
+| `formatters.ts` — `sumMeritIncentiveApr` / `sumMerklIncentiveApr` / `sumBrevisIncentiveApr` | 过期不计入 Composite APY |
 | `IncentiveTooltip.tsx` — `renderSourceCampaigns` Merit / Brevis 分支 | 过期不渲染 |
 | `useRateSimulation.ts` — Merit 过滤 + `simulationCampaignDetails` 过滤 | 过期不参与模拟 |
 | `merklCampaigns.ts` — `collectMerklCampaignOptions` | 过期不收集到选项列表 |

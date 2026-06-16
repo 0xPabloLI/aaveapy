@@ -98,19 +98,19 @@ _Avoid_: Blocklist
 
 ## Limits
 
-**Eligible Deposit Cap**:
-Per-user 存款中可获 incentive 的金额上限。只有前 `eligibleDepositCapUsd` 部分的存款能获得 incentive，超出部分仍可存入但不获 incentive。
-提取层字段名 `selfEligibleDepositCapUsd`（从 Merit Self Auth message 解析），域名 `eligibleDepositCapUsd`。
+**Eligible Deposit Cap (Merit Self Position Cap)**:
+Per-user 存款中可获 incentive 的金额上限。只有前 `selfPositionCapUsd` 部分的存款能获得 incentive，超出部分仍可存入但不获 incentive。
+提取层字段名 `selfPositionCapUsd`（从 Merit Self Auth message 解析，提取函数 `extractMeritSelfPositionCapUsd`）。缩放逻辑与 Brevis Position Cap 统一，共享 `applyPositionCap` 纯函数。
 UI 显示 `"Incentive on first $X"`。
-_Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfEligibleDepositCapUsd`）
+_Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfPositionCapUsd`）
 
 **Position Cap (Brevis)**:
 Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单个用户能获得 incentive 的最大仓位金额（API 字段 `positionCap`，domain 层 `positionCapUsd`）。
-UI 显示 `"Incentive on first $X"`（与 Merit Eligible Deposit Cap 统一文案）。可能 shared（supply + borrow 共享）。
+UI 显示 `"Incentive on first $X"`（与 Merit Self Position Cap 统一文案）。可能 shared（supply + borrow 共享）。
 _Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `positionCap`）
 
 **Supply Cap / Borrow Cap**:
-Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Eligible Deposit Cap / Position Cap）是不同概念。
+Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Merit Self Position Cap / Brevis Position Cap）是不同概念。
 _Avoid_: Supply Ceiling, Borrow Ceiling
 
 **Portfolio Cap Warning**:

@@ -7,7 +7,7 @@ This note records a **one-off empirical comparison** between two ways to fix **d
 
 ## How the app chooses (production code)
 
-`forecastMeritCampaign` in `meritForecast.ts` resolves Merit **Base** in this order:
+`forecastMeritApr` in `meritForecast.ts` resolves Merit **Base** in this order:
 
 1. **`reserve_tvl`** — If `anchorTvlUsd` is finite and `> 0`, daily reward is  
    `anchorTvlUsd × (Base APR % / 100) / 365`, and hypothetical TVL is `anchorTvlUsd + scenarioDepositUsd` (daily reward held flat → APR dilutes).

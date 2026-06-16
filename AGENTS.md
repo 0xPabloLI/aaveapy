@@ -29,7 +29,7 @@
 - 2-space indentation; `PascalCase` for components/types, `camelCase` for vars/functions.
 - Keep backend API field names unchanged in transport layer (e.g. `positionCap`).
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
-- For new domain naming, prefer *cap* semantics (`eligibleDepositCapUsd`, `rewardCapUsd`) and existing helpers.
+- For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
 
 ## Validation Gate (修改后必跑 — 强制)

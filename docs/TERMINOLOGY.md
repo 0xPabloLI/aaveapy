@@ -132,8 +132,8 @@ src/hooks/useRateSimulation.ts
 | Cap Type | Scope | Mechanism | Source |
 |----------|-------|-----------|--------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Eligible deposit cap | Per-user | `eligibleDeposit = min(deposit, selfEligibleDepositCapUsd)` | `meritForecast.ts` |
-| Position cap (Brevis) | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，API 字段 `positionCap` | `rateSimulationCalculator.ts` |
+| Eligible deposit cap (Merit self) | Per-user | `eligibleUsd = min(positionUsd, selfPositionCapUsd)`，共享 `applyPositionCap` | `meritForecast.ts` |
+| Position cap (Brevis) | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，API 字段 `positionCap`，共享 `applyPositionCap` | `rateSimulationCalculator.ts` |
 
 ### Tydro Points
 

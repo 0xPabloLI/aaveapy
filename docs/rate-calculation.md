@@ -649,7 +649,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Source | Domain meaning | Notes |
 |--------|----------------|-------|
 | Brevis `positionCap` | Position cap | Keep API name; domain uses `positionCapUsd` |
-| Merit `selfEligibleDepositCapUsd` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive |
+| Merit `selfPositionCapUsd` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive |
 | Simulation UI | Same diagnostics | Keep `cap*` props stable |
 
 ### Unified simulation `capNote` strings
@@ -970,9 +970,9 @@ Source: `src/lib/rateSimulationCalculator.ts`, `src/lib/portfolioSimulator.ts`.
 
 JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 
-### 7.5 Brevis Cap ≠ Merit Deposit Ceiling
+### 7.5 Brevis Position Cap vs Merit Self Position Cap
 
-**Brevis `positionCap`** limits cumulative USD reward total, not position size. **Merit `selfCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
+**Brevis `positionCap`** limits cumulative USD reward total, not position size. **Merit `selfPositionCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
 
 ### 7.6 Wallet-Only Incentive Delta
 

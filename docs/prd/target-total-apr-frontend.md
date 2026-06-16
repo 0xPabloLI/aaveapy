@@ -70,11 +70,11 @@ effectiveAprCap = convertApyToApr(effectiveApyPercent) / 100  // APY percent →
 
 **为什么不在 mergeForecastState 统一转换**：`aprCap` 的 ÷100 是通用转换（所有类型都做），`nativeApyPercent` 的转换是 TARGET_TOTAL_APR 特有的（需要 APR↔APY 复利转换，不是简单的 ÷100）。两者语义不同，分开处理更清晰。
 
-### D3: forecastBreakdownApr 新增可选 nativeApyPercent 参数
+### D3: forecastMerklApr 新增可选 nativeApyPercent 参数
 
-B 类路径（inputUsd>0）**经过** `forecastBreakdownApr`（经 `buildMerklCampaignDetails` 调用），而非独立调 `mergeForecastState + forecastWithTVL`。
+B 类路径（inputUsd>0）**经过** `forecastMerklApr`（经 `buildMerklCampaignDetails` 调用），而非独立调 `mergeForecastState + forecastWithTVL`。
 
-`forecastBreakdownApr` 新增可选参数 `nativeApyPercent?: number`，透传给 `mergeForecastState`，再透传到 `MerklForecastState`，最终由 `forecastWithTVL` 内部 TARGET_TOTAL_APR 分支使用。可选参数向后兼容，MAX/FIX/DUTCH 不传此参数，零影响。
+`forecastMerklApr` 新增可选参数 `nativeApyPercent?: number`，透传给 `mergeForecastState`，再透传到 `MerklForecastState`，最终由 `forecastWithTVL` 内部 TARGET_TOTAL_APR 分支使用。可选参数向后兼容，MAX/FIX/DUTCH 不传此参数，零影响。
 
 A 类路径（inputUsd=0）天然正确：
 - `campaignApr > 0` → 直接返回（后端已算好实付 APR）
@@ -106,7 +106,7 @@ if (campaignType === 'TARGET_TOTAL_APR') {
 
 ```
 buildMerklCampaignDetails(nativeApyPercent)
-  → forecastBreakdownApr(nativeApyPercent)
+  → forecastMerklApr(nativeApyPercent)
     → mergeForecastState(nativeApyPercent)
       → MerklForecastState.nativeApyPercent
         → forecastWithTVL 读取
@@ -142,10 +142,10 @@ Target 4.7% = Native 3% + Merkl 1.7%
 - `reserve.supplyApy` / `reserve.borrowApy`（nativeAPY）— 来自 reserve
 - `campaignApr`（Merkl 实付 APR）— 来自 breakdown
 
-### D10: forecastBreakdownApr 对 TARGET_TOTAL_APR + campaignApr=0 的处理
+### D10: forecastMerklApr 对 TARGET_TOTAL_APR + campaignApr=0 的处理
 
 ```typescript
-// 在 getMerklBreakdownApr 返回 0 后，forecastBreakdownApr 的 headline 分支
+// 在 getMerklBreakdownApr 返回 0 后，forecastMerklApr 的 headline 分支
 // 当前逻辑：currentApr === 0 → 走 forecastWithTVL fallback
 // TARGET_TOTAL_APR 修正：campaignApr=0 意味着确实无 incentive，不应走 fallback
 // 性能优化：短路返回 0，避免不必要的 forecastWithTVL 计算
@@ -162,7 +162,7 @@ if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
 
 | 文件 | 改动 | 风险 |
 |---|---|---|
-| `src/lib/merklForecast.ts` | `MerklForecastState` 新增 `nativeApyPercent` + `budgetBoundMode`；`mergeForecastState` 新增 `nativeApyPercent` 可选参数透传；`forecastWithTVL` 新增 TARGET_TOTAL_APR 路径；`forecastBreakdownApr` 新增 `nativeApyPercent` 可选参数透传 + 处理 campaignApr=0 | 高 |
+| `src/lib/merklForecast.ts` | `MerklForecastState` 新增 `nativeApyPercent` + `budgetBoundMode`；`mergeForecastState` 新增 `nativeApyPercent` 可选参数透传；`forecastWithTVL` 新增 TARGET_TOTAL_APR 路径；`forecastMerklApr` 新增 `nativeApyPercent` 可选参数透传 + 处理 campaignApr=0 | 高 |
 | `src/lib/rateSimulationCalculator.ts` | `buildMerklCampaignDetails` 新增 `nativeApyPercent` 参数；`FORECAST_REQUIRING_CAMPAIGN_TYPES` 加入 TARGET_TOTAL_APR；cap note 条件扩展 | 高 |
 | `src/types/aave.ts` | `MerklCampaignBreakdown` 新增 `budgetBoundMode?: string` | 低 |
 | `src/shared/market-contract/schemas.ts` | Zod schema 新增 `budgetBoundMode: z.string().optional()` | 低 |
@@ -180,7 +180,7 @@ if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
 2. `MerklForecastState` 新增 `nativeApyPercent` + `budgetBoundMode`
 3. `mergeForecastState` 透传新字段
 4. `forecastWithTVL` 新增 TARGET_TOTAL_APR 第 4 条路径
-5. `forecastBreakdownApr` 处理 campaignApr=0
+5. `forecastMerklApr` 处理 campaignApr=0
 6. `buildMerklCampaignDetails` 新增 `nativeApyPercent` 参数
 7. `FORECAST_REQUIRING_CAMPAIGN_TYPES` 加入 TARGET_TOTAL_APR
 8. cap note 条件扩展
@@ -205,7 +205,7 @@ if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
 | `forecastWithTVL` TARGET_TOTAL_APR + MAX_APR | P0 | effectiveAprCap 计算 + dilution |
 | `forecastWithTVL` TARGET_TOTAL_APR + FIX_APR | P0 | effectiveAprCap 计算 + fixRewardableDays |
 | `forecastWithTVL` TARGET_TOTAL_APR + nativeAPY > targetAPR | P0 | effectiveAprCap = 0 |
-| `forecastBreakdownApr` TARGET_TOTAL_APR + campaignApr=0 | P0 | 返回 0 不走 fallback |
+| `forecastMerklApr` TARGET_TOTAL_APR + campaignApr=0 | P0 | 返回 0 不走 fallback |
 | `mergeForecastState` 透传 nativeApyPercent | P1 | |
 | `buildMerklCampaignDetails` TARGET_TOTAL_APR | P1 | cap note / after / delta |
 | IncentiveTooltip 三段拆分 | P2 | |
@@ -241,11 +241,11 @@ if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
 |---|---|---|
 | 1 | nativeApyPercent 只影响 TARGET_TOTAL_APR 分支 | MAX/FIX 的 aprCap 是实付上限，不需要减 nativeAPY |
 | 2 | APR↔APY 转换在 forecastWithTVL 内部做 | 与后端公式一致，mergeForecastState 只透传不转换 |
-| 3 | nativeApyPercent 沿完整调用链透传（forecastBreakdownApr + mergeForecastState 均新增可选参数） | nativeApyPercent 是 reserve 级数据，不在 breakdown 中；可选参数向后兼容 |
+| 3 | nativeApyPercent 沿完整调用链透传（forecastMerklApr + mergeForecastState 均新增可选参数） | nativeApyPercent 是 reserve 级数据，不在 breakdown 中；可选参数向后兼容 |
 | 4 | campaignApr=0 时直接返回 0 不走 fallback | TARGET_TOTAL_APR 的 campaignApr=0 是"确实无 incentive"，不是"数据缺失" |
 | 5 | scenario 下用 afterNativeAPY | nativeAPY 随 utilization 变化，simulation 应反映实时值 |
 | 6 | effectiveAprCap 走现有 MAX/FIX 子逻辑 | 不重复造轮子，TARGET_TOTAL_APR 的 dilutive 行为与 MAX/FIX 同族 |
-| 7 | D3 修正：B 类路径经过 forecastBreakdownApr | 代码验证 buildMerklCampaignDetails 通过 forecastBreakdownApr 调用 forecastWithTVL |
+| 7 | D3 修正：B 类路径经过 forecastMerklApr | 代码验证 buildMerklCampaignDetails 通过 forecastMerklApr 调用 forecastWithTVL |
 
 ---
 
