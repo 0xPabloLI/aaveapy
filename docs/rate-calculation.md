@@ -640,7 +640,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 
 | Layer | Role | Examples |
 |-------|------|----------|
-| API | Backend field names stay stable | `perUserRewardCapUsd` |
+| API | Backend field names stay stable | `positionCap` |
 | Domain | Prefer `cap` vocabulary | `positionCapUsd`, `eligibleUsd` |
 | UI | Stable row diagnostics | `capNote`, `capWarning` |
 
@@ -648,7 +648,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 
 | Source | Domain meaning | Notes |
 |--------|----------------|-------|
-| Brevis `perUserRewardCapUsd` | Position cap | Keep API name; domain uses `positionCapUsd` |
+| Brevis `positionCap` | Position cap | Keep API name; domain uses `positionCapUsd` |
 | Merit `selfEligibleDepositCapUsd` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive |
 | Simulation UI | Same diagnostics | Keep `cap*` props stable |
 
@@ -673,8 +673,8 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 
 ### Brevis position cap
 
-- `perUserRewardCapUsd` is a **position cap** — only the first `$X` of deposit/debt earns incentive.
-- `positionCapUsd` = API `perUserRewardCapUsd`; `eligibleUsd = min(deposit, positionCapUsd)`.
+- `positionCap` is a **position cap** — only the first `$X` of deposit/debt earns incentive.
+- `positionCapUsd` = API `positionCap`; `eligibleUsd = min(deposit, positionCapUsd)`.
 - Effective APR: `nominalApr × eligibleUsd / deposit` (when cap binds, APR is diluted).
 - Missing `endDate` degrades gracefully to nominal APR.
 - Shared cap across supply/borrow requires the same `campaignId` and matching metadata.
@@ -972,7 +972,7 @@ JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 
 ### 7.5 Brevis Cap ≠ Merit Deposit Ceiling
 
-**Brevis `perUserRewardCapUsd`** limits cumulative USD reward total, not position size. **Merit `selfCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
+**Brevis `positionCap`** limits cumulative USD reward total, not position size. **Merit `selfCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
 
 ### 7.6 Wallet-Only Incentive Delta
 

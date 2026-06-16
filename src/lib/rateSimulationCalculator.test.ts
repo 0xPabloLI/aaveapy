@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRateSimulationResult } from './rateSimulationCalculator';
+import { buildRateSimulationResult, buildMeritCampaignDetails } from './rateSimulationCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -861,7 +861,10 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
   });
 
   it('derives wallet from totalSupplyUsd - supplyInputUsd when hasInput=true', () => {
-    // When hasInput=true and totalSupplyUsd is provided, wallet = total - delta
+    // When hasInput=true, deltaIncentive = afterIncentive - currentIncentive (simulation effect).
+    // wallet=1000=cap=1000 → no dilution on current (1000/1000=1.0)
+    // totalSupplyUsd=1500 > cap=1000 → after IS diluted (1000/1500)
+    // deltaIncentive = diluted - headline < 0 (simulation dilution effect)
     const result = buildRateSimulationResult({
       reserve: MERIT_SELF_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -871,11 +874,8 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     });
 
     expect(result.supply.hasInput).toBe(true);
-    // wallet=$1000 = cap=$1000 → no dilution on current (1000/1000=1.0)
-    // but after IS diluted (1500 > 1000 → 1000/1500)
-    // deltaIncentive = currentIncentive - headlineIncentive = 0 (no wallet dilution)
     expect(result.supply.deltaIncentive).not.toBeNull();
-    expect(result.supply.deltaIncentive!).toBe(0);
+    expect(result.supply.deltaIncentive!).toBeLessThan(0);
   });
 
   it('AAV-771: wallet-only position shows dilution currentIncentive and deltaIncentive', () => {
@@ -930,172 +930,33 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
   });
 });
 
-describe('resolveBrevisForecastApr (via buildRateSimulationResult)', () => {
-  const BREVIS_FIX_RESERVE: ReserveWithSpread = {
-    ...BASE_RESERVE,
-    brevisSupplys: [{
-      link: 'https://brevis.example',
-      name: 'TestCampaign',
-      campaignApr: 10,
-      campaignStartedAt: '2025-01-01',
-      campaignEndedAt: '2026-12-31',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      campaignId: 'brevis-fix-1',
-      totalBudget: 100000,
-      latestTvl: 500000,
-      perUserRewardCapUsd: 5000,
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2026-12-31',
-        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        campaignId: 'brevis-fix-1',
-        totalBudget: 100000,
-        latestTvl: 500000,
-        perUserRewardCapUsd: 5000,
-      }],
-    }],
-  };
+describe('AAV-916: buildMeritCampaignDetails self-cap capNote', () => {
+  const merits = [
+    {
+      apr: 10,
+      selfApr: 8,
+      link: 'https://example.com',
+      name: 'Merit Self-Cap Test',
+      message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
+      startDate: '2024-01-01',
+      endDate: '2030-12-31',
+      lastRoundRewardUsd: 100,
+    },
+  ];
 
-  it('uses forecast APR for current when forecast state shows near-depleted budget', () => {
-    const forecastStates = {
-      'brevis-fix-1': {
-        distributedSoFar: 99900,
-        requiredDaily: 500,
-        endTimestamp: Math.floor(Date.now() / 1000) + 365 * 86400,
-      },
-    };
-    const withForecast = buildRateSimulationResult({
-      reserve: BREVIS_FIX_RESERVE,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-      forecastStates,
-    });
-    const withoutForecast = buildRateSimulationResult({
-      reserve: BREVIS_FIX_RESERVE,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-    });
-    expect(withForecast.supply.currentIncentive).toBeGreaterThan(0);
-    expect(withForecast.supply.currentIncentive).toBeLessThan(withoutForecast.supply.currentIncentive);
+  it('generates capNote when deposit exceeds self-position cap', () => {
+    const rows = buildMeritCampaignDetails(merits, false, 5000, true);
+    const selfRow = rows.find((r) => r.id.includes('-self'));
+    expect(selfRow).toBeDefined();
+    expect(selfRow!.capNote).toBeDefined();
+    expect(selfRow!.capWarning).toBe(true);
   });
 
-  it('falls back to nominal APR when no forecast state', () => {
-    const result = buildRateSimulationResult({
-      reserve: BREVIS_FIX_RESERVE,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-    });
-    expect(result.supply.currentIncentive).toBeCloseTo(10, 1);
-  });
-
-  it('uses forecast APR when latestTvl is 0 (first depositor scenario)', () => {
-    const reserve: ReserveWithSpread = {
-      ...BASE_RESERVE,
-      brevisSupplys: [{
-        link: 'https://brevis.example',
-        name: 'FirstDepositor',
-        campaignApr: 20,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2026-12-31',
-        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        campaignId: 'brevis-tvl-zero',
-        totalBudget: 50000,
-        latestTvl: 0,
-        breakdowns: [{
-          campaignApr: 20,
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2026-12-31',
-          campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignId: 'brevis-tvl-zero',
-          totalBudget: 50000,
-          latestTvl: 0,
-        }],
-      }],
-    };
-    const forecastStates = {
-      'brevis-tvl-zero': {
-        distributedSoFar: 1000,
-        requiredDaily: 200,
-        endTimestamp: Math.floor(Date.now() / 1000) + 180 * 86400,
-      },
-    };
-    const result = buildRateSimulationResult({
-      reserve,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-      supplyInput: '10000',
-      forecastStates,
-    });
-    expect(result.supply.afterIncentive).not.toBeNull();
-    expect(result.supply.afterIncentive).toBeGreaterThan(0);
-  });
-
-  it('falls back to nominal APR when latestTvl is undefined', () => {
-    const reserve: ReserveWithSpread = {
-      ...BASE_RESERVE,
-      brevisSupplys: [{
-        link: 'https://brevis.example',
-        name: 'NoTvl',
-        campaignApr: 8,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2026-12-31',
-        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        campaignId: 'brevis-no-tvl',
-        breakdowns: [{
-          campaignApr: 8,
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2026-12-31',
-          campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignId: 'brevis-no-tvl',
-        }],
-      }],
-    };
-    const result = buildRateSimulationResult({
-      reserve,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-    });
-    expect(result.supply.currentIncentive).toBeCloseTo(8, 1);
-  });
-
-  it('MAX type without aprCap falls back to nominal (no forecast cap applicable)', () => {
-    const reserve: ReserveWithSpread = {
-      ...BASE_RESERVE,
-      brevisSupplys: [{
-        link: 'https://brevis.example',
-        name: 'MaxCampaign',
-        campaignApr: 15,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2026-12-31',
-        campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        campaignId: 'brevis-max-1',
-        totalBudget: 200000,
-        latestTvl: 1000000,
-        breakdowns: [{
-          campaignApr: 15,
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2026-12-31',
-          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignId: 'brevis-max-1',
-          totalBudget: 200000,
-          latestTvl: 1000000,
-        }],
-      }],
-    };
-    const forecastStates = {
-      'brevis-max-1': {
-        distributedSoFar: 50000,
-        requiredDaily: 800,
-        endTimestamp: Math.floor(Date.now() / 1000) + 300 * 86400,
-      },
-    };
-    const result = buildRateSimulationResult({
-      reserve,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-      forecastStates,
-    });
-    expect(result.supply.currentIncentive).toBeCloseTo(15, 1);
+  it('generates capNote but no capWarning when deposit is below cap', () => {
+    const rows = buildMeritCampaignDetails(merits, false, 500, true);
+    const selfRow = rows.find((r) => r.id.includes('-self'));
+    expect(selfRow).toBeDefined();
+    expect(selfRow!.capNote).toBeDefined();
+    expect(selfRow!.capWarning).toBeFalsy();
   });
 });

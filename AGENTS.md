@@ -27,7 +27,7 @@
 ## Coding Conventions
 - TypeScript + functional React components/hooks.
 - 2-space indentation; `PascalCase` for components/types, `camelCase` for vars/functions.
-- Keep backend API field names unchanged in transport layer (e.g. `perUserRewardCapUsd`).
+- Keep backend API field names unchanged in transport layer (e.g. `positionCap`).
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`eligibleDepositCapUsd`, `rewardCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
@@ -64,11 +64,6 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - `docs/conventions/api-contract-checklist.md`
 - Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`
 
-## Docs Directory Convention
-- **Plans**: 所有 plan 文档归档到 `docs/plans/completed/`（小写，扁平结构，不分子目录）。禁止创建 `Completed`、`linear-issues`、`phase-2`、`handoff` 等目录。由 `architecture-guard.test.ts` CI 拦截。
-- **Archive**: 历史快照放 `docs/archive/`，已标注"no longer actively maintained"。
-- **ADR**: 架构决策放 `docs/adr/`，编号递增。
-
 ## Learned Preferences (Condensed)
 - Prefer Chinese for collaboration text and direct execution once confirmed.
 - Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
@@ -90,10 +85,10 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - Pre-push: stash > 3 警告清理。
 
 ## Learned Lessons
-
-- Scripts/icons/共享 schema → `docs/conventions/scripts-and-schema-lessons.md`
-- CJK 全角小数点归一化 / handleFocus cursor / 千分位格式化 → `docs/rate-calculation.md` §Part 6
-- 同一业务动作只允许一条语义路径 → `docs/conventions/design-principles.md` §8
+- Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
+- **CJK 全角小数点归一化 (AAV-739)**：中文/日文输入法在非数字上下文按 `.` 出 `。`(U+3002)/`．`(U+FF0E)/`｡`(U+FF61) 而非 ASCII `.`(U+002E)。`sanitizeNumberInput` 必须先归一化全角小数点，否则被 `[^\d.]` 正则当非法字符删掉。归一化放在 sanitizer 最前面，先于逗号去除和数字过滤。
+- **handleFocus cursor 修复走 pendingCursorRef (AAV-739)**：`handleFocus` 中 `setDisplayValue` 触发 React re-render 会覆盖同步 `setSelectionRange`。必须用 `pendingCursorRef` + `useLayoutEffect`（与 `handleChange` 一致），在 re-render 后恢复 cursor。
+- **实时千分位格式化 (AAV-745)**：`useDebouncedInput` 的 `handleChange` 必须 sanitize→formatNumberInput→setDisplayValue，输入过程中实时显示千分位。`computeCursorAfterFormat` 基于 cursor 前有效数字字符数推算格式化后位置。handleFocus 不剥离逗号（只设 cursor 到末尾），handleBlur 保留 formatNumberInput（幂等防御）。CJK 全角小数点归一化（AAV-739）必须在 format 之前完成。
 
 ## Agent skills
 
@@ -111,32 +106,72 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: Portfolio Delta Input
 
-- **Controlled ↔ Uncontrolled 迁移风险**: `useNumberInput`→`useDebouncedInput` 迁移前必须分析双向数据流
-- **Delta 空语义 ≠ 空字符串**: clear delta = 设 `amount=walletValue`，不是 `amount=''`
-- **Toggle sign 有 delta 时必须重算 amount**: sign 翻转→effectiveUsd 变化→amount 必须同步
-- **Debounce 对 delta 输入有害**: 即时计算派生字段传 `debounceMs: 0`
-- **输入提交函数必须显式定义空值语义**: 空值是有意义的输入，TDD 必须覆盖"清空输入框"路径
+- **Controlled ↔ Uncontrolled 迁移风险**: `useNumberInput`（uncontrolled, initialValue）→ `useDebouncedInput`（controlled, value prop）迁移会引入双向同步反馈循环。迁移前必须分析双向数据流。
+- **Delta 空语义 ≠ 空字符串**: Portfolio 中 clear delta 的正确语义是"使 delta=0"，即设 `amount = walletValue`，而非设 `amount = ''`。空字符串经 parseNumberInput→0 后与 walletValue 做差反而产生非零 delta。
+- **Toggle sign 有 delta 时必须重算 amount**: `effectiveUsd = walletValue + deltaSign × delta` 中，toggle sign 翻转 deltaSign 后 effectiveUsd 变化，amount（=effectiveUsd）必须同步重算。当 absDeltaUsd ≥ 0.005 时 patch {deltaSign, amount}；delta 为零时只 patch deltaSign。旧设计"toggle sign 只翻符号不重算 amount"已被推翻——sign 变了 effectiveUsd 就变了，amount 不跟着重算会导致 UI 显示不一致。
+- **Debounce 对 delta 输入有害**: 用户逐字输入 delta 时 300ms debounce 会在输入中途 commit 不完整值。对即时计算的派生字段传 `debounceMs: 0`。
+- **if/else 两分支结果一致是死代码**: review 时注意简化，减少认知负担。
+- **同一业务动作只允许一条语义路径**: 当同一操作有多种触发方式（按钮/键盘删除/粘贴/程序调用），底层语义必须统一到同一个函数。不要让多条路径各自实现——否则语义断裂会产生"A路径正确、B路径错误"的隐蔽 bug。典型反例：`handleClearDelta`（X 按钮）和 `handleDeltaCommit`（输入提交）曾经各自实现清空语义，键盘删除走 `handleDeltaCommit` 的 early return 丢掉了"归零"语义。修复：`handleDeltaCommit` 对空值委托给 `handleClearDelta`，两条路径归一。
+- **输入提交函数必须显式定义空值语义**: 对任何数值输入框，明确回答"用户清空 = 什么？"。空值是有意义的输入，不是"没有输入"。不要用 early return 隐式丢弃——要么显式归零、要么显式回退、要么显式报错。TDD 必须覆盖"清空输入框"这条路径。
 
-## Learned Lessons: AAV-761 — Simulation after 语义与 double-count 防御
+## Learned Lessons: Simulation `after` 语义（AAV-761）
 
-→ 详见 `docs/rate-calculation.md` §Part 7 "Simulation Null Semantics"
+- **`after=0` 与 `after=null` 语义不同，`??` 运算符下行为迥异**: `0 ?? fallback` → `0`（不 fallback），`null ?? fallback` → `fallback`。当 `hasInput=false` 时，after 必须为 `null`（表示"未参与模拟，使用 current 值"），不能为 `0`（表示"模拟后为 0%"）。这条规则适用于所有 `SimulationLane` 的 after/delta 字段及 per-campaign detail row。
+- **多层计算链路需逐层统一语义**: campaign row 层（`buildMeritCampaignDetails`/`buildMerklCampaignDetails`）、`buildMetricsFromLane` 层、aggregate 层（`supplyAfterSources`/`borrowAfterSources`）需一致使用 `hasInput` 分支，否则会出现某层 `after=null` 而另一层 `after=0` 的矛盾。修改某一层时必须检查上下游所有层级。
+- **Portfolio 模式传 delta 而非 total position，导致 hasInput 判断需特别小心**: `buildPerReserveInputsFromEntries` 传入 delta，当 borrow 有 delta 但 supply delta=0 时 `rawSupply=0, hasSupplyInput=false, hasBorrowInput=true`。`hasAnyInput` 为 true 不代表每个 side 都有 input——必须用 per-side `hasInput` 而非全局 `hasAnyInput` 来决定 per-side after 语义。
+- **Per-campaign detail row 的 `else if (hasAnyInput)` 分支必须显式设 `after=null`**: Merit base/self、Merkl 三处原先设 `after=0`，导致 `pickScenarioValue` 不 fallback。修复：`after=0` → `after=null`，让 `??` 正确回退到 current。
 
-速记：
-- `after=0` 与 `after=null` 语义不同（`??` 下行为迥异），`hasInput=false` 时 after 必须为 `null`
-- aggregate 层用 `hasAnyInput` 保留跨侧影响，消费端用 per-side `hasInput` 做显示控制
-- `totalSupplyUsd = wallet + delta`，`totalPositionUsd = totalSupplyUsd`（不做加法，否则 double-count）
-- Fallback 上移到调用层，calculator 不做 `??` 回退
-- Brevis `perUserRewardCapUsd` 限制累计奖励而非 position，不需要 `totalPositionUsd`
-- `reservePositions` → `crossReservePositions`（跨 reserve eligibility，不暗示存的是什么）
+## Learned Lessons: AAV-761 回归修复 — per-side 守卫 vs 跨側影响
 
-## Learned Lessons: 外部 API 集成测试
+- **`hasSupplyInput`/`hasBorrowInput` 守卫切断跨侧影响（中间尝试，已回退）**: aggregate 层（`supplyAfterSources`/`borrowAfterSources`、4 个 `afterIncentiveRaw`/`afterIncentiveAprRaw`）曾从 `hasAnyInput` 改为 per-side 守卫，导致 Shared Scenario 下无输入侧的 after 变为 null，UI 显示错误。修复：6 处守卫改回 `hasAnyInput`。
+- **`SimulationLane.hasInput` 保持 per-side 不改**: Portfolio 消费端（`buildMetricsFromLane`）用 `lane.hasInput` 做二次守卫实现 em dash，per-side 语义正确。aggregate 层用 `hasAnyInput` 保留跨侧影响，消费端用 `hasInput` 做显示控制——两层守卫各司其职。
+- **cross-side 测试断言不是 `after === current`**: 跨側影响保留后，无输入侧的 after 值可以因对侧输入而变化（如 Brevis 共享 cap），正确断言是 `after !== null`（有值可显示），而非 `after === current`（值不变）。
+- **`SimulationLane` 没有 `after`/`delta` 字段**: 只有 `afterTotal`/`deltaTotal`、`afterNative`/`deltaNative`、`afterIncentive`/`deltaIncentive`。测试中不要用 `lane.after`/`lane.delta`。
 
-→ 详见 `docs/conventions/external-api-testing-lessons.md`
+## Learned Lessons: 单一变量承载多语义导致 double-count (AAV-761 merit-deposit-ceiling-dilution)
 
-速记：Don't Mock What You Don't Own；外部 API 必须有契约测试；API URL 基于官方文档不猜测
+- **变量命名直接决定代码能否自文档化**: 旧名 `principalSupplyUsd` 暗示"已有本金（不含 delta）"，实际值 = wallet + delta（含 delta 的总仓位）。这导致 `totalPositionUsd = principal + netInput` 公式在设计时引入了 double-count。改名 `totalSupplyUsd` 后（见下方 § 重命名），语义自明：`totalPositionUsd = totalSupplyUsd`（无需加任何东西）。**教训：变量名必须精确反映值的构成（wallet + delta），不能只取其中一部分（principal）暗示另一种语义。**
+- **数据源语义必须显式文档化**: `reservePositions` 在 single simulation 下存的是 shared simulation input（`parseNumberInput(debouncedSharedSupplyInput)`），不是钱包仓位。代码中用 `reservePositions` 这个名字暗示"仓位"，构建处的注释只说"用于 cross-reserve eligibility"——没有说明在 single simulation 下这些值就是 simulation input 本身。**教训：数据容器名称应与数据源语义一致；如果同一容器在不同模式下承载不同语义，必须在类型或注释中显式标注。**
+- **`X + Y` 计算必须覆盖 `X === Y` 的边界用例**: 当两个加项可能来自同一数据源时（如 single simulation 中二者都来自 shared input），`A + A = 2A` 就是 double-count。**教训：做 `X + Y` 计算时，TDD 必须覆盖"X 和 Y 相等时结果是否符合预期"的边界用例。** 恰好漏掉这类测试会导致回归测试通过但逻辑错误。
+- **Calculator 层无法保护调用层传错误值**: `buildRateSimulationResult` 的参数合约需要调用侧保证 `totalSupplyUsd ≥ supplyNetInputUsd`，但调用侧可能 `totalSupplyUsd = supplyNetInputUsd = simulationInput`（single simulation）。**教训：关键合约约束应在 calculator 层加断言，而非依赖注释和调用侧的"自觉"遵守。**
 
-## Learned Lessons: Wallet-only incentive delta (AAV-771)
+## Learned Lessons: 重命名 `principalSupplyUsd` → `totalSupplyUsd` (AAV-761 refactor)
 
-- **`buildIncentiveCurrent` 区分稀释计算和 headline 展示**: `walletSupplyUsd`/`walletBorrowUsd` 与 `depositUsd` 语义分离
-- **`portfolioSimulator` 不能跳过 wallet-only positions**: 先判 `hasWalletPosition` 和 `hasUserInput`，都不满足才跳过
-- **`formatDeltaPercent` 阈值过滤不能替代空语义**: `null` = "无 delta 概念"，`0` = "有 delta 但值为零"
+- **`totalSupplyUsd` = 总仓位 (wallet + delta)**：用于 USD accrual 收益计算和 Merit self-cap 稀释公式。名字"total"即自说明：它就是总数，不要再加。
+- **`supplyNetInputUsd` = 净 delta (max(supplyInput - borrowInput, 0))**：推动利率曲线的量，不包含已有仓位。新旧都叫delta，不变。
+- **公式 `totalPositionUsd = totalSupplyUsd`**（直接取用，不做加法）：因为 total 本身已含 delta，加 netInput 即 double-count。
+- **入口统一**：Single simulation 和 Portfolio simulation 通过同一个 `perReserveInputs` Map 分发，只在 single 模式下为 undefined（不含 total），portfolio 模式下有值。两者统一调 `useSharedRateSimulations`，只有数据不同，没有代码路径分支。
+
+## Learned Lessons: Fallback 上移到调用层 + 命名统一 (AAV-761 refactor v3)
+
+- **隐式 fallback 分散在 calculator 层导致语义不可见**：旧方案 `buildRateSimulationResult` 内部 `effectiveTotalSupplyUsd = totalSupplyUsd ?? (hasSupplyInput ? supplyInputUsd : undefined)` 让单模拟模式下 `totalSupplyUsd` 的语义（"输入即总仓位"）隐藏在 calculator 内部，不读源码无法知道。
+- **上移方案**：fallback 逻辑移到 `useSharedRateSimulations`（唯一调用入口），`buildRateSimulationResult` 直接使用传入的 `totalSupplyUsd`/`totalBorrowUsd`，不做任何 `??` 回退。calculator 的合约变简单：调用方负责提供正确的 total position，不提供 = 无 total。
+- **`reservePositions` → `crossReservePositions`（8 个文件）**：旧名 `reservePositions` 暗示"仓位"，但在 single simulation 下存的是 simulation inputs。新名 `crossReservePositions` 准确描述用途（跨 reserve 的 net eligibility 计算），不暗示具体存的是什么。
+- **contract 从隐式变显式**：`buildRateSimulationResult` 的 JSDoc 明确列出三种调用方合约——Portfolio 传 wallet+delta、Single 传 inputUsd、无输入传 undefined。未来新增调用方不会因"不知道 calculator 内部有 fallback"而传错值。
+
+## Learned Lessons: 外部 API 集成测试必须验证真实端点（chainDiscovery 404 根因）
+
+- **Mock 测试无法发现"API URL 不存在"的问题**：`chainDiscovery.test.ts` mock 了 `fetch` 返回 `ok: true` + JSON，但真实的 `chainid.network/chains/{id}.json` 和 `chainlist.org/rpcs/{id}.json` 端点根本不存在（官方只有 bulk 端点 `chains.json` 和 `rpcs.json`）。所有链的单链 fetch 全部 404，mock 测试从未暴露这个问题。
+- **外部 API 集成必须同时维护契约测试**：单元测试 mock fetch 是必要的（速度、隔离），但对第三方 API 的集成必须额外有契约测试（contract test）——在 CI 或手动触发时用真实 fetch 验证：(1) URL 是否可达；(2) 响应格式是否符合预期 schema；(3) CORS 是否允许浏览器端调用。契约测试不需要每次跑，但必须存在且可运行。
+- **测试原则：Don't Mock What You Don't Own**：只 mock 自己控制的代码（内部函数、状态），不要 mock 第三方 API 的行为——因为你对它的假设可能是错的。对第三方 API，用 schema 验证（zod/Joi）替代 mock：真实响应必须满足 schema，mock 也必须满足同一 schema。
+- **API URL 必须基于官方文档而非猜测**：`/chains/{id}.json` 这种路径模式看似合理但从未被官方文档确认。添加外部 API 集成时，必须先查官方文档确认端点存在，再写代码。
+- **防御性编码：fetch 失败时区分"链不存在"和"API 不可达"**：404 可能意味着"链未收录"或"API 端点不存在"——两者语义不同但表现相同。当所有链都 404 时，应该怀疑是 API 本身的问题而非逐链问题。
+
+## Learned Lessons: Wallet-only incentive delta 不显示 (AAV-771)
+
+- **`buildIncentiveCurrent` 需区分"稀释计算"和"headline 展示"两种用途**：旧版只有一个 `depositUsd` 参数，`hasInput=false` 时传 0 导致 self-cap 稀释被跳过。修复：新增 `walletSupplyUsd`/`walletBorrowUsd` 参数，与 `depositUsd`（input 用）语义分离。wallet-only 场景下 wallet 有值、depositUsd=0，仍然正确计算稀释。
+- **`totalSupplyUsd = wallet + delta` 公式可直接推导 wallet**：portfolio 模式下 `wallet = totalSupplyUsd - supplyInputUsd`，single simulation 下 `totalSupplyUsd` 未定义所以 wallet 为 undefined。这个推导避免了调用方额外传 wallet 参数。
+- **`portfolioSimulator.ts` 跳过 wallet-only positions 导致 totalSupplyUsd 丢失**：`buildGroupMapFromSlots` 和 `buildPerReserveInputsFromEntries` 原来用 `if (amountUsd <= 0) continue` 跳过 delta=0 的 side，导致 wallet value 没被累加。修复：先判断 `hasWalletPosition` 和 `hasUserInput`，两者都不满足才跳过。
+- **`formatDeltaPercent` 阈值过滤可能掩盖逻辑 bug**：delta=0 被过滤掉后 UI 不显示，用户看不到 delta 但也不知道是"无稀释"还是"计算错误"。threshold 过滤不能替代正确的空语义——null 表示"无 delta 概念"，0 表示"有 delta 但值为零"。
+
+## Learned Lessons: AAV-761 方向回撤 — walletSupplyUsd 推导不应被 hasInput 守卫阻断
+
+- **Deposit Ceiling 稀释是钱包仓位本身的属性，不是用户输入的属性**：即使用户没有输入任何 delta，只要钱包仓位超过了 Deposit Ceiling，current incentive 就应该显示稀释后的值。`walletSupplyUsd` 推导必须始终执行（`totalSupplyUsd != null` 即可），不能加 `hasSupplyInput` 守卫。
+- **AAV-761 修复曾错误地引入 `hasSupplyInput` 守卫**：`walletSupplyUsd = explicitWalletSupplyUsd ?? (hasSupplyInput && totalSupplyUsd != null ? totalSupplyUsd - supplyInputUsd : undefined)` 导致 `hasInput=false` 时 `walletSupplyUsd=undefined`，`buildIncentiveCurrent` 走 headline 分支不稀释，用户看到的是"所有仓位都能拿 incentive"的错误值。修复：去掉 `hasSupplyInput` 守卫，改为 `totalSupplyUsd != null ? totalSupplyUsd - supplyInputUsd : undefined`。
+- **`deltaIncentive` 分两路计算，必须匹配 `deltaNative`/`deltaTotal` 模式**：旧公式 `walletSupplyUsd != null ? currentIncentive - headlineIncentive : null` 永远只算 wallet dilution gap，不管 `hasInput`。修复后分两路——`hasInput=true` → `afterIncentive - currentIncentive`（simulation 效果）；`hasInput=false` + wallet → `currentIncentive - headlineIncentive`（wallet 稀释缺口）；`hasInput=false` + 无 wallet → `null`。三态统一：`hasInput` 决定 simulation delta，wallet 决定 dilution gap，两者互斥。
+
+## Learned Lessons: deltaIncentive 公式修复 — 三态分路
+
+- **`deltaIncentive` 永远只用 `current - headline` 是 bug**：旧公式使纯 manual（无 wallet）时 delta 为 null（不显示），wallet + manual 时 delta 永远等于 dilution gap 不随输入变化。原因：`deltaIncentive` 从不使用 `afterIncentive`。
+- **修复后三态分路**：`hasInput=true` → `afterIncentive - currentIncentive`（simulation 效果）；`hasInput=false` + wallet → `currentIncentive - headlineIncentive`（dilution gap）；`hasInput=false` + 无 wallet → `null`（无数据可显示）。
+- **`deltaIncentive` 与 `deltaNative`/`deltaTotal` 模式一致**：三者都遵循 `hasInput ? after - current : null` 核心模式，`deltaIncentive` 额外在 `hasInput=false` 时加 wallet dilution gap 分支。

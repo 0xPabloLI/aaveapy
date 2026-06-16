@@ -215,7 +215,7 @@ describe('apiSchemas', () => {
                   campaignEndedAt: '2026-08-08T00:00:00.000Z',
                   latestTvl: 4_151_203.07,
                   totalBudget: 25_000,
-                  perUserRewardCapUsd: 5000,
+                  positionCap: 5000,
                   campaignId: 'linea-usdc',
                   totalRewardAmount: 12345,
                   totalRewardTokenSymbol: 'USDC',
@@ -239,7 +239,7 @@ describe('apiSchemas', () => {
     expect(brevis?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
     expect(brevis?.latestTvl).toBe(4_151_203.07);
     expect(brevis?.totalBudget).toBe(25_000);
-    expect(brevis?.perUserRewardCapUsd).toBe(5000);
+    expect(brevis?.positionCap).toBe(5000);
     expect(brevis?.campaignId).toBe('linea-usdc');
     expect('totalRewardAmount' in (brevis ?? {})).toBe(true);
     expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(true);
@@ -378,7 +378,7 @@ describe('apiSchemas', () => {
                   campaignEndedAt: '2026-08-08T00:00:00.000Z',
                   latestTvl: 3_784_092,
                   totalBudget: 9_996_400.6,
-                  perUserRewardCapUsd: 5000,
+                  positionCap: 5000,
                   campaignId: '1754995104',
                   customBreakdownField: 'from-breakdown',
                 },

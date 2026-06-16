@@ -14,6 +14,22 @@ export function computePositionCapEligibility(
   };
 }
 
+export interface PositionCapResult {
+  aprPercent: number;
+  isCapBinding: boolean;
+  eligibleUsd: number;
+}
+
+export function applyPositionCap(
+  nominalAprPercent: number,
+  positionUsd: number,
+  capUsd: number,
+): PositionCapResult {
+  const { eligibleUsd, isCapBinding } = computePositionCapEligibility(positionUsd, capUsd);
+  const aprPercent = isCapBinding ? nominalAprPercent * (eligibleUsd / positionUsd) : nominalAprPercent;
+  return { aprPercent, isCapBinding, eligibleUsd };
+}
+
 export function computeBudgetRemainingDays(
   remainingBudget: number,
   dailyReward: number,

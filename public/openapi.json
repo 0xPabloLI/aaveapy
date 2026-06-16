@@ -427,6 +427,9 @@
                             },
                             "plannedDaily": {
                               "type": "number"
+                            },
+                            "budgetBoundMode": {
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -533,6 +536,9 @@
                             },
                             "plannedDaily": {
                               "type": "number"
+                            },
+                            "budgetBoundMode": {
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -639,6 +645,9 @@
                             },
                             "plannedDaily": {
                               "type": "number"
+                            },
+                            "budgetBoundMode": {
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -717,26 +726,37 @@
                                 "campaignEndedAt": {
                                   "type": "string"
                                 },
+                                "campaignId": {
+                                  "type": "string"
+                                },
+                                "campaignType": {
+                                  "type": "string"
+                                },
+                                "aprCap": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "latestTvl": {
                                   "type": "number"
                                 },
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "perUserRewardCapUsd": {
+                                "positionCap": {
                                   "type": "number"
-                                },
-                                "distributedSoFarUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
                                 }
                               },
                               "required": [
                                 "campaignApr",
                                 "campaignStartedAt",
-                                "campaignEndedAt"
+                                "campaignEndedAt",
+                                "campaignId"
                               ],
                               "additionalProperties": {}
                             }
@@ -774,26 +794,37 @@
                                 "campaignEndedAt": {
                                   "type": "string"
                                 },
+                                "campaignId": {
+                                  "type": "string"
+                                },
+                                "campaignType": {
+                                  "type": "string"
+                                },
+                                "aprCap": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "latestTvl": {
                                   "type": "number"
                                 },
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "perUserRewardCapUsd": {
+                                "positionCap": {
                                   "type": "number"
-                                },
-                                "distributedSoFarUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
                                 }
                               },
                               "required": [
                                 "campaignApr",
                                 "campaignStartedAt",
-                                "campaignEndedAt"
+                                "campaignEndedAt",
+                                "campaignId"
                               ],
                               "additionalProperties": {}
                             }
@@ -807,16 +838,26 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "distributedSoFarUsd": {
+                          "positionCap": {
                             "type": "number"
                           },
                           "campaignId": {
@@ -861,26 +902,37 @@
                                 "campaignEndedAt": {
                                   "type": "string"
                                 },
+                                "campaignId": {
+                                  "type": "string"
+                                },
+                                "campaignType": {
+                                  "type": "string"
+                                },
+                                "aprCap": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "latestTvl": {
                                   "type": "number"
                                 },
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "perUserRewardCapUsd": {
+                                "positionCap": {
                                   "type": "number"
-                                },
-                                "distributedSoFarUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
                                 }
                               },
                               "required": [
                                 "campaignApr",
                                 "campaignStartedAt",
-                                "campaignEndedAt"
+                                "campaignEndedAt",
+                                "campaignId"
                               ],
                               "additionalProperties": {}
                             }
@@ -918,26 +970,37 @@
                                 "campaignEndedAt": {
                                   "type": "string"
                                 },
+                                "campaignId": {
+                                  "type": "string"
+                                },
+                                "campaignType": {
+                                  "type": "string"
+                                },
+                                "aprCap": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "latestTvl": {
                                   "type": "number"
                                 },
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "perUserRewardCapUsd": {
+                                "positionCap": {
                                   "type": "number"
-                                },
-                                "distributedSoFarUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
                                 }
                               },
                               "required": [
                                 "campaignApr",
                                 "campaignStartedAt",
-                                "campaignEndedAt"
+                                "campaignEndedAt",
+                                "campaignId"
                               ],
                               "additionalProperties": {}
                             }
@@ -951,16 +1014,26 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "distributedSoFarUsd": {
+                          "positionCap": {
                             "type": "number"
                           },
                           "campaignId": {
@@ -1573,6 +1646,9 @@
                       },
                       "plannedDaily": {
                         "type": "number"
+                      },
+                      "budgetBoundMode": {
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -1679,6 +1755,9 @@
                       },
                       "plannedDaily": {
                         "type": "number"
+                      },
+                      "budgetBoundMode": {
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -1785,6 +1864,9 @@
                       },
                       "plannedDaily": {
                         "type": "number"
+                      },
+                      "budgetBoundMode": {
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -1863,26 +1945,37 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
+                          "positionCap": {
                             "type": "number"
-                          },
-                          "distributedSoFarUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
                           }
                         },
                         "required": [
                           "campaignApr",
                           "campaignStartedAt",
-                          "campaignEndedAt"
+                          "campaignEndedAt",
+                          "campaignId"
                         ],
                         "additionalProperties": {}
                       }
@@ -1920,26 +2013,37 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
+                          "positionCap": {
                             "type": "number"
-                          },
-                          "distributedSoFarUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
                           }
                         },
                         "required": [
                           "campaignApr",
                           "campaignStartedAt",
-                          "campaignEndedAt"
+                          "campaignEndedAt",
+                          "campaignId"
                         ],
                         "additionalProperties": {}
                       }
@@ -1953,16 +2057,26 @@
                     "campaignEndedAt": {
                       "type": "string"
                     },
+                    "campaignType": {
+                      "type": "string"
+                    },
+                    "aprCap": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "latestTvl": {
                       "type": "number"
                     },
                     "totalBudget": {
                       "type": "number"
                     },
-                    "perUserRewardCapUsd": {
-                      "type": "number"
-                    },
-                    "distributedSoFarUsd": {
+                    "positionCap": {
                       "type": "number"
                     },
                     "campaignId": {
@@ -2007,26 +2121,37 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
+                          "positionCap": {
                             "type": "number"
-                          },
-                          "distributedSoFarUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
                           }
                         },
                         "required": [
                           "campaignApr",
                           "campaignStartedAt",
-                          "campaignEndedAt"
+                          "campaignEndedAt",
+                          "campaignId"
                         ],
                         "additionalProperties": {}
                       }
@@ -2064,26 +2189,37 @@
                           "campaignEndedAt": {
                             "type": "string"
                           },
+                          "campaignId": {
+                            "type": "string"
+                          },
+                          "campaignType": {
+                            "type": "string"
+                          },
+                          "aprCap": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "latestTvl": {
                             "type": "number"
                           },
                           "totalBudget": {
                             "type": "number"
                           },
-                          "perUserRewardCapUsd": {
+                          "positionCap": {
                             "type": "number"
-                          },
-                          "distributedSoFarUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
                           }
                         },
                         "required": [
                           "campaignApr",
                           "campaignStartedAt",
-                          "campaignEndedAt"
+                          "campaignEndedAt",
+                          "campaignId"
                         ],
                         "additionalProperties": {}
                       }
@@ -2097,16 +2233,26 @@
                     "campaignEndedAt": {
                       "type": "string"
                     },
+                    "campaignType": {
+                      "type": "string"
+                    },
+                    "aprCap": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "latestTvl": {
                       "type": "number"
                     },
                     "totalBudget": {
                       "type": "number"
                     },
-                    "perUserRewardCapUsd": {
-                      "type": "number"
-                    },
-                    "distributedSoFarUsd": {
+                    "positionCap": {
                       "type": "number"
                     },
                     "campaignId": {
@@ -2304,6 +2450,9 @@
           },
           "plannedDaily": {
             "type": "number"
+          },
+          "budgetBoundMode": {
+            "type": "string"
           }
         },
         "required": [
@@ -2370,6 +2519,9 @@
                 },
                 "plannedDaily": {
                   "type": "number"
+                },
+                "budgetBoundMode": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -2430,26 +2582,37 @@
           "campaignEndedAt": {
             "type": "string"
           },
+          "campaignId": {
+            "type": "string"
+          },
+          "campaignType": {
+            "type": "string"
+          },
+          "aprCap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "latestTvl": {
             "type": "number"
           },
           "totalBudget": {
             "type": "number"
           },
-          "perUserRewardCapUsd": {
+          "positionCap": {
             "type": "number"
-          },
-          "distributedSoFarUsd": {
-            "type": "number"
-          },
-          "campaignId": {
-            "type": "string"
           }
         },
         "required": [
           "campaignApr",
           "campaignStartedAt",
-          "campaignEndedAt"
+          "campaignEndedAt",
+          "campaignId"
         ],
         "additionalProperties": {}
       },
@@ -2480,26 +2643,37 @@
                 "campaignEndedAt": {
                   "type": "string"
                 },
+                "campaignId": {
+                  "type": "string"
+                },
+                "campaignType": {
+                  "type": "string"
+                },
+                "aprCap": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "latestTvl": {
                   "type": "number"
                 },
                 "totalBudget": {
                   "type": "number"
                 },
-                "perUserRewardCapUsd": {
+                "positionCap": {
                   "type": "number"
-                },
-                "distributedSoFarUsd": {
-                  "type": "number"
-                },
-                "campaignId": {
-                  "type": "string"
                 }
               },
               "required": [
                 "campaignApr",
                 "campaignStartedAt",
-                "campaignEndedAt"
+                "campaignEndedAt",
+                "campaignId"
               ],
               "additionalProperties": {}
             }
@@ -2513,16 +2687,26 @@
           "campaignEndedAt": {
             "type": "string"
           },
+          "campaignType": {
+            "type": "string"
+          },
+          "aprCap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "latestTvl": {
             "type": "number"
           },
           "totalBudget": {
             "type": "number"
           },
-          "perUserRewardCapUsd": {
-            "type": "number"
-          },
-          "distributedSoFarUsd": {
+          "positionCap": {
             "type": "number"
           },
           "campaignId": {

@@ -61,7 +61,7 @@ export const BrevisCampaignBreakdownSchema = z.object({
   aprCap: z.number().nullable().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
-  perUserRewardCapUsd: z.number().optional(),
+  positionCap: z.number().optional(),
 }).passthrough();
 
 export const BrevisIncentiveSchema = z.object({
@@ -76,7 +76,7 @@ export const BrevisIncentiveSchema = z.object({
   aprCap: z.number().nullable().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
-  perUserRewardCapUsd: z.number().optional(),
+  positionCap: z.number().optional(),
   campaignId: z.string().optional(),
 }).passthrough();
 

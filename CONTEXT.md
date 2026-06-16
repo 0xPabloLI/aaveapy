@@ -27,8 +27,42 @@ _Avoid_: Optimal Utilization
 ## Incentive Programs
 
 **Merkl Campaign**:
-Merkl 协议分发的激励活动。按活动类型分三种：Dutch Auction（衰减拍卖）、MAX（APR 上限 + 追补）、FIX（固定 APR 预算）。
+Merkl 协议分发的激励活动。按 `campaignType`（= normalize 后的 Merkl `distributionType`）分四大类：
+
+| campaignType | 含义 | APR cap 来源 |
+|---|---|---|
+| `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` | Capped: 每 $1 流动性最多 $1 奖励 | `distributionSettings.apr` |
+| `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` | Fixed: 每 $1 流动性固定 $1 奖励 | `distributionSettings.apr` |
+| `DUTCH_AUCTION` | 衰减拍卖 | 无 |
+| `TARGET_TOTAL_APR` | 总 APR 目标（AAVE_NET_APR / AAVE_V4_NET_APR / ERC4626 等 7 种 subtype） | `distributionSettings.targetAPR` |
+
 _Avoid_: Merkl Reward, Merkl Incentive
+
+**TARGET_TOTAL_APR aprCap Semantics**:
+TARGET_TOTAL_APR 的 `aprCap` 是"总 APR 目标"（= targetAPR），不是 Merkl 实付上限。后端已将 `campaignApr` 转换为 Merkl 实付 APR（`convertAprToApy(targetAPR) - nativeAPY → apyToApr`），前端 A 类路径可直接使用 `campaignApr`。B 类路径（scenario 模拟）需用 `effectiveAprCap = max(aprCap - nativeAPY, 0)` 走现有 MAX/FIX 子逻辑——因为 nativeAPY 随 utilization 变化，scenario 下 effectiveAprCap 也随之变化。`budgetBoundMode`（MAX_APR / FIX_APR）是正交维度，决定 budget 用尽后的行为（dilutive vs early-end），与 MAX/FIX 同族。
+
+_Avoid_: 把 TARGET_TOTAL_APR 的 aprCap 当作 Merkl 实付上限（它是总目标）、手动在 A 类路径减 nativeAPY（后端已算好 campaignApr）
+
+**Merkl Campaign AMOUNT Variant**:
+Merkl `distributionType` 中 VALUE/AMOUNT 的区分：`VALUE` = dollar 计价，`AMOUNT` = token 数量计价。命名规律 `{MAX/FIX}_REWARD_{VALUE/AMOUNT}_PER_LIQUIDITY_{VALUE/AMOUNT}`。
+
+`distributionSettings.apr` 在所有变体中格式一致（decimal），但结果单位不同：
+- VALUE：`daily_rewards_usd = TVL_usd × apr / 365`
+- AMOUNT_PER_VALUE：`daily_rewards_tokens = TVL_usd × apr / 365`（Merkl campaign APR = 0，需 fallback）
+- AMOUNT_PER_AMOUNT：`daily_rewards_tokens = targetTokenTVL_in_tokens × apr / 365`（TVL 单位是 token 数量而非 USD）
+
+| distributionType | TVL 单位 | daily rewards 单位 | campaign APR | 实际验证 |
+|---|---|---|---|---|
+| `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` | USD | USD | 有值 | ✅ 大量 |
+| `FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE` | USD | token | 0（需 fallback） | ✅ IPOR Fusion Points S2 (Base) |
+| `FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT` | target token count | token | 0（需 fallback） | ✅ Gravity Points (Ethereum) |
+
+AMOUNT 变体的 forecast 计算公式与 VALUE 变体完全一致（`requiredDaily = remainingBudget / remainingDays`），区别仅在于：① `campaignApr = 0` 需从 `distributionSettings.apr` fallback；② `totalBudget` / `distributedSoFar` / `dailyRewards` 单位是 token 而非 USD；③ APR 随 token 价格浮动（VALUE 变体的 USD APR 是固定的）。前端 UI 不显示 campaignType 文字，仅在 forecast simulation 中自动处理。
+_Avoid_: 把 AMOUNT 变体映射为 VALUE 变体（语义丢失）、把 `distributionSettings.apr` 在 AMOUNT 变体中当成 token rate（它是 decimal 格式，已数学验证）
+
+**campaignType vs distributionType**:
+`campaignType` 是我们对 Merkl `distributionType` normalize 后的枚举值（`CampaignForecastType` / `ForecastCampaignTypeLite`），贯穿全链路（fetcher → backend → API → frontend）。`distributionType` 是 Merkl API 原始字段（6+ 种）。`rawDistributionType` 是 fetcher 内部暂存 Merkl 原始值的字段名，不透传到 API。`campaignType` 无其他含义，等价于 `normalize(distributionType)`。
+_Avoid_: 在 API 响应或前端使用 `distributionType`（原始值）、`rawDistributionType`（内部暂存）
 
 **Merit Program**:
 Aave 官方的 Merit 激励项目。有 per-user deposit ceiling 和 self-cap 模型，独立于 Merkl Campaign。
@@ -71,16 +105,16 @@ UI 显示 `"Incentive on first $X"`。
 _Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfEligibleDepositCapUsd`）
 
 **Position Cap (Brevis)**:
-Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单个用户能获得 incentive 的最大仓位金额（API 字段 `perUserRewardCapUsd`，domain 层 `positionCapUsd`）。
+Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单个用户能获得 incentive 的最大仓位金额（API 字段 `positionCap`，domain 层 `positionCapUsd`）。
 UI 显示 `"Incentive on first $X"`（与 Merit Eligible Deposit Cap 统一文案）。可能 shared（supply + borrow 共享）。
-_Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `perUserRewardCapUsd`）
+_Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `positionCap`）
 
 **Supply Cap / Borrow Cap**:
 Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Eligible Deposit Cap / Position Cap）是不同概念。
 _Avoid_: Supply Ceiling, Borrow Ceiling
 
 **Portfolio Cap Warning**:
-Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`；API 字段 `perUserRewardCapUsd`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
+Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`；API 字段 `positionCap`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
 _Avoid_: Cap Error, Cap Alert（这不是错误/警告，是提醒）；red/danger 色（用 amber）
 
 ## Identity

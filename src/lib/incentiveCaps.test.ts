@@ -7,6 +7,7 @@ import {
   buildMerklAprCapEffect,
   buildMerklFixPoolBudgetEffect,
   capEffectToSimulationFields,
+  applyPositionCapToForecastResult,
 } from './incentiveCaps';
 
 describe('capEffectToSimulationFields', () => {
@@ -151,5 +152,43 @@ describe('Merkl cap helpers', () => {
       capNote: 'APR capped for low TVL',
       capWarning: true,
     });
+  });
+});
+
+describe('applyPositionCapToForecastResult', () => {
+  it('returns unscaled APR when capUsd is undefined', () => {
+    const result = applyPositionCapToForecastResult(10, 5000, undefined);
+    expect(result.aprPercent).toBe(10);
+    expect(result.capNote).toBeUndefined();
+    expect(result.capWarning).toBe(false);
+  });
+
+  it('returns unscaled APR when capUsd is 0', () => {
+    const result = applyPositionCapToForecastResult(10, 5000, 0);
+    expect(result.aprPercent).toBe(10);
+    expect(result.capNote).toBeUndefined();
+    expect(result.capWarning).toBe(false);
+  });
+
+  it('scales APR and generates capNote when position exceeds cap', () => {
+    const result = applyPositionCapToForecastResult(10, 5000, 1000);
+    expect(result.aprPercent).toBeCloseTo(2, 6);
+    expect(result.capNote).toBeDefined();
+    expect(result.capWarning).toBe(true);
+    expect(result.capMetrics?.positionCapUsd).toBe(1000);
+  });
+
+  it('generates capNote but no capWarning when position is below cap', () => {
+    const result = applyPositionCapToForecastResult(10, 500, 1000);
+    expect(result.aprPercent).toBe(10);
+    expect(result.capNote).toBeDefined();
+    expect(result.capWarning).toBe(false);
+  });
+
+  it('includes isSharedSupplyBorrow in capMetrics', () => {
+    const result = applyPositionCapToForecastResult(10, 5000, 1000, {
+      isSharedSupplyBorrow: true,
+    });
+    expect(result.capMetrics?.isSharedSupplyBorrow).toBe(true);
   });
 });

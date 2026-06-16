@@ -283,7 +283,7 @@ export const mergeForecastState = (
  *
  * Callers are responsible for whitelist filtering before calling this function.
  */
-export const forecastBreakdownApr = (
+export const forecastMerklApr = (
   breakdown: MerklCampaignBreakdown,
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,

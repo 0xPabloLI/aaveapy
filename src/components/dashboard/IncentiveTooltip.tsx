@@ -11,7 +11,7 @@ import {
   MERKL_WHITELIST_TOGGLE_ARIA,
   MERKL_WHITELIST_TOGGLE_LABEL,
 } from '@/lib/merklWhitelist';
-import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
+import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import type { MerklForecastWireItem } from '@/types/aave';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
@@ -545,7 +545,7 @@ const IncentiveTooltip = ({
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const apr = forecastStates
-            ? sanitizePercent(forecastBreakdownApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
+            ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
             : getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);

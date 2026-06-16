@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
   deriveForecastProgressFlags,
-  forecastBreakdownApr,
+  forecastMerklApr,
   forecastWithTVL,
   mergeForecastState,
   merklAprCapPercentToForecastDecimal,
@@ -266,7 +266,7 @@ describe('forecastWithTVL — TARGET_TOTAL_APR', () => {
   });
 });
 
-describe('forecastBreakdownApr — TARGET_TOTAL_APR', () => {
+describe('forecastMerklApr — TARGET_TOTAL_APR', () => {
   const targetBreakdown: MerklCampaignBreakdown = {
     campaignApr: 1.7,
     campaignStartedAt: '2025-01-01',
@@ -287,19 +287,19 @@ describe('forecastBreakdownApr — TARGET_TOTAL_APR', () => {
       campaignApr: 0,
     };
 
-    const result = forecastBreakdownApr(zeroBreakdown, 0, emptyForecastStates, 1);
+    const result = forecastMerklApr(zeroBreakdown, 0, emptyForecastStates, 1);
 
     expect(result).toBe(0);
   });
 
   it('returns campaignApr directly when positive and inputUsd is 0', () => {
-    const result = forecastBreakdownApr(targetBreakdown, 0, emptyForecastStates, 1);
+    const result = forecastMerklApr(targetBreakdown, 0, emptyForecastStates, 1);
 
     expect(result).toBe(1.7);
   });
 
   it('uses forecastWithTVL with nativeApyPercent for scenario input', () => {
-    const result = forecastBreakdownApr(targetBreakdown, 100_000, emptyForecastStates, 1, 3.0);
+    const result = forecastMerklApr(targetBreakdown, 100_000, emptyForecastStates, 1, 3.0);
 
     expect(result).toBeGreaterThan(0);
     expect(result).toBeLessThan(4.7);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractMeritSelfPositionCapUsd, forecastMeritCampaign, getMeritCampaignCycleDays } from './meritForecast';
+import { extractMeritSelfPositionCapUsd, forecastMeritApr, getMeritCampaignCycleDays } from './meritForecast';
 
 describe('extractMeritSelfPositionCapUsd', () => {
   it('parses the Self-auth cap from structured Merit messages', () => {
@@ -34,12 +34,12 @@ describe('extractMeritSelfPositionCapUsd', () => {
   });
 });
 
-describe('forecastMeritCampaign', () => {
+describe('forecastMeritApr', () => {
   it('uses anchor reserve TVL × APR when anchorTvlUsd is set (before last round)', () => {
     const anchor = 9_000_000;
     const aprPct = 4;
     const deposit = 100_000;
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_BASE',
       depositUsd: deposit,
       forecastAprPercent: aprPct,
@@ -62,7 +62,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('falls back to current APR when latest-round reward data is missing', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_BASE',
       depositUsd: 100_000,
       forecastAprPercent: 4.084439890516138,
@@ -81,7 +81,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('scales self-auth APR by the eligible cap when latest-round reward data is missing', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4.084439890516138,
@@ -96,12 +96,12 @@ describe('forecastMeritCampaign', () => {
       selfPositionCapUsd: 1000,
       eligibleUsd: 1000,
     });
-    expect(result?.apr).toBeCloseTo(0.0004084439890516138, 12);
+    expect(result?.apr).toBeCloseTo(0.04084439890516138, 12);
     expect(result?.dailyRewards).toBeCloseTo((1000 * 0.04084439890516138) / 365, 10);
   });
 
   it('returns null for zero deposit', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_BASE',
       depositUsd: 0,
       forecastAprPercent: 4,
@@ -110,7 +110,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('returns null for negative deposit', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_BASE',
       depositUsd: -1000,
       forecastAprPercent: 4,
@@ -119,7 +119,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('returns null for zero APR', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_BASE',
       depositUsd: 100_000,
       forecastAprPercent: 0,
@@ -128,7 +128,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('returns null for MERIT_SELF_CAP with zero selfPositionCapUsd', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
@@ -138,7 +138,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('clamps eligible deposit to selfPositionCapUsd when deposit exceeds cap', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
@@ -150,7 +150,7 @@ describe('forecastMeritCampaign', () => {
   });
 
   it('uses anchorTvlUsd for MERIT_SELF_CAP base estimate', () => {
-    const result = forecastMeritCampaign({
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
@@ -163,18 +163,18 @@ describe('forecastMeritCampaign', () => {
     expect(result?.meritEstimateSource).toBe('reserve_tvl');
   });
 
-  it('BUG REPRO: same delta + same cap but different existing position produces same APY (should differ)', () => {
+  it('BUG REPRO: same delta + same cap but different existing position produces same unscaled APR (cap applied by caller)', () => {
     const aprPct = 4;
     const selfCap = 1000;
 
-    const withNoPosition = forecastMeritCampaign({
+    const withNoPosition = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: aprPct,
       selfPositionCapUsd: selfCap,
     });
 
-    const withExistingPosition = forecastMeritCampaign({
+    const withExistingPosition = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: aprPct,
@@ -182,7 +182,7 @@ describe('forecastMeritCampaign', () => {
       totalPositionUsd: 2000,
     });
 
-    const withLargerPosition = forecastMeritCampaign({
+    const withLargerPosition = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 2000,
       forecastAprPercent: aprPct,
@@ -195,14 +195,16 @@ describe('forecastMeritCampaign', () => {
     expect(withLargerPosition).not.toBeNull();
 
     expect(withNoPosition!.apr).toBeCloseTo(aprPct / 100, 10);
+    expect(withExistingPosition!.apr).toBeCloseTo(aprPct / 100, 10);
+    expect(withLargerPosition!.apr).toBeCloseTo(aprPct / 100, 10);
 
-    expect(withExistingPosition!.apr).toBeLessThan(withNoPosition!.apr);
-
-    expect(withLargerPosition!.apr).toBeLessThan(withExistingPosition!.apr);
+    expect(withNoPosition!.eligibleUsd).toBe(1000);
+    expect(withExistingPosition!.eligibleUsd).toBe(1000);
+    expect(withLargerPosition!.eligibleUsd).toBe(1000);
   });
 
-  it('with totalPositionUsd, eligible deposit uses total position for cap check', () => {
-    const result = forecastMeritCampaign({
+  it('with totalPositionUsd, eligible deposit uses total position for cap check (cap applied by caller)', () => {
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: 4,
@@ -211,11 +213,11 @@ describe('forecastMeritCampaign', () => {
     });
     expect(result).not.toBeNull();
     expect(result!.eligibleUsd).toBe(1000);
-    expect(result!.apr).toBeCloseTo((4 * (1000 / 2000)) / 100, 10);
+    expect(result!.apr).toBeCloseTo(4 / 100, 10);
   });
 
-  it('totalPositionUsd within cap is not diluted', () => {
-    const result = forecastMeritCampaign({
+  it('totalPositionUsd within cap returns unscaled APR (cap not binding)', () => {
+    const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 500,
       forecastAprPercent: 4,

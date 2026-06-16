@@ -1,5 +1,5 @@
 import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
-import { computePositionCapEligibility } from '@/lib/incentiveMath';
+import { computePositionCapEligibility, applyPositionCap } from '@/lib/incentiveMath';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -164,7 +164,7 @@ function computeMeritBaseFromAnchorTvl({
   };
 }
 
-export function forecastMeritCampaign({
+export function forecastMeritApr({
   mode,
   depositUsd,
   forecastAprPercent,
@@ -217,7 +217,7 @@ export function forecastMeritCampaign({
         if (hypotheticalTvl > 0) {
           const baseForecastAprPercent = (baseEstimate.estimatedDailyRewardUsd * 365 * 100) / hypotheticalTvl;
           if (Number.isFinite(baseForecastAprPercent) && baseForecastAprPercent > 0) {
-            const effectiveAprPercent = baseForecastAprPercent * (eligibleUsd / positionForCap);
+            const effectiveAprPercent = baseForecastAprPercent;
             return {
               unavailable: false,
               hypotheticalTvl,
@@ -236,7 +236,7 @@ export function forecastMeritCampaign({
       }
     }
 
-    const effectiveAprPercent = aprPercent * (eligibleUsd / positionForCap);
+    const effectiveAprPercent = aprPercent;
     return {
       unavailable: false,
       dailyRewards: (aprPercent / 100) * (eligibleUsd / 365),
@@ -325,8 +325,7 @@ export function forecastMeritAprPercent(
     const selfPositionCapUsd = extractMeritSelfPositionCapUsd(selfMessage);
     const positionForCap = totalPositionUsd ?? 0;
     if (selfPositionCapUsd != null && selfPositionCapUsd > 0 && positionForCap > 0) {
-      const { eligibleUsd } = computePositionCapEligibility(positionForCap, selfPositionCapUsd);
-      const effectiveAprPercent = selfAprPercent * (eligibleUsd / positionForCap);
+      const { aprPercent: effectiveAprPercent } = applyPositionCap(selfAprPercent, positionForCap, selfPositionCapUsd);
       return baseAprPercent + effectiveAprPercent;
     }
     return baseAprPercent + selfAprPercent;
@@ -336,7 +335,7 @@ export function forecastMeritAprPercent(
   const selfPositionCapUsd = extractMeritSelfPositionCapUsd(selfMessage);
 
   const baseForecast = baseAprPercent > 0
-    ? forecastMeritCampaign({
+    ? forecastMeritApr({
         mode: 'MERIT_BASE',
         depositUsd,
         forecastAprPercent: baseAprPercent,
@@ -348,7 +347,7 @@ export function forecastMeritAprPercent(
     : null;
 
   const selfForecast = selfAprPercent > 0
-    ? forecastMeritCampaign({
+    ? forecastMeritApr({
         mode: 'MERIT_SELF_CAP',
         depositUsd,
         forecastAprPercent: selfAprPercent,
@@ -363,6 +362,17 @@ export function forecastMeritAprPercent(
     : null;
 
   const baseAfterPercent = baseForecast ? baseForecast.apr * 100 : baseAprPercent;
-  const selfAfterPercent = selfForecast ? selfForecast.apr * 100 : selfAprPercent;
+  const selfAfterPercent = selfForecast
+    ? (() => {
+        const unscaledPercent = selfForecast.apr * 100;
+        if (selfForecast.selfPositionCapUsd != null && selfForecast.selfPositionCapUsd > 0) {
+          const positionForCap = totalPositionUsd ?? depositUsd;
+          if (positionForCap > 0) {
+            return applyPositionCap(unscaledPercent, positionForCap, selfForecast.selfPositionCapUsd).aprPercent;
+          }
+        }
+        return unscaledPercent;
+      })()
+    : selfAprPercent;
   return baseAfterPercent + selfAfterPercent;
 }

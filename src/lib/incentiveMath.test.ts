@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computePositionCapEligibility, computeBudgetRemainingDays } from './incentiveMath';
+import { computePositionCapEligibility, computeBudgetRemainingDays, applyPositionCap } from './incentiveMath';
 
 describe('computePositionCapEligibility', () => {
   it('returns eligibleUsd = min(position, cap) and isCapBinding when position > cap', () => {
@@ -47,5 +47,35 @@ describe('computeBudgetRemainingDays', () => {
 
   it('handles budget exactly matching calendar window', () => {
     expect(computeBudgetRemainingDays(3000, 100, 30)).toBe(30);
+  });
+});
+
+describe('applyPositionCap', () => {
+  it('scales APR when position exceeds cap', () => {
+    const result = applyPositionCap(10, 5000, 1000);
+    expect(result.aprPercent).toBeCloseTo(2, 6);
+    expect(result.isCapBinding).toBe(true);
+    expect(result.eligibleUsd).toBe(1000);
+  });
+
+  it('returns unscaled APR when position is below cap', () => {
+    const result = applyPositionCap(10, 500, 1000);
+    expect(result.aprPercent).toBe(10);
+    expect(result.isCapBinding).toBe(false);
+    expect(result.eligibleUsd).toBe(500);
+  });
+
+  it('returns unscaled APR when position equals cap', () => {
+    const result = applyPositionCap(10, 1000, 1000);
+    expect(result.aprPercent).toBe(10);
+    expect(result.isCapBinding).toBe(false);
+    expect(result.eligibleUsd).toBe(1000);
+  });
+
+  it('handles zero position', () => {
+    const result = applyPositionCap(10, 0, 1000);
+    expect(result.aprPercent).toBe(10);
+    expect(result.isCapBinding).toBe(false);
+    expect(result.eligibleUsd).toBe(0);
   });
 });

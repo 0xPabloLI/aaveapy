@@ -1,9 +1,9 @@
 import { formatUsd } from '@/lib/formatters';
-import { computeBudgetRemainingDays } from '@/lib/incentiveMath';
+import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 
 /**
  * Domain-layer model for incentive constraints that surface as simulation `capNote` / `capWarning`.
- * API field names stay unchanged (e.g. `perUserRewardCapUsd`); UI props stay `capNote` / `capWarning`.
+ * API field names stay unchanged (e.g. `positionCap`); UI props stay `capNote` / `capWarning`.
  */
 export type IncentiveCapKind =
   | 'position_cap'
@@ -71,7 +71,7 @@ export function buildMeritPositionCapEffect(input: {
   };
 }
 
-/** Brevis: per-user position cap from API `perUserRewardCapUsd`. */
+/** Brevis: per-user position cap from API `positionCap`. */
 export function buildBrevisPositionCapEffect(input: {
   positionCapUsd: number;
   isSharedSupplyBorrow: boolean;
@@ -129,7 +129,7 @@ export function buildMerklFixPoolBudgetEffect(fixRewardableDays: number): Incent
     kind: 'pool_budget',
     scope: 'pool',
     window: 'campaign_lifetime',
-    noteParts: [`~${fixRewardableDays.toFixed(0)}d earn`],
+    noteParts: [`~${fixRewardableDays < 1 ? fixRewardableDays.toFixed(2) : fixRewardableDays.toFixed(0)}d earn`],
     warning: false,
   };
 }
@@ -156,6 +156,40 @@ export interface CrossReserveNetNoteInput {
   grossUsd: number;
   sourceSide: 'supply' | 'borrow';
   offsetSymbols: string[];
+}
+
+export interface PositionCapForecastResult {
+  aprPercent: number;
+  capNote?: string;
+  capWarning: boolean;
+  capMetrics?: SimulationCapMetrics;
+}
+
+export function applyPositionCapToForecastResult(
+  nominalAprPercent: number,
+  positionUsd: number,
+  capUsd: number | undefined,
+  options?: {
+    isSharedSupplyBorrow?: boolean;
+    remainingBudget?: number | null;
+    dailyRewardUsd?: number | null;
+    remainingDays?: number | null;
+  },
+): PositionCapForecastResult {
+  if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
+    return { aprPercent: nominalAprPercent, capWarning: false };
+  }
+  const { aprPercent, isCapBinding, eligibleUsd } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
+  const effect = buildBrevisPositionCapEffect({
+    positionCapUsd: capUsd,
+    isSharedSupplyBorrow: options?.isSharedSupplyBorrow ?? false,
+    isCapBinding,
+    remainingBudget: options?.remainingBudget ?? null,
+    dailyRewardUsd: options?.dailyRewardUsd ?? null,
+    remainingDays: options?.remainingDays ?? null,
+  });
+  const fields = capEffectToSimulationFields(effect);
+  return { aprPercent, ...fields };
 }
 
 export function buildCrossReserveNetEligibilityNote(input: CrossReserveNetNoteInput): string | null {

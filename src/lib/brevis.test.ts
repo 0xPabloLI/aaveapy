@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { BrevisIncentive, MerklForecastWireItem } from '@/types/aave';
-import { forecastBreakdownApr } from '@/lib/merklForecast';
+import { forecastMerklApr } from '@/lib/merklForecast';
 import {
   getBrevisCampaignApr,
   getBrevisCampaignBreakdowns,
@@ -10,7 +10,6 @@ import {
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
   getBrevisLatestTvl,
-  getBrevisPerUserRewardCapUsd,
   getBrevisResolvedBreakdown,
   getBrevisTotalBudget,
   hasActiveBrevisBreakdown,
@@ -47,7 +46,7 @@ describe('brevis field accessors', () => {
     const brevis = makeBrevis();
     expect(getBrevisLatestTvl(brevis)).toBeUndefined();
     expect(getBrevisTotalBudget(brevis)).toBeUndefined();
-    expect(getBrevisPerUserRewardCapUsd(brevis)).toBeUndefined();
+    expect(getBrevisResolvedBreakdown(brevis).positionCap).toBeUndefined();
   });
 
   it('returns undefined when message is absent', () => {
@@ -59,11 +58,11 @@ describe('brevis field accessors', () => {
     const brevis = makeBrevis({
       latestTvl: 150_000,
       totalBudget: 9000,
-      perUserRewardCapUsd: 5000,
+      positionCap: 5000,
     });
     expect(getBrevisLatestTvl(brevis)).toBe(150_000);
     expect(getBrevisTotalBudget(brevis)).toBe(9000);
-    expect(getBrevisPerUserRewardCapUsd(brevis)).toBe(5000);
+    expect(getBrevisResolvedBreakdown(brevis).positionCap).toBe(5000);
   });
 });
 
@@ -191,7 +190,7 @@ describe('toMerklBreakdown', () => {
   });
 });
 
-describe('Brevis via forecastBreakdownApr', () => {
+describe('Brevis via forecastMerklApr', () => {
   const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
     [campaignId]: {
       distributedSoFar: 100,
@@ -213,7 +212,7 @@ describe('Brevis via forecastBreakdownApr', () => {
       totalBudget: 500,
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 0, makeForecastStates('brevis-1'), 0);
+    const apr = forecastMerklApr(merkl, 0, makeForecastStates('brevis-1'), 0);
     expect(apr).toBe(3.2);
   });
 
@@ -229,7 +228,7 @@ describe('Brevis via forecastBreakdownApr', () => {
       totalBudget: 500,
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 50_000, makeForecastStates('brevis-1'), 0);
+    const apr = forecastMerklApr(merkl, 50_000, makeForecastStates('brevis-1'), 0);
     expect(apr).toBeGreaterThan(0);
     expect(apr).toBe(5);
   });
@@ -246,7 +245,7 @@ describe('Brevis via forecastBreakdownApr', () => {
       totalBudget: 500,
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 50_000, makeForecastStates('brevis-fix'), 0);
+    const apr = forecastMerklApr(merkl, 50_000, makeForecastStates('brevis-fix'), 0);
     expect(apr).toBeGreaterThan(0);
   });
 
@@ -260,7 +259,7 @@ describe('Brevis via forecastBreakdownApr', () => {
       campaignEndedAt: '2026-03-31T00:00:00.000Z',
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 0, {}, 0);
+    const apr = forecastMerklApr(merkl, 0, {}, 0);
     expect(apr).toBe(3.2);
   });
 
@@ -274,11 +273,11 @@ describe('Brevis via forecastBreakdownApr', () => {
       campaignEndedAt: '2026-03-31T00:00:00.000Z',
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 0, {}, 0);
+    const apr = forecastMerklApr(merkl, 0, {}, 0);
     expect(apr).toBe(0);
   });
 
-  it('passes tydroPointToUsdRate=0 to forecastBreakdownApr (Brevis is not points)', () => {
+  it('passes tydroPointToUsdRate=0 to forecastMerklApr (Brevis is not points)', () => {
     const resolved = getBrevisResolvedBreakdown(makeBrevis({
       campaignId: 'brevis-1',
       campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
@@ -290,7 +289,7 @@ describe('Brevis via forecastBreakdownApr', () => {
       totalBudget: 500,
     }));
     const merkl = toMerklBreakdown(resolved);
-    const apr = forecastBreakdownApr(merkl, 50_000, makeForecastStates('brevis-1'), 0);
+    const apr = forecastMerklApr(merkl, 50_000, makeForecastStates('brevis-1'), 0);
     expect(apr).toBeGreaterThan(0);
     expect(Number.isFinite(apr)).toBe(true);
   });

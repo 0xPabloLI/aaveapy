@@ -638,7 +638,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           aprCap: 10,
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           campaignId: 'brevis-supply',
@@ -651,7 +651,7 @@ describe('buildRateSimulationResult', () => {
               campaignEndedAt: endDate,
               campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
               aprCap: 10,
-              perUserRewardCapUsd: 5000,
+              positionCap: 5000,
               latestTvl: 1_000_000,
               totalBudget: 100_000,
               campaignId: 'brevis-supply',
@@ -692,7 +692,7 @@ describe('buildRateSimulationResult', () => {
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'brevis-supply',
           name: 'Brevis Supply',
           message: 'Brevis Supply',
@@ -702,7 +702,7 @@ describe('buildRateSimulationResult', () => {
               campaignStartedAt: '2020-01-01T00:00:00.000Z',
               campaignEndedAt: endDate,
               campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-              perUserRewardCapUsd: 5000,
+              positionCap: 5000,
               campaignId: 'brevis-supply',
             },
           ],
@@ -746,7 +746,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
         },
       ],
     };
@@ -769,7 +769,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.after).toBe(10);
   });
 
-  it('keeps brevis incentive unchanged when perUserRewardCapUsd is absent', () => {
+  it('keeps brevis incentive unchanged when positionCap is absent', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
       brevisSupplys: [
@@ -814,7 +814,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           message: 'Brevis Borrow',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
         },
       ],
     };
@@ -849,7 +849,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: '',
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           message: 'Brevis Supply (no end)',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
         },
       ],
     };
@@ -887,7 +887,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
@@ -901,7 +901,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
@@ -945,7 +945,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
@@ -959,7 +959,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
@@ -1002,7 +1002,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
         },
       ],
       brevisBorrows: [
@@ -1013,7 +1013,7 @@ describe('buildRateSimulationResult', () => {
           campaignEndedAt: endDate,
           campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           message: 'Brevis Borrow',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
         },
       ],
     };
@@ -1052,7 +1052,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
@@ -1066,7 +1066,7 @@ describe('buildRateSimulationResult', () => {
           latestTvl: 1_000_000,
           totalBudget: 100_000,
           message: 'Shared campaign',
-          perUserRewardCapUsd: 5000,
+          positionCap: 5000,
           campaignId: 'linea-usdc',
         },
       ],
