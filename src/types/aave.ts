@@ -47,6 +47,8 @@ export interface MerklCampaignBreakdown extends BaseCampaignBreakdown {
   aprCap?: number | null;
   latestTvl?: number;
   plannedDaily?: number;
+  /** Budget-bound mode for TARGET_TOTAL_APR campaigns: MAX_APR (dilutive) or FIX_APR (early-end). */
+  budgetBoundMode?: string;
 }
 
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;

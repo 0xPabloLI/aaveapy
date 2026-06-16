@@ -114,6 +114,7 @@ export function buildForecastMerklOpportunities({
 export const FORECAST_REQUIRING_CAMPAIGN_TYPES = new Set([
   'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
   'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'TARGET_TOTAL_APR',
 ]);
 
 export const collectActiveCampaignIds = (opportunities?: MerklOpportunityGroup[]): string[] => {
@@ -731,10 +732,10 @@ export const buildMeritCampaignDetails = (
         });
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
-          if (typeof fp.selfPositionCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
+          if (typeof fp.selfPositionCapUsd === 'number' && typeof fp.eligibleUsd === 'number') {
             const capEffect = buildMeritPositionCapEffect({
               inputUsd,
-              eligibleUsd: fp.selfEligibleUsd,
+              eligibleUsd: fp.eligibleUsd,
               positionCapUsd: fp.selfPositionCapUsd,
             });
             ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(capEffect));
@@ -776,6 +777,7 @@ export const buildMerklCampaignDetails = (
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
   merklCrossReserveNote?: (group: MerklOpportunityGroup) => string | null,
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
+  nativeApyPercent?: number,
 ): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
 
@@ -797,7 +799,7 @@ export const buildMerklCampaignDetails = (
       if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return;
       if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds, campaignAccessStatuses?.[bd.campaignId])) return;
 
-      const currentApr = sanitizePercent(forecastBreakdownApr(bd, 0, forecastStates, tydroPointToUsdRate));
+      const currentApr = sanitizePercent(forecastBreakdownApr(bd, 0, forecastStates, tydroPointToUsdRate, nativeApyPercent));
       const current = isApy ? convertAprToApy(currentApr) : currentApr;
       let after: number | null = null;
       let capNote: string | undefined;
@@ -805,24 +807,27 @@ export const buildMerklCampaignDetails = (
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
 
       if (inputUsd > 0) {
-        const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, tydroPointToUsdRate);
+        const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, tydroPointToUsdRate, nativeApyPercent);
         const forecastAprSan = sanitizePercent(forecastApr);
         const groupMul = merklGroupMultiplier ? merklGroupMultiplier(opportunity) : 1;
         after = (isApy ? convertAprToApy(forecastAprSan) : forecastAprSan) * eligibilityRatio * groupMul;
 
-        const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate);
+        const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate, nativeApyPercent);
         const merklType = merged?.campaignType;
+        const isTargetTotalApr = merklType === 'TARGET_TOTAL_APR';
         if (
           merged &&
-          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE')
+          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || isTargetTotalApr)
         ) {
           const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
           const forecast = forecastWithTVL(merged, hypotheticalTvl);
-          if (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && typeof forecast.fixRewardableDays === 'number') {
+          const isFixLike = merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode === 'FIX_APR');
+          const isMaxLike = merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode !== 'FIX_APR');
+          if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
               buildMerklFixPoolBudgetEffect(forecast.fixRewardableDays),
             ));
-          } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
+          } else if (isMaxLike && forecast.regime === 'APR_CAPPED') {
             ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(buildMerklAprCapEffect()));
           }
         }
@@ -1571,6 +1576,7 @@ export function buildRateSimulationResult({
     merklGroupMultiplier('supply'),
     merklCrossReserveNote('supply'),
     campaignAccessStatuses,
+    reserve.supplyApy ?? 0,
   );
   const supplyBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisSupplys,
@@ -1603,6 +1609,7 @@ export function buildRateSimulationResult({
     merklGroupMultiplier('borrow'),
     merklCrossReserveNote('borrow'),
     campaignAccessStatuses,
+    reserve.borrowApy ?? 0,
   );
   const borrowBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisBorrows,

@@ -79,6 +79,8 @@ interface IncentiveSource {
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
+    campaignType?: string;
+    aprCap?: number | null;
   }>;
 }
 
@@ -559,17 +561,19 @@ const IncentiveTooltip = ({
               message: opportunity.message,
               dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
               campaigns: [{
-                value: included ? displayValue : 0,
-                rawValue: displayValue,
-                whitelistOnly,
-                included,
-                dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-                startDate: breakdown.campaignStartedAt,
-                endDate: breakdown.campaignEndedAt,
-                message: opportunity.message,
-                campaignId: breakdown.campaignId,
-                sourceType: 'Merkl',
-              }],
+                 value: included ? displayValue : 0,
+                 rawValue: displayValue,
+                 whitelistOnly,
+                 included,
+                 dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+                 startDate: breakdown.campaignStartedAt,
+                 endDate: breakdown.campaignEndedAt,
+                 message: opportunity.message,
+                 campaignId: breakdown.campaignId,
+                 sourceType: 'Merkl',
+                 campaignType: breakdown.campaignType,
+                 aprCap: breakdown.aprCap,
+               }],
             });
           }
         });
@@ -703,7 +707,12 @@ const IncentiveTooltip = ({
                   {formatPercent(displayValue)}
                 </span>
               </div>
-              {messageLines.length > 0 && (
+          {campaign.campaignType === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0 && (
+            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
+              Target {formatPercent(campaign.aprCap)} = Native {formatPercent(type === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0))} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            </p>
+          )}
+          {messageLines.length > 0 && (
                 <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
                   {messageLines.map((line, lineIndex) => (
                     <li key={`${keyPrefix}-campaign-${campaignIndex}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">

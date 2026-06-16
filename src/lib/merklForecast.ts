@@ -8,6 +8,7 @@ import {
   convertMerklPointsAmountToUsd,
 } from '@/lib/tydro';
 import { computeBudgetRemainingDays } from '@/lib/incentiveMath';
+import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 
 const DAYS_PER_YEAR = 365;
 const SECONDS_PER_DAY = 86400;
@@ -24,6 +25,10 @@ export interface MerklForecastState {
   totalBudget?: number;
   latestTvl?: number;
   endTimestamp?: number;
+  /** Native APY in percent points (e.g. 3.0 for 3%). Only used by TARGET_TOTAL_APR. */
+  nativeApyPercent?: number;
+  /** Budget-bound mode: MAX_APR (dilutive) or FIX_APR (early-end). Only used by TARGET_TOTAL_APR. */
+  budgetBoundMode?: string;
 }
 
 export type MerklForecastProgressState = MerklForecastState;
@@ -62,13 +67,14 @@ export const forecastWithTVL = (
   const safeTvl = safe(tvl);
   const isMaxAprCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
   const isFixAprCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isTargetTotalAprCampaign = forecastState.campaignType === 'TARGET_TOTAL_APR';
   const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
 
   if (safeTvl <= 0) {
     return {
       dailyRewards: 0,
       apr: 0,
-      regime: isMaxAprCampaign ? 'APR_CAPPED' : 'PLANNED',
+      regime: isMaxAprCampaign || (isTargetTotalAprCampaign && forecastState.budgetBoundMode === 'MAX_APR') ? 'APR_CAPPED' : 'PLANNED',
     };
   }
 
@@ -78,6 +84,62 @@ export const forecastWithTVL = (
   if (forecastState.campaignType === 'DUTCH_AUCTION') {
     const apr = (plannedDaily * DAYS_PER_YEAR) / safeTvl;
     return { dailyRewards: plannedDaily, apr, regime: 'PLANNED' as const };
+  }
+
+  // TARGET_TOTAL_APR: aprCap is total APR target, not Merkl payable cap.
+  // Compute effectiveAprCap = max(convertAprToApy(aprCap*100) - nativeApy, 0) converted back to APR decimal.
+  if (isTargetTotalAprCampaign) {
+    const nativeApy = forecastState.nativeApyPercent ?? 0;
+    const aprCapDecimal = safe(forecastState.aprCap ?? 0);
+    const targetApyPercent = convertAprToApy(aprCapDecimal * 100);
+    const effectiveApyPercent = Math.max(targetApyPercent - nativeApy, 0);
+    const effectiveAprCap = apyToApr(effectiveApyPercent) / 100;
+
+    const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
+    const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
+    const aprBasedDaily = (safeTvl * effectiveAprCap) / DAYS_PER_YEAR;
+
+    if (forecastState.budgetBoundMode === 'FIX_APR') {
+      const dailyRewards = aprBasedDaily;
+      const apr = effectiveAprCap;
+      const fixRewardableDays = computeBudgetRemainingDays(remainingBudget, dailyRewards, remainingDays);
+      const fixRewardableUntilTs = Math.floor(
+        Math.min(
+          safe(forecastState.endTimestamp),
+          safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY
+        )
+      );
+
+      return {
+        dailyRewards,
+        apr,
+        regime: 'PLANNED',
+        fixRewardableDays,
+        fixRewardableUntilTs,
+      };
+    }
+
+    // MAX_APR (default for TARGET_TOTAL_APR)
+    const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
+    const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
+    const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
+    const capBinding = aprBasedDaily < requiredDaily;
+    const isCatchingUp = requiredDaily > plannedDaily * 1.01;
+
+    let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';
+    if (capBinding) {
+      regime = 'APR_CAPPED';
+    } else if (isCatchingUp) {
+      regime = 'CATCHING_UP';
+    } else {
+      regime = 'PLANNED';
+    }
+
+    return {
+      dailyRewards,
+      apr,
+      regime,
+    };
   }
 
   const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
@@ -186,6 +248,7 @@ export const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
   forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,
+  nativeApyPercent?: number,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
@@ -204,6 +267,8 @@ export const mergeForecastState = (
     requiredDaily: normalizeUsdUnit(metrics?.requiredDaily),
     distributedSoFar: normalizeUsdUnit(metrics?.distributedSoFar),
     endTimestamp: metrics?.endTimestamp,
+    nativeApyPercent,
+    budgetBoundMode: breakdown.budgetBoundMode,
   };
 };
 
@@ -214,17 +279,24 @@ export const mergeForecastState = (
  * - `inputUsd <= 0` and `currentApr === 0` → forecastWithTVL at current TVL (fallback for MAX/FIX/DUTCH)
  * - `inputUsd > 0`  → forecastWithTVL at hypothetical TVL (scenario forecast)
  *
+ * For TARGET_TOTAL_APR with campaignApr=0, returns 0 immediately (nativeAPY ≥ targetAPR → no incentive).
+ *
  * Callers are responsible for whitelist filtering before calling this function.
  */
 export const forecastBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number
+  tydroPointToUsdRate: number,
+  nativeApyPercent?: number,
 ): number => {
   const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
 
-  const merged = mergeForecastState(breakdown, forecastStates, tydroPointToUsdRate);
+  if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
+    return 0;
+  }
+
+  const merged = mergeForecastState(breakdown, forecastStates, tydroPointToUsdRate, nativeApyPercent);
   if (!merged) return currentApr;
 
   if (inputUsd <= 0) {
