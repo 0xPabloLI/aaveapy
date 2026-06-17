@@ -58,6 +58,21 @@ interface IncentiveTooltipProps {
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
+interface IncentiveCampaign {
+  value: number;
+  dateRange?: string;
+  startDate?: string;
+  endDate?: string;
+  message?: string | Record<string, unknown> | unknown[];
+  campaignId?: string;
+  sourceType?: IncentiveSource['sourceType'];
+  whitelistOnly?: boolean;
+  included?: boolean;
+  rawValue?: number;
+  campaignType?: string;
+  aprCap?: number | null;
+}
+
 interface IncentiveSource {
   name: string;
   value: number;
@@ -68,20 +83,7 @@ interface IncentiveSource {
   dateRange?: string;
   message?: string | Record<string, unknown> | unknown[];
   requiredTokens?: string[] | string;
-  campaigns?: Array<{
-    value: number;
-    dateRange?: string;
-    startDate?: string;
-    endDate?: string;
-    message?: string | Record<string, unknown> | unknown[];
-    campaignId?: string;
-    sourceType?: IncentiveSource['sourceType'];
-    whitelistOnly?: boolean;
-    included?: boolean;
-    rawValue?: number;
-    campaignType?: string;
-    aprCap?: number | null;
-  }>;
+  campaigns?: IncentiveCampaign[];
 }
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -616,6 +618,52 @@ const IncentiveTooltip = ({
   const displayTargetApr = (aprCap: number) => isApy ? convertAprToApy(aprCap) : aprCap;
   const displayNative = () => isApy ? nativeApy : apyToApr(nativeApy);
 
+  const renderCampaignTypeDescription = (campaign: IncentiveCampaign, accentClass: string) => {
+    const ct = campaign.campaignType;
+    if (!ct || campaign.value <= 0) return null;
+
+    if (ct === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0) {
+      return (
+        <p data-campaign-desc="TARGET_TOTAL_APR" className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground`}>
+          <span className={accentClass}>Target {formatPercent(displayTargetApr(campaign.aprCap!))}</span>
+          {' = Native '}
+          <span className={accentClass}>{formatPercent(displayNative())}</span>
+          {' + Merkl '}
+          <span className={accentClass}>{formatPercent(campaign.rawValue ?? campaign.value)}</span>
+        </p>
+      );
+    }
+
+    if (ct === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
+      const capPart = campaign.aprCap != null && campaign.aprCap > 0
+        ? ` (cap ${formatPercent(displayTargetApr(campaign.aprCap))})`
+        : '';
+      return (
+        <p data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
+          Variable APR — reward rate decreases as TVL grows{capPart}
+        </p>
+      );
+    }
+
+    if (ct === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
+      return (
+        <p data-campaign-desc="FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
+          Fixed APR — campaign ends early if budget runs out
+        </p>
+      );
+    }
+
+    if (ct === 'DUTCH_AUCTION') {
+      return (
+        <p data-campaign-desc="DUTCH_AUCTION" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
+          Variable APR — daily reward amount is fixed, rate changes with TVL
+        </p>
+      );
+    }
+
+    return null;
+  };
+
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
       source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
@@ -653,11 +701,7 @@ const IncentiveTooltip = ({
               </span>
             </label>
           )}
-          {campaign.campaignType === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0 && (
-            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
-              Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
-            </p>
-          )}
+          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
           {campaign.dateRange && (
             <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
               Campaign time: {campaign.dateRange}
@@ -716,11 +760,7 @@ const IncentiveTooltip = ({
                   {formatPercent(displayValue)}
                 </span>
               </div>
-          {campaign.campaignType === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0 && (
-            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
-              Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
-            </p>
-          )}
+          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
           {messageLines.length > 0 && (
                 <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
                   {messageLines.map((line, lineIndex) => (

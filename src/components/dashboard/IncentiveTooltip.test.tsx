@@ -305,4 +305,137 @@ describe('IncentiveTooltip', () => {
       expect(container).toBeTruthy();
     });
   });
+
+  describe('Merkl campaign type descriptions', () => {
+    const merklCampaignReserve = (campaignType: string, overrides?: Partial<ReserveWithSpread>): ReserveWithSpread => ({
+      ...mockReserve,
+      ...overrides,
+      merklSupplys: [{
+        name: 'Merkl Campaign',
+        message: '',
+        link: 'https://merkl.angle.money',
+        breakdowns: [{
+          campaignId: 'merkl-test',
+          campaignApr: 3.0,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2027-12-31',
+          whitelistOnly: false,
+          campaignType,
+          aprCap: 5.83,
+        }],
+      }],
+    });
+
+    it('renders TARGET_TOTAL_APR three-part formula', () => {
+      const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: true });
+      expect(container.textContent).toContain('Target');
+      expect(container.textContent).toContain('Native');
+      expect(container.textContent).toContain('Merkl');
+    });
+
+    it('renders TARGET_TOTAL_APR with muted label and accent value', () => {
+      const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: true });
+      const descriptionEl = container.querySelector('[data-campaign-desc="TARGET_TOTAL_APR"]');
+      expect(descriptionEl).not.toBeNull();
+      expect(descriptionEl!.textContent).toContain('Target');
+      expect(descriptionEl!.className).toContain('text-muted-foreground');
+    });
+
+    it('renders MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE with variable APR and cap', () => {
+      const reserve = merklCampaignReserve('MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Variable APR');
+      expect(container.textContent).toContain('reward rate decreases as TVL grows');
+      expect(container.textContent).toContain('cap');
+    });
+
+    it('renders MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE with aprCap following isApy toggle', () => {
+      const reserve = merklCampaignReserve('MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: false });
+      const descEl = container.querySelector('[data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE"]');
+      expect(descEl).not.toBeNull();
+      expect(descEl!.textContent).toContain('cap');
+    });
+
+    it('renders FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE with fixed APR and early-end note', () => {
+      const reserve = merklCampaignReserve('FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Fixed APR');
+      expect(container.textContent).toContain('campaign ends early if budget runs out');
+    });
+
+    it('renders DUTCH_AUCTION with variable APR and daily reward note', () => {
+      const reserve = merklCampaignReserve('DUTCH_AUCTION');
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Variable APR');
+      expect(container.textContent).toContain('daily reward amount is fixed');
+      expect(container.textContent).toContain('rate changes with TVL');
+    });
+
+    it('does not render campaign type description for unknown campaign types', () => {
+      const reserve = merklCampaignReserve('UNKNOWN_TYPE');
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.querySelector('[data-campaign-desc]')).toBeNull();
+    });
+
+    it('renders all three non-TARGET campaign types with muted text color', () => {
+      const types = ['MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE', 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', 'DUTCH_AUCTION'] as const;
+      for (const campaignType of types) {
+        cleanup();
+        const reserve = merklCampaignReserve(campaignType);
+        const { container } = renderTooltip({ ...defaultProps, reserve });
+        const descEl = container.querySelector(`[data-campaign-desc="${campaignType}"]`);
+        expect(descEl).not.toBeNull();
+        expect(descEl!.className).toContain('text-muted-foreground');
+      }
+    });
+
+    it('renders MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE without cap when aprCap is null', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          message: '',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-test',
+            campaignApr: 3.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            whitelistOnly: false,
+            campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            aprCap: null,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const descEl = container.querySelector('[data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE"]');
+      expect(descEl).not.toBeNull();
+      expect(descEl!.textContent).not.toContain('cap');
+    });
+
+    it('renders FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE without apr value when campaignApr is 0', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          message: '',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-test',
+            campaignApr: 0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            whitelistOnly: false,
+            campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            aprCap: 5.83,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.querySelector('[data-campaign-desc]')).toBeNull();
+    });
+  });
 });
