@@ -67,6 +67,8 @@ import {
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
 
+const FORECAST_UNAVAILABLE_NOTE = 'No forecast data — using current APR.';
+
 export type BrevisCampaignRow = {
   source: BrevisIncentive;
   breakdown: NonNullable<BrevisIncentive['breakdowns']>[number];
@@ -150,7 +152,12 @@ export interface SimulationCampaignDetail {
   capMetrics?: import('./incentiveCaps').SimulationCapMetrics;
   /** Optional deep-link (Merit incentive, Merkl opportunity, or Brevis campaign). */
   href?: string | null;
+  /** When true, forecast data was unavailable for this campaign; after value uses current APR. */
+  forecastUnavailable?: boolean;
 }
+
+const countForecastUnavailable = (rows: SimulationCampaignDetail[]): number =>
+  rows.filter((r) => r.forecastUnavailable).length;
 
 export interface SimulationSourceDetail extends SimulationMetric {
   campaigns?: SimulationCampaignDetail[];
@@ -802,6 +809,13 @@ export const buildMerklCampaignDetails = (
       let capNote: string | undefined;
       let capWarning = false;
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
+      let forecastUnavailable = false;
+
+      const isForecastRequiring = !!bd.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(bd.campaignType);
+      const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate, nativeApyPercent);
+      if (isForecastRequiring && (!merged || !forecastStates[String(bd.campaignId)])) {
+        forecastUnavailable = true;
+      }
 
       if (inputUsd > 0) {
         const forecastApr = forecastMerklApr(bd, inputUsd, forecastStates, tydroPointToUsdRate, nativeApyPercent);
@@ -809,7 +823,6 @@ export const buildMerklCampaignDetails = (
         const groupMul = merklGroupMultiplier ? merklGroupMultiplier(opportunity) : 1;
         after = (isApy ? convertAprToApy(forecastAprSan) : forecastAprSan) * eligibilityRatio * groupMul;
 
-        const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate, nativeApyPercent);
         const merklType = merged?.campaignType;
         const isTargetTotalApr = merklType === 'TARGET_TOTAL_APR';
         if (
@@ -832,6 +845,10 @@ export const buildMerklCampaignDetails = (
         after = null;
       }
 
+      if (forecastUnavailable && hasAnyInput) {
+        capNote = capNote ? `${capNote} · ${FORECAST_UNAVAILABLE_NOTE}` : FORECAST_UNAVAILABLE_NOTE;
+      }
+
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
       const oppLink = opportunity.link;
@@ -845,6 +862,7 @@ export const buildMerklCampaignDetails = (
         capWarning,
         capMetrics,
         href: oppLink ?? null,
+        forecastUnavailable: forecastUnavailable || undefined,
       });
     });
   });
@@ -890,8 +908,19 @@ export const buildBrevisCampaignDetails = (
     const combined = getBrevisCombinedDepositUsd(source, breakdown, sharedDepositsByCampaignId);
     const noteDepositUsd = combined ?? inputUsd;
     const merkl = toMerklBreakdown(resolved);
-
     const effectiveInputUsd = combined ?? inputUsd;
+    let forecastUnavailable = false;
+
+    const isForecastRequiring = !!merkl.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(merkl.campaignType);
+    if (isForecastRequiring && forecastStates && merkl.campaignId) {
+      const merged = mergeForecastState(merkl, forecastStates, 0);
+      if (!merged || !forecastStates[String(merkl.campaignId)]) {
+        forecastUnavailable = true;
+      }
+    } else if (isForecastRequiring && forecastStates) {
+      forecastUnavailable = true;
+    }
+
     if (effectiveInputUsd > 0) {
       let aprPercent = forecastStates
         ? sanitizePercent(forecastMerklApr(merkl, effectiveInputUsd, forecastStates, 0))
@@ -934,6 +963,10 @@ export const buildBrevisCampaignDetails = (
       }
     }
 
+    if (forecastUnavailable && hasAnyInput) {
+      capNote = capNote ? `${capNote} · ${FORECAST_UNAVAILABLE_NOTE}` : FORECAST_UNAVAILABLE_NOTE;
+    }
+
     const delta = after !== null ? after - current : null;
     collected.push({
       id: `brevis-${collected.length}-${breakdown.campaignId ?? 'b'}`,
@@ -944,6 +977,7 @@ export const buildBrevisCampaignDetails = (
       capNote,
       capWarning,
       capMetrics,
+      forecastUnavailable: forecastUnavailable || undefined,
     });
   });
 
@@ -1755,7 +1789,10 @@ export function buildRateSimulationResult({
       )
     : [];
   const forecastUnavailableCampaignIds = allActiveCampaignIds.filter((id) => !forecastStates[id]);
-  const forecastUnavailableCampaignCount = forecastUnavailableCampaignIds.length;
+  const forecastUnavailableCampaignCount = countForecastUnavailable(supplyMerklCampaignRows)
+    + countForecastUnavailable(supplyBrevisCampaignRows)
+    + countForecastUnavailable(borrowMerklCampaignRows)
+    + countForecastUnavailable(borrowBrevisCampaignRows);
 
   const deriveTotalBorrowedUsd = (
     reserveSizeUsd: number | null | undefined,

@@ -176,6 +176,7 @@ export function buildPortfolioPositionResult(
   incentiveAprPercent: number,
   metrics?: BuildPositionResultMetrics,
   isApy: boolean = false,
+  forecastUnavailableCampaignCount?: number,
 ): PortfolioPositionResult {
   const totalPercent = side === 'supply'
     ? nativeAprPercent + incentiveAprPercent
@@ -200,6 +201,7 @@ export function buildPortfolioPositionResult(
     incentiveMetric: metrics?.incentiveMetric,
     totalMetric: metrics?.totalMetric,
     usdPerDayMetric: metrics?.usdPerDayMetric,
+    forecastUnavailableCampaignCount,
   };
 }
 

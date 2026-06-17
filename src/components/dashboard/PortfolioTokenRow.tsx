@@ -399,6 +399,11 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
 
   const tokenSymbol = entry.tokenSymbol;
 
+  const supplyCapLimitUsd = capWarnings?.supply?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
+  const borrowCapLimitUsd = capWarnings?.borrow?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
+  const supplyWarnings = capWarnings?.supply;
+  const borrowWarnings = capWarnings?.borrow;
+
   if (isMobile) {
     return (
       <div
@@ -432,8 +437,10 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </div>
         </div>
         <div className="flex flex-col items-stretch gap-1">
-          <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} capWarnings={capWarnings?.supply} />
-          <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} capWarnings={capWarnings?.borrow} />
+          <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} capLimitUsd={supplyCapLimitUsd} />
+          {supplyWarnings && supplyWarnings.length > 0 && <CapWarningRow warnings={supplyWarnings} side="supply" isMobile={isMobile} />}
+          <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} capLimitUsd={borrowCapLimitUsd} />
+          {borrowWarnings && borrowWarnings.length > 0 && <CapWarningRow warnings={borrowWarnings} side="borrow" isMobile={isMobile} />}
         </div>
       </div>
     );
@@ -474,9 +481,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} />
-        <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} />
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
+          <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} capLimitUsd={supplyCapLimitUsd} />
+          <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} capLimitUsd={borrowCapLimitUsd} />
+        </div>
+        {supplyWarnings && supplyWarnings.length > 0 && <CapWarningRow warnings={supplyWarnings} side="supply" isMobile={isMobile} />}
+        {borrowWarnings && borrowWarnings.length > 0 && <CapWarningRow warnings={borrowWarnings} side="borrow" isMobile={isMobile} />}
       </div>
     </div>
   );

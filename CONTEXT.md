@@ -76,6 +76,10 @@ _Avoid_: Brevis Campaign, Brevis Program
 仅 Merkl Campaign 的可选 points 路径产出的积分。转换公式：`points × pointToUsdRate × 36.5`。Merit / Brevis / 协议激励**不是** Tydro Points。
 _Avoid_: Points（太泛）
 
+**Reward Token Symbol**:
+Merkl campaign 的 reward token 标识，来自 Merkl API `rewardToken.symbol`（如 `TydroInkPoints`、`ipor-fusion-points-s2`、`Gravity Points`）。前端按 symbol 做 case-insensitive 匹配路由 `pointToUsdRate`：`TydroInkPoints` → FDV slider rate，其余 → 0。`rewardTokenIconUrl` 来自 Merkl API `rewardToken.icon`，IncentiveTooltip 中 APR 前显示。
+_Avoid_: point token name、reward token id
+
 ## Net Position
 
 **Net Position Constraint**:

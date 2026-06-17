@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRateSimulationResult, buildMeritCampaignDetails } from './rateSimulationCalculator';
+import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails } from './rateSimulationCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -958,5 +958,230 @@ describe('AAV-916: buildMeritCampaignDetails self-cap capNote', () => {
     expect(selfRow).toBeDefined();
     expect(selfRow!.capNote).toBeDefined();
     expect(selfRow!.capWarning).toBeFalsy();
+  });
+});
+
+describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
+  const opportunities = [
+    {
+      name: 'Test Merkl',
+      link: 'https://example.com',
+      breakdowns: [
+        {
+          campaignId: 'camp-with-forecast',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignApr: 5,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        },
+        {
+          campaignId: 'camp-without-forecast',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignApr: 3,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        },
+        {
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignApr: 2,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        },
+      ],
+    },
+  ];
+
+  it('marks campaign as forecastUnavailable when forecastStates lacks the campaignId', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
+      'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+    };
+    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const withoutForecast = rows.find((r) => r.id.includes('camp-without-forecast'));
+    expect(withoutForecast).toBeDefined();
+    expect(withoutForecast!.forecastUnavailable).toBe(true);
+    expect(withoutForecast!.capNote).toContain('No forecast data');
+  });
+
+  it('does not mark campaign as forecastUnavailable when forecastStates has the campaignId', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
+      'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+    };
+    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const withForecast = rows.find((r) => r.id.includes('camp-with-forecast'));
+    expect(withForecast).toBeDefined();
+    expect(withForecast!.forecastUnavailable).toBeFalsy();
+  });
+
+  it('marks campaign as forecastUnavailable when mergeForecastState returns null (no campaignId)', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
+    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const noIdRow = rows.find((r) => r.id.includes('-x'));
+    expect(noIdRow).toBeDefined();
+    expect(noIdRow!.forecastUnavailable).toBe(true);
+    expect(noIdRow!.capNote).toContain('No forecast data');
+  });
+
+  it('does not add forecastUnavailable capNote when hasAnyInput is false', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
+    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, false);
+    for (const row of rows) {
+      expect(row.capNote ?? '').not.toContain('No forecast data');
+    }
+  });
+});
+
+describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
+  it('marks brevis campaign as forecastUnavailable when forecastStates is provided but lacks campaignId', () => {
+    const brevis = [
+      {
+        campaignId: 'brevis-1',
+        campaignApr: 4,
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        campaignStartedAt: '2025-01-01',
+        campaignEndedAt: '2030-12-31',
+        message: 'Test Brevis',
+        positionCap: null,
+        totalBudget: null,
+      },
+    ];
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
+    const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].forecastUnavailable).toBe(true);
+    expect(rows[0].capNote).toContain('No forecast data');
+  });
+
+  it('does not mark brevis campaign as forecastUnavailable when forecastStates has the campaign', () => {
+    const brevis = [
+      {
+        campaignId: 'brevis-1',
+        campaignApr: 4,
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        campaignStartedAt: '2025-01-01',
+        campaignEndedAt: '2030-12-31',
+        message: 'Test Brevis',
+        positionCap: null,
+        totalBudget: null,
+      },
+    ];
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
+      'brevis-1': { requiredDaily: 50, distributedSoFar: 20, endTimestamp: 2000000000 },
+    };
+    const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].forecastUnavailable).toBeFalsy();
+  });
+});
+
+describe('forecastUnavailableCampaignCount — expanded counting', () => {
+  it('counts campaigns without campaignId (mergeForecastState returns null)', () => {
+    const reserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      merklSupplys: [{
+        name: 'Merkl No ID',
+        breakdowns: [{
+          campaignApr: 3,
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        }],
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    expect(result.forecastUnavailableCampaignCount).toBeGreaterThanOrEqual(1);
+    const supplyMerklCampaigns = result.supply.sources.merkl.campaigns ?? [];
+    const noIdRow = supplyMerklCampaigns.find((r) => r.forecastUnavailable);
+    expect(noIdRow).toBeDefined();
+  });
+
+  it('counts Brevis campaigns without forecast', () => {
+    const reserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      brevisSupplys: [{
+        campaignApr: 4,
+        campaignId: 'brevis-no-forecast',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        campaignStartedAt: '2025-01-01',
+        campaignEndedAt: '2030-12-31',
+        message: 'Brevis No Forecast',
+        positionCap: null,
+        totalBudget: null,
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    expect(result.forecastUnavailableCampaignCount).toBeGreaterThanOrEqual(1);
+    const brevisCampaigns = result.supply.sources.brevis.campaigns ?? [];
+    const brevisRow = brevisCampaigns.find((r) => r.forecastUnavailable);
+    expect(brevisRow).toBeDefined();
+  });
+
+  it('does not count campaigns with available forecast', () => {
+    const reserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      merklSupplys: [{
+        name: 'Merkl With Forecast',
+        breakdowns: [{
+          campaignApr: 3,
+          campaignId: 'has-forecast',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        }],
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      forecastStates: {
+        'has-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+      },
+    });
+    expect(result.forecastUnavailableCampaignCount).toBe(0);
+  });
+
+  it('sums across supply and borrow sides', () => {
+    const reserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      merklSupplys: [{
+        name: 'Merkl Supply No Forecast',
+        breakdowns: [{
+          campaignApr: 3,
+          campaignId: 'supply-no-forecast',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        }],
+      }],
+      merklBorrows: [{
+        name: 'Merkl Borrow No Forecast',
+        breakdowns: [{
+          campaignApr: 2,
+          campaignId: 'borrow-no-forecast',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+        }],
+      }],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      borrowInput: '500',
+    });
+    expect(result.forecastUnavailableCampaignCount).toBeGreaterThanOrEqual(2);
   });
 });

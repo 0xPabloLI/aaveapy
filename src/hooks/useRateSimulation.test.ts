@@ -1853,7 +1853,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote).toBeUndefined();
+    expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
+    expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 
   it('no cross-reserve note when no constraint on group', () => {
@@ -1895,7 +1896,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote).toBeUndefined();
+    expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
+    expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 });
 

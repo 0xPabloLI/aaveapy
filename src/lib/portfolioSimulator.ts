@@ -7,7 +7,7 @@ import type {
   PortfolioSimulationMetric,
   PortfolioSide,
 } from '@/types/portfolio';
-import type { ScenarioInputMode, SimulationLane } from '@/lib/rateSimulationCalculator';
+import type { ScenarioInputMode, SimulationLane, SimulationCampaignDetail } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
 import {
   buildPortfolioPositionResult,
@@ -221,6 +221,17 @@ function computeResultsFromGroups(
         hubBorrowed: hubAgg?.hubBorrowed,
       });
 
+      const countSideForecastUnavailable = (lane: SimulationLane): number => {
+        const rows: SimulationCampaignDetail[] = [
+          ...(lane.sources.merkl.campaigns ?? []),
+          ...(lane.sources.brevis.campaigns ?? []),
+        ];
+        return rows.filter((r) => r.forecastUnavailable).length;
+      };
+
+      const supplyForecastUnavailable = countSideForecastUnavailable(simResult.supply);
+      const borrowForecastUnavailable = countSideForecastUnavailable(simResult.borrow);
+
       for (const slot of group.supplySlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const nativePercent = simResult.supply.hasInput
@@ -231,7 +242,7 @@ function computeResultsFromGroups(
           : (simResult.supply.currentIncentive ?? 0);
         const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable),
         );
       }
 
@@ -245,7 +256,7 @@ function computeResultsFromGroups(
           : (simResult.borrow.currentIncentive ?? 0);
         const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable),
         );
       }
     } else {

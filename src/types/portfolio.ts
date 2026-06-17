@@ -87,6 +87,8 @@ export interface PortfolioPositionResult {
   totalMetric?: PortfolioSimulationMetric;
   /** USD/day current/after/delta. */
   usdPerDayMetric?: PortfolioSimulationMetric;
+  /** Count of incentive campaigns without forecast data (using current APR). */
+  forecastUnavailableCampaignCount?: number;
 }
 
 /** Aggregated portfolio summary. */

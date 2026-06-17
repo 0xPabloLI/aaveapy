@@ -55,7 +55,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   if (results.length === 0) return null;
 
   const entryMap = new Map(entries.map(e => [e.reserveId, e]));
-  const rows = results.map((r) => {
+  const rows: ResultRowData[] = results.map((r) => {
     const entry = entryMap.get(r.reserveId);
     return { ...r, tokenSymbol: entry?.tokenSymbol ?? '?', chainName: entry?.chainName ?? '', marketName: entry?.marketName ?? '' };
   });
@@ -63,6 +63,8 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   const supplyRows = rows.filter((r) => r.side === 'supply');
   const borrowRows = rows.filter((r) => r.side === 'borrow');
   const colCount = 6;
+
+  const hasForecastUnavailable = rows.some((r) => (r.forecastUnavailableCampaignCount ?? 0) > 0);
 
   return (
     <div className="rounded-lg border border-border/50 overflow-hidden">
@@ -110,6 +112,11 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
           )}
         </tbody>
       </table>
+      {hasForecastUnavailable && (
+        <p className="ds-text-10 text-muted-foreground px-2.5 py-1.5 border-t border-border/30">
+          * No forecast data — using current APR.
+        </p>
+      )}
     </div>
   );
 });
@@ -155,6 +162,9 @@ const ResultRow = memo(function ResultRow({
       <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
         {formatPercent(row.incentivePercent)}
         <InlineDelta value={incentiveDelta} accentClass={accentClass} />
+        {row.forecastUnavailableCampaignCount != null && row.forecastUnavailableCampaignCount > 0 && (
+          <span className="ds-text-9 text-muted-foreground ml-1" title="No forecast data — using current APR">*</span>
+        )}
       </td>
       <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600')}>
         {formatPercent(row.totalPercent)}
