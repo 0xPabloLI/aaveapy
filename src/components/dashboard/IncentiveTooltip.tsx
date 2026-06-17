@@ -643,7 +643,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Distribution: Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            Target total {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );
@@ -656,7 +656,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Distribution: Variable APR — reward rate decreases as TVL grows{capPart}
+            Max APR — reward rate decreases as TVL grows{capPart}
           </p>
         </div>
       );
@@ -666,7 +666,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Distribution: Fixed APR — campaign ends early if budget runs out
+            Fixed APR — campaign ends early if budget runs out
           </p>
         </div>
       );
@@ -676,7 +676,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="DUTCH_AUCTION" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Distribution: Variable APR — daily reward amount is fixed, rate changes with TVL
+            Variable APR — daily reward amount is fixed, rate changes with TVL
           </p>
         </div>
       );
