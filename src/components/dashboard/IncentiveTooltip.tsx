@@ -12,6 +12,7 @@ import {
   MERKL_WHITELIST_TOGGLE_LABEL,
 } from '@/lib/merklWhitelist';
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
+import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import type { MerklForecastWireItem } from '@/types/aave';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
@@ -52,6 +53,7 @@ interface IncentiveTooltipProps {
   accentTextClass?: string;
   accentBgClass?: string;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   forecastStates?: Record<string, MerklForecastWireItem>;
@@ -245,6 +247,7 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
   tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
   forecastStates,
@@ -546,9 +549,12 @@ const IncentiveTooltip = ({
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
+          const effectiveRate = pointRateMap
+            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+            : tydroPointToUsdRate;
           const apr = forecastStates
-            ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
-            : getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+            ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
+            : getMerklBreakdownApr(breakdown, effectiveRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
           if (!isNaN(apr) && apr >= 0) {
@@ -664,6 +670,39 @@ const IncentiveTooltip = ({
     return null;
   };
 
+  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string, showAprRow: boolean, displayValue?: number) => {
+    const messageLines = getMessageLines(campaign.message);
+    const dateRangeText = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : '';
+    return (
+      <>
+        {showAprRow && displayValue != null && (
+          <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
+            <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{dateRangeText || 'Campaign time: N/A'}</p>
+            <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
+              {formatPercent(displayValue)}
+            </span>
+          </div>
+        )}
+        {!showAprRow && dateRangeText && (
+          <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
+            {dateRangeText}
+          </p>
+        )}
+        {renderCampaignTypeDescription(campaign, campaignAccentClass)}
+        {messageLines.length > 0 && (
+          <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+            {messageLines.map((line, lineIndex) => (
+              <li key={`${keyPrefix}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
+                <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  };
+
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
       source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
@@ -681,7 +720,6 @@ const IncentiveTooltip = ({
         campaign.whitelistOnly === true
           ? String(campaign.campaignId ?? '').trim() || MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL
           : '';
-      const messageLines = getMessageLines(campaign.message);
       const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
       return (
         <>
@@ -701,22 +739,7 @@ const IncentiveTooltip = ({
               </span>
             </label>
           )}
-          {campaign.dateRange && (
-            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
-              Campaign time: {campaign.dateRange}
-            </p>
-          )}
-          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
-          {messageLines.length > 0 && (
-            <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-              {messageLines.map((line, lineIndex) => (
-                <li key={`${keyPrefix}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                  <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
-                  <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-0`, false)}
         </>
       );
     }
@@ -729,8 +752,6 @@ const IncentiveTooltip = ({
             campaign.whitelistOnly === true
               ? String(campaign.campaignId ?? '').trim() || MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL
               : '';
-          const messageLines = getMessageLines(campaign.message);
-          const campaignLabel = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : 'Campaign time: N/A';
           const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
           const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
           return (
@@ -754,23 +775,7 @@ const IncentiveTooltip = ({
                   </span>
                 </label>
               )}
-              <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
-                <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
-                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
-                  {formatPercent(displayValue)}
-                </span>
-              </div>
-          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
-          {messageLines.length > 0 && (
-                <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-                  {messageLines.map((line, lineIndex) => (
-                    <li key={`${keyPrefix}-campaign-${campaignIndex}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                      <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
-                      <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-${campaignIndex}`, true, displayValue)}
             </div>
           );
         })}
