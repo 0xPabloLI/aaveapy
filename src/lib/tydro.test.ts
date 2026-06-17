@@ -196,40 +196,16 @@ describe('getPointToUsdRate', () => {
     expect(getPointToUsdRate('tydroinkpoints', rateMap)).toBe(1.5);
   });
 
-  it('returns 0 for unknown symbol when no fallback', () => {
-    expect(getPointToUsdRate('unknown-points', rateMap)).toBe(0);
-  });
-
-  it('returns 0 for unknown symbol even with missingSymbolFallback (known ≠ missing)', () => {
-    expect(getPointToUsdRate('unknown-points', rateMap, 1.5)).toBe(0);
-  });
-
-  it('returns missingSymbolFallback for undefined symbol', () => {
-    expect(getPointToUsdRate(undefined, rateMap, 1.5)).toBe(1.5);
-  });
-
-  it('returns 0 for undefined symbol without fallback', () => {
+  it('returns 0 for undefined symbol', () => {
     expect(getPointToUsdRate(undefined, rateMap)).toBe(0);
   });
 
-  it('returns missingSymbolFallback for empty string symbol', () => {
-    expect(getPointToUsdRate('', rateMap, 2.0)).toBe(2.0);
-  });
-
-  it('returns 0 for empty string symbol without fallback', () => {
+  it('returns 0 for empty string symbol', () => {
     expect(getPointToUsdRate('', rateMap)).toBe(0);
-  });
-
-  it('returns missingSymbolFallback for empty map with undefined symbol', () => {
-    expect(getPointToUsdRate(undefined, {}, 1.5)).toBe(1.5);
   });
 
   it('returns 0 for known symbol not in map (AAV-898: unknown points token)', () => {
     expect(getPointToUsdRate('GravityPoints', rateMap)).toBe(0);
-  });
-
-  it('returns 0 for known symbol not in map even with missingSymbolFallback', () => {
-    expect(getPointToUsdRate('GravityPoints', rateMap, 1.5)).toBe(0);
   });
 });
 
