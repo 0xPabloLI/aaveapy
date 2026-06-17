@@ -725,9 +725,11 @@ const TopOpportunities = ({
   const reservesWithTotals = useMemo<ReserveWithTotals[]>(() => reserves.map(reserve => {
     const supplyIncentive = getReserveIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
       whitelistMerklCampaignIds,
+      pointRateMap,
     });
     const borrowIncentive = getReserveIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
       whitelistMerklCampaignIds,
+      pointRateMap,
     });
 
     const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
@@ -748,7 +750,7 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }).filter(r => !r.isFrozen && !r.isPaused && r.isActive !== false), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
+  }).filter(r => !r.isFrozen && !r.isPaused && r.isActive !== false), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate, pointRateMap]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...reservesWithTotals]

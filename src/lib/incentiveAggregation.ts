@@ -10,7 +10,7 @@ import {
   getBrevisResolvedBreakdown,
   toMerklBreakdown,
 } from '@/lib/brevis';
-import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { TYDRO_POINT_TO_USD_RATE, getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
@@ -22,6 +22,8 @@ export interface IncentiveCalculationOptions {
   forecastStates?: Record<string, MerklForecastWireItem>;
   /** Per-campaignId access status from /meta/side-data.campaignAccess (AAV-66). */
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
+  /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
+  pointRateMap?: PointRateMap;
 }
 
 const sumNumberArray = (arr?: number[]): number => {
@@ -64,15 +66,19 @@ const sumMerklIncentiveApr = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
+  const { pointRateMap } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
     mapValue: (_group, breakdown) => {
+      const effectiveRate = pointRateMap
+        ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+        : pointToUsdRate;
       const apr = options.forecastStates
-        ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, pointToUsdRate))
-        : getMerklBreakdownApr(breakdown, pointToUsdRate);
+        ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
+        : getMerklBreakdownApr(breakdown, effectiveRate);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
   });
@@ -83,15 +89,19 @@ const sumMerklIncentiveApy = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
+  const { pointRateMap } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
     mapValue: (_group, breakdown) => {
+      const effectiveRate = pointRateMap
+        ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+        : pointToUsdRate;
       const apr = options.forecastStates
-        ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, pointToUsdRate))
-        : getMerklBreakdownApr(breakdown, pointToUsdRate);
+        ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
+        : getMerklBreakdownApr(breakdown, effectiveRate);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
   });
@@ -208,6 +218,7 @@ export function reserveHasIncentiveTooltipSources(
   side: 'supply' | 'borrow',
   isApy: boolean,
   tydroPointToUsdRate: number,
+  pointRateMap?: PointRateMap,
 ): boolean {
   const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
   if (protocolIncentives && protocolIncentives.length > 0) {
@@ -248,7 +259,10 @@ export function reserveHasIncentiveTooltipSources(
     for (const opportunity of opportunities) {
       for (const breakdown of opportunity.breakdowns ?? []) {
         if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
-        const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+        const effectiveRate = pointRateMap
+          ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+          : tydroPointToUsdRate;
+        const apr = getMerklBreakdownApr(breakdown, effectiveRate);
         if (!isNaN(apr) && apr >= 0) return true;
       }
     }
@@ -263,10 +277,11 @@ export function resolveVisibleIncentiveBadgeValue(
   side: 'supply' | 'borrow',
   isApy: boolean,
   tydroPointToUsdRate: number,
+  pointRateMap?: PointRateMap,
 ): number | null {
   if (rawIncentive === null || Number.isNaN(rawIncentive) || rawIncentive < 0) return null;
   if (rawIncentive > 0) return rawIncentive;
-  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate)) {
+  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate, pointRateMap)) {
     return rawIncentive;
   }
   return null;

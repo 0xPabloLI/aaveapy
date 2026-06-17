@@ -10,6 +10,7 @@ import {
 } from '@/lib/formatters';
 import { getReserveMarketDisplayName } from '@/lib/marketLabels';
 import { resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
+import { type PointRateMap } from '@/lib/tydro';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -167,6 +168,8 @@ interface MobileReserveCardProps {
   isApy: boolean;
   /** Matches table / `getMerklBreakdownApr` Tydro USD rate. */
   tydroPointToUsdRate: number;
+  /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
+  pointRateMap?: PointRateMap;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -468,6 +471,7 @@ const MobileReserveCard = memo(({
   reserve,
   isApy,
   tydroPointToUsdRate,
+  pointRateMap,
   onIncentiveClick,
   isSimulationExpanded,
   onToggleSimulation,
@@ -539,6 +543,7 @@ const MobileReserveCard = memo(({
     'supply',
     isApy,
     tydroPointToUsdRate,
+    pointRateMap,
   );
   const visibleBorrowIncentive = resolveVisibleIncentiveBadgeValue(
     displayBorrowIncentive,
@@ -546,6 +551,7 @@ const MobileReserveCard = memo(({
     'borrow',
     isApy,
     tydroPointToUsdRate,
+    pointRateMap,
   );
 
   const chainIconSrc = getChainIconSrc(reserve.chainName);

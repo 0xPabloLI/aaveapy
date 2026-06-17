@@ -286,6 +286,9 @@
                       },
                       "lastRoundRewardUsd": {
                         "type": "number"
+                      },
+                      "campaignType": {
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -359,6 +362,9 @@
                       },
                       "lastRoundRewardUsd": {
                         "type": "number"
+                      },
+                      "campaignType": {
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -1523,6 +1529,9 @@
                 },
                 "lastRoundRewardUsd": {
                   "type": "number"
+                },
+                "campaignType": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -1596,6 +1605,9 @@
                 },
                 "lastRoundRewardUsd": {
                   "type": "number"
+                },
+                "campaignType": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -2434,6 +2446,9 @@
           },
           "lastRoundRewardUsd": {
             "type": "number"
+          },
+          "campaignType": {
+            "type": "string"
           }
         },
         "required": [

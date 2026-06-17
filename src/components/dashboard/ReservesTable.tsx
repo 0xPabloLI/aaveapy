@@ -302,7 +302,7 @@ const ReservesTable = ({
   // matches the previous behavior of `buildIncentiveCurrent`, which always
   // factored Merkl forecast adjustments into "current" incentive values.
   const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') =>
-    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates });
+    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, pointRateMap });
 
   // Calculate totals for a reserve (frontend calculates incentive totals from details)
   const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
@@ -1022,6 +1022,7 @@ const ReservesTable = ({
             reservesCount={reserves.length}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            pointRateMap={pointRateMap}
             hasScenarioInput={hasScenarioInput}
             inputMode={sharedInputMode}
             supplyInput={debouncedSharedSupplyInput}
@@ -1212,6 +1213,7 @@ const ReservesTable = ({
                 'supply',
                 isApy,
                 tydroPointToUsdRate,
+                pointRateMap,
               );
               const displayBorrowIncentive = resolveVisibleIncentiveBadgeValue(
                 getDisplayBorrowIncentive(reserve),
@@ -1219,6 +1221,7 @@ const ReservesTable = ({
                 'borrow',
                 isApy,
                 tydroPointToUsdRate,
+                pointRateMap,
               );
               return (
                 <DesktopReserveRow

@@ -1,6 +1,7 @@
 import type { ScenarioInputMode, RateSimulationResult } from '@/lib/rateSimulationCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 import { getReserveKey } from '@/lib/reserveKey';
+import { type PointRateMap } from '@/lib/tydro';
 import { Skeleton } from '@/components/ui/skeleton';
 import MobileReserveCard from './MobileReserveCard';
 import MobileExpandedReserveShell from './MobileExpandedReserveShell';
@@ -12,6 +13,7 @@ interface ReservesTableMobileGridProps {
   reservesCount: number;
   isApy: boolean;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   hasScenarioInput: boolean;
   inputMode: ScenarioInputMode;
   supplyInput: string;
@@ -75,6 +77,7 @@ export default function ReservesTableMobileGrid({
   reservesCount,
   isApy,
   tydroPointToUsdRate,
+  pointRateMap,
   hasScenarioInput,
   inputMode,
   supplyInput,
@@ -124,6 +127,7 @@ export default function ReservesTableMobileGrid({
         reserve={leftReserve}
         isApy={isApy}
         tydroPointToUsdRate={tydroPointToUsdRate}
+        pointRateMap={pointRateMap}
         onIncentiveClick={onIncentiveClick}
         isSimulationExpanded={isLeftActive}
         onToggleSimulation={() => onToggleExpand(leftId)}
@@ -147,6 +151,7 @@ export default function ReservesTableMobileGrid({
         reserve={rightReserve}
         isApy={isApy}
         tydroPointToUsdRate={tydroPointToUsdRate}
+        pointRateMap={pointRateMap}
         onIncentiveClick={onIncentiveClick}
         isSimulationExpanded={isRightActive}
         onToggleSimulation={() => onToggleExpand(rightId!)}
@@ -180,6 +185,7 @@ export default function ReservesTableMobileGrid({
                 reserve={activeReserve}
                 isApy={isApy}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                pointRateMap={pointRateMap}
                 onIncentiveClick={onIncentiveClick}
                 isSimulationExpanded
                 onToggleSimulation={() => onToggleExpand(activeId)}
