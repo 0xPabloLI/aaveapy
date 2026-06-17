@@ -528,6 +528,8 @@ const IncentiveTooltip = ({
               message,
               campaignId: breakdown.campaignId,
               sourceType: 'Brevis' as const,
+              campaignType: breakdown.campaignType ?? brevis.campaignType,
+              aprCap: breakdown.aprCap ?? brevis.aprCap,
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -633,7 +635,7 @@ const IncentiveTooltip = ({
 
   const CAMPAIGN_DESC_WRAPPER = 'mt-[var(--ds-space-1)] rounded-md bg-muted/40 border-l-2 border-muted-foreground/30 pl-[var(--ds-space-1-5)] py-[3px] pr-[var(--ds-space-1)]';
 
-  const renderCampaignTypeDescription = (campaign: IncentiveCampaign, accentClass: string) => {
+  const renderCampaignTypeDescription = (campaign: IncentiveCampaign) => {
     const ct = campaign.campaignType;
     if (!ct || campaign.value <= 0) return null;
 
@@ -641,11 +643,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            <span className={accentClass}>Target {formatPercent(displayTargetApr(campaign.aprCap!))}</span>
-            {' = Native '}
-            <span className={accentClass}>{formatPercent(displayNative())}</span>
-            {' + Merkl '}
-            <span className={accentClass}>{formatPercent(campaign.rawValue ?? campaign.value)}</span>
+            Distribution: Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );
@@ -695,7 +693,7 @@ const IncentiveTooltip = ({
         {dateRangeText && (
           <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>{dateRangeText}</p>
         )}
-        {renderCampaignTypeDescription(campaign, campaignAccentClass)}
+        {renderCampaignTypeDescription(campaign)}
         {messageLines.length > 0 && (
           <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
             {messageLines.map((line, lineIndex) => (
