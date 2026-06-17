@@ -540,5 +540,26 @@ describe('IncentiveTooltip', () => {
       const srcs = Array.from(allImgs).map(el => (el as HTMLImageElement).src);
       expect(srcs).toContain('https://example.com/ink.svg');
     });
+
+    it('falls back to tydroPointToUsdRate when rewardTokenSymbol is missing but pointRateMap exists', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-ink',
+            campaignApr: 0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            pointsPerThousandUsd: 2,
+          }],
+        }],
+      };
+      const pointRateMap = { tydroinkpoints: 1.5 };
+      const { container } = renderTooltip({ ...defaultProps, reserve, pointRateMap, tydroPointToUsdRate: 1.5 });
+      const aprText = container.textContent;
+      expect(aprText).toContain('185.2');
+    });
   });
 });

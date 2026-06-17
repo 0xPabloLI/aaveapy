@@ -551,7 +551,7 @@ const IncentiveTooltip = ({
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const effectiveRate = pointRateMap
-            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap, tydroPointToUsdRate)
             : tydroPointToUsdRate;
           const apr = forecastStates
             ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
@@ -626,19 +626,23 @@ const IncentiveTooltip = ({
   const displayTargetApr = (aprCap: number) => isApy ? convertAprToApy(aprCap) : aprCap;
   const displayNative = () => isApy ? nativeApy : apyToApr(nativeApy);
 
+  const CAMPAIGN_DESC_WRAPPER = 'mt-[var(--ds-space-1)] rounded-md bg-muted/40 border-l-2 border-muted-foreground/30 pl-[var(--ds-space-1-5)] py-[3px] pr-[var(--ds-space-1)]';
+
   const renderCampaignTypeDescription = (campaign: IncentiveCampaign, accentClass: string) => {
     const ct = campaign.campaignType;
     if (!ct || campaign.value <= 0) return null;
 
     if (ct === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0) {
       return (
-        <p data-campaign-desc="TARGET_TOTAL_APR" className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground`}>
-          <span className={accentClass}>Target {formatPercent(displayTargetApr(campaign.aprCap!))}</span>
-          {' = Native '}
-          <span className={accentClass}>{formatPercent(displayNative())}</span>
-          {' + Merkl '}
-          <span className={accentClass}>{formatPercent(campaign.rawValue ?? campaign.value)}</span>
-        </p>
+        <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
+          <p className="ds-tooltip-body break-words text-muted-foreground">
+            <span className={accentClass}>Target {formatPercent(displayTargetApr(campaign.aprCap!))}</span>
+            {' = Native '}
+            <span className={accentClass}>{formatPercent(displayNative())}</span>
+            {' + Merkl '}
+            <span className={accentClass}>{formatPercent(campaign.rawValue ?? campaign.value)}</span>
+          </p>
+        </div>
       );
     }
 
@@ -647,56 +651,52 @@ const IncentiveTooltip = ({
         ? ` (cap ${formatPercent(displayTargetApr(campaign.aprCap))})`
         : '';
       return (
-        <p data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
-          Variable APR — reward rate decreases as TVL grows{capPart}
-        </p>
+        <div data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
+          <p className="ds-tooltip-body break-words text-muted-foreground">
+            Distribution: Variable APR — reward rate decreases as TVL grows{capPart}
+          </p>
+        </div>
       );
     }
 
     if (ct === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
       return (
-        <p data-campaign-desc="FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
-          Fixed APR — campaign ends early if budget runs out
-        </p>
+        <div data-campaign-desc="FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
+          <p className="ds-tooltip-body break-words text-muted-foreground">
+            Distribution: Fixed APR — campaign ends early if budget runs out
+          </p>
+        </div>
       );
     }
 
     if (ct === 'DUTCH_AUCTION') {
       return (
-        <p data-campaign-desc="DUTCH_AUCTION" className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
-          Variable APR — daily reward amount is fixed, rate changes with TVL
-        </p>
+        <div data-campaign-desc="DUTCH_AUCTION" className={CAMPAIGN_DESC_WRAPPER}>
+          <p className="ds-tooltip-body break-words text-muted-foreground">
+            Distribution: Variable APR — daily reward amount is fixed, rate changes with TVL
+          </p>
+        </div>
       );
     }
 
     return null;
   };
 
-  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string, showAprRow: boolean, displayValue?: number) => {
+  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string) => {
     const messageLines = getMessageLines(campaign.message);
     const dateRangeText = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : '';
     return (
       <>
-        {showAprRow && displayValue != null && (
-          <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
-            <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{dateRangeText || 'Campaign time: N/A'}</p>
-            <span className="flex items-center gap-0.5">
-              {campaign.rewardTokenIconUrl && (
-                <img
-                  src={campaign.rewardTokenIconUrl}
-                  alt=""
-                  className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
-                  loading="lazy"
-                />
-              )}
-              <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
-                {formatPercent(displayValue)}
-              </span>
-            </span>
-          </div>
-        )}
-        {!showAprRow && dateRangeText && (
+        {dateRangeText && (
           <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
+            {campaign.rewardTokenIconUrl && (
+              <img
+                src={campaign.rewardTokenIconUrl}
+                alt=""
+                className="mr-0.5 inline h-3.5 w-3.5 flex-shrink-0 rounded-full align-text-bottom"
+                loading="lazy"
+              />
+            )}
             {dateRangeText}
           </p>
         )}
@@ -751,7 +751,7 @@ const IncentiveTooltip = ({
               </span>
             </label>
           )}
-          {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-0`, false)}
+          {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-0`)}
         </>
       );
     }
@@ -765,7 +765,6 @@ const IncentiveTooltip = ({
               ? String(campaign.campaignId ?? '').trim() || MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL
               : '';
           const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
-          const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
           return (
             <div
               key={`${keyPrefix}-campaign-${campaignIndex}`}
@@ -787,7 +786,7 @@ const IncentiveTooltip = ({
                   </span>
                 </label>
               )}
-              {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-${campaignIndex}`, true, displayValue)}
+              {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-${campaignIndex}`)}
             </div>
           );
         })}

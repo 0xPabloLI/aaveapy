@@ -29,9 +29,11 @@ export function safePointToUsdRate(pointToUsdRate: number): number {
 
 export type PointRateMap = Record<string, number>;
 
-export function getPointToUsdRate(symbol: string | undefined, pointRateMap: PointRateMap): number {
-  if (!symbol) return 0;
-  return pointRateMap[symbol.toLowerCase()] ?? 0;
+export function getPointToUsdRate(symbol: string | undefined, pointRateMap: PointRateMap, missingSymbolFallback = 0): number {
+  if (!symbol) return missingSymbolFallback;
+  const key = symbol.toLowerCase();
+  if (key in pointRateMap) return pointRateMap[key];
+  return 0;
 }
 
 export function buildPointRateMap(tydroPointToUsdRate: number): PointRateMap {
