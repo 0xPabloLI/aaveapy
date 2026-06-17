@@ -706,6 +706,7 @@ const IncentiveTooltip = ({
               Campaign time: {campaign.dateRange}
             </p>
           )}
+          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
           {messageLines.length > 0 && (
             <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
               {messageLines.map((line, lineIndex) => (
@@ -716,7 +717,6 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
         </>
       );
     }
@@ -760,6 +760,7 @@ const IncentiveTooltip = ({
                   {formatPercent(displayValue)}
                 </span>
               </div>
+          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
           {messageLines.length > 0 && (
                 <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
                   {messageLines.map((line, lineIndex) => (
@@ -770,7 +771,6 @@ const IncentiveTooltip = ({
                   ))}
                 </ul>
               )}
-          {renderCampaignTypeDescription(campaign, campaignAccentClass)}
             </div>
           );
         })}
