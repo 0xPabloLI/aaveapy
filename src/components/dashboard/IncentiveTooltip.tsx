@@ -4,7 +4,7 @@ import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
 import { formatPercent } from '@/lib/formatters';
-import { convertAprToApy } from '@/lib/rateCalculations';
+import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
   isMerklWhitelistBreakdownIncluded,
   MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
@@ -612,6 +612,10 @@ const IncentiveTooltip = ({
     );
   }, [incentiveSources, campaignAccessStatuses]);
 
+  const nativeApy = type === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
+  const displayTargetApr = (aprCap: number) => isApy ? convertAprToApy(aprCap) : aprCap;
+  const displayNative = () => isApy ? nativeApy : apyToApr(nativeApy);
+
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
       source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
@@ -648,6 +652,11 @@ const IncentiveTooltip = ({
                 {MERKL_WHITELIST_TOGGLE_LABEL}
               </span>
             </label>
+          )}
+          {campaign.campaignType === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0 && (
+            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
+              Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            </p>
           )}
           {campaign.dateRange && (
             <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
@@ -709,7 +718,7 @@ const IncentiveTooltip = ({
               </div>
           {campaign.campaignType === 'TARGET_TOTAL_APR' && campaign.aprCap != null && campaign.aprCap > 0 && (
             <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
-              Target {formatPercent(campaign.aprCap)} = Native {formatPercent(type === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0))} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+              Target {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
             </p>
           )}
           {messageLines.length > 0 && (
