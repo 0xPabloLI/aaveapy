@@ -18,6 +18,7 @@ import {
   calculateSpreadApr,
 } from '@/lib/rateCalculations';
 import { getReserveIncentiveValues } from '@/lib/incentiveAggregation';
+import type { PointRateMap } from '@/lib/tydro';
 import { getReserveMarketDisplayName } from '@/lib/marketLabels';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -49,6 +50,7 @@ interface TopOpportunitiesProps {
   categoryGroups: TokenCategoryGroups;
   onCardClick?: (reserve: ReserveWithSpread) => void;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
@@ -687,6 +689,7 @@ const TopOpportunities = ({
   categoryGroups,
   onCardClick,
   tydroPointToUsdRate,
+  pointRateMap,
   campaignAccessStatuses,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
@@ -996,6 +999,7 @@ const TopOpportunities = ({
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            pointRateMap={pointRateMap}
             whitelistMerklCampaignIds={whitelistMerklCampaignIds}
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
             forecastStates={forecastStates}

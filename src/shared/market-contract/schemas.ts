@@ -32,6 +32,8 @@ export const MerklCampaignBreakdownSchema = z.object({
   campaignId: z.string(),
   whitelistOnly: z.boolean().optional(),
   pointsPerThousandUsd: z.number().optional(),
+  rewardTokenSymbol: z.string().optional(),
+  rewardTokenIconUrl: z.string().optional(),
   campaignType: z.string().optional(),
   totalBudget: z.number().optional(),
   aprCap: z.number().nullable().optional(),

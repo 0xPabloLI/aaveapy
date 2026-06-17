@@ -438,4 +438,107 @@ describe('IncentiveTooltip', () => {
       expect(container.querySelector('[data-campaign-desc]')).toBeNull();
     });
   });
+
+  describe('pointRateMap per-campaign routing', () => {
+    it('uses pointRateMap for known reward token symbol', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-ink',
+            campaignApr: 0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            pointsPerThousandUsd: 2,
+            rewardTokenSymbol: 'TydroInkPoints',
+            rewardTokenIconUrl: 'https://example.com/ink.svg',
+          }],
+        }],
+      };
+      const pointRateMap = { tydroinkpoints: 1.5 };
+      const { container } = renderTooltip({ ...defaultProps, reserve, pointRateMap });
+      const aprText = container.textContent;
+      expect(aprText).toContain('185.2');
+    });
+
+    it('uses rate 0 for unknown reward token symbol in pointRateMap', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-unknown',
+            campaignApr: 0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            pointsPerThousandUsd: 2,
+            rewardTokenSymbol: 'UnknownPoints',
+          }],
+        }],
+      };
+      const pointRateMap = { tydroinkpoints: 1.5 };
+      const { container } = renderTooltip({ ...defaultProps, reserve, pointRateMap });
+      const aprText = container.textContent;
+      expect(aprText).toContain('0.00');
+    });
+
+    it('falls back to tydroPointToUsdRate when pointRateMap is not provided', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-ink',
+            campaignApr: 0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            pointsPerThousandUsd: 2,
+            rewardTokenSymbol: 'TydroInkPoints',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve, tydroPointToUsdRate: 2 });
+      const aprText = container.textContent;
+      expect(aprText).toContain('296.6');
+    });
+
+    it('renders reward token icon when rewardTokenIconUrl is present', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            {
+              campaignId: 'merkl-ink',
+              campaignApr: 0,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              pointsPerThousandUsd: 2,
+              rewardTokenSymbol: 'TydroInkPoints',
+              rewardTokenIconUrl: 'https://example.com/ink.svg',
+            },
+            {
+              campaignId: 'merkl-ink-2',
+              campaignApr: 0,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              pointsPerThousandUsd: 1,
+              rewardTokenSymbol: 'TydroInkPoints',
+              rewardTokenIconUrl: 'https://example.com/ink.svg',
+            },
+          ],
+        }],
+      };
+      const pointRateMap = { tydroinkpoints: 1 };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve, pointRateMap });
+      const allImgs = baseElement.querySelectorAll('img');
+      const srcs = Array.from(allImgs).map(el => (el as HTMLImageElement).src);
+      expect(srcs).toContain('https://example.com/ink.svg');
+    });
+  });
 });

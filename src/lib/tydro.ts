@@ -20,11 +20,22 @@ export function parseMerklNumeric(value: unknown): number | undefined {
 export function safePointToUsdRate(pointToUsdRate: number): number {
   if (!Number.isFinite(pointToUsdRate) || pointToUsdRate < 0) {
     if (import.meta.env.DEV) {
-      console.warn('[safePointToUsdRate] invalid pointToUsdRate:', pointToUsdRate, '— falling back to default', TYDRO_POINT_TO_USD_RATE);
+      console.warn('[safePointToUsdRate] invalid pointToUsdRate:', pointToUsdRate, '— falling back to 0');
     }
-    return TYDRO_POINT_TO_USD_RATE;
+    return 0;
   }
   return pointToUsdRate;
+}
+
+export type PointRateMap = Record<string, number>;
+
+export function getPointToUsdRate(symbol: string | undefined, pointRateMap: PointRateMap): number {
+  if (!symbol) return 0;
+  return pointRateMap[symbol.toLowerCase()] ?? 0;
+}
+
+export function buildPointRateMap(tydroPointToUsdRate: number): PointRateMap {
+  return { tydroinkpoints: safePointToUsdRate(tydroPointToUsdRate) };
 }
 
 export const calculatePointsApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_POINT_TO_USD_RATE): number => {

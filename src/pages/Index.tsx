@@ -28,7 +28,7 @@ import ReservesTable from '@/components/dashboard/ReservesTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
-import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { TYDRO_POINT_TO_USD_RATE, buildPointRateMap } from '@/lib/tydro';
 import { AlertTriangle, Send, Github } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -93,6 +93,8 @@ const Index = () => {
     if (Number.isNaN(parsed)) return TYDRO_POINT_TO_USD_RATE;
     return Math.max(parsed, 0);
   }, [tydroPointToUsdRateInput]);
+
+  const pointRateMap = useMemo(() => buildPointRateMap(tydroPointToUsdRate), [tydroPointToUsdRate]);
 
   // Persist Tydro rate to localStorage when it changes
   useEffect(() => {
@@ -568,6 +570,7 @@ const Index = () => {
                 categoryGroups={tokenCategoryGroups}
                 onCardClick={handleTopCardClick}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                pointRateMap={pointRateMap}
                 campaignAccessStatuses={campaignAccessStatuses}
               />
             )}
@@ -645,6 +648,7 @@ const Index = () => {
                 }
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
+              pointRateMap={pointRateMap}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}
               onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}

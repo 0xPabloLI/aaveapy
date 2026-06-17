@@ -73,6 +73,7 @@ interface IncentiveCampaign {
   rawValue?: number;
   campaignType?: string;
   aprCap?: number | null;
+  rewardTokenIconUrl?: string;
 }
 
 interface IncentiveSource {
@@ -579,8 +580,9 @@ const IncentiveTooltip = ({
                  message: opportunity.message,
                  campaignId: breakdown.campaignId,
                  sourceType: 'Merkl',
-                 campaignType: breakdown.campaignType,
-                 aprCap: breakdown.aprCap,
+                  campaignType: breakdown.campaignType,
+                  aprCap: breakdown.aprCap,
+                  rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                }],
             });
           }
@@ -678,8 +680,18 @@ const IncentiveTooltip = ({
         {showAprRow && displayValue != null && (
           <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
             <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{dateRangeText || 'Campaign time: N/A'}</p>
-            <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
-              {formatPercent(displayValue)}
+            <span className="flex items-center gap-0.5">
+              {campaign.rewardTokenIconUrl && (
+                <img
+                  src={campaign.rewardTokenIconUrl}
+                  alt=""
+                  className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                  loading="lazy"
+                />
+              )}
+              <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
+                {formatPercent(displayValue)}
+              </span>
             </span>
           </div>
         )}
