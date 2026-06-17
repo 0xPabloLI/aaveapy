@@ -545,7 +545,7 @@ describe('IncentiveTooltip', () => {
       expect(srcs).toContain('https://example.com/ink.svg');
     });
 
-    it('falls back to tydroPointToUsdRate when rewardTokenSymbol is missing but pointRateMap exists', () => {
+    it('returns 0 APR when rewardTokenSymbol is missing and pointRateMap exists', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
         merklSupplys: [{
@@ -563,7 +563,7 @@ describe('IncentiveTooltip', () => {
       const pointRateMap = { tydroinkpoints: 1.5 };
       const { container } = renderTooltip({ ...defaultProps, reserve, pointRateMap, tydroPointToUsdRate: 1.5 });
       const aprText = container.textContent;
-      expect(aprText).toContain('185.2');
+      expect(aprText).toContain('0.00');
     });
   });
 });

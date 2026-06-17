@@ -87,6 +87,7 @@ interface IncentiveSource {
   message?: string | Record<string, unknown> | unknown[];
   requiredTokens?: string[] | string;
   campaigns?: IncentiveCampaign[];
+  rewardTokenIconUrl?: string;
 }
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -463,6 +464,7 @@ const IncentiveTooltip = ({
               endDate: merit.endDate,
               message: baseMessage ?? merit.message,
               sourceType: 'ACI',
+              campaignType: 'DUTCH_AUCTION',
             });
           }
           if (selfAprPercent > 0) {
@@ -473,6 +475,7 @@ const IncentiveTooltip = ({
               endDate: merit.endDate,
               message: selfMessage,
               sourceType: 'ACI',
+              campaignType: 'DUTCH_AUCTION',
             });
           }
 
@@ -493,6 +496,7 @@ const IncentiveTooltip = ({
                   startDate: merit.startDate,
                   endDate: merit.endDate,
                   message: merit.message,
+                  campaignType: 'DUTCH_AUCTION',
                 }],
           });
         }
@@ -551,7 +555,7 @@ const IncentiveTooltip = ({
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const effectiveRate = pointRateMap
-            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap, tydroPointToUsdRate)
+            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
             : tydroPointToUsdRate;
           const apr = forecastStates
             ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
@@ -569,6 +573,7 @@ const IncentiveTooltip = ({
               link: getMerklLink(opportunity),
               message: opportunity.message,
               dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+              rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
               campaigns: [{
                  value: included ? displayValue : 0,
                  rawValue: displayValue,
@@ -688,17 +693,7 @@ const IncentiveTooltip = ({
     return (
       <>
         {dateRangeText && (
-          <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
-            {campaign.rewardTokenIconUrl && (
-              <img
-                src={campaign.rewardTokenIconUrl}
-                alt=""
-                className="mr-0.5 inline h-3.5 w-3.5 flex-shrink-0 rounded-full align-text-bottom"
-                loading="lazy"
-              />
-            )}
-            {dateRangeText}
-          </p>
+          <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>{dateRangeText}</p>
         )}
         {renderCampaignTypeDescription(campaign, campaignAccentClass)}
         {messageLines.length > 0 && (
@@ -948,7 +943,15 @@ const IncentiveTooltip = ({
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
-            <span className={`${valueClass} whitespace-nowrap`}>
+            <span className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
+              {source.rewardTokenIconUrl && (
+                <img
+                  src={source.rewardTokenIconUrl}
+                  alt=""
+                  className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                  loading="lazy"
+                />
+              )}
               {formatPercent(sourceDisplayValue)}
             </span>
           </div>
