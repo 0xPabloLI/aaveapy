@@ -340,13 +340,15 @@ describe('IncentiveTooltip', () => {
       const descriptionEl = container.querySelector('[data-campaign-desc="TARGET_TOTAL_APR"]');
       expect(descriptionEl).not.toBeNull();
       expect(descriptionEl!.textContent).toContain('Target');
-      expect(descriptionEl!.className).toContain('text-muted-foreground');
+      const textEl = descriptionEl!.querySelector('p');
+      expect(textEl).not.toBeNull();
+      expect(textEl!.className).toContain('text-muted-foreground');
     });
 
     it('renders MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE with variable APR and cap', () => {
       const reserve = merklCampaignReserve('MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Variable APR');
+      expect(container.textContent).toContain('Distribution: Variable APR');
       expect(container.textContent).toContain('reward rate decreases as TVL grows');
       expect(container.textContent).toContain('cap');
     });
@@ -362,14 +364,14 @@ describe('IncentiveTooltip', () => {
     it('renders FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE with fixed APR and early-end note', () => {
       const reserve = merklCampaignReserve('FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Fixed APR');
+      expect(container.textContent).toContain('Distribution: Fixed APR');
       expect(container.textContent).toContain('campaign ends early if budget runs out');
     });
 
     it('renders DUTCH_AUCTION with variable APR and daily reward note', () => {
       const reserve = merklCampaignReserve('DUTCH_AUCTION');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Variable APR');
+      expect(container.textContent).toContain('Distribution: Variable APR');
       expect(container.textContent).toContain('daily reward amount is fixed');
       expect(container.textContent).toContain('rate changes with TVL');
     });
@@ -388,7 +390,9 @@ describe('IncentiveTooltip', () => {
         const { container } = renderTooltip({ ...defaultProps, reserve });
         const descEl = container.querySelector(`[data-campaign-desc="${campaignType}"]`);
         expect(descEl).not.toBeNull();
-        expect(descEl!.className).toContain('text-muted-foreground');
+        const textEl = descEl!.querySelector('p');
+        expect(textEl).not.toBeNull();
+        expect(textEl!.className).toContain('text-muted-foreground');
       }
     });
 
