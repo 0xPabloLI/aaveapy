@@ -13,6 +13,7 @@ export interface MeritIncentive {
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
   lastRoundRewardUsd?: number;         // Latest round total reward in USD
+  campaignType?: string;               // Distribution type (e.g. 'DUTCH_AUCTION')
 }
 
 export interface BaseCampaignBreakdown {

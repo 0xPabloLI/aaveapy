@@ -464,7 +464,7 @@ const IncentiveTooltip = ({
               endDate: merit.endDate,
               message: baseMessage ?? merit.message,
               sourceType: 'ACI',
-              campaignType: 'DUTCH_AUCTION',
+              campaignType: merit.campaignType,
             });
           }
           if (selfAprPercent > 0) {
@@ -475,7 +475,7 @@ const IncentiveTooltip = ({
               endDate: merit.endDate,
               message: selfMessage,
               sourceType: 'ACI',
-              campaignType: 'DUTCH_AUCTION',
+              campaignType: merit.campaignType,
             });
           }
 
@@ -496,7 +496,7 @@ const IncentiveTooltip = ({
                   startDate: merit.startDate,
                   endDate: merit.endDate,
                   message: merit.message,
-                  campaignType: 'DUTCH_AUCTION',
+                  campaignType: merit.campaignType,
                 }],
           });
         }

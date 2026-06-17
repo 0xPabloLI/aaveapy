@@ -23,6 +23,7 @@ export const MeritIncentiveSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   lastRoundRewardUsd: z.number().optional(),
+  campaignType: z.string().optional(),
 });
 
 export const MerklCampaignBreakdownSchema = z.object({
