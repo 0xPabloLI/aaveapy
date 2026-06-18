@@ -444,6 +444,66 @@ describe('IncentiveTooltip', () => {
     });
   });
 
+  describe('Position cap display', () => {
+    it('renders position cap for Brevis breakdown with positionCap', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        brevisSupplys: [{
+          name: 'Brevis Campaign',
+          campaignApr: 1.5,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2027-12-31',
+          message: 'Brevis rewards',
+          link: 'https://brevis.network',
+          positionCap: 5000,
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('$5,000');
+    });
+
+    it('does not render position cap when positionCap is absent', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        brevisSupplys: [{
+          name: 'Brevis Campaign',
+          campaignApr: 1.5,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2027-12-31',
+          message: 'Brevis rewards',
+          link: 'https://brevis.network',
+          breakdowns: [{
+            campaignApr: 1.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'brevis-1',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).not.toContain('Position cap');
+    });
+
+    it('renders position cap for Merit self auth campaign', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Merit Campaign',
+          apr: 2.5,
+          selfApr: 1.0,
+          startDate: '2026-01-01',
+          endDate: '2027-12-31',
+          message: [{ action: 'Self Authentication', description: 'Incentive on first $1,000 of deposit' }],
+          link: 'https://example.com',
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('$1,000');
+    });
+  });
+
   describe('pointRateMap per-campaign routing', () => {
     it('uses pointRateMap for known reward token symbol', () => {
       const reserve: ReserveWithSpread = {

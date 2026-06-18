@@ -26,6 +26,26 @@ export const MeritIncentiveSchema = z.object({
   campaignType: z.string().optional(),
 });
 
+export const MeritCampaignBreakdownSchema = z.object({
+  campaignApr: z.number(),
+  campaignStartedAt: z.string(),
+  campaignEndedAt: z.string(),
+  campaignId: z.string(),
+  campaignType: z.string().optional(),
+  positionCap: z.number().optional(),
+  aprCap: z.number().nullable().optional(),
+  rewardTokenSymbol: z.string().optional(),
+  totalBudget: z.number().optional(),
+  latestTvl: z.number().optional(),
+});
+
+export const MeritCampaignGroupSchema = z.object({
+  link: z.string().optional(),
+  name: z.string().optional(),
+  message: IncentiveMessageSchema.optional(),
+  breakdowns: z.array(MeritCampaignBreakdownSchema),
+});
+
 export const MerklCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
@@ -65,6 +85,7 @@ export const BrevisCampaignBreakdownSchema = z.object({
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
   positionCap: z.number().optional(),
+  rewardTokenSymbol: z.string().optional(),
 }).passthrough();
 
 export const BrevisIncentiveSchema = z.object({

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, formatUsd } from '@/lib/formatters';
 import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
   isMerklWhitelistBreakdownIncluded,
@@ -14,7 +14,7 @@ import {
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import type { MerklForecastWireItem } from '@/types/aave';
-import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
+import { splitMeritMessageBySelfAuth, extractMeritSelfPositionCapUsd } from '@/lib/meritForecast';
 import {
   getBrevisCampaignApr,
   getBrevisCampaignBreakdowns,
@@ -74,6 +74,7 @@ interface IncentiveCampaign {
   campaignType?: string;
   aprCap?: number | null;
   rewardTokenIconUrl?: string;
+  positionCap?: number;
 }
 
 interface IncentiveSource {
@@ -454,6 +455,7 @@ const IncentiveTooltip = ({
               : 'ACI Incentive';
 
           const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
+          const selfPositionCap = extractMeritSelfPositionCapUsd(selfMessage);
 
           const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
           if (baseAprPercent > 0) {
@@ -476,6 +478,7 @@ const IncentiveTooltip = ({
               message: selfMessage,
               sourceType: 'ACI',
               campaignType: merit.campaignType,
+              ...(selfPositionCap != null ? { positionCap: selfPositionCap } : {}),
             });
           }
 
@@ -530,6 +533,8 @@ const IncentiveTooltip = ({
               sourceType: 'Brevis' as const,
               campaignType: breakdown.campaignType ?? brevis.campaignType,
               aprCap: breakdown.aprCap ?? brevis.aprCap,
+              ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
+              ...(brevis.positionCap != null && brevis.positionCap > 0 && breakdown.positionCap == null ? { positionCap: brevis.positionCap } : {}),
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -694,6 +699,11 @@ const IncentiveTooltip = ({
           <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>{dateRangeText}</p>
         )}
         {renderCampaignTypeDescription(campaign)}
+        {campaign.positionCap != null && campaign.positionCap > 0 && (
+          <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
+            Position cap {formatUsd(campaign.positionCap)}
+          </p>
+        )}
         {messageLines.length > 0 && (
           <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
             {messageLines.map((line, lineIndex) => (

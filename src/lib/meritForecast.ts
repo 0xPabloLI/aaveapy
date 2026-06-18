@@ -84,10 +84,17 @@ export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
   };
 }
 
+/**
+ * Extract the first `$X` dollar amount from a Merit message.
+ *
+ * **Precondition**: Callers MUST pass the `selfMessage` output of
+ * `splitMeritMessageBySelfAuth()`, not the raw `merit.message`.
+ * This function does NOT check for the "self" keyword — it returns
+ * the first `$X` pattern found in any line.
+ */
 export function extractMeritSelfPositionCapUsd(message?: MeritMessage): number | null {
   const lines = flattenMessageLines(message);
   for (const line of lines) {
-    if (!line.toLowerCase().includes('self')) continue;
     const match = line.match(/\$\s*([\d,]+(?:\.\d+)?)/);
     if (!match) continue;
     const parsed = Number(match[1].replace(/,/g, ''));

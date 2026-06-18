@@ -15,7 +15,7 @@ describe('extractMeritSelfPositionCapUsd', () => {
     expect(cap).toBe(1000);
   });
 
-  it('returns null when message has no Self reference', () => {
+  it('returns null when message has no dollar amount', () => {
     const cap = extractMeritSelfPositionCapUsd([
       { action: 'Base Reward', description: 'Standard merit reward.' },
     ]);
@@ -26,7 +26,7 @@ describe('extractMeritSelfPositionCapUsd', () => {
     expect(extractMeritSelfPositionCapUsd(undefined)).toBeNull();
   });
 
-  it('parses cap with comma-separated thousands when self and amount are on same line', () => {
+  it('parses cap with comma-separated thousands', () => {
     const cap = extractMeritSelfPositionCapUsd([
       'Self Authentication: Supply and double your yield for the first $10,000 USDT supplied per user.',
     ]);

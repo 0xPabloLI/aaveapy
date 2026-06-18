@@ -16,6 +16,18 @@ export interface MeritIncentive {
   campaignType?: string;               // Distribution type (e.g. 'DUTCH_AUCTION')
 }
 
+export interface MeritCampaignBreakdown extends BaseCampaignBreakdown {
+  campaignId: string;
+  campaignType?: string;
+  positionCap?: number;
+  aprCap?: number | null;
+  rewardTokenSymbol?: string;
+  totalBudget?: number;
+  latestTvl?: number;
+}
+
+export type MeritCampaignGroup = CampaignGroup<MeritCampaignBreakdown>;
+
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
@@ -63,6 +75,7 @@ export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
   latestTvl?: number;
   totalBudget?: number;
   positionCap?: number;
+  rewardTokenSymbol?: string;
 }
 
 export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {

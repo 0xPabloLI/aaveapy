@@ -65,12 +65,12 @@ _Avoid_: 把 AMOUNT 变体映射为 VALUE 变体（语义丢失）、把 `distri
 _Avoid_: 在 API 响应或前端使用 `distributionType`（原始值）、`rawDistributionType`（内部暂存）
 
 **Merit Program**:
-Aave 官方的 Merit 激励项目。有 per-user deposit ceiling 和 self-cap 模型，独立于 Merkl Campaign。
-_Avoid_: Merit Reward, Merit Incentive
+Aave 官方的 Merit 激励项目。`campaignType` = `DUTCH_AUCTION`（与 Merkl 统一命名）；self auth 部分有 position cap。Position cap 与 Brevis `positionCap` 同术语。
+_Avoid_: Merit Reward, Merit Incentive, deposit ceiling, self cap（用 position cap 代替）
 
 **Brevis Incentive**:
-Brevis 协议分发的激励。有 per-user reward ceiling 模型。
-_Avoid_: Brevis Campaign, Brevis Program
+Brevis 协议分发的激励。有 per-user position cap 模型。`campaignType` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE`；`rewardTokenSymbol` 从 gRPC `RewardToken.symbol` 提取。
+_Avoid_: Brevis Campaign, Brevis Program, reward ceiling（用 position cap 代替）
 
 **Tydro Points**:
 仅 Merkl Campaign 的可选 points 路径产出的积分。转换公式：`points × pointToUsdRate × 36.5`。Merit / Brevis / 协议激励**不是** Tydro Points。
