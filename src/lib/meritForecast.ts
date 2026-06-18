@@ -1,7 +1,6 @@
 import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
 import { computePositionCapEligibility, applyPositionCap } from '@/lib/incentiveMath';
-
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+import { parseCampaignBoundaryMs } from '@/lib/campaignGroups';
 
 export type MeritMessage = MeritIncentive['message'];
 export type MeritForecastMode = 'MERIT_BASE' | 'MERIT_SELF_CAP';
@@ -46,17 +45,6 @@ interface ForecastMeritCampaignInput {
 
 function sanitizePercent(value: number | undefined): number {
   return Number.isFinite(value) && value! > 0 ? value! : 0;
-}
-
-function parseCampaignBoundaryMs(value: string | undefined, boundary: 'start' | 'end'): number | null {
-  if (!value) return null;
-  if (DATE_ONLY_PATTERN.test(value)) {
-    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
-    const timestamp = Date.parse(normalized);
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-  const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? null : timestamp;
 }
 
 function flattenMessageLines(message?: MeritMessage): string[] {
