@@ -26,7 +26,7 @@ function buildReserve(overrides: Partial<ReserveWithSpread>): ReserveWithSpread 
 
 const sim: RateSimulationResult = {
   tokenPrice: 1, tokenPriceLoading: false, forecastLoading: false,
-  forecastErrors: {}, forecastUnavailableCampaignCount: 0, forecastUnavailableCampaignIds: [], scenarioUsdAccrual: null,
+  forecastErrors: {}, forecastUnavailableCampaignCount: 0, scenarioUsdAccrual: null,
   supply: {
     currentNative: 4.2, currentIncentive: 0, currentTotal: 4.2,
     afterNative: null, afterIncentive: null, afterTotal: null,

@@ -471,12 +471,17 @@ campaignId=... category=needs-data-check
 ### FIX branch
 
 ```text
-aprBasedDaily = (tvl × aprCap) / 365
-dailyRewards   = min(aprBasedDaily, remainingBudget)
-apr            = (dailyRewards × 365) / tvl
+aprBasedDaily  = (tvl × aprCap) / 365
+dailyRewards   = aprBasedDaily
+apr            = aprCap
 ```
 
-Produces `fixRewardableDays` and `fixRewardableUntilTs` from remaining budget.
+APR 始终等于 `aprCap`，不会因 TVL 增大或预算不足而降低。预算能支撑多久由 `fixRewardableDays` 和 `fixRewardableUntilTs` 告知用户（UI 显示 `~Nd earn`，小于 1 天时用两位小数如 `~0.09d earn`）。
+
+**FIX APR 不会稀释的依据**（Merkl 官方文档 `docs.merkl.xyz/merkl-mechanisms/distributions`）：
+> Fixed Reward Rate — Campaign may finish earlier: Campaigns end when funds are depleted or when the scheduled duration expires. If a campaign runs out of funds before its end date, rewards are split proportionally (like a variable reward rate campaign) in the final run, then the campaign closes.
+
+最后一轮按比例分配（proportional split）在数学上等价于"完整 APR 应用不足一天的有效时长"：每人的实际收益 = `aprCap × (fixRewardableDays / 365)`。因此 `fixRewardableDays` 精确表达了 Merkl 的行为——APR 不变，只是有效时长缩短。
 
 ### MAX / capped APR branch
 

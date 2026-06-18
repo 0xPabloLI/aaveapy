@@ -999,7 +999,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const withoutForecast = rows.find((r) => r.id.includes('camp-without-forecast'));
     expect(withoutForecast).toBeDefined();
     expect(withoutForecast!.forecastUnavailable).toBe(true);
-    expect(withoutForecast!.capNote).toContain('No forecast data');
+    expect(withoutForecast!.capNote ?? '').not.toContain('No forecast data');
   });
 
   it('does not mark campaign as forecastUnavailable when forecastStates has the campaignId', () => {
@@ -1018,12 +1018,14 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const noIdRow = rows.find((r) => r.id.includes('-x'));
     expect(noIdRow).toBeDefined();
     expect(noIdRow!.forecastUnavailable).toBe(true);
-    expect(noIdRow!.capNote).toContain('No forecast data');
+    expect(noIdRow!.capNote ?? '').not.toContain('No forecast data');
   });
 
-  it('does not add forecastUnavailable capNote when hasAnyInput is false', () => {
+  it('sets forecastUnavailable flag even when hasAnyInput is false (capNote not affected)', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
     const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, false);
+    const unavailableRows = rows.filter((r) => r.forecastUnavailable);
+    expect(unavailableRows.length).toBeGreaterThan(0);
     for (const row of rows) {
       expect(row.capNote ?? '').not.toContain('No forecast data');
     }
@@ -1048,7 +1050,7 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBe(true);
-    expect(rows[0].capNote).toContain('No forecast data');
+    expect(rows[0].capNote ?? '').not.toContain('No forecast data');
   });
 
   it('does not mark brevis campaign as forecastUnavailable when forecastStates has the campaign', () => {

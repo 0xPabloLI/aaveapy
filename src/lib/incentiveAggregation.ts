@@ -286,17 +286,3 @@ export function resolveVisibleIncentiveBadgeValue(
   }
   return null;
 }
-
-export function formatForecastUnavailableLabel(
-  ids: string[] | undefined,
-  count: number,
-): string {
-  const resolvedIds = ids ?? [];
-  const maxShow = 3;
-  const shown = resolvedIds.slice(0, maxShow);
-  const rest = resolvedIds.length - maxShow;
-  const label = shown.length > 0
-    ? `Campaign${shown.length > 1 ? 's' : ''} ${shown.map((id) => `#${id}`).join(', ')}${rest > 0 ? ` +${rest} more` : ''}`
-    : `${count} campaign${count > 1 ? 's' : ''}`;
-  return `${label} without forecast – using current APR.`;
-}

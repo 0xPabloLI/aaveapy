@@ -1222,7 +1222,6 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.forecastUnavailableCampaignCount).toBe(0);
-    expect(result.forecastUnavailableCampaignIds).toEqual([]);
   });
 
   describe('blocked / disabled reserves', () => {
@@ -1509,7 +1508,6 @@ describe('buildRateSimulationResult', () => {
 
     // dutch1 excluded, fix1 has forecast, fix2 missing forecast
     expect(result.forecastUnavailableCampaignCount).toBe(1);
-    expect(result.forecastUnavailableCampaignIds).toEqual(['fix2']);
   });
 });
 

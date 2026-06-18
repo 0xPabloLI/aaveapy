@@ -59,7 +59,6 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     borrowLimitedByLiquidity: false,
   },
   forecastUnavailableCampaignCount: 0,
-  forecastUnavailableCampaignIds: [],
   ...overrides,
 });
 

@@ -82,7 +82,7 @@ describe('Architecture guard: formatters must not re-import extracted module sym
     { module: 'rateCalculations', symbols: ['calculateTotalSupplyApy', 'calculateTotalBorrowApy', 'calculateSpreadApy', 'calculateTotalSupplyApr', 'calculateTotalBorrowApr', 'calculateSpreadApr', 'annualPercentToDailyFraction'] },
     { module: 'rateSimulationCalculator', symbols: ['simulateRate'] },
     { module: 'merklWhitelist', symbols: ['MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL', 'MERKL_WHITELIST_CHAIN_IDS', 'isMerklWhitelisted'] },
-    { module: 'incentiveAggregation', symbols: ['getReserveIncentiveValues', 'resolveVisibleIncentiveBadgeValue', 'formatForecastUnavailableLabel', 'IncentiveCalculationOptions'] },
+    { module: 'incentiveAggregation', symbols: ['getReserveIncentiveValues', 'resolveVisibleIncentiveBadgeValue', 'IncentiveCalculationOptions'] },
     { module: 'marketLabels', symbols: ['getReserveMarketDisplayName', 'getHubChipLabel', 'getHubChipClass'] },
   ];
 

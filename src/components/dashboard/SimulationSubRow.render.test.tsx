@@ -50,7 +50,6 @@ const baseSimulation: RateSimulationResult = {
   forecastLoading: false,
   forecastErrors: {},
   forecastUnavailableCampaignCount: 0,
-  forecastUnavailableCampaignIds: [],
   scenarioUsdAccrual: null,
   supply: {
     currentNative: 2.1,
@@ -312,12 +311,12 @@ describe('SimulationSubRow — href link rendering (regression from cac7eef)', (
   });
 });
 
-describe('SimulationSubRow — forecast unavailable campaign IDs', () => {
-  it('TC-F01: displays campaign IDs when forecast unavailable', () => {
+describe('SimulationSubRow — forecast unavailable footnote', () => {
+  it('TC-F01: displays footnote when forecast unavailable and hasAnyInput', () => {
     const sim: RateSimulationResult = {
       ...baseSimulation,
       forecastUnavailableCampaignCount: 2,
-      forecastUnavailableCampaignIds: ['123', '456'],
+      hasAnyInput: true,
     };
     const html = renderToString(
       <QueryClientProvider client={new QueryClient()}>
@@ -333,16 +332,16 @@ describe('SimulationSubRow — forecast unavailable campaign IDs', () => {
         </TooltipProvider>
       </QueryClientProvider>,
     );
-    expect(html).toContain('#123');
-    expect(html).toContain('#456');
-    expect(html).toContain('without forecast');
+    expect(html).toContain('No forecast data');
+    expect(html).toContain('using current APR');
   });
 
-  it('TC-F02: truncates after 3 campaign IDs with +N more', () => {
+  it('TC-F02: does not display footnote when hasAnyInput is false', () => {
     const sim: RateSimulationResult = {
       ...baseSimulation,
-      forecastUnavailableCampaignCount: 5,
-      forecastUnavailableCampaignIds: ['1', '2', '3', '4', '5'],
+      forecastUnavailableCampaignCount: 2,
+      supply: { ...baseSimulation.supply, hasInput: false, inputUsd: 0, inputAmount: 0 },
+      borrow: { ...baseSimulation.borrow, hasInput: false, inputUsd: 0, inputAmount: 0 },
     };
     const html = renderToString(
       <QueryClientProvider client={new QueryClient()}>
@@ -358,10 +357,6 @@ describe('SimulationSubRow — forecast unavailable campaign IDs', () => {
         </TooltipProvider>
       </QueryClientProvider>,
     );
-    expect(html).toContain('#1');
-    expect(html).toContain('#2');
-    expect(html).toContain('#3');
-    expect(html).toContain('+2 more');
-    expect(html).not.toContain('#4');
+    expect(html).not.toContain('No forecast data');
   });
 });

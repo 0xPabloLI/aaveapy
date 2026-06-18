@@ -67,7 +67,6 @@ import {
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
 
-const FORECAST_UNAVAILABLE_NOTE = 'No forecast data — using current APR.';
 
 export type BrevisCampaignRow = {
   source: BrevisIncentive;
@@ -118,19 +117,6 @@ export const FORECAST_REQUIRING_CAMPAIGN_TYPES = new Set([
   'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
   'TARGET_TOTAL_APR',
 ]);
-
-export const collectActiveCampaignIds = (opportunities?: MerklOpportunityGroup[]): string[] => {
-  if (!opportunities || opportunities.length === 0) return [];
-  const ids = new Set<string>();
-  opportunities.forEach((opportunity) => {
-    opportunity.breakdowns?.forEach((breakdown) => {
-      if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
-      if (breakdown.campaignType && !FORECAST_REQUIRING_CAMPAIGN_TYPES.has(breakdown.campaignType)) return;
-      if (breakdown.campaignId) ids.add(String(breakdown.campaignId));
-    });
-  });
-  return Array.from(ids);
-};
 
 export type RateSide = 'supply' | 'borrow';
 
@@ -241,8 +227,6 @@ export interface RateSimulationComputedResult {
   };
   marketMetrics: MarketMetrics;
   forecastUnavailableCampaignCount: number;
-  /** Campaign IDs that are active but have no forecast state available. */
-  forecastUnavailableCampaignIds: string[];
   /** Present when at least one side has scenario principal; uses after-simulation rates. */
   scenarioUsdAccrual: ScenarioUsdAccrual | null;
 }
@@ -845,10 +829,6 @@ export const buildMerklCampaignDetails = (
         after = null;
       }
 
-      if (forecastUnavailable && hasAnyInput) {
-        capNote = capNote ? `${capNote} · ${FORECAST_UNAVAILABLE_NOTE}` : FORECAST_UNAVAILABLE_NOTE;
-      }
-
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
       const oppLink = opportunity.link;
@@ -961,10 +941,6 @@ export const buildBrevisCampaignDetails = (
           ));
         }
       }
-    }
-
-    if (forecastUnavailable && hasAnyInput) {
-      capNote = capNote ? `${capNote} · ${FORECAST_UNAVAILABLE_NOTE}` : FORECAST_UNAVAILABLE_NOTE;
     }
 
     const delta = after !== null ? after - current : null;
@@ -1780,15 +1756,6 @@ export function buildRateSimulationResult({
   const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? reserve.utilizationPct ?? null;
   const utilizationAfter = combinedNativeSimulation?.utilizationRatePercent ?? null;
   const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? reserve.optimalUtilization ?? null;
-  const allActiveCampaignIds = hasAnyInput
-    ? Array.from(
-        new Set([
-          ...collectActiveCampaignIds(reserve.merklSupplys),
-          ...collectActiveCampaignIds(reserve.merklBorrows),
-        ])
-      )
-    : [];
-  const forecastUnavailableCampaignIds = allActiveCampaignIds.filter((id) => !forecastStates[id]);
   const forecastUnavailableCampaignCount = countForecastUnavailable(supplyMerklCampaignRows)
     + countForecastUnavailable(supplyBrevisCampaignRows)
     + countForecastUnavailable(borrowMerklCampaignRows)
@@ -1992,7 +1959,6 @@ export function buildRateSimulationResult({
     marketMetrics,
     // ─── B 类字段: Scenario-only (无模拟 → null) ───
     forecastUnavailableCampaignCount,
-    forecastUnavailableCampaignIds,
     scenarioUsdAccrual,
   };
 }
