@@ -214,9 +214,9 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $5,000.00 · supply + borrow',
+      capNote: 'Incentive on first $5,000.00 · combine',
       capWarning: true,
-      capMetrics: { positionCapUsd: 5000, isSharedSupplyBorrow: true },
+      capMetrics: { positionCapUsd: 5000, isCombineCap: true },
     };
     const result = makeSimResult({
       supply: {
@@ -233,7 +233,7 @@ describe('extractCapWarnings', () => {
     const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw).toBeDefined();
     expect(icw.adjustToUsd).toBe(3000); // 5000 - 2000 borrow
-    expect(icw.isSharedSupplyBorrow).toBe(true);
+    expect(icw.isCombineCap).toBe(true);
   });
 
   it('orders warnings: protocol cap before incentive cap', () => {
@@ -395,9 +395,9 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 · supply + borrow',
+      capNote: 'Incentive on first $1,000.00 · combine',
       capWarning: true,
-      capMetrics: { positionCapUsd: 1000, isSharedSupplyBorrow: true },
+      capMetrics: { positionCapUsd: 1000, isCombineCap: true },
     };
     const result = makeSimResult({
       supply: {

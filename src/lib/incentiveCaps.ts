@@ -25,13 +25,13 @@ export interface IncentiveCapEffect {
     positionCapUsd?: number;
     eligibleUsd?: number;
     remainingDays?: number | null;
-    isSharedSupplyBorrow?: boolean;
+    isCombineCap?: boolean;
   };
 }
 
 export interface SimulationCapMetrics {
   positionCapUsd?: number;
-  isSharedSupplyBorrow?: boolean;
+  isCombineCap?: boolean;
 }
 
 export function capEffectToSimulationFields(
@@ -40,8 +40,8 @@ export function capEffectToSimulationFields(
   let capMetrics: SimulationCapMetrics | undefined;
   if (effect.kind === 'position_cap' && effect.metrics?.positionCapUsd != null) {
     capMetrics = { positionCapUsd: effect.metrics.positionCapUsd };
-    if (effect.metrics.isSharedSupplyBorrow) {
-      capMetrics.isSharedSupplyBorrow = true;
+    if (effect.metrics.isCombineCap) {
+      capMetrics.isCombineCap = true;
     }
   }
   return {
@@ -51,30 +51,10 @@ export function capEffectToSimulationFields(
   };
 }
 
-/** Merit Self Authentication: only the first `positionCapUsd` of position earns incentive. */
-export function buildMeritPositionCapEffect(input: {
-  inputUsd: number;
-  eligibleUsd: number;
-  positionCapUsd: number;
-}): IncentiveCapEffect {
-  const { inputUsd, eligibleUsd, positionCapUsd } = input;
-  return {
-    kind: 'position_cap',
-    scope: 'per_user',
-    window: 'round_cycle',
-    noteParts: [`Incentive on first ${formatUsd(positionCapUsd)}`],
-    warning: inputUsd > positionCapUsd,
-    metrics: {
-      positionCapUsd,
-      eligibleUsd,
-    },
-  };
-}
-
 /** Brevis: per-user position cap from API `positionCap`. */
 export function buildBrevisPositionCapEffect(input: {
   positionCapUsd: number;
-  isSharedSupplyBorrow: boolean;
+  isCombineCap: boolean;
   isCapBinding: boolean;
   remainingBudget: number | null;
   dailyRewardUsd: number | null;
@@ -82,8 +62,8 @@ export function buildBrevisPositionCapEffect(input: {
 }): IncentiveCapEffect {
   const parts: string[] = [];
   parts.push(
-    input.isSharedSupplyBorrow
-      ? `Incentive on first ${formatUsd(input.positionCapUsd)} · supply + borrow`
+    input.isCombineCap
+      ? `Incentive on first ${formatUsd(input.positionCapUsd)} · combine`
       : `Incentive on first ${formatUsd(input.positionCapUsd)}`,
   );
   if (input.remainingBudget != null && input.dailyRewardUsd != null && input.remainingDays != null) {
@@ -103,7 +83,7 @@ export function buildBrevisPositionCapEffect(input: {
     metrics: {
       positionCapUsd: input.positionCapUsd,
       remainingDays: input.remainingDays,
-      isSharedSupplyBorrow: input.isSharedSupplyBorrow || undefined,
+      isCombineCap: input.isCombineCap || undefined,
     },
   };
 }
@@ -170,7 +150,7 @@ export function applyPositionCapToForecastResult(
   positionUsd: number,
   capUsd: number | undefined,
   options?: {
-    isSharedSupplyBorrow?: boolean;
+    isCombineCap?: boolean;
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
@@ -182,7 +162,7 @@ export function applyPositionCapToForecastResult(
   const { aprPercent, isCapBinding, eligibleUsd } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
   const effect = buildBrevisPositionCapEffect({
     positionCapUsd: capUsd,
-    isSharedSupplyBorrow: options?.isSharedSupplyBorrow ?? false,
+    isCombineCap: options?.isCombineCap ?? false,
     isCapBinding,
     remainingBudget: options?.remainingBudget ?? null,
     dailyRewardUsd: options?.dailyRewardUsd ?? null,

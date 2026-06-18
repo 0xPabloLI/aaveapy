@@ -271,7 +271,7 @@ describe('PortfolioTokenRow render', () => {
         capUsd: 5_000,
         isCapBinding: true,
         adjustToUsd: 5_000,
-        isSharedSupplyBorrow: true,
+        isCombineCap: true,
         capNote: 'Incentive on first $5,000 · supply + borrow',
       };
       render(

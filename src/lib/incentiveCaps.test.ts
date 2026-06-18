@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBrevisCalendarEndOnlyEffect,
   buildBrevisPositionCapEffect,
-  buildMeritPositionCapEffect,
   buildMerklAprCapEffect,
   buildMerklFixPoolBudgetEffect,
   capEffectToSimulationFields,
@@ -21,26 +20,29 @@ describe('capEffectToSimulationFields', () => {
   });
 
   it('carries capMetrics from position_cap effect', () => {
-    const eff = buildMeritPositionCapEffect({
-      inputUsd: 2000,
-      eligibleUsd: 1000,
+    const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 1000,
+      isCombineCap: false,
+      isCapBinding: false,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
     });
     const fields = capEffectToSimulationFields(eff);
     expect(fields.capMetrics).toEqual({ positionCapUsd: 1000 });
   });
 
-  it('carries capMetrics with isSharedSupplyBorrow from Brevis position_cap', () => {
+  it('carries capMetrics with isCombineCap from Brevis position_cap', () => {
     const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 5000,
-      isSharedSupplyBorrow: true,
+      isCombineCap: true,
       isCapBinding: true,
       remainingBudget: null,
       dailyRewardUsd: null,
       remainingDays: null,
     });
     const fields = capEffectToSimulationFields(eff);
-    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isSharedSupplyBorrow: true });
+    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isCombineCap: true });
   });
 
   it('returns undefined capMetrics for non-position-cap effects', () => {
@@ -49,37 +51,11 @@ describe('capEffectToSimulationFields', () => {
   });
 });
 
-describe('buildMeritPositionCapEffect', () => {
-  it('matches simulation copy and warns when input exceeds position cap', () => {
-    const under = buildMeritPositionCapEffect({
-      inputUsd: 500,
-      eligibleUsd: 500,
-      positionCapUsd: 1000,
-    });
-    expect(capEffectToSimulationFields(under)).toEqual({
-      capNote: 'Incentive on first $1,000.00',
-      capWarning: false,
-      capMetrics: { positionCapUsd: 1000 },
-    });
-
-    const over = buildMeritPositionCapEffect({
-      inputUsd: 2000,
-      eligibleUsd: 1000,
-      positionCapUsd: 1000,
-    });
-    expect(capEffectToSimulationFields(over)).toEqual({
-      capNote: 'Incentive on first $1,000.00',
-      capWarning: true,
-      capMetrics: { positionCapUsd: 1000 },
-    });
-  });
-});
-
 describe('buildBrevisPositionCapEffect', () => {
   it('uses supply+borrow label when shared', () => {
     const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 5000,
-      isSharedSupplyBorrow: true,
+      isCombineCap: true,
       isCapBinding: false,
       remainingBudget: 10000,
       dailyRewardUsd: 100,
@@ -87,15 +63,15 @@ describe('buildBrevisPositionCapEffect', () => {
     });
     const fields = capEffectToSimulationFields(eff);
     expect(fields.capNote).toBe(
-      'Incentive on first $5,000.00 · supply + borrow · ~100d earn',
+      'Incentive on first $5,000.00 · combine · ~100d earn',
     );
-    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isSharedSupplyBorrow: true });
+    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isCombineCap: true });
   });
 
   it('uses single-side label when not shared', () => {
     const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 5000,
-      isSharedSupplyBorrow: false,
+      isCombineCap: false,
       isCapBinding: true,
       remainingBudget: 5000,
       dailyRewardUsd: 100,
@@ -110,7 +86,7 @@ describe('buildBrevisPositionCapEffect', () => {
   it('falls back to calendar days when no budget data', () => {
     const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 5000,
-      isSharedSupplyBorrow: false,
+      isCombineCap: false,
       isCapBinding: false,
       remainingBudget: null,
       dailyRewardUsd: null,
@@ -122,7 +98,7 @@ describe('buildBrevisPositionCapEffect', () => {
   it('omits earn segment when neither horizon is positive', () => {
     const eff = buildBrevisPositionCapEffect({
       positionCapUsd: 100,
-      isSharedSupplyBorrow: false,
+      isCombineCap: false,
       isCapBinding: false,
       remainingBudget: null,
       dailyRewardUsd: null,
@@ -185,10 +161,10 @@ describe('applyPositionCapToForecastResult', () => {
     expect(result.capWarning).toBe(false);
   });
 
-  it('includes isSharedSupplyBorrow in capMetrics', () => {
+  it('includes isCombineCap in capMetrics', () => {
     const result = applyPositionCapToForecastResult(10, 5000, 1000, {
-      isSharedSupplyBorrow: true,
+      isCombineCap: true,
     });
-    expect(result.capMetrics?.isSharedSupplyBorrow).toBe(true);
+    expect(result.capMetrics?.isCombineCap).toBe(true);
   });
 });

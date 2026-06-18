@@ -16,7 +16,7 @@ export interface IncentiveCapWarning {
   capUsd: number;
   isCapBinding: boolean;
   adjustToUsd: number;
-  isSharedSupplyBorrow?: boolean;
+  isCombineCap?: boolean;
   capNote?: string;
 }
 
@@ -87,7 +87,7 @@ function extractIncentiveCapWarnings(
     if (c.capWarning && c.capMetrics?.positionCapUsd != null) {
       if (seenSources.has('brevis')) continue;
       seenSources.add('brevis');
-      const adjustToUsd = computeIncentiveAdjustToUsd(c.capMetrics.positionCapUsd, c.capMetrics.isSharedSupplyBorrow, side, reserveId, otherSideEntries);
+      const adjustToUsd = computeIncentiveAdjustToUsd(c.capMetrics.positionCapUsd, c.capMetrics.isCombineCap, side, reserveId, otherSideEntries);
       warnings.push({
         kind: 'incentive_cap',
         side,
@@ -95,7 +95,7 @@ function extractIncentiveCapWarnings(
         capUsd: c.capMetrics.positionCapUsd,
         isCapBinding: true,
         adjustToUsd,
-        isSharedSupplyBorrow: c.capMetrics.isSharedSupplyBorrow || undefined,
+        isCombineCap: c.capMetrics.isCombineCap || undefined,
         capNote: c.capNote,
       });
     }
@@ -106,7 +106,7 @@ function extractIncentiveCapWarnings(
     if (c.capWarning && c.capMetrics?.positionCapUsd != null) {
       if (seenSources.has('merit')) continue;
       seenSources.add('merit');
-      const adjustToUsd = computeIncentiveAdjustToUsd(c.capMetrics.positionCapUsd, c.capMetrics.isSharedSupplyBorrow, side, reserveId, otherSideEntries);
+      const adjustToUsd = computeIncentiveAdjustToUsd(c.capMetrics.positionCapUsd, c.capMetrics.isCombineCap, side, reserveId, otherSideEntries);
       warnings.push({
         kind: 'incentive_cap',
         side,
@@ -114,7 +114,7 @@ function extractIncentiveCapWarnings(
         capUsd: c.capMetrics.positionCapUsd,
         isCapBinding: true,
         adjustToUsd,
-        isSharedSupplyBorrow: c.capMetrics.isSharedSupplyBorrow || undefined,
+        isCombineCap: c.capMetrics.isCombineCap || undefined,
         capNote: c.capNote,
       });
     }
@@ -125,12 +125,12 @@ function extractIncentiveCapWarnings(
 
 function computeIncentiveAdjustToUsd(
   positionCapUsd: number,
-  isSharedSupplyBorrow: boolean | undefined,
+  isCombineCap: boolean | undefined,
   side: 'supply' | 'borrow',
   reserveId: string,
   otherSideEntries: OtherSideEntry[],
 ): number {
-  if (!isSharedSupplyBorrow) return positionCapUsd;
+  if (!isCombineCap) return positionCapUsd;
 
   const entry = otherSideEntries.find(e => e.reserveId === reserveId);
   if (!entry) return positionCapUsd;

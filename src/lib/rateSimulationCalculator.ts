@@ -27,7 +27,6 @@ import {
 import {
   buildBrevisCalendarEndOnlyEffect,
   buildBrevisPositionCapEffect,
-  buildMeritPositionCapEffect,
   buildMerklAprCapEffect,
   buildMerklFixPoolBudgetEffect,
   buildNetEligibilityNote,
@@ -903,7 +902,7 @@ export const buildBrevisCampaignDetails = (
         positionUsd,
         resolved.positionCap,
         {
-          isSharedSupplyBorrow: combined !== undefined,
+          isCombineCap: combined !== undefined,
           remainingBudget: resolved.totalBudget != null && resolved.totalBudget > 0
             ? resolved.totalBudget - (resolved.positionCap ?? 0)
             : null,
