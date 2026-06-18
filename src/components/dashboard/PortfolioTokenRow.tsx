@@ -39,7 +39,7 @@ interface SideInputProps {
   actions: PortfolioSimulationActions;
   disabled?: boolean;
   disabledNotice?: string | null;
-  capWarnings?: PortfolioCapWarning[];
+  capLimitUsd?: number;
 }
 
 function SideInput({
@@ -53,7 +53,7 @@ function SideInput({
   actions,
   disabled,
   disabledNotice,
-  capWarnings,
+  capLimitUsd,
 }: SideInputProps) {
   const isBorrow = side === 'borrow';
   const labelColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
@@ -95,30 +95,49 @@ function SideInput({
       actions.updateReserve(reserveId, clearPatch);
       return;
     }
+    const rawUsd = !hasWallet && sideData.inputMode === 'token'
+      ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
+      : parseNumberInput(formattedValue);
+    const absDeltaUsd = rawUsd;
+    let effectiveUsd = hasWallet
+      ? Math.max(sideData.walletValue! + (isPositiveDelta ? 1 : -1) * absDeltaUsd, 0)
+      : rawUsd;
+    if (capLimitUsd != null && effectiveUsd > capLimitUsd) {
+      effectiveUsd = capLimitUsd;
+    }
     const patch = side === 'supply'
       ? { supplyAmount: formattedValue }
       : { borrowAmount: formattedValue };
     if (!hasWallet) {
-      actions.updateReserve(reserveId, patch);
+      if (capLimitUsd != null && rawUsd > capLimitUsd) {
+        const clampedAmount = sideData.inputMode === 'usd'
+          ? formatNumberInput(formatConvertedAmount(capLimitUsd))
+          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
+        const clampedPatch = side === 'supply'
+          ? { supplyAmount: clampedAmount }
+          : { borrowAmount: clampedAmount };
+        actions.updateReserve(reserveId, clampedPatch);
+      } else {
+        actions.updateReserve(reserveId, patch);
+      }
       return;
     }
-    const absDeltaUsd = parseNumberInput(formattedValue);
     const sign = isPositiveDelta ? 1 : -1;
-    const effectiveUsd = Math.max(sideData.walletValue! + sign * absDeltaUsd, 0);
     const signPatch = side === 'supply'
       ? { supplyDeltaSign: sign as DeltaSign }
       : { borrowDeltaSign: sign as DeltaSign };
     const amountValue = sideData.inputMode === 'usd'
-      ? formatConvertedAmount(effectiveUsd)
-      : (tokenPriceInUsd != null ? formatConvertedAmount(effectiveUsd / tokenPriceInUsd) : formatConvertedAmount(effectiveUsd));
+      ? formatNumberInput(formatConvertedAmount(effectiveUsd))
+      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(effectiveUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(effectiveUsd)));
     const amountPatch = side === 'supply'
       ? { supplyAmount: amountValue }
       : { borrowAmount: amountValue };
+    const clampedDeltaRawUsd = effectiveUsd - sideData.walletValue!;
     const deltaRawUsdPatch = side === 'supply'
-      ? { supplyDeltaRawUsd: sign * absDeltaUsd as number | null }
-      : { borrowDeltaRawUsd: sign * absDeltaUsd as number | null };
+      ? { supplyDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null }
+      : { borrowDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null };
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd]);
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
 
   const numberInput = useDebouncedInput({
     value: deltaDisplay,
@@ -164,23 +183,6 @@ function SideInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
-  const handleAdjustToMax = useCallback((warning: PortfolioCapWarning) => {
-    const adjustedUsd = warning.adjustToUsd;
-    if (sideData.inputMode === 'usd') {
-      const amountValue = formatConvertedAmount(adjustedUsd);
-      const patch = side === 'supply'
-        ? { supplyAmount: amountValue, supplyDeltaSign: 1 as DeltaSign }
-        : { borrowAmount: amountValue, borrowDeltaSign: 1 as DeltaSign };
-      actions.updateReserve(reserveId, patch);
-    } else if (tokenPriceInUsd != null && tokenPriceInUsd > 0) {
-      const amountValue = formatConvertedAmount(adjustedUsd / tokenPriceInUsd);
-      const patch = side === 'supply'
-        ? { supplyAmount: amountValue, supplyDeltaSign: 1 as DeltaSign }
-        : { borrowAmount: amountValue, borrowDeltaSign: 1 as DeltaSign };
-      actions.updateReserve(reserveId, patch);
-    }
-  }, [sideData.inputMode, tokenPriceInUsd, actions, reserveId, side]);
-
   if (disabled) {
     return (
       <Tooltip>
@@ -213,34 +215,8 @@ function SideInput({
     );
   }
 
-  const capWarningElements = capWarnings && capWarnings.length > 0 && (
-    <div className={cn('flex flex-col gap-0.5 mt-0.5', isMobile ? 'pl-11' : 'pl-12')}>
-      {capWarnings.map((w, i) => {
-        const label = w.kind === 'protocol_cap'
-          ? `${side === 'supply' ? 'Supply' : 'Borrow'} cap exceeded by ${formatUsd(w.exceededByUsd)}`
-          : w.source === 'brevis'
-            ? `Brevis incentive cap: ${formatUsd(w.capUsd)}${w.isSharedSupplyBorrow ? ' (supply + borrow)' : ''}`
-            : `Merit incentive cap: ${formatUsd(w.capUsd)}`;
-        return (
-          <div key={`${w.kind}-${i}`} className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="size-3 shrink-0" aria-hidden />
-            <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11')}>{label}</span>
-            <button
-              type="button"
-              onClick={() => handleAdjustToMax(w)}
-              className="shrink-0 underline decoration-dotted underline-offset-2 ds-text-11 hover:text-foreground transition-colors"
-            >
-              Adjust
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-
   return (
-    <div className="flex min-w-0 flex-col">
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+    <div className="flex min-w-0 flex-1 items-center gap-1.5">
       <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
         {sideLabel}
       </span>
@@ -338,8 +314,32 @@ function SideInput({
           </button>
         )}
       </div>
-      </div>
-      {capWarningElements}
+    </div>
+  );
+}
+
+function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'): string {
+  if (w.kind === 'protocol_cap') {
+    const sideLabel = side === 'supply' ? 'Supply' : 'Borrow';
+    const suffix = w.limitedByLiquidity ? ' (liquidity)' : '';
+    return `${sideLabel} limited to ${formatUsd(w.adjustToUsd)} available${suffix}`;
+  }
+  if (w.source === 'brevis') {
+    const shared = w.isSharedSupplyBorrow ? ' · supply + borrow' : '';
+    return `Incentive on first ${formatUsd(w.capUsd)}${shared}`;
+  }
+  return `Incentive on first ${formatUsd(w.capUsd)}`;
+}
+
+function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWarning[]; side: 'supply' | 'borrow'; isMobile: boolean }) {
+  return (
+    <div className={cn('flex flex-col gap-0.5', isMobile ? 'pl-11' : 'pl-12')}>
+      {warnings.map((w, i) => (
+        <div key={`${w.kind}-${i}`} className="flex items-center gap-1 text-amber-600 dark:text-amber-400 min-w-0">
+          <AlertTriangle className="size-3 shrink-0" aria-hidden />
+          <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{formatCapWarningLabel(w, side)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -486,8 +486,16 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           <SideInput sideData={entry.supply} side="supply" sideLabel="Supply" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.supply} disabledNotice={disabledNotice?.supply} capLimitUsd={supplyCapLimitUsd} />
           <SideInput sideData={entry.borrow} side="borrow" sideLabel="Borrow" tokenSymbol={tokenSymbol} tokenPriceInUsd={tokenPriceInUsd} isMobile={isMobile} reserveId={reserveId} actions={actions} disabled={!!disabledNotice?.borrow} disabledNotice={disabledNotice?.borrow} capLimitUsd={borrowCapLimitUsd} />
         </div>
-        {supplyWarnings && supplyWarnings.length > 0 && <CapWarningRow warnings={supplyWarnings} side="supply" isMobile={isMobile} />}
-        {borrowWarnings && borrowWarnings.length > 0 && <CapWarningRow warnings={borrowWarnings} side="borrow" isMobile={isMobile} />}
+        {(supplyWarnings || borrowWarnings) && (
+          <div className="flex gap-2">
+            <div className="flex-1 min-w-0">
+              {supplyWarnings && supplyWarnings.length > 0 && <CapWarningRow warnings={supplyWarnings} side="supply" isMobile={isMobile} />}
+            </div>
+            <div className="flex-1 min-w-0">
+              {borrowWarnings && borrowWarnings.length > 0 && <CapWarningRow warnings={borrowWarnings} side="borrow" isMobile={isMobile} />}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

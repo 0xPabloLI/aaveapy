@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: vi.fn(() => false),
@@ -197,7 +198,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '4000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7000', supplyDeltaSign: 1, supplyDeltaRawUsd: 4000 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '7,000', supplyDeltaSign: 1, supplyDeltaRawUsd: 4000 });
     });
 
     it('calls actions.updateReserve with effective amount on blur in negative delta mode', () => {
@@ -214,7 +215,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '2000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3000', supplyDeltaSign: -1, supplyDeltaRawUsd: -2000 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3,000', supplyDeltaSign: -1, supplyDeltaRawUsd: -2000 });
     });
 
     it('clears delta by resetting amount to walletValue so deltaDisplay becomes empty', () => {
@@ -276,7 +277,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '5000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '8000', supplyDeltaSign: 1, supplyDeltaRawUsd: 5000 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '8,000', supplyDeltaSign: 1, supplyDeltaRawUsd: 5000 });
     });
 
     it('patches deltaSign alongside amount in handleDeltaCommit (negative delta)', () => {
@@ -293,7 +294,7 @@ describe('PortfolioTokenRow callbacks', () => {
       const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
       fireEvent.change(input, { target: { value: '3000' } });
       fireEvent.blur(input);
-      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '2000', supplyDeltaSign: -1, supplyDeltaRawUsd: -3000 });
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '2,000', supplyDeltaSign: -1, supplyDeltaRawUsd: -3000 });
     });
 
     it('allows toggling from negative to positive even when deltaDisplay is empty', () => {
@@ -462,7 +463,7 @@ describe('PortfolioTokenRow callbacks', () => {
         const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
         fireEvent.change(input, { target: { value: '5' } });
         vi.advanceTimersByTime(0);
-        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3005', supplyDeltaSign: 1, supplyDeltaRawUsd: 5 });
+        expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '3,005', supplyDeltaSign: 1, supplyDeltaRawUsd: 5 });
         vi.useRealTimers();
       });
 
@@ -770,6 +771,104 @@ describe('PortfolioTokenRow callbacks', () => {
         expect(Math.abs(actualTokenAmount - expectedTokenAmount)).toBeLessThan(0.001);
         vi.useRealTimers();
       });
+    });
+  });
+
+  describe('auto-clamp on protocol cap', () => {
+    const protocolCapWarning: PortfolioCapWarning = {
+      kind: 'protocol_cap',
+      side: 'supply',
+      capUsd: 10_000,
+      exceededByUsd: 5_000,
+      adjustToUsd: 10_000,
+    };
+
+    it('clamps wallet-mode supply input to capLimitUsd when effectiveUsd exceeds cap', () => {
+      const actions = makeActions();
+      const capWarnings = { supply: [protocolCapWarning] };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          capWarnings={capWarnings}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '8000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', expect.objectContaining({
+        supplyAmount: '10,000',
+        supplyDeltaSign: 1,
+        supplyDeltaRawUsd: 7000,
+      }));
+    });
+
+    it('clamps manual (no-wallet) supply input to capLimitUsd', () => {
+      const actions = makeActions();
+      const capWarnings = { supply: [protocolCapWarning] };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null } })}
+          actions={actions}
+          reserveId="reserve-1"
+          capWarnings={capWarnings}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*amount.*USDC/i });
+      fireEvent.change(input, { target: { value: '15,000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', { supplyAmount: '10,000' });
+    });
+
+    it('does not clamp when input is within cap', () => {
+      const actions = makeActions();
+      const capWarnings = { supply: [protocolCapWarning] };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 3000, deltaSign: 1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          capWarnings={capWarnings}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '2000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', expect.objectContaining({
+        supplyAmount: '5,000',
+      }));
+    });
+
+    it('clamps borrow to capLimitUsd with liquidity suffix in warning', () => {
+      const actions = makeActions();
+      const borrowLiquidityWarning: PortfolioCapWarning = {
+        kind: 'protocol_cap',
+        side: 'borrow',
+        capUsd: 5_000,
+        exceededByUsd: 2_000,
+        adjustToUsd: 3_000,
+        limitedByLiquidity: true,
+      };
+      const capWarnings = { borrow: [borrowLiquidityWarning] };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ borrow: { amount: '5000', inputMode: 'usd', walletValue: 2000, deltaSign: 1 } })}
+          actions={actions}
+          reserveId="reserve-1"
+          capWarnings={capWarnings}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /borrow.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '5000' } });
+      fireEvent.blur(input);
+      expect(actions.updateReserve).toHaveBeenCalledWith('reserve-1', expect.objectContaining({
+        borrowAmount: '3,000',
+      }));
     });
   });
 });

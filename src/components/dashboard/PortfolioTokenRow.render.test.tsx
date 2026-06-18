@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: vi.fn(() => false),
@@ -215,6 +216,96 @@ describe('PortfolioTokenRow render', () => {
       };
       const eyeOffSmall = smallSvgs.filter(isEyeOffPath);
       expect(eyeOffSmall.length).toBe(0);
+    });
+  });
+
+  describe('cap warning rendering', () => {
+    const protocolCapWarning: PortfolioCapWarning = {
+      kind: 'protocol_cap',
+      side: 'supply',
+      capUsd: 10_000,
+      exceededByUsd: 5_000,
+      adjustToUsd: 10_000,
+    };
+
+    it('renders protocol cap warning with "limited to ... available" text', () => {
+      renderRow();
+      const { rerender } = render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null } })}
+          actions={makeActions()}
+          reserveId="reserve-1"
+          capWarnings={{ supply: [protocolCapWarning] }}
+        />,
+        { wrapper: Wrapper },
+      );
+      expect(screen.getByText(/Supply limited to.*10,000.*available/)).toBeTruthy();
+    });
+
+    it('renders liquidity suffix for borrow limited by liquidity', () => {
+      const liquidityWarning: PortfolioCapWarning = {
+        kind: 'protocol_cap',
+        side: 'borrow',
+        capUsd: 5_000,
+        exceededByUsd: 2_000,
+        adjustToUsd: 3_000,
+        limitedByLiquidity: true,
+      };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ borrow: { amount: '2000', inputMode: 'usd', walletValue: null } })}
+          actions={makeActions()}
+          reserveId="reserve-1"
+          capWarnings={{ borrow: [liquidityWarning] }}
+        />,
+        { wrapper: Wrapper },
+      );
+      expect(screen.getByText(/Borrow limited to.*3,000.*available.*liquidity/)).toBeTruthy();
+    });
+
+    it('renders incentive cap warning with "Incentive on first" text', () => {
+      const incentiveWarning: PortfolioCapWarning = {
+        kind: 'incentive_cap',
+        side: 'supply',
+        source: 'brevis',
+        capUsd: 5_000,
+        isCapBinding: true,
+        adjustToUsd: 5_000,
+        isSharedSupplyBorrow: true,
+      };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null } })}
+          actions={makeActions()}
+          reserveId="reserve-1"
+          capWarnings={{ supply: [incentiveWarning] }}
+        />,
+        { wrapper: Wrapper },
+      );
+      expect(screen.getByText(/Incentive on first.*5,000.*supply \+ borrow/)).toBeTruthy();
+    });
+
+    it('desktop: supply and borrow warnings render in same row', () => {
+      const supplyWarning: PortfolioCapWarning = {
+        kind: 'protocol_cap', side: 'supply', capUsd: 10_000, exceededByUsd: 5_000, adjustToUsd: 10_000,
+      };
+      const borrowWarning: PortfolioCapWarning = {
+        kind: 'protocol_cap', side: 'borrow', capUsd: 5_000, exceededByUsd: 2_000, adjustToUsd: 3_000,
+      };
+      render(
+        <PortfolioTokenRow
+          entry={makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } })}
+          actions={makeActions()}
+          reserveId="reserve-1"
+          capWarnings={{ supply: [supplyWarning], borrow: [borrowWarning] }}
+        />,
+        { wrapper: Wrapper },
+      );
+      const supplyWarningEl = screen.getByText(/Supply limited to/);
+      const borrowWarningEl = screen.getByText(/Borrow limited to/);
+      const row = supplyWarningEl.closest('div.flex.gap-2');
+      expect(row).toBeTruthy();
+      expect(row!.contains(borrowWarningEl)).toBe(true);
     });
   });
 });

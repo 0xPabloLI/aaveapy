@@ -6,6 +6,7 @@ export interface ProtocolCapWarning {
   capUsd: number;
   exceededByUsd: number;
   adjustToUsd: number;
+  limitedByLiquidity?: boolean;
 }
 
 export interface IncentiveCapWarning {
@@ -54,6 +55,7 @@ export function extractCapWarnings(
       capUsd: metrics.borrowCapUsd,
       exceededByUsd: metrics.borrowCapExceededByUsd,
       adjustToUsd: metrics.availableBorrowRoomUsd,
+      limitedByLiquidity: metrics.borrowLimitedByLiquidity || undefined,
     });
   }
 

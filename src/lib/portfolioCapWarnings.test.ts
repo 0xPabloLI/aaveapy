@@ -109,6 +109,50 @@ describe('extractCapWarnings', () => {
     expect(pw.adjustToUsd).toBe(4700);
   });
 
+  it('sets limitedByLiquidity=true when borrowLimitedByLiquidity is true', () => {
+    const result = makeSimResult({
+      marketMetrics: {
+        ...makeSimResult().marketMetrics,
+        borrowCapExceeded: true,
+        borrowCapExceededByUsd: 300,
+        availableBorrowRoomUsd: 4700,
+        borrowLimitedByLiquidity: true,
+      },
+    });
+    const warnings = extractCapWarnings('r1', 'borrow', result, []);
+    const pw = warnings[0] as ProtocolCapWarning;
+    expect(pw.limitedByLiquidity).toBe(true);
+  });
+
+  it('sets limitedByLiquidity=undefined when borrowLimitedByLiquidity is false', () => {
+    const result = makeSimResult({
+      marketMetrics: {
+        ...makeSimResult().marketMetrics,
+        borrowCapExceeded: true,
+        borrowCapExceededByUsd: 300,
+        availableBorrowRoomUsd: 4700,
+        borrowLimitedByLiquidity: false,
+      },
+    });
+    const warnings = extractCapWarnings('r1', 'borrow', result, []);
+    const pw = warnings[0] as ProtocolCapWarning;
+    expect(pw.limitedByLiquidity).toBeUndefined();
+  });
+
+  it('sets limitedByLiquidity=undefined by default for supply cap', () => {
+    const result = makeSimResult({
+      marketMetrics: {
+        ...makeSimResult().marketMetrics,
+        supplyCapExceeded: true,
+        supplyCapExceededByUsd: 500,
+        availableSupplyRoomUsd: 11500,
+      },
+    });
+    const warnings = extractCapWarnings('r1', 'supply', result, []);
+    const pw = warnings[0] as ProtocolCapWarning;
+    expect(pw.limitedByLiquidity).toBeUndefined();
+  });
+
   it('returns IncentiveCapWarning for Brevis position cap', () => {
     const brevisCampaign: SimulationCampaignDetail = {
       id: 'brevis-0-b1',
