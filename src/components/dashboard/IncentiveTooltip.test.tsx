@@ -330,6 +330,7 @@ describe('IncentiveTooltip', () => {
       const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
       const { container } = renderTooltip({ ...defaultProps, reserve, isApy: true });
       expect(container.textContent).toContain('Target total');
+      expect(container.textContent).toContain('target APR');
       expect(container.textContent).toContain('Native');
       expect(container.textContent).toContain('Merkl');
     });
@@ -348,8 +349,8 @@ describe('IncentiveTooltip', () => {
     it('renders MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE with Max APR and cap', () => {
       const reserve = merklCampaignReserve('MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Max APR');
-      expect(container.textContent).toContain('reward rate decreases as TVL grows');
+      expect(container.textContent).toContain('Max APR (capped reward rate)');
+      expect(container.textContent).toContain('reward decreases as TVL grows');
       expect(container.textContent).toContain('cap');
     });
 
@@ -364,15 +365,15 @@ describe('IncentiveTooltip', () => {
     it('renders FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE with fixed APR and early-end note', () => {
       const reserve = merklCampaignReserve('FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Fixed APR');
+      expect(container.textContent).toContain('Fixed APR (fixed reward rate)');
       expect(container.textContent).toContain('campaign ends early if budget runs out');
     });
 
     it('renders DUTCH_AUCTION with variable APR and daily reward note', () => {
       const reserve = merklCampaignReserve('DUTCH_AUCTION');
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Variable APR');
-      expect(container.textContent).toContain('daily reward amount is fixed');
+      expect(container.textContent).toContain('Dutch auction (variable reward rate)');
+      expect(container.textContent).toContain('daily amount is fixed');
       expect(container.textContent).toContain('rate changes with TVL');
     });
 

@@ -643,20 +643,20 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Target total {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            Target total (target APR) — {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );
     }
 
     if (ct === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
-      const capPart = campaign.aprCap != null && campaign.aprCap > 0
-        ? ` (cap ${formatPercent(displayTargetApr(campaign.aprCap))})`
-        : '';
+      const hasCap = campaign.aprCap != null && campaign.aprCap > 0;
+      const label = hasCap ? 'Max APR (capped reward rate)' : 'Max APR';
+      const capPart = hasCap ? ` (cap ${formatPercent(displayTargetApr(campaign.aprCap!))})` : '';
       return (
         <div data-campaign-desc="MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Max APR — reward rate decreases as TVL grows{capPart}
+            {label} — reward decreases as TVL grows{capPart}
           </p>
         </div>
       );
@@ -666,7 +666,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Fixed APR — campaign ends early if budget runs out
+            Fixed APR (fixed reward rate) — campaign ends early if budget runs out
           </p>
         </div>
       );
@@ -676,7 +676,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="DUTCH_AUCTION" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Variable APR — daily reward amount is fixed, rate changes with TVL
+            Dutch auction (variable reward rate) — daily amount is fixed, rate changes with TVL
           </p>
         </div>
       );
