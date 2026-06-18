@@ -15,7 +15,7 @@ import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
+import { formatProtocolCapText, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 const DELTA_EPSILON = 0.005;
 
@@ -320,9 +320,7 @@ function SideInput({
 
 function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'): string {
   if (w.kind === 'protocol_cap') {
-    const sideLabel = side === 'supply' ? 'Supply' : 'Borrow';
-    const suffix = w.limitedByLiquidity ? ' (liquidity)' : '';
-    return `${sideLabel} limited to ${formatUsd(w.adjustToUsd)} available${suffix}`;
+    return formatProtocolCapText({ side, availableFormatted: formatUsd(w.adjustToUsd), limitedByLiquidity: w.limitedByLiquidity });
   }
   return w.capNote ?? `Incentive on first ${formatUsd(w.capUsd)}`;
 }

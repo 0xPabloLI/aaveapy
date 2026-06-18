@@ -141,3 +141,15 @@ function computeIncentiveAdjustToUsd(
 
   return Math.max(positionCapUsd - otherSideUsd, 0);
 }
+
+export function formatProtocolCapText(options: {
+  side: 'supply' | 'borrow';
+  availableFormatted: string;
+  limitedByLiquidity?: boolean;
+  currentExceeded?: boolean;
+}): string {
+  const sideLabel = options.side === 'supply' ? 'Supply' : 'Borrow';
+  const prefix = options.currentExceeded ? 'Current ' : '';
+  const suffix = options.limitedByLiquidity ? ' (liquidity)' : '';
+  return `${prefix}${sideLabel} limited to ${options.availableFormatted} available${suffix}`;
+}

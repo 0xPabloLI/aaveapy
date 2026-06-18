@@ -9,6 +9,7 @@ import {
   formatSpread,
   formatUsd,
 } from '@/lib/formatters';
+import { formatProtocolCapText } from '@/lib/portfolioCapWarnings';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { convertUsdToInputValue, nativeToUsd } from '@/lib/scenarioSize';
@@ -1362,9 +1363,9 @@ const SimulationSubRow = ({
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.supply.hasInput && supplyCapExceeded ? (
-              <>Supply limited to {formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice })} available</>
+              <>{formatProtocolCapText({ side: 'supply', availableFormatted: formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }) })}</>
             ) : (
-              <>Current supply exceeds cap by {formatScenarioSize(supplyCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'supply', availableFormatted: formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), currentExceeded: true })}</>
             )}
           </p>
           {simulation.supply.hasInput &&
@@ -1383,9 +1384,9 @@ const SimulationSubRow = ({
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.borrow.hasInput && borrowCapExceeded ? (
-              <>Borrow limited to {formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice })} available{borrowLimitedByLiquidity ? ' (liquidity)' : ''}</>
+              <>{formatProtocolCapText({ side: 'borrow', availableFormatted: formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), limitedByLiquidity: borrowLimitedByLiquidity })}</>
             ) : (
-              <>Current borrow exceeds cap by {formatScenarioSize(borrowCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'borrow', availableFormatted: formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), limitedByLiquidity: borrowLimitedByLiquidity, currentExceeded: true })}</>
             )}
           </p>
           {simulation.borrow.hasInput &&

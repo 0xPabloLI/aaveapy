@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractCapWarnings, type PortfolioCapWarning, type ProtocolCapWarning, type IncentiveCapWarning } from './portfolioCapWarnings';
+import { extractCapWarnings, formatProtocolCapText, type PortfolioCapWarning, type ProtocolCapWarning, type IncentiveCapWarning } from './portfolioCapWarnings';
 import type { RateSimulationComputedResult, SimulationCampaignDetail } from './rateSimulationCalculator';
 
 const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateSimulationComputedResult => ({
@@ -387,6 +387,38 @@ describe('extractCapWarnings', () => {
     expect(icws[0].source).toBe('brevis');
     expect(icws[1].source).toBe('merit');
   });
+
+describe('formatProtocolCapText', () => {
+  it('formats supply cap text with available amount', () => {
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500' }))
+      .toBe('Supply limited to $11,500 available');
+  });
+
+  it('formats borrow cap text with available amount', () => {
+    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700' }))
+      .toBe('Borrow limited to $4,700 available');
+  });
+
+  it('adds (liquidity) suffix when limitedByLiquidity is true', () => {
+    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700', limitedByLiquidity: true }))
+      .toBe('Borrow limited to $4,700 available (liquidity)');
+  });
+
+  it('adds "Current" prefix when currentExceeded is true', () => {
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', currentExceeded: true }))
+      .toBe('Current Supply limited to $11,500 available');
+  });
+
+  it('combines currentExceeded and limitedByLiquidity', () => {
+    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700', currentExceeded: true, limitedByLiquidity: true }))
+      .toBe('Current Borrow limited to $4,700 available (liquidity)');
+  });
+
+  it('does not add suffix when limitedByLiquidity is false', () => {
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', limitedByLiquidity: false }))
+      .toBe('Supply limited to $11,500 available');
+  });
+});
 
   it('handles shared cap when other side exceeds cap (adjustToUsd = 0)', () => {
     const brevisCampaign: SimulationCampaignDetail = {
