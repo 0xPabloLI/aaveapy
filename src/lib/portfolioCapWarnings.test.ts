@@ -388,6 +388,33 @@ describe('extractCapWarnings', () => {
     expect(icws[1].source).toBe('merit');
   });
 
+  it('handles shared cap when other side exceeds cap (adjustToUsd = 0)', () => {
+    const brevisCampaign: SimulationCampaignDetail = {
+      id: 'brevis-0-b1',
+      label: 'Brevis',
+      current: 5,
+      after: 3,
+      delta: -2,
+      capNote: 'Incentive on first $1,000.00 · supply + borrow',
+      capWarning: true,
+      capMetrics: { positionCapUsd: 1000, isSharedSupplyBorrow: true },
+    };
+    const result = makeSimResult({
+      supply: {
+        ...makeSimResult().supply,
+        sources: {
+          ...makeSimResult().supply.sources,
+          brevis: { current: 5, after: 3, delta: -2, campaigns: [brevisCampaign] },
+        },
+      },
+    });
+    const entries = [{ reserveId: 'r1', borrowAmountUsd: 1500 }];
+    const warnings = extractCapWarnings('r1', 'supply', result, entries);
+    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    expect(icw.adjustToUsd).toBe(0);
+  });
+});
+
 describe('formatProtocolCapText', () => {
   it('formats supply cap text with available amount', () => {
     expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500' }))
@@ -417,32 +444,5 @@ describe('formatProtocolCapText', () => {
   it('does not add suffix when limitedByLiquidity is false', () => {
     expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', limitedByLiquidity: false }))
       .toBe('Supply limited to $11,500 available');
-  });
-});
-
-  it('handles shared cap when other side exceeds cap (adjustToUsd = 0)', () => {
-    const brevisCampaign: SimulationCampaignDetail = {
-      id: 'brevis-0-b1',
-      label: 'Brevis',
-      current: 5,
-      after: 3,
-      delta: -2,
-      capNote: 'Incentive on first $1,000.00 · supply + borrow',
-      capWarning: true,
-      capMetrics: { positionCapUsd: 1000, isSharedSupplyBorrow: true },
-    };
-    const result = makeSimResult({
-      supply: {
-        ...makeSimResult().supply,
-        sources: {
-          ...makeSimResult().supply.sources,
-          brevis: { current: 5, after: 3, delta: -2, campaigns: [brevisCampaign] },
-        },
-      },
-    });
-    const entries = [{ reserveId: 'r1', borrowAmountUsd: 1500 }];
-    const warnings = extractCapWarnings('r1', 'supply', result, entries);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
-    expect(icw.adjustToUsd).toBe(0);
   });
 });

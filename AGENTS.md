@@ -175,3 +175,9 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`deltaIncentive` 永远只用 `current - headline` 是 bug**：旧公式使纯 manual（无 wallet）时 delta 为 null（不显示），wallet + manual 时 delta 永远等于 dilution gap 不随输入变化。原因：`deltaIncentive` 从不使用 `afterIncentive`。
 - **修复后三态分路**：`hasInput=true` → `afterIncentive - currentIncentive`（simulation 效果）；`hasInput=false` + wallet → `currentIncentive - headlineIncentive`（dilution gap）；`hasInput=false` + 无 wallet → `null`（无数据可显示）。
 - **`deltaIncentive` 与 `deltaNative`/`deltaTotal` 模式一致**：三者都遵循 `hasInput ? after - current : null` 核心模式，`deltaIncentive` 额外在 `hasInput=false` 时加 wallet dilution gap 分支。
+
+## Learned Lessons: Cap warning 文案统一 (AAV-785/AAV-851)
+
+- **`formatProtocolCapText` 是 Reserve Table 和 Portfolio 的共享入口**：两处使用同一函数生成 protocol cap warning 文案，未来改文案只改一处。函数接受 `availableFormatted: string`（预格式化），因为 Reserve Table 用 `formatScenarioSize`（支持 USD/Token 模式），Portfolio 用 `formatUsd`（纯 USD）。
+- **`currentExceeded` 语义变更**：旧 SimulationSubRow 用 `"exceeds cap by $X"` 描述超出量（`exceededByUsd`），新文案统一为 `"Current {Supply|Borrow} limited to $X available"` 描述可用量（`availableRoomUsd`）。数值从 exceededBy 变成了 availableRoom，语义和数值都不同——这是有意的设计决策，"limited to X available" 信息量更大。
+- **测试 describe 嵌套要注意**：Vitest 允许 describe 内嵌套 describe，但如果嵌套位置错误会导致 it 块归属到错误的 describe。新增 describe 块时要确保放在正确的外层 describe 之外。

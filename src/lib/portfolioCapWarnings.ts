@@ -142,6 +142,17 @@ function computeIncentiveAdjustToUsd(
   return Math.max(positionCapUsd - otherSideUsd, 0);
 }
 
+/**
+ * Unified protocol cap warning text — shared by SimulationSubRow (Reserve Table)
+ * and PortfolioTokenRow (Portfolio). Accepts pre-formatted `availableFormatted`
+ * string because Reserve Table uses formatScenarioSize (USD/Token mode) while
+ * Portfolio uses formatUsd (pure USD).
+ *
+ * - `currentExceeded`: chain position already exceeds cap (not user input).
+ *   Shows "Current {Supply|Borrow} limited to X available".
+ * - `limitedByLiquidity`: borrow cap is constrained by available liquidity.
+ *   Appends " (liquidity)" suffix.
+ */
 export function formatProtocolCapText(options: {
   side: 'supply' | 'borrow';
   availableFormatted: string;
