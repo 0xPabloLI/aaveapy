@@ -17,7 +17,7 @@ Merit campaign 的 `startDate`/`endDate` 当前从 Aave Chan SSR 页面文本提
 具体变更：
 - 后端：`fetchMeritTimeRange` 从三层策略（DOM→正则→block）简化为唯一路径（block→RPC→ISO）
 - 没有 etherscan block 链接的 campaign 返回空日期，不显示
-- 前端代码不需要修改（ISO 格式走 `Date.parse()` 无时区偏差）。`meritForecast.ts` 中的 `parseCampaignBoundaryMs` 本地副本代码与 `campaignGroups.ts` 导出版本一致，对 ISO 格式同样正常工作
+- 前端逻辑不需要修改（ISO 格式走 `Date.parse()` 无时区偏差）。去重重构：`meritForecast.ts` 和 `rateSimulationCalculator.ts` 中的 `parseCampaignBoundaryMs` 本地副本已替换为从 `campaignGroups.ts` 导入
 - `startBlock`/`endBlock` 不暴露到 API 响应
 
 ## Consequences
@@ -30,10 +30,11 @@ Merit campaign 的 `startDate`/`endDate` 当前从 Aave Chan SSR 页面文本提
 **Negative:**
 - 没有 etherscan block 链接的 Merit campaign 将没有日期、不显示。当前所有已知 campaign 都有 block 链接
 - 增加 RPC 调用（每个 campaign 2 次 `eth_getBlockByNumber`）。已在旧 P3 路径中存在，只是现在成为唯一路径
-- 不可逆：删除了文本日期提取代码，未来如需回退需要重写
+- 后端数据源切换不可逆：删除了文本日期提取代码，未来如需回退需要重写。前端 `parseCampaignBoundaryMs` 对旧格式和 ISO 格式均能解析，不存在前端侧不可逆性
 
 **Technical Debt:**
-- ~~`meritForecast.ts` 中存在 `parseCampaignBoundaryMs` 的本地副本（与 `campaignGroups.ts` 导出版本重复）~~ — 已在后续 commit 中修复，替换为从 `campaignGroups.ts` 导入
+- ~~`meritForecast.ts` 中存在 `parseCampaignBoundaryMs` 的本地副本~~ — 已修复，替换为从 `campaignGroups.ts` 导入
+- ~~`rateSimulationCalculator.ts` 中存在 `parseBoundaryMs` 的本地副本~~ — 已修复，替换为从 `campaignGroups.ts` 导入
 
 ## Alternatives Considered
 

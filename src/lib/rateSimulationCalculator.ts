@@ -47,6 +47,7 @@ import {
   applyStableCampaignLabels,
   flattenCampaignBreakdowns,
   isCampaignActive,
+  parseCampaignBoundaryMs,
   sumActiveCampaignBreakdownValues,
 } from '@/lib/campaignGroups';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -850,17 +851,6 @@ export const buildMerklCampaignDetails = (
   return finalizeCampaignDetailRows(collected);
 };
 
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const parseBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
-  if (!value) return null;
-  if (DATE_ONLY_PATTERN.test(value)) {
-    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
-    const ts = Date.parse(normalized);
-    return Number.isNaN(ts) ? null : ts;
-  }
-  const ts = Date.parse(value);
-  return Number.isNaN(ts) ? null : ts;
-};
 
 export const buildBrevisCampaignDetails = (
   items: BrevisIncentive[] | undefined,
@@ -907,7 +897,7 @@ export const buildBrevisCampaignDetails = (
         : nominal;
 
       const positionUsd = effectiveInputUsd;
-      const endMs = parseBoundaryMs(resolved.campaignEndedAt, 'end');
+      const endMs = parseCampaignBoundaryMs(resolved.campaignEndedAt, 'end');
       const capResult = applyPositionCapToForecastResult(
         aprPercent,
         positionUsd,
@@ -932,7 +922,7 @@ export const buildBrevisCampaignDetails = (
     }
 
     if (hasAnyInput && noteDepositUsd > 0 && !capNote) {
-      const endMs = parseBoundaryMs(resolved.campaignEndedAt, 'end');
+      const endMs = parseCampaignBoundaryMs(resolved.campaignEndedAt, 'end');
       if (endMs !== null && endMs > nowMs) {
         const remainingDays = (endMs - nowMs) / 86_400_000;
         if (Number.isFinite(remainingDays) && remainingDays > 0) {

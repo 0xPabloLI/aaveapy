@@ -21,6 +21,16 @@ describe('parseCampaignBoundaryMs', () => {
   it('returns null for empty string', () => {
     expect(parseCampaignBoundaryMs('', 'end')).toBeNull();
   });
+
+  it('returns null for garbage string', () => {
+    expect(parseCampaignBoundaryMs('not-a-date', 'end')).toBeNull();
+  });
+
+  it('parses old-format "Thu Jun 18 2026" as local-midnight (known timezone-dependent behavior)', () => {
+    const result = parseCampaignBoundaryMs('Thu Jun 18 2026', 'end');
+    expect(result).not.toBeNull();
+    expect(typeof result).toBe('number');
+  });
 });
 
 describe('isCampaignActive with ISO dates (Merit scenario)', () => {
@@ -51,5 +61,14 @@ describe('isCampaignActive with ISO dates (Merit scenario)', () => {
 
   it('returns true for empty endDate when allowOpenEnd is true', () => {
     expect(isCampaignActive('2026-06-04T00:00:00.000Z', '', NOW_MS, true)).toBe(true);
+  });
+
+  it('returns false when startDate is undefined', () => {
+    expect(isCampaignActive(undefined, '2026-06-18T23:59:59.999Z', NOW_MS)).toBe(false);
+  });
+
+  it('returns true when nowMs equals startDate exactly (campaign just started)', () => {
+    const startMs = new Date('2026-06-04T12:00:00.000Z').getTime();
+    expect(isCampaignActive('2026-06-04T12:00:00.000Z', '2026-06-18T23:59:59.999Z', startMs)).toBe(true);
   });
 });
