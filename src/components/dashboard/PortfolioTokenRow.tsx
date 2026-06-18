@@ -324,11 +324,7 @@ function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'
     const suffix = w.limitedByLiquidity ? ' (liquidity)' : '';
     return `${sideLabel} limited to ${formatUsd(w.adjustToUsd)} available${suffix}`;
   }
-  if (w.source === 'brevis') {
-    const shared = w.isSharedSupplyBorrow ? ' · supply + borrow' : '';
-    return `Incentive on first ${formatUsd(w.capUsd)}${shared}`;
-  }
-  return `Incentive on first ${formatUsd(w.capUsd)}`;
+  return w.capNote ?? `Incentive on first ${formatUsd(w.capUsd)}`;
 }
 
 function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWarning[]; side: 'supply' | 'borrow'; isMobile: boolean }) {

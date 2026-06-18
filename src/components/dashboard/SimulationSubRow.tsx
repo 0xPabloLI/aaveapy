@@ -9,7 +9,6 @@ import {
   formatSpread,
   formatUsd,
 } from '@/lib/formatters';
-import { formatForecastUnavailableLabel } from '@/lib/incentiveAggregation';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { convertUsdToInputValue, nativeToUsd } from '@/lib/scenarioSize';
@@ -1363,7 +1362,7 @@ const SimulationSubRow = ({
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.supply.hasInput && supplyCapExceeded ? (
-              <>Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>Supply limited to {formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice })} available</>
             ) : (
               <>Current supply exceeds cap by {formatScenarioSize(supplyCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
             )}
@@ -1384,7 +1383,7 @@ const SimulationSubRow = ({
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.borrow.hasInput && borrowCapExceeded ? (
-              <>Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>Borrow limited to {formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice })} available{borrowLimitedByLiquidity ? ' (liquidity)' : ''}</>
             ) : (
               <>Current borrow exceeds cap by {formatScenarioSize(borrowCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
             )}
@@ -1479,18 +1478,15 @@ const SimulationSubRow = ({
       )}
 
       {/* Footer notes */}
-      {(simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
+      {(simulation.forecastLoading || showPriceMissingNotice || ((simulation.supply.hasInput || simulation.borrow.hasInput) && simulation.forecastUnavailableCampaignCount > 0)) && (
         <div className={`mt-3 space-y-1 ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           {simulation.forecastLoading && <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast...</p>}
           {showPriceMissingNotice && (
             <p className="ds-text-11 text-muted-foreground">Price unavailable for {reserve.tokenSymbol}; using current supply for forecast.</p>
           )}
-          {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
+          {!simulation.forecastLoading && (simulation.supply.hasInput || simulation.borrow.hasInput) && simulation.forecastUnavailableCampaignCount > 0 && (
             <p className="ds-text-11 text-muted-foreground">
-              {formatForecastUnavailableLabel(
-                simulation.forecastUnavailableCampaignIds,
-                simulation.forecastUnavailableCampaignCount,
-              )}
+              * No forecast data — using current APR.
             </p>
           )}
         </div>

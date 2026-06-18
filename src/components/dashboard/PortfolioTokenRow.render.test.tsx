@@ -272,6 +272,7 @@ describe('PortfolioTokenRow render', () => {
         isCapBinding: true,
         adjustToUsd: 5_000,
         isSharedSupplyBorrow: true,
+        capNote: 'Incentive on first $5,000 · supply + borrow',
       };
       render(
         <PortfolioTokenRow
@@ -282,7 +283,7 @@ describe('PortfolioTokenRow render', () => {
         />,
         { wrapper: Wrapper },
       );
-      expect(screen.getByText(/Incentive on first.*5,000.*supply \+ borrow/)).toBeTruthy();
+      expect(screen.getByText(/Incentive on first.*5,000.*·.*supply \+ borrow/)).toBeTruthy();
     });
 
     it('desktop: supply and borrow warnings render in same row', () => {

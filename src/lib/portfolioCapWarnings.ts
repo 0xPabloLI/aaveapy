@@ -17,6 +17,7 @@ export interface IncentiveCapWarning {
   isCapBinding: boolean;
   adjustToUsd: number;
   isSharedSupplyBorrow?: boolean;
+  capNote?: string;
 }
 
 export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning;
@@ -95,6 +96,7 @@ function extractIncentiveCapWarnings(
         isCapBinding: true,
         adjustToUsd,
         isSharedSupplyBorrow: c.capMetrics.isSharedSupplyBorrow || undefined,
+        capNote: c.capNote,
       });
     }
   }
@@ -113,6 +115,7 @@ function extractIncentiveCapWarnings(
         isCapBinding: true,
         adjustToUsd,
         isSharedSupplyBorrow: c.capMetrics.isSharedSupplyBorrow || undefined,
+        capNote: c.capNote,
       });
     }
   }
