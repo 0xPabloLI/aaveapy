@@ -33,7 +33,7 @@ Merit campaign 的 `startDate`/`endDate` 当前从 Aave Chan SSR 页面文本提
 - 不可逆：删除了文本日期提取代码，未来如需回退需要重写
 
 **Technical Debt:**
-- `meritForecast.ts` 中存在 `parseCampaignBoundaryMs` 的本地副本（与 `campaignGroups.ts` 导出版本重复）。本次不修改，但应跟踪为独立技术债
+- ~~`meritForecast.ts` 中存在 `parseCampaignBoundaryMs` 的本地副本（与 `campaignGroups.ts` 导出版本重复）~~ — 已在后续 commit 中修复，替换为从 `campaignGroups.ts` 导入
 
 ## Alternatives Considered
 
