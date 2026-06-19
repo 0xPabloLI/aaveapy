@@ -8,8 +8,7 @@ import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMat
 export type IncentiveCapKind =
   | 'position_cap'
   | 'pool_budget'
-  | 'apr_cap'
-  | 'informational';
+  | 'apr_cap';
 
 export type IncentiveCapScope = 'per_user' | 'pool' | 'unspecified';
 
@@ -88,23 +87,11 @@ export function buildPositionCapEffect(input: {
   };
 }
 
-/** No per-user cap in payload; calendar window only. */
-export function buildCalendarEndEffect(remainingDays: number): IncentiveCapEffect {
-  return {
-    kind: 'informational',
-    scope: 'unspecified',
-    window: 'unknown',
-    noteParts: [`~${remainingDays.toFixed(0)}d to end`],
-    warning: false,
-    metrics: { remainingDays },
-  };
-}
-
 /**
- * Pool budget horizon at hypothetical TVL (scenario deposit folded into `forecastWithTVL`).
+ * FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE (and TARGET_TOTAL_APR + FIX_APR): pool budget horizon.
  * Uses the same **`~Nd earn`** surface copy as position-cap notes; semantics differ (pool budget vs per-user position cap).
  */
-export function buildPoolBudgetEffect(fixRewardableDays: number): IncentiveCapEffect {
+export function buildFixRewardCapEffect(fixRewardableDays: number): IncentiveCapEffect {
   return {
     kind: 'pool_budget',
     scope: 'pool',
@@ -114,8 +101,8 @@ export function buildPoolBudgetEffect(fixRewardableDays: number): IncentiveCapEf
   };
 }
 
-/** APR capped regime for low TVL. */
-export function buildAprCapEffect(): IncentiveCapEffect {
+/** MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE (and TARGET_TOTAL_APR + MAX_APR): APR capped regime for low TVL. */
+export function buildMaxRewardCapEffect(): IncentiveCapEffect {
   return {
     kind: 'apr_cap',
     scope: 'pool',
@@ -125,10 +112,10 @@ export function buildAprCapEffect(): IncentiveCapEffect {
   };
 }
 
-/** Net position eligibility: effective incentive is discounted because only the net portion is eligible. */
-export function buildNetEligibilityNote(netUsd: number, grossUsd: number): string | null {
+/** Net position note: effective incentive is discounted because only the net portion (supply - borrow) counts. */
+export function buildNetPositionNote(netUsd: number, grossUsd: number): string | null {
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
-  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
+  return `Net position ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
 }
 
 export interface CrossReserveNetNoteInput {
@@ -172,10 +159,10 @@ export function applyPositionCapToForecastResult(
   return { aprPercent, ...fields };
 }
 
-export function buildCrossReserveNetEligibilityNote(input: CrossReserveNetNoteInput): string | null {
+export function buildCrossReserveNetPositionNote(input: CrossReserveNetNoteInput): string | null {
   const { netUsd, grossUsd, sourceSide, offsetSymbols } = input;
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
   const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
   const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
-  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)} (${sideLabel}${offsets})`;
+  return `Net position ${formatUsd(netUsd)} of ${formatUsd(grossUsd)} (${sideLabel}${offsets})`;
 }

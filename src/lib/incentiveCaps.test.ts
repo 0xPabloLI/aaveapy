@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildCalendarEndEffect,
   buildPositionCapEffect,
-  buildAprCapEffect,
-  buildPoolBudgetEffect,
+  buildMaxRewardCapEffect,
+  buildFixRewardCapEffect,
   capEffectToSimulationFields,
   applyPositionCapToForecastResult,
 } from './incentiveCaps';
 
 describe('capEffectToSimulationFields', () => {
   it('joins note parts and passes warning through', () => {
-    const eff = buildPoolBudgetEffect(12.3);
+    const eff = buildFixRewardCapEffect(12.3);
     expect(capEffectToSimulationFields(eff)).toEqual({
       capNote: '~12d earn',
       capWarning: false,
@@ -32,7 +31,7 @@ describe('capEffectToSimulationFields', () => {
     expect(fields.capMetrics).toEqual({ positionCapUsd: 1000 });
   });
 
-  it('carries capMetrics with isCombineCap from Brevis position_cap', () => {
+  it('carries capMetrics with isCombineCap from position_cap', () => {
     const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: true,
@@ -46,13 +45,13 @@ describe('capEffectToSimulationFields', () => {
   });
 
   it('returns undefined capMetrics for non-position-cap effects', () => {
-    const eff = buildAprCapEffect();
+    const eff = buildMaxRewardCapEffect();
     expect(capEffectToSimulationFields(eff).capMetrics).toBeUndefined();
   });
 });
 
 describe('buildPositionCapEffect', () => {
-  it('uses supply+borrow label when shared', () => {
+  it('uses combine label when shared', () => {
     const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: true,
@@ -108,23 +107,13 @@ describe('buildPositionCapEffect', () => {
   });
 });
 
-describe('buildCalendarEndEffect', () => {
-  it('matches ~Nd to end copy', () => {
-    const eff = buildCalendarEndEffect(30);
-    expect(capEffectToSimulationFields(eff)).toEqual({
-      capNote: '~30d to end',
-      capWarning: false,
-    });
-  });
-});
-
-describe('Pool budget and APR cap helpers', () => {
-  it('buildPoolBudgetEffect formats days', () => {
-    expect(capEffectToSimulationFields(buildPoolBudgetEffect(7)).capNote).toBe('~7d earn');
+describe('FIX_REWARD and MAX_REWARD cap helpers', () => {
+  it('buildFixRewardCapEffect formats days', () => {
+    expect(capEffectToSimulationFields(buildFixRewardCapEffect(7)).capNote).toBe('~7d earn');
   });
 
-  it('buildAprCapEffect is warning', () => {
-    expect(capEffectToSimulationFields(buildAprCapEffect())).toEqual({
+  it('buildMaxRewardCapEffect is warning', () => {
+    expect(capEffectToSimulationFields(buildMaxRewardCapEffect())).toEqual({
       capNote: 'APR capped for low TVL',
       capWarning: true,
     });

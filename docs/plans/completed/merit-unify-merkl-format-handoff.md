@@ -18,6 +18,7 @@
 | `c3a8f3f9` | AAV-964/965/966: 逻辑层统一（incentiveAggregation、IncentiveTooltip、recentlyEndedCampaigns、meritForecast 适配、删除旧辅助函数） |
 | `ebe695e3` | ForecastableBreakdown 接口 + 删除 toMerklBreakdown + FIX aprCap fallback 移入 resolver |
 | `c537ef4c` | 修复: 传 baseAprPercent 到 MERIT_SELF_CAP forecast + Merit campaignType 硬编码 DUTCH_AUCTION |
+| `9b3b7d27` | ADR-0018 合规: 移除 getMerklBreakdownApr 默认参数, tydroPointToUsdRate → pointToUsdRate |
 
 ## 关键设计决策
 
@@ -27,6 +28,16 @@
 4. **`breakdowns` schema `.optional().default([])`** — 后端未部署新格式时兼容，部署后可移除 `.default([])`。
 5. **`baseAprPercent` 传入 MERIT_SELF_CAP** — 新格式下每个 breakdown 是独立 campaign，`baseAprPercent = breakdown.campaignApr`。
 6. **`baseLastRoundRewardUsd` 未传入** — 后端新格式不提供此字段，`forecastMeritApr` 走 fallback 路径（anchorTvlUsd 估算）。
+7. **ADR-0018 合规** — 移除 `getMerklBreakdownApr` 默认参数，`tydroPointToUsdRate` → `pointToUsdRate`。
+
+## ADR 合规检查
+
+| ADR | 状态 | 备注 |
+|-----|------|------|
+| ADR-0009 | ✅ | delta 语义不变，baseAprPercent 传入 MERIT_SELF_CAP |
+| ADR-0014 | ✅ | positionCap 在 BaseCampaignBreakdown，与新格式一致 |
+| ADR-0018 | ✅ | 已修复：移除默认参数 + 重命名 tydroPointToUsdRate |
+| ADR-0019 | ✅ | parseCampaignBoundaryMs 统一从 campaignGroups.ts 导入 |
 
 ## 已删除
 

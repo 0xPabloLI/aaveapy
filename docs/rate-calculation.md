@@ -664,10 +664,9 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Merkl FIX | Scenario input exists and rewardable days resolved | `~Nd earn` |
 | Merkl MAX | APR capped for low TVL | `APR capped for low TVL` |
 | Brevis | Position cap exists | `Incentive on first $X` |
-| Brevis (calendar) | No position cap, campaign has remaining days | `~Nd to end` (informational, not a cap) |
-| Merit Self | Eligible deposit cap applies | `Incentive on first $Z` |
-| Merit Base | Net note only | `Net eligible $X of $Y` |
-| Merkl DUTCH_AUCTION | Net note only | `Net eligible $X of $Y` |
+| Merit Self | Position cap applies | `Incentive on first $Z` |
+| Merit Base | Net note only | `Net position $X of $Y` |
+| Merkl DUTCH_AUCTION | Net note only | `Net position $X of $Y` |
 
 ### Cap taxonomy
 
