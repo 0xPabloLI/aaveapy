@@ -60,7 +60,7 @@ describe('generateOpenApiDocument', () => {
     expect(keys).toContain('MarketsErrorResponse');
     expect(keys).toContain('SideDataMetaResponse');
     expect(keys).toContain('Reserve');
-    expect(keys).toContain('MeritIncentive');
+    expect(keys).toContain('MeritCampaignGroup');
     expect(keys).toContain('MerklCampaignBreakdown');
     expect(keys).toContain('MerklOpportunityGroup');
     expect(keys).toContain('BrevisCampaignBreakdown');
@@ -101,11 +101,11 @@ describe('generateOpenApiDocument', () => {
     }
   });
 
-  it('MeritIncentive.message is inlined, not an orphan $ref', () => {
+  it('MeritCampaignGroup.message is inlined, not an orphan $ref', () => {
     const doc = generateOpenApiDocument();
     const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
-    const meritIncentive = schemas?.MeritIncentive as Record<string, unknown>;
-    const props = meritIncentive?.properties as Record<string, unknown>;
+    const meritCampaignGroup = schemas?.MeritCampaignGroup as Record<string, unknown>;
+    const props = meritCampaignGroup?.properties as Record<string, unknown>;
     const message = props?.message as Record<string, unknown>;
     expect(message?.$ref).toBeUndefined();
     expect(message?.anyOf).toBeDefined();

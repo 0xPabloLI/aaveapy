@@ -228,12 +228,6 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "apr": {
-                        "type": "number"
-                      },
-                      "selfApr": {
-                        "type": "number"
-                      },
                       "link": {
                         "type": "string"
                       },
@@ -278,24 +272,60 @@
                           }
                         ]
                       },
-                      "startDate": {
-                        "type": "string"
-                      },
-                      "endDate": {
-                        "type": "string"
-                      },
-                      "lastRoundRewardUsd": {
-                        "type": "number"
-                      },
-                      "campaignType": {
-                        "type": "string"
+                      "breakdowns": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "campaignApr": {
+                              "type": "number"
+                            },
+                            "campaignStartedAt": {
+                              "type": "string"
+                            },
+                            "campaignEndedAt": {
+                              "type": "string"
+                            },
+                            "campaignId": {
+                              "type": "string"
+                            },
+                            "campaignType": {
+                              "type": "string"
+                            },
+                            "positionCap": {
+                              "type": "number"
+                            },
+                            "aprCap": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "rewardTokenSymbol": {
+                              "type": "string"
+                            },
+                            "totalBudget": {
+                              "type": "number"
+                            },
+                            "latestTvl": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "campaignApr",
+                            "campaignStartedAt",
+                            "campaignEndedAt",
+                            "campaignId"
+                          ]
+                        }
                       }
                     },
                     "required": [
-                      "apr",
-                      "link",
-                      "startDate",
-                      "endDate"
+                      "breakdowns"
                     ]
                   }
                 },
@@ -304,12 +334,6 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "apr": {
-                        "type": "number"
-                      },
-                      "selfApr": {
-                        "type": "number"
-                      },
                       "link": {
                         "type": "string"
                       },
@@ -354,24 +378,60 @@
                           }
                         ]
                       },
-                      "startDate": {
-                        "type": "string"
-                      },
-                      "endDate": {
-                        "type": "string"
-                      },
-                      "lastRoundRewardUsd": {
-                        "type": "number"
-                      },
-                      "campaignType": {
-                        "type": "string"
+                      "breakdowns": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "campaignApr": {
+                              "type": "number"
+                            },
+                            "campaignStartedAt": {
+                              "type": "string"
+                            },
+                            "campaignEndedAt": {
+                              "type": "string"
+                            },
+                            "campaignId": {
+                              "type": "string"
+                            },
+                            "campaignType": {
+                              "type": "string"
+                            },
+                            "positionCap": {
+                              "type": "number"
+                            },
+                            "aprCap": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "rewardTokenSymbol": {
+                              "type": "string"
+                            },
+                            "totalBudget": {
+                              "type": "number"
+                            },
+                            "latestTvl": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "campaignApr",
+                            "campaignStartedAt",
+                            "campaignEndedAt",
+                            "campaignId"
+                          ]
+                        }
                       }
                     },
                     "required": [
-                      "apr",
-                      "link",
-                      "startDate",
-                      "endDate"
+                      "breakdowns"
                     ]
                   }
                 },
@@ -774,6 +834,9 @@
                                 },
                                 "positionCap": {
                                   "type": "number"
+                                },
+                                "rewardTokenSymbol": {
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -842,6 +905,9 @@
                                 },
                                 "positionCap": {
                                   "type": "number"
+                                },
+                                "rewardTokenSymbol": {
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -950,6 +1016,9 @@
                                 },
                                 "positionCap": {
                                   "type": "number"
+                                },
+                                "rewardTokenSymbol": {
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -1018,6 +1087,9 @@
                                 },
                                 "positionCap": {
                                   "type": "number"
+                                },
+                                "rewardTokenSymbol": {
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -1471,12 +1543,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "apr": {
-                  "type": "number"
-                },
-                "selfApr": {
-                  "type": "number"
-                },
                 "link": {
                   "type": "string"
                 },
@@ -1521,24 +1587,60 @@
                     }
                   ]
                 },
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "lastRoundRewardUsd": {
-                  "type": "number"
-                },
-                "campaignType": {
-                  "type": "string"
+                "breakdowns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "campaignApr": {
+                        "type": "number"
+                      },
+                      "campaignStartedAt": {
+                        "type": "string"
+                      },
+                      "campaignEndedAt": {
+                        "type": "string"
+                      },
+                      "campaignId": {
+                        "type": "string"
+                      },
+                      "campaignType": {
+                        "type": "string"
+                      },
+                      "positionCap": {
+                        "type": "number"
+                      },
+                      "aprCap": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rewardTokenSymbol": {
+                        "type": "string"
+                      },
+                      "totalBudget": {
+                        "type": "number"
+                      },
+                      "latestTvl": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "campaignApr",
+                      "campaignStartedAt",
+                      "campaignEndedAt",
+                      "campaignId"
+                    ]
+                  }
                 }
               },
               "required": [
-                "apr",
-                "link",
-                "startDate",
-                "endDate"
+                "breakdowns"
               ]
             }
           },
@@ -1547,12 +1649,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "apr": {
-                  "type": "number"
-                },
-                "selfApr": {
-                  "type": "number"
-                },
                 "link": {
                   "type": "string"
                 },
@@ -1597,24 +1693,60 @@
                     }
                   ]
                 },
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "lastRoundRewardUsd": {
-                  "type": "number"
-                },
-                "campaignType": {
-                  "type": "string"
+                "breakdowns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "campaignApr": {
+                        "type": "number"
+                      },
+                      "campaignStartedAt": {
+                        "type": "string"
+                      },
+                      "campaignEndedAt": {
+                        "type": "string"
+                      },
+                      "campaignId": {
+                        "type": "string"
+                      },
+                      "campaignType": {
+                        "type": "string"
+                      },
+                      "positionCap": {
+                        "type": "number"
+                      },
+                      "aprCap": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rewardTokenSymbol": {
+                        "type": "string"
+                      },
+                      "totalBudget": {
+                        "type": "number"
+                      },
+                      "latestTvl": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "campaignApr",
+                      "campaignStartedAt",
+                      "campaignEndedAt",
+                      "campaignId"
+                    ]
+                  }
                 }
               },
               "required": [
-                "apr",
-                "link",
-                "startDate",
-                "endDate"
+                "breakdowns"
               ]
             }
           },
@@ -2017,6 +2149,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "rewardTokenSymbol": {
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -2085,6 +2220,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "rewardTokenSymbol": {
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -2193,6 +2331,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "rewardTokenSymbol": {
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -2261,6 +2402,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "rewardTokenSymbol": {
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -2384,16 +2528,10 @@
         ],
         "additionalProperties": {}
       },
-      "MeritIncentive": {
+      "MeritCampaignGroup": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
-          "apr": {
-            "type": "number"
-          },
-          "selfApr": {
-            "type": "number"
-          },
           "link": {
             "type": "string"
           },
@@ -2438,24 +2576,60 @@
               }
             ]
           },
-          "startDate": {
-            "type": "string"
-          },
-          "endDate": {
-            "type": "string"
-          },
-          "lastRoundRewardUsd": {
-            "type": "number"
-          },
-          "campaignType": {
-            "type": "string"
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campaignApr": {
+                  "type": "number"
+                },
+                "campaignStartedAt": {
+                  "type": "string"
+                },
+                "campaignEndedAt": {
+                  "type": "string"
+                },
+                "campaignId": {
+                  "type": "string"
+                },
+                "campaignType": {
+                  "type": "string"
+                },
+                "positionCap": {
+                  "type": "number"
+                },
+                "aprCap": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rewardTokenSymbol": {
+                  "type": "string"
+                },
+                "totalBudget": {
+                  "type": "number"
+                },
+                "latestTvl": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "campaignApr",
+                "campaignStartedAt",
+                "campaignEndedAt",
+                "campaignId"
+              ]
+            }
           }
         },
         "required": [
-          "apr",
-          "link",
-          "startDate",
-          "endDate"
+          "breakdowns"
         ]
       },
       "MerklCampaignBreakdown": {
@@ -2669,6 +2843,9 @@
           },
           "positionCap": {
             "type": "number"
+          },
+          "rewardTokenSymbol": {
+            "type": "string"
           }
         },
         "required": [
@@ -2730,6 +2907,9 @@
                 },
                 "positionCap": {
                   "type": "number"
+                },
+                "rewardTokenSymbol": {
+                  "type": "string"
                 }
               },
               "required": [

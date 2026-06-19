@@ -3,7 +3,7 @@ import { z } from 'zod';
 export {
   MarketsResponseSchema,
   ReserveWithSpreadSchema,
-  MeritIncentiveSchema,
+  MeritCampaignGroupSchema,
   MerklCampaignBreakdownSchema,
   MerklOpportunityGroupSchema,
   BrevisIncentiveSchema,

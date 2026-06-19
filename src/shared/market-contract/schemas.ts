@@ -14,18 +14,6 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
   ])
 );
 
-export const MeritIncentiveSchema = z.object({
-  apr: z.number(),
-  selfApr: z.number().optional(),
-  link: z.string(),
-  name: z.string().optional(),
-  message: IncentiveMessageSchema.optional(),
-  startDate: z.string(),
-  endDate: z.string(),
-  lastRoundRewardUsd: z.number().optional(),
-  campaignType: z.string().optional(),
-});
-
 export const MeritCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
@@ -166,8 +154,8 @@ export const ReserveWithSpreadSchema = z.object({
   borrowApy: z.number().optional(),
   supplyIncentives: z.array(z.number()).optional(),
   borrowIncentives: z.array(z.number()).optional(),
-  meritSupplys: z.array(MeritIncentiveSchema).optional(),
-  meritBorrows: z.array(MeritIncentiveSchema).optional(),
+  meritSupplys: z.array(MeritCampaignGroupSchema).optional(),
+  meritBorrows: z.array(MeritCampaignGroupSchema).optional(),
   merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
   merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
   merklHolds: z.array(MerklOpportunityGroupSchema).optional(),

@@ -19,11 +19,17 @@ const buildMarketsPayload = (message: unknown) => ({
       vTokenAddress: '0xb1234',
       meritSupplys: [
         {
-          apr: 4.16,
           link: 'https://app.merit.systems/campaign',
           message,
-          startDate: '2026-02-26',
-          endDate: '2026-03-12',
+          breakdowns: [
+            {
+              campaignApr: 4.16,
+              campaignStartedAt: '2026-02-26',
+              campaignEndedAt: '2026-03-12',
+              campaignId: 'merit-base',
+              campaignType: 'DUTCH_AUCTION',
+            },
+          ],
         },
       ],
     },

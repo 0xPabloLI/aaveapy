@@ -1,7 +1,7 @@
 export {
   MarketsResponseSchema,
   ReserveWithSpreadSchema,
-  MeritIncentiveSchema,
+  MeritCampaignGroupSchema,
   MerklCampaignBreakdownSchema,
   MerklOpportunityGroupSchema,
   BrevisIncentiveSchema,

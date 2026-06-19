@@ -3,36 +3,25 @@ export type IncentiveMessage = string | IncentiveMessage[] | {
   [key: string]: IncentiveMessageScalar | IncentiveMessage;
 };
 
-// Merit incentive data structure
-export interface MeritIncentive {
-  apr: number;                         // APR percentage value (e.g., 5.2 means 5.2%)
-  selfApr?: number;                    // Self APR percentage value (if there's a corresponding self- prefixed key)
-  link: string;                        // Merit campaign detail page link
-  name?: string;                       // Merit campaign name (optional)
-  message?: IncentiveMessage;          // Merit campaign message/description (optional)
-  startDate: string;                   // Campaign start date
-  endDate: string;                     // Campaign end date
-  lastRoundRewardUsd?: number;         // Latest round total reward in USD
-  campaignType?: string;               // Distribution type (e.g. 'DUTCH_AUCTION')
-}
-
 export interface MeritCampaignBreakdown extends BaseCampaignBreakdown {
   campaignId: string;
   campaignType?: string;
-  positionCap?: number;
   aprCap?: number | null;
   rewardTokenSymbol?: string;
   totalBudget?: number;
   latestTvl?: number;
 }
 
-export type MeritCampaignGroup = CampaignGroup<MeritCampaignBreakdown>;
+export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {
+  message?: IncentiveMessage;
+}
 
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
   campaignEndedAt: string;
   campaignId?: string;
+  positionCap?: number;
 }
 
 export interface NetPositionConstraint {
@@ -177,9 +166,9 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   supplyIncentives?: number[];
   borrowIncentives?: number[];
   
-  // Merit APR incentives (array of objects containing complete campaign information)
-  meritSupplys?: MeritIncentive[];
-  meritBorrows?: MeritIncentive[];
+  // Merit APR incentives (CampaignGroup format)
+  meritSupplys?: MeritCampaignGroup[];
+  meritBorrows?: MeritCampaignGroup[];
   
   // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];
