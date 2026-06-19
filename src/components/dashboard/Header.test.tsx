@@ -18,6 +18,19 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
 
 vi.mock('wagmi', () => ({
   useEnsAddress: () => ({ data: null, isLoading: false }),
+  createConfig: vi.fn(() => ({})),
+  fallback: vi.fn(() => ({})),
+  http: vi.fn(() => ({})),
+}))
+
+vi.mock('wagmi/connectors', () => ({
+  injected: vi.fn(() => ({})),
+  walletConnect: vi.fn(() => ({})),
+}))
+
+vi.mock('@/lib/wagmi/config', () => ({
+  wagmiConfig: {},
+  WALLET_SUPPORTED_CHAINS: [],
 }))
 
 vi.mock('@/components/ThemeToggle', () => ({
