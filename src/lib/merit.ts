@@ -1,14 +1,17 @@
 import { isCampaignActive } from './campaignGroups';
-import type { MeritIncentive } from '@/types/aave';
+import type { MeritCampaignGroup } from '@/types/aave';
 
 export const getFirstActiveMeritLink = (
-  merits?: MeritIncentive[],
+  merits?: MeritCampaignGroup[],
   nowMs = Date.now(),
 ): string | null => {
   if (!merits?.length) return null;
-  for (const merit of merits) {
-    if (merit.link && isCampaignActive(merit.startDate, merit.endDate, nowMs, false)) {
-      return merit.link;
+  for (const group of merits) {
+    if (group.link) {
+      const hasActiveBreakdown = (group.breakdowns ?? []).some((b) =>
+        isCampaignActive(b.campaignStartedAt, b.campaignEndedAt, nowMs, false),
+      );
+      if (hasActiveBreakdown) return group.link;
     }
   }
   return null;

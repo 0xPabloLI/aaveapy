@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
+import { ReserveWithSpread, MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
 import { formatPercent, formatUsd } from '@/lib/formatters';
 import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
@@ -14,14 +14,12 @@ import {
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import type { MerklForecastWireItem } from '@/types/aave';
-import { splitMeritMessageBySelfAuth, extractMeritSelfPositionCapUsd } from '@/lib/meritForecast';
 import {
-  getBrevisCampaignApr,
   getBrevisCampaignBreakdowns,
   getBrevisDisplayLabel,
-  getBrevisCampaignEndedAt,
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
+  getBrevisCampaignEndedAt,
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
@@ -426,83 +424,46 @@ const IncentiveTooltip = ({
       }
     }
 
-    // Merit incentives (MeritIncentive array)
-    const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-    if (meritIncentives && Array.isArray(meritIncentives)) {
-      meritIncentives.forEach((merit, index) => {
-        if (!isCampaignActive(merit.startDate, merit.endDate)) return;
-        const apr = merit.apr;
-        const selfApr = merit.selfApr || 0;
-        
-        const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
-        const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
-        const totalForecastAprPercent = baseAprPercent + selfAprPercent;
+    // Merit incentives (MeritCampaignGroup array)
+    const meritGroups: MeritCampaignGroup[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+    if (meritGroups && Array.isArray(meritGroups)) {
+      meritGroups.forEach((group, groupIndex) => {
+        const breakdowns = group.breakdowns ?? [];
+        const activeBreakdowns = breakdowns.filter((b) => isCampaignActive(b.campaignStartedAt, b.campaignEndedAt));
+        if (activeBreakdowns.length === 0) return;
 
-        // Convert each APR to APY separately then sum (convertAprToApy is non-linear)
-        let totalValue = 0;
-        if (isApy) {
-          if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
-          if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
-        } else {
-          totalValue = totalForecastAprPercent;
-        }
-        
-        if (totalValue >= 0) {
-          const name = merit.name
-            ? merit.name
-            : meritIncentives.length > 1 
-              ? `ACI Incentive ${index + 1}`
-              : 'ACI Incentive';
-
-          const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
-          const selfPositionCap = extractMeritSelfPositionCapUsd(selfMessage);
-
-          const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
-          if (baseAprPercent > 0) {
-            meritCampaigns.push({
-              value: isApy ? convertAprToApy(baseAprPercent) : baseAprPercent,
-              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-              startDate: merit.startDate,
-              endDate: merit.endDate,
-              message: baseMessage ?? merit.message,
-              sourceType: 'ACI',
-              campaignType: merit.campaignType,
-            });
-          }
-          if (selfAprPercent > 0) {
-            meritCampaigns.push({
-              value: isApy ? convertAprToApy(selfAprPercent) : selfAprPercent,
-              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-              startDate: merit.startDate,
-              endDate: merit.endDate,
-              message: selfMessage,
-              sourceType: 'ACI',
-              campaignType: merit.campaignType,
-              ...(selfPositionCap != null ? { positionCap: selfPositionCap } : {}),
-            });
-          }
-
-          sources.push({
-            name,
-            value: totalValue,
-            color: 'text-foreground',
-            bgColor: 'bg-muted/60',
+        const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = activeBreakdowns.map((breakdown) => {
+          const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
+          return {
+            value,
+            dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+            startDate: breakdown.campaignStartedAt,
+            endDate: breakdown.campaignEndedAt,
+            message: group.message,
             sourceType: 'ACI',
-            link: merit.link,
-            message: merit.message,
-            dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-            campaigns: meritCampaigns.length > 0
-              ? meritCampaigns
-              : [{
-                  value: totalValue,
-                  dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-                  startDate: merit.startDate,
-                  endDate: merit.endDate,
-                  message: merit.message,
-                  campaignType: merit.campaignType,
-                }],
-          });
-        }
+            campaignType: breakdown.campaignType,
+            ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
+          };
+        });
+
+        const totalValue = meritCampaigns.reduce((sum, c) => sum + c.value, 0);
+        const name = group.name
+          ? group.name
+          : meritGroups.length > 1
+            ? `ACI Incentive ${groupIndex + 1}`
+            : 'ACI Incentive';
+
+        sources.push({
+          name,
+          value: totalValue,
+          color: 'text-foreground',
+          bgColor: 'bg-muted/60',
+          sourceType: 'ACI',
+          link: group.link,
+          message: group.message,
+          dateRange: meritCampaigns[0]?.dateRange,
+          campaigns: meritCampaigns,
+        });
       });
     }
 

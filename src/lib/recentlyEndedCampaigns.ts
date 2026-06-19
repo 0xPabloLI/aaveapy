@@ -42,38 +42,28 @@ export function collectRecentlyEndedCampaigns(
 
   const meritList = supplyOrBorrow === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   if (meritList && Array.isArray(meritList)) {
-    for (const merit of meritList) {
-      if (!isRecentlyEnded(merit.endDate, nowMs, lookbackDays)) continue;
+    for (const group of meritList) {
+      const breakdowns = group.breakdowns ?? [];
+      const endedBreakdowns = breakdowns.filter((b) =>
+        isRecentlyEnded(b.campaignEndedAt, nowMs, lookbackDays),
+      );
+      if (endedBreakdowns.length === 0) continue;
 
-      const campaigns: RecentlyEndedCampaign[] = [];
+      const campaigns: RecentlyEndedCampaign[] = endedBreakdowns.map((b) => ({
+        apr: b.campaignApr,
+        endDate: b.campaignEndedAt,
+        startDate: b.campaignStartedAt,
+        message: group.message,
+        name: group.name,
+        campaignId: b.campaignId,
+      }));
 
-      if (merit.apr >= 0) {
-        campaigns.push({
-          apr: merit.apr,
-          endDate: merit.endDate,
-          startDate: merit.startDate,
-          message: merit.message,
-          name: merit.name,
-        });
-      }
-
-      if (merit.selfApr !== undefined && merit.selfApr !== null) {
-        campaigns.push({
-          apr: merit.selfApr,
-          endDate: merit.endDate,
-          startDate: merit.startDate,
-          name: merit.name ? `${merit.name} (self)` : undefined,
-        });
-      }
-
-      if (campaigns.length > 0) {
-        sources.push({
-          sourceType: 'merit',
-          name: merit.name || 'ACI Incentive',
-          link: merit.link,
-          campaigns,
-        });
-      }
+      sources.push({
+        sourceType: 'merit',
+        name: group.name || 'ACI Incentive',
+        link: group.link || '',
+        campaigns,
+      });
     }
   }
 

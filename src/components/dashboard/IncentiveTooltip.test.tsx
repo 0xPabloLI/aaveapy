@@ -185,12 +185,14 @@ describe('IncentiveTooltip', () => {
         ...mockReserve,
         meritSupplys: [{
           name: 'Merit Campaign',
-          apr: 2.5,
-          selfApr: 1.0,
-          startDate: '2026-01-01',
-          endDate: '2026-12-31',
-          message: 'Earn extra rewards',
           link: 'https://example.com',
+          message: 'Earn extra rewards',
+          breakdowns: [{
+            campaignApr: 2.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2026-12-31',
+            campaignId: 'merit-1',
+          }],
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
@@ -238,11 +240,14 @@ describe('IncentiveTooltip', () => {
         ...mockReserve,
         meritSupplys: [{
           name: 'Expired Campaign',
-          apr: 2.5,
-          selfApr: 1.0,
-          startDate: '2020-01-01',
-          endDate: '2020-12-31',
+          link: 'https://example.com',
           message: 'This is expired',
+          breakdowns: [{
+            campaignApr: 2.5,
+            campaignStartedAt: '2020-01-01',
+            campaignEndedAt: '2020-12-31',
+            campaignId: 'merit-expired',
+          }],
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithExpiredMerit });
@@ -490,12 +495,15 @@ describe('IncentiveTooltip', () => {
         ...mockReserve,
         meritSupplys: [{
           name: 'Merit Campaign',
-          apr: 2.5,
-          selfApr: 1.0,
-          startDate: '2026-01-01',
-          endDate: '2027-12-31',
-          message: [{ action: 'Self Authentication', description: 'Incentive on first $1,000 of deposit' }],
           link: 'https://example.com',
+          message: [{ action: 'Self Authentication', description: 'Incentive on first $1,000 of deposit' }],
+          breakdowns: [{
+            campaignApr: 1.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'merit-self',
+            positionCap: 1000,
+          }],
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });

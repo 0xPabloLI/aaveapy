@@ -1,6 +1,6 @@
 import {
   type BrevisIncentive,
-  type MeritIncentive,
+  type MeritCampaignGroup,
   type MerklOpportunityGroup,
   type ReserveWithSpread,
   MerklForecastWireItem } from '@/types/aave';
@@ -33,32 +33,27 @@ const sumNumberArray = (arr?: number[]): number => {
   }, 0);
 };
 
-export const sumMeritIncentiveApr = (meritIncentives?: MeritIncentive[]): number => {
-  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
-  return meritIncentives.reduce((sum, incentive) => {
-    if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;
-    const apr = incentive.apr;
-    const selfApr = incentive.selfApr || 0;
-    const totalApr = (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0);
-    return sum + totalApr;
-  }, 0);
+export const sumMeritIncentiveApr = (meritGroups?: MeritCampaignGroup[]): number => {
+  return sumActiveCampaignBreakdownValues(meritGroups, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, b) => b.campaignStartedAt,
+    getEndDate: (_group, b) => b.campaignEndedAt,
+    include: () => true,
+    mapValue: (_group, b) => !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0,
+  });
 };
 
-const sumMeritIncentiveApy = (meritIncentives?: MeritIncentive[]): number => {
-  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
-  return meritIncentives.reduce((sum, incentive) => {
-    if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;
-    const apr = incentive.apr;
-    const selfApr = incentive.selfApr || 0;
-    let totalApy = 0;
-    if (!isNaN(apr) && apr >= 0) {
-      totalApy += convertAprToApy(apr);
-    }
-    if (!isNaN(selfApr) && selfApr >= 0) {
-      totalApy += convertAprToApy(selfApr);
-    }
-    return sum + totalApy;
-  }, 0);
+const sumMeritIncentiveApy = (meritGroups?: MeritCampaignGroup[]): number => {
+  return sumActiveCampaignBreakdownValues(meritGroups, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, b) => b.campaignStartedAt,
+    getEndDate: (_group, b) => b.campaignEndedAt,
+    include: () => true,
+    mapValue: (_group, b) => {
+      const apr = !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0;
+      return convertAprToApy(apr);
+    },
+  });
 };
 
 const sumMerklIncentiveApr = (
@@ -142,14 +137,14 @@ const sumBrevisIncentiveApy = (brevis?: BrevisIncentive[], forecastStates?: Reco
 };
 
 export const calculateTotalIncentiveApr = (
-  meritIncentives?: MeritIncentive[],
+  meritGroups?: MeritCampaignGroup[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const meritApr = sumMeritIncentiveApr(meritIncentives);
+  const meritApr = sumMeritIncentiveApr(meritGroups);
   const merklApr = sumMerklIncentiveApr(merklOpportunities, tydroPointToUsdRate, options);
   const protocolApr = sumNumberArray(protocolIncentives);
   const brevisAprValue = sumBrevisIncentiveApr(brevisIncentives, options.forecastStates);
@@ -158,14 +153,14 @@ export const calculateTotalIncentiveApr = (
 };
 
 export const calculateTotalIncentiveApy = (
-  meritIncentives?: MeritIncentive[],
+  meritGroups?: MeritCampaignGroup[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const meritApy = sumMeritIncentiveApy(meritIncentives);
+  const meritApy = sumMeritIncentiveApy(meritGroups);
   const merklApy = sumMerklIncentiveApy(merklOpportunities, tydroPointToUsdRate, options);
 
   let protocolApy = 0;
@@ -189,13 +184,13 @@ export function getReserveIncentiveValues(
   options: IncentiveCalculationOptions = {}
 ): { apr: number; apy: number } {
   const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
-  const meritIncentives = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merklOpportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
 
   return {
     apr: calculateTotalIncentiveApr(
-      meritIncentives,
+      meritGroups,
       merklOpportunities,
       brevisIncentives,
       protocolIncentives,
@@ -203,7 +198,7 @@ export function getReserveIncentiveValues(
       options
     ),
     apy: calculateTotalIncentiveApy(
-      meritIncentives,
+      meritGroups,
       merklOpportunities,
       brevisIncentives,
       protocolIncentives,
@@ -225,22 +220,18 @@ export function reserveHasIncentiveTooltipSources(
     return true;
   }
 
-  const meritIncentives = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-  if (meritIncentives?.length) {
-    for (const merit of meritIncentives) {
-      if (!isCampaignActive(merit.startDate, merit.endDate)) continue;
-      const apr = merit.apr;
-      const selfApr = merit.selfApr || 0;
-      const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
-      const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
-      let totalValue = 0;
-      if (isApy) {
-        if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
-        if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
-      } else {
-        totalValue = baseAprPercent + selfAprPercent;
+  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  if (meritGroups?.length) {
+    for (const group of meritGroups) {
+      for (const breakdown of group.breakdowns ?? []) {
+        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
+        const apr = breakdown.campaignApr;
+        let totalValue = 0;
+        if (!isNaN(apr) && apr >= 0) {
+          totalValue = isApy ? convertAprToApy(apr) : apr;
+        }
+        if (totalValue >= 0) return true;
       }
-      if (totalValue >= 0) return true;
     }
   }
 

@@ -28,7 +28,7 @@ import {
   type IncentiveSourceRow,
   type SimulationTableRow,
 } from '@/lib/simulationIncentiveTableRows';
-import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import type { ReserveWithSpread, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';

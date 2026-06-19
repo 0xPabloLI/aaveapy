@@ -1,38 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractMeritSelfPositionCapUsd, forecastMeritApr, getMeritCampaignCycleDays } from './meritForecast';
-
-describe('extractMeritSelfPositionCapUsd', () => {
-  it('parses the Self-auth cap from structured Merit messages', () => {
-    const cap = extractMeritSelfPositionCapUsd([
-      {
-        action: 'Self Authentication',
-        description:
-          'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
-      },
-    ]);
-
-    expect(cap).toBe(1000);
-  });
-
-  it('returns null when message has no dollar amount', () => {
-    const cap = extractMeritSelfPositionCapUsd([
-      { action: 'Base Reward', description: 'Standard merit reward.' },
-    ]);
-    expect(cap).toBeNull();
-  });
-
-  it('returns null for undefined message', () => {
-    expect(extractMeritSelfPositionCapUsd(undefined)).toBeNull();
-  });
-
-  it('parses cap with comma-separated thousands', () => {
-    const cap = extractMeritSelfPositionCapUsd([
-      'Self Authentication: Supply and double your yield for the first $10,000 USDT supplied per user.',
-    ]);
-    expect(cap).toBe(10000);
-  });
-});
+import { forecastMeritApr, getMeritCampaignCycleDays } from './meritForecast';
 
 describe('forecastMeritApr', () => {
   it('uses anchor reserve TVL × APR when anchorTvlUsd is set (before last round)', () => {

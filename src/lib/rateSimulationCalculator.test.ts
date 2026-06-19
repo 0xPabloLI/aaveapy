@@ -345,28 +345,46 @@ const MERIT_SELF_CAP_RESERVE: ReserveWithSpread = {
   ...BASE_RESERVE,
   meritSupplys: [
     {
-      apr: 10,
-      selfApr: 8,
-      selfMessage: 'Self authentication. Cap: $1,000',
       link: 'https://example.com',
       name: 'Merit Test',
       message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
-      startDate: '2024-01-01',
-      endDate: '2030-12-31',
-      lastRoundRewardUsd: 100,
+      breakdowns: [
+        {
+          campaignApr: 10,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-base',
+        },
+        {
+          campaignApr: 8,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-self',
+          positionCap: 1000,
+        },
+      ],
     },
   ],
   meritBorrows: [
     {
-      apr: 5,
-      selfApr: 4,
-      selfMessage: 'Self authentication. Cap: $500',
       link: 'https://example.com',
       name: 'Merit Borrow Test',
       message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $500' }],
-      startDate: '2024-01-01',
-      endDate: '2030-12-31',
-      lastRoundRewardUsd: 50,
+      breakdowns: [
+        {
+          campaignApr: 5,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-borrow-base',
+        },
+        {
+          campaignApr: 4,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-borrow-self',
+          positionCap: 500,
+        },
+      ],
     },
   ],
 };
@@ -393,8 +411,8 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     const noPrincipalCampaigns = withoutPrincipal.supply.sources.merit?.campaigns ?? [];
     const withPrincipalCampaigns = withPrincipal.supply.sources.merit?.campaigns ?? [];
 
-    const selfCapRowNoPrincipal = noPrincipalCampaigns.find((r) => r.id.includes('self'));
-    const selfCapRowWithPrincipal = withPrincipalCampaigns.find((r) => r.id.includes('self'));
+    const selfCapRowNoPrincipal = noPrincipalCampaigns.find((r) => r.id === 'merit-0-1');
+    const selfCapRowWithPrincipal = withPrincipalCampaigns.find((r) => r.id === 'merit-0-1');
 
     expect(selfCapRowNoPrincipal?.after).not.toBeNull();
     expect(selfCapRowWithPrincipal?.after).not.toBeNull();
@@ -432,8 +450,8 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     const campaigns = result.supply.sources.merit?.campaigns ?? [];
-    const baseRow = campaigns.find((r) => r.id.includes('base'));
-    const selfRow = campaigns.find((r) => r.id.includes('self'));
+    const baseRow = campaigns.find((r) => r.id === 'merit-0-0');
+    const selfRow = campaigns.find((r) => r.id === 'merit-0-1');
 
     expect(baseRow?.after).toBeNull();
     expect(selfRow?.after).toBeNull();
@@ -473,8 +491,8 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     const campaigns = result.borrow.sources.merit?.campaigns ?? [];
-    const baseRow = campaigns.find((r) => r.id.includes('base'));
-    const selfRow = campaigns.find((r) => r.id.includes('self'));
+    const baseRow = campaigns.find((r) => r.id === 'merit-0-0');
+    const selfRow = campaigns.find((r) => r.id === 'merit-0-1');
 
     expect(baseRow?.after).toBeNull();
     expect(selfRow?.after).toBeNull();
@@ -635,8 +653,8 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     const campaigns = result.supply.sources.merit?.campaigns ?? [];
-    const selfCapRow = campaigns.find((r) => r.id.includes('self'));
-    const baseRow = campaigns.find((r) => r.id.includes('base'));
+    const selfCapRow = campaigns.find((r) => r.id === 'merit-0-1');
+    const baseRow = campaigns.find((r) => r.id === 'merit-0-0');
 
     expect(selfCapRow?.after).not.toBeNull();
     expect(baseRow?.after).not.toBeNull();
@@ -666,12 +684,23 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     const SMALL_CAP_RESERVE: ReserveWithSpread = {
       ...BASE_RESERVE,
       meritSupplys: [{
-        apr: 10, selfApr: 8,
-        selfMessage: 'Self authentication. Cap: $200',
         link: 'https://example.com', name: 'Small Cap Test',
         message: [{ description: 'Base' }, { description: 'Self authentication. Cap: $200' }],
-        startDate: '2024-01-01', endDate: '2030-12-31',
-        lastRoundRewardUsd: 100,
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2024-01-01',
+            campaignEndedAt: '2030-12-31',
+            campaignId: 'merit-base',
+          },
+          {
+            campaignApr: 8,
+            campaignStartedAt: '2024-01-01',
+            campaignEndedAt: '2030-12-31',
+            campaignId: 'merit-self',
+            positionCap: 200,
+          },
+        ],
       }],
     };
 
@@ -692,9 +721,9 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     });
 
     const noWalletSelf = (noWallet.supply.sources.merit?.campaigns ?? [])
-      .find((r) => r.id.includes('self'));
+      .find((r) => r.id === 'merit-0-1');
     const withWalletSelf = (withWallet.supply.sources.merit?.campaigns ?? [])
-      .find((r) => r.id.includes('self'));
+      .find((r) => r.id === 'merit-0-1');
 
     expect(noWalletSelf?.after).not.toBeNull();
     expect(withWalletSelf?.after).not.toBeNull();
@@ -933,20 +962,30 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
 describe('AAV-916: buildMeritCampaignDetails self-cap capNote', () => {
   const merits = [
     {
-      apr: 10,
-      selfApr: 8,
       link: 'https://example.com',
       name: 'Merit Self-Cap Test',
       message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
-      startDate: '2024-01-01',
-      endDate: '2030-12-31',
-      lastRoundRewardUsd: 100,
+      breakdowns: [
+        {
+          campaignApr: 10,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-base',
+        },
+        {
+          campaignApr: 8,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-self',
+          positionCap: 1000,
+        },
+      ],
     },
   ];
 
   it('generates capNote when deposit exceeds self-position cap', () => {
     const rows = buildMeritCampaignDetails(merits, false, 5000, true);
-    const selfRow = rows.find((r) => r.id.includes('-self'));
+    const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
     expect(selfRow!.capNote).toBeDefined();
     expect(selfRow!.capWarning).toBe(true);
@@ -954,7 +993,7 @@ describe('AAV-916: buildMeritCampaignDetails self-cap capNote', () => {
 
   it('generates capNote but no capWarning when deposit is below cap', () => {
     const rows = buildMeritCampaignDetails(merits, false, 500, true);
-    const selfRow = rows.find((r) => r.id.includes('-self'));
+    const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
     expect(selfRow!.capNote).toBeDefined();
     expect(selfRow!.capWarning).toBeFalsy();

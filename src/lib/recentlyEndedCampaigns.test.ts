@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isRecentlyEnded, collectRecentlyEndedCampaigns, DEFAULT_LOOKBACK_DAYS } from './recentlyEndedCampaigns';
-import type { MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import type { MeritCampaignGroup, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 import type { MerklCampaignBreakdown, BrevisIncentive } from '../shared/market-contract/schemas';
 
 const NOW_MS = new Date('2026-05-15T12:00:00Z').getTime();
@@ -57,8 +57,6 @@ describe('isRecentlyEnded', () => {
   });
 
   it('handles date-only format (end-day normalization)', () => {
-    // '2026-05-08' normalizes to 2026-05-08T23:59:59.999Z (end of day)
-    // which is within the 7-day window from May 15 noon
     expect(isRecentlyEnded('2026-05-09', NOW_MS)).toBe(true);
   });
 
@@ -79,26 +77,35 @@ describe('DEFAULT_LOOKBACK_DAYS', () => {
 
 describe('collectRecentlyEndedCampaigns', () => {
   it('collects only Merit campaigns that ended within the window', () => {
-    const activeMerit: MeritIncentive = {
-      apr: 5,
+    const activeMerit: MeritCampaignGroup = {
       link: 'https://merit.example/active',
-      startDate: '2026-01-01',
-      endDate: '2026-12-31',
       name: 'Active Merit',
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-12-31',
+        campaignId: 'merit-active',
+      }],
     };
-    const recentlyEndedMerit: MeritIncentive = {
-      apr: 3,
+    const recentlyEndedMerit: MeritCampaignGroup = {
       link: 'https://merit.example/ended',
-      startDate: '2026-01-01',
-      endDate: '2026-05-12',
       name: 'Recently Ended Merit',
+      breakdowns: [{
+        campaignApr: 3,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-05-12',
+        campaignId: 'merit-ended',
+      }],
     };
-    const oldEndedMerit: MeritIncentive = {
-      apr: 2,
+    const oldEndedMerit: MeritCampaignGroup = {
       link: 'https://merit.example/old',
-      startDate: '2025-01-01',
-      endDate: '2026-04-01',
       name: 'Old Ended Merit',
+      breakdowns: [{
+        campaignApr: 2,
+        campaignStartedAt: '2025-01-01',
+        campaignEndedAt: '2026-04-01',
+        campaignId: 'merit-old',
+      }],
     };
 
     const reserve = mockReserve({
@@ -122,12 +129,15 @@ describe('collectRecentlyEndedCampaigns', () => {
   });
 
   it('returns empty array when all campaigns are active', () => {
-    const activeMerit: MeritIncentive = {
-      apr: 5,
+    const activeMerit: MeritCampaignGroup = {
       link: 'https://merit.example',
-      startDate: '2026-01-01',
-      endDate: '2026-12-31',
       name: 'Active',
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-12-31',
+        campaignId: 'merit-active',
+      }],
     };
     const reserve = mockReserve({ meritSupplys: [activeMerit] });
     const result = collectRecentlyEndedCampaigns(reserve, 'supply', NOW_MS);
@@ -135,12 +145,15 @@ describe('collectRecentlyEndedCampaigns', () => {
   });
 
   it('collects from all three source types (Merit, Merkl, Brevis)', () => {
-    const endedMerit: MeritIncentive = {
-      apr: 3,
+    const endedMerit: MeritCampaignGroup = {
       link: 'https://merit.example',
-      startDate: '2026-01-01',
-      endDate: '2026-05-10',
       name: 'Ended Merit',
+      breakdowns: [{
+        campaignApr: 3,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-05-10',
+        campaignId: 'merit-ended',
+      }],
     };
 
     const endedMerklBreakdown: MerklCampaignBreakdown = {
@@ -177,16 +190,19 @@ describe('collectRecentlyEndedCampaigns', () => {
   });
 
   it('uses borrow-side campaigns when supplyOrBorrow is borrow', () => {
-    const endedMeritBorrow: MeritIncentive = {
-      apr: 4,
+    const endedMeritBorrow: MeritCampaignGroup = {
       link: 'https://merit.example/borrow',
-      startDate: '2026-01-01',
-      endDate: '2026-05-12',
       name: 'Borrow Merit',
+      breakdowns: [{
+        campaignApr: 4,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-05-12',
+        campaignId: 'merit-borrow',
+      }],
     };
 
     const reserve = mockReserve({
-      meritSupplys: [], // supply side empty
+      meritSupplys: [],
       meritBorrows: [endedMeritBorrow],
     });
 
@@ -196,17 +212,28 @@ describe('collectRecentlyEndedCampaigns', () => {
     expect(result[0].name).toBe('Borrow Merit');
   });
 
-  it('handles Merit campaigns with selfApr as separate campaign entries', () => {
-    const meritWithSelf: MeritIncentive = {
-      apr: 3,
-      selfApr: 2,
+  it('handles Merit groups with multiple breakdowns as separate campaign entries', () => {
+    const meritWithMultiple: MeritCampaignGroup = {
       link: 'https://merit.example',
-      startDate: '2026-01-01',
-      endDate: '2026-05-12',
       name: 'ACI Incentive',
+      breakdowns: [
+        {
+          campaignApr: 3,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2026-05-12',
+          campaignId: 'merit-base',
+        },
+        {
+          campaignApr: 2,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2026-05-12',
+          campaignId: 'merit-self',
+          positionCap: 1000,
+        },
+      ],
     };
 
-    const reserve = mockReserve({ meritSupplys: [meritWithSelf] });
+    const reserve = mockReserve({ meritSupplys: [meritWithMultiple] });
     const result = collectRecentlyEndedCampaigns(reserve, 'supply', NOW_MS);
 
     expect(result).toHaveLength(1);

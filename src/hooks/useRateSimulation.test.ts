@@ -565,17 +565,13 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       meritSupplys: [
         {
-          apr: 4.084439890516138,
-          selfApr: 4.084439890516138,
           link: 'https://apps.aavechan.com/merit/celo-supply-usdt',
-          startDate: '2020-01-01',
-          endDate: '2099-01-01',
           name: 'Supply USDT',
           message: [
             {
               action: 'Supply USDT',
               description:
-                'Rewards are distributed using the following formula: f(USD₮ aToken Holding - USD₮ vToken Holding / USD₮ Liquidation Threshold)',
+                'Rewards are distributed using the following formula: f(USD. aToken Holding - USD. vToken Holding / USD. Liquidation Threshold)',
             },
             {
               action: 'Self Authentication',
@@ -583,6 +579,21 @@ describe('buildRateSimulationResult', () => {
                 'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
             },
           ] as unknown as string,
+          breakdowns: [
+            {
+              campaignApr: 4.084439890516138,
+              campaignStartedAt: '2020-01-01',
+              campaignEndedAt: '2099-01-01',
+              campaignId: 'merit-base-use-rate',
+            },
+            {
+              campaignApr: 4.084439890516138,
+              campaignStartedAt: '2020-01-01',
+              campaignEndedAt: '2099-01-01',
+              campaignId: 'merit-self-use-rate',
+              positionCap: 1000,
+            },
+          ],
         },
       ],
     };

@@ -744,10 +744,15 @@ describe('simulatePortfolioFromEntries', () => {
         tokenPrice: 1,
         meritSupplys: [
           {
-            apr: 5,
             link: 'https://merit.example/campaign',
-            startDate: recentPast,
-            endDate: farFuture,
+            breakdowns: [
+              {
+                campaignApr: 5,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-1',
+              },
+            ],
           },
         ],
       });
@@ -786,10 +791,15 @@ describe('simulatePortfolioFromEntries', () => {
         tokenPrice: 1,
         meritSupplys: [
           {
-            apr: 3,
             link: 'https://merit.example/campaign',
-            startDate: recentPast,
-            endDate: farFuture,
+            breakdowns: [
+              {
+                campaignApr: 3,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-2',
+              },
+            ],
           },
         ],
       });
@@ -832,14 +842,24 @@ describe('simulatePortfolioFromEntries', () => {
         supplied: '1000000000', // 1000 tokens
         meritSupplys: [
           {
-            apr: 10,
-            selfApr: 8,
             link: 'https://merit.example/campaign',
             name: 'Merit Self Cap',
             message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
-            startDate: recentPast,
-            endDate: farFuture,
-            lastRoundRewardUsd: 100,
+            breakdowns: [
+              {
+                campaignApr: 10,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-base-3',
+              },
+              {
+                campaignApr: 8,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-self-3',
+                positionCap: 1000,
+              },
+            ],
           },
         ],
       });

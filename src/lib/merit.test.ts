@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getFirstActiveMeritLink } from './merit';
-import type { MeritIncentive } from '@/types/aave';
+import type { MeritCampaignGroup } from '@/types/aave';
 
 const NOW_MS = new Date('2026-05-15T12:00:00Z').getTime();
 
@@ -10,12 +10,15 @@ function msFromNow(daysOffset: number, timeStr = 'T12:00:00.000Z'): string {
   return `${datePart}${timeStr}`;
 }
 
-function merit(overrides: Partial<MeritIncentive> = {}): MeritIncentive {
+function meritGroup(overrides: Partial<MeritCampaignGroup> = {}): MeritCampaignGroup {
   return {
-    apr: 5,
     link: 'https://merit.example/campaign',
-    startDate: msFromNow(-10),
-    endDate: msFromNow(10),
+    breakdowns: [{
+      campaignApr: 5,
+      campaignStartedAt: msFromNow(-10),
+      campaignEndedAt: msFromNow(10),
+      campaignId: 'merit-1',
+    }],
     ...overrides,
   };
 }
@@ -29,68 +32,139 @@ describe('getFirstActiveMeritLink', () => {
     expect(getFirstActiveMeritLink([], NOW_MS)).toBeNull();
   });
 
-  it('returns link of first active merit', () => {
-    const items = [merit({ link: 'https://a.com' }), merit({ link: 'https://b.com' })];
+  it('returns link of first active merit group', () => {
+    const items = [meritGroup({ link: 'https://a.com' }), meritGroup({ link: 'https://b.com' })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBe('https://a.com');
   });
 
-  it('skips merit with no link', () => {
-    const items = [merit({ link: '' }), merit({ link: 'https://b.com' })];
+  it('skips group with no link', () => {
+    const items = [meritGroup({ link: '' }), meritGroup({ link: 'https://b.com' })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBe('https://b.com');
   });
 
-  it('skips merit that has not started yet', () => {
-    const items = [merit({ startDate: msFromNow(5), endDate: msFromNow(30) })];
+  it('skips group whose breakdowns have not started yet', () => {
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: msFromNow(5),
+        campaignEndedAt: msFromNow(30),
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBeNull();
   });
 
-  it('skips merit that has already ended', () => {
-    const items = [merit({ startDate: msFromNow(-30), endDate: msFromNow(-5) })];
+  it('skips group whose breakdowns have already ended', () => {
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: msFromNow(-30),
+        campaignEndedAt: msFromNow(-5),
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBeNull();
   });
 
-  it('returns null when all merits are inactive', () => {
+  it('returns null when all groups are inactive', () => {
     const items = [
-      merit({ startDate: msFromNow(1), endDate: msFromNow(30) }),
-      merit({ startDate: msFromNow(-30), endDate: msFromNow(-1) }),
+      meritGroup({
+        breakdowns: [{
+          campaignApr: 5,
+          campaignStartedAt: msFromNow(1),
+          campaignEndedAt: msFromNow(30),
+          campaignId: 'merit-1',
+        }],
+      }),
+      meritGroup({
+        breakdowns: [{
+          campaignApr: 5,
+          campaignStartedAt: msFromNow(-30),
+          campaignEndedAt: msFromNow(-1),
+          campaignId: 'merit-2',
+        }],
+      }),
     ];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBeNull();
   });
 
-  it('finds active merit after skipping inactive ones', () => {
+  it('finds active group after skipping inactive ones', () => {
     const items = [
-      merit({ startDate: msFromNow(-30), endDate: msFromNow(-5), link: 'https://expired.com' }),
-      merit({ link: 'https://active.com' }),
+      meritGroup({
+        link: 'https://expired.com',
+        breakdowns: [{
+          campaignApr: 5,
+          campaignStartedAt: msFromNow(-30),
+          campaignEndedAt: msFromNow(-5),
+          campaignId: 'merit-1',
+        }],
+      }),
+      meritGroup({ link: 'https://active.com' }),
     ];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBe('https://active.com');
   });
 
   it('uses Date.now() as default for nowMs', () => {
     const now = Date.now();
-    const items = [merit({ startDate: new Date(now - 86400000).toISOString(), endDate: new Date(now + 86400000).toISOString() })];
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: new Date(now - 86400000).toISOString(),
+        campaignEndedAt: new Date(now + 86400000).toISOString(),
+        campaignId: 'merit-1',
+      }],
+    })];
     const result = getFirstActiveMeritLink(items);
     expect(result).toBe('https://merit.example/campaign');
   });
 
   it('supports date-only format (YYYY-MM-DD) for startDate/endDate', () => {
-    const items = [merit({ startDate: '2026-05-01', endDate: '2026-06-01' })];
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2026-05-01',
+        campaignEndedAt: '2026-06-01',
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBe('https://merit.example/campaign');
   });
 
   it('treats date-only endDate as end of day', () => {
     const NOW_END_OF_15TH = new Date('2026-05-15T23:59:59.999Z').getTime();
-    const items = [merit({ startDate: '2026-05-01', endDate: '2026-05-15' })];
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2026-05-01',
+        campaignEndedAt: '2026-05-15',
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_END_OF_15TH)).toBe('https://merit.example/campaign');
   });
 
   it('treats date-only startDate as start of day', () => {
     const NOW_START_OF_15TH = new Date('2026-05-15T00:00:00.000Z').getTime();
-    const items = [merit({ startDate: '2026-05-15', endDate: '2026-06-01' })];
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2026-05-15',
+        campaignEndedAt: '2026-06-01',
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_START_OF_15TH)).toBe('https://merit.example/campaign');
   });
 
-  it('does not allow open end — merit with missing endDate is skipped', () => {
-    const items = [merit({ startDate: msFromNow(-10), endDate: undefined as unknown as string })];
+  it('does not allow open end — group with missing endDate breakdown is skipped', () => {
+    const items = [meritGroup({
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: msFromNow(-10),
+        campaignEndedAt: undefined as unknown as string,
+        campaignId: 'merit-1',
+      }],
+    })];
     expect(getFirstActiveMeritLink(items, NOW_MS)).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
-import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
+import type { IncentiveMessage, MeritCampaignGroup } from '@/types/aave';
 import { computePositionCapEligibility, applyPositionCap } from '@/lib/incentiveMath';
 import { parseCampaignBoundaryMs } from '@/lib/campaignGroups';
 
-export type MeritMessage = MeritIncentive['message'];
+export type MeritMessage = IncentiveMessage;
 export type MeritForecastMode = 'MERIT_BASE' | 'MERIT_SELF_CAP';
 export type MeritForecastEstimateKind = MeritForecastMode | 'MERIT_CURRENT_RATE';
 
@@ -16,9 +16,7 @@ export interface MeritForecastPreview {
   regime: 'PLANNED';
   isUnderDistributed: false;
   estimateKind: MeritForecastEstimateKind;
-  /** When set, Base/self base leg used reserve TVL × APR to fix daily rewards (see `anchorTvlUsd`). */
   meritEstimateSource?: MeritEstimateSource;
-  /** Reserve-side USD TVL assumed equal to Merit’s denominator when using `reserve_tvl`. */
   anchorTvlUsd?: number;
   lastRoundRewardUsd?: number;
   selfPositionCapUsd?: number;
@@ -33,74 +31,15 @@ interface ForecastMeritCampaignInput {
   startDate?: string;
   endDate?: string;
   lastRoundRewardUsd?: number;
-  /** If set, assumes this USD TVL matches Merit's rate denominator; daily reward = TVL × APR / 365, then dilutes. */
   anchorTvlUsd?: number;
   selfPositionCapUsd?: number;
   baseAprPercent?: number;
   baseLastRoundRewardUsd?: number;
-  /** Total position USD (existing wallet position + delta). Used for self-cap eligibility check
-   *  so that cap dilution accounts for the full position, not just the incremental input. */
   totalPositionUsd?: number;
 }
 
 function sanitizePercent(value: number | undefined): number {
   return Number.isFinite(value) && value! > 0 ? value! : 0;
-}
-
-function flattenMessageLines(message?: MeritMessage): string[] {
-  if (!message) return [];
-  if (typeof message === 'string') return [message];
-  if (Array.isArray(message)) {
-    return message.flatMap((item) => flattenMessageLines(item as MeritMessage));
-  }
-  if (typeof message === 'object') {
-    return Object.values(message).flatMap((value) => flattenMessageLines(value as MeritMessage));
-  }
-  return [];
-}
-
-export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
-  baseMessage?: MeritMessage;
-  selfMessage?: MeritMessage;
-} {
-  if (!Array.isArray(message)) {
-    return { baseMessage: message };
-  }
-
-  const base: IncentiveMessage[] = [];
-  const self: IncentiveMessage[] = [];
-  for (const item of message) {
-    const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
-    if (text.includes('self authentication')) {
-      self.push(item);
-    } else {
-      base.push(item);
-    }
-  }
-
-  return {
-    baseMessage: base.length > 0 ? base : undefined,
-    selfMessage: self.length > 0 ? self : undefined,
-  };
-}
-
-/**
- * Extract the first `$X` dollar amount from a Merit message.
- *
- * **Precondition**: Callers MUST pass the `selfMessage` output of
- * `splitMeritMessageBySelfAuth()`, not the raw `merit.message`.
- * This function does NOT check for the "self" keyword — it returns
- * the first `$X` pattern found in any line.
- */
-export function extractMeritSelfPositionCapUsd(message?: MeritMessage): number | null {
-  const lines = flattenMessageLines(message);
-  for (const line of lines) {
-    const match = line.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-    if (!match) continue;
-    const parsed = Number(match[1].replace(/,/g, ''));
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-  }
-  return null;
 }
 
 export function getMeritCampaignCycleDays(startDate: string | undefined, endDate: string | undefined): number | null {
@@ -139,10 +78,6 @@ function computeMeritBaseEstimate({
   };
 }
 
-/**
- * Assume headline Base APR applies to `anchorTvlUsd` (e.g. reserve supply or borrowed USD).
- * Then implied daily reward is fixed; adding `depositUsd` dilutes APR like Merkl fixed-reward intuition.
- */
 function computeMeritBaseFromAnchorTvl({
   baseAprPercent,
   anchorTvlUsd,
@@ -305,69 +240,69 @@ export function forecastMeritApr({
 }
 
 export function forecastMeritAprPercent(
-  incentive: MeritIncentive,
+  groups: MeritCampaignGroup[] | undefined,
   depositUsd: number,
   anchorTvlUsd?: number,
   totalPositionUsd?: number,
 ): number {
-  const baseAprPercent = sanitizePercent(incentive.apr);
-  const selfAprPercent = sanitizePercent(incentive.selfApr);
+  if (!groups?.length) return 0;
 
-  // When depositUsd <= 0, skip BASE forecasting (no new deposit to dilute TVL),
-  // but still apply self-cap dilution if totalPositionUsd is provided.
-  if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
-    const { selfMessage } = splitMeritMessageBySelfAuth(incentive.message);
-    const selfPositionCapUsd = extractMeritSelfPositionCapUsd(selfMessage);
-    const positionForCap = totalPositionUsd ?? 0;
-    if (selfPositionCapUsd != null && selfPositionCapUsd > 0 && positionForCap > 0) {
-      const { aprPercent: effectiveAprPercent } = applyPositionCap(selfAprPercent, positionForCap, selfPositionCapUsd);
-      return baseAprPercent + effectiveAprPercent;
-    }
-    return baseAprPercent + selfAprPercent;
-  }
+  return groups.reduce((sum, group) => {
+    const breakdowns = group.breakdowns ?? [];
+    return sum + breakdowns.reduce((bdSum, breakdown) => {
+      const aprPercent = sanitizePercent(breakdown.campaignApr);
+      const positionCapUsd = breakdown.positionCap;
 
-  const { selfMessage } = splitMeritMessageBySelfAuth(incentive.message);
-  const selfPositionCapUsd = extractMeritSelfPositionCapUsd(selfMessage);
-
-  const baseForecast = baseAprPercent > 0
-    ? forecastMeritApr({
-        mode: 'MERIT_BASE',
-        depositUsd,
-        forecastAprPercent: baseAprPercent,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
-        lastRoundRewardUsd: incentive.lastRoundRewardUsd,
-        anchorTvlUsd,
-      })
-    : null;
-
-  const selfForecast = selfAprPercent > 0
-    ? forecastMeritApr({
-        mode: 'MERIT_SELF_CAP',
-        depositUsd,
-        forecastAprPercent: selfAprPercent,
-        selfPositionCapUsd: selfPositionCapUsd ?? undefined,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
-        baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-        baseLastRoundRewardUsd: incentive.lastRoundRewardUsd,
-        anchorTvlUsd,
-        totalPositionUsd,
-      })
-    : null;
-
-  const baseAfterPercent = baseForecast ? baseForecast.apr * 100 : baseAprPercent;
-  const selfAfterPercent = selfForecast
-    ? (() => {
-        const unscaledPercent = selfForecast.apr * 100;
-        if (selfForecast.selfPositionCapUsd != null && selfForecast.selfPositionCapUsd > 0) {
-          const positionForCap = totalPositionUsd ?? depositUsd;
+      if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
+        if (positionCapUsd != null && positionCapUsd > 0) {
+          const positionForCap = totalPositionUsd ?? 0;
           if (positionForCap > 0) {
-            return applyPositionCap(unscaledPercent, positionForCap, selfForecast.selfPositionCapUsd).aprPercent;
+            const { aprPercent: effectiveAprPercent } = applyPositionCap(aprPercent, positionForCap, positionCapUsd);
+            return bdSum + effectiveAprPercent;
           }
         }
-        return unscaledPercent;
-      })()
-    : selfAprPercent;
-  return baseAfterPercent + selfAfterPercent;
+        return bdSum + aprPercent;
+      }
+
+      if (positionCapUsd != null && positionCapUsd > 0) {
+        const selfForecast = forecastMeritApr({
+          mode: 'MERIT_SELF_CAP',
+          depositUsd,
+          forecastAprPercent: aprPercent,
+          selfPositionCapUsd: positionCapUsd,
+          startDate: breakdown.campaignStartedAt,
+          endDate: breakdown.campaignEndedAt,
+          anchorTvlUsd,
+          totalPositionUsd,
+        });
+        const selfAfterPercent = selfForecast
+          ? (() => {
+              const unscaledPercent = selfForecast.apr * 100;
+              if (selfForecast.selfPositionCapUsd != null && selfForecast.selfPositionCapUsd > 0) {
+                const positionForCap = totalPositionUsd ?? depositUsd;
+                if (positionForCap > 0) {
+                  return applyPositionCap(unscaledPercent, positionForCap, selfForecast.selfPositionCapUsd).aprPercent;
+                }
+              }
+              return unscaledPercent;
+            })()
+          : aprPercent;
+        return bdSum + selfAfterPercent;
+      }
+
+      const baseForecast = aprPercent > 0
+        ? forecastMeritApr({
+            mode: 'MERIT_BASE',
+            depositUsd,
+            forecastAprPercent: aprPercent,
+            startDate: breakdown.campaignStartedAt,
+            endDate: breakdown.campaignEndedAt,
+            anchorTvlUsd,
+          })
+        : null;
+
+      const baseAfterPercent = baseForecast ? baseForecast.apr * 100 : aprPercent;
+      return bdSum + baseAfterPercent;
+    }, 0);
+  }, 0);
 }

@@ -8,7 +8,7 @@ import {
 } from './incentiveAggregation';
 import { convertAprToApy } from './rateCalculations';
 import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './merklWhitelist';
-import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import type { BrevisIncentive, MeritCampaignGroup, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
 const daysFromNowIso = (days: number): string => {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -17,25 +17,45 @@ const daysFromNowIso = (days: number): string => {
 
 describe('incentive calculations only include active campaigns', () => {
   it('counts only active merit/merkl/brevis campaigns for APR totals', () => {
-    const meritIncentives: MeritIncentive[] = [
+    const meritIncentives: MeritCampaignGroup[] = [
       {
-        apr: 2,
-        selfApr: 1,
         link: 'https://example.com/active-merit',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
+        breakdowns: [
+          {
+            campaignApr: 2,
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(1),
+            campaignId: 'merit-base',
+          },
+          {
+            campaignApr: 1,
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(1),
+            campaignId: 'merit-self',
+          },
+        ],
       },
       {
-        apr: 10,
         link: 'https://example.com/past-merit',
-        startDate: daysFromNowIso(-10),
-        endDate: daysFromNowIso(-5),
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: daysFromNowIso(-10),
+            campaignEndedAt: daysFromNowIso(-5),
+            campaignId: 'merit-past',
+          },
+        ],
       },
       {
-        apr: 5,
         link: 'https://example.com/missing-merit-dates',
-        startDate: '',
-        endDate: '',
+        breakdowns: [
+          {
+            campaignApr: 5,
+            campaignStartedAt: '',
+            campaignEndedAt: '',
+            campaignId: 'merit-missing',
+          },
+        ],
       },
     ];
 
@@ -105,19 +125,34 @@ describe('incentive calculations only include active campaigns', () => {
   });
 
   it('uses the same active-only scope for APY totals', () => {
-    const meritIncentives: MeritIncentive[] = [
+    const meritIncentives: MeritCampaignGroup[] = [
       {
-        apr: 2,
-        selfApr: 1,
         link: 'https://example.com/active-merit',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
+        breakdowns: [
+          {
+            campaignApr: 2,
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(1),
+            campaignId: 'merit-base',
+          },
+          {
+            campaignApr: 1,
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(1),
+            campaignId: 'merit-self',
+          },
+        ],
       },
       {
-        apr: 10,
         link: 'https://example.com/past-merit',
-        startDate: daysFromNowIso(-10),
-        endDate: daysFromNowIso(-5),
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: daysFromNowIso(-10),
+            campaignEndedAt: daysFromNowIso(-5),
+            campaignId: 'merit-past',
+          },
+        ],
       },
     ];
 
