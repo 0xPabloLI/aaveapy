@@ -553,7 +553,7 @@ const IncentiveTooltip = ({
                  message: opportunity.message,
                  campaignId: breakdown.campaignId,
                  sourceType: 'Merkl',
-                  campaignType: breakdown.campaignType,
+            campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
                   aprCap: breakdown.aprCap,
                   rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                }],

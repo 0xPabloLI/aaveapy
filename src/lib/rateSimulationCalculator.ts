@@ -681,6 +681,7 @@ export const buildMeritCampaignDetails = (
             endDate: breakdown.campaignEndedAt,
             anchorTvlUsd: meritAnchorTvlUsd,
             totalPositionUsd,
+            baseAprPercent,
           });
           if (fp) {
             const capResult = applyPositionCapToForecastResult(
