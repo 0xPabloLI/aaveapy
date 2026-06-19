@@ -104,12 +104,12 @@ Both Merit self-cap and Brevis position cap flow through `applyPositionCapToFore
 | `buildFixRewardCapEffect` | pool_budget | `~{N}d earn` | `~7d earn` |
 | `buildMaxRewardCapEffect` | apr_cap | `APR capped for low TVL` | `APR capped for low TVL` |
 
-### Net position note
+### Net eligible note
 
 | Builder | Template | Example |
 |---|---|---|
-| `buildNetPositionNote` | `Net position {net} of {gross}` | `Net position $500 of $1,000` |
-| `buildCrossReserveNetPositionNote` | `Net position {net} of {gross} ({side} minus {symbols} {offsets})` | `Net position $500 of $1,000 (supply minus USDC+DAI borrows)` |
+| `buildNetEligibleNote` | `Net eligible {net} of {gross}` | `Net eligible $500 of $1,000` |
+| `buildCrossReserveNetEligibleNote` | `Net eligible {net} of {gross} ({side} minus {symbols} {offsets})` | `Net eligible $500 of $1,000 (supply minus USDC+DAI borrows)` |
 
 ---
 

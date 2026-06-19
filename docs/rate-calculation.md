@@ -665,8 +665,8 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Merkl MAX | APR capped for low TVL | `APR capped for low TVL` |
 | Brevis | Position cap exists | `Incentive on first $X` |
 | Merit Self | Position cap applies | `Incentive on first $Z` |
-| Merit Base | Net note only | `Net position $X of $Y` |
-| Merkl DUTCH_AUCTION | Net note only | `Net position $X of $Y` |
+| Merit Base | Net note only | `Net eligible $X of $Y` |
+| Merkl DUTCH_AUCTION | Net note only | `Net eligible $X of $Y` |
 
 ### Cap taxonomy
 

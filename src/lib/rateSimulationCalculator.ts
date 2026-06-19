@@ -26,8 +26,8 @@ import {
   buildPositionCapEffect,
   buildFixRewardCapEffect,
   buildMaxRewardCapEffect,
-  buildNetPositionNote,
-  buildCrossReserveNetPositionNote,
+  buildNetEligibleNote,
+  buildCrossReserveNetEligibleNote,
   capEffectToSimulationFields,
   applyPositionCapToForecastResult,
 } from '@/lib/incentiveCaps';
@@ -638,7 +638,7 @@ export const buildMeritCampaignDetails = (
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
 
-  const netNote = grossInputUsd !== undefined ? buildNetPositionNote(inputUsd, grossInputUsd) : null;
+  const netNote = grossInputUsd !== undefined ? buildNetEligibleNote(inputUsd, grossInputUsd) : null;
   const appendNetNote = (note: string | undefined, crossReserveNote: string | null | undefined): string | undefined => {
     const parts: string[] = [];
     if (note) parts.push(note);
@@ -743,7 +743,7 @@ export const buildMerklCampaignDetails = (
 ): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
 
-  const netNote = grossInputUsd !== undefined ? buildNetPositionNote(inputUsd, grossInputUsd) : null;
+  const netNote = grossInputUsd !== undefined ? buildNetEligibleNote(inputUsd, grossInputUsd) : null;
   const appendNetNote = (note: string | undefined, crossReserveNote: string | null | undefined): string | undefined => {
     const parts: string[] = [];
     if (note) parts.push(note);
@@ -1239,7 +1239,7 @@ export function buildRateSimulationResult({
     ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
     : undefined;
 
-  // Net position amounts: supply net position = max(supply - borrow, 0),
+  // Net eligible amounts: supply net eligible = max(supply - borrow, 0),
   // borrow incentive eligible = max(borrow - supply, 0).
   // Gross amounts are used by incentive sources that reward both sides independently.
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
@@ -1291,7 +1291,7 @@ export function buildRateSimulationResult({
       const offsetSymbols = constraint.offsetReserveIds
         .map((id) => reserveSymbolById?.get(id) ?? id)
         .filter(Boolean);
-      return buildCrossReserveNetPositionNote({
+      return buildCrossReserveNetEligibleNote({
         netUsd,
         grossUsd,
         sourceSide: constraint.sourceSide,
