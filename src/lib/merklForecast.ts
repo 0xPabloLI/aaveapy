@@ -1,4 +1,4 @@
-import type { MerklCampaignBreakdown, MerklForecastWireItem } from '@/types/aave';
+import type { ForecastableBreakdown, MerklForecastWireItem } from '@/types/aave';
 import {
   parseMerklNumeric,
   calculatePointsApr,
@@ -222,7 +222,7 @@ export const sanitizePercent = (value: number): number =>
  * 3. Return 0 (MAX/FIX capped fallbacks are handled by `forecastWithTVL`, not here)
  */
 export const getMerklBreakdownApr = (
-  breakdown: MerklCampaignBreakdown,
+  breakdown: ForecastableBreakdown,
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE
 ): number => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
@@ -245,7 +245,7 @@ export const getMerklBreakdownApr = (
  * type-driven even when the campaign's display intensity comes from pointsPerThousandUsd.
  */
 export const mergeForecastState = (
-  breakdown: MerklCampaignBreakdown,
+  breakdown: ForecastableBreakdown,
   forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,
   nativeApyPercent?: number,
@@ -284,7 +284,7 @@ export const mergeForecastState = (
  * Callers are responsible for whitelist filtering before calling this function.
  */
 export const forecastMerklApr = (
-  breakdown: MerklCampaignBreakdown,
+  breakdown: ForecastableBreakdown,
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,

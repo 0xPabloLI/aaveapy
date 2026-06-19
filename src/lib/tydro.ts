@@ -1,9 +1,9 @@
-import type { MerklCampaignBreakdown } from '@/types/aave';
+import type { ForecastableBreakdown } from '@/types/aave';
 
 // Frontend-configurable rate: 1 Tydro point = 1 USD (default)
 export const TYDRO_POINT_TO_USD_RATE = 1;
 
-const hasPointsField = (breakdown: Pick<MerklCampaignBreakdown, 'pointsPerThousandUsd'>): boolean =>
+const hasPointsField = (breakdown: Pick<ForecastableBreakdown, 'pointsPerThousandUsd'>): boolean =>
   Object.prototype.hasOwnProperty.call(breakdown, 'pointsPerThousandUsd');
 
 /** Coerce API/cache values that may arrive as numeric strings. */
@@ -48,7 +48,7 @@ export const calculatePointsApr = (pointsPerThousandUsd: number, pointToUsdRate 
 export { getMerklBreakdownApr } from './merklForecast';
 
 export const getMerklForecastUsdMultiplier = (
-  breakdown: MerklCampaignBreakdown,
+  breakdown: ForecastableBreakdown,
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE
 ): number => {
   if (!hasPointsField(breakdown)) {
@@ -63,7 +63,7 @@ export const getMerklForecastUsdMultiplier = (
  * - pointsPerThousandUsd is present and positive
  */
 export const isMerklPointsCampaign = (
-  breakdown: Pick<MerklCampaignBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
+  breakdown: Pick<ForecastableBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
 ): boolean => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
   const hasPoints = hasPointsField(breakdown);

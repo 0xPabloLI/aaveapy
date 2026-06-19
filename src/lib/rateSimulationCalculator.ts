@@ -36,7 +36,6 @@ import {
   getBrevisCampaignBreakdowns,
   getBrevisCampaignId,
   getBrevisResolvedBreakdown,
-  toMerklBreakdown,
 } from '@/lib/brevis';
 import { getReserveKey } from '@/lib/reserveKey';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
@@ -539,9 +538,8 @@ export const sumForecastBrevisIncentiveApr = (
       const resolved = getBrevisResolvedBreakdown(group, breakdown);
       const combined = getBrevisCombinedDepositUsd(group, breakdown, sharedDepositsByCampaignId);
       const positionUsd = combined ?? inputUsd;
-      const merkl = toMerklBreakdown(resolved);
       let aprPercent = forecastStates
-        ? sanitizePercent(forecastMerklApr(merkl, inputUsd, forecastStates, 0))
+        ? sanitizePercent(forecastMerklApr(resolved, inputUsd, forecastStates, 0))
         : sanitizePercent(resolved.campaignApr);
 
       const capResult = applyPositionCapToForecastResult(aprPercent, positionUsd, resolved.positionCap);
@@ -855,14 +853,13 @@ export const buildBrevisCampaignDetails = (
     let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
     const combined = getBrevisCombinedDepositUsd(source, breakdown, sharedDepositsByCampaignId);
     const noteDepositUsd = combined ?? inputUsd;
-    const merkl = toMerklBreakdown(resolved);
     const effectiveInputUsd = combined ?? inputUsd;
     let forecastUnavailable = false;
 
-    const isForecastRequiring = !!merkl.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(merkl.campaignType);
-    if (isForecastRequiring && forecastStates && merkl.campaignId) {
-      const merged = mergeForecastState(merkl, forecastStates, 0);
-      if (!merged || !forecastStates[String(merkl.campaignId)]) {
+    const isForecastRequiring = !!resolved.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(resolved.campaignType);
+    if (isForecastRequiring && forecastStates && resolved.campaignId) {
+      const merged = mergeForecastState(resolved, forecastStates, 0);
+      if (!merged || !forecastStates[String(resolved.campaignId)]) {
         forecastUnavailable = true;
       }
     } else if (isForecastRequiring && forecastStates) {
@@ -871,7 +868,7 @@ export const buildBrevisCampaignDetails = (
 
     if (effectiveInputUsd > 0) {
       let aprPercent = forecastStates
-        ? sanitizePercent(forecastMerklApr(merkl, effectiveInputUsd, forecastStates, 0))
+        ? sanitizePercent(forecastMerklApr(resolved, effectiveInputUsd, forecastStates, 0))
         : nominal;
 
       const positionUsd = effectiveInputUsd;

@@ -1,4 +1,4 @@
-import type { BrevisIncentive, MerklCampaignBreakdown } from '@/types/aave';
+import type { BrevisIncentive } from '@/types/aave';
 import { isCampaignActive } from '@/lib/campaignGroups';
 
 type BrevisBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
@@ -81,23 +81,32 @@ export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined
 export const getBrevisCampaignBreakdowns = (brevis: BrevisIncentive): BrevisCampaignBreakdown[] =>
   [makeSingleBreakdown(brevis)];
 
+const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+
 export const getBrevisResolvedBreakdown = (
   brevis: BrevisIncentive,
   breakdown?: BrevisBreakdown,
-): BrevisResolvedBreakdown => ({
-  name: getBrevisCampaignName(brevis),
-  message: getBrevisCampaignMessage(brevis),
-  link: brevis.link,
-  campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
-  campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt) ?? '',
-  campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt) ?? '',
-  campaignType: firstNonEmptyString(breakdown?.campaignType, brevis.campaignType),
-  aprCap: breakdown?.aprCap ?? brevis.aprCap,
-  latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
-  totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
-  positionCap: firstFiniteNumber(breakdown?.positionCap, brevis.positionCap),
-  campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
-});
+): BrevisResolvedBreakdown => {
+  const rawAprCap = breakdown?.aprCap ?? brevis.aprCap;
+  const campaignType = firstNonEmptyString(breakdown?.campaignType, brevis.campaignType);
+  const effectiveAprCap = campaignType === BREVIS_FIX_TYPE
+    ? (rawAprCap ?? firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr))
+    : rawAprCap;
+  return {
+    name: getBrevisCampaignName(brevis),
+    message: getBrevisCampaignMessage(brevis),
+    link: brevis.link,
+    campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
+    campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt) ?? '',
+    campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt) ?? '',
+    campaignType,
+    aprCap: effectiveAprCap,
+    latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
+    totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
+    positionCap: firstFiniteNumber(breakdown?.positionCap, brevis.positionCap),
+    campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
+  };
+};
 
 export const hasActiveBrevisBreakdown = (
   brevis: BrevisIncentive,
@@ -123,18 +132,3 @@ export const getFirstActiveBrevisLink = (
   }
   return null;
 };
-
-const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
-
-export const toMerklBreakdown = (resolved: BrevisResolvedBreakdown): MerklCampaignBreakdown => ({
-  campaignApr: resolved.campaignApr,
-  campaignStartedAt: resolved.campaignStartedAt,
-  campaignEndedAt: resolved.campaignEndedAt,
-  campaignId: resolved.campaignId ?? '',
-  campaignType: resolved.campaignType,
-  aprCap: resolved.campaignType === BREVIS_FIX_TYPE
-    ? (resolved.aprCap ?? resolved.campaignApr)
-    : resolved.aprCap,
-  latestTvl: resolved.latestTvl,
-  totalBudget: resolved.totalBudget,
-});

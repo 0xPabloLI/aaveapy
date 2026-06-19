@@ -24,6 +24,19 @@ export interface BaseCampaignBreakdown {
   positionCap?: number;
 }
 
+export interface ForecastableBreakdown extends BaseCampaignBreakdown {
+  campaignType?: string;
+  aprCap?: number | null;
+  latestTvl?: number;
+  totalBudget?: number;
+  plannedDaily?: number;
+  budgetBoundMode?: string;
+  pointsPerThousandUsd?: number;
+  rewardTokenSymbol?: string;
+  rewardTokenIconUrl?: string;
+  whitelistOnly?: boolean;
+}
+
 export interface NetPositionConstraint {
   sourceSide: 'supply' | 'borrow';
   offsetReserveIds: string[];
@@ -38,21 +51,8 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
   netPositionConstraint?: NetPositionConstraint | null;
 }
 
-// Merkl opportunity data structure
-export interface MerklCampaignBreakdown extends BaseCampaignBreakdown {
-  campaignId: string;                 // Campaign ID
-  whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
-  pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
-  rewardTokenSymbol?: string;
-  rewardTokenIconUrl?: string;
-  campaignType?: string;
-  totalBudget?: number;
-  /** Max APR cap from API as percent points (e.g. 3.2 means 3.2%), same unit as `campaignApr`. */
-  aprCap?: number | null;
-  latestTvl?: number;
-  plannedDaily?: number;
-  /** Budget-bound mode for TARGET_TOTAL_APR campaigns: MAX_APR (dilutive) or FIX_APR (early-end). */
-  budgetBoundMode?: string;
+export interface MerklCampaignBreakdown extends ForecastableBreakdown {
+  campaignId: string;
 }
 
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;
