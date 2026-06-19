@@ -59,7 +59,7 @@ describe('getMerklBreakdownApr', () => {
       ...baseBreakdown,
       campaignApr: 2.5,
       pointsPerThousandUsd: 2,
-    });
+    }, 1);
     expect(apr).toBe(2.5);
   });
 
@@ -68,7 +68,7 @@ describe('getMerklBreakdownApr', () => {
       ...baseBreakdown,
       campaignApr: 0,
       pointsPerThousandUsd: 2,
-    });
+    }, 1);
     // 2 points × $1/point × 36.5 (see calculatePointsApr in tydro.ts)
     expect(apr).toBe(73);
   });
@@ -89,7 +89,7 @@ describe('getMerklBreakdownApr', () => {
     const apr = getMerklBreakdownApr({
       ...baseBreakdown,
       campaignApr: '4.2' as unknown as number,
-    });
+    }, 1);
     expect(apr).toBe(4.2);
   });
 
@@ -101,7 +101,8 @@ describe('getMerklBreakdownApr', () => {
         pointsPerThousandUsd: 0,
         plannedDaily: 1,
         latestTvl: 100_000,
-      })
+      }),
+      1
     );
     expect(apr).toBe(0);
   });

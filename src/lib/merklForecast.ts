@@ -3,7 +3,6 @@ import {
   parseMerklNumeric,
   calculatePointsApr,
   safePointToUsdRate,
-  TYDRO_POINT_TO_USD_RATE,
   isMerklPointsCampaign,
   convertMerklPointsAmountToUsd,
 } from '@/lib/tydro';
@@ -223,7 +222,7 @@ export const sanitizePercent = (value: number): number =>
  */
 export const getMerklBreakdownApr = (
   breakdown: ForecastableBreakdown,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate: number,
 ): number => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
   if (campaignApr !== undefined && campaignApr > 0) {
@@ -247,14 +246,14 @@ export const getMerklBreakdownApr = (
 export const mergeForecastState = (
   breakdown: ForecastableBreakdown,
   forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number,
+  pointToUsdRate: number,
   nativeApyPercent?: number,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
   const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
     if (isMerklPointsCampaign(breakdown)) {
-      return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+      return convertMerklPointsAmountToUsd(value, pointToUsdRate);
     }
     return value ?? undefined;
   };
@@ -287,16 +286,16 @@ export const forecastMerklApr = (
   breakdown: ForecastableBreakdown,
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number,
+  pointToUsdRate: number,
   nativeApyPercent?: number,
 ): number => {
-  const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
+  const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, pointToUsdRate));
 
   if (currentApr <= 0 && breakdown.campaignType === 'TARGET_TOTAL_APR') {
     return 0;
   }
 
-  const merged = mergeForecastState(breakdown, forecastStates, tydroPointToUsdRate, nativeApyPercent);
+  const merged = mergeForecastState(breakdown, forecastStates, pointToUsdRate, nativeApyPercent);
   if (!merged) return currentApr;
 
   if (inputUsd <= 0) {
