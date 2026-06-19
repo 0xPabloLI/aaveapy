@@ -219,17 +219,14 @@ export function reserveHasIncentiveTooltipSources(
 
   const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   if (meritGroups?.length) {
-    for (const group of meritGroups) {
-      for (const breakdown of group.breakdowns ?? []) {
-        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
-        const apr = breakdown.campaignApr;
-        let totalValue = 0;
-        if (!isNaN(apr) && apr >= 0) {
-          totalValue = isApy ? convertAprToApy(apr) : apr;
-        }
-        if (totalValue >= 0) return true;
-      }
-    }
+    const meritApr = sumActiveCampaignBreakdownValues(meritGroups, {
+      getBreakdowns: (group) => group.breakdowns,
+      getStartDate: (_group, b) => b.campaignStartedAt,
+      getEndDate: (_group, b) => b.campaignEndedAt,
+      include: () => true,
+      mapValue: (_group, b) => !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0,
+    });
+    if (meritApr > 0) return true;
   }
 
   const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;

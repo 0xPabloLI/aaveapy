@@ -23,12 +23,11 @@ import {
   forecastMeritApr,
 } from '@/lib/meritForecast';
 import {
-  buildCalendarEndEffect,
   buildPositionCapEffect,
-  buildAprCapEffect,
-  buildPoolBudgetEffect,
-  buildNetEligibilityNote,
-  buildCrossReserveNetEligibilityNote,
+  buildFixRewardCapEffect,
+  buildMaxRewardCapEffect,
+  buildNetPositionNote,
+  buildCrossReserveNetPositionNote,
   capEffectToSimulationFields,
   applyPositionCapToForecastResult,
 } from '@/lib/incentiveCaps';
@@ -350,19 +349,16 @@ export const sumNumberArray = (values?: number[], isApy = false): number => {
 };
 
 export const sumMeritIncentiveApr = (values?: MeritCampaignGroup[], isApy = false): number => {
-  if (!values || values.length === 0) return 0;
-  return values.reduce((sum, group) => {
-    const breakdowns = group.breakdowns ?? [];
-    if (breakdowns.length === 0) return sum;
-    return sum + breakdowns.reduce((bdSum, bd) => {
-      if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return bdSum;
-      const apr = sanitizePercent(bd.campaignApr);
-      if (isApy) {
-        return bdSum + (apr > 0 ? convertAprToApy(apr) : 0);
-      }
-      return bdSum + apr;
-    }, 0);
-  }, 0);
+  return sumActiveCampaignBreakdownValues(values, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, b) => b.campaignStartedAt,
+    getEndDate: (_group, b) => b.campaignEndedAt,
+    include: () => true,
+    mapValue: (_group, b) => {
+      const apr = sanitizePercent(b.campaignApr);
+      return isApy ? (apr > 0 ? convertAprToApy(apr) : 0) : apr;
+    },
+  });
 };
 
 /**
@@ -642,7 +638,7 @@ export const buildMeritCampaignDetails = (
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
 
-  const netNote = grossInputUsd !== undefined ? buildNetEligibilityNote(inputUsd, grossInputUsd) : null;
+  const netNote = grossInputUsd !== undefined ? buildNetPositionNote(inputUsd, grossInputUsd) : null;
   const appendNetNote = (note: string | undefined, crossReserveNote: string | null | undefined): string | undefined => {
     const parts: string[] = [];
     if (note) parts.push(note);
@@ -747,7 +743,7 @@ export const buildMerklCampaignDetails = (
 ): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
 
-  const netNote = grossInputUsd !== undefined ? buildNetEligibilityNote(inputUsd, grossInputUsd) : null;
+  const netNote = grossInputUsd !== undefined ? buildNetPositionNote(inputUsd, grossInputUsd) : null;
   const appendNetNote = (note: string | undefined, crossReserveNote: string | null | undefined): string | undefined => {
     const parts: string[] = [];
     if (note) parts.push(note);
@@ -797,10 +793,10 @@ export const buildMerklCampaignDetails = (
           const isMaxLike = merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode !== 'FIX_APR');
           if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
-              buildPoolBudgetEffect(forecast.fixRewardableDays),
+              buildFixRewardCapEffect(forecast.fixRewardableDays),
             ));
           } else if (isMaxLike && forecast.regime === 'APR_CAPPED') {
-            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(buildAprCapEffect()));
+            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(buildMaxRewardCapEffect()));
           }
         }
       } else if (hasAnyInput) {
@@ -895,18 +891,6 @@ export const buildBrevisCampaignDetails = (
       }
     } else if (hasAnyInput) {
       after = null;
-    }
-
-    if (hasAnyInput && noteDepositUsd > 0 && !capNote) {
-      const endMs = parseCampaignBoundaryMs(resolved.campaignEndedAt, 'end');
-      if (endMs !== null && endMs > nowMs) {
-        const remainingDays = (endMs - nowMs) / 86_400_000;
-        if (Number.isFinite(remainingDays) && remainingDays > 0) {
-          ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(
-            buildCalendarEndEffect(remainingDays),
-          ));
-        }
-      }
     }
 
     const delta = after !== null ? after - current : null;
@@ -1255,7 +1239,7 @@ export function buildRateSimulationResult({
     ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
     : undefined;
 
-  // Net eligible amounts: supply incentive eligible = max(supply - borrow, 0),
+  // Net position amounts: supply net position = max(supply - borrow, 0),
   // borrow incentive eligible = max(borrow - supply, 0).
   // Gross amounts are used by incentive sources that reward both sides independently.
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
@@ -1307,7 +1291,7 @@ export function buildRateSimulationResult({
       const offsetSymbols = constraint.offsetReserveIds
         .map((id) => reserveSymbolById?.get(id) ?? id)
         .filter(Boolean);
-      return buildCrossReserveNetEligibilityNote({
+      return buildCrossReserveNetPositionNote({
         netUsd,
         grossUsd,
         sourceSide: constraint.sourceSide,
