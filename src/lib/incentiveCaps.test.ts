@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildBrevisCalendarEndOnlyEffect,
-  buildBrevisPositionCapEffect,
-  buildMerklAprCapEffect,
-  buildMerklFixPoolBudgetEffect,
+  buildCalendarEndEffect,
+  buildPositionCapEffect,
+  buildAprCapEffect,
+  buildPoolBudgetEffect,
   capEffectToSimulationFields,
   applyPositionCapToForecastResult,
 } from './incentiveCaps';
 
 describe('capEffectToSimulationFields', () => {
   it('joins note parts and passes warning through', () => {
-    const eff = buildMerklFixPoolBudgetEffect(12.3);
+    const eff = buildPoolBudgetEffect(12.3);
     expect(capEffectToSimulationFields(eff)).toEqual({
       capNote: '~12d earn',
       capWarning: false,
@@ -20,7 +20,7 @@ describe('capEffectToSimulationFields', () => {
   });
 
   it('carries capMetrics from position_cap effect', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 1000,
       isCombineCap: false,
       isCapBinding: false,
@@ -33,7 +33,7 @@ describe('capEffectToSimulationFields', () => {
   });
 
   it('carries capMetrics with isCombineCap from Brevis position_cap', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: true,
       isCapBinding: true,
@@ -46,14 +46,14 @@ describe('capEffectToSimulationFields', () => {
   });
 
   it('returns undefined capMetrics for non-position-cap effects', () => {
-    const eff = buildMerklAprCapEffect();
+    const eff = buildAprCapEffect();
     expect(capEffectToSimulationFields(eff).capMetrics).toBeUndefined();
   });
 });
 
-describe('buildBrevisPositionCapEffect', () => {
+describe('buildPositionCapEffect', () => {
   it('uses supply+borrow label when shared', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: true,
       isCapBinding: false,
@@ -69,7 +69,7 @@ describe('buildBrevisPositionCapEffect', () => {
   });
 
   it('uses single-side label when not shared', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: false,
       isCapBinding: true,
@@ -84,7 +84,7 @@ describe('buildBrevisPositionCapEffect', () => {
   });
 
   it('falls back to calendar days when no budget data', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 5000,
       isCombineCap: false,
       isCapBinding: false,
@@ -96,7 +96,7 @@ describe('buildBrevisPositionCapEffect', () => {
   });
 
   it('omits earn segment when neither horizon is positive', () => {
-    const eff = buildBrevisPositionCapEffect({
+    const eff = buildPositionCapEffect({
       positionCapUsd: 100,
       isCombineCap: false,
       isCapBinding: false,
@@ -108,9 +108,9 @@ describe('buildBrevisPositionCapEffect', () => {
   });
 });
 
-describe('buildBrevisCalendarEndOnlyEffect', () => {
+describe('buildCalendarEndEffect', () => {
   it('matches ~Nd to end copy', () => {
-    const eff = buildBrevisCalendarEndOnlyEffect(30);
+    const eff = buildCalendarEndEffect(30);
     expect(capEffectToSimulationFields(eff)).toEqual({
       capNote: '~30d to end',
       capWarning: false,
@@ -118,13 +118,13 @@ describe('buildBrevisCalendarEndOnlyEffect', () => {
   });
 });
 
-describe('Merkl cap helpers', () => {
-  it('buildMerklFixPoolBudgetEffect formats days', () => {
-    expect(capEffectToSimulationFields(buildMerklFixPoolBudgetEffect(7)).capNote).toBe('~7d earn');
+describe('Pool budget and APR cap helpers', () => {
+  it('buildPoolBudgetEffect formats days', () => {
+    expect(capEffectToSimulationFields(buildPoolBudgetEffect(7)).capNote).toBe('~7d earn');
   });
 
-  it('buildMerklAprCapEffect is warning', () => {
-    expect(capEffectToSimulationFields(buildMerklAprCapEffect())).toEqual({
+  it('buildAprCapEffect is warning', () => {
+    expect(capEffectToSimulationFields(buildAprCapEffect())).toEqual({
       capNote: 'APR capped for low TVL',
       capWarning: true,
     });

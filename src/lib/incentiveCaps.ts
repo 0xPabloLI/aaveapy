@@ -51,8 +51,8 @@ export function capEffectToSimulationFields(
   };
 }
 
-/** Brevis: per-user position cap from API `positionCap`. */
-export function buildBrevisPositionCapEffect(input: {
+/** Per-user position cap from API `positionCap`. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
+export function buildPositionCapEffect(input: {
   positionCapUsd: number;
   isCombineCap: boolean;
   isCapBinding: boolean;
@@ -88,8 +88,8 @@ export function buildBrevisPositionCapEffect(input: {
   };
 }
 
-/** Brevis: no per-user cap in payload; calendar window only. */
-export function buildBrevisCalendarEndOnlyEffect(remainingDays: number): IncentiveCapEffect {
+/** No per-user cap in payload; calendar window only. */
+export function buildCalendarEndEffect(remainingDays: number): IncentiveCapEffect {
   return {
     kind: 'informational',
     scope: 'unspecified',
@@ -101,10 +101,10 @@ export function buildBrevisCalendarEndOnlyEffect(remainingDays: number): Incenti
 }
 
 /**
- * Merkl FIX: pool budget horizon at hypothetical TVL (scenario deposit folded into `forecastWithTVL`).
- * Uses the same **`~Nd earn`** surface copy as Brevis position-cap notes; semantics differ (pool budget vs per-user position cap).
+ * Pool budget horizon at hypothetical TVL (scenario deposit folded into `forecastWithTVL`).
+ * Uses the same **`~Nd earn`** surface copy as position-cap notes; semantics differ (pool budget vs per-user position cap).
  */
-export function buildMerklFixPoolBudgetEffect(fixRewardableDays: number): IncentiveCapEffect {
+export function buildPoolBudgetEffect(fixRewardableDays: number): IncentiveCapEffect {
   return {
     kind: 'pool_budget',
     scope: 'pool',
@@ -114,8 +114,8 @@ export function buildMerklFixPoolBudgetEffect(fixRewardableDays: number): Incent
   };
 }
 
-/** Merkl MAX: APR capped regime for low TVL. */
-export function buildMerklAprCapEffect(): IncentiveCapEffect {
+/** APR capped regime for low TVL. */
+export function buildAprCapEffect(): IncentiveCapEffect {
   return {
     kind: 'apr_cap',
     scope: 'pool',
@@ -160,7 +160,7 @@ export function applyPositionCapToForecastResult(
     return { aprPercent: nominalAprPercent, capWarning: false };
   }
   const { aprPercent, isCapBinding, eligibleUsd } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
-  const effect = buildBrevisPositionCapEffect({
+  const effect = buildPositionCapEffect({
     positionCapUsd: capUsd,
     isCombineCap: options?.isCombineCap ?? false,
     isCapBinding,

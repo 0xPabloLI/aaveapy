@@ -273,6 +273,7 @@
                         ]
                       },
                       "breakdowns": {
+                        "default": [],
                         "type": "array",
                         "items": {
                           "type": "object",
@@ -323,10 +324,7 @@
                           ]
                         }
                       }
-                    },
-                    "required": [
-                      "breakdowns"
-                    ]
+                    }
                   }
                 },
                 "meritBorrows": {
@@ -379,6 +377,7 @@
                         ]
                       },
                       "breakdowns": {
+                        "default": [],
                         "type": "array",
                         "items": {
                           "type": "object",
@@ -429,10 +428,7 @@
                           ]
                         }
                       }
-                    },
-                    "required": [
-                      "breakdowns"
-                    ]
+                    }
                   }
                 },
                 "merklSupplys": {
@@ -1588,6 +1584,7 @@
                   ]
                 },
                 "breakdowns": {
+                  "default": [],
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -1638,10 +1635,7 @@
                     ]
                   }
                 }
-              },
-              "required": [
-                "breakdowns"
-              ]
+              }
             }
           },
           "meritBorrows": {
@@ -1694,6 +1688,7 @@
                   ]
                 },
                 "breakdowns": {
+                  "default": [],
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -1744,10 +1739,7 @@
                     ]
                   }
                 }
-              },
-              "required": [
-                "breakdowns"
-              ]
+              }
             }
           },
           "merklSupplys": {
@@ -2577,6 +2569,7 @@
             ]
           },
           "breakdowns": {
+            "default": [],
             "type": "array",
             "items": {
               "type": "object",
@@ -2627,10 +2620,7 @@
               ]
             }
           }
-        },
-        "required": [
-          "breakdowns"
-        ]
+        }
       },
       "MerklCampaignBreakdown": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
