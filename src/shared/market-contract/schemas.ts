@@ -25,6 +25,7 @@ export const MeritCampaignBreakdownSchema = z.object({
   rewardTokenSymbol: z.string().optional(),
   totalBudget: z.number().optional(),
   latestTvl: z.number().optional(),
+  message: IncentiveMessageSchema.optional(),
 });
 
 export const MeritCampaignGroupSchema = z.object({

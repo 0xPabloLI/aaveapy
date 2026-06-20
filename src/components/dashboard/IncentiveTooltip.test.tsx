@@ -654,4 +654,215 @@ describe('IncentiveTooltip', () => {
       expect(aprText).toContain('0.00');
     });
   });
+
+  describe('Message JSON.parse and breakdown-level rendering', () => {
+    it('parses JSON string message from Merit breakdown and renders structured content', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          breakdowns: [
+            {
+              campaignApr: 3.8,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              campaignId: 'celo-supply-usdt-base',
+              campaignType: 'DUTCH_AUCTION',
+              message: '[{"action":"Supply USDT","description":"Rewards are distributed using the following formula"}]',
+            },
+            {
+              campaignApr: 3.8,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              campaignId: 'celo-supply-usdt-self',
+              campaignType: 'DUTCH_AUCTION',
+              positionCap: 1000,
+              message: '[{"action":"Self Authentication","description":"Double your yield by verifying your humanity"}]',
+            },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const text = container.textContent!;
+      expect(text).toContain('Supply USDT');
+      expect(text).toContain('Self Authentication');
+      expect(text).toContain('Double your yield');
+      expect(text).toContain('Rewards are distributed');
+      expect(text).not.toContain('[{"action"');
+      expect(text).not.toContain('"}]');
+    });
+
+    it('renders breakdown message below each campaign for Merit', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          message: 'Opportunity-level message',
+          breakdowns: [
+            {
+              campaignApr: 3.8,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              campaignId: 'celo-supply-usdt-base',
+              message: 'Base breakdown message',
+            },
+            {
+              campaignApr: 3.8,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              campaignId: 'celo-supply-usdt-self',
+              positionCap: 1000,
+              message: 'Self breakdown message',
+            },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const text = container.textContent!;
+      expect(text).toContain('Base breakdown message');
+      expect(text).toContain('Self breakdown message');
+      expect(text).not.toContain('Opportunity-level message');
+    });
+
+    it('falls back to group.message when breakdown has no message', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          message: 'Group-level fallback',
+          breakdowns: [{
+            campaignApr: 3.8,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'celo-supply-usdt-base',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Group-level fallback');
+    });
+
+    it('still renders plain string messages (Merkl/Brevis) without JSON parsing', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          message: 'Plain string message',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-1',
+            campaignApr: 3.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Plain string message');
+    });
+
+    it('handles invalid JSON string as plain text', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          breakdowns: [{
+            campaignApr: 3.8,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'celo-supply-usdt-base',
+            message: 'Not a JSON string',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Not a JSON string');
+    });
+  });
+
+  describe('Opportunity message position + per-campaign APR and reward token', () => {
+    it('renders opportunity message below all campaigns for Merkl', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO',
+          link: 'https://merkl.angle.money',
+          message: 'Opportunity message',
+          breakdowns: [
+            { campaignId: 'merkl-1', campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' },
+            { campaignId: 'merkl-2', campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', whitelistOnly: false },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: false });
+      const text = container.textContent!;
+      const oppMsgIdx = text.indexOf('Opportunity message');
+      const lastCampIdx = text.lastIndexOf('Campaign time');
+      expect(oppMsgIdx).toBeGreaterThan(0);
+      expect(oppMsgIdx).toBeGreaterThan(lastCampIdx);
+    });
+
+    it('renders per-campaign APR in multi-campaign mode', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          breakdowns: [
+            { campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', campaignId: 'base' },
+            { campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', campaignId: 'self', positionCap: 1000 },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: false });
+      const text = container.textContent!;
+      expect(text).toContain('3.00%');
+      expect(text).toContain('2.00%');
+    });
+
+    it('renders per-campaign reward token icon when different tokens exist', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          message: 'Earn rewards on your net lending position',
+          breakdowns: [
+            { campaignId: 'merkl-ink', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-ops', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'OPS', rewardTokenIconUrl: 'https://example.com/ops.svg' },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const imgs = container.querySelectorAll('img[src]');
+      expect(imgs.length).toBeGreaterThanOrEqual(2);
+      const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
+      expect(srcs).toContain('https://example.com/ink.svg');
+      expect(srcs).toContain('https://example.com/ops.svg');
+    });
+
+    it('renders per-campaign reward token icon in Campaign time row', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-ink', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-ops', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'OPS', rewardTokenIconUrl: 'https://example.com/ops.svg' },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const imgs = container.querySelectorAll('img[src]');
+      expect(imgs.length).toBeGreaterThanOrEqual(2);
+      const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
+      expect(srcs).toContain('https://example.com/ink.svg');
+      expect(srcs).toContain('https://example.com/ops.svg');
+    });
+  });
 });

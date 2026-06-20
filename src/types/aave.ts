@@ -5,6 +5,7 @@ export type IncentiveMessage = string | IncentiveMessage[] | {
 
 export interface MeritCampaignBreakdown extends ForecastableBreakdown {
   campaignId: string;
+  message?: IncentiveMessage;
 }
 
 export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {

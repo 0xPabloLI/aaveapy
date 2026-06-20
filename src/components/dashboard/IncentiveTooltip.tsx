@@ -73,6 +73,7 @@ interface IncentiveCampaign {
   campaignType?: string;
   aprCap?: number | null;
   rewardTokenIconUrl?: string;
+  rewardTokenSymbol?: string;
   positionCap?: number;
 }
 
@@ -142,14 +143,42 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
 
   const renderCampaignMessage = (message: unknown, keyPrefix: string) => {
     if (!message) return null;
-    const text = typeof message === 'string'
-      ? message
-      : JSON.stringify(message);
-    if (!text) return null;
+    let resolvedMessage: string | Record<string, unknown> | unknown[] | undefined;
+    if (typeof message === 'string') {
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed)) {
+          resolvedMessage = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          resolvedMessage = parsed as Record<string, unknown>;
+        } else {
+          resolvedMessage = message;
+        }
+      } catch { /* not JSON */ }
+      if (!resolvedMessage) resolvedMessage = message;
+    } else {
+      resolvedMessage = message as Record<string, unknown> | unknown[];
+    }
+    const lines = getMessageLines(resolvedMessage);
+    if (lines.length === 0) return null;
     return (
-      <p key={`${keyPrefix}-msg`} className="ds-tooltip-body text-zinc-400 mt-[var(--ds-space-0-5)]">
-        {text}
-      </p>
+      <ul key={`${keyPrefix}-msg`} className="mt-[var(--ds-space-0-5)] space-y-[var(--ds-space-0-5)] ds-tooltip-body text-zinc-400">
+        {lines.map((line, lineIndex) => (
+          <li key={`${keyPrefix}-msg-line-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+            <span className="mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0" />
+            <span className="min-w-0 break-words">
+              {line.emphasizePrefix && line.text.includes(':') ? (
+                <>
+                  <span className="font-semibold">{line.text.split(':')[0]}:</span>
+                  {line.text.slice(line.text.indexOf(':') + 1)}
+                </>
+              ) : (
+                line.text
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
     );
   };
 
@@ -326,7 +355,18 @@ const IncentiveTooltip = ({
     if (!message) return [];
     const filterLines = (lines: MessageLine[]) =>
       lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
-    if (typeof message === 'string') return filterLines([{ text: message }]);
+    if (typeof message === 'string') {
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed)) {
+          return getMessageLines(parsed);
+        }
+        if (parsed && typeof parsed === 'object') {
+          return getMessageLines(parsed as Record<string, unknown>);
+        }
+      } catch { /* not JSON, treat as plain string */ }
+      return filterLines([{ text: message }]);
+    }
     if (Array.isArray(message)) {
       return filterLines(
         message
@@ -439,7 +479,7 @@ const IncentiveTooltip = ({
             dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
             startDate: breakdown.campaignStartedAt,
             endDate: breakdown.campaignEndedAt,
-            message: group.message,
+            message: breakdown.message ?? group.message,
             sourceType: 'ACI',
             campaignType: breakdown.campaignType,
             ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
@@ -455,7 +495,6 @@ const IncentiveTooltip = ({
           bgColor: 'bg-muted/60',
           sourceType: 'ACI',
           link: group.link,
-          message: group.message,
           dateRange: meritCampaigns[0]?.dateRange,
           campaigns: meritCampaigns,
         });
@@ -481,7 +520,6 @@ const IncentiveTooltip = ({
               dateRange: formatDateRange(startDate, endDate) || undefined,
               startDate,
               endDate,
-              message,
               campaignId: breakdown.campaignId,
               sourceType: 'Brevis' as const,
               campaignType: breakdown.campaignType ?? brevis.campaignType,
@@ -533,21 +571,21 @@ const IncentiveTooltip = ({
               message: opportunity.message,
               dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-              campaigns: [{
-                 value: included ? displayValue : 0,
-                 rawValue: displayValue,
-                 whitelistOnly,
-                 included,
-                 dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-                 startDate: breakdown.campaignStartedAt,
-                 endDate: breakdown.campaignEndedAt,
-                 message: opportunity.message,
-                 campaignId: breakdown.campaignId,
-                 sourceType: 'Merkl',
-            campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
-                  aprCap: breakdown.aprCap,
-                  rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-               }],
+                 campaigns: [{
+                   value: included ? displayValue : 0,
+                   rawValue: displayValue,
+                   whitelistOnly,
+                   included,
+                   dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+                   startDate: breakdown.campaignStartedAt,
+                   endDate: breakdown.campaignEndedAt,
+                   campaignId: breakdown.campaignId,
+                   sourceType: 'Merkl',
+              campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
+                    aprCap: breakdown.aprCap,
+                    rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
+                    rewardTokenSymbol: breakdown.rewardTokenSymbol,
+                 }],
             });
           }
         });
@@ -641,12 +679,42 @@ const IncentiveTooltip = ({
     return null;
   };
 
-  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string) => {
+  const renderCampaignMessageLines = (message: IncentiveCampaign['message'], keyPrefix: string, accentClass: string) => {
+    const lines = getMessageLines(message);
+    if (lines.length === 0) return null;
+    return (
+      <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+        {lines.map((line, lineIndex) => (
+          <li key={`${keyPrefix}-bd-msg-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+            <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${accentClass}`} />
+            <span className="min-w-0 break-words">{renderMessageLine(line, accentClass)}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string, showApr?: boolean) => {
     const dateRangeText = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : '';
     return (
       <>
         {dateRangeText && (
-          <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>{dateRangeText}</p>
+          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] flex items-start justify-between gap-[var(--ds-space-2)] ${campaignAccentClass}`}>
+            <span className="break-words min-w-0">{dateRangeText}</span>
+            {showApr && (
+              <span className="flex items-center gap-0.5 whitespace-nowrap flex-shrink-0">
+                {campaign.rewardTokenIconUrl && (
+                  <img
+                    src={campaign.rewardTokenIconUrl}
+                    alt=""
+                    className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                    loading="lazy"
+                  />
+                )}
+                <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>{formatPercent(campaign.value)}</span>
+              </span>
+            )}
+          </div>
         )}
         {renderCampaignTypeDescription(campaign)}
         {campaign.positionCap != null && campaign.positionCap > 0 && (
@@ -654,13 +722,14 @@ const IncentiveTooltip = ({
             Position cap {formatUsd(campaign.positionCap)}
           </p>
         )}
+        {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}
       </>
     );
   };
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
-      source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
+      source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, sourceType: source.sourceType }];
     const campaigns = [...campaignsBase].sort((a, b) => {
       const aExcluded = a.whitelistOnly === true && a.included === false;
       const bExcluded = b.whitelistOnly === true && b.included === false;
@@ -741,7 +810,7 @@ const IncentiveTooltip = ({
                   </span>
                 </label>
               )}
-              {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-${campaignIndex}`)}
+              {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-${campaignIndex}`, true)}
             </div>
           );
         })}
