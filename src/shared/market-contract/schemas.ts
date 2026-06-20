@@ -31,7 +31,7 @@ export const MeritCampaignGroupSchema = z.object({
   link: z.string().optional(),
   name: z.string().optional(),
   message: IncentiveMessageSchema.optional(),
-  breakdowns: z.array(MeritCampaignBreakdownSchema).optional().default([]),
+  breakdowns: z.array(MeritCampaignBreakdownSchema),
 });
 
 export const MerklCampaignBreakdownSchema = z.object({
