@@ -283,7 +283,6 @@ export default function ReservesTableDesktopHeader({
                 : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
-            <span>Price</span>
             {activeSortColumn === 'price' ? (
               priceSortOrder === 'desc' ? (
                 <ArrowDown className="w-3 h-3" />
@@ -293,6 +292,7 @@ export default function ReservesTableDesktopHeader({
             ) : (
               <ArrowDown className="w-3 h-3 opacity-50" />
             )}
+            <span>Price</span>
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right hidden md:table-cell">
@@ -303,7 +303,6 @@ export default function ReservesTableDesktopHeader({
               activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
-            <span>Size</span>
             {activeSortColumn === 'size' ? (
               sizeSortOrder === 'desc' ? (
                 <ArrowDown className="w-3 h-3" />
@@ -313,6 +312,7 @@ export default function ReservesTableDesktopHeader({
             ) : (
               <ArrowDown className="w-3 h-3 opacity-50" />
             )}
+            <span>Size</span>
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right hidden md:table-cell">
@@ -323,7 +323,6 @@ export default function ReservesTableDesktopHeader({
               activeSortColumn === 'util' ? 'ds-text-purple-600 font-bold scale-105' : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
-            <span>Liquidity</span>
             {activeSortColumn === 'util' ? (
               utilSortOrder === 'desc' ? (
                 <ArrowDown className="w-3 h-3" />
@@ -333,6 +332,7 @@ export default function ReservesTableDesktopHeader({
             ) : (
               <ArrowDown className="w-3 h-3 opacity-50" />
             )}
+            <span>Liquidity</span>
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right">
