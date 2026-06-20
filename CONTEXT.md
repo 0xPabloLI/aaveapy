@@ -76,8 +76,16 @@ _Avoid_: 把 AMOUNT 变体映射为 VALUE 变体（语义丢失）、把 `distri
 _Avoid_: 在 API 响应或前端使用 `distributionType`（原始值）、`rawDistributionType`（内部暂存）
 
 **Merit Program**:
-Aave 官方的 Merit 激励项目。`campaignType` = `DUTCH_AUCTION`（与 Merkl 统一命名）；self auth 部分有 position cap。Position cap 与 Brevis `positionCap` 同术语。
+Aave 官方的 Merit 激励项目。`campaignType` = `DUTCH_AUCTION`（与 Merkl 统一命名）；self auth 部分有 position cap。Position cap 与 Brevis `positionCap` 同术语。Forecast 参数名统一为 `positionCapUsd`（原 `selfPositionCapUsd`，已重命名对齐 Brevis）。
 _Avoid_: Merit Reward, Merit Incentive, deposit ceiling, self cap（用 position cap 代替）
+
+**IncentiveSources**:
+统一 side→source accessor 函数 `getIncentiveSources(reserve, side)` 的返回类型。将 28 处 `side === 'supply' ? reserve.xxxSupplys : reserve.xxxBorrows` 模式收敛为一个调用点。新增第 4 种 source 时只需改 1 处而非 28 处。
+_Avoid_: 在消费端直接写 `side === 'supply' ? reserve.xxxSupplys : reserve.xxxBorrows`（用 `getIncentiveSources` 代替）
+
+**ForecastableBreakdown**:
+`BaseCampaignBreakdown` 的子类型，包含 forecast 相关字段（`campaignType`/`aprCap`/`latestTvl`/`totalBudget`/`plannedDaily`/`budgetBoundMode`/`pointsPerThousandUsd`/`whitelistOnly`）。`MerklCampaignBreakdown`、`BrevisCampaignBreakdown`、`MeritCampaignBreakdown` 均继承自此类型，消除重复字段声明。Brevis 不使用 `plannedDaily`/`budgetBoundMode`/`whitelistOnly` 等 Merkl 特有字段，但类型层面作为 optional 字段不造成运行时问题。
+_Avoid_: 在 Brevis/Merit breakdown 中独立声明 `campaignType`/`aprCap`/`latestTvl`/`totalBudget`（应继承自 `ForecastableBreakdown`）
 
 **Brevis Incentive**:
 Brevis 协议分发的激励。有 per-user position cap 模型。`campaignType` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE`；`rewardTokenSymbol` 从 gRPC `RewardToken.symbol` 提取。
