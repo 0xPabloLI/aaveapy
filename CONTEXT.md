@@ -77,7 +77,8 @@ _Avoid_: 在 API 响应或前端使用 `distributionType`（原始值）、`rawD
 
 **Merit Program**:
 Aave 官方的 Merit 激励项目。`campaignType` = `DUTCH_AUCTION`（与 Merkl 统一命名）；self auth 部分有 position cap。Position cap 与 Brevis `positionCap` 同术语。Forecast 参数名统一为 `positionCapUsd`（原 `selfPositionCapUsd`，已重命名对齐 Brevis）。
-_Avoid_: Merit Reward, Merit Incentive, deposit ceiling, self cap（用 position cap 代替）
+Forecast 估算有两种模式：`TVL_DILUTION`（基于 anchor TVL 或 last round reward 推算隐含 TVL，deposit 稀释后算 APR）和 `CURRENT_RATE`（无 TVL 数据时直接用当前 APR 作为估算）。Position cap 不在 forecast 内部处理，而是作为正交叠加层由 `applyPositionCapToForecastResult` 后处理。
+_Avoid_: Merit Reward, Merit Incentive, deposit ceiling, self cap（用 position cap 代替）、`MERIT_BASE`/`MERIT_SELF_CAP` mode（已移除，position cap 现在是正交叠加层）
 
 **IncentiveSources**:
 统一 side→source accessor 函数 `getIncentiveSources(reserve, side)` 的返回类型。将 28 处 `side === 'supply' ? reserve.xxxSupplys : reserve.xxxBorrows` 模式收敛为一个调用点。新增第 4 种 source 时只需改 1 处而非 28 处。

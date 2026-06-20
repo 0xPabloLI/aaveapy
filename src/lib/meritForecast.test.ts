@@ -3,12 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { forecastMeritApr, getMeritCampaignCycleDays } from './meritForecast';
 
 describe('forecastMeritApr', () => {
-  it('uses anchor reserve TVL × APR when anchorTvlUsd is set (before last round)', () => {
+  it('uses anchor reserve TVL × APR when anchorTvlUsd is set', () => {
     const anchor = 9_000_000;
     const aprPct = 4;
     const deposit = 100_000;
     const result = forecastMeritApr({
-      mode: 'MERIT_BASE',
       depositUsd: deposit,
       forecastAprPercent: aprPct,
       startDate: 'Thu Feb 26 2026',
@@ -20,7 +19,7 @@ describe('forecastMeritApr', () => {
     expect(result).not.toBeNull();
     expect(result).toMatchObject({
       unavailable: false,
-      estimateKind: 'MERIT_BASE',
+      estimateKind: 'TVL_DILUTION',
       meritEstimateSource: 'reserve_tvl',
       anchorTvlUsd: anchor,
     });
@@ -29,9 +28,22 @@ describe('forecastMeritApr', () => {
     expect(result?.apr).toBeCloseTo((daily * 365) / hyp, 10);
   });
 
-  it('falls back to current APR when latest-round reward data is missing', () => {
+  it('uses lastRoundRewardUsd for TVL dilution when no anchorTvlUsd', () => {
     const result = forecastMeritApr({
-      mode: 'MERIT_BASE',
+      depositUsd: 100_000,
+      forecastAprPercent: 4,
+      startDate: 'Thu Feb 26 2026',
+      endDate: 'Thu Mar 12 2026',
+      lastRoundRewardUsd: 10_000,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.estimateKind).toBe('TVL_DILUTION');
+    expect(result?.meritEstimateSource).toBe('last_round');
+  });
+
+  it('falls back to current APR when no TVL data available', () => {
+    const result = forecastMeritApr({
       depositUsd: 100_000,
       forecastAprPercent: 4.084439890516138,
       startDate: 'Thu Feb 26 2026',
@@ -41,36 +53,25 @@ describe('forecastMeritApr', () => {
     expect(result).not.toBeNull();
     expect(result).toMatchObject({
       unavailable: false,
-      estimateKind: 'MERIT_CURRENT_RATE',
+      estimateKind: 'CURRENT_RATE',
       usesCurrentRateFallback: true,
     });
     expect(result?.apr).toBeCloseTo(0.04084439890516138, 12);
     expect(result?.dailyRewards).toBeCloseTo((100_000 * 0.04084439890516138) / 365, 10);
   });
 
-  it('scales self-auth APR by the eligible cap when latest-round reward data is missing', () => {
+  it('returns full APR without positionCap clip (positionCap handled by caller)', () => {
     const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
-      forecastAprPercent: 4.084439890516138,
-      positionCapUsd: 1000,
+      forecastAprPercent: 4,
     });
 
     expect(result).not.toBeNull();
-    expect(result).toMatchObject({
-      unavailable: false,
-      estimateKind: 'MERIT_CURRENT_RATE',
-      usesCurrentRateFallback: true,
-      positionCapUsd: 1000,
-      eligibleUsd: 1000,
-    });
-    expect(result?.apr).toBeCloseTo(0.04084439890516138, 12);
-    expect(result?.dailyRewards).toBeCloseTo((1000 * 0.04084439890516138) / 365, 10);
+    expect(result?.apr).toBeCloseTo(4 / 100, 10);
   });
 
   it('returns null for zero deposit', () => {
     const result = forecastMeritApr({
-      mode: 'MERIT_BASE',
       depositUsd: 0,
       forecastAprPercent: 4,
     });
@@ -79,7 +80,6 @@ describe('forecastMeritApr', () => {
 
   it('returns null for negative deposit', () => {
     const result = forecastMeritApr({
-      mode: 'MERIT_BASE',
       depositUsd: -1000,
       forecastAprPercent: 4,
     });
@@ -88,113 +88,10 @@ describe('forecastMeritApr', () => {
 
   it('returns null for zero APR', () => {
     const result = forecastMeritApr({
-      mode: 'MERIT_BASE',
       depositUsd: 100_000,
       forecastAprPercent: 0,
     });
     expect(result).toBeNull();
-  });
-
-  it('returns null for MERIT_SELF_CAP with zero positionCapUsd', () => {
-    const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 100_000,
-      forecastAprPercent: 4,
-      positionCapUsd: 0,
-    });
-    expect(result).toBeNull();
-  });
-
-  it('clamps eligible deposit to positionCapUsd when deposit exceeds cap', () => {
-    const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 100_000,
-      forecastAprPercent: 4,
-      positionCapUsd: 1000,
-    });
-    expect(result).not.toBeNull();
-    expect(result?.eligibleUsd).toBe(1000);
-    expect(result?.positionCapUsd).toBe(1000);
-  });
-
-  it('uses anchorTvlUsd for MERIT_SELF_CAP base estimate', () => {
-    const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 100_000,
-      forecastAprPercent: 4,
-      positionCapUsd: 1000,
-      baseAprPercent: 3,
-      anchorTvlUsd: 5_000_000,
-    });
-    expect(result).not.toBeNull();
-    expect(result?.estimateKind).toBe('MERIT_SELF_CAP');
-    expect(result?.meritEstimateSource).toBe('reserve_tvl');
-  });
-
-  it('BUG REPRO: same delta + same cap but different existing position produces same unscaled APR (cap applied by caller)', () => {
-    const aprPct = 4;
-    const selfCap = 1000;
-
-    const withNoPosition = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 1000,
-      forecastAprPercent: aprPct,
-      positionCapUsd: selfCap,
-    });
-
-    const withExistingPosition = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 1000,
-      forecastAprPercent: aprPct,
-      positionCapUsd: selfCap,
-      totalPositionUsd: 2000,
-    });
-
-    const withLargerPosition = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 2000,
-      forecastAprPercent: aprPct,
-      positionCapUsd: selfCap,
-      totalPositionUsd: 3000,
-    });
-
-    expect(withNoPosition).not.toBeNull();
-    expect(withExistingPosition).not.toBeNull();
-    expect(withLargerPosition).not.toBeNull();
-
-    expect(withNoPosition!.apr).toBeCloseTo(aprPct / 100, 10);
-    expect(withExistingPosition!.apr).toBeCloseTo(aprPct / 100, 10);
-    expect(withLargerPosition!.apr).toBeCloseTo(aprPct / 100, 10);
-
-    expect(withNoPosition!.eligibleUsd).toBe(1000);
-    expect(withExistingPosition!.eligibleUsd).toBe(1000);
-    expect(withLargerPosition!.eligibleUsd).toBe(1000);
-  });
-
-  it('with totalPositionUsd, eligible deposit uses total position for cap check (cap applied by caller)', () => {
-    const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 1000,
-      forecastAprPercent: 4,
-      positionCapUsd: 1000,
-      totalPositionUsd: 2000,
-    });
-    expect(result).not.toBeNull();
-    expect(result!.eligibleUsd).toBe(1000);
-    expect(result!.apr).toBeCloseTo(4 / 100, 10);
-  });
-
-  it('totalPositionUsd within cap returns unscaled APR (cap not binding)', () => {
-    const result = forecastMeritApr({
-      mode: 'MERIT_SELF_CAP',
-      depositUsd: 500,
-      forecastAprPercent: 4,
-      positionCapUsd: 1000,
-      totalPositionUsd: 800,
-    });
-    expect(result).not.toBeNull();
-    expect(result!.eligibleUsd).toBe(800);
-    expect(result!.apr).toBeCloseTo(4 / 100, 10);
   });
 });
 

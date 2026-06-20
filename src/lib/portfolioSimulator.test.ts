@@ -827,7 +827,7 @@ describe('simulatePortfolioFromEntries', () => {
       expect(supplyResult.incentivePercent).toBeGreaterThan(0);
     });
 
-    it('wallet-only with self-cap Merit: incentiveMetric.delta shows wallet dilution (AAV-771)', () => {
+    it('wallet-only with position cap Merit: incentiveMetric.delta shows wallet dilution (AAV-771)', () => {
       const reserveId = 'r-selfcap';
       const now = new Date();
       const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();

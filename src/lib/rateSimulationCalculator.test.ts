@@ -341,7 +341,7 @@ describe('totalSupplyUsd / totalBorrowUsd', () => {
   });
 });
 
-const MERIT_SELF_CAP_RESERVE: ReserveWithSpread = {
+const MERIT_POSITION_CAP_RESERVE: ReserveWithSpread = {
   ...BASE_RESERVE,
   meritSupplys: [
     {
@@ -389,11 +389,11 @@ const MERIT_SELF_CAP_RESERVE: ReserveWithSpread = {
   ],
 };
 
-describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after sources', () => {
-  it('Bug 2: campaign detail self-cap after should be diluted when total position exceeds cap', () => {
+describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & after sources', () => {
+  it('Bug 2: campaign detail position cap after should be diluted when total position exceeds cap', () => {
     // Without principal: depositUsd=500, positionForCap=500, cap=1000 → no dilution
     const withoutPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -401,7 +401,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     // With principal: totalPositionUsd=1500, depositUsd=500, cap=1000
     // eligible=min(1500,1000)=1000, dilution=1000/1500 ≈ 0.67
     const withPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -421,15 +421,15 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(selfCapRowWithPrincipal!.after!).toBeLessThan(selfCapRowNoPrincipal!.after!);
   });
 
-  it('Bug 3: supply after sources merit should reflect self-cap dilution with totalSupplyUsd', () => {
+  it('Bug 3: supply after sources merit should reflect position cap dilution with totalSupplyUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
     });
     const withPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -443,7 +443,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('Bug AAV-761: supply incentive campaign detail after=null (not 0) when only borrow has input', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
@@ -484,7 +484,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('Bug AAV-761: borrow incentive campaign detail after=null (not 0) when only supply has input', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
@@ -524,7 +524,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-770 regression fix: supply.sources.*.after is not null when only borrow has input (cross-side preservation)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
@@ -537,7 +537,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-770 regression fix: borrow.sources.*.after is not null when only supply has input (cross-side preservation)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
@@ -550,7 +550,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-770 regression fix: supply.afterIncentive is null when only borrow has input (no false-zero)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
@@ -565,7 +565,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-770 regression fix: borrow.afterIncentive is null when only supply has input (no false-zero)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
@@ -579,7 +579,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('cross-side: supply.afterNative is not null when only borrow has input (no supply change)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
@@ -596,7 +596,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('cross-side: borrow.afterNative is not null when only supply has input (cross-side influence preserved)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
@@ -613,7 +613,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-761 layer-3: supply delta is null when only borrow has input (hasInput=false side)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '500',
@@ -627,7 +627,7 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
 
   it('AAV-761 layer-3: borrow delta is null when only supply has input (hasInput=false side)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '1000',
@@ -639,13 +639,13 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(result.borrow.deltaTotal).toBeNull();
   });
 
-  it('single simulation: self-cap should NOT double-count when supplyInput used alone (no principal)', () => {
+  it('single simulation: position cap should NOT double-count when supplyInput used alone (no principal)', () => {
     // In single simulation mode, crossReservePositions stores the shared simulation input,
     // not a wallet position. totalSupplyUsd should NOT be passed.
     // This test guards against the regression where totalSupplyUsd = supplyInput
     // caused totalPositionUsd = 2× input (double-count) in merit self-cap dilution.
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -731,15 +731,15 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
     expect(withWalletSelf!.after!).toBeLessThan(noWalletSelf!.after!);
   });
 
-  it('Bug 4: borrow after sources merit should reflect self-cap dilution with totalBorrowUsd', () => {
+  it('Bug 4: borrow after sources merit should reflect position cap dilution with totalBorrowUsd', () => {
     const withoutPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '300',
     });
     const withPrincipal = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       borrowInput: '300',
@@ -752,20 +752,20 @@ describe('Bug 2-4: merit self-cap totalPositionUsd in campaign details & after s
   });
 });
 
-describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => {
-  // Fixture: MERIT_SELF_CAP_RESERVE has supply self-cap = $1,000 (from selfMessage)
-  it('current incentive should be diluted when wallet position exceeds self-cap', () => {
+describe('position cap dilution: buildIncentiveCurrent with wallet position', () => {
+  // Fixture: MERIT_POSITION_CAP_RESERVE has supply self-cap = $1,000 (from selfMessage)
+  it('current incentive should be diluted when wallet position exceeds position cap', () => {
     // Wallet=$1500 > self-cap=$1000 → dilution ratio = 1000/1500 ≈ 0.667
     // current incentive (with wallet) should be LOWER than undiluted headline rate
     const noWallet = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
     });
 
     // With wallet position that exceeds cap
     const withWallet = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       walletSupplyUsd: 1500,
@@ -782,7 +782,7 @@ describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => 
     // after = diluted(wallet+delta=2000) → ratio = 1000/2000 = 0.5
     // delta = after - current (should be the actual impact of adding $500)
     const withWalletAndDelta = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -804,7 +804,7 @@ describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => 
     // Simulates portfolio mode: wallet=1500, delta=500, cap=1000
     // Both current (wallet only) and after (wallet+delta) should be diluted
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -826,7 +826,7 @@ describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => 
   it('single simulation: current incentive should NOT be diluted (no wallet)', () => {
     // Single simulation has no wallet position, so current incentive should be undiluted
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -842,7 +842,7 @@ describe('self-cap dilution: buildIncentiveCurrent with wallet position', () => 
 describe('deltaIncentive shows dilution gap when hasInput=false but wallet exists', () => {
   it('deltaIncentive is null when no wallet position (no dilution)', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       // No supplyInput, no wallet — delta should be null
@@ -856,7 +856,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     // Wallet=$1500 > self-cap=$1000 → current is diluted
     // deltaIncentive should show the dilution gap (negative value)
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       walletSupplyUsd: 1500,
@@ -877,7 +877,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
 
   it('deltaIncentive for borrow side also shows dilution gap', () => {
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       walletBorrowUsd: 2000,
@@ -895,7 +895,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     // totalSupplyUsd=1500 > cap=1000 → after IS diluted (1000/1500)
     // deltaIncentive = diluted - headline < 0 (simulation dilution effect)
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',   // delta=$500
@@ -913,7 +913,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     // itself — $1,042 wallet vs $1,000 cap means only 1000/1042 gets incentive.
     // currentIncentive shows diluted rate, deltaIncentive shows wallet dilution gap.
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '0',     // no supply delta → hasInput=false
@@ -936,7 +936,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     // totalSupplyUsd = wallet(1500) + delta(500) = 2000
     // walletSupplyUsd should be derived as 2000 - 500 = 1500
     const result = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -947,7 +947,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     expect(result.supply.hasInput).toBe(true);
     // Wallet derivation should match explicit walletSupplyUsd=1500 result
     const withExplicitWallet = buildRateSimulationResult({
-      reserve: MERIT_SELF_CAP_RESERVE,
+      reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
       supplyInput: '500',
@@ -959,7 +959,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
   });
 });
 
-describe('AAV-916: buildMeritCampaignDetails self-cap capNote', () => {
+describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
   const merits = [
     {
       link: 'https://example.com',

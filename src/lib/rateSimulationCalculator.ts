@@ -264,7 +264,7 @@ export interface BuildRateSimulationResultParams {
   hubBorrowed?: string;
   /**
    * Total supply position in USD (wallet + delta) for accrual & cap dilution.
-   * Used as the principal in buildSupplyUsdAccrualSide and for Merit self-cap
+   * Used as the principal in buildSupplyUsdAccrualSide and for Merit position cap
    * dilution (eligibleDepositUsd = min(effectiveTotalPosition, cap)).
    *
    * This decouples "what moves the rate curve" (supplyInput = delta) from
@@ -282,12 +282,12 @@ export interface BuildRateSimulationResultParams {
    */
   totalBorrowUsd?: number;
   /**
-   * Wallet-only supply position (USD) for self-cap dilution in current incentive.
+   * Wallet-only supply position (USD) for position cap dilution in current incentive.
    * If not provided, derived from totalSupplyUsd - supplyInputUsd.
    */
   walletSupplyUsd?: number;
   /**
-   * Wallet-only borrow position (USD) for self-cap dilution in current incentive.
+   * Wallet-only borrow position (USD) for position cap dilution in current incentive.
    * If not provided, derived from totalBorrowUsd - borrowInputUsd.
    */
   walletBorrowUsd?: number;
@@ -302,8 +302,8 @@ export const buildIncentiveCurrent = (
   forecastStates: Record<string, MerklForecastWireItem> | undefined,
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
   /**
-   * Wallet-only position (USD) for self-cap dilution.
-   * When set, Merit self-cap campaigns are diluted based on wallet position,
+   * Wallet-only position (USD) for position cap dilution.
+   * When set, Merit position cap campaigns are diluted based on wallet position,
    * matching the semantics of buildIncentiveAfter (which uses wallet + delta).
    * When unset, raw selfApr from the API is used (no dilution).
    */
@@ -318,12 +318,12 @@ export const buildIncentiveCurrent = (
   const walletPositionUsd = side === 'supply' ? walletSupplyUsd : walletBorrowUsd;
 
   // Always use sumForecastMeritIncentiveApr for Merit — consistent calculation path.
-  // When walletPositionUsd is set, applies TVL-based forecast with self-cap dilution.
+  // When walletPositionUsd is set, applies TVL-based forecast with position cap dilution.
   // When unset, uses static headline rates (no forecast, no dilution).
   const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
 
   if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
-    // Wallet-based: apply self-cap dilution using totalPositionUsd, but
+    // Wallet-based: apply position cap dilution using totalPositionUsd, but
     // inputUsd=0 because wallet is an existing position — not a new deposit
     // that would dilute TVL.
     const meritPercent = sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd);
@@ -659,43 +659,30 @@ export const buildMeritCampaignDetails = (
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
 
       if (inputUsd > 0) {
-        if (positionCapUsd != null && positionCapUsd > 0) {
-          const fp = forecastMeritApr({
-            mode: 'MERIT_SELF_CAP',
-            depositUsd: inputUsd,
-            forecastAprPercent: baseAprPercent,
-            positionCapUsd,
-            startDate: breakdown.campaignStartedAt,
-            endDate: breakdown.campaignEndedAt,
-            anchorTvlUsd: meritAnchorTvlUsd,
-            totalPositionUsd,
-            baseAprPercent,
-          });
-          if (fp) {
+        const fp = forecastMeritApr({
+          depositUsd: inputUsd,
+          forecastAprPercent: baseAprPercent,
+          startDate: breakdown.campaignStartedAt,
+          endDate: breakdown.campaignEndedAt,
+          anchorTvlUsd: meritAnchorTvlUsd,
+        });
+        if (fp) {
+          const fullAfter = meritForecastAprToDisplay(fp.apr, isApy);
+          if (positionCapUsd != null && positionCapUsd > 0) {
             const capResult = applyPositionCapToForecastResult(
-              meritForecastAprToDisplay(fp.apr, isApy),
+              fullAfter,
               totalPositionUsd ?? inputUsd,
-              fp.positionCapUsd,
+              positionCapUsd,
             );
             baseAfter = capResult.aprPercent * eligibilityRatio;
             if (capResult.capNote) {
               ({ capNote, capWarning, capMetrics } = capResult);
             }
           } else {
-            baseAfter = baseCurrent;
+            baseAfter = fullAfter * eligibilityRatio;
           }
         } else {
-          const fp = forecastMeritApr({
-            mode: 'MERIT_BASE',
-            depositUsd: inputUsd,
-            forecastAprPercent: baseAprPercent,
-            startDate: breakdown.campaignStartedAt,
-            endDate: breakdown.campaignEndedAt,
-            anchorTvlUsd: meritAnchorTvlUsd,
-          });
-          if (fp) {
-            baseAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
-          }
+          baseAfter = baseCurrent;
         }
       } else if (hasAnyInput) {
         baseAfter = null;
@@ -1148,7 +1135,7 @@ export function buildRateSimulationResult({
   const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
   const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
 
-  // Wallet position for self-cap dilution in buildIncentiveCurrent.
+  // Wallet position for position cap dilution in buildIncentiveCurrent.
   // Priority: explicit wallet param > derived from totalSupplyUsd - delta.
   // In portfolio mode: totalSupplyUsd = wallet + delta, so wallet = total - delta.
   // Always derive wallet when totalSupplyUsd is available, regardless of hasInput.
