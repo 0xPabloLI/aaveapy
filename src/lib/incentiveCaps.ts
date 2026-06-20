@@ -159,6 +159,28 @@ export function applyPositionCapToForecastResult(
   return { aprPercent, ...fields };
 }
 
+export function appendNotes(
+  note: string | undefined,
+  crossReserveNote: string | null | undefined,
+  netNote: string | null | undefined,
+): string | undefined {
+  const parts: string[] = [];
+  if (note) parts.push(note);
+  if (crossReserveNote) parts.push(crossReserveNote);
+  if (netNote) parts.push(netNote);
+  return parts.length > 0 ? parts.join(' · ') : undefined;
+}
+
+export function checkForecastAvailability(
+  campaignType: string | undefined,
+  campaignId: string | undefined,
+  merged: unknown,
+  forecastStates: Record<string, unknown> | undefined,
+): boolean {
+  if (!campaignType) return false;
+  return merged == null || !forecastStates?.[String(campaignId)];
+}
+
 export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput): string | null {
   const { netUsd, grossUsd, sourceSide, offsetSymbols } = input;
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;

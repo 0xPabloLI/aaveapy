@@ -3,13 +3,8 @@ export type IncentiveMessage = string | IncentiveMessage[] | {
   [key: string]: IncentiveMessageScalar | IncentiveMessage;
 };
 
-export interface MeritCampaignBreakdown extends BaseCampaignBreakdown {
+export interface MeritCampaignBreakdown extends ForecastableBreakdown {
   campaignId: string;
-  campaignType?: string;
-  aprCap?: number | null;
-  rewardTokenSymbol?: string;
-  totalBudget?: number;
-  latestTvl?: number;
 }
 
 export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {
@@ -57,14 +52,8 @@ export interface MerklCampaignBreakdown extends ForecastableBreakdown {
 
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;
 
-export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
+export interface BrevisCampaignBreakdown extends ForecastableBreakdown {
   campaignId: string;
-  campaignType?: string;
-  aprCap?: number | null;
-  latestTvl?: number;
-  totalBudget?: number;
-  positionCap?: number;
-  rewardTokenSymbol?: string;
 }
 
 export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {

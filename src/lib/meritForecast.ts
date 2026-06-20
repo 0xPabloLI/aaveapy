@@ -19,7 +19,7 @@ export interface MeritForecastPreview {
   meritEstimateSource?: MeritEstimateSource;
   anchorTvlUsd?: number;
   lastRoundRewardUsd?: number;
-  selfPositionCapUsd?: number;
+  positionCapUsd?: number;
   eligibleUsd?: number;
   usesCurrentRateFallback?: boolean;
 }
@@ -32,7 +32,7 @@ interface ForecastMeritCampaignInput {
   endDate?: string;
   lastRoundRewardUsd?: number;
   anchorTvlUsd?: number;
-  selfPositionCapUsd?: number;
+  positionCapUsd?: number;
   baseAprPercent?: number;
   baseLastRoundRewardUsd?: number;
   totalPositionUsd?: number;
@@ -102,7 +102,7 @@ export function forecastMeritApr({
   endDate,
   lastRoundRewardUsd,
   anchorTvlUsd,
-  selfPositionCapUsd,
+  positionCapUsd,
   baseAprPercent,
   baseLastRoundRewardUsd,
   totalPositionUsd,
@@ -113,10 +113,10 @@ export function forecastMeritApr({
   if (aprPercent <= 0) return null;
 
   if (mode === 'MERIT_SELF_CAP') {
-    if (!Number.isFinite(selfPositionCapUsd) || selfPositionCapUsd! <= 0) return null;
+    if (!Number.isFinite(positionCapUsd) || positionCapUsd! <= 0) return null;
     const positionForCap = totalPositionUsd ?? depositUsd;
     if (positionForCap <= 0) return null;
-    const { eligibleUsd } = computePositionCapEligibility(positionForCap, selfPositionCapUsd!);
+    const { eligibleUsd } = computePositionCapEligibility(positionForCap, positionCapUsd!);
     if (eligibleUsd <= 0) return null;
 
     const latestRoundBaseApr = sanitizePercent(baseAprPercent);
@@ -156,7 +156,7 @@ export function forecastMeritApr({
               regime: 'PLANNED',
               isUnderDistributed: false,
               estimateKind: 'MERIT_SELF_CAP',
-              selfPositionCapUsd,
+              positionCapUsd,
               eligibleUsd: eligibleUsd,
               meritEstimateSource: usedReserveTvl ? 'reserve_tvl' : 'last_round',
               anchorTvlUsd: usedReserveTvl ? anchorTvlUsd : undefined,
@@ -174,7 +174,7 @@ export function forecastMeritApr({
       regime: 'PLANNED',
       isUnderDistributed: false,
       estimateKind: 'MERIT_CURRENT_RATE',
-      selfPositionCapUsd,
+      positionCapUsd,
       eligibleUsd,
       usesCurrentRateFallback: true,
     };
@@ -269,7 +269,7 @@ export function forecastMeritAprPercent(
           mode: 'MERIT_SELF_CAP',
           depositUsd,
           forecastAprPercent: aprPercent,
-          selfPositionCapUsd: positionCapUsd,
+          positionCapUsd: positionCapUsd,
           startDate: breakdown.campaignStartedAt,
           endDate: breakdown.campaignEndedAt,
           anchorTvlUsd,
@@ -278,10 +278,10 @@ export function forecastMeritAprPercent(
         const selfAfterPercent = selfForecast
           ? (() => {
               const unscaledPercent = selfForecast.apr * 100;
-              if (selfForecast.selfPositionCapUsd != null && selfForecast.selfPositionCapUsd > 0) {
+              if (selfForecast.positionCapUsd != null && selfForecast.positionCapUsd > 0) {
                 const positionForCap = totalPositionUsd ?? depositUsd;
                 if (positionForCap > 0) {
-                  return applyPositionCap(unscaledPercent, positionForCap, selfForecast.selfPositionCapUsd).aprPercent;
+                  return applyPositionCap(unscaledPercent, positionForCap, selfForecast.positionCapUsd).aprPercent;
                 }
               }
               return unscaledPercent;

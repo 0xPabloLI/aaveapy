@@ -34,6 +34,7 @@ import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
 import { getFirstActiveMeritLink } from '@/lib/merit';
 import { getFirstActiveMerklLink } from '@/lib/merkl';
+import { getIncentiveSources } from '@/lib/incentiveAggregation';
 
 interface SimulationSubRowProps {
   reserve: ReserveWithSpread;
@@ -244,13 +245,15 @@ const SimulationSubRow = ({
     borrowCapUsd !== null && currentBorrowedSizeUsd !== null && currentBorrowedSizeUsd > borrowCapUsd;
   const showBorrowCapWarning = (borrowCapExceeded || borrowCapBaseExceeded) && !borrowSideBlocked;
 
-  const supplyMeritLink = getFirstActiveMeritLink(reserve.meritSupplys);
-  const supplyMerklLink = getFirstActiveMerklLink(reserve.merklSupplys);
-  const supplyBrevisLink = getFirstActiveBrevisLink(reserve.brevisSupplys);
+  const supplySources = getIncentiveSources(reserve, 'supply');
+  const supplyMeritLink = getFirstActiveMeritLink(supplySources.merit);
+  const supplyMerklLink = getFirstActiveMerklLink(supplySources.merkl);
+  const supplyBrevisLink = getFirstActiveBrevisLink(supplySources.brevis);
 
-  const borrowMeritLink = getFirstActiveMeritLink(reserve.meritBorrows);
-  const borrowMerklLink = getFirstActiveMerklLink(reserve.merklBorrows);
-  const borrowBrevisLink = getFirstActiveBrevisLink(reserve.brevisBorrows);
+  const borrowSources = getIncentiveSources(reserve, 'borrow');
+  const borrowMeritLink = getFirstActiveMeritLink(borrowSources.merit);
+  const borrowMerklLink = getFirstActiveMerklLink(borrowSources.merkl);
+  const borrowBrevisLink = getFirstActiveBrevisLink(borrowSources.brevis);
 
   const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
   const supplyIncentiveSources: IncentiveSourceRow[] = [

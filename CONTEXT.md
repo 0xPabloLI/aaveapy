@@ -26,6 +26,17 @@ _Avoid_: Optimal Utilization
 
 ## Incentive Programs
 
+**Incentive Three-Level Hierarchy**:
+激励数据的三层结构，所有 source（Merit / Merkl / Brevis / Protocol）统一遵循：
+
+1. **Source** — 激励提供方（如 ACI/Merit/Brevis/Protocol）。Source 本身不携带数据，仅用于分组标识和图标/logo。
+2. **Opportunity** — 一个独立的激励机会，对应后端 API 的 `MeritCampaignGroup` / `MerklOpportunityGroup` / `BrevisIncentive`。每个 Opportunity 有独立的 `name`、`link`、`message`，下挂 1~N 个 Campaign。同一 token 可以有多个 Opportunity（不同 link = 不同 Opportunity）。Opportunity 级别的 `message` 描述该机会的通用规则（如 Merit 的 "Supply USDT" 和 "Self Authentication" 条目）。
+3. **Campaign** — Opportunity 内的一个子活动，对应后端的 `breakdown`（`MeritCampaignBreakdown` / `MerklCampaignBreakdown` / `BrevisCampaignBreakdown`）。每个 Campaign 有独立的 `campaignApr`、`campaignStartedAt`/`campaignEndedAt`、`campaignId`、`campaignType`，可选的 `positionCap`、`aprCap`。
+
+前端 `IncentiveSource` 接口 = Opportunity 层级（不是 Source 层级），`IncentiveSource.campaigns` = Campaign 层级。同名同 link 的 Opportunity 视为同一个（`groupIncentiveSources` 合并，后进覆盖先进）。
+
+_Avoid_: 把 `IncentiveSource` 当作 Source 层级（它是 Opportunity）；把 breakdown 级别叫做 "source"
+
 **Merkl Campaign**:
 Merkl 协议分发的激励活动。按 `campaignType`（= normalize 后的 Merkl `distributionType`）分四大类：
 

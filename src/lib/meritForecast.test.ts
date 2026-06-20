@@ -53,7 +53,7 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4.084439890516138,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
     });
 
     expect(result).not.toBeNull();
@@ -61,7 +61,7 @@ describe('forecastMeritApr', () => {
       unavailable: false,
       estimateKind: 'MERIT_CURRENT_RATE',
       usesCurrentRateFallback: true,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
       eligibleUsd: 1000,
     });
     expect(result?.apr).toBeCloseTo(0.04084439890516138, 12);
@@ -95,26 +95,26 @@ describe('forecastMeritApr', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null for MERIT_SELF_CAP with zero selfPositionCapUsd', () => {
+  it('returns null for MERIT_SELF_CAP with zero positionCapUsd', () => {
     const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
-      selfPositionCapUsd: 0,
+      positionCapUsd: 0,
     });
     expect(result).toBeNull();
   });
 
-  it('clamps eligible deposit to selfPositionCapUsd when deposit exceeds cap', () => {
+  it('clamps eligible deposit to positionCapUsd when deposit exceeds cap', () => {
     const result = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
     });
     expect(result).not.toBeNull();
     expect(result?.eligibleUsd).toBe(1000);
-    expect(result?.selfPositionCapUsd).toBe(1000);
+    expect(result?.positionCapUsd).toBe(1000);
   });
 
   it('uses anchorTvlUsd for MERIT_SELF_CAP base estimate', () => {
@@ -122,7 +122,7 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 100_000,
       forecastAprPercent: 4,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
       baseAprPercent: 3,
       anchorTvlUsd: 5_000_000,
     });
@@ -139,14 +139,14 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: aprPct,
-      selfPositionCapUsd: selfCap,
+      positionCapUsd: selfCap,
     });
 
     const withExistingPosition = forecastMeritApr({
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: aprPct,
-      selfPositionCapUsd: selfCap,
+      positionCapUsd: selfCap,
       totalPositionUsd: 2000,
     });
 
@@ -154,7 +154,7 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 2000,
       forecastAprPercent: aprPct,
-      selfPositionCapUsd: selfCap,
+      positionCapUsd: selfCap,
       totalPositionUsd: 3000,
     });
 
@@ -176,7 +176,7 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 1000,
       forecastAprPercent: 4,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
       totalPositionUsd: 2000,
     });
     expect(result).not.toBeNull();
@@ -189,7 +189,7 @@ describe('forecastMeritApr', () => {
       mode: 'MERIT_SELF_CAP',
       depositUsd: 500,
       forecastAprPercent: 4,
-      selfPositionCapUsd: 1000,
+      positionCapUsd: 1000,
       totalPositionUsd: 800,
     });
     expect(result).not.toBeNull();

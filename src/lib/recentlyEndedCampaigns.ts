@@ -1,4 +1,5 @@
 import { parseCampaignBoundaryMs } from './campaignGroups';
+import { getIncentiveSources } from './incentiveAggregation';
 import type { ReserveWithSpread } from '@/types/aave';
 
 export const DEFAULT_LOOKBACK_DAYS = 7;
@@ -40,7 +41,7 @@ export function collectRecentlyEndedCampaigns(
 ): RecentlyEndedSource[] {
   const sources: RecentlyEndedSource[] = [];
 
-  const meritList = supplyOrBorrow === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  const { merit: meritList, merkl: merklList, brevis: brevisList } = getIncentiveSources(reserve, supplyOrBorrow);
   if (meritList && Array.isArray(meritList)) {
     for (const group of meritList) {
       const breakdowns = group.breakdowns ?? [];
@@ -67,7 +68,6 @@ export function collectRecentlyEndedCampaigns(
     }
   }
 
-  const merklList = supplyOrBorrow === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   if (merklList && Array.isArray(merklList)) {
     for (const group of merklList) {
       if (!group.breakdowns?.length) continue;
@@ -94,7 +94,6 @@ export function collectRecentlyEndedCampaigns(
     }
   }
 
-  const brevisList = supplyOrBorrow === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   if (brevisList && Array.isArray(brevisList)) {
     for (const brevis of brevisList) {
       const brevisBreakdowns = brevis.breakdowns ?? [];

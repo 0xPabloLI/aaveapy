@@ -6,6 +6,8 @@ import {
   buildFixRewardCapEffect,
   capEffectToSimulationFields,
   applyPositionCapToForecastResult,
+  appendNotes,
+  checkForecastAvailability,
 } from './incentiveCaps';
 
 describe('capEffectToSimulationFields', () => {
@@ -155,5 +157,63 @@ describe('applyPositionCapToForecastResult', () => {
       isCombineCap: true,
     });
     expect(result.capMetrics?.isCombineCap).toBe(true);
+  });
+});
+
+describe('appendNotes', () => {
+  it('returns undefined when all notes are empty', () => {
+    expect(appendNotes(undefined, null, null)).toBeUndefined();
+  });
+
+  it('returns single note', () => {
+    expect(appendNotes('cap note', null, null)).toBe('cap note');
+  });
+
+  it('joins note + crossReserveNote with middle dot', () => {
+    expect(appendNotes('cap', 'cross', null)).toBe('cap · cross');
+  });
+
+  it('joins all three notes with middle dot', () => {
+    expect(appendNotes('cap', 'cross', 'net')).toBe('cap · cross · net');
+  });
+
+  it('handles string crossReserveNote', () => {
+    expect(appendNotes(undefined, 'cross', null)).toBe('cross');
+  });
+});
+
+describe('checkForecastAvailability', () => {
+  it('returns false when campaignType is undefined', () => {
+    expect(checkForecastAvailability(undefined, 'camp-1', null, {})).toBe(false);
+  });
+
+  it('returns false when campaignType is empty string', () => {
+    expect(checkForecastAvailability('', 'camp-1', null, {})).toBe(false);
+  });
+
+  it('returns true when merged is null and campaignType is forecast-requiring', () => {
+    expect(checkForecastAvailability('FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', 'camp-1', null, {})).toBe(true);
+  });
+
+  it('returns false when merged has valid forecastState', () => {
+    expect(checkForecastAvailability(
+      'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      'camp-1',
+      { apr: 5 },
+      { 'camp-1': { apr: 5 } },
+    )).toBe(false);
+  });
+
+  it('returns true for DUTCH_AUCTION when merged is null', () => {
+    expect(checkForecastAvailability('DUTCH_AUCTION', 'camp-1', null, {})).toBe(true);
+  });
+
+  it('returns false for DUTCH_AUCTION when merged has forecastState', () => {
+    expect(checkForecastAvailability(
+      'DUTCH_AUCTION',
+      'camp-1',
+      { apr: 5 },
+      { 'camp-1': { apr: 5 } },
+    )).toBe(false);
   });
 });

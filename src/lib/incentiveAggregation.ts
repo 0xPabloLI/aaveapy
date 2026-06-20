@@ -25,6 +25,25 @@ export interface IncentiveCalculationOptions {
   pointRateMap?: PointRateMap;
 }
 
+export interface IncentiveSources {
+  protocol?: number[];
+  merit?: MeritCampaignGroup[];
+  merkl?: MerklOpportunityGroup[];
+  brevis?: BrevisIncentive[];
+}
+
+export function getIncentiveSources(
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+): IncentiveSources {
+  return {
+    protocol: side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives,
+    merit: side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows,
+    merkl: side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows,
+    brevis: side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows,
+  };
+}
+
 const sumNumberArray = (arr?: number[]): number => {
   if (!arr || !Array.isArray(arr)) return 0;
   return arr.reduce((sum, val) => {
@@ -180,10 +199,7 @@ export function getReserveIncentiveValues(
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): { apr: number; apy: number } {
-  const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
-  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-  const merklOpportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-  const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
+  const { protocol: protocolIncentives, merit: meritGroups, merkl: merklOpportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, side);
 
   return {
     apr: calculateTotalIncentiveApr(
@@ -212,12 +228,11 @@ export function reserveHasIncentiveTooltipSources(
   tydroPointToUsdRate: number,
   pointRateMap?: PointRateMap,
 ): boolean {
-  const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+  const { protocol: protocolIncentives, merit: meritGroups, merkl: opportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, side);
   if (protocolIncentives && protocolIncentives.length > 0) {
     return true;
   }
 
-  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   if (meritGroups?.length) {
     const meritApr = sumActiveCampaignBreakdownValues(meritGroups, {
       getBreakdowns: (group) => group.breakdowns,
@@ -229,7 +244,6 @@ export function reserveHasIncentiveTooltipSources(
     if (meritApr > 0) return true;
   }
 
-  const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   if (brevisIncentives?.length) {
     for (const brevis of brevisIncentives) {
       const resolved = getBrevisResolvedBreakdown(brevis);
@@ -239,7 +253,6 @@ export function reserveHasIncentiveTooltipSources(
     }
   }
 
-  const opportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   if (opportunities?.length) {
     for (const opportunity of opportunities) {
       for (const breakdown of opportunity.breakdowns ?? []) {

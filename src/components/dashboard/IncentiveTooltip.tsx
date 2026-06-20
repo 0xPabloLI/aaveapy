@@ -22,6 +22,7 @@ import {
   getBrevisCampaignEndedAt,
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
+import { getIncentiveSources } from '@/lib/incentiveAggregation';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { collectRecentlyEndedCampaigns, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
@@ -400,11 +401,11 @@ const IncentiveTooltip = ({
   }, [position.x, position.y, triggerCenterX, type]);
 
   // Get detailed incentive sources (unified layout)
-  const getIncentiveSources = (): IncentiveSource[] => {
+  const buildIncentiveSources = (): IncentiveSource[] => {
     const sources: IncentiveSource[] = [];
 
     // Protocol incentives (number array)
-    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+    const { protocol: protocolIncentives, merit: meritGroups, merkl: opportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, type);
     if (protocolIncentives && Array.isArray(protocolIncentives) && protocolIncentives.length > 0) {
       const totalProtocol = protocolIncentives.reduce((sum, apr) => {
         if (!isNaN(apr) && apr >= 0) {
@@ -425,7 +426,6 @@ const IncentiveTooltip = ({
     }
 
     // Merit incentives (MeritCampaignGroup array)
-    const meritGroups: MeritCampaignGroup[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
     if (meritGroups && Array.isArray(meritGroups)) {
       meritGroups.forEach((group) => {
         const breakdowns = group.breakdowns ?? [];
@@ -463,9 +463,6 @@ const IncentiveTooltip = ({
     }
 
     // Brevis incentives (array)
-    const brevisIncentives: BrevisIncentive[] | undefined =
-      type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
-
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
         const name = getBrevisDisplayLabel(brevis, 'Brevis Incentive');
@@ -511,7 +508,6 @@ const IncentiveTooltip = ({
     }
 
     // Merkl incentives (use breakdowns for date range)
-    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
     if (opportunities && Array.isArray(opportunities)) {
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
@@ -562,7 +558,7 @@ const IncentiveTooltip = ({
   };
 
 
-  const incentiveSources = getIncentiveSources();
+  const incentiveSources = buildIncentiveSources();
   const orderedIncentiveSources = useMemo(() => {
     const sourcePriority = (source: IncentiveSource): number => {
       const campaigns = source.campaigns ?? [];
