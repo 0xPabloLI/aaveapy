@@ -199,7 +199,7 @@ describe('IncentiveTooltip', () => {
       expect(container.innerHTML).toContain('Merit Campaign');
     });
 
-    it('renders base/self suffix for multi-breakdown Merit groups', () => {
+    it('renders multi-breakdown Merit group as one source with multiple campaign cards', () => {
       const reserveWithMerit: ReserveWithSpread = {
         ...mockReserve,
         meritSupplys: [{
@@ -213,8 +213,10 @@ describe('IncentiveTooltip', () => {
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
-      expect(container.innerHTML).toContain('Supply USDT (base)');
-      expect(container.innerHTML).toContain('Supply USDT (self)');
+      expect(container.innerHTML).toContain('Supply USDT');
+      expect(container.textContent).toContain('7.73%');
+      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('Earn extra rewards');
     });
 
     it('renders Merkl incentives when merklSupplys exist', () => {

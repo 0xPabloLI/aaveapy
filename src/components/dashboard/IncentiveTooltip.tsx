@@ -432,32 +432,32 @@ const IncentiveTooltip = ({
         const activeBreakdowns = breakdowns.filter((b) => isCampaignActive(b.campaignStartedAt, b.campaignEndedAt));
         if (activeBreakdowns.length === 0) return;
 
-        activeBreakdowns.forEach((breakdown) => {
+        const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = activeBreakdowns.map((breakdown, bdIndex) => {
           const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
-          const baseName = group.name || 'Merit Incentive';
-          const suffix = activeBreakdowns.length > 1
-            ? breakdown.campaignId.endsWith('-self') ? ' (self)' : ' (base)'
-            : '';
-          sources.push({
-            name: `${baseName}${suffix}`,
+          return {
             value,
-            color: 'text-foreground',
-            bgColor: 'bg-muted/60',
-            sourceType: 'ACI',
-            link: group.link,
-            message: group.message,
             dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-            campaigns: [{
-              value,
-              dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-              startDate: breakdown.campaignStartedAt,
-              endDate: breakdown.campaignEndedAt,
-              message: group.message,
-              sourceType: 'ACI',
-              campaignType: breakdown.campaignType,
-              ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
-            }],
-          });
+            startDate: breakdown.campaignStartedAt,
+            endDate: breakdown.campaignEndedAt,
+            message: group.message,
+            sourceType: 'ACI',
+            campaignType: breakdown.campaignType,
+            ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
+          };
+        });
+
+        const totalValue = meritCampaigns.reduce((sum, c) => sum + c.value, 0);
+
+        sources.push({
+          name: group.name || 'Merit Incentive',
+          value: totalValue,
+          color: 'text-foreground',
+          bgColor: 'bg-muted/60',
+          sourceType: 'ACI',
+          link: group.link,
+          message: group.message,
+          dateRange: meritCampaigns[0]?.dateRange,
+          campaigns: meritCampaigns,
         });
       });
     }
@@ -646,7 +646,6 @@ const IncentiveTooltip = ({
   };
 
   const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string) => {
-    const messageLines = getMessageLines(campaign.message);
     const dateRangeText = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : '';
     return (
       <>
@@ -658,16 +657,6 @@ const IncentiveTooltip = ({
           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
             Position cap {formatUsd(campaign.positionCap)}
           </p>
-        )}
-        {messageLines.length > 0 && (
-          <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-            {messageLines.map((line, lineIndex) => (
-              <li key={`${keyPrefix}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
-                <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
-              </li>
-            ))}
-          </ul>
         )}
       </>
     );
@@ -682,6 +671,8 @@ const IncentiveTooltip = ({
       if (aExcluded === bExcluded) return 0;
       return aExcluded ? 1 : -1;
     });
+
+    const sourceMessageLines = getMessageLines(source.message);
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
@@ -710,6 +701,16 @@ const IncentiveTooltip = ({
             </label>
           )}
           {renderCampaignContent(campaign, campaignAccentClass, `${keyPrefix}-0`)}
+          {sourceMessageLines.length > 0 && (
+            <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+              {sourceMessageLines.map((line, lineIndex) => (
+                <li key={`${keyPrefix}-src-msg-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                  <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                  <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       );
     }
@@ -748,6 +749,16 @@ const IncentiveTooltip = ({
             </div>
           );
         })}
+        {sourceMessageLines.length > 0 && (
+          <ul className="space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+            {sourceMessageLines.map((line, lineIndex) => (
+              <li key={`${keyPrefix}-src-msg-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     );
   };
