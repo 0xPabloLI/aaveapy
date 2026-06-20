@@ -427,42 +427,37 @@ const IncentiveTooltip = ({
     // Merit incentives (MeritCampaignGroup array)
     const meritGroups: MeritCampaignGroup[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
     if (meritGroups && Array.isArray(meritGroups)) {
-      meritGroups.forEach((group, groupIndex) => {
+      meritGroups.forEach((group) => {
         const breakdowns = group.breakdowns ?? [];
         const activeBreakdowns = breakdowns.filter((b) => isCampaignActive(b.campaignStartedAt, b.campaignEndedAt));
         if (activeBreakdowns.length === 0) return;
 
-        const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = activeBreakdowns.map((breakdown) => {
+        activeBreakdowns.forEach((breakdown) => {
           const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
-          return {
+          const baseName = group.name || 'Merit Incentive';
+          const suffix = activeBreakdowns.length > 1
+            ? breakdown.campaignId.endsWith('-self') ? ' (self)' : ' (base)'
+            : '';
+          sources.push({
+            name: `${baseName}${suffix}`,
             value,
-            dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-            startDate: breakdown.campaignStartedAt,
-            endDate: breakdown.campaignEndedAt,
-            message: group.message,
+            color: 'text-foreground',
+            bgColor: 'bg-muted/60',
             sourceType: 'ACI',
-            campaignType: breakdown.campaignType,
-            ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
-          };
-        });
-
-        const totalValue = meritCampaigns.reduce((sum, c) => sum + c.value, 0);
-        const name = group.name
-          ? group.name
-          : meritGroups.length > 1
-            ? `ACI Incentive ${groupIndex + 1}`
-            : 'ACI Incentive';
-
-        sources.push({
-          name,
-          value: totalValue,
-          color: 'text-foreground',
-          bgColor: 'bg-muted/60',
-          sourceType: 'ACI',
-          link: group.link,
-          message: group.message,
-          dateRange: meritCampaigns[0]?.dateRange,
-          campaigns: meritCampaigns,
+            link: group.link,
+            message: group.message,
+            dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+            campaigns: [{
+              value,
+              dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+              startDate: breakdown.campaignStartedAt,
+              endDate: breakdown.campaignEndedAt,
+              message: group.message,
+              sourceType: 'ACI',
+              campaignType: breakdown.campaignType,
+              ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
+            }],
+          });
         });
       });
     }

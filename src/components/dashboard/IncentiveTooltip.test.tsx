@@ -199,6 +199,24 @@ describe('IncentiveTooltip', () => {
       expect(container.innerHTML).toContain('Merit Campaign');
     });
 
+    it('renders base/self suffix for multi-breakdown Merit groups', () => {
+      const reserveWithMerit: ReserveWithSpread = {
+        ...mockReserve,
+        meritSupplys: [{
+          name: 'Supply USDT',
+          link: 'https://example.com',
+          message: 'Earn extra rewards',
+          breakdowns: [
+            { campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-12-31', campaignId: 'celo-supply-usdt-base', campaignType: 'DUTCH_AUCTION' },
+            { campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-12-31', campaignId: 'celo-supply-usdt-self', campaignType: 'DUTCH_AUCTION', positionCap: 1000 },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
+      expect(container.innerHTML).toContain('Supply USDT (base)');
+      expect(container.innerHTML).toContain('Supply USDT (self)');
+    });
+
     it('renders Merkl incentives when merklSupplys exist', () => {
       const reserveWithMerkl: ReserveWithSpread = {
         ...mockReserve,
