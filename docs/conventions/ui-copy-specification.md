@@ -95,7 +95,7 @@ SimulationCampaignDetail.capNote  ← rendered directly in UI
 IncentiveCapWarning.capNote      ← same string, rendered in Portfolio
 ```
 
-Both Merit self-cap and Brevis position cap flow through `applyPositionCapToForecastResult()` → `buildPositionCapEffect()`.
+Both Merit position cap and Brevis position cap flow through `applyPositionCapToForecastResult()` → `buildPositionCapEffect()`.
 
 ### Other incentive cap notes (non-position)
 

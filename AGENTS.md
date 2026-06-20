@@ -137,7 +137,7 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: 重命名 `principalSupplyUsd` → `totalSupplyUsd` (AAV-761 refactor)
 
-- **`totalSupplyUsd` = 总仓位 (wallet + delta)**：用于 USD accrual 收益计算和 Merit self-cap 稀释公式。名字"total"即自说明：它就是总数，不要再加。
+- **`totalSupplyUsd` = 总仓位 (wallet + delta)**：用于 USD accrual 收益计算和 Merit position cap 稀释公式。名字"total"即自说明：它就是总数，不要再加。
 - **`supplyNetInputUsd` = 净 delta (max(supplyInput - borrowInput, 0))**：推动利率曲线的量，不包含已有仓位。新旧都叫delta，不变。
 - **公式 `totalPositionUsd = totalSupplyUsd`**（直接取用，不做加法）：因为 total 本身已含 delta，加 netInput 即 double-count。
 - **入口统一**：Single simulation 和 Portfolio simulation 通过同一个 `perReserveInputs` Map 分发，只在 single 模式下为 undefined（不含 total），portfolio 模式下有值。两者统一调 `useSharedRateSimulations`，只有数据不同，没有代码路径分支。
@@ -159,7 +159,7 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: Wallet-only incentive delta 不显示 (AAV-771)
 
-- **`buildIncentiveCurrent` 需区分"稀释计算"和"headline 展示"两种用途**：旧版只有一个 `depositUsd` 参数，`hasInput=false` 时传 0 导致 self-cap 稀释被跳过。修复：新增 `walletSupplyUsd`/`walletBorrowUsd` 参数，与 `depositUsd`（input 用）语义分离。wallet-only 场景下 wallet 有值、depositUsd=0，仍然正确计算稀释。
+- **`buildIncentiveCurrent` 需区分"稀释计算"和"headline 展示"两种用途**：旧版只有一个 `depositUsd` 参数，`hasInput=false` 时传 0 导致 position cap 稀释被跳过。修复：新增 `walletSupplyUsd`/`walletBorrowUsd` 参数，与 `depositUsd`（input 用）语义分离。wallet-only 场景下 wallet 有值、depositUsd=0，仍然正确计算稀释。
 - **`totalSupplyUsd = wallet + delta` 公式可直接推导 wallet**：portfolio 模式下 `wallet = totalSupplyUsd - supplyInputUsd`，single simulation 下 `totalSupplyUsd` 未定义所以 wallet 为 undefined。这个推导避免了调用方额外传 wallet 参数。
 - **`portfolioSimulator.ts` 跳过 wallet-only positions 导致 totalSupplyUsd 丢失**：`buildGroupMapFromSlots` 和 `buildPerReserveInputsFromEntries` 原来用 `if (amountUsd <= 0) continue` 跳过 delta=0 的 side，导致 wallet value 没被累加。修复：先判断 `hasWalletPosition` 和 `hasUserInput`，两者都不满足才跳过。
 - **`formatDeltaPercent` 阈值过滤可能掩盖逻辑 bug**：delta=0 被过滤掉后 UI 不显示，用户看不到 delta 但也不知道是"无稀释"还是"计算错误"。threshold 过滤不能替代正确的空语义——null 表示"无 delta 概念"，0 表示"有 delta 但值为零"。

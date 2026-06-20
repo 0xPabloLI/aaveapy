@@ -654,7 +654,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Source | Domain meaning | Notes |
 |--------|----------------|-------|
 | Brevis `positionCap` | Position cap | Keep API name; domain uses `positionCapUsd` |
-| Merit `selfPositionCapUsd` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive |
+| Merit `positionCap` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive; applied as orthogonal overlay via `applyPositionCapToForecastResult` |
 | Simulation UI | Same diagnostics | Keep `cap*` props stable |
 
 ### Unified simulation `capNote` strings
@@ -673,7 +673,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts`, `rateSimulationCalculator.ts` |
+| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
 
 ### Brevis position cap
 
@@ -982,7 +982,7 @@ JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 
 `buildIncentiveCurrent` accepts `walletSupplyUsd`/`walletBorrowUsd` (wallet position) separate from `depositUsd` (simulation input). When wallet exists but no manual input:
 
-- `walletSupplyUsd` > 0 → Merit self-cap dilution still computed → `currentIncentive` is diluted value
+- `walletSupplyUsd` > 0 → Merit position cap dilution still computed → `currentIncentive` is diluted value
 - `deltaIncentive = currentIncentive - headlineIncentive` (typically negative, showing dilution)
 - Without `walletSupplyUsd`: `currentIncentive = headlineIncentive` → `deltaIncentive = 0` → filtered by `formatDeltaPercent` threshold → delta not displayed
 
