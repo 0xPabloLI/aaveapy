@@ -871,51 +871,51 @@ setRateInput(tokenPrice.toFixed(4))
 - `MAX_FDV` = dynamic from reference points (see above)
 - Slider interaction uses `sliderActiveRef` guard to prevent blur events from overwriting slider updates
 
-### FDV vs Simulation Input Behavioral Differences
+### FDV vs Simulation Input: Why They Differ
 
-Both FDV input and simulation input use `useDebouncedInput` (300ms debounce) but differ in control mode, external correction, and UI components due to different business requirements.
+Both FDV and Simulation inputs use the same `useDebouncedInput` hook, but their behavior differs due to different business requirements.
 
 | | FDV input | Simulation input |
 |---|---|---|
-| File | `InkAprCalculator.tsx` | `ScenarioControls.tsx` |
-| Hook | `useDebouncedInput` | `useDebouncedInput` |
-| Debounce | 300ms | 300ms |
-| Value source | Direct `value` prop (derived from `rateInput`) | `externalSupplyValue` state (initial `undefined`) |
-| External correction | None (clamp in onCommit) | `ref.setSupplyInput` via `useImperativeHandle` |
-| Slider | `sliderActiveRef` guard | None |
-| UI component | shadcn `Input` | Native `<input>` |
-| Decimal limit | 2 places | None |
-| Reason | Bounded value 0–MAX_FDV, no external correction needed | External imperative write-back for corrected values |
+| 文件 | `InkAprCalculator.tsx` | `ScenarioControls.tsx` |
+| hook | `useDebouncedInput` | `useDebouncedInput` |
+| debounce | 300ms | 300ms |
+| value 来源 | 直接 `value` prop（派生自 `rateInput`） | `externalSupplyValue` state（初始 `undefined`） |
+| 外部校正 | 无（clamp 在 onCommit 内） | `ref.setSupplyInput` 通过 `useImperativeHandle` 暴露 |
+| 滑块 | `sliderActiveRef` 守卫 | 无 |
+| UI 组件 | shadcn `Input` | 原生 `<input>` |
+| 小数限制 | 2 位 | 无 |
+| 范围 | 有界 0-MAX_FDV（动态） | 无界 |
 
-#### 1. Direct value prop vs externalSupplyValue
+**1. 直接 value prop vs externalSupplyValue**
 
-- **FDV**: `value` always derives from `currentFdvBillions` (i.e. `rateInput`), always controlled mode. The "true value" lives in parent `rateInput`; `useDebouncedInput` is purely the display/edit layer.
-- **Simulation**: `externalSupplyValue` starts as `undefined`. When `undefined`, the hook enters uncontrolled mode (free user input). When external correction is needed (e.g. max button, shared scenario switch), `ref.setSupplyInput` sets a value making it controlled; on next onCommit, `setExternalSupplyValue(undefined)` returns to uncontrolled.
-- **Why this difference**: FDV's value source is deterministic (rateInput → currentFdvBillions), no external correction needed. Simulation can be imperatively modified by various external operations (max, shared scenario, mode switch), requiring `useImperativeHandle` to expose `setSupplyInput`/`setBorrowInput`.
+- **FDV**: `value` 始终派生自 `currentFdvBillions`（即 `rateInput`），始终是 controlled 模式。FDV 的「真实值」在父组件 `rateInput` 中，`useDebouncedInput` 只是显示和编辑层。
+- **Simulation**: `externalSupplyValue` 初始为 `undefined`。`undefined` 时 hook 进入 uncontrolled 模式（用户自由输入）。当外部需要校正时（如点击 max 按钮、shared scenario 切换），`ref.setSupplyInput` 设值后变为 controlled，下次 onCommit 时 `setExternalSupplyValue(undefined)` 回到 uncontrolled。
+- **为什么有这个区别**: FDV 值的来源是确定的（rateInput → currentFdvBillions），不需要外部校正。Simulation 可能被各种外部操作（max、shared scenario、mode switch）命令式修改，需要 `useImperativeHandle` 暴露 `setSupplyInput`/`setBorrowInput`。
 
-#### 2. shadcn Input vs native input
+**2. shadcn Input vs 原生 input**
 
-shadcn `Input` is a native `<input>` wrapper with Tailwind style tokens (border, focus ring, padding). Both are functionally equivalent — same standard props (`ref`, `value`, `onChange`, `onBlur`, `onFocus`, `onKeyDown`). FDV uses shadcn for design-system styles (`disableSurface`, `cnDsInputNeutralWell`); Simulation uses native for historical reasons. Switching has no functional difference.
+shadcn `Input` 本质是原生 `<input>` 的封装，加了 Tailwind 样式 tokens（border、focus ring、padding 等）。两者功能完全等价，都接收 `ref`、`value`、`onChange`、`onBlur`、`onFocus`、`onKeyDown` 等标准 props。FDV 用 shadcn 是因为需要 `disableSurface` 和 `cnDsInputNeutralWell` 等设计系统样式；Simulation 用原生是历史原因，切换无功能差异。
 
-#### 3. Slider guard (sliderActiveRef)
+**3. 滑块守卫 (sliderActiveRef)**
 
-Only FDV has a slider. During drag, mousedown triggers `updateFromFdv` → `setRateInput` → `currentFdvBillions` changes → `value` prop changes → `useDebouncedInput` syncs to `displayValue`. But during drag, `handleBlur` also fires (input loses focus), and `doCommit` would overwrite the slider update. `sliderActiveRef` checks at onCommit start — if slider is active, skip the commit.
+只有 FDV 有 slider。当用户拖动滑块时，mousedown 触发 `updateFromFdv` → `setRateInput` → `currentFdvBillions` 变化 → `value` prop 变化 → `useDebouncedInput` 内部 sync 到 `displayValue`。但拖动期间 `handleBlur` 也会触发（input 失去焦点），此时 `doCommit` 会覆盖 slider 的更新。`sliderActiveRef` 在 onCommit 开头检查，如果 slider 正在活跃则跳过 commit。
 
-#### 4. Shared core logic
+**4. 统一入口**
 
-All numeric inputs use `useDebouncedInput`, sharing:
+所有数值输入统一使用 `useDebouncedInput` hook，共享以下逻辑：
+- `sanitizeNumberInput`（CJK 全角小数点归一化、非法字符过滤）
+- `formatNumberInput`（实时千分位格式化）
+- `computeCursorAfterFormat`（格式化后光标位置计算）
+- `pendingCursorRef` + `useLayoutEffect`（re-render 后恢复光标）
+- `maxDecimalPlaces`（可选，FDV 用 2 位）
 
-- `sanitizeNumberInput` (CJK full-width decimal normalization, illegal character filtering)
-- `formatNumberInput` (real-time thousands separator formatting)
-- `computeCursorAfterFormat` (cursor position after formatting)
-- `pendingCursorRef` + `useLayoutEffect` (cursor restoration after re-render)
-- `maxDecimalPlaces` (optional; FDV uses 2)
-
-**Conclusion**: Core logic is unified in `useDebouncedInput`. FDV and Simulation differences are driven by business requirements (bounded slider vs unbounded input + external correction), not code duplication — no further unification needed.
+**结论**: 核心逻辑已统一到 `useDebouncedInput`。FDV 和 Simulation 的差异由不同业务需求驱动（有界 slider vs 无限输入 + 外部校正），不是代码重复，不需要进一步统一。
 
 ### Related Files
 
 - `src/components/dashboard/InkAprCalculator.tsx` — Calculator component with FDV slider and input
+- `src/components/dashboard/ScenarioControls.tsx` — Simulation input controls (shared `useDebouncedInput` hook)
 - `src/hooks/useCoingeckoFdv.ts` — CoinGecko FDV data fetching hook
 - `src/hooks/useDebouncedInput.ts` — Debounced controlled input hook (shared with simulation inputs)
 - `src/lib/numberFormat.ts` — `sanitizeNumberInput` with `maxDecimalPlaces` parameter
