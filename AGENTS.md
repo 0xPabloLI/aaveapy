@@ -188,3 +188,9 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **per-campaign current 也必须与 per-source sum 口径一致**：`buildBrevisCampaignDetails` 中 per-campaign `current` 用 `sanitizePercent(resolved.campaignApr)`（headline），但 per-source sum 用 `resolveBrevisCurrentApr(resolved, forecastStates)`（可能含 forecast），导致 campaign detail 行的 current 之和 ≠ per-source current。**教训：修改 per-source sum 时必须同步修改 per-campaign current 计算。**
 - **抽取辅助函数消除重复**：`resolveBrevisCurrentApr(resolved, forecastStates)` 被三处共享（`sumBrevisIncentiveApr` 的 mapValue、`sumBrevisIncentiveApy` 的 mapValue、`buildBrevisCampaignDetails` 的 current），避免改一处忘改另一处。
 - **APY 转换策略统一为 APR-only + 独立 APY 函数**：Merit/Merkl/Brevis 统一使用 `sumXxxIncentiveApr`（纯 APR）+ `sumXxxIncentiveApy`（APY 转换），不再用内联 `isApy` 参数。dispatch map 按需选调。
+
+## Learned Lessons: per-source sum 统一后 dispatch map 参数映射 (AAV-980)
+
+- **统一 per-source sum 后必须逐参数校验映射**：旧 calculator `sumMerklIncentiveApr(opportunities, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates?, groupMultiplier?, campaignAccessStatuses?)` → 新 aggregation `sumMerklIncentiveApr(opportunities?, pointToUsdRate?, options?)`。review 发现 `sumAfter` 遗漏了 `campaignAccessStatuses`（旧代码第 7 个参数，新代码在 `options` 中），导致黑名单 campaign 在 after 计算中未被过滤。**教训：签名迁移时必须逐参数对照，options 对象比位置参数更容易漏传。**
+- **`getPointToUsdRate` 的 fallback 语义必须与 symbol 归属一致**：`tydroPointToUsdRate` 是 TydroInk 专属换算率，`getPointToUsdRate` 在 symbol 不在 map 中返回 0 是正确的——不同 symbol 不应 fallback 到另一个 symbol 的 rate。"查不到" = "不知道" = 0，而非"用另一个 rate 凑数"。
+- **`groupMultiplier` 需要加到 aggregation 版才能统一**：aggregation 版 `sumMerklIncentiveApr` 原先缺少 `groupMultiplier` 支持，但 `sumActiveCampaignBreakdownValues` 已支持。统一前需确认 aggregation 版具备 calculator 版的所有能力，否则统一后会丢功能。

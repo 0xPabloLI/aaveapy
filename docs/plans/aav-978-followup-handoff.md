@@ -57,24 +57,20 @@ Merit campaign 有 `positionCap` 且用户钱包仓位超过 cap。当前只有�
 
 ---
 
-## Follow-up 2: Merkl per-source current 缺 pointRateMap 支持
+## Follow-up 2: Merkl per-source current 缺 pointRateMap 支持 — ✅ 已修复 (AAV-980)
 
-**优先级**: 技术债务 / Won't Fix Until Real Impact
-**建议 Linear 标题**: `sumMerklIncentiveApr per-source sum lacks pointRateMap — two implementations diverge`
+**Commit**: `93c7e3fc` — fix(AAV-980): unify sumMerklIncentiveApr to aggregation canonical version
 
-### 问题
+**优先级**: Low → 已完成
+**Linear**: AAV-980
 
-`rateSimulationCalculator.ts` 的 `sumMerklIncentiveApr` 只用 `tydroPointToUsdRate`（统一换算率），不支持 per-symbol 路由。`incentiveAggregation.ts` 的同名函数支持 `pointRateMap`（按 `rewardTokenSymbol` 动态路由 rate）。两个实现口径不一致。
+### 修复内容
 
-### 当前影响
-
-**零**。`pointRateMap` 在运行时从未被传入 `calculateTotalIncentiveApr/Apy`，所有路径都走 `tydroPointToUsdRate` 统一换算。当前 Merkl campaign 的 `rewardTokenSymbol` 几乎全部是 TydroInkPoints。
-
-### 未来触发条件
-
-出现 `rewardTokenSymbol` 非 TydroInkPoints 的 Merkl campaign，且 `buildIncentiveCurrent` 传了 `pointRateMap` 但 dispatch map 没传。
-
-### 修复方向（等真正需要时再执行）
+1. 删除 calculator 版 `sumMerklIncentiveApr`，统一到 aggregation canonical 版
+2. aggregation 版新增 `merklGroupMultiplier` 支持（通过 `IncentiveCalculationOptions`）
+3. dispatch map merkl 使用 aggregation 版，APR/APY 拆分（跟 Brevis AAV-978 同模式）
+4. `SideSourceContext` 预留 `pointRateMap` 字段（尚未 wired，等后端提供时再传）
+5. **设计决策**: `getPointToUsdRate` 在 symbol 不在 map 中时返回 0（不 fallback 到 `tydroPointToUsdRate`——TydroInk 专属 rate 不应用于其他 symbol）
 
 1. 统一 `sumMerklIncentiveApr` 到 `incentiveAggregation.ts`（跟 Brevis AAV-978 同一模式）
 2. 删除 `rateSimulationCalculator.ts` 中的本地版本
