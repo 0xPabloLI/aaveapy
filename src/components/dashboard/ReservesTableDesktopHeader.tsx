@@ -336,36 +336,27 @@ export default function ReservesTableDesktopHeader({
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right">
-          <div className="flex items-center justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
-              <span
-                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'text-muted-foreground'}`}
-              >
-                Supply
-              </span>
-              <div className="relative">
-                <button
-                  ref={supplySortButtonRef}
-                  type="button"
-                  onClick={onToggleSupplyMenu}
-                  className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                    showSupplySortMenu || activeSortColumn === 'supply'
-                      ? 'bg-card/60 border-border/70 ds-text-emerald-700'
-                      : 'bg-card/60 border-border/70 text-muted-foreground'
-                  }`}
-                  title="Select sort field"
-                >
-                  <span className="font-semibold ds-text-10 md:ds-text-11">{supplySortLabel}</span>
-                  <ChevronDown className="w-2.5 h-2.5" />
-                </button>
-                <DesktopSortMenuPortal
-                  open={showSupplySortMenu}
-                  menuPos={supplyMenuPos}
-                  onClose={onCloseSupplyMenu}
-                  options={supplySortOptions}
-                />
-              </div>
-            </div>
+          <div className="relative flex items-center justify-end">
+            <button
+              ref={supplySortButtonRef}
+              type="button"
+              onClick={onToggleSupplyMenu}
+              className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
+                showSupplySortMenu || activeSortColumn === 'supply'
+                  ? 'ds-text-emerald-700 font-bold'
+                  : 'text-muted-foreground hover:text-foreground/80'
+              }`}
+              title="Select sort field"
+            >
+              <span>Supply</span>
+              <ChevronDown className="w-2.5 h-2.5" />
+            </button>
+            <DesktopSortMenuPortal
+              open={showSupplySortMenu}
+              menuPos={supplyMenuPos}
+              onClose={onCloseSupplyMenu}
+              options={supplySortOptions}
+            />
           </div>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-right ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
@@ -389,36 +380,27 @@ export default function ReservesTableDesktopHeader({
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th-edge-r py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right">
-          <div className="flex items-center justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
-              <span
-                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'borrow' ? 'ds-text-brand-cyan font-bold scale-105' : 'text-muted-foreground'}`}
-              >
-                Borrow
-              </span>
-              <div className="relative">
-                <button
-                  ref={borrowSortButtonRef}
-                  type="button"
-                  onClick={onToggleBorrowMenu}
-                  className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                    showBorrowSortMenu || activeSortColumn === 'borrow'
-                      ? 'bg-card/60 border-border/70 ds-text-brand-cyan'
-                      : 'bg-card/60 border-border/70 text-muted-foreground'
-                  }`}
-                  title="Select sort field"
-                >
-                  <span className="font-semibold ds-text-10 md:ds-text-11">{borrowSortLabel}</span>
-                  <ChevronDown className="w-2.5 h-2.5" />
-                </button>
-                <DesktopSortMenuPortal
-                  open={showBorrowSortMenu}
-                  menuPos={borrowMenuPos}
-                  onClose={onCloseBorrowMenu}
-                  options={borrowSortOptions}
-                />
-              </div>
-            </div>
+          <div className="relative flex items-center justify-end">
+            <button
+              ref={borrowSortButtonRef}
+              type="button"
+              onClick={onToggleBorrowMenu}
+              className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
+                showBorrowSortMenu || activeSortColumn === 'borrow'
+                  ? 'ds-text-brand-cyan font-bold'
+                  : 'text-muted-foreground hover:text-foreground/80'
+              }`}
+              title="Select sort field"
+            >
+              <span>Borrow</span>
+              <ChevronDown className="w-2.5 h-2.5" />
+            </button>
+            <DesktopSortMenuPortal
+              open={showBorrowSortMenu}
+              menuPos={borrowMenuPos}
+              onClose={onCloseBorrowMenu}
+              options={borrowSortOptions}
+            />
           </div>
         </TableHead>
       </TableRow>
