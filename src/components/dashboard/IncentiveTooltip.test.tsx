@@ -630,7 +630,8 @@ describe('IncentiveTooltip', () => {
       const { baseElement } = renderTooltip({ ...defaultProps, reserve, pointRateMap });
       const allImgs = baseElement.querySelectorAll('img');
       const srcs = Array.from(allImgs).map(el => (el as HTMLImageElement).src);
-      expect(srcs).toContain('https://example.com/ink.svg');
+      const inkSrc = srcs.find(s => s.includes('tydroinkpoints'));
+      expect(inkSrc).toBeDefined();
     });
 
     it('returns 0 APR when rewardTokenSymbol is missing and pointRateMap exists', () => {
@@ -863,6 +864,120 @@ describe('IncentiveTooltip', () => {
       const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
       expect(srcs).toContain('https://example.com/ink.svg');
       expect(srcs).toContain('https://example.com/ops.svg');
+    });
+
+    it('prefers local token icon over URL when rewardTokenSymbol matches manifest', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-gho', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'aUSDC', rewardTokenIconUrl: 'https://example.com/ausdc.svg' },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const imgs = container.querySelectorAll('img[src]');
+      const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
+      const usdcIconSrc = srcs.find(s => s?.includes('usdc'));
+      expect(usdcIconSrc).toBeDefined();
+      expect(usdcIconSrc).toContain('/icons/tokens/ausdc');
+      expect(usdcIconSrc).not.toContain('example.com');
+    });
+
+    it('falls back to rewardTokenIconUrl when rewardTokenSymbol has no local icon', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-xyz', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'XyzPoints', rewardTokenIconUrl: 'https://example.com/xyz.svg' },
+          ],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      const imgs = container.querySelectorAll('img[src]');
+      const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
+      expect(srcs).toContain('https://example.com/xyz.svg');
+    });
+
+    it('hides opp header icon when campaigns have different reward token icons', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Aave',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-ink', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-ops', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'OPS', rewardTokenIconUrl: 'https://example.com/ops.svg' },
+          ],
+        }],
+      };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
+      const headerAprs = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
+      const merklHeaderApr = Array.from(headerAprs).find(el => el.textContent?.includes('15'));
+      expect(merklHeaderApr?.querySelector('img')).toBeNull();
+    });
+
+    it('shows opp header icon when all campaigns have the same reward token icon', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-1', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-2', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+          ],
+        }],
+      };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
+      const headerAprs = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
+      const merklHeaderApr = Array.from(headerAprs).find(el => el.textContent?.includes('15'));
+      expect(merklHeaderApr?.querySelector('img')).not.toBeNull();
+    });
+
+    it('shows opp header icon when all campaigns have the same reward token icon', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Tydro',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-1', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-2', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+          ],
+        }],
+      };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
+      const headerRows = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
+      const merklHeader = Array.from(headerRows).find(el => el.innerHTML.includes('example.com'));
+      expect(merklHeader).toBeDefined();
+    });
+
+    it('uses grid layout for vertical APR alignment between opp header and campaign rows', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Merkl',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            { campaignId: 'merkl-1', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+            { campaignId: 'merkl-2', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
+          ],
+        }],
+      };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
+      const headerApr = baseElement.querySelector('[data-testid="source-header-apr"]');
+      const campaignAprs = baseElement.querySelectorAll('[data-testid="campaign-apr"]');
+      expect(headerApr).toBeTruthy();
+      expect(campaignAprs.length).toBeGreaterThanOrEqual(1);
+      const headerRow = headerApr!.parentElement!;
+      const campaignRow = campaignAprs[0].parentElement!;
+      expect(headerRow.className).toContain('grid-cols-[1fr_auto_auto]');
+      expect(campaignRow.className).toContain('grid-cols-[1fr_auto_auto]');
     });
   });
 });

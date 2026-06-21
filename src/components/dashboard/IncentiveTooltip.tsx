@@ -30,6 +30,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
+import { TOKEN_ICON_MANIFEST } from '@/lib/tokenIconManifest.generated';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -113,6 +114,24 @@ const getSourceIcon = (
   const map = isDark ? darkSourceIconMap : lightSourceIconMap;
   return map[sourceType];
 };
+
+function resolveRewardTokenIconSrc(symbol?: string, fallbackUrl?: string): string | undefined {
+  if (symbol) {
+    const key = symbol.trim().toLowerCase();
+    if (TOKEN_ICON_MANIFEST[key]) {
+      return `/icons/tokens/${key}.${TOKEN_ICON_MANIFEST[key][0]}`;
+    }
+  }
+  return fallbackUrl;
+}
+
+function campaignsHaveUniformIcon(campaigns: IncentiveCampaign[]): boolean {
+  const icons = campaigns
+    .map(c => resolveRewardTokenIconSrc(c.rewardTokenSymbol, c.rewardTokenIconUrl))
+    .filter(Boolean);
+  if (icons.length === 0) return false;
+  return new Set(icons).size === 1;
+}
 
 function formatDateSafe(dateString?: string): string | null {
   if (!dateString) return null;
@@ -699,13 +718,16 @@ const IncentiveTooltip = ({
     return (
       <>
         {dateRangeText && (
-          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] flex items-start justify-between gap-[var(--ds-space-2)] ${campaignAccentClass}`}>
+          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
             <span className="break-words min-w-0">{dateRangeText}</span>
-            {showApr && (
-              <span className="flex items-center gap-0.5 whitespace-nowrap flex-shrink-0">
-                {campaign.rewardTokenIconUrl && (
+            <div />
+            {showApr && (() => {
+              const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
+              return (
+              <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap">
+                {campaignIconSrc && (
                   <img
-                    src={campaign.rewardTokenIconUrl}
+                    src={campaignIconSrc}
                     alt=""
                     className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
                     loading="lazy"
@@ -713,7 +735,8 @@ const IncentiveTooltip = ({
                 )}
                 <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>{formatPercent(campaign.value)}</span>
               </span>
-            )}
+              );
+            })()}
           </div>
         )}
         {renderCampaignTypeDescription(campaign)}
@@ -939,6 +962,11 @@ const IncentiveTooltip = ({
     const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
     const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
     const keyPrefix = animated ? `desktop-${index}` : `mobile-${index}`;
+    const headerAllCampaigns = source.campaigns ?? [];
+    const headerUniformIcon = campaignsHaveUniformIcon(headerAllCampaigns);
+    const headerRewardTokenIcon = headerUniformIcon
+      ? resolveRewardTokenIconSrc(headerAllCampaigns[0]?.rewardTokenSymbol, headerAllCampaigns[0]?.rewardTokenIconUrl)
+      : undefined;
     return (
       <div
         className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${
@@ -946,8 +974,8 @@ const IncentiveTooltip = ({
         } ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
         style={animated ? { animationDelay: `${index * 45}ms` } : undefined}
       >
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 pr-1">
             {iconSrc && (
               <span
                 className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
@@ -970,30 +998,30 @@ const IncentiveTooltip = ({
               {source.name}
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-            {source.link && (
-              <a
-                href={source.link}
-                {...externalLinkTabProps(isMobile)}
-                onClick={(e) => e.stopPropagation()}
-                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-                title="Open link"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+          {source.link ? (
+            <a
+              href={source.link}
+              {...externalLinkTabProps(isMobile)}
+              onClick={(e) => e.stopPropagation()}
+              className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+              title="Open link"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <div />
+          )}
+          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
+            {headerRewardTokenIcon && (
+              <img
+                src={headerRewardTokenIcon}
+                alt=""
+                className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                loading="lazy"
+              />
             )}
-            <span className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
-              {source.rewardTokenIconUrl && (
-                <img
-                  src={source.rewardTokenIconUrl}
-                  alt=""
-                  className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
-                  loading="lazy"
-                />
-              )}
-              {formatPercent(sourceDisplayValue)}
-            </span>
-          </div>
+            {formatPercent(sourceDisplayValue)}
+          </span>
         </div>
         {renderSourceCampaigns(source, keyPrefix)}
       </div>
