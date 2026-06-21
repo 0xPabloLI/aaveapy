@@ -64,16 +64,16 @@ export const forecastWithTVL = (
   nowTs = Math.floor(Date.now() / 1000)
 ): MerklForecastResult => {
   const safeTvl = safe(tvl);
-  const isMaxAprCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
-  const isFixAprCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isMaxRewardCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isFixRewardCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
   const isTargetTotalAprCampaign = forecastState.campaignType === 'TARGET_TOTAL_APR';
-  const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
+  const isRateLimitedCampaign = isMaxRewardCampaign || isFixRewardCampaign;
 
   if (safeTvl <= 0) {
     return {
       dailyRewards: 0,
       apr: 0,
-      regime: isMaxAprCampaign || (isTargetTotalAprCampaign && forecastState.budgetBoundMode === 'MAX_APR') ? 'APR_CAPPED' : 'PLANNED',
+      regime: isMaxRewardCampaign || (isTargetTotalAprCampaign && forecastState.budgetBoundMode === 'MAX_APR') ? 'APR_CAPPED' : 'PLANNED',
     };
   }
 
@@ -146,7 +146,7 @@ export const forecastWithTVL = (
   const aprCap = safe(forecastState.aprCap ?? 0);
   const aprBasedDaily = (safeTvl * aprCap) / DAYS_PER_YEAR;
 
-  if (isFixAprCampaign) {
+  if (isFixRewardCampaign) {
     const dailyRewards = Math.min(aprBasedDaily, remainingBudget);
     const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
     const fixRewardableDays = computeBudgetRemainingDays(remainingBudget, aprBasedDaily, remainingDays);
