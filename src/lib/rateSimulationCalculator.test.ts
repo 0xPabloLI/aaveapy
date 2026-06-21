@@ -1226,3 +1226,35 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
     expect(result.forecastUnavailableCampaignCount).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('AAV-975: anchorTvlUsd TVL_DILUTION per-source merit.after', () => {
+  it('per-source merit.after uses TVL_DILUTION (not CURRENT_RATE) when anchorTvlUsd is available', () => {
+    const RESERVE_WITH_SUPPLIED: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      supplied: '10000000000000000000000',
+      meritSupplys: [{
+        link: 'https://example.com',
+        name: 'Merit TVL Test',
+        message: [{ description: 'Base reward' }],
+        breakdowns: [{
+          campaignApr: 10,
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'merit-tvl-base',
+        }],
+      }],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve: RESERVE_WITH_SUPPLIED,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+
+    // Dispatch map passes real anchorTvlUsd → TVL_DILUTION mode → after < current
+    expect(result.supply.sources.merit?.after).not.toBeNull();
+    expect(result.supply.sources.merit!.current!).toBeGreaterThan(0);
+    expect(result.supply.sources.merit!.after!).toBeLessThan(result.supply.sources.merit!.current!);
+  });
+});
