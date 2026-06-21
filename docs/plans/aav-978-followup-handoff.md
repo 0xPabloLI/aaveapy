@@ -12,7 +12,9 @@ AAV-978 核心修复已全部完成并提交（4 个 commits）：
 3. `9d603475` — dailyRewardUsd 改用 aprPercent
 4. `4287ab65` — 恢复 AAV-978 被 AAV-975 覆盖的修复
 
-## Follow-up 1: Merit per-source current 缺 position cap 稀释
+## Follow-up 1: Merit per-source current 缺 position cap 稀释 — ✅ 已修复 (AAV-979)
+
+**Commit**: `2c440785` — fix(AAV-979): per-source Merit current includes position cap dilution
 
 **优先级**: 下个迭代（Low-Medium）
 **建议 Linear 标题**: `sumMeritIncentiveApr per-source current lacks position cap dilution — per-source ≠ total`

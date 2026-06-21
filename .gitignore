@@ -59,3 +59,6 @@ scripts/verify-*
 scripts/verify_*
 src/pages/Debug*
 output/
+
+# Local-only notes and drafts (not committed)
+/local/
