@@ -1258,3 +1258,112 @@ describe('AAV-975: anchorTvlUsd TVL_DILUTION per-source merit.after', () => {
     expect(result.supply.sources.merit!.after!).toBeLessThan(result.supply.sources.merit!.current!);
   });
 });
+
+describe('AAV-979: per-source Merit current includes position cap dilution', () => {
+  it('per-source merit.current is diluted when walletPositionUsd exceeds positionCap', () => {
+    const noWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+    });
+
+    const withWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+    });
+
+    expect(withWallet.supply.sources.merit!.current)
+      .toBeLessThan(noWallet.supply.sources.merit!.current);
+  });
+
+  it('per-source merit.current + other sources ≈ total currentIncentive when wallet exceeds cap', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+    });
+
+    const meritCurrent = result.supply.sources.merit!.current;
+    const merklCurrent = result.supply.sources.merkl?.current ?? 0;
+    const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
+    const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
+    const perSourceSum = meritCurrent + merklCurrent + brevisCurrent + protocolCurrent;
+
+    expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 1);
+  });
+
+  it('per-source merit.current equals headline when walletPositionUsd is undefined', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+    });
+
+    expect(result.supply.sources.merit!.current).toBeGreaterThanOrEqual(17);
+  });
+
+  it('per-source merit.current reflects dilution ratio when wallet exceeds cap', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 10000,
+    });
+
+    // headline = 10 (base) + 8 (self) = 18
+    // cap = 1000, wallet = 10000, dilution on self row = min(10000,1000)/10000 = 0.1
+    // diluted self = 8 * 0.1 = 0.8, total = 10 + 0.8 = 10.8
+    expect(result.supply.sources.merit!.current).toBeCloseTo(10.8, 1);
+  });
+
+  it('per-campaign current is also diluted when wallet exceeds cap', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+    });
+
+    const selfCampaign = result.supply.sources.merit!.campaigns
+      .find(c => c.id.includes('merit-0-1'));
+    expect(selfCampaign).toBeDefined();
+    // Self campaign: headline=8, cap=1000, wallet=1500
+    // diluted = 8 * min(1500,1000)/1500 = 8 * 0.667 ≈ 5.33
+    expect(selfCampaign!.current).toBeLessThan(8);
+  });
+
+  it('no positionCap campaign current is unchanged regardless of wallet', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+    });
+
+    const baseCampaign = result.supply.sources.merit!.campaigns
+      .find(c => c.id.includes('merit-0-0'));
+    expect(baseCampaign).toBeDefined();
+    expect(baseCampaign!.current).toBe(10);
+  });
+
+  it('borrow side merit.current also respects position cap dilution', () => {
+    const noWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+    });
+
+    const withWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletBorrowUsd: 2000,
+    });
+
+    expect(withWallet.borrow.sources.merit!.current)
+      .toBeLessThan(noWallet.borrow.sources.merit!.current);
+  });
+});

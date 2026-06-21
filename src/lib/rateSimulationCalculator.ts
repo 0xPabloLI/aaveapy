@@ -33,6 +33,7 @@ import {
   appendNotes,
   checkForecastAvailability,
 } from '@/lib/incentiveCaps';
+import { applyPositionCap } from '@/lib/incentiveMath';
 import {
   getBrevisCampaignBreakdowns,
   getBrevisCampaignId,
@@ -347,18 +348,8 @@ export const sumNumberArray = (values?: number[], isApy = false): number => {
   }, 0);
 };
 
-export const sumMeritIncentiveApr = (values?: MeritCampaignGroup[], isApy = false): number => {
-  return sumActiveCampaignBreakdownValues(values, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, b) => b.campaignStartedAt,
-    getEndDate: (_group, b) => b.campaignEndedAt,
-    include: () => true,
-    mapValue: (_group, b) => {
-      const apr = sanitizePercent(b.campaignApr);
-      return isApy ? (apr > 0 ? convertAprToApy(apr) : 0) : apr;
-    },
-  });
-};
+
+
 
 /**
  * Supply: supplied (native b USD). Borrow: borrowed USD b supplied C utilization (Merit TVL proxy when no campaign TVL exists).
@@ -614,6 +605,7 @@ export const buildMeritCampaignDetails = (
   eligibilityRatio = 1,
   grossInputUsd?: number,
   totalPositionUsd?: number,
+  walletPositionUsd?: number,
 ): SimulationCampaignDetail[] => {
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
@@ -631,8 +623,14 @@ export const buildMeritCampaignDetails = (
 
     activeBreakdowns.forEach((breakdown, bdIndex) => {
       const baseAprPercent = sanitizePercent(breakdown.campaignApr);
-      const baseCurrent = meritAprToDisplay(baseAprPercent, isApy);
       const positionCapUsd = breakdown.positionCap;
+      // AAV-979: per-campaign current must include position cap dilution for wallet positions
+      let effectiveBaseApr = baseAprPercent;
+      if (positionCapUsd != null && positionCapUsd > 0 && walletPositionUsd != null && walletPositionUsd > 0) {
+        const { aprPercent: cappedApr } = applyPositionCap(baseAprPercent, walletPositionUsd, positionCapUsd);
+        effectiveBaseApr = cappedApr;
+      }
+      const baseCurrent = meritAprToDisplay(effectiveBaseApr, isApy);
       const bdLabel = extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? `${groupName} #${bdIndex + 1}` : groupName);
       let baseAfter: number | null = null;
       let capNote: string | undefined;
@@ -1260,6 +1258,7 @@ export function buildRateSimulationResult({
     campaignAccessStatuses: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'> | undefined;
     nativeApyPercent: number | undefined;
     brevisSharedDeposits: ReadonlyMap<string, number> | undefined;
+    walletPositionUsd: number | undefined;
   }
 
   const sourceDispatch: Record<SourceKey, {
@@ -1268,12 +1267,14 @@ export function buildRateSimulationResult({
     buildDetails: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => SimulationCampaignDetail[];
   }> = {
     merit: {
-      sumCurrent: (data, ctx) => sumMeritIncentiveApr(data, ctx.isApy),
+      // AAV-979: sumCurrent must include position cap dilution for wallet positions
+      sumCurrent: (data, ctx) =>
+        sumForecastMeritIncentiveApr(data, ctx.isApy, 0, ctx.anchorTvlUsd, ctx.walletPositionUsd) * ctx.eligibilityRatio,
       sumAfter: (data, ctx) =>
         sumForecastMeritIncentiveApr(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.anchorTvlUsd, ctx.totalPositionUsd)
         * ctx.eligibilityRatio,
       buildDetails: (data, ctx) =>
-        buildMeritCampaignDetails(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.hasAnyInput, ctx.anchorTvlUsd, ctx.eligibilityRatio, ctx.grossInputUsd, ctx.totalPositionUsd),
+        buildMeritCampaignDetails(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.hasAnyInput, ctx.anchorTvlUsd, ctx.eligibilityRatio, ctx.grossInputUsd, ctx.totalPositionUsd, ctx.walletPositionUsd),
     },
     merkl: {
       sumCurrent: (data, ctx) =>
@@ -1324,6 +1325,7 @@ export function buildRateSimulationResult({
       campaignAccessStatuses,
       nativeApyPercent: isSupply ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0),
       brevisSharedDeposits: brevisSharedDepositsByCampaignId,
+      walletPositionUsd: isSupply ? walletSupplyUsd : walletBorrowUsd,
     };
 
     // Aggregate afterIncentive (independent from dispatch map — different Math.min semantics)
