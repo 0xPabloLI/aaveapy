@@ -90,6 +90,8 @@ _Avoid_: 在 Brevis/Merit breakdown 中独立声明 `campaignType`/`aprCap`/`lat
 
 **Brevis Incentive**:
 Brevis 协议分发的激励。有 per-user position cap 模型。`campaignType` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE`；`rewardTokenSymbol` 从 gRPC `RewardToken.symbol` 提取。
+Per-source sum 的 canonical 实现在 `incentiveAggregation.ts`（`sumBrevisIncentiveApr` / `sumBrevisIncentiveApy` / `resolveBrevisCurrentApr`），dispatch map 和 `buildBrevisCampaignDetails` 统一使用这些函数。不再在 `rateSimulationCalculator.ts` 中维护独立的 headline-only 版本。
+_Avoid_: 在 `rateSimulationCalculator.ts` 中新建 `sumBrevisIncentiveApr` 的本地变体（统一用 aggregation 版本）
 _Avoid_: Brevis Campaign, Brevis Program, reward ceiling（用 position cap 代替）
 
 **Tydro Points**:
