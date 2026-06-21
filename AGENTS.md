@@ -181,3 +181,10 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`formatProtocolCapText` 是 Reserve Table 和 Portfolio 的共享入口**：两处使用同一函数生成 protocol cap warning 文案，未来改文案只改一处。函数接受 `availableFormatted: string`（预格式化），因为 Reserve Table 用 `formatScenarioSize`（支持 USD/Token 模式），Portfolio 用 `formatUsd`（纯 USD）。
 - **`currentExceeded` 语义变更**：旧 SimulationSubRow 用 `"exceeds cap by $X"` 描述超出量（`exceededByUsd`），新文案统一为 `"Current {Supply|Borrow} limited to $X available"` 描述可用量（`availableRoomUsd`）。数值从 exceededBy 变成了 availableRoom，语义和数值都不同——这是有意的设计决策，"limited to X available" 信息量更大。
 - **测试 describe 嵌套要注意**：Vitest 允许 describe 内嵌套 describe，但如果嵌套位置错误会导致 it 块归属到错误的 describe。新增 describe 块时要确保放在正确的外层 describe 之外。
+
+## Learned Lessons: 同名 per-source sum 函数口径不一致 (AAV-978)
+
+- **per-source sum 的 canonical 实现必须在 `incentiveAggregation.ts`**：`rateSimulationCalculator.ts` 曾维护独立的 `sumBrevisIncentiveApr`（纯 headline，无 forecastStates），与 `incentiveAggregation.ts` 的同名函数（支持 forecastStates）口径不同。dispatch map 的 per-source current 用 calculator 版本，`buildIncentiveCurrent` 的 total current 用 aggregation 版本，导致分项之和 ≠ 总值。**教训：per-source sum 函数只有一个 canonical 位置（`incentiveAggregation.ts`），calculator 层只 import 不重建。**
+- **per-campaign current 也必须与 per-source sum 口径一致**：`buildBrevisCampaignDetails` 中 per-campaign `current` 用 `sanitizePercent(resolved.campaignApr)`（headline），但 per-source sum 用 `resolveBrevisCurrentApr(resolved, forecastStates)`（可能含 forecast），导致 campaign detail 行的 current 之和 ≠ per-source current。**教训：修改 per-source sum 时必须同步修改 per-campaign current 计算。**
+- **抽取辅助函数消除重复**：`resolveBrevisCurrentApr(resolved, forecastStates)` 被三处共享（`sumBrevisIncentiveApr` 的 mapValue、`sumBrevisIncentiveApy` 的 mapValue、`buildBrevisCampaignDetails` 的 current），避免改一处忘改另一处。
+- **APY 转换策略统一为 APR-only + 独立 APY 函数**：Merit/Merkl/Brevis 统一使用 `sumXxxIncentiveApr`（纯 APR）+ `sumXxxIncentiveApy`（APY 转换），不再用内联 `isApy` 参数。dispatch map 按需选调。
