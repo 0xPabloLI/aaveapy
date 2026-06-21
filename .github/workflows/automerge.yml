@@ -2,29 +2,97 @@ name: Auto Merge
 
 on:
   pull_request_target:
-    # Include `opened` so PRs created with labels (e.g. bot PRs) still evaluate the job `if`.
     types: [opened, labeled, reopened, synchronize, ready_for_review]
+  check_suite:
+    types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   enable-automerge:
     if: >-
-      contains(github.event.pull_request.labels.*.name, 'automerge') &&
-      github.event.pull_request.draft != true
+      (
+        github.event_name == 'check_suite' &&
+        contains(github.event.check_suite.pull_requests[0].labels.*.name, 'automerge')
+      ) || (
+        github.event_name == 'pull_request_target' &&
+        contains(github.event.pull_request.labels.*.name, 'automerge') &&
+        github.event.pull_request.draft != true
+      )
     runs-on: ubuntu-latest
     steps:
-      - name: Cooldown for async review bots
-        run: sleep 180
-
-      - name: Enable auto-merge when checks pass
+      - name: Resolve PR number
+        id: pr
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
+            if (context.eventName === 'check_suite') {
+              const prs = context.payload.check_suite.pull_requests;
+              if (!prs.length) {
+                core.notice('No PRs associated with this check suite, skipping.');
+                core.setOutput('number', '');
+                core.setOutput('skip', 'true');
+                return;
+              }
+              core.setOutput('number', String(prs[0].number));
+              core.setOutput('skip', 'false');
+            } else {
+              core.setOutput('number', String(context.payload.pull_request.number));
+              core.setOutput('skip', 'false');
+            }
+
+      - name: Wait for CI checks to stabilise
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const maxPolls = 20;
+            const pollIntervalMs = 15000;
+
+            for (let i = 0; i < maxPolls; i++) {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: context.payload.pull_request
+                  ? context.payload.pull_request.head.ref
+                  : context.payload.check_suite.head_branch,
+                per_page: 100
+              });
+
+              const total = checks.total_count;
+              const completed = checks.check_runs.filter(
+                (r) => r.status === 'completed'
+              ).length;
+              const pending = total - completed;
+
+              if (pending <= 0 || total === 0) {
+                core.info(`All ${total} check runs completed after ${(i + 1)} poll(s).`);
+                return;
+              }
+
+              core.info(
+                `Poll ${i + 1}/${maxPolls}: ${completed}/${total} checks completed, ${pending} pending. Waiting ${pollIntervalMs / 1000}s.`
+              );
+              await new Promise((r) => setTimeout(r, pollIntervalMs));
+            }
+
+            core.warning(`Timed out after ${maxPolls} polls, proceeding anyway.`);
+
+      - name: Enable auto-merge when checks pass
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
             const query = `
               query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
@@ -47,18 +115,18 @@ jobs:
             const data = await github.graphql(query, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              number: pr.number
+              number: prNumber
             });
             const prInfo = data.repository.pullRequest;
             const unresolvedThreads = prInfo.reviewThreads.nodes.filter((thread) => !thread.isResolved).length;
             if (prInfo.reviewDecision === 'CHANGES_REQUESTED' || prInfo.reviewDecision === 'REVIEW_REQUIRED' || unresolvedThreads > 0) {
               core.notice(
-                `Skip enabling auto-merge for PR #${pr.number}: reviewDecision=${prInfo.reviewDecision || 'NONE'}, unresolvedThreads=${unresolvedThreads}`
+                `Skip enabling auto-merge for PR #${prNumber}: reviewDecision=${prInfo.reviewDecision || 'NONE'}, unresolvedThreads=${unresolvedThreads}`
               );
               return;
             }
             if (prInfo.autoMergeRequest) {
-              core.info(`Auto-merge already enabled for PR #${pr.number}`);
+              core.info(`Auto-merge already enabled for PR #${prNumber}`);
               return;
             }
             const enableAutoMergeMutation = `
@@ -76,12 +144,12 @@ jobs:
                 }
               }
             `;
-            const maxAttempts = 3;
-            const baseDelayMs = 60000;
+            const maxAttempts = 5;
+            const baseDelayMs = 30000;
             for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
               try {
                 await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-                core.info(`Enabled auto-merge for PR #${pr.number} on attempt ${attempt}/${maxAttempts}`);
+                core.info(`Enabled auto-merge for PR #${prNumber} on attempt ${attempt}/${maxAttempts}`);
                 return;
               } catch (error) {
                 const message = String(error && error.message ? error.message : error);
@@ -92,7 +160,7 @@ jobs:
                 }
                 const waitMs = baseDelayMs * attempt;
                 core.warning(
-                  `PR #${pr.number} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
+                  `PR #${prNumber} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
                 );
                 await new Promise((resolve) => setTimeout(resolve, waitMs));
               }
