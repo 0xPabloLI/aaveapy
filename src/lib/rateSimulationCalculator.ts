@@ -841,7 +841,7 @@ export const buildBrevisCampaignDetails = (
           remainingBudget: resolved.totalBudget != null && resolved.totalBudget > 0
             ? resolved.totalBudget - (resolved.positionCap ?? 0)
             : null,
-          dailyRewardUsd: positionUsd * (nominal / 100) / 365,
+          dailyRewardUsd: positionUsd * (aprPercent / 100) / 365,
           remainingDays: endMs !== null && endMs > nowMs ? (endMs - nowMs) / 86_400_000 : null,
         },
       );
