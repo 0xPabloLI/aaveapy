@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getReserveIncentiveValues, getIncentiveSources, sumBrevisIncentiveApr, sumBrevisIncentiveApy } from './incentiveAggregation';
+import { getReserveIncentiveValues, getIncentiveSources, sumBrevisIncentiveApr, sumBrevisIncentiveApy, sumMerklIncentiveApr, sumMerklIncentiveApy } from './incentiveAggregation';
 import { convertAprToApy } from '@/lib/rateCalculations';
-import type { BrevisIncentive, MerklForecastWireItem, ReserveWithSpread } from '@/types/aave';
+import type { BrevisIncentive, MerklForecastWireItem, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
 const merklPointsReserve = (rewardTokenSymbol?: string): ReserveWithSpread => ({
   reserveId: 'test-1',
@@ -288,5 +288,119 @@ describe('sumBrevisIncentiveApy', () => {
     const withoutForecast = sumBrevisIncentiveApy(brevis);
     expect(withForecast).toBeGreaterThan(0);
     expect(withoutForecast).toBe(0);
+  });
+});
+
+const makeMerklOpportunity = (overrides: Partial<MerklOpportunityGroup> = {}): MerklOpportunityGroup => ({
+  name: 'Merkl Test',
+  link: 'https://merkl.angle.money',
+  breakdowns: [{
+    campaignId: 'merkl-test-1',
+    campaignApr: 3.0,
+    campaignStartedAt: '2026-01-01',
+    campaignEndedAt: '2027-12-31',
+  }],
+  ...overrides,
+});
+
+const makeMerklPointsOpportunity = (rewardTokenSymbol?: string, pointsPerThousandUsd = 2): MerklOpportunityGroup => ({
+  name: 'Merkl Points Test',
+  link: 'https://merkl.angle.money',
+  breakdowns: [{
+    campaignId: 'merkl-pts-1',
+    campaignApr: 0,
+    campaignStartedAt: '2026-01-01',
+    campaignEndedAt: '2027-12-31',
+    pointsPerThousandUsd,
+    rewardTokenSymbol,
+  }],
+});
+
+describe('sumMerklIncentiveApr', () => {
+  it('returns 0 for undefined input', () => {
+    expect(sumMerklIncentiveApr()).toBe(0);
+  });
+
+  it('returns 0 for empty array', () => {
+    expect(sumMerklIncentiveApr([])).toBe(0);
+  });
+
+  it('sums active campaign APRs', () => {
+    const opportunities = [
+      makeMerklOpportunity(),
+      makeMerklOpportunity({ breakdowns: [{ campaignId: 'merkl-test-2', campaignApr: 1.5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' }] }),
+    ];
+    expect(sumMerklIncentiveApr(opportunities)).toBeCloseTo(4.5, 6);
+  });
+
+  it('applies groupMultiplier', () => {
+    const opportunities = [makeMerklOpportunity()];
+    const result = sumMerklIncentiveApr(opportunities, 1, { merklGroupMultiplier: () => 0.5 });
+    expect(result).toBeCloseTo(1.5, 6);
+  });
+
+  it('applies groupMultiplier per group', () => {
+    const opportunities = [
+      makeMerklOpportunity({ name: 'opp-1' }),
+      makeMerklOpportunity({ name: 'opp-2', breakdowns: [{ campaignId: 'merkl-test-2', campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' }] }),
+    ];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      merklGroupMultiplier: (group) => group.name === 'opp-1' ? 2 : 1,
+    });
+    expect(result).toBeCloseTo(3.0 * 2 + 2.0, 6);
+  });
+
+  it('uses pointRateMap for per-symbol rate routing', () => {
+    const opportunities = [makeMerklPointsOpportunity('TydroInkPoints', 2)];
+    const pointRateMap = { tydroinkpoints: 1.5 };
+    const result = sumMerklIncentiveApr(opportunities, 1, { pointRateMap });
+    expect(result).toBeCloseTo(2 * 1.5 * 36.5, 1);
+  });
+
+  it('returns 0 APR when rewardTokenSymbol not in pointRateMap', () => {
+    const opportunities = [makeMerklPointsOpportunity('UnknownPoints', 2)];
+    const pointRateMap = { tydroinkpoints: 1.5 };
+    const result = sumMerklIncentiveApr(opportunities, 1, { pointRateMap });
+    expect(result).toBe(0);
+  });
+
+  it('falls back to tydroPointToUsdRate when pointRateMap is not provided', () => {
+    const opportunities = [makeMerklPointsOpportunity('TydroInkPoints', 2)];
+    const result = sumMerklIncentiveApr(opportunities, 2.0);
+    expect(result).toBeCloseTo(2 * 2.0 * 36.5, 1);
+  });
+
+  it('excludes inactive campaigns', () => {
+    const opportunities = [makeMerklOpportunity({
+      breakdowns: [{ campaignId: 'merkl-ended', campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-01-31' }],
+    })];
+    expect(sumMerklIncentiveApr(opportunities)).toBe(0);
+  });
+});
+
+describe('sumMerklIncentiveApy', () => {
+  it('returns 0 for undefined input', () => {
+    expect(sumMerklIncentiveApy()).toBe(0);
+  });
+
+  it('converts APR to APY before summing', () => {
+    const opportunities = [makeMerklOpportunity()];
+    const apr = sumMerklIncentiveApr(opportunities);
+    const apy = sumMerklIncentiveApy(opportunities);
+    expect(apy).toBeCloseTo(convertAprToApy(3.0), 6);
+    expect(apy).toBeGreaterThan(apr);
+  });
+
+  it('applies groupMultiplier to APY result', () => {
+    const opportunities = [makeMerklOpportunity()];
+    const result = sumMerklIncentiveApy(opportunities, 1, { merklGroupMultiplier: () => 0.5 });
+    expect(result).toBeCloseTo(convertAprToApy(3.0) * 0.5, 6);
+  });
+
+  it('excludes inactive campaigns', () => {
+    const opportunities = [makeMerklOpportunity({
+      breakdowns: [{ campaignId: 'merkl-ended', campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-01-31' }],
+    })];
+    expect(sumMerklIncentiveApy(opportunities)).toBe(0);
   });
 });

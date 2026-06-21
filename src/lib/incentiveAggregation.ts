@@ -23,6 +23,8 @@ export interface IncentiveCalculationOptions {
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
   /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
   pointRateMap?: PointRateMap;
+  /** Per-group multiplier for Merkl opportunity groups (e.g., cross-reserve eligibility). AAV-980 */
+  merklGroupMultiplier?: (group: MerklOpportunityGroup) => number;
 }
 
 export interface IncentiveSources {
@@ -74,7 +76,7 @@ const sumMeritIncentiveApy = (meritGroups?: MeritCampaignGroup[]): number => {
   });
 };
 
-const sumMerklIncentiveApr = (
+export const sumMerklIncentiveApr = (
   opportunities?: MerklOpportunityGroup[],
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
@@ -94,10 +96,11 @@ const sumMerklIncentiveApr = (
         : getMerklBreakdownApr(breakdown, effectiveRate);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
+    groupMultiplier: options.merklGroupMultiplier,
   });
 };
 
-const sumMerklIncentiveApy = (
+export const sumMerklIncentiveApy = (
   opportunities?: MerklOpportunityGroup[],
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
@@ -117,6 +120,7 @@ const sumMerklIncentiveApy = (
         : getMerklBreakdownApr(breakdown, effectiveRate);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
+    groupMultiplier: options.merklGroupMultiplier,
   });
 };
 

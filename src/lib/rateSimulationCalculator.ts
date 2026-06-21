@@ -6,7 +6,7 @@ import {
   calculateTotalSupplyApr,
   convertAprToApy,
 } from '@/lib/rateCalculations';
-import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources, resolveBrevisCurrentApr, sumBrevisIncentiveApr, sumBrevisIncentiveApy } from '@/lib/incentiveAggregation';
+import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources, resolveBrevisCurrentApr, sumBrevisIncentiveApr, sumBrevisIncentiveApy, sumMerklIncentiveApr, sumMerklIncentiveApy } from '@/lib/incentiveAggregation';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -66,6 +66,7 @@ import {
   computeCrossReserveNetEligible,
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
+import type { PointRateMap } from '@/lib/tydro';
 
 
 export type BrevisCampaignRow = {
@@ -517,30 +518,6 @@ export const sumForecastBrevisIncentiveApr = (
   });
 };
 
-export const sumMerklIncentiveApr = (
-  opportunities: MerklOpportunityGroup[] | undefined,
-  isApy: boolean,
-  tydroPointToUsdRate: number,
-  whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  forecastStates?: Record<string, MerklForecastWireItem>,
-  groupMultiplier?: (group: MerklOpportunityGroup) => number,
-  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
-): number => {
-  return sumActiveCampaignBreakdownValues(opportunities, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
-    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]),
-    mapValue: (_group, breakdown) => {
-      const apr = forecastStates
-        ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
-        : sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
-      return isApy ? convertAprToApy(apr) : apr;
-    },
-    groupMultiplier,
-  });
-};
-
 export const buildMetric = (current: number | null, after: number | null): SimulationMetric => ({
   current,
   after,
@@ -895,7 +872,9 @@ export const buildIncentiveAfter = (
   return (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritIncentiveApr(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed), totalPositionUsd) * eligibilityRatio +
-    sumMerklIncentiveApr(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier, campaignAccessStatuses) +
+    (isApy
+      ? sumMerklIncentiveApy(forecastedMerkl, tydroPointToUsdRate, { whitelistMerklCampaignIds, merklGroupMultiplier, campaignAccessStatuses })
+      : sumMerklIncentiveApr(forecastedMerkl, tydroPointToUsdRate, { whitelistMerklCampaignIds, merklGroupMultiplier, campaignAccessStatuses })) +
     sumForecastBrevisIncentiveApr(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId, forecastStates)
   );
 };
@@ -1259,6 +1238,7 @@ export function buildRateSimulationResult({
     nativeApyPercent: number | undefined;
     brevisSharedDeposits: ReadonlyMap<string, number> | undefined;
     walletPositionUsd: number | undefined;
+    pointRateMap?: PointRateMap;
   }
 
   const sourceDispatch: Record<SourceKey, {
@@ -1277,15 +1257,20 @@ export function buildRateSimulationResult({
         buildMeritCampaignDetails(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.hasAnyInput, ctx.anchorTvlUsd, ctx.eligibilityRatio, ctx.grossInputUsd, ctx.totalPositionUsd, ctx.walletPositionUsd),
     },
     merkl: {
+      // AAV-980: unified to aggregation canonical version
       sumCurrent: (data, ctx) =>
-        sumMerklIncentiveApr(data, ctx.isApy, ctx.tydroPointToUsdRate, ctx.whitelistMerklCampaignIds, ctx.forecastStates, ctx.merklGroupMul, ctx.campaignAccessStatuses),
+        ctx.isApy
+          ? sumMerklIncentiveApy(data, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, forecastStates: ctx.forecastStates, campaignAccessStatuses: ctx.campaignAccessStatuses, merklGroupMultiplier: ctx.merklGroupMul })
+          : sumMerklIncentiveApr(data, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, forecastStates: ctx.forecastStates, campaignAccessStatuses: ctx.campaignAccessStatuses, merklGroupMultiplier: ctx.merklGroupMul }),
       sumAfter: (data, ctx) => {
         const forecasted = buildForecastMerklOpportunities({
           opportunities: data, inputUsd: ctx.meritMerklInputUsd,
           forecastStates: ctx.forecastStates, whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
           tydroPointToUsdRate: ctx.tydroPointToUsdRate,
         });
-        return sumMerklIncentiveApr(forecasted, ctx.isApy, ctx.tydroPointToUsdRate, ctx.whitelistMerklCampaignIds, undefined, ctx.merklGroupMul, ctx.campaignAccessStatuses);
+        return ctx.isApy
+          ? sumMerklIncentiveApy(forecasted, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, campaignAccessStatuses: ctx.campaignAccessStatuses, merklGroupMultiplier: ctx.merklGroupMul })
+          : sumMerklIncentiveApr(forecasted, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, campaignAccessStatuses: ctx.campaignAccessStatuses, merklGroupMultiplier: ctx.merklGroupMul });
       },
       buildDetails: (data, ctx) =>
         buildMerklCampaignDetails(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.forecastStates!, ctx.whitelistMerklCampaignIds, ctx.tydroPointToUsdRate, ctx.hasAnyInput, ctx.eligibilityRatio, ctx.grossInputUsd, ctx.merklGroupMul, ctx.merklCrossNote, ctx.campaignAccessStatuses, ctx.nativeApyPercent),
