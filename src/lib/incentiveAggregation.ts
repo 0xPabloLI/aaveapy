@@ -120,7 +120,17 @@ const sumMerklIncentiveApy = (
   });
 };
 
-const sumBrevisIncentiveApr = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
+export const resolveBrevisCurrentApr = (
+  resolved: ReturnType<typeof getBrevisResolvedBreakdown>,
+  forecastStates?: Record<string, MerklForecastWireItem>,
+): number => {
+  const apr = forecastStates
+    ? sanitizePercent(forecastMerklApr(resolved, 0, forecastStates, 0))
+    : sanitizePercent(resolved.campaignApr);
+  return !isNaN(apr) && apr >= 0 ? apr : 0;
+};
+
+export const sumBrevisIncentiveApr = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
@@ -128,15 +138,12 @@ const sumBrevisIncentiveApr = (brevis?: BrevisIncentive[], forecastStates?: Reco
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
       const resolved = getBrevisResolvedBreakdown(group, breakdown);
-      const apr = forecastStates
-        ? sanitizePercent(forecastMerklApr(resolved, 0, forecastStates, 0))
-        : sanitizePercent(resolved.campaignApr);
-      return !isNaN(apr) && apr >= 0 ? apr : 0;
+      return resolveBrevisCurrentApr(resolved, forecastStates);
     },
   });
 };
 
-const sumBrevisIncentiveApy = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
+export const sumBrevisIncentiveApy = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
@@ -144,10 +151,8 @@ const sumBrevisIncentiveApy = (brevis?: BrevisIncentive[], forecastStates?: Reco
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
       const resolved = getBrevisResolvedBreakdown(group, breakdown);
-      const apr = forecastStates
-        ? sanitizePercent(forecastMerklApr(resolved, 0, forecastStates, 0))
-        : sanitizePercent(resolved.campaignApr);
-      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
+      const apr = resolveBrevisCurrentApr(resolved, forecastStates);
+      return apr > 0 ? convertAprToApy(apr) : 0;
     },
   });
 };

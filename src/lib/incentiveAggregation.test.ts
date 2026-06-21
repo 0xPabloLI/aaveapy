@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getReserveIncentiveValues, getIncentiveSources } from './incentiveAggregation';
-import type { ReserveWithSpread } from '@/types/aave';
+import { getReserveIncentiveValues, getIncentiveSources, sumBrevisIncentiveApr, sumBrevisIncentiveApy } from './incentiveAggregation';
+import { convertAprToApy } from '@/lib/rateCalculations';
+import type { BrevisIncentive, MerklForecastWireItem, ReserveWithSpread } from '@/types/aave';
 
 const merklPointsReserve = (rewardTokenSymbol?: string): ReserveWithSpread => ({
   reserveId: 'test-1',
@@ -140,5 +141,152 @@ describe('getIncentiveSources', () => {
     expect(sources.merit).toBeUndefined();
     expect(sources.merkl).toBeUndefined();
     expect(sources.brevis).toBeUndefined();
+  });
+});
+
+const makeBrevis = (overrides: Partial<BrevisIncentive> = {}): BrevisIncentive => ({
+  link: 'https://example.com/brevis',
+  name: 'Brevis USDC',
+  campaignApr: 2.5,
+  campaignStartedAt: '2026-01-01T00:00:00.000Z',
+  campaignEndedAt: '2027-12-31T00:00:00.000Z',
+  message: 'Brevis campaign',
+  ...overrides,
+});
+
+const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
+  [campaignId]: {
+    distributedSoFar: 100,
+    endTimestamp: Math.floor(new Date('2027-12-31').getTime() / 1000),
+    requiredDaily: 5,
+    ...overrides,
+  },
+});
+
+describe('sumBrevisIncentiveApr', () => {
+  it('returns 0 for undefined input', () => {
+    expect(sumBrevisIncentiveApr()).toBe(0);
+  });
+
+  it('returns 0 for empty array', () => {
+    expect(sumBrevisIncentiveApr([])).toBe(0);
+  });
+
+  it('returns sum of active campaign APRs without forecastStates', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 2.5 }),
+      makeBrevis({ campaignApr: 1.5 }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBeCloseTo(4.0, 6);
+  });
+
+  it('uses forecastMerklApr when forecastStates is provided', () => {
+    const brevis = [
+      makeBrevis({ campaignId: 'brevis-1', campaignApr: 0, campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', aprCap: 5, latestTvl: 100_000, totalBudget: 500 }),
+    ];
+    const forecastStates = makeForecastStates('brevis-1');
+    const withForecast = sumBrevisIncentiveApr(brevis, forecastStates);
+    const withoutForecast = sumBrevisIncentiveApr(brevis);
+    expect(withForecast).toBeGreaterThan(0);
+    expect(withoutForecast).toBe(0);
+  });
+
+  it('excludes inactive campaigns', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 2.5, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2026-01-31T00:00:00.000Z' }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBe(0);
+  });
+
+  it('includes open-ended campaigns (no end date)', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 3.0, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: undefined }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBe(3.0);
+  });
+
+  it('filters negative APR to 0', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: -1.5 }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBe(0);
+  });
+
+  it('filters NaN APR to 0', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: NaN }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBe(0);
+  });
+
+  it('sums multiple groups with multiple breakdowns', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 2.0, breakdowns: [{ campaignApr: 1.2, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }, { campaignApr: 0.8, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }] }),
+      makeBrevis({ campaignApr: 1.5 }),
+    ];
+    expect(sumBrevisIncentiveApr(brevis)).toBeCloseTo(3.5, 6);
+  });
+
+  it('falls back to campaignApr when forecastStates has no matching campaignId', () => {
+    const brevis = [
+      makeBrevis({ campaignId: 'brevis-1', campaignApr: 2.5 }),
+    ];
+    const forecastStates = makeForecastStates('other-campaign');
+    expect(sumBrevisIncentiveApr(brevis, forecastStates)).toBeCloseTo(2.5, 6);
+  });
+});
+
+describe('sumBrevisIncentiveApy', () => {
+  it('returns 0 for undefined input', () => {
+    expect(sumBrevisIncentiveApy()).toBe(0);
+  });
+
+  it('converts each campaign APR to APY before summing', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 2.5 }),
+    ];
+    const apr = sumBrevisIncentiveApr(brevis);
+    const apy = sumBrevisIncentiveApy(brevis);
+    expect(apy).toBeCloseTo(convertAprToApy(2.5), 6);
+    expect(apy).toBeGreaterThan(apr);
+  });
+
+  it('excludes inactive campaigns', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 2.5, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2026-01-31T00:00:00.000Z' }),
+    ];
+    expect(sumBrevisIncentiveApy(brevis)).toBe(0);
+  });
+
+  it('includes open-ended campaigns', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: 3.0, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: undefined }),
+    ];
+    expect(sumBrevisIncentiveApy(brevis)).toBeCloseTo(convertAprToApy(3.0), 6);
+  });
+
+  it('filters negative APR to 0', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: -1.5 }),
+    ];
+    expect(sumBrevisIncentiveApy(brevis)).toBe(0);
+  });
+
+  it('filters NaN APR to 0', () => {
+    const brevis = [
+      makeBrevis({ campaignApr: NaN }),
+    ];
+    expect(sumBrevisIncentiveApy(brevis)).toBe(0);
+  });
+
+  it('uses forecastStates when provided', () => {
+    const brevis = [
+      makeBrevis({ campaignId: 'brevis-1', campaignApr: 0, campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', aprCap: 5, latestTvl: 100_000, totalBudget: 500 }),
+    ];
+    const forecastStates = makeForecastStates('brevis-1');
+    const withForecast = sumBrevisIncentiveApy(brevis, forecastStates);
+    const withoutForecast = sumBrevisIncentiveApy(brevis);
+    expect(withForecast).toBeGreaterThan(0);
+    expect(withoutForecast).toBe(0);
   });
 });
