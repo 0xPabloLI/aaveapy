@@ -53,5 +53,9 @@ test-results/
 .agents/
 .trae/skills/
 
-# Local-only notes and drafts (not committed)
-/local/
+# Debug scripts and pages (development-only, not committed)
+scripts/debug-*
+scripts/verify-*
+scripts/verify_*
+src/pages/Debug*
+output/
