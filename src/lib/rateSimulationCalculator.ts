@@ -6,7 +6,7 @@ import {
   calculateTotalSupplyApr,
   convertAprToApy,
 } from '@/lib/rateCalculations';
-import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources } from '@/lib/incentiveAggregation';
+import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources, resolveBrevisCurrentApr, sumBrevisIncentiveApr, sumBrevisIncentiveApy } from '@/lib/incentiveAggregation';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -413,25 +413,6 @@ export const sumForecastMeritIncentiveApr = (
   return isApy ? convertAprToApy(aprPercent) : aprPercent;
 };
 
-export const sumBrevisIncentiveApr = (values?: BrevisIncentive[], isApy = false): number => {
-  if (!values || values.length === 0) return 0;
-  return values.reduce((sum, value) => {
-    const breakdowns = getBrevisCampaignBreakdowns(value);
-    if (breakdowns.length === 0) return sum;
-    return (
-      sum +
-      breakdowns.reduce((breakdownSum, breakdown) => {
-        const resolved = getBrevisResolvedBreakdown(value, breakdown);
-        if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, Date.now(), true)) {
-          return breakdownSum;
-        }
-        const apr = sanitizePercent(resolved.campaignApr);
-        return breakdownSum + (isApy ? convertAprToApy(apr) : apr);
-      }, 0)
-    );
-  }, 0);
-};
-
 export const areBrevisSharedSnapshotsEqual = (
   left: ReturnType<typeof getBrevisResolvedBreakdown>,
   right: ReturnType<typeof getBrevisResolvedBreakdown>,
@@ -811,7 +792,7 @@ export const buildBrevisCampaignDetails = (
     const resolved = getBrevisResolvedBreakdown(source, breakdown);
     const baseLabel = (resolved.name?.trim() || resolved.message?.trim() || 'Brevis');
     if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, nowMs, true)) return;
-    const nominal = sanitizePercent(resolved.campaignApr);
+    const nominal = resolveBrevisCurrentApr(resolved, forecastStates);
     const current = isApy ? convertAprToApy(nominal) : nominal;
     let after: number | null = null;
     let capNote: string | undefined;
@@ -1309,7 +1290,7 @@ export function buildRateSimulationResult({
         buildMerklCampaignDetails(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.forecastStates!, ctx.whitelistMerklCampaignIds, ctx.tydroPointToUsdRate, ctx.hasAnyInput, ctx.eligibilityRatio, ctx.grossInputUsd, ctx.merklGroupMul, ctx.merklCrossNote, ctx.campaignAccessStatuses, ctx.nativeApyPercent),
     },
     brevis: {
-      sumCurrent: (data, ctx) => sumBrevisIncentiveApr(data, ctx.isApy),
+      sumCurrent: (data, ctx) => ctx.isApy ? sumBrevisIncentiveApy(data, ctx.forecastStates) : sumBrevisIncentiveApr(data, ctx.forecastStates),
       sumAfter: (data, ctx) =>
         sumForecastBrevisIncentiveApr(data, ctx.isApy, ctx.grossInputUsd, ctx.brevisSharedDeposits, ctx.forecastStates),
       buildDetails: (data, ctx) =>
