@@ -741,7 +741,7 @@ const IncentiveTooltip = ({
         )}
         {renderCampaignTypeDescription(campaign)}
         {campaign.positionCap != null && campaign.positionCap > 0 && (
-          <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-muted-foreground">
+          <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
             Position cap {formatUsd(campaign.positionCap)}
           </p>
         )}
