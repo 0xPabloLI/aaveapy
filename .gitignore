@@ -47,3 +47,10 @@ test-results/
 
 # Local-only notes and drafts (not committed)
 /local/
+
+# Tool/IDE local caches
+.agents/
+.arts/
+.trae/
+.playwright-cli/
+*.tsbuildinfo
