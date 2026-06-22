@@ -186,16 +186,44 @@ describe('forecastWithTVL', () => {
     expect(amountResult.regime).toBe(valueResult.regime);
   });
 
-  it('treats TARGET_TOTAL_APR same as FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', () => {
-    const targetTotalState: MerklForecastState = {
+  it('routes TARGET_TOTAL_APR with MAX_APR budgetBoundMode to MAX path', () => {
+    const targetTotalMaxState: MerklForecastState = {
       ...baseState,
       campaignType: 'TARGET_TOTAL_APR',
+      budgetBoundMode: 'MAX_APR',
+      aprCap: 0.047,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const maxState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      aprCap: 0.047,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const targetResult = forecastWithTVL(targetTotalMaxState, 1_000, nowTs);
+    const maxResult = forecastWithTVL(maxState, 1_000, nowTs);
+
+    expect(targetResult.dailyRewards).toBeCloseTo(maxResult.dailyRewards, 10);
+    expect(targetResult.apr).toBeCloseTo(maxResult.apr, 10);
+    expect(targetResult.regime).toBe(maxResult.regime);
+    expect(targetResult.fixRewardableDays).toBeUndefined();
+  });
+
+  it('routes TARGET_TOTAL_APR with FIX_APR budgetBoundMode to FIX path', () => {
+    const targetTotalFixState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'TARGET_TOTAL_APR',
+      budgetBoundMode: 'FIX_APR',
       aprCap: 0.005,
       plannedDaily: 4_000,
       requiredDaily: 10_000,
     };
 
-    const fixValueState: MerklForecastState = {
+    const fixState: MerklForecastState = {
       ...baseState,
       campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
       aprCap: 0.005,
@@ -203,12 +231,39 @@ describe('forecastWithTVL', () => {
       requiredDaily: 10_000,
     };
 
-    const targetResult = forecastWithTVL(targetTotalState, 100_000, nowTs);
-    const fixResult = forecastWithTVL(fixValueState, 100_000, nowTs);
+    const targetResult = forecastWithTVL(targetTotalFixState, 100_000, nowTs);
+    const fixResult = forecastWithTVL(fixState, 100_000, nowTs);
 
     expect(targetResult.dailyRewards).toBeCloseTo(fixResult.dailyRewards, 10);
     expect(targetResult.apr).toBeCloseTo(fixResult.apr, 10);
     expect(targetResult.regime).toBe(fixResult.regime);
+    expect(targetResult.fixRewardableDays).toBeCloseTo(fixResult.fixRewardableDays!, 10);
+  });
+
+  it('treats TARGET_TOTAL_APR without budgetBoundMode as non-rate-limited (Dutch path)', () => {
+    const targetTotalNoModeState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'TARGET_TOTAL_APR',
+      aprCap: 0.047,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const dutchState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'DUTCH_AUCTION',
+      aprCap: null,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const targetResult = forecastWithTVL(targetTotalNoModeState, 1_000, nowTs);
+    const dutchResult = forecastWithTVL(dutchState, 1_000, nowTs);
+
+    expect(targetResult.dailyRewards).toBeCloseTo(dutchResult.dailyRewards, 10);
+    expect(targetResult.apr).toBeCloseTo(dutchResult.apr, 10);
+    expect(targetResult.regime).toBe(dutchResult.regime);
+    expect(targetResult.fixRewardableDays).toBeUndefined();
   });
 
   it('shortens FIX rewardable window as TVL increases', () => {

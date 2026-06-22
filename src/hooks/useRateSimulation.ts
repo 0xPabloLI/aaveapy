@@ -109,6 +109,7 @@ const mergeForecastState = (
   pointRateMap: PointRateMap,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
+  if (breakdown.campaignType === 'TARGET_TOTAL_APR' && !breakdown.budgetBoundMode) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
   const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
     if (isMerklPointsCampaign(breakdown)) {
@@ -125,6 +126,7 @@ const mergeForecastState = (
     requiredDaily: normalizeUsdUnit(metrics?.requiredDaily),
     distributedSoFar: normalizeUsdUnit(metrics?.distributedSoFar),
     endTimestamp: metrics?.endTimestamp,
+    budgetBoundMode: breakdown.budgetBoundMode,
   };
 };
 
@@ -772,17 +774,24 @@ const buildMerklCampaignDetails = (
 
         const merged = mergeForecastState(bd, forecastStates, pointRateMap);
         const merklType = merged?.campaignType;
-        if (
-          merged &&
-          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE')
-        ) {
+        const merklBudgetBoundMode = merged?.budgetBoundMode;
+        const isMerklFixLike =
+          merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+          merklType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE' ||
+          merklType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT' ||
+          (merklType === 'TARGET_TOTAL_APR' && merklBudgetBoundMode === 'FIX_APR');
+        const isMerklMaxLike =
+          merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+          merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT' ||
+          (merklType === 'TARGET_TOTAL_APR' && merklBudgetBoundMode === 'MAX_APR');
+        if (merged && (isMerklFixLike || isMerklMaxLike)) {
           const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
           const forecast = forecastWithTVL(merged, hypotheticalTvl);
-          if (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && typeof forecast.fixRewardableDays === 'number') {
+          if (isMerklFixLike && typeof forecast.fixRewardableDays === 'number') {
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(
               buildMerklFixPoolBudgetEffect(forecast.fixRewardableDays),
             ));
-          } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
+          } else if (isMerklMaxLike && forecast.regime === 'APR_CAPPED') {
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
           }
         }

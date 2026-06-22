@@ -42,6 +42,7 @@ export interface MerklCampaignBreakdown extends BaseCampaignBreakdown {
   plannedDaily?: number;
   rewardTokenSymbol?: string;
   rewardTokenIconUrl?: string;
+  budgetBoundMode?: string;
 }
 
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;

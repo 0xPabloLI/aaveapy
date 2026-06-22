@@ -1160,4 +1160,149 @@ describe('buildRateSimulationResult', () => {
     expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBeUndefined();
     expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBeUndefined();
   });
+
+  it('adds APR ceiling cap note for TARGET_TOTAL_APR with MAX_APR budgetBoundMode', () => {
+    const merkl: MerklOpportunityGroup[] = [
+      {
+        name: 'TTA MAX opp',
+        breakdowns: [
+          {
+            campaignApr: 2.1,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'tta-max1',
+            campaignType: 'TARGET_TOTAL_APR',
+            budgetBoundMode: 'MAX_APR',
+            aprCap: 4.7,
+            totalBudget: 100000,
+            latestTvl: 1000,
+            plannedDaily: 10,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastWireItem> = {
+      'tta-max1': {
+        campaignId: 'tta-max1',
+        requiredDaily: 10,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const reserve: ReserveWithSpread = { ...baseReserve, merklSupplys: merkl };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      pointRateMap: { tydroinkpoints: 1 },
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: states,
+    });
+
+    const row = result.supply.sources.merkl.campaigns?.[0];
+    expect(row).toBeDefined();
+    expect(row!.current).toBe(2.1);
+  });
+
+  it('adds fix budget cap note for TARGET_TOTAL_APR with FIX_APR budgetBoundMode', () => {
+    const merkl: MerklOpportunityGroup[] = [
+      {
+        name: 'TTA FIX opp',
+        breakdowns: [
+          {
+            campaignApr: 2.1,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'tta-fix1',
+            campaignType: 'TARGET_TOTAL_APR',
+            budgetBoundMode: 'FIX_APR',
+            aprCap: 4.7,
+            totalBudget: 100000,
+            latestTvl: 1000,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastWireItem> = {
+      'tta-fix1': {
+        campaignId: 'tta-fix1',
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const reserve: ReserveWithSpread = { ...baseReserve, merklSupplys: merkl };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      pointRateMap: { tydroinkpoints: 1 },
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: states,
+    });
+
+    const row = result.supply.sources.merkl.campaigns?.[0];
+    expect(row).toBeDefined();
+    expect(row!.current).toBe(2.1);
+  });
+
+  it('skips forecast for TARGET_TOTAL_APR without budgetBoundMode', () => {
+    const merkl: MerklOpportunityGroup[] = [
+      {
+        name: 'TTA no mode opp',
+        breakdowns: [
+          {
+            campaignApr: 2.1,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'tta-nomode1',
+            campaignType: 'TARGET_TOTAL_APR',
+            aprCap: 4.7,
+            totalBudget: 100000,
+            latestTvl: 1000,
+            plannedDaily: 10,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastWireItem> = {
+      'tta-nomode1': {
+        campaignId: 'tta-nomode1',
+        requiredDaily: 10,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const reserve: ReserveWithSpread = { ...baseReserve, merklSupplys: merkl };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      pointRateMap: { tydroinkpoints: 1 },
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: states,
+    });
+
+    const row = result.supply.sources.merkl.campaigns?.[0];
+    expect(row).toBeDefined();
+    expect(row!.current).toBe(2.1);
+    expect(row!.capNote).toBeUndefined();
+  });
 });

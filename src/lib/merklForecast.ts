@@ -12,6 +12,7 @@ export interface MerklForecastState {
   totalBudget?: number;
   latestTvl?: number;
   endTimestamp?: number;
+  budgetBoundMode?: string;
 }
 
 export type MerklForecastProgressState = MerklForecastState;
@@ -50,12 +51,13 @@ export const forecastWithTVL = (
   const safeTvl = safe(tvl);
   const isMaxAprCampaign =
     forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
-    forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT';
+    forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT' ||
+    (forecastState.campaignType === 'TARGET_TOTAL_APR' && forecastState.budgetBoundMode === 'MAX_APR');
   const isFixAprCampaign =
     forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
     forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE' ||
     forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT' ||
-    forecastState.campaignType === 'TARGET_TOTAL_APR';
+    (forecastState.campaignType === 'TARGET_TOTAL_APR' && forecastState.budgetBoundMode === 'FIX_APR');
   const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
 
   if (safeTvl <= 0) {
