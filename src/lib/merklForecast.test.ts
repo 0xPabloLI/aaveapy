@@ -186,6 +186,31 @@ describe('forecastWithTVL', () => {
     expect(amountResult.regime).toBe(valueResult.regime);
   });
 
+  it('treats TARGET_TOTAL_APR same as FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', () => {
+    const targetTotalState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'TARGET_TOTAL_APR',
+      aprCap: 0.005,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const fixValueState: MerklForecastState = {
+      ...baseState,
+      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      aprCap: 0.005,
+      plannedDaily: 4_000,
+      requiredDaily: 10_000,
+    };
+
+    const targetResult = forecastWithTVL(targetTotalState, 100_000, nowTs);
+    const fixResult = forecastWithTVL(fixValueState, 100_000, nowTs);
+
+    expect(targetResult.dailyRewards).toBeCloseTo(fixResult.dailyRewards, 10);
+    expect(targetResult.apr).toBeCloseTo(fixResult.apr, 10);
+    expect(targetResult.regime).toBe(fixResult.regime);
+  });
+
   it('shortens FIX rewardable window as TVL increases', () => {
     const fixState: MerklForecastState = {
       ...baseState,

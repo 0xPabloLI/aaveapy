@@ -485,6 +485,7 @@ const IncentiveTooltip = ({
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
                 rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
+                rewardTokenSymbol: breakdown.rewardTokenSymbol,
               }],
             });
           }
@@ -598,14 +599,15 @@ const IncentiveTooltip = ({
                   </span>
                 </label>
               )}
-              <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
-                <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
-                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass} inline-flex items-center gap-1`}>
+              <div className={`ds-tooltip-body grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)]`}>
+                <span className={`break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</span>
+                <div />
+                <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap">
                   {(() => {
                     const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
-                    return campaignIconSrc ? <img src={campaignIconSrc} alt="" className="w-4 h-4 rounded-full" loading="eager" /> : null;
+                    return campaignIconSrc ? <img src={campaignIconSrc} alt="" className="h-3.5 w-3.5 flex-shrink-0 rounded-full" loading="lazy" /> : null;
                   })()}
-                  {formatPercent(displayValue)}
+                  <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>{formatPercent(displayValue)}</span>
                 </span>
               </div>
               {messageLines.length > 0 && (
@@ -761,13 +763,17 @@ const IncentiveTooltip = ({
                   const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
                   const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
                   const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
+                  const headerUniformIcon = campaignsHaveUniformIcon(campaigns);
+                  const headerRewardTokenIcon = headerUniformIcon
+                    ? resolveRewardTokenIconSrc(campaigns[0]?.rewardTokenSymbol, campaigns[0]?.rewardTokenIconUrl)
+                    : undefined;
                   return (
                     <div 
                       key={`${source.name}-${index}`}
                       className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
                     >
-                      <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                        <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+                        <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 pr-1">
                           {iconSrc && (
                             <span
                               className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
@@ -790,22 +796,30 @@ const IncentiveTooltip = ({
                             {source.name}
                           </span>
                         </div>
-                        <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                          {source.link && (
-                            <a
-                              href={source.link}
-                              {...externalLinkTabProps(isMobile)}
-                              onClick={(e) => e.stopPropagation()}
-                              className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-                              title="Open link"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
+                        {source.link ? (
+                          <a
+                            href={source.link}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                            title="Open link"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <div />
+                        )}
+                        <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
+                          {headerRewardTokenIcon && (
+                            <img
+                              src={headerRewardTokenIcon}
+                              alt=""
+                              className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                              loading="lazy"
+                            />
                           )}
-                          <span className={`${valueClass} whitespace-nowrap`}>
-                            {formatPercent(sourceDisplayValue)}
-                          </span>
-                        </div>
+                          {formatPercent(sourceDisplayValue)}
+                        </span>
                       </div>
                       {renderSourceCampaigns(source, `mobile-${index}`)}
                     </div>
@@ -888,14 +902,18 @@ const IncentiveTooltip = ({
                 const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
                 const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
                 const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
+                const headerUniformIcon = campaignsHaveUniformIcon(campaigns);
+                const headerRewardTokenIcon = headerUniformIcon
+                  ? resolveRewardTokenIconSrc(campaigns[0]?.rewardTokenSymbol, campaigns[0]?.rewardTokenIconUrl)
+                  : undefined;
                 return (
                   <div 
                     key={`${source.name}-${index}`}
                     className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0 slide-in-from-top-2 ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
                     style={{ animationDelay: `${index * 45}ms` }}
                   >
-                    <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                      <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+                    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+                      <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 pr-1">
                         {iconSrc && (
                           <span
                             className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
@@ -918,22 +936,30 @@ const IncentiveTooltip = ({
                           {source.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                        {source.link && (
-                          <a
-                            href={source.link}
-                            {...externalLinkTabProps(isMobile)}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-                            title="Open link"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                      {source.link ? (
+                        <a
+                          href={source.link}
+                          {...externalLinkTabProps(isMobile)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                          title="Open link"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                      <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
+                        {headerRewardTokenIcon && (
+                          <img
+                            src={headerRewardTokenIcon}
+                            alt=""
+                            className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
+                            loading="lazy"
+                          />
                         )}
-                        <span className={`${valueClass} whitespace-nowrap`}>
-                          {formatPercent(sourceDisplayValue)}
-                        </span>
-                      </div>
+                        {formatPercent(sourceDisplayValue)}
+                      </span>
                     </div>
                     {renderSourceCampaigns(source, `desktop-${index}`)}
                   </div>

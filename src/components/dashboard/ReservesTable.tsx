@@ -50,7 +50,9 @@ interface ReservesTableProps {
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
-}type SortMode = 'total' | 'native' | 'incentive';
+}
+
+type SortMode = 'total' | 'native' | 'incentive';
 
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 

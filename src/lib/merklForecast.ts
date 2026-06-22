@@ -54,7 +54,8 @@ export const forecastWithTVL = (
   const isFixAprCampaign =
     forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
     forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE' ||
-    forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT';
+    forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT' ||
+    forecastState.campaignType === 'TARGET_TOTAL_APR';
   const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
 
   if (safeTvl <= 0) {
