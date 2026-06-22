@@ -18,6 +18,7 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { buildPointRateMap, type PointRateMap } from '@/lib/formatters';
 import { AlertTriangle, Send, Github } from 'lucide-react';
 import {
   preloadIncentiveIcons,
@@ -88,6 +89,11 @@ const Index = () => {
       setCachedTydroRate(parsed);
     }
   }, [tydroPointToUsdRateInput]);
+
+  const pointRateMap = useMemo(
+    () => buildPointRateMap(tydroPointToUsdRate),
+    [tydroPointToUsdRate]
+  );
 
   // Fetch data - API returns { snapshot, reserves } (breaking change)
   const { data, isLoading, error, isError, refetch } = useAaveMarkets();
@@ -372,7 +378,7 @@ const Index = () => {
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
               onCardClick={handleTopCardClick}
-              tydroPointToUsdRate={tydroPointToUsdRate}
+              pointRateMap={pointRateMap}
             />
           )}
 
@@ -402,7 +408,7 @@ const Index = () => {
                   prev.length === 1 && prev[0] === marketName ? [] : [marketName]
                 );
               }}
-              tydroPointToUsdRate={tydroPointToUsdRate}
+              pointRateMap={pointRateMap}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}
               onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}
@@ -423,7 +429,7 @@ const Index = () => {
                 accentBgClass={topTooltipState.accentBgClass}
                 onClose={() => setTopTooltipState(null)}
                 isApy={isApy}
-                tydroPointToUsdRate={tydroPointToUsdRate}
+                pointRateMap={pointRateMap}
                 whitelistMerklCampaignIds={whitelistMerklCampaignIds}
                 onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
                 usePortal
@@ -450,7 +456,7 @@ const Index = () => {
               <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
                 <MerklForecastPanel
                   reserves={filteredReserves}
-                  tydroPointToUsdRate={tydroPointToUsdRate}
+                  pointRateMap={pointRateMap}
                   whitelistMerklCampaignIds={whitelistMerklCampaignIds}
                   onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
                   tokenPrices={tokenPrices}

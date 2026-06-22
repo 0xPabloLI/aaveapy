@@ -35,6 +35,8 @@ const MerklCampaignBreakdownSchema = z.object({
   aprCap: z.number().nullable().optional(),
   latestTvl: z.number().optional(),
   plannedDaily: z.number().optional(),
+  rewardTokenSymbol: z.string().optional(),
+  rewardTokenIconUrl: z.string().optional(),
 });
 
 const MerklOpportunityGroupSchema = z.object({

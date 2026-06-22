@@ -16,6 +16,7 @@ import {
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
   resolveVisibleIncentiveBadgeValue,
+  type PointRateMap,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
@@ -44,14 +45,12 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
-}
-
-type SortMode = 'total' | 'native' | 'incentive';
+}type SortMode = 'total' | 'native' | 'incentive';
 
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
@@ -65,7 +64,7 @@ const ReservesTable = ({
   isApy,
   isLoading,
   onSelectMarket,
-  tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
   tokenPrices,
@@ -171,7 +170,7 @@ const ReservesTable = ({
     reserves,
     isApy,
     whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
+    pointRateMap,
     tokenPrices,
     supplyInput: debouncedSharedSupplyInput,
     borrowInput: debouncedSharedBorrowInput,
@@ -267,7 +266,7 @@ const ReservesTable = ({
         merklOpportunities,
         brevisIncentives,
         protocolIncentives,
-        tydroPointToUsdRate,
+        pointRateMap,
         { whitelistMerklCampaignIds }
       ),
       apy: calculateTotalIncentiveApy(
@@ -275,7 +274,7 @@ const ReservesTable = ({
         merklOpportunities,
         brevisIncentives,
         protocolIncentives,
-        tydroPointToUsdRate,
+        pointRateMap,
         { whitelistMerklCampaignIds }
       ),
     };
@@ -550,7 +549,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, pointRateMap, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
   /**
    * Simulation pin scroll — normative spec + implementation steps:
@@ -1439,7 +1438,7 @@ const ReservesTable = ({
                     connectedBelow={leftExpanded}
                     reserve={leftReserve}
                     isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
+                    pointRateMap={pointRateMap}
                     onIncentiveClick={handleMobileIncentiveClick}
                     isSimulationExpanded={isLeftActive}
                     onToggleSimulation={() => handleToggleExpand(leftId)}
@@ -1459,7 +1458,7 @@ const ReservesTable = ({
                     connectedBelow={rightExpanded}
                     reserve={rightReserve}
                     isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
+                    pointRateMap={pointRateMap}
                     onIncentiveClick={handleMobileIncentiveClick}
                     isSimulationExpanded={isRightActive}
                     onToggleSimulation={() => handleToggleExpand(rightId!)}
@@ -1490,7 +1489,7 @@ const ReservesTable = ({
                             variant="simulationOnly"
                             reserve={activeReserve}
                             isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
+                            pointRateMap={pointRateMap}
                             onIncentiveClick={handleMobileIncentiveClick}
                             isSimulationExpanded
                             onToggleSimulation={() => handleToggleExpand(activeId)}
@@ -1553,7 +1552,7 @@ const ReservesTable = ({
             accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
             isApy={isApy}
-            tydroPointToUsdRate={tydroPointToUsdRate}
+            pointRateMap={pointRateMap}
             whitelistMerklCampaignIds={whitelistMerklCampaignIds}
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           />
@@ -2234,14 +2233,14 @@ const ReservesTable = ({
                 reserve,
                 'supply',
                 isApy,
-                tydroPointToUsdRate,
+                pointRateMap,
               );
               const displayBorrowIncentive = resolveVisibleIncentiveBadgeValue(
                 getDisplayBorrowIncentive(reserve),
                 reserve,
                 'borrow',
                 isApy,
-                tydroPointToUsdRate,
+                pointRateMap,
               );
               return (
                 <DesktopReserveRow
@@ -2321,7 +2320,7 @@ const ReservesTable = ({
           accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}
           isApy={isApy}
-          tydroPointToUsdRate={tydroPointToUsdRate}
+          pointRateMap={pointRateMap}
           whitelistMerklCampaignIds={whitelistMerklCampaignIds}
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />

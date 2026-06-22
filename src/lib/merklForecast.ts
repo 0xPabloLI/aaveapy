@@ -48,8 +48,13 @@ export const forecastWithTVL = (
   nowTs = Math.floor(Date.now() / 1000)
 ): MerklForecastResult => {
   const safeTvl = safe(tvl);
-  const isMaxAprCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
-  const isFixAprCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isMaxAprCampaign =
+    forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+    forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT';
+  const isFixAprCampaign =
+    forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+    forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE' ||
+    forecastState.campaignType === 'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT';
   const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
 
   if (safeTvl <= 0) {

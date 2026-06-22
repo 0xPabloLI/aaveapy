@@ -13,7 +13,8 @@ import {
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
-import { convertMerklPointsAmountToUsd, isMerklPointsCampaign } from '@/lib/tydro';
+import { convertMerklPointsAmountToUsd, getPointToUsdRate, isMerklPointsCampaign } from '@/lib/tydro';
+import { type PointRateMap } from '@/lib/formatters';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 import { cn } from '@/lib/utils';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -21,7 +22,7 @@ import { cnDsInputSurface } from '@/lib/dsInputSurface';
 interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
   tokenPrices?: TokenPricesIndex;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
 }
@@ -64,7 +65,7 @@ const findBreakdownByCampaignId = (reserves: ReserveWithSpread[], campaignId: st
 const MerklForecastPanel = ({
   reserves,
   tokenPrices,
-  tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
 }: MerklForecastPanelProps) => {
@@ -161,7 +162,7 @@ const MerklForecastPanel = ({
     if (!selectedBreakdown?.campaignType) return undefined;
     const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
       if (isMerklPointsCampaign(selectedBreakdown)) {
-        return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+        return convertMerklPointsAmountToUsd(value, getPointToUsdRate(selectedBreakdown.rewardTokenSymbol, pointRateMap));
       }
       return value ?? undefined;
     };
@@ -175,7 +176,7 @@ const MerklForecastPanel = ({
       distributedSoFar: normalizeUsdUnit(selectedMetrics?.distributedSoFar),
       endTimestamp: selectedMetrics?.endTimestamp,
     };
-  }, [selectedBreakdown, selectedMetrics, tydroPointToUsdRate]);
+  }, [selectedBreakdown, selectedMetrics, pointRateMap]);
 
   const forecast = useMemo(() => {
     if (!mergedState || !selectedOption) return null;

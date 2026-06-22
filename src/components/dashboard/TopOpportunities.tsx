@@ -18,7 +18,8 @@ import {
   calculateTotalBorrowApr,
   calculateSpreadApr,
   calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy
+  calculateTotalIncentiveApy,
+  type PointRateMap,
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
@@ -49,7 +50,7 @@ interface TopOpportunitiesProps {
     accentBgClass?: string;
   }) => void;
   onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
 }
 
 const DISPLAY_COUNT = 5;
@@ -205,7 +206,7 @@ const TopOpportunities = ({
   categoryGroups,
   onIncentiveClick,
   onCardClick,
-  tydroPointToUsdRate,
+  pointRateMap,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
@@ -238,7 +239,7 @@ const TopOpportunities = ({
           merklOpportunities,
           brevisIncentives,
           protocolIncentives,
-          tydroPointToUsdRate,
+          pointRateMap,
           { whitelistMerklCampaignIds }
         ),
         apy: calculateTotalIncentiveApy(
@@ -246,7 +247,7 @@ const TopOpportunities = ({
           merklOpportunities,
           brevisIncentives,
           protocolIncentives,
-          tydroPointToUsdRate,
+          pointRateMap,
           { whitelistMerklCampaignIds }
         ),
       };
@@ -273,7 +274,7 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
+  }), [whitelistMerklCampaignIds, reserves, pointRateMap]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...reservesWithTotals]

@@ -13,7 +13,7 @@ const whitelistMerklSetsEqual = (a: ReadonlySet<string>, b: ReadonlySet<string>)
 
 export interface TopOpportunitiesMemoProps {
   isApy: boolean;
-  tydroPointToUsdRate: number;
+  pointRateMap: Record<string, number>;
   isRateDragging?: boolean;
   onIncentiveClick?: unknown;
   onCardClick?: unknown;
@@ -27,7 +27,7 @@ export const shouldSkipTopOpportunitiesRender = (
   nextProps: TopOpportunitiesMemoProps
 ): boolean => {
   if (prevProps.isApy !== nextProps.isApy) return false;
-  if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) return false;
+  if (prevProps.pointRateMap !== nextProps.pointRateMap) return false;
   if (prevProps.isRateDragging !== nextProps.isRateDragging) return false;
   if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) return false;
   if (prevProps.onCardClick !== nextProps.onCardClick) return false;

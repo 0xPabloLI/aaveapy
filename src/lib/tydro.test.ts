@@ -4,6 +4,8 @@ import {
   getMerklBreakdownApr,
   getMerklForecastUsdMultiplier,
   convertMerklPointsAmountToUsd,
+  safePointToUsdRate,
+  getPointToUsdRate,
 } from './tydro';
 import type { MerklCampaignBreakdown } from '@/types/aave';
 
@@ -13,6 +15,60 @@ const baseBreakdown: MerklCampaignBreakdown = {
   campaignEndedAt: '2026-02-01T00:00:00.000Z',
   campaignId: '1',
 };
+
+describe('safePointToUsdRate', () => {
+  it('passes through valid positive rate', () => {
+    expect(safePointToUsdRate(1.5)).toBe(1.5);
+  });
+
+  it('passes through zero (user intent)', () => {
+    expect(safePointToUsdRate(0)).toBe(0);
+  });
+
+  it('falls back to 0 for NaN', () => {
+    expect(safePointToUsdRate(NaN)).toBe(0);
+  });
+
+  it('falls back to 0 for negative', () => {
+    expect(safePointToUsdRate(-5)).toBe(0);
+  });
+
+  it('falls back to 0 for Infinity', () => {
+    expect(safePointToUsdRate(Infinity)).toBe(0);
+  });
+
+  it('falls back to 0 for -Infinity', () => {
+    expect(safePointToUsdRate(-Infinity)).toBe(0);
+  });
+});
+
+describe('getPointToUsdRate', () => {
+  const pointRateMap = { tydroinkpoints: 1.5 };
+
+  it('returns rate for matching symbol (case-insensitive)', () => {
+    expect(getPointToUsdRate('TydroInkPoints', pointRateMap)).toBe(1.5);
+  });
+
+  it('returns rate for lowercase symbol', () => {
+    expect(getPointToUsdRate('tydroinkpoints', pointRateMap)).toBe(1.5);
+  });
+
+  it('returns 0 for unknown symbol', () => {
+    expect(getPointToUsdRate('Gravity Points', pointRateMap)).toBe(0);
+  });
+
+  it('returns 0 for undefined symbol', () => {
+    expect(getPointToUsdRate(undefined, pointRateMap)).toBe(0);
+  });
+
+  it('returns 0 for empty string symbol', () => {
+    expect(getPointToUsdRate('', pointRateMap)).toBe(0);
+  });
+
+  it('returns 0 for empty pointRateMap', () => {
+    expect(getPointToUsdRate('TydroInkPoints', {})).toBe(0);
+  });
+});
 
 describe('getMerklForecastUsdMultiplier', () => {
   it('returns selected rate multiplier for point-based campaigns', () => {
@@ -45,7 +101,7 @@ describe('getMerklForecastUsdMultiplier', () => {
 });
 
 describe('getMerklBreakdownApr', () => {
-  it('prefers campaignApr over Tydro points when campaignApr is positive', () => {
+  it('prefers campaignApr over points when campaignApr is positive', () => {
     const apr = getMerklBreakdownApr({
       ...baseBreakdown,
       campaignApr: 2.5,
@@ -54,17 +110,19 @@ describe('getMerklBreakdownApr', () => {
     expect(apr).toBe(2.5);
   });
 
-  it('uses Tydro points when campaignApr is zero', () => {
-    const apr = getMerklBreakdownApr({
-      ...baseBreakdown,
-      campaignApr: 0,
-      pointsPerThousandUsd: 2,
-    });
-    // 2 points × $1/point × 36.5 (see calculateTydroApr in tydro.ts)
+  it('uses points when campaignApr is zero and rate is positive', () => {
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: 0,
+        pointsPerThousandUsd: 2,
+      },
+      1
+    );
     expect(apr).toBe(73);
   });
 
-  it('zeros out rewards when pointToUsdRate is zero (user explicitly set $0/INK)', () => {
+  it('zeros out rewards when pointToUsdRate is zero', () => {
     const apr = getMerklBreakdownApr(
       {
         ...baseBreakdown,
@@ -76,6 +134,15 @@ describe('getMerklBreakdownApr', () => {
     expect(apr).toBe(0);
   });
 
+  it('zeros out rewards when pointToUsdRate is not provided (default 0)', () => {
+    const apr = getMerklBreakdownApr({
+      ...baseBreakdown,
+      campaignApr: 0,
+      pointsPerThousandUsd: 2,
+    });
+    expect(apr).toBe(0);
+  });
+
   it('coerces numeric string campaignApr when points are absent', () => {
     const apr = getMerklBreakdownApr({
       ...baseBreakdown,
@@ -84,7 +151,7 @@ describe('getMerklBreakdownApr', () => {
     expect(apr).toBe(4.2);
   });
 
-  it('zeros out rewards for negative pointToUsdRate via fallback to default then zeros', () => {
+  it('zeros out rewards for invalid pointToUsdRate (negative falls back to 0)', () => {
     const apr = getMerklBreakdownApr(
       {
         ...baseBreakdown,
@@ -93,46 +160,28 @@ describe('getMerklBreakdownApr', () => {
       },
       -1
     );
-    expect(apr).toBe(73);
+    expect(apr).toBe(0);
   });
 });
 
-describe('safePointToUsdRate (via public API)', () => {
-  it('passes through zero rate — multiplier is 0', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      0
-    );
-    expect(multiplier).toBe(0);
-  });
-
-  it('passes through positive rate — multiplier equals rate', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      1.5
-    );
-    expect(multiplier).toBeCloseTo(1.5, 10);
-  });
-
-  it('falls back to default for NaN — multiplier is 1', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      NaN
-    );
-    expect(multiplier).toBe(1);
-  });
-
-  it('falls back to default for negative — multiplier is 1', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      -5
-    );
-    expect(multiplier).toBe(1);
-  });
-});
-
-describe('convertMerklPointsAmountToUsd with zero rate', () => {
+describe('convertMerklPointsAmountToUsd', () => {
   it('returns 0 when pointToUsdRate is zero', () => {
     expect(convertMerklPointsAmountToUsd(100, 0)).toBe(0);
+  });
+
+  it('returns 0 when pointToUsdRate is not provided (default 0)', () => {
+    expect(convertMerklPointsAmountToUsd(100)).toBe(0);
+  });
+
+  it('converts with valid rate', () => {
+    expect(convertMerklPointsAmountToUsd(100, 1.5)).toBe(150);
+  });
+
+  it('returns undefined for null amount', () => {
+    expect(convertMerklPointsAmountToUsd(null, 1)).toBeUndefined();
+  });
+
+  it('returns undefined for undefined amount', () => {
+    expect(convertMerklPointsAmountToUsd(undefined, 1)).toBeUndefined();
   });
 });

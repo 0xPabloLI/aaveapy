@@ -1,9 +1,7 @@
 import type { MerklCampaignBreakdown } from '@/types/aave';
 
-// Frontend-configurable rate: 1 Tydro point = 1 USD (default)
 export const TYDRO_POINT_TO_USD_RATE = 1;
 
-/** Coerce API/cache values that may arrive as numeric strings. */
 function parseMerklNumeric(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
   if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
@@ -14,29 +12,34 @@ function parseMerklNumeric(value: unknown): number | undefined {
   return undefined;
 }
 
-function safePointToUsdRate(pointToUsdRate: number): number {
+export function safePointToUsdRate(pointToUsdRate: number): number {
   if (!Number.isFinite(pointToUsdRate) || pointToUsdRate < 0) {
     if (import.meta.env.DEV) {
-      console.warn('[safePointToUsdRate] invalid pointToUsdRate:', pointToUsdRate, '— falling back to default', TYDRO_POINT_TO_USD_RATE);
+      console.warn('[safePointToUsdRate] invalid pointToUsdRate:', pointToUsdRate, '— falling back to 0');
     }
-    return TYDRO_POINT_TO_USD_RATE;
+    return 0;
   }
   return pointToUsdRate;
 }
 
-const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_POINT_TO_USD_RATE): number => {
-  if (isNaN(pointsPerThousandUsd) || pointsPerThousandUsd <= 0) return 0;
-  return pointsPerThousandUsd * pointToUsdRate * 36.5;
+export const getPointToUsdRate = (
+  rewardTokenSymbol: string | undefined,
+  pointRateMap: Record<string, number>,
+): number => {
+  if (!rewardTokenSymbol) return 0;
+  const key = rewardTokenSymbol.toLowerCase();
+  if (key in pointRateMap) return pointRateMap[key];
+  return 0;
 };
 
-/**
- * Display APR for a Merkl breakdown. `campaignApr` from `GET /api/markets` is already **percent points**
- * (e.g. 5 => 5%/year); do not rescale. When positive, use it first; otherwise derive from
- * `pointsPerThousandUsd` (Tydro-style points curve). Merkl may send both.
- */
+const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate: number): number => {
+  if (isNaN(pointsPerThousandUsd) || pointsPerThousandUsd <= 0) return 0;
+  return pointsPerThousandUsd * safePointToUsdRate(pointToUsdRate) * 36.5;
+};
+
 export const getMerklBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = 0
 ): number => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
   if (campaignApr !== undefined && campaignApr > 0) {
@@ -44,7 +47,7 @@ export const getMerklBreakdownApr = (
   }
   const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
   if (points !== undefined && points > 0) {
-    const tydroApr = calculateTydroApr(points, safePointToUsdRate(pointToUsdRate));
+    const tydroApr = calculateTydroApr(points, pointToUsdRate);
     if (tydroApr > 0) return tydroApr;
   }
   return campaignApr ?? 0;
@@ -52,7 +55,7 @@ export const getMerklBreakdownApr = (
 
 export const getMerklForecastUsdMultiplier = (
   breakdown: MerklCampaignBreakdown,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = 0
 ): number => {
   if (breakdown.pointsPerThousandUsd === undefined || isNaN(breakdown.pointsPerThousandUsd)) {
     return 1;
@@ -60,11 +63,6 @@ export const getMerklForecastUsdMultiplier = (
   return safePointToUsdRate(pointToUsdRate) / TYDRO_POINT_TO_USD_RATE;
 };
 
-/**
- * Points-mode Merkl campaign:
- * - campaignApr is missing/zero/non-positive
- * - pointsPerThousandUsd is present and positive
- */
 export const isMerklPointsCampaign = (
   breakdown: Pick<MerklCampaignBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
 ): boolean => {
@@ -75,7 +73,7 @@ export const isMerklPointsCampaign = (
 
 export const convertMerklPointsAmountToUsd = (
   amount: number | null | undefined,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = 0
 ): number | undefined => {
   if (amount === null || amount === undefined || !Number.isFinite(amount)) return undefined;
   return amount * safePointToUsdRate(pointToUsdRate);

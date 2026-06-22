@@ -60,7 +60,13 @@ import {
   getBrevisCampaignBreakdowns,
   getBrevisResolvedBreakdown,
 } from '@/lib/brevis';
-import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
+import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr, getPointToUsdRate } from '@/lib/tydro';
+
+export type PointRateMap = Record<string, number>;
+
+export const buildPointRateMap = (tydroPointToUsdRate: number): PointRateMap => ({
+  tydroinkpoints: tydroPointToUsdRate,
+});
 
 /**
  * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).
@@ -152,7 +158,7 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
  */
 const sumMerklOpportunities = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  pointRateMap: PointRateMap = {},
   options: IncentiveCalculationOptions = {}
 ): number => {
   return sumActiveCampaignBreakdownValues(opportunities, {
@@ -161,7 +167,8 @@ const sumMerklOpportunities = (
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
     mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
+      const rate = getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap);
+      const apr = getMerklBreakdownApr(breakdown, rate);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
   });
@@ -173,7 +180,7 @@ const sumMerklOpportunities = (
  */
 const sumMerklOpportunitiesApy = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  pointRateMap: PointRateMap = {},
   options: IncentiveCalculationOptions = {}
 ): number => {
   return sumActiveCampaignBreakdownValues(opportunities, {
@@ -182,7 +189,8 @@ const sumMerklOpportunitiesApy = (
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
     mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
+      const rate = getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap);
+      const apr = getMerklBreakdownApr(breakdown, rate);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
   });
@@ -235,11 +243,11 @@ export const calculateTotalIncentiveApr = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  pointRateMap: PointRateMap = {},
   options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApr = sumMeritIncentives(meritIncentives);
-  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate, options);
+  const merklApr = sumMerklOpportunities(merklOpportunities, pointRateMap, options);
   const protocolApr = sumNumberArray(protocolIncentives);
   const brevisAprValue = sumBrevisIncentives(brevisIncentives);
   
@@ -259,11 +267,11 @@ export const calculateTotalIncentiveApy = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  pointRateMap: PointRateMap = {},
   options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApy = sumMeritIncentivesApy(meritIncentives);
-  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate, options);
+  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, pointRateMap, options);
   
   // Convert protocol incentives (already in APR form) to APY
   let protocolApy = 0;
@@ -457,7 +465,7 @@ export function reserveHasIncentiveTooltipSources(
   reserve: ReserveWithSpread,
   side: 'supply' | 'borrow',
   isApy: boolean,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
 ): boolean {
   const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
   if (protocolIncentives && protocolIncentives.length > 0) {
@@ -498,7 +506,7 @@ export function reserveHasIncentiveTooltipSources(
     for (const opportunity of opportunities) {
       for (const breakdown of opportunity.breakdowns ?? []) {
         if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
-        const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+        const apr = getMerklBreakdownApr(breakdown, getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap));
         if (!isNaN(apr) && apr >= 0) return true;
       }
     }
@@ -518,11 +526,11 @@ export function resolveVisibleIncentiveBadgeValue(
   reserve: ReserveWithSpread,
   side: 'supply' | 'borrow',
   isApy: boolean,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
 ): number | null {
   if (rawIncentive === null || Number.isNaN(rawIncentive) || rawIncentive < 0) return null;
   if (rawIncentive > 0) return rawIncentive;
-  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate)) {
+  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, pointRateMap)) {
     return rawIncentive;
   }
   return null;

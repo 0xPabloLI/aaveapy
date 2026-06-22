@@ -11,7 +11,8 @@ import {
   MERKL_WHITELIST_TOGGLE_ARIA,
   MERKL_WHITELIST_TOGGLE_LABEL,
 } from '@/lib/formatters';
-import { getMerklBreakdownApr } from '@/lib/tydro';
+import { getMerklBreakdownApr, getPointToUsdRate } from '@/lib/tydro';
+import { type PointRateMap } from '@/lib/formatters';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
   getBrevisCampaignApr,
@@ -46,7 +47,7 @@ interface IncentiveTooltipProps {
   accentBorderClass?: string;
   accentTextClass?: string;
   accentBgClass?: string;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
 }
@@ -72,6 +73,7 @@ interface IncentiveSource {
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
+    rewardTokenIconUrl?: string;
   }>;
 }
 
@@ -137,7 +139,7 @@ const IncentiveTooltip = ({
   accentBorderClass,
   accentTextClass,
   accentBgClass,
-  tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
 }: IncentiveTooltipProps) => {
@@ -437,7 +439,7 @@ const IncentiveTooltip = ({
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
-          const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+          const apr = getMerklBreakdownApr(breakdown, getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap));
           const whitelistOnly = breakdown.whitelistOnly === true;
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds);
           if (!isNaN(apr) && apr >= 0) {
@@ -462,6 +464,7 @@ const IncentiveTooltip = ({
                 message: opportunity.message,
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
+                rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
               }],
             });
           }
@@ -577,7 +580,10 @@ const IncentiveTooltip = ({
               )}
               <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
                 <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
-                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
+                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass} inline-flex items-center gap-1`}>
+                  {campaign.rewardTokenIconUrl && (
+                    <img src={campaign.rewardTokenIconUrl} alt="" className="w-4 h-4 rounded-full" loading="eager" />
+                  )}
                   {formatPercent(displayValue)}
                 </span>
               </div>

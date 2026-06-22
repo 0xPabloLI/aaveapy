@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ListCollapse, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue } from '@/lib/formatters';
+import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue, type PointRateMap } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -200,7 +200,7 @@ interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
   /** Matches table / `getMerklBreakdownApr` Tydro USD rate. */
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -227,7 +227,7 @@ interface MobileReserveCardProps {
 const MobileReserveCard = memo(({
   reserve,
   isApy,
-  tydroPointToUsdRate,
+  pointRateMap,
   onIncentiveClick,
   isSimulationExpanded,
   onToggleSimulation,
@@ -292,14 +292,14 @@ const MobileReserveCard = memo(({
     reserve,
     'supply',
     isApy,
-    tydroPointToUsdRate,
+    pointRateMap,
   );
   const visibleBorrowIncentive = resolveVisibleIncentiveBadgeValue(
     displayBorrowIncentive,
     reserve,
     'borrow',
     isApy,
-    tydroPointToUsdRate,
+    pointRateMap,
   );
 
   const chainIconSrc = getChainIconSrc(reserve.chainName);

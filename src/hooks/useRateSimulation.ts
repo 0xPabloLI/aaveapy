@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import {
   annualPercentToDailyFraction,
+  buildPointRateMap,
   calculateTotalBorrowApy,
   calculateTotalBorrowApr,
   calculateTotalIncentiveApy,
@@ -11,6 +12,7 @@ import {
   calculateTotalSupplyApr,
   convertAprToApy,
   isMerklWhitelistBreakdownIncluded,
+  type PointRateMap,
 } from '@/lib/formatters';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
@@ -53,6 +55,7 @@ import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '
 import {
   convertMerklPointsAmountToUsd,
   getMerklBreakdownApr,
+  getPointToUsdRate,
   isMerklPointsCampaign,
 } from '@/lib/tydro';
 import type {
@@ -89,7 +92,7 @@ interface BuildForecastMerklOpportunitiesInput {
   inputUsd: number;
   forecastStates: Record<string, MerklForecastWireItem>;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
 }
 
 const sanitizePercent = (value: number): number =>
@@ -103,13 +106,13 @@ const sanitizePercent = (value: number): number =>
 const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
   forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
   const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
     if (isMerklPointsCampaign(breakdown)) {
-      return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+      return convertMerklPointsAmountToUsd(value, getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap));
     }
     return value ?? undefined;
   };
@@ -130,13 +133,13 @@ const forecastBreakdownApr = (
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  tydroPointToUsdRate: number
+  pointRateMap: PointRateMap
 ): number => {
-  const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
+  const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)));
   if (inputUsd <= 0) return currentApr;
   if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds)) return currentApr;
 
-  const merged = mergeForecastState(breakdown, forecastStates, tydroPointToUsdRate);
+  const merged = mergeForecastState(breakdown, forecastStates, pointRateMap);
   if (!merged) return currentApr;
 
   const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
@@ -150,7 +153,7 @@ export function buildForecastMerklOpportunities({
   inputUsd,
   forecastStates,
   whitelistMerklCampaignIds,
-  tydroPointToUsdRate,
+  pointRateMap,
 }: BuildForecastMerklOpportunitiesInput): MerklOpportunityGroup[] {
   if (!opportunities || opportunities.length === 0) return [];
 
@@ -163,7 +166,7 @@ export function buildForecastMerklOpportunities({
         inputUsd,
         forecastStates,
         whitelistMerklCampaignIds,
-        tydroPointToUsdRate
+        pointRateMap
       ),
       pointsPerThousandUsd: undefined,
     })),
@@ -303,7 +306,7 @@ interface BuildRateSimulationResultParams {
   reserveRateInput?: RateCalcInput | null;
   isApy: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   tokenPrice?: number;
   supplyInput: string;
   borrowInput: string;
@@ -321,7 +324,7 @@ interface UseRateSimulationParams {
   reserve: ReserveWithSpread;
   isApy: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   tokenPrices?: TokenPricesIndex;
   enabled?: boolean;
   supplyInput: string;
@@ -334,7 +337,7 @@ interface UseSharedRateSimulationsParams {
   reserves: ReserveWithSpread[];
   isApy: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
-  tydroPointToUsdRate: number;
+  pointRateMap: PointRateMap;
   tokenPrices?: TokenPricesIndex;
   enabled?: boolean;
   supplyInput: string;
@@ -347,7 +350,7 @@ const buildIncentiveCurrent = (
   reserve: ReserveWithSpread,
   side: RateSide,
   isApy: boolean,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
@@ -355,10 +358,10 @@ const buildIncentiveCurrent = (
   const brevis = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   const protocol = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
   return isApy
-    ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, {
+    ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, pointRateMap, {
         whitelistMerklCampaignIds,
       })
-    : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, {
+    : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, pointRateMap, {
         whitelistMerklCampaignIds,
       });
 };
@@ -545,7 +548,7 @@ const sumForecastBrevisValues = (
 const sumMerklValues = (
   opportunities: MerklOpportunityGroup[] | undefined,
   isApy: boolean,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined
 ): number => {
   return sumActiveCampaignBreakdownValues(opportunities, {
@@ -554,7 +557,7 @@ const sumMerklValues = (
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds),
     mapValue: (_group, breakdown) => {
-      const apr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
+      const apr = sanitizePercent(getMerklBreakdownApr(breakdown, getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)));
       return isApy ? convertAprToApy(apr) : apr;
     },
   });
@@ -734,7 +737,7 @@ const buildMerklCampaignDetails = (
   inputUsd: number,
   forecastStates: Record<string, MerklForecastWireItem>,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
   hasAnyInput: boolean,
   eligibilityRatio = 1,
   grossInputUsd?: number,
@@ -756,18 +759,18 @@ const buildMerklCampaignDetails = (
       if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return;
       if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds)) return;
 
-      const currentApr = sanitizePercent(getMerklBreakdownApr(bd, tydroPointToUsdRate));
+      const currentApr = sanitizePercent(getMerklBreakdownApr(bd, getPointToUsdRate(bd.rewardTokenSymbol, pointRateMap)));
       const current = isApy ? convertAprToApy(currentApr) : currentApr;
       let after: number | null = null;
       let capNote: string | undefined;
       let capWarning = false;
 
       if (inputUsd > 0) {
-        const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, whitelistMerklCampaignIds, tydroPointToUsdRate);
+        const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, whitelistMerklCampaignIds, pointRateMap);
         const forecastAprSan = sanitizePercent(forecastApr);
         after = (isApy ? convertAprToApy(forecastAprSan) : forecastAprSan) * eligibilityRatio;
 
-        const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate);
+        const merged = mergeForecastState(bd, forecastStates, pointRateMap);
         const merklType = merged?.campaignType;
         if (
           merged &&
@@ -884,7 +887,7 @@ const buildIncentiveAfter = (
   grossInputUsd: number,
   eligibilityRatio: number,
   forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number,
+  pointRateMap: PointRateMap,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   brevisSharedDepositsByCampaignId?: ReadonlyMap<string, number>,
 ): number => {
@@ -897,13 +900,13 @@ const buildIncentiveAfter = (
     inputUsd: netInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
+    pointRateMap,
   });
 
   return (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side)) * eligibilityRatio +
-    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) * eligibilityRatio +
+    sumMerklValues(forecastedMerkl, isApy, pointRateMap, whitelistMerklCampaignIds) * eligibilityRatio +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
 };
@@ -990,7 +993,7 @@ export function buildRateSimulationResult({
   reserveRateInput,
   isApy,
   whitelistMerklCampaignIds,
-  tydroPointToUsdRate,
+  pointRateMap,
   tokenPrice,
   supplyInput,
   borrowInput,
@@ -1106,28 +1109,28 @@ export function buildRateSimulationResult({
     reserve,
     'supply',
     isApy,
-    tydroPointToUsdRate,
+    pointRateMap,
     whitelistMerklCampaignIds
   );
   const borrowCurrentIncentive = buildIncentiveCurrent(
     reserve,
     'borrow',
     isApy,
-    tydroPointToUsdRate,
+    pointRateMap,
     whitelistMerklCampaignIds
   );
   const supplyCurrentIncentiveApr = buildIncentiveCurrent(
     reserve,
     'supply',
     false,
-    tydroPointToUsdRate,
+    pointRateMap,
     whitelistMerklCampaignIds
   );
   const borrowCurrentIncentiveApr = buildIncentiveCurrent(
     reserve,
     'borrow',
     false,
-    tydroPointToUsdRate,
+    pointRateMap,
     whitelistMerklCampaignIds
   );
 
@@ -1177,7 +1180,7 @@ export function buildRateSimulationResult({
         supplyInputUsd,
         supplyMeritMerklEligibilityRatio,
         forecastStates,
-        tydroPointToUsdRate,
+        pointRateMap,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
       )
@@ -1191,7 +1194,7 @@ export function buildRateSimulationResult({
         borrowInputUsd,
         borrowMeritMerklEligibilityRatio,
         forecastStates,
-        tydroPointToUsdRate,
+        pointRateMap,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
       )
@@ -1205,7 +1208,7 @@ export function buildRateSimulationResult({
         supplyInputUsd,
         supplyMeritMerklEligibilityRatio,
         forecastStates,
-        tydroPointToUsdRate,
+        pointRateMap,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
       )
@@ -1219,7 +1222,7 @@ export function buildRateSimulationResult({
         borrowInputUsd,
         borrowMeritMerklEligibilityRatio,
         forecastStates,
-        tydroPointToUsdRate,
+        pointRateMap,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
       )
@@ -1254,13 +1257,13 @@ export function buildRateSimulationResult({
   const supplyCurrentSources = {
     protocol: sumNumberArray(reserve.supplyIncentives, isApy),
     merit: sumMeritValues(reserve.meritSupplys, isApy),
-    merkl: sumMerklValues(reserve.merklSupplys, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds),
+    merkl: sumMerklValues(reserve.merklSupplys, isApy, pointRateMap, whitelistMerklCampaignIds),
     brevis: sumBrevisValues(reserve.brevisSupplys, isApy),
   };
   const borrowCurrentSources = {
     protocol: sumNumberArray(reserve.borrowIncentives, isApy),
     merit: sumMeritValues(reserve.meritBorrows, isApy),
-    merkl: sumMerklValues(reserve.merklBorrows, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds),
+    merkl: sumMerklValues(reserve.merklBorrows, isApy, pointRateMap, whitelistMerklCampaignIds),
     brevis: sumBrevisValues(reserve.brevisBorrows, isApy),
   };
 
@@ -1274,10 +1277,10 @@ export function buildRateSimulationResult({
             inputUsd: supplyMeritMerklInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
-            tydroPointToUsdRate,
+            pointRateMap,
           }),
           isApy,
-          tydroPointToUsdRate,
+          pointRateMap,
           whitelistMerklCampaignIds
         ) * supplyMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
@@ -1305,10 +1308,10 @@ export function buildRateSimulationResult({
             inputUsd: borrowMeritMerklInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
-            tydroPointToUsdRate,
+            pointRateMap,
           }),
           isApy,
-          tydroPointToUsdRate,
+          pointRateMap,
           whitelistMerklCampaignIds
         ) * borrowMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
@@ -1341,7 +1344,7 @@ export function buildRateSimulationResult({
     supplyMeritMerklInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
+    pointRateMap,
     hasAnyInput,
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
@@ -1368,7 +1371,7 @@ export function buildRateSimulationResult({
     borrowMeritMerklInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
+    pointRateMap,
     hasAnyInput,
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
@@ -1657,7 +1660,7 @@ export const useSharedRateSimulations = ({
   reserves,
   isApy,
   whitelistMerklCampaignIds,
-  tydroPointToUsdRate,
+  pointRateMap,
   tokenPrices,
   enabled = true,
   supplyInput,
@@ -1754,7 +1757,7 @@ export const useSharedRateSimulations = ({
           reserveRateInput,
           isApy,
           whitelistMerklCampaignIds,
-          tydroPointToUsdRate,
+          pointRateMap,
           tokenPrice: tokenPriceById[reserveId],
           supplyInput,
           borrowInput,
@@ -1785,7 +1788,7 @@ export const useSharedRateSimulations = ({
     supplyInput,
     tokenPriceById,
     tokenPriceLoadingById,
-    tydroPointToUsdRate,
+    pointRateMap,
   ]);
 
   return {
@@ -1802,7 +1805,7 @@ export const useRateSimulation = ({
   reserve,
   isApy,
   whitelistMerklCampaignIds,
-  tydroPointToUsdRate,
+  pointRateMap,
   tokenPrices,
   enabled = true,
   supplyInput,
@@ -1815,7 +1818,7 @@ export const useRateSimulation = ({
     reserves: [reserve],
     isApy,
     whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
+    pointRateMap,
     tokenPrices,
     enabled,
     supplyInput,
@@ -1830,7 +1833,7 @@ export const useRateSimulation = ({
       reserveRateInput: null,
       isApy,
       whitelistMerklCampaignIds,
-      tydroPointToUsdRate,
+      pointRateMap,
       tokenPrice: resolveLocalReserveTokenPrice(reserve, tokenPrices),
       supplyInput,
       borrowInput,
