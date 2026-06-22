@@ -26,6 +26,7 @@ import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosi
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
+import { getTokenIconSources, getTokenIconSymbolKey } from '@/lib/preloadUtils';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -581,9 +582,11 @@ const IncentiveTooltip = ({
               <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
                 <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
                 <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass} inline-flex items-center gap-1`}>
-                  {campaign.rewardTokenIconUrl && (
-                    <img src={campaign.rewardTokenIconUrl} alt="" className="w-4 h-4 rounded-full" loading="eager" />
-                  )}
+                  {(() => {
+                    const localIcon = campaign.rewardTokenSymbol ? getTokenIconSources(getTokenIconSymbolKey(campaign.rewardTokenSymbol))[0] : undefined;
+                    const iconSrc = localIcon || campaign.rewardTokenIconUrl;
+                    return iconSrc ? <img src={iconSrc} alt="" className="w-4 h-4 rounded-full" loading="eager" /> : null;
+                  })()}
                   {formatPercent(displayValue)}
                 </span>
               </div>
