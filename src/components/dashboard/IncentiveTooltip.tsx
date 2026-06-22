@@ -26,7 +26,7 @@ import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosi
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
-import { getTokenIconSources, getTokenIconSymbolKey } from '@/lib/preloadUtils';
+import { TOKEN_ICON_MANIFEST } from '@/lib/tokenIconManifest.generated';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -75,6 +75,7 @@ interface IncentiveSource {
     included?: boolean;
     rawValue?: number;
     rewardTokenIconUrl?: string;
+    rewardTokenSymbol?: string;
   }>;
 }
 
@@ -126,6 +127,24 @@ const getSourceIcon = (
   const map = isDark ? darkSourceIconMap : lightSourceIconMap;
   return map[sourceType];
 };
+
+function resolveRewardTokenIconSrc(symbol?: string, fallbackUrl?: string): string | undefined {
+  if (symbol) {
+    const key = symbol.trim().toLowerCase();
+    if (TOKEN_ICON_MANIFEST[key]) {
+      return `/icons/tokens/${key}.${TOKEN_ICON_MANIFEST[key][0]}`;
+    }
+  }
+  return fallbackUrl;
+}
+
+function campaignsHaveUniformIcon(campaigns: NonNullable<IncentiveSource['campaigns']>): boolean {
+  const icons = campaigns
+    .map(c => resolveRewardTokenIconSrc(c.rewardTokenSymbol, c.rewardTokenIconUrl))
+    .filter(Boolean);
+  if (icons.length === 0) return false;
+  return new Set(icons).size === 1;
+}
 
 const IncentiveTooltip = ({
   reserve,
@@ -583,9 +602,8 @@ const IncentiveTooltip = ({
                 <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
                 <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass} inline-flex items-center gap-1`}>
                   {(() => {
-                    const localIcon = campaign.rewardTokenSymbol ? getTokenIconSources(getTokenIconSymbolKey(campaign.rewardTokenSymbol))[0] : undefined;
-                    const iconSrc = localIcon || campaign.rewardTokenIconUrl;
-                    return iconSrc ? <img src={iconSrc} alt="" className="w-4 h-4 rounded-full" loading="eager" /> : null;
+                    const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
+                    return campaignIconSrc ? <img src={campaignIconSrc} alt="" className="w-4 h-4 rounded-full" loading="eager" /> : null;
                   })()}
                   {formatPercent(displayValue)}
                 </span>
