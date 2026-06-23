@@ -14,6 +14,37 @@ describe('extractMeritSelfCapUsd', () => {
 
     expect(cap).toBe(1000);
   });
+
+  it('returns API positionCap directly when provided', () => {
+    const cap = extractMeritSelfCapUsd(undefined, 35000);
+    expect(cap).toBe(35000);
+  });
+
+  it('prefers API positionCap over message regex', () => {
+    const cap = extractMeritSelfCapUsd(
+      [
+        {
+          action: 'Self Authentication',
+          description: 'for the first $500 USDT',
+        },
+      ],
+      2000,
+    );
+    expect(cap).toBe(2000);
+  });
+
+  it('falls back to regex when API positionCap is not positive', () => {
+    const cap = extractMeritSelfCapUsd(
+      [
+        {
+          action: 'Self Authentication',
+          description: 'for the first $500 USDT',
+        },
+      ],
+      0,
+    );
+    expect(cap).toBe(500);
+  });
 });
 
 describe('forecastMeritCampaign', () => {
