@@ -47,6 +47,7 @@ jobs:
 
       - name: Wait for CI checks to stabilise
         if: steps.pr.outputs.skip != 'true'
+        id: wait-checks
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,14 +57,15 @@ jobs:
             const repo = context.repo.repo;
             const maxPolls = 20;
             const pollIntervalMs = 15000;
+            const ref = context.payload.pull_request
+              ? context.payload.pull_request.head.ref
+              : context.payload.check_suite.head_branch;
 
             for (let i = 0; i < maxPolls; i++) {
               const { data: checks } = await github.rest.checks.listForRef({
                 owner,
                 repo,
-                ref: context.payload.pull_request
-                  ? context.payload.pull_request.head.ref
-                  : context.payload.check_suite.head_branch,
+                ref,
                 per_page: 100
               });
 
@@ -74,7 +76,20 @@ jobs:
               const pending = total - completed;
 
               if (pending <= 0 || total === 0) {
-                core.info(`All ${total} check runs completed after ${(i + 1)} poll(s).`);
+                const failed = checks.check_runs.filter(
+                  (r) => r.status === 'completed' && r.conclusion !== 'success' && r.conclusion !== 'skipped'
+                ).length;
+
+                if (failed > 0) {
+                  core.notice(
+                    `All checks completed but ${failed} failed. Skipping auto-merge enable — will retry on next successful check run.`
+                  );
+                  core.setOutput('has_failures', 'true');
+                  return;
+                }
+
+                core.info(`All ${total} check runs passed after ${(i + 1)} poll(s).`);
+                core.setOutput('has_failures', 'false');
                 return;
               }
 
@@ -85,9 +100,10 @@ jobs:
             }
 
             core.warning(`Timed out after ${maxPolls} polls, proceeding anyway.`);
+            core.setOutput('has_failures', 'unknown');
 
       - name: Enable auto-merge when checks pass
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.wait-checks.outputs.has_failures != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -144,24 +160,16 @@ jobs:
                 }
               }
             `;
-            const maxAttempts = 5;
-            const baseDelayMs = 30000;
-            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-              try {
-                await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-                core.info(`Enabled auto-merge for PR #${prNumber} on attempt ${attempt}/${maxAttempts}`);
-                return;
-              } catch (error) {
-                const message = String(error && error.message ? error.message : error);
-                const isUnstable = message.toLowerCase().includes('unstable status');
-                const isLastAttempt = attempt === maxAttempts;
-                if (!isUnstable || isLastAttempt) {
-                  throw error;
-                }
-                const waitMs = baseDelayMs * attempt;
-                core.warning(
-                  `PR #${prNumber} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
+            try {
+              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
+              core.info(`Enabled auto-merge for PR #${prNumber}`);
+            } catch (error) {
+              const message = String(error && error.message ? error.message : error);
+              if (message.toLowerCase().includes('unstable status')) {
+                core.notice(
+                  `PR #${prNumber} is still unstable — likely a transient race. A future check_suite completed event will retry.`
                 );
-                await new Promise((resolve) => setTimeout(resolve, waitMs));
+                return;
               }
+              throw error;
             }
