@@ -54,13 +54,14 @@ export const apyToApr = (apy: number): number => {
   return aprDecimal * 100;
 };
 
-import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
-import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
-import {
-  getBrevisCampaignBreakdowns,
-  getBrevisResolvedBreakdown,
-} from '@/lib/brevis';
+import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive, ReserveWithSpread } from '@/types/aave';
+import { isCampaignActive } from '@/lib/campaignGroups';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
+import {
+  aggregateMeritIncentiveApr,
+  aggregateMerklOpportunityApr,
+  aggregateBrevisIncentiveApr,
+} from '@/lib/incentiveAggregation';
 
 /**
  * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).
@@ -99,9 +100,6 @@ export interface IncentiveCalculationOptions {
   whitelistMerklCampaignIds?: ReadonlySet<string>;
 }
 
-/**
- * Helper: Sum valid APR values from an array of numbers
- */
 const sumNumberArray = (arr?: number[]): number => {
   if (!arr || !Array.isArray(arr)) return 0;
   return arr.reduce((sum, val) => {
@@ -109,127 +107,13 @@ const sumNumberArray = (arr?: number[]): number => {
   }, 0);
 };
 
-/**
- * Helper: Sum Merit incentive APR values
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumMeritIncentives = (meritIncentives?: MeritIncentive[]): number => {
-  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
-  return meritIncentives.reduce((sum, incentive) => {
-    if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;
-    const apr = incentive.apr;
-    const selfApr = incentive.selfApr || 0;
-    // Sum both apr and selfApr if they are valid (>= 0 to include active zero-APR campaigns)
-    const totalApr = (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0);
-    return sum + totalApr;
+const sumNumberArrayApy = (arr?: number[]): number => {
+  if (!arr || !Array.isArray(arr)) return 0;
+  return arr.reduce((sum, val) => {
+    return (!isNaN(val) && val >= 0) ? sum + convertAprToApy(val) : sum;
   }, 0);
 };
 
-/**
- * Helper: Sum Merit incentive APY values (convert each APR to APY then sum)
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
-  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
-  return meritIncentives.reduce((sum, incentive) => {
-    if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;
-    const apr = incentive.apr;
-    const selfApr = incentive.selfApr || 0;
-    let totalApy = 0;
-    if (!isNaN(apr) && apr >= 0) {
-      totalApy += convertAprToApy(apr);
-    }
-    if (!isNaN(selfApr) && selfApr >= 0) {
-      totalApy += convertAprToApy(selfApr);
-    }
-    return sum + totalApy;
-  }, 0);
-};
-
-/**
- * Helper: Calculate total Merkl APR from opportunity groups
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumMerklOpportunities = (
-  opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
-): number => {
-  return sumActiveCampaignBreakdownValues(opportunities, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
-    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
-    mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      return !isNaN(apr) && apr >= 0 ? apr : 0;
-    },
-  });
-};
-
-/**
- * Helper: Calculate total Merkl APY from opportunity groups (convert each APR to APY then sum)
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumMerklOpportunitiesApy = (
-  opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
-): number => {
-  return sumActiveCampaignBreakdownValues(opportunities, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
-    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
-    mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
-    },
-  });
-};
-
-/**
- * Helper: Sum Brevis incentives (supports array or legacy single APR)
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
-  return sumActiveCampaignBreakdownValues(brevis, {
-    allowOpenEnd: true,
-    getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
-    getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
-    getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
-    mapValue: (group, breakdown) => {
-      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
-      return !isNaN(apr) && apr >= 0 ? apr : 0;
-    },
-  });
-};
-
-/**
- * Helper: Sum Brevis incentives as APY (supports array or legacy single APR)
- * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
- */
-const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
-  return sumActiveCampaignBreakdownValues(brevis, {
-    allowOpenEnd: true,
-    getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
-    getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
-    getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
-    mapValue: (group, breakdown) => {
-      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
-      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
-    },
-  });
-};
-
-/**
- * Calculate total incentive APR from detailed sources
- * All values are in percentage form (e.g., 5 for 5%)
- * @param meritIncentives - Merit incentive objects array
- * @param merklOpportunities - Merkl opportunity groups array
- * @param brevisIncentives - Brevis incentives array
- * @param protocolIncentives - Protocol incentives array (number[])
- */
 export const calculateTotalIncentiveApr = (
   meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
@@ -238,22 +122,14 @@ export const calculateTotalIncentiveApr = (
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const meritApr = sumMeritIncentives(meritIncentives);
-  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate, options);
+  const meritApr = aggregateMeritIncentiveApr(meritIncentives);
+  const merklApr = aggregateMerklOpportunityApr(merklOpportunities, { tydroPointToUsdRate, whitelistMerklCampaignIds: options.whitelistMerklCampaignIds });
   const protocolApr = sumNumberArray(protocolIncentives);
-  const brevisAprValue = sumBrevisIncentives(brevisIncentives);
+  const brevisAprValue = aggregateBrevisIncentiveApr(brevisIncentives);
   
   return meritApr + merklApr + protocolApr + brevisAprValue;
 };
 
-/**
- * Calculate total incentive APY from detailed sources
- * Converts each APR source to APY and sums them (each source converted separately, then summed)
- * @param meritIncentives - Merit incentive objects array
- * @param merklOpportunities - Merkl opportunity groups array
- * @param brevisIncentives - Brevis incentives array
- * @param protocolIncentives - Protocol incentives array (number[])
- */
 export const calculateTotalIncentiveApy = (
   meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
@@ -262,20 +138,10 @@ export const calculateTotalIncentiveApy = (
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const meritApy = sumMeritIncentivesApy(meritIncentives);
-  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate, options);
-  
-  // Convert protocol incentives (already in APR form) to APY
-  let protocolApy = 0;
-  if (protocolIncentives && Array.isArray(protocolIncentives)) {
-    protocolIncentives.forEach(apr => {
-      if (!isNaN(apr) && apr >= 0) {
-        protocolApy += convertAprToApy(apr);
-      }
-    });
-  }
-  
-  const brevisApy = sumBrevisIncentivesApy(brevisIncentives);
+  const meritApy = aggregateMeritIncentiveApr(meritIncentives, { isApy: true });
+  const merklApy = aggregateMerklOpportunityApr(merklOpportunities, { isApy: true, tydroPointToUsdRate, whitelistMerklCampaignIds: options.whitelistMerklCampaignIds });
+  const protocolApy = sumNumberArrayApy(protocolIncentives);
+  const brevisApy = aggregateBrevisIncentiveApr(brevisIncentives, { isApy: true });
   
   return meritApy + merklApy + protocolApy + brevisApy;
 };

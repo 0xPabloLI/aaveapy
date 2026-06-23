@@ -38,6 +38,11 @@ import {
   ceilingEffectToSimulationFields,
 } from '@/lib/incentiveCeilings';
 import {
+  aggregateMeritIncentiveApr,
+  aggregateMerklOpportunityApr,
+  aggregateBrevisIncentiveApr,
+} from '@/lib/incentiveAggregation';
+import {
   getBrevisCampaignBreakdowns,
   getBrevisCampaignId,
   getBrevisResolvedBreakdown,
@@ -371,19 +376,6 @@ const sumNumberArray = (values?: number[], isApy = false): number => {
   }, 0);
 };
 
-const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
-  if (!values || values.length === 0) return 0;
-  return values.reduce((sum, value) => {
-    if (!isCampaignActive(value.startDate, value.endDate)) return sum;
-    const apr = sanitizePercent(value.apr);
-    const selfApr = sanitizePercent(value.selfApr ?? 0);
-    if (isApy) {
-      return sum + (apr > 0 ? convertAprToApy(apr) : 0) + (selfApr > 0 ? convertAprToApy(selfApr) : 0);
-    }
-    return sum + apr + selfApr;
-  }, 0);
-};
-
 /**
  * Supply: `reserveSizeUsd`. Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
  */
@@ -410,25 +402,6 @@ const sumForecastMeritValues = (
     const aprPercent = forecastMeritAprPercent(value, inputUsd, anchorTvlUsd);
     if (aprPercent <= 0) return sum;
     return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
-  }, 0);
-};
-
-const sumBrevisValues = (values?: BrevisIncentive[], isApy = false): number => {
-  if (!values || values.length === 0) return 0;
-  return values.reduce((sum, value) => {
-    const breakdowns = getBrevisCampaignBreakdowns(value);
-    if (breakdowns.length === 0) return sum;
-    return (
-      sum +
-      breakdowns.reduce((breakdownSum, breakdown) => {
-        const resolved = getBrevisResolvedBreakdown(value, breakdown);
-        if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, Date.now(), true)) {
-          return breakdownSum;
-        }
-        const apr = sanitizePercent(resolved.campaignApr);
-        return breakdownSum + (isApy ? convertAprToApy(apr) : apr);
-      }, 0)
-    );
   }, 0);
 };
 
@@ -538,24 +511,6 @@ const sumForecastBrevisValues = (
       );
       if (aprPercent <= 0) return 0;
       return isApy ? convertAprToApy(aprPercent) : aprPercent;
-    },
-  });
-};
-
-const sumMerklValues = (
-  opportunities: MerklOpportunityGroup[] | undefined,
-  isApy: boolean,
-  tydroPointToUsdRate: number,
-  whitelistMerklCampaignIds: ReadonlySet<string> | undefined
-): number => {
-  return sumActiveCampaignBreakdownValues(opportunities, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
-    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds),
-    mapValue: (_group, breakdown) => {
-      const apr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
-      return isApy ? convertAprToApy(apr) : apr;
     },
   });
 };
@@ -903,7 +858,7 @@ const buildIncentiveAfter = (
   return (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side)) * eligibilityRatio +
-    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) * eligibilityRatio +
+    aggregateMerklOpportunityApr(forecastedMerkl, { isApy, tydroPointToUsdRate, whitelistMerklCampaignIds }) * eligibilityRatio +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
 };
@@ -1253,22 +1208,22 @@ export function buildRateSimulationResult({
 
   const supplyCurrentSources = {
     protocol: sumNumberArray(reserve.supplyIncentives, isApy),
-    merit: sumMeritValues(reserve.meritSupplys, isApy),
-    merkl: sumMerklValues(reserve.merklSupplys, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds),
-    brevis: sumBrevisValues(reserve.brevisSupplys, isApy),
+    merit: aggregateMeritIncentiveApr(reserve.meritSupplys, { isApy }),
+    merkl: aggregateMerklOpportunityApr(reserve.merklSupplys, { isApy, tydroPointToUsdRate, whitelistMerklCampaignIds }),
+    brevis: aggregateBrevisIncentiveApr(reserve.brevisSupplys, { isApy }),
   };
   const borrowCurrentSources = {
     protocol: sumNumberArray(reserve.borrowIncentives, isApy),
-    merit: sumMeritValues(reserve.meritBorrows, isApy),
-    merkl: sumMerklValues(reserve.merklBorrows, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds),
-    brevis: sumBrevisValues(reserve.brevisBorrows, isApy),
+    merit: aggregateMeritIncentiveApr(reserve.meritBorrows, { isApy }),
+    merkl: aggregateMerklOpportunityApr(reserve.merklBorrows, { isApy, tydroPointToUsdRate, whitelistMerklCampaignIds }),
+    brevis: aggregateBrevisIncentiveApr(reserve.brevisBorrows, { isApy }),
   };
 
   const supplyAfterSources = hasAnyInput
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd) * supplyMeritMerklEligibilityRatio;
-        const merklAfterRaw = sumMerklValues(
+        const merklAfterRaw = aggregateMerklOpportunityApr(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
             inputUsd: supplyMeritMerklInputUsd,
@@ -1276,9 +1231,7 @@ export function buildRateSimulationResult({
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
           }),
-          isApy,
-          tydroPointToUsdRate,
-          whitelistMerklCampaignIds
+          { isApy, tydroPointToUsdRate, whitelistMerklCampaignIds }
         ) * supplyMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisSupplys,
@@ -1299,7 +1252,7 @@ export function buildRateSimulationResult({
     ? (() => {
         const meritAfterRaw =
           sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd) * borrowMeritMerklEligibilityRatio;
-        const merklAfterRaw = sumMerklValues(
+        const merklAfterRaw = aggregateMerklOpportunityApr(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
             inputUsd: borrowMeritMerklInputUsd,
@@ -1307,9 +1260,7 @@ export function buildRateSimulationResult({
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
           }),
-          isApy,
-          tydroPointToUsdRate,
-          whitelistMerklCampaignIds
+          { isApy, tydroPointToUsdRate, whitelistMerklCampaignIds }
         ) * borrowMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisBorrows,
