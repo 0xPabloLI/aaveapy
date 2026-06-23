@@ -1,4 +1,5 @@
 import type { IncentiveMessage, MeritCampaignBreakdown, MeritCampaignGroup } from '@/types/aave';
+import { isCampaignActive } from '@/lib/campaignGroups';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -319,16 +320,19 @@ export function forecastMeritAprPercent(
   depositUsd: number,
   anchorTvlUsd?: number,
 ): number {
+  const activeBreakdowns = group.breakdowns.filter(
+    (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
+  );
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
-    return group.breakdowns.reduce((sum, bd) => sum + sanitizePercent(bd.campaignApr), 0);
+    return activeBreakdowns.reduce((sum, bd) => sum + sanitizePercent(bd.campaignApr), 0);
   }
 
-  const selfBd = group.breakdowns.find((bd) => {
+  const selfBd = activeBreakdowns.find((bd) => {
     const msg = bd.message;
     const text = typeof msg === 'string' ? msg.toLowerCase() : JSON.stringify(msg ?? '').toLowerCase();
     return text.includes('self authentication');
   });
-  const baseBreakdowns = group.breakdowns.filter((bd) => bd !== selfBd);
+  const baseBreakdowns = activeBreakdowns.filter((bd) => bd !== selfBd);
 
   const baseAprPercent = baseBreakdowns.reduce((sum, bd) => sum + sanitizePercent(bd.campaignApr), 0);
   const selfAprPercent = sanitizePercent(selfBd?.campaignApr ?? 0);

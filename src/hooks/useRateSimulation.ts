@@ -613,12 +613,9 @@ const buildMeritCampaignDetails = (
     const baseBreakdowns = activeBreakdowns.filter((bd) => bd !== selfBd);
 
     baseBreakdowns.forEach((bd) => {
-      const bdSelfMessage = bd.message
-        ? splitMeritMessageBySelfAuth(bd.message).selfMessage
-        : undefined;
-      const bdBaseMessage = bd.message
-        ? splitMeritMessageBySelfAuth(bd.message).baseMessage
-        : undefined;
+      const { selfMessage: bdSelfMessage, baseMessage: bdBaseMessage } = bd.message
+        ? splitMeritMessageBySelfAuth(bd.message)
+        : { selfMessage: undefined, baseMessage: undefined };
       const baseAprPercent = sanitizePercent(bd.campaignApr);
       if (baseAprPercent <= 0) return;
       const label = extractActionLabelFromMeritMessage(bdBaseMessage ?? baseMessage) ?? meritName;
