@@ -72,7 +72,7 @@ grep -rn 'payload\.reserves\|\.reserves\b' src/ scripts/ --include='*.ts' --incl
 |------|------|
 | Reserve | `reserves[].supplyApy`、`borrowApy` |
 | Incentives | `reserves[].supplyIncentives[]`、`borrowIncentives[]` |
-| Merit | `reserves[].meritSupplys[]`、`meritBorrows[]` 中的 `apr`、`selfApr`（若有） |
+| Merit | `reserves[].meritSupplys[]`、`meritBorrows[]` 中 `breakdowns[]` 的 `campaignApr`、`positionCap`（若有） |
 | Merkl | `reserves[].merkl*[]`（各 Merkl 数组）中 `breakdowns[]` 的 `campaignApr`、`aprCap`（若有；`null` 仍为 `null`） |
 | Brevis | `reserves[].brevisSupplys`、`brevisBorrows` 中的 `campaignApr` |
 
@@ -90,3 +90,10 @@ grep -rn 'payload\.reserves\|\.reserves\b' src/ scripts/ --include='*.ts' --incl
   - Schema 测试假绿（用旧格式 mock 验证旧 schema，永远 pass）
   - CI hardcode-drift-check 永远失败（API 200 但解析为空 → fallback → 474 假缺失 → issue）
 - **修复后新增防线**：运行时 safeParse + live API test + schema 作为唯一真相源
+
+### 2026-06-23: MeritIncentive → MeritCampaignGroup
+
+- **问题**：前端 `MeritIncentive` 扁平格式（`apr`, `selfApr`, `startDate`, `endDate`）与后端实际返回的 `CampaignGroup` 格式（`breakdowns[]` 含 `campaignApr`, `campaignStartedAt`, `positionCap` 等）不匹配，导致 Zod 无 `passthrough()` 时静默丢弃 `positionCap` 等字段
+- **已更新**：`types/aave.ts`（`MeritIncentive` → `MeritCampaignGroup` + `MeritCampaignBreakdown`）、`apiSchemas.ts`（新 schema + `passthrough()`）、`incentiveAggregation.ts`、`meritForecast.ts`、`useRateSimulation.ts`、`IncentiveTooltip.tsx`、`SimulationSubRow.tsx`、`formatters.ts`
+- **关键变更**：`positionCap` 加入 `BaseCampaignBreakdown`；`extractMeritSelfCapUsd` 优先使用 API `positionCap`，正则作为 fallback
+- **影响**：staging API 已确认返回 `positionCap`（如 USD₮ `positionCap: 1000`），前端现在能正确读取
