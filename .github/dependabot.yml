@@ -1,17 +1,19 @@
-# npm：保持 open-pull-requests-limit: 0，不自动开「有新版本」的依赖 PR（与 AGENTS.md 一致）。
-# github-actions：Workflow 内第三方 action 已钉到 commit SHA；此处 limit>0 以便 Dependabot
-# 在周更中提出 SHA / 版本 bump PR，避免长期停在过期 action。
-# Security updates 仍可在 Repo → Settings → Code security 中单独启用。
 version: 2
 updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
+    labels:
+      - automerge
+      - dependencies
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    labels:
+      - automerge
+      - dependencies
