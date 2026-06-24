@@ -27,7 +27,7 @@ So for **typical supply rows with `reserveSizeUsd`**, **`lastRoundRewardUsd` is 
 
 - **Source:** `https://staging-api.aaveapy.com/api/markets`
 - **Fetched:** 2026-03-27 (approximate wall time during analysis)
-- **Filter:** reserves with `meritSupplys` where Base `apr > 0`, `lastRoundRewardUsd > 0`, valid cycle from `startDate`/`endDate`, and `reserveSizeUsd > 0`. At that time this yielded **two** Celo reserves (USDT, WETH).
+- **Filter:** reserves with `meritSupplys` where Base breakdown `campaignApr > 0`, valid cycle from `campaignStartedAt`/`campaignEndedAt`, and `reserveSizeUsd > 0`. At that time this yielded **two** Celo reserves (USDT, WETH).
 
 **Hypothetical deposit for comparison:** `max(50_000, 0.005 × reserveSizeUsd)` → **$50,000** for both rows below.
 

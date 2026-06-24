@@ -1,4 +1,4 @@
-import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup } from '@/types/aave';
+import type { BrevisIncentive, MeritCampaignGroup, MerklOpportunityGroup } from '@/types/aave';
 import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
 import {
   getBrevisCampaignBreakdowns,
@@ -13,27 +13,24 @@ const sanitizePercent = (value: number): number =>
 
 export interface IncentiveAggregationOptions {
   isApy?: boolean;
-  /** Merkl campaign IDs the user opted into for whitelist-only APR */
   whitelistMerklCampaignIds?: ReadonlySet<string>;
-  /** Point-to-USD conversion rate for Merkl points campaigns */
   tydroPointToUsdRate?: number;
 }
 
 export function aggregateMeritIncentiveApr(
-  meritIncentives?: MeritIncentive[],
+  meritGroups?: MeritCampaignGroup[],
   options: IncentiveAggregationOptions = {},
 ): number {
-  if (!meritIncentives?.length) return 0;
   const { isApy = false } = options;
-  return meritIncentives.reduce((sum, incentive) => {
-    if (!isCampaignActive(incentive.startDate, incentive.endDate)) return sum;
-    const apr = sanitizePercent(incentive.apr);
-    const selfApr = sanitizePercent(incentive.selfApr ?? 0);
-    if (isApy) {
-      return sum + (apr > 0 ? convertAprToApy(apr) : 0) + (selfApr > 0 ? convertAprToApy(selfApr) : 0);
-    }
-    return sum + apr + selfApr;
-  }, 0);
+  return sumActiveCampaignBreakdownValues(meritGroups, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
+    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
+    mapValue: (_group, breakdown) => {
+      const apr = sanitizePercent(breakdown.campaignApr);
+      return isApy && apr > 0 ? convertAprToApy(apr) : apr;
+    },
+  });
 }
 
 export function aggregateMerklOpportunityApr(
