@@ -1,8 +1,9 @@
-import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
+import type { IncentiveMessage, MeritCampaignBreakdown, MeritCampaignGroup } from '@/types/aave';
+import { isCampaignActive } from '@/lib/campaignGroups';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-export type MeritMessage = MeritIncentive['message'];
+export type MeritMessage = IncentiveMessage;
 export type MeritForecastMode = 'MERIT_BASE' | 'MERIT_SELF_CAP';
 export type MeritForecastEstimateKind = MeritForecastMode | 'MERIT_CURRENT_RATE';
 
@@ -62,7 +63,16 @@ function flattenMessageLines(message?: MeritMessage): string[] {
     return message.flatMap((item) => flattenMessageLines(item as MeritMessage));
   }
   if (typeof message === 'object') {
-    return Object.values(message).flatMap((value) => flattenMessageLines(value as MeritMessage));
+    const rec = message as Record<string, unknown>;
+    const action = rec.action;
+    const description = rec.description;
+    if (typeof action === 'string' && typeof description === 'string') {
+      return [`${action} ${description}`];
+    }
+    if (typeof description === 'string') {
+      return [description];
+    }
+    return Object.values(rec).flatMap((value) => flattenMessageLines(value as MeritMessage));
   }
   return [];
 }
@@ -92,7 +102,10 @@ export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
   };
 }
 
-export function extractMeritSelfCapUsd(message?: MeritMessage): number | null {
+export function extractMeritSelfCapUsd(message?: MeritMessage, apiPositionCap?: number): number | null {
+  if (typeof apiPositionCap === 'number' && Number.isFinite(apiPositionCap) && apiPositionCap > 0) {
+    return apiPositionCap;
+  }
   const lines = flattenMessageLines(message);
   for (const line of lines) {
     if (!line.toLowerCase().includes('self')) continue;
@@ -303,27 +316,40 @@ export function forecastMeritCampaign({
 }
 
 export function forecastMeritAprPercent(
-  incentive: MeritIncentive,
+  group: MeritCampaignGroup,
   depositUsd: number,
   anchorTvlUsd?: number,
 ): number {
+  const activeBreakdowns = group.breakdowns.filter(
+    (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
+  );
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
-    return sanitizePercent(incentive.apr) + sanitizePercent(incentive.selfApr);
+    return activeBreakdowns.reduce((sum, bd) => sum + sanitizePercent(bd.campaignApr), 0);
   }
 
-  const baseAprPercent = sanitizePercent(incentive.apr);
-  const selfAprPercent = sanitizePercent(incentive.selfApr);
-  const { selfMessage } = splitMeritMessageBySelfAuth(incentive.message);
-  const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
+  const selfBd = activeBreakdowns.find((bd) => {
+    const msg = bd.message;
+    const text = typeof msg === 'string' ? msg.toLowerCase() : JSON.stringify(msg ?? '').toLowerCase();
+    return text.includes('self authentication');
+  });
+  const baseBreakdowns = activeBreakdowns.filter((bd) => bd !== selfBd);
+
+  const baseAprPercent = baseBreakdowns.reduce((sum, bd) => sum + sanitizePercent(bd.campaignApr), 0);
+  const selfAprPercent = sanitizePercent(selfBd?.campaignApr ?? 0);
+  const { selfMessage } = splitMeritMessageBySelfAuth(selfBd?.message);
+  const selfCapUsd = extractMeritSelfCapUsd(selfMessage, selfBd?.positionCap);
+
+  const firstBd = baseBreakdowns[0] ?? selfBd;
+  const startDate = firstBd?.campaignStartedAt;
+  const endDate = firstBd?.campaignEndedAt;
 
   const baseForecast = baseAprPercent > 0
     ? forecastMeritCampaign({
         mode: 'MERIT_BASE',
         depositUsd,
         forecastAprPercent: baseAprPercent,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
-        lastRoundRewardUsd: incentive.lastRoundRewardUsd,
+        startDate,
+        endDate,
         anchorTvlUsd,
       })
     : null;
@@ -334,10 +360,9 @@ export function forecastMeritAprPercent(
         depositUsd,
         forecastAprPercent: selfAprPercent,
         selfCapUsd: selfCapUsd ?? undefined,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
+        startDate,
+        endDate,
         baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-        baseLastRoundRewardUsd: incentive.lastRoundRewardUsd,
         anchorTvlUsd,
       })
     : null;

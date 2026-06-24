@@ -24,19 +24,21 @@ import {
   type IncentiveSourceRow,
   type SimulationTableRow,
 } from '@/lib/simulationIncentiveTableRows';
-import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import type { ReserveWithSpread, MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
 
-const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
+const getFirstMeritLink = (merits?: MeritCampaignGroup[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
   const now = Date.now();
-  for (const merit of merits) {
-    const start = Date.parse(merit.startDate);
-    const end = Date.parse(merit.endDate);
-    if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && merit.link) {
-      return merit.link;
-    }
+  for (const group of merits) {
+    if (!group.link) continue;
+    const hasActive = (group.breakdowns ?? []).some((bd) => {
+      const start = Date.parse(bd.campaignStartedAt);
+      const end = Date.parse(bd.campaignEndedAt);
+      return !Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end;
+    });
+    if (hasActive) return group.link;
   }
   return null;
 };
