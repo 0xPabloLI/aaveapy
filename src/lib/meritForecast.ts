@@ -1,6 +1,6 @@
 import type { IncentiveMessage, MeritCampaignGroup } from '@/types/aave';
 import { applyPositionCap } from '@/lib/incentiveMath';
-import { parseCampaignBoundaryMs } from '@/lib/campaignGroups';
+import { isCampaignActive, parseCampaignBoundaryMs } from '@/lib/campaignGroups';
 
 export type MeritMessage = IncentiveMessage;
 export type MeritForecastEstimateKind = 'TVL_DILUTION' | 'CURRENT_RATE';
@@ -167,8 +167,10 @@ export function forecastMeritAprPercent(
   if (!groups?.length) return 0;
 
   return groups.reduce((sum, group) => {
-    const breakdowns = group.breakdowns ?? [];
-    return sum + breakdowns.reduce((bdSum, breakdown) => {
+    const activeBreakdowns = (group.breakdowns ?? []).filter(
+      (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
+    );
+    return sum + activeBreakdowns.reduce((bdSum, breakdown) => {
       const aprPercent = sanitizePercent(breakdown.campaignApr);
       const positionCapUsd = breakdown.positionCap;
 

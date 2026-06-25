@@ -514,7 +514,19 @@ const IncentiveTooltip = ({
           bgColor: 'bg-muted/60',
           sourceType: 'ACI',
           link: group.link,
-          dateRange: meritCampaigns[0]?.dateRange,
+          dateRange: formatDateRange(
+            ...activeBreakdowns.reduce<[string | undefined, string | undefined]>(
+              ([earliestStart, latestEnd], bd) => {
+                const s = bd.campaignStartedAt;
+                const e = bd.campaignEndedAt;
+                return [
+                  !earliestStart || (s && s < earliestStart) ? s : earliestStart,
+                  !latestEnd || (e && e > latestEnd) ? e : latestEnd,
+                ];
+              },
+              [undefined, undefined],
+            ),
+          ) || undefined,
           campaigns: meritCampaigns,
         });
       });
@@ -558,7 +570,19 @@ const IncentiveTooltip = ({
           sourceType: 'Brevis',
           link: brevis.link,
           message,
-          dateRange: campaigns[0]?.dateRange,
+          dateRange: formatDateRange(
+            ...campaigns.reduce<[string | undefined, string | undefined]>(
+              ([earliestStart, latestEnd], c) => {
+                const s = c.startDate;
+                const e = c.endDate;
+                return [
+                  !earliestStart || (s && s < earliestStart) ? s : earliestStart,
+                  !latestEnd || (e && e > latestEnd) ? e : latestEnd,
+                ];
+              },
+              [undefined, undefined],
+            ),
+          ) || undefined,
           campaigns,
         });
       });
