@@ -62,13 +62,12 @@ import {
 } from '@/lib/tydro';
 import type {
   BrevisIncentive,
-  MeritCampaignGroup,
+  MeritIncentive,
   MerklCampaignBreakdown,
   MerklForecastWireItem,
   MerklOpportunityGroup,
   ReserveWithSpread,
   TokenPricesIndex,
-  IncentiveMessage,
 } from '@/types/aave';
 
 const FORECAST_TOKEN_PRICE_QUERY_KEY = ['forecast-token-price'] as const;
@@ -392,18 +391,15 @@ const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide): numbe
 };
 
 const sumForecastMeritValues = (
-  values: MeritCampaignGroup[] | undefined,
+  values: MeritIncentive[] | undefined,
   isApy: boolean,
   inputUsd: number,
   anchorTvlUsd?: number,
 ): number => {
   if (!values || values.length === 0) return 0;
-  return values.reduce((sum, group) => {
-    const activeBreakdowns = (group.breakdowns ?? []).filter(
-      (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
-    );
-    if (!activeBreakdowns.length) return sum;
-    const aprPercent = forecastMeritAprPercent(group, inputUsd, anchorTvlUsd);
+  return values.reduce((sum, value) => {
+    if (!isCampaignActive(value.startDate, value.endDate)) return sum;
+    const aprPercent = forecastMeritAprPercent(value, inputUsd, anchorTvlUsd);
     if (aprPercent <= 0) return sum;
     return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
   }, 0);
@@ -553,11 +549,11 @@ const finalizeCampaignDetailRows = (
   return shouldExposeCampaignRows(rows) ? rows : [];
 };
 
-const extractActionLabelFromMeritMessage = (message?: IncentiveMessage): string | null => {
+const extractActionLabelFromMeritMessage = (message: MeritIncentive['message']): string | null => {
   if (!message) return null;
   if (Array.isArray(message)) {
     for (const item of message) {
-      const label = extractActionLabelFromMeritMessage(item as IncentiveMessage);
+      const label = extractActionLabelFromMeritMessage(item as MeritIncentive['message']);
       if (label) return label;
     }
     return null;
@@ -566,7 +562,7 @@ const extractActionLabelFromMeritMessage = (message?: IncentiveMessage): string 
     const actionValue = (message as Record<string, unknown>).action;
     if (typeof actionValue === 'string' && actionValue.trim()) return actionValue.trim();
     for (const value of Object.values(message)) {
-      const label = extractActionLabelFromMeritMessage(value as IncentiveMessage);
+      const label = extractActionLabelFromMeritMessage(value as MeritIncentive['message']);
       if (label) return label;
     }
     return null;
@@ -575,7 +571,7 @@ const extractActionLabelFromMeritMessage = (message?: IncentiveMessage): string 
 };
 
 const buildMeritCampaignDetails = (
-  meritGroups: MeritCampaignGroup[] | undefined,
+  merits: MeritIncentive[] | undefined,
   isApy: boolean,
   inputUsd: number,
   hasAnyInput: boolean,
@@ -583,8 +579,8 @@ const buildMeritCampaignDetails = (
   eligibilityRatio = 1,
   grossInputUsd?: number,
 ): SimulationCampaignDetail[] => {
-  const rows: LabeledCampaignRow[] = [];
-  if (!meritGroups?.length) return [];
+  const rows: SimulationCampaignDetail[] = [];
+  if (!merits?.length) return rows;
 
   const netNote = grossInputUsd !== undefined ? buildNetEligibilityNote(inputUsd, grossInputUsd) : null;
   const appendNetNote = (note: string | undefined): string | undefined => {
@@ -592,33 +588,20 @@ const buildMeritCampaignDetails = (
     return note ? `${note} · ${netNote}` : netNote;
   };
 
-  let globalIndex = 0;
+  const activeMerits = merits.filter((m) => isCampaignActive(m.startDate, m.endDate));
 
-  meritGroups.forEach((group) => {
-    const activeBreakdowns = (group.breakdowns ?? []).filter(
-      (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
-    );
-    if (!activeBreakdowns.length) return;
+  activeMerits.forEach((merit, meritIndex) => {
+    const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
+    const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
+    const baseAprPercent = sanitizePercent(merit.apr);
+    const selfAprPercent = sanitizePercent(merit.selfApr ?? 0);
+    const meritName = (merit.name?.trim() || 'Merit');
+    const hasBaseLeg = baseAprPercent > 0;
+    const baseLabel = extractActionLabelFromMeritMessage(baseMessage) ?? meritName;
+    const selfLabel = extractActionLabelFromMeritMessage(selfMessage) ?? (hasBaseLeg ? `${baseLabel} #2` : meritName);
+    const meritHref = typeof merit.link === 'string' && merit.link.trim() ? merit.link.trim() : null;
 
-    const groupMessage = group.message;
-    const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(groupMessage);
-    const meritName = (group.name?.trim() || 'Merit');
-    const meritHref = typeof group.link === 'string' && group.link.trim() ? group.link.trim() : null;
-
-    const selfBd = activeBreakdowns.find((bd) => {
-      const msg = bd.message;
-      const text = typeof msg === 'string' ? msg.toLowerCase() : JSON.stringify(msg ?? '').toLowerCase();
-      return text.includes('self authentication');
-    });
-    const baseBreakdowns = activeBreakdowns.filter((bd) => bd !== selfBd);
-
-    baseBreakdowns.forEach((bd) => {
-      const { selfMessage: bdSelfMessage, baseMessage: bdBaseMessage } = bd.message
-        ? splitMeritMessageBySelfAuth(bd.message)
-        : { selfMessage: undefined, baseMessage: undefined };
-      const baseAprPercent = sanitizePercent(bd.campaignApr);
-      if (baseAprPercent <= 0) return;
-      const label = extractActionLabelFromMeritMessage(bdBaseMessage ?? baseMessage) ?? meritName;
+    if (baseAprPercent > 0) {
       const baseCurrent = meritAprToDisplay(baseAprPercent, isApy);
       let baseAfter: number | null = null;
       if (inputUsd > 0) {
@@ -626,8 +609,9 @@ const buildMeritCampaignDetails = (
           mode: 'MERIT_BASE',
           depositUsd: inputUsd,
           forecastAprPercent: baseAprPercent,
-          startDate: bd.campaignStartedAt,
-          endDate: bd.campaignEndedAt,
+          startDate: merit.startDate,
+          endDate: merit.endDate,
+          lastRoundRewardUsd: merit.lastRoundRewardUsd,
           anchorTvlUsd: meritAnchorTvlUsd,
         });
         if (fp) {
@@ -638,8 +622,8 @@ const buildMeritCampaignDetails = (
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
       rows.push({
-        id: `merit-${globalIndex}-base`,
-        baseLabel: label,
+        id: `merit-${meritIndex}-base`,
+        label: baseLabel,
         current: baseCurrent,
         after: baseAfter,
         delta,
@@ -647,63 +631,56 @@ const buildMeritCampaignDetails = (
         capWarning: false,
         href: meritHref,
       });
-      globalIndex++;
-    });
+    }
 
-    if (selfBd) {
-      const selfAprPercent = sanitizePercent(selfBd.campaignApr);
-      if (selfAprPercent > 0) {
-        const selfCapUsd = extractMeritSelfCapUsd(selfBd.message ?? selfMessage, selfBd.positionCap);
-        const selfCurrent = meritAprToDisplay(selfAprPercent, isApy);
-        let selfAfter: number | null = null;
-        let capNote: string | undefined;
-        let capWarning = false;
-        const baseAprPercent = baseBreakdowns.reduce((s, b) => s + sanitizePercent(b.campaignApr), 0);
-        if (inputUsd > 0) {
-          const fp = forecastMeritCampaign({
-            mode: 'MERIT_SELF_CAP',
-            depositUsd: inputUsd,
-            forecastAprPercent: selfAprPercent,
-            selfCapUsd: selfCapUsd ?? undefined,
-            startDate: selfBd.campaignStartedAt,
-            endDate: selfBd.campaignEndedAt,
-            baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-            anchorTvlUsd: meritAnchorTvlUsd,
-          });
-          if (fp) {
-            selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
-            if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
-              const ceiling = buildMeritSelfDepositCeilingEffect({
-                inputUsd,
-                selfEligibleUsd: fp.selfEligibleUsd,
-                depositCeilingUsd: fp.selfCapUsd,
-              });
-              ({ capNote, capWarning } = ceilingEffectToSimulationFields(ceiling));
-            }
-          } else {
-            selfAfter = selfCurrent;
-          }
-        } else if (hasAnyInput) {
-          selfAfter = 0;
-        }
-        const delta = selfAfter !== null ? selfAfter - selfCurrent : null;
-        const selfLabel = extractActionLabelFromMeritMessage(selfBd.message ?? selfMessage) ?? (baseBreakdowns.length > 0 ? `${meritName} #2` : meritName);
-        rows.push({
-          id: `merit-${globalIndex}-self`,
-          baseLabel: selfLabel,
-          current: selfCurrent,
-          after: selfAfter,
-          delta,
-          capNote: appendNetNote(capNote),
-          capWarning,
-          href: meritHref,
+    if (selfAprPercent > 0) {
+      const selfCurrent = meritAprToDisplay(selfAprPercent, isApy);
+      let selfAfter: number | null = null;
+      let capNote: string | undefined;
+      let capWarning = false;
+      if (inputUsd > 0) {
+        const fp = forecastMeritCampaign({
+          mode: 'MERIT_SELF_CAP',
+          depositUsd: inputUsd,
+          forecastAprPercent: selfAprPercent,
+          selfCapUsd: selfCapUsd ?? undefined,
+          startDate: merit.startDate,
+          endDate: merit.endDate,
+          baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
+          baseLastRoundRewardUsd: merit.lastRoundRewardUsd,
+          anchorTvlUsd: meritAnchorTvlUsd,
         });
-        globalIndex++;
+        if (fp) {
+          selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
+          if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
+            const ceiling = buildMeritSelfDepositCeilingEffect({
+              inputUsd,
+              selfEligibleUsd: fp.selfEligibleUsd,
+              depositCeilingUsd: fp.selfCapUsd,
+            });
+            ({ capNote, capWarning } = ceilingEffectToSimulationFields(ceiling));
+          }
+        } else {
+          selfAfter = selfCurrent;
+        }
+      } else if (hasAnyInput) {
+        selfAfter = 0;
       }
+      const delta = selfAfter !== null ? selfAfter - selfCurrent : null;
+      rows.push({
+        id: `merit-${meritIndex}-self`,
+        label: selfLabel,
+        current: selfCurrent,
+        after: selfAfter,
+        delta,
+        capNote: appendNetNote(capNote),
+        capWarning,
+        href: meritHref,
+      });
     }
   });
 
-  return finalizeCampaignDetailRows(rows);
+  return shouldExposeCampaignRows(rows) ? rows : [];
 };
 
 const buildMerklCampaignDetails = (

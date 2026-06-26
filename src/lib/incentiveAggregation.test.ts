@@ -4,7 +4,7 @@ import {
   aggregateMerklOpportunityApr,
   aggregateBrevisIncentiveApr,
 } from './incentiveAggregation';
-import type { MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 
 function daysFromNowIso(days: number): string {
   const d = new Date();
@@ -13,29 +13,18 @@ function daysFromNowIso(days: number): string {
 }
 
 describe('aggregateMeritIncentiveApr', () => {
-  it('sums campaignApr for active breakdowns', () => {
-    const groups: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com',
-        breakdowns: [
-          { campaignApr: 3, campaignId: 'base', campaignStartedAt: daysFromNowIso(-1), campaignEndedAt: daysFromNowIso(1) },
-          { campaignApr: 2, campaignId: 'self', campaignStartedAt: daysFromNowIso(-1), campaignEndedAt: daysFromNowIso(1) },
-        ],
-      },
+  it('sums apr + selfApr for active campaigns', () => {
+    const incentives: MeritIncentive[] = [
+      { apr: 3, selfApr: 2, link: 'https://example.com', startDate: daysFromNowIso(-1), endDate: daysFromNowIso(1) },
     ];
-    expect(aggregateMeritIncentiveApr(groups)).toBe(5);
+    expect(aggregateMeritIncentiveApr(incentives)).toBe(5);
   });
 
   it('excludes inactive campaigns', () => {
-    const groups: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com',
-        breakdowns: [
-          { campaignApr: 3, campaignId: 'base', campaignStartedAt: daysFromNowIso(-10), campaignEndedAt: daysFromNowIso(-5) },
-        ],
-      },
+    const incentives: MeritIncentive[] = [
+      { apr: 3, link: 'https://example.com', startDate: daysFromNowIso(-10), endDate: daysFromNowIso(-5) },
     ];
-    expect(aggregateMeritIncentiveApr(groups)).toBe(0);
+    expect(aggregateMeritIncentiveApr(incentives)).toBe(0);
   });
 
   it('returns 0 for undefined/empty', () => {
@@ -44,29 +33,18 @@ describe('aggregateMeritIncentiveApr', () => {
   });
 
   it('sanitizes NaN/negative values', () => {
-    const groups: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com',
-        breakdowns: [
-          { campaignApr: NaN, campaignId: 'a', campaignStartedAt: daysFromNowIso(-1), campaignEndedAt: daysFromNowIso(1) },
-          { campaignApr: -1, campaignId: 'b', campaignStartedAt: daysFromNowIso(-1), campaignEndedAt: daysFromNowIso(1) },
-        ],
-      },
+    const incentives: MeritIncentive[] = [
+      { apr: NaN, selfApr: -1, link: 'https://example.com', startDate: daysFromNowIso(-1), endDate: daysFromNowIso(1) },
     ];
-    expect(aggregateMeritIncentiveApr(groups)).toBe(0);
+    expect(aggregateMeritIncentiveApr(incentives)).toBe(0);
   });
 
   it('converts to APY when isApy is true', () => {
-    const groups: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com',
-        breakdowns: [
-          { campaignApr: 10, campaignId: 'a', campaignStartedAt: daysFromNowIso(-1), campaignEndedAt: daysFromNowIso(1) },
-        ],
-      },
+    const incentives: MeritIncentive[] = [
+      { apr: 10, link: 'https://example.com', startDate: daysFromNowIso(-1), endDate: daysFromNowIso(1) },
     ];
-    const apr = aggregateMeritIncentiveApr(groups);
-    const apy = aggregateMeritIncentiveApr(groups, { isApy: true });
+    const apr = aggregateMeritIncentiveApr(incentives);
+    const apy = aggregateMeritIncentiveApr(incentives, { isApy: true });
     expect(apy).toBeGreaterThan(apr);
   });
 });
