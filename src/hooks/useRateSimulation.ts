@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -97,6 +97,7 @@ export const useSharedRateSimulations = ({
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
+  const lastHubMismatchKey = useRef<string | null>(null);
   const pointRateMap = useMemo(() => buildPointRateMap(tydroPointToUsdRate), [tydroPointToUsdRate]);
   const hasPerReserveInput = useMemo(
     () =>
@@ -272,7 +273,13 @@ export const useSharedRateSimulations = ({
   if (import.meta.env.DEV) {
     const warnings = validateHubAggregateConsistency(reserves, hubAggregationMap);
     if (warnings.length > 0) {
-      console.warn('[V4 HubAggregation] utilization mismatch:', warnings);
+      const key = warnings.map(w => w.reserveId).join(',');
+      if (key !== lastHubMismatchKey.current) {
+        lastHubMismatchKey.current = key;
+        console.warn('[V4 HubAggregation] utilization mismatch:', warnings);
+      }
+    } else {
+      lastHubMismatchKey.current = null;
     }
   }
 
