@@ -62,12 +62,15 @@ Rate=0 for non-Ink points means `convertMerklPointsAmountToUsd(value, 0) = 0`. F
 
 ## Implementation
 
-**Status**: Completed (2026-06-17)
+**Status**: Completed (2026-06-26)
 
 ### Frontend commits (aaveapy, branch `lovable`)
 
+- `032ef3bf` — per-campaign point rate routing + reward token icon in IncentiveTooltip
 - `619fac4a` — remove `missingSymbolFallback` from `getPointToUsdRate`
 - `0be584d7` — unify badge and tooltip to use `getPointToUsdRate` via `pointRateMap`
+- `9b3b7d27` — comply with ADR-0018 §3: remove default pointToUsdRate, rename tydroPointToUsdRate → pointRateMap
+- `9d4f5600` — wire pointRateMap through calculator layer (dispatch, buildIncentiveCurrent/After, buildMerklCampaignDetails) and migrate test fixtures
 
 ### Backend commits (aave-protocol-analysis)
 
@@ -78,8 +81,10 @@ Rate=0 for non-Ink points means `convertMerklPointsAmountToUsd(value, 0) = 0`. F
 - AAV-937 (PRD) → Done
 - AAV-941 (safePointToUsdRate fallback) → Done
 - AAV-943 (getPointToUsdRate + pointRateMap prop drill) → Done
+- AAV-944 (调用方改用 getPointToUsdRate) → Done
 - AAV-945 (IncentiveTooltip reward token icon) → Done
+- AAV-946 (全量测试 + Playwright 验证) → Done
 
 ### Deployment note
 
-Backend commit `3fbc146` must deploy before frontend for `rewardTokenSymbol` to appear in production API.
+Backend commit `3bc146` must deploy before frontend for `rewardTokenSymbol` to appear in production API.
