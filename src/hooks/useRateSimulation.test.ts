@@ -4,7 +4,6 @@ import type {
   MerklForecastWireItem,
   MerklCampaignBreakdown,
   ReserveWithSpread,
-  IncentiveMessage,
 } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
@@ -566,24 +565,24 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       meritSupplys: [
         {
+          apr: 4.084439890516138,
+          selfApr: 4.084439890516138,
           link: 'https://apps.aavechan.com/merit/celo-supply-usdt',
+          startDate: '2020-01-01',
+          endDate: '2099-01-01',
           name: 'Supply USDT',
           message: [
             {
               action: 'Supply USDT',
               description:
-                'Rewards are distributed using the following formula: f(USDb. aToken Holding - USDb. vToken Holding / USDb. Liquidation Threshold)',
+                'Rewards are distributed using the following formula: f(USD₮ aToken Holding - USD₮ vToken Holding / USD₮ Liquidation Threshold)',
             },
             {
               action: 'Self Authentication',
               description:
                 'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
             },
-          ] as unknown as IncentiveMessage,
-          breakdowns: [
-            { campaignApr: 4.084439890516138, campaignId: 'base', campaignStartedAt: '2020-01-01', campaignEndedAt: '2099-01-01' },
-            { campaignApr: 4.084439890516138, campaignId: 'self', campaignStartedAt: '2020-01-01', campaignEndedAt: '2099-01-01', positionCap: 1000, message: 'Self Authentication' },
-          ],
+          ] as unknown as string,
         },
       ],
     };

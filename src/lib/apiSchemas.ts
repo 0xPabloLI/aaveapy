@@ -10,27 +10,17 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
   ])
 );
 
-// ── Merit campaign breakdown ──
-const MeritCampaignBreakdownSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  campaignType: z.string().optional(),
-  positionCap: z.number().optional(),
-  message: IncentiveMessageSchema.optional(),
-  aprCap: z.number().nullable().optional(),
-  rewardTokenSymbol: z.string().optional(),
-  totalBudget: z.number().optional(),
-  latestTvl: z.number().optional(),
-}).passthrough();
-
-const MeritCampaignGroupSchema = z.object({
-  link: z.string().optional(),
+// ── Merit incentive ──
+const MeritIncentiveSchema = z.object({
+  apr: z.number(),
+  selfApr: z.number().optional(),
+  link: z.string(),
   name: z.string().optional(),
   message: IncentiveMessageSchema.optional(),
-  breakdowns: z.array(MeritCampaignBreakdownSchema),
-}).passthrough();
+  startDate: z.string(),
+  endDate: z.string(),
+  lastRoundRewardUsd: z.number().optional(),
+});
 
 // ── Merkl campaign breakdown ──
 const MerklCampaignBreakdownSchema = z.object({
@@ -147,8 +137,8 @@ const ReserveWithSpreadSchema = z.object({
   borrowApy: z.number().optional(),
   supplyIncentives: z.array(z.number()).optional(),
   borrowIncentives: z.array(z.number()).optional(),
-  meritSupplys: z.array(MeritCampaignGroupSchema).optional(),
-  meritBorrows: z.array(MeritCampaignGroupSchema).optional(),
+  meritSupplys: z.array(MeritIncentiveSchema).optional(),
+  meritBorrows: z.array(MeritIncentiveSchema).optional(),
   merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
   merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
   merklHolds: z.array(MerklOpportunityGroupSchema).optional(),

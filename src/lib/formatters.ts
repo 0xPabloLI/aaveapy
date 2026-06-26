@@ -54,7 +54,7 @@ export const apyToApr = (apy: number): number => {
   return aprDecimal * 100;
 };
 
-import type { MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive, ReserveWithSpread } from '@/types/aave';
+import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive, ReserveWithSpread } from '@/types/aave';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 import {
@@ -115,7 +115,7 @@ const sumNumberArrayApy = (arr?: number[]): number => {
 };
 
 export const calculateTotalIncentiveApr = (
-  meritIncentives?: MeritCampaignGroup[],
+  meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
@@ -131,7 +131,7 @@ export const calculateTotalIncentiveApr = (
 };
 
 export const calculateTotalIncentiveApy = (
-  meritIncentives?: MeritCampaignGroup[],
+  meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],

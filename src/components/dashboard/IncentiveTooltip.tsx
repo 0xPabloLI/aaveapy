@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import {
   formatPercent,
   convertAprToApy,
@@ -311,59 +311,57 @@ const IncentiveTooltip = ({
       }
     }
 
-    // Merit incentives (MeritCampaignGroup array)
-    const meritGroups: MeritCampaignGroup[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-    if (meritGroups && Array.isArray(meritGroups)) {
-      meritGroups.forEach((group, index) => {
-        const activeBreakdowns = (group.breakdowns ?? []).filter(
-          (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
-        );
-        if (!activeBreakdowns.length) return;
+    // Merit incentives (MeritIncentive array)
+    const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+    if (meritIncentives && Array.isArray(meritIncentives)) {
+      meritIncentives.forEach((merit, index) => {
+        if (!isCampaignActive(merit.startDate, merit.endDate)) return;
+        const apr = merit.apr;
+        const selfApr = merit.selfApr || 0;
+        
+        const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
+        const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
+        const totalForecastAprPercent = baseAprPercent + selfAprPercent;
 
-        const totalAprPercent = activeBreakdowns.reduce((s, bd) => {
-          const apr = !isNaN(bd.campaignApr) && bd.campaignApr >= 0 ? bd.campaignApr : 0;
-          return s + apr;
-        }, 0);
-
+        // Convert each APR to APY separately then sum (convertAprToApy is non-linear)
         let totalValue = 0;
         if (isApy) {
-          activeBreakdowns.forEach((bd) => {
-            const apr = !isNaN(bd.campaignApr) && bd.campaignApr >= 0 ? bd.campaignApr : 0;
-            if (apr > 0) totalValue += convertAprToApy(apr);
-          });
+          if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
+          if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
         } else {
-          totalValue = totalAprPercent;
+          totalValue = totalForecastAprPercent;
         }
-
+        
         if (totalValue >= 0) {
-          const name = group.name
-            ? group.name
-            : meritGroups.length > 1 
+          const name = merit.name
+            ? merit.name
+            : meritIncentives.length > 1 
               ? `ACI Incentive ${index + 1}`
               : 'ACI Incentive';
 
-          const firstBd = activeBreakdowns[0];
-          const startDate = firstBd?.campaignStartedAt ?? '';
-          const endDate = firstBd?.campaignEndedAt ?? '';
-          const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(group.message);
+          const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
 
           const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
-          activeBreakdowns.forEach((bd) => {
-            const apr = !isNaN(bd.campaignApr) && bd.campaignApr >= 0 ? bd.campaignApr : 0;
-            if (apr <= 0) return;
-            const bdMessage = bd.message;
-            const msgText = typeof bdMessage === 'string' ? bdMessage.toLowerCase() : JSON.stringify(bdMessage ?? '').toLowerCase();
-            const isSelf = msgText.includes('self authentication');
-            const { baseMessage: bdBaseMsg, selfMessage: bdSelfMsg } = splitMeritMessageBySelfAuth(bdMessage);
+          if (baseAprPercent > 0) {
             meritCampaigns.push({
-              value: isApy ? convertAprToApy(apr) : apr,
-              dateRange: formatDateRange(bd.campaignStartedAt, bd.campaignEndedAt) || undefined,
-              startDate: bd.campaignStartedAt,
-              endDate: bd.campaignEndedAt,
-              message: isSelf ? (bdSelfMsg ?? selfMessage) : (bdBaseMsg ?? baseMessage ?? bdMessage),
+              value: isApy ? convertAprToApy(baseAprPercent) : baseAprPercent,
+              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              startDate: merit.startDate,
+              endDate: merit.endDate,
+              message: baseMessage ?? merit.message,
               sourceType: 'ACI',
             });
-          });
+          }
+          if (selfAprPercent > 0) {
+            meritCampaigns.push({
+              value: isApy ? convertAprToApy(selfAprPercent) : selfAprPercent,
+              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              startDate: merit.startDate,
+              endDate: merit.endDate,
+              message: selfMessage,
+              sourceType: 'ACI',
+            });
+          }
 
           sources.push({
             name,
@@ -371,17 +369,17 @@ const IncentiveTooltip = ({
             color: 'text-foreground',
             bgColor: 'bg-muted/60',
             sourceType: 'ACI',
-            link: group.link,
-            message: group.message,
-            dateRange: formatDateRange(startDate, endDate) || undefined,
+            link: merit.link,
+            message: merit.message,
+            dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
             campaigns: meritCampaigns.length > 0
               ? meritCampaigns
               : [{
                   value: totalValue,
-                  dateRange: formatDateRange(startDate, endDate) || undefined,
-                  startDate,
-                  endDate,
-                  message: group.message,
+                  dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+                  startDate: merit.startDate,
+                  endDate: merit.endDate,
+                  message: merit.message,
                 }],
           });
         }
