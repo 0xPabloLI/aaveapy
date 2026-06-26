@@ -92,8 +92,8 @@ const App = () => (
                 </Routes>
               </Suspense>
             </BrowserRouter>
-            <Analytics />
-            <SpeedInsights />
+            <Analytics debug={false} />
+            <SpeedInsights debug={false} />
           </TooltipProvider>
             </AaveProviders>
           </SdkErrorBoundary>
