@@ -26,8 +26,7 @@
     <!-- Preload critical API data -->
     <link rel="preconnect" href="https://api.aaveapy.com" crossorigin />
 
-    <!-- Preload LCP image (hero logo) -->
-    <link rel="preload" as="image" href="/aave_apy_logo.png" fetchpriority="high" />
+    <!-- Logo is rendered via React <img> in Header.tsx; no preload needed for SPA lazy content -->
     
     <meta name="description" content="Compare Aave V3 lending and borrowing APYs across 17 chains. Track Merit, Merkl, and Brevis incentives in real time." />
     <meta name="author" content="AAVE APY" />

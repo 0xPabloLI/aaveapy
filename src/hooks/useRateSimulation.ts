@@ -115,8 +115,22 @@ export const useSharedRateSimulations = ({
   );
   const needsTokenPrice = inputMode === 'token';
 
-  const priceQueries = useQueries({
-    queries: reserves.map((reserve) => {
+  // Deduplicate price queries by queryKey. Same token across multiple V4
+  // hub/spoke reserves shares the same price — one query per unique key avoids
+  // React Query's "Duplicate Queries" warning.
+  // Contract: queryKey includes chainId+tokenAddress+aTokenAddress+vTokenAddress+tokenSymbol,
+  // so same-key reserves share identical token price — queryFn using first reserve is correct.
+  const { dedupedQueries, reserveToQueryIndex } = useMemo(() => {
+    const seen = new Map<string, { idx: number; needsPrice: boolean; localPriceMissing: boolean }>();
+    const queries: Array<{
+      queryKey: readonly unknown[];
+      queryFn: () => Promise<number | null>;
+      enabled: boolean;
+      staleTime: number;
+    }> = [];
+    const indexMap: number[] = [];
+
+    for (const reserve of reserves) {
       const localPrice = resolveLocalReserveTokenPrice(reserve, tokenPrices);
       const reserveId = getReserveSimulationId(reserve);
       const perReserve = perReserveInputs?.get(reserveId);
@@ -125,35 +139,66 @@ export const useSharedRateSimulations = ({
         parseNumberInput(borrowInput) > 0 ||
         (perReserve != null &&
           (parseNumberInput(perReserve.supplyInput) > 0 || parseNumberInput(perReserve.borrowInput) > 0));
-      return {
-        queryKey: [
-          ...FORECAST_TOKEN_PRICE_QUERY_KEY,
-          reserve.chainId,
-          reserve.tokenAddress,
-          reserve.aTokenAddress ?? '',
-          reserve.vTokenAddress ?? '',
-          reserve.tokenSymbol,
-        ],
-        queryFn: async () => {
-          return (
-            (await resolveForecastTokenPriceWithBackup(
-              buildPriceLookup(reserve, tokenPrices, 'Supply'),
-              fetch
-            )) ??
-            (await resolveForecastTokenPriceWithBackup(
-              buildPriceLookup(reserve, tokenPrices, 'Borrow'),
-              fetch
-            )) ??
-            null
-          );
-        },
-        // Per-reserve price query is enabled when either shared or per-reserve
-        // input exists for that reserve, avoiding request storms when no input.
-        enabled: enabled && reserveNeedsPrice && needsTokenPrice && localPrice === undefined,
-        staleTime: QUERY_STALE_TIMES.default,
-      };
-    }),
-  });
+      const localPriceMissing = localPrice === undefined;
+      const queryKey = [
+        ...FORECAST_TOKEN_PRICE_QUERY_KEY,
+        reserve.chainId,
+        reserve.tokenAddress,
+        reserve.aTokenAddress ?? '',
+        reserve.vTokenAddress ?? '',
+        reserve.tokenSymbol,
+      ] as const;
+      const keyStr = JSON.stringify(queryKey);
+
+      const existing = seen.get(keyStr);
+      if (existing) {
+        // OR the enabled conditions — if ANY reserve needs the price, enable the query
+        existing.needsPrice = existing.needsPrice || reserveNeedsPrice;
+        existing.localPriceMissing = existing.localPriceMissing || localPriceMissing;
+        indexMap.push(existing.idx);
+      } else {
+        const idx = queries.length;
+        seen.set(keyStr, { idx, needsPrice: reserveNeedsPrice, localPriceMissing });
+        indexMap.push(idx);
+        queries.push({
+          queryKey,
+          // First reserve is used for queryFn; same queryKey guarantees same token,
+          // so buildPriceLookup produces the same result regardless of which reserve.
+          queryFn: async () => {
+            return (
+              (await resolveForecastTokenPriceWithBackup(
+                buildPriceLookup(reserve, tokenPrices, 'Supply'),
+                fetch
+              )) ??
+              (await resolveForecastTokenPriceWithBackup(
+                buildPriceLookup(reserve, tokenPrices, 'Borrow'),
+                fetch
+              )) ??
+              null
+            );
+          },
+          // enabled will be finalized after the loop (placeholder; overwritten below)
+          enabled: false,
+          staleTime: QUERY_STALE_TIMES.default,
+        });
+      }
+    }
+
+    // Finalize enabled: OR of all same-key reserves' conditions
+    for (const { idx, needsPrice, localPriceMissing } of seen.values()) {
+      queries[idx].enabled = enabled && needsPrice && needsTokenPrice && localPriceMissing;
+    }
+
+    return { dedupedQueries: queries, reserveToQueryIndex: indexMap };
+  }, [reserves, tokenPrices, perReserveInputs, supplyInput, borrowInput, enabled, needsTokenPrice]);
+
+  const dedupedResults = useQueries({ queries: dedupedQueries });
+
+  // Re-expand deduped results back to per-reserve alignment
+  const priceQueries = useMemo(
+    () => reserveToQueryIndex.map((qi) => dedupedResults[qi]),
+    [reserveToQueryIndex, dedupedResults],
+  );
 
   // `useQueries` returns a fresh array reference every render even when the
   // underlying data is unchanged. Deriving stable structural signatures from
