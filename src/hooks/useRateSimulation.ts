@@ -15,6 +15,7 @@ import type {
 } from '@/types/aave';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import type { PerReserveInput } from '@/lib/portfolioSimulator';
+import { buildPointRateMap, type PointRateMap } from '@/lib/tydro';
 import {
   buildRateSimulationResult,
   buildEmptyRateSimulationResult,
@@ -96,6 +97,7 @@ export const useSharedRateSimulations = ({
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
+  const pointRateMap = useMemo(() => buildPointRateMap(tydroPointToUsdRate), [tydroPointToUsdRate]);
   const hasPerReserveInput = useMemo(
     () =>
       perReserveInputs != null &&
@@ -283,6 +285,7 @@ export const useSharedRateSimulations = ({
           hubBorrowed,
           totalSupplyUsd: effectiveTotalSupplyUsd,
           totalBorrowUsd: effectiveTotalBorrowUsd,
+          pointRateMap,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasEffectiveInput && forecastLoading,
@@ -306,6 +309,7 @@ export const useSharedRateSimulations = ({
     tokenPriceById,
     tokenPriceLoadingById,
     tydroPointToUsdRate,
+    pointRateMap,
     crossReservePositions,
     reserveSymbolById,
   ]);

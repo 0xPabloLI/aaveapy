@@ -1,3 +1,5 @@
+import type { PointRateMap } from '@/lib/tydro';
+
 export interface TopOpportunitiesMemoReserve {
   tokenAddress?: string;
   marketName?: string;
@@ -11,9 +13,21 @@ const whitelistMerklSetsEqual = (a: ReadonlySet<string>, b: ReadonlySet<string>)
   return true;
 };
 
+const pointRateMapsEqual = (a: PointRateMap | undefined, b: PointRateMap | undefined): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+};
+
 export interface TopOpportunitiesMemoProps {
   isApy: boolean;
-  tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   isRateDragging?: boolean;
   onToggleWhitelistMerklCampaign?: unknown;
   onCardClick?: unknown;
@@ -27,7 +41,7 @@ export const shouldSkipTopOpportunitiesRender = (
   nextProps: TopOpportunitiesMemoProps
 ): boolean => {
   if (prevProps.isApy !== nextProps.isApy) return false;
-  if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) return false;
+  if (!pointRateMapsEqual(prevProps.pointRateMap, nextProps.pointRateMap)) return false;
   if (prevProps.isRateDragging !== nextProps.isRateDragging) return false;
   if (prevProps.onToggleWhitelistMerklCampaign !== nextProps.onToggleWhitelistMerklCampaign) return false;
   if (prevProps.onCardClick !== nextProps.onCardClick) return false;

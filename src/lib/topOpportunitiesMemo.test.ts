@@ -4,7 +4,7 @@ import { shouldSkipTopOpportunitiesRender } from './topOpportunitiesMemo';
 
 const makeProps = () => ({
   isApy: true,
-  tydroPointToUsdRate: 1,
+  pointRateMap: { tydroinkpoints: 1 },
   isRateDragging: false,
   onToggleWhitelistMerklCampaign: undefined,
   categoryGroups: {},
