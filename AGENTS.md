@@ -47,6 +47,39 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - Commits: 简洁的 conventional 格式;不在 message 里放 URL。
 - 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
 
+## Cross-Branch Workflow（禁止本地切分支）
+**核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。
+
+### 场景 1：需要向 main 提交改动（main 有分支保护，必须走 PR）
+```bash
+# 1. 创建 worktree（不会切换当前分支）
+git worktree add /tmp/aaveapy-main main
+# 2. 在 worktree 中操作
+cd /tmp/aaveapy-main
+git checkout -b fix/xxx
+# 编辑文件、commit
+git push -u origin fix/xxx
+gh pr create --title "fix: xxx" --body "..." --base main --head fix/xxx
+gh pr merge <PR_NUMBER> --squash --auto   # CI 通过后自动合并
+# 3. 清理 worktree
+cd <original-repo>
+git worktree remove /tmp/aaveapy-main
+```
+
+### 场景 2：需要从其他分支 cherry-pick 到当前分支
+```bash
+git cherry-pick <commit-sha>   # 不需要切分支，直接在当前分支操作
+```
+
+### 场景 3：需要查看其他分支的文件
+```bash
+git show main:path/to/file     # 不切分支，直接读取
+git diff main..lovable -- path/to/file
+```
+
+### 场景 4：需要将 lovable 的改动合入 main
+通过 PR：从 lovable 向 main 开 PR，不要本地 merge。
+
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
 - Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
