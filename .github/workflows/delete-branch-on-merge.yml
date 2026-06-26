@@ -24,9 +24,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const ref = `heads/${context.payload.pull_request.head.ref}`;
-            await github.rest.git.deleteRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref,
-            });
-            core.info(`Deleted branch ref: ${ref}`);
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref,
+              });
+              core.info(`Deleted branch ref: ${ref}`);
+            } catch (error) {
+              if (error.status === 422) {
+                core.info(`Branch ${ref} already deleted — likely by GitHub auto-delete on merge.`);
+              } else {
+                throw error;
+              }
+            }
