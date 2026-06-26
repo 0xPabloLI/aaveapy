@@ -16,6 +16,8 @@ interface UseWalletAutoImportParams {
   portfolioActions: PortfolioSimulationActions
   /** Called when wallet positions are successfully imported (non-empty). */
   onImport?: () => void
+  /** Called when wallet disconnects, after wallet entries are removed. */
+  onDisconnect?: () => void
 }
 
 export function useWalletAutoImport({
@@ -28,9 +30,11 @@ export function useWalletAutoImport({
   reserves,
   portfolioActions,
   onImport,
+  onDisconnect,
 }: UseWalletAutoImportParams) {
   const lastImportedAddress = useRef<string | null>(null)
   const lastDegradedShown = useRef(false)
+  const wasConnected = useRef(false)
 
   useEffect(() => {
     if (!isConnected || !address) return
@@ -65,14 +69,22 @@ export function useWalletAutoImport({
 
   useEffect(() => {
     if (!isConnected || !address) {
+      const hadConnected = wasConnected.current
+      wasConnected.current = false
+      // Note: assumes isConnected=true always comes with a valid address.
+      // If wallet library emits isConnected=true + address=undefined briefly,
+      // this would incorrectly trigger onDisconnect before the real connect completes.
       const removed = portfolioActions.removeWalletEntries()
       if (removed > 0) {
         toast.info(`Removed ${removed} wallet position${removed > 1 ? 's' : ''}`)
       }
       lastImportedAddress.current = null
       lastDegradedShown.current = false
+      if (hadConnected) onDisconnect?.()
       return
     }
+
+    wasConnected.current = true
 
     if (lastDegradedShown.current) return
 
@@ -86,5 +98,5 @@ export function useWalletAutoImport({
         duration: 5000,
       })
     }
-  }, [isConnected, address, v3SdkFailed, v4SdkFailed, walletLoadState, portfolioActions])
+  }, [isConnected, address, v3SdkFailed, v4SdkFailed, walletLoadState, portfolioActions, onDisconnect])
 }

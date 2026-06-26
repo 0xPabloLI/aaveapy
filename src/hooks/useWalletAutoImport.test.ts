@@ -339,5 +339,116 @@ describe('useWalletAutoImport', () => {
 
       expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('wallet position'))
     })
+
+    it('calls onDisconnect callback when wallet disconnects', () => {
+      const onDisconnect = vi.fn()
+
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult() : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+            onDisconnect,
+          }),
+        { initialProps: { isConnected: true } },
+      )
+
+      expect(onDisconnect).not.toHaveBeenCalled()
+
+      rerender({ isConnected: false })
+
+      expect(onDisconnect).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not call onDisconnect when wallet is already disconnected', () => {
+      const onDisconnect = vi.fn()
+
+      renderHook(() =>
+        useWalletAutoImport({
+          address: undefined,
+          isConnected: false,
+          walletLoadState: 'idle',
+          walletResult: makeErrorResult(),
+          v3SdkFailed: false,
+          v4SdkFailed: false,
+          reserves: emptyReserves,
+          portfolioActions: mockPortfolioActions,
+          onDisconnect,
+        }),
+      )
+
+      expect(onDisconnect).not.toHaveBeenCalled()
+    })
+
+    it('calls onDisconnect before re-import on reconnect', () => {
+      const onDisconnect = vi.fn()
+      const onImport = vi.fn()
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult(walletPositions) : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+            onImport,
+            onDisconnect,
+          }),
+        { initialProps: { isConnected: true } },
+      )
+
+      expect(onImport).toHaveBeenCalledTimes(1)
+      expect(onDisconnect).not.toHaveBeenCalled()
+
+      rerender({ isConnected: false })
+
+      expect(onDisconnect).toHaveBeenCalledTimes(1)
+
+      rerender({ isConnected: true })
+
+      expect(onImport).toHaveBeenCalledTimes(2)
+    })
+
+    it('calls onDisconnect on multiple connect/disconnect cycles', () => {
+      const onDisconnect = vi.fn()
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult(walletPositions) : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+            onDisconnect,
+          }),
+        { initialProps: { isConnected: false } },
+      )
+
+      expect(onDisconnect).toHaveBeenCalledTimes(0)
+
+      rerender({ isConnected: true })
+      rerender({ isConnected: false })
+      expect(onDisconnect).toHaveBeenCalledTimes(1)
+
+      rerender({ isConnected: true })
+      rerender({ isConnected: false })
+      expect(onDisconnect).toHaveBeenCalledTimes(2)
+    })
   })
 })

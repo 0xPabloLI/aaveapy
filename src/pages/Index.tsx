@@ -304,6 +304,7 @@ const Index = () => {
     reserves: stableReserves,
     portfolioActions: portfolio.actions,
     onImport: () => setSimulationMode('portfolio'),
+    onDisconnect: () => setSimulationMode('single'),
   });
 
   const handleWalletSync = useCallback(() => {
