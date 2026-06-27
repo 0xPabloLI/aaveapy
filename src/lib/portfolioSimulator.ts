@@ -194,10 +194,13 @@ function computeResultsFromGroups(
 
     const hubKey = reserve.hubId ? getHubAssetKey(reserve) : null;
     const hubAgg = hubKey ? hubMap.get(hubKey) : undefined;
+    const hubBorrowed = reserve.hubBorrowed;
 
+    if (reserveRateInput && hubBorrowed) {
+      reserveRateInput.borrowed = hubBorrowed;
+      reserveRateInput.hubBorrowed = hubBorrowed;
+    }
     if (reserveRateInput && hubAgg) {
-      reserveRateInput.borrowed = hubAgg.hubBorrowed;
-      reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
       reserveRateInput.hubSupplied = hubAgg.hubSupplied;
     }
 
@@ -218,7 +221,7 @@ function computeResultsFromGroups(
         crossReservePositions,
         reserveSymbolById,
         hubSupplied: hubAgg?.hubSupplied,
-        hubBorrowed: hubAgg?.hubBorrowed,
+        hubBorrowed,
       });
 
       const countSideForecastUnavailable = (lane: SimulationLane): number => {

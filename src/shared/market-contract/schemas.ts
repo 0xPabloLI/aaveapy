@@ -179,6 +179,7 @@ export const ReserveWithSpreadSchema = z.object({
   aaveProReserveId: z.string().optional(),
   hubId: z.string().optional(),
   hubName: z.string().optional(),
+  hubBorrowed: z.string().optional(),
   spokeId: z.string().optional(),
   spokeName: z.string().optional(),
 }).passthrough();

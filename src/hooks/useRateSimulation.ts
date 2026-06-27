@@ -1,10 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildHubAggregationMap, getHubAssetKey, validateHubAggregateConsistency } from '@/lib/hubAggregation';
+import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
@@ -97,7 +97,6 @@ export const useSharedRateSimulations = ({
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
-  const lastHubMismatchKey = useRef<string | null>(null);
   const pointRateMap = useMemo(() => buildPointRateMap(tydroPointToUsdRate), [tydroPointToUsdRate]);
   const hasPerReserveInput = useMemo(
     () =>
@@ -270,19 +269,6 @@ export const useSharedRateSimulations = ({
     [reserves]
   );
 
-  if (import.meta.env.DEV) {
-    const warnings = validateHubAggregateConsistency(reserves, hubAggregationMap);
-    if (warnings.length > 0) {
-      const key = warnings.map(w => w.reserveId).join(',');
-      if (key !== lastHubMismatchKey.current) {
-        lastHubMismatchKey.current = key;
-        console.warn('[V4 HubAggregation] utilization mismatch:', warnings);
-      }
-    } else {
-      lastHubMismatchKey.current = null;
-    }
-  }
-
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
@@ -294,14 +280,16 @@ export const useSharedRateSimulations = ({
       let hubSupplied: string | undefined;
       let hubBorrowed: string | undefined;
       if (reserve.hubId) {
+        hubBorrowed = reserve.hubBorrowed;
+        if (reserveRateInput && hubBorrowed) {
+          reserveRateInput.borrowed = hubBorrowed;
+          reserveRateInput.hubBorrowed = hubBorrowed;
+        }
         const hubKey = getHubAssetKey(reserve);
         const hubAgg = hubKey ? hubAggregationMap.get(hubKey) : undefined;
         if (hubAgg) {
           hubSupplied = hubAgg.hubSupplied;
-          hubBorrowed = hubAgg.hubBorrowed;
           if (reserveRateInput) {
-            reserveRateInput.borrowed = hubAgg.hubBorrowed;
-            reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
             reserveRateInput.hubSupplied = hubAgg.hubSupplied;
           }
         }

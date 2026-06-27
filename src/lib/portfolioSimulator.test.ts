@@ -381,24 +381,31 @@ describe('simulatePortfolioFromEntries', () => {
     );
   });
 
-  it('v4 Hub: hubAggregationMap raises supply rate vs per-spoke baseline', () => {
-    const reserve = makeRateCalcReserve({
+  it('v4 Hub: hubBorrowed + hubSupplied raise supply rate vs per-spoke baseline', () => {
+    const baseReserve = makeRateCalcReserve({
       reserveId: 'r-usdc-v4',
       hubId: 'hub-usdc',
       hubName: 'usdc-hub',
       hubAddress: '0xHub',
     });
+    const hubReserve = makeRateCalcReserve({
+      reserveId: 'r-usdc-v4',
+      hubId: 'hub-usdc',
+      hubName: 'usdc-hub',
+      hubAddress: '0xHub',
+      hubBorrowed: '40000000000000',
+    });
     const hubAggregationMap = new Map([
       [
         'hub-usdc:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        { hubBorrowed: '40000000000000', hubSupplied: '60000000000000' },
+        { hubSupplied: '60000000000000' },
       ],
     ]);
     const entries = [
       makeEntry({ reserveId: 'r-usdc-v4', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
-    const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [reserve] });
-    const hubArgs = baseEntriesSimArgs({ entries, reserves: [reserve], hubAggregationMap });
+    const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [baseReserve] });
+    const hubArgs = baseEntriesSimArgs({ entries, reserves: [hubReserve], hubAggregationMap });
     const perSpokeResult = simulatePortfolioFromEntries(perSpokeArgs);
     const hubResult = simulatePortfolioFromEntries(hubArgs);
     const perSpokeSupply = perSpokeResult.results.find((r) => r.side === 'supply')!;

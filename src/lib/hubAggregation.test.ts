@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHubAggregationMap, getHubAssetKey, validateHubAggregateConsistency } from './hubAggregation';
+import { buildHubAggregationMap, getHubAssetKey } from './hubAggregation';
 import type { ReserveWithSpread } from '@/types/aave';
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> & {
@@ -28,7 +28,7 @@ describe('buildHubAggregationMap', () => {
     expect(map.size).toBe(0);
   });
 
-  it('aggregates borrowed/supplied across Spokes of same Hub+token', () => {
+  it('aggregates supplied across Spokes of same Hub+token', () => {
     const hubId = 'base64(1::0xHubAddr)';
     const reserves = [
       makeReserve({
@@ -51,7 +51,6 @@ describe('buildHubAggregationMap', () => {
     expect(key).toBe(`${hubId}:0xA0b8`);
     const agg = map.get(key!);
     expect(agg).toBeDefined();
-    expect(agg!.hubBorrowed).toBe('3000000');
     expect(agg!.hubSupplied).toBe('8000000');
   });
 
@@ -75,7 +74,7 @@ describe('buildHubAggregationMap', () => {
     expect(map.size).toBe(2);
   });
 
-  it('handles missing borrowed/supplied gracefully', () => {
+  it('handles missing supplied gracefully', () => {
     const hubId = 'base64(1::0xHubAddr)';
     const reserves = [
       makeReserve({
@@ -89,25 +88,7 @@ describe('buildHubAggregationMap', () => {
     const key = getHubAssetKey(reserves[0]);
     const agg = map.get(key!);
     expect(agg).toBeDefined();
-    expect(agg!.hubBorrowed).toBe('0');
     expect(agg!.hubSupplied).toBe('0');
-  });
-
-  it('validates aggregate utilization against API utilizationPct', () => {
-    const hubId = 'base64(1::0xHubAddr)';
-    const reserves = [
-      makeReserve({
-        marketName: 'AaveV4Main', reserveId: 'v4:1:usdc:Core',
-        chainName: 'Ethereum', chainId: 1,
-        tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xA0b8',
-        hubId, borrowed: '4000', supplied: '10000', utilizationPct: 40,
-      }),
-    ];
-    const map = buildHubAggregationMap(reserves);
-    const key = getHubAssetKey(reserves[0]);
-    const agg = map.get(key!);
-    const calcUtil = (BigInt(agg!.hubBorrowed) * 100n) / BigInt(agg!.hubSupplied);
-    expect(Number(calcUtil)).toBeCloseTo(40, 0);
   });
 });
 
@@ -147,7 +128,6 @@ describe('buildHubAggregationMap boundary cases', () => {
     const map = buildHubAggregationMap(reserves);
     const key = getHubAssetKey(reserves[0]);
     const agg = map.get(key!);
-    expect(agg!.hubBorrowed).toBe('3000000');
     expect(agg!.hubSupplied).toBe('7000000');
   });
 
@@ -172,40 +152,6 @@ describe('buildHubAggregationMap boundary cases', () => {
     const key = getHubAssetKey(reserves[0]);
     const agg = map.get(key!);
     const expected = (BigInt(largeValue) * 2n).toString();
-    expect(agg!.hubBorrowed).toBe(expected);
     expect(agg!.hubSupplied).toBe(expected);
-  });
-});
-
-describe('validateHubAggregateConsistency', () => {
-  it('returns empty array when all consistent', () => {
-    const hubId = 'base64(1::0xHubAddr)';
-    const reserves = [
-      makeReserve({
-        marketName: 'AaveV4Main', reserveId: 'v4:1:usdc:Core',
-        chainName: 'Ethereum', chainId: 1,
-        tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xA0b8',
-        hubId, borrowed: '4000', supplied: '10000', utilizationPct: 40,
-      }),
-    ];
-    const map = buildHubAggregationMap(reserves);
-    const warnings = validateHubAggregateConsistency(reserves, map, 5);
-    expect(warnings).toHaveLength(0);
-  });
-
-  it('returns warnings when utilization mismatch exceeds tolerance', () => {
-    const hubId = 'base64(1::0xHubAddr)';
-    const reserves = [
-      makeReserve({
-        marketName: 'AaveV4Main', reserveId: 'v4:1:usdc:Core',
-        chainName: 'Ethereum', chainId: 1,
-        tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xA0b8',
-        hubId, borrowed: '4000', supplied: '6000', utilizationPct: 60,
-      }),
-    ];
-    const map = buildHubAggregationMap(reserves);
-    const warnings = validateHubAggregateConsistency(reserves, map, 5);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0].deltaPct).toBeGreaterThan(5);
   });
 });

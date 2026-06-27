@@ -172,6 +172,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   // V4 Hub & Spoke addresses for contract interaction (only present for V4 markets)
   hubId?: string;
   hubName?: string;
+  hubBorrowed?: string;
   hubAddress?: string;
   /** Kept: future spoke detail page needs spoke identity. */
   spokeId?: string;
