@@ -394,18 +394,13 @@ describe('simulatePortfolioFromEntries', () => {
       hubName: 'usdc-hub',
       hubAddress: '0xHub',
       hubBorrowed: '40000000000000',
+      hubSupplied: '60000000000000',
     });
-    const hubAggregationMap = new Map([
-      [
-        'hub-usdc:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        { hubSupplied: '60000000000000' },
-      ],
-    ]);
     const entries = [
       makeEntry({ reserveId: 'r-usdc-v4', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [baseReserve] });
-    const hubArgs = baseEntriesSimArgs({ entries, reserves: [hubReserve], hubAggregationMap });
+    const hubArgs = baseEntriesSimArgs({ entries, reserves: [hubReserve] });
     const perSpokeResult = simulatePortfolioFromEntries(perSpokeArgs);
     const hubResult = simulatePortfolioFromEntries(hubArgs);
     const perSpokeSupply = perSpokeResult.results.find((r) => r.side === 'supply')!;

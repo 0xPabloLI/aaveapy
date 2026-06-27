@@ -18,8 +18,6 @@ import {
 } from '@/lib/portfolioCalculator';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
-import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -34,7 +32,6 @@ export interface PerReserveInput {
 
 interface SimulateCommonArgs {
   reserves: ReserveWithSpread[];
-  hubAggregationMap?: Map<HubAssetKey, HubAggregate>;
   isApy: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
   tydroPointToUsdRate: number;
@@ -160,7 +157,6 @@ function buildGroupMapFromSlots(
 function computeResultsFromGroups(
   groupMap: Map<string, EntryGroup>,
   reserveMap: Map<string, ReserveWithSpread>,
-  hubMap: Map<HubAssetKey, HubAggregate>,
   isApy: boolean,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number,
@@ -192,16 +188,15 @@ function computeResultsFromGroups(
       ? { ...reserve }
       : null;
 
-    const hubKey = reserve.hubId ? getHubAssetKey(reserve) : null;
-    const hubAgg = hubKey ? hubMap.get(hubKey) : undefined;
     const hubBorrowed = reserve.hubBorrowed;
+    const hubSupplied = reserve.hubSupplied;
 
     if (reserveRateInput && hubBorrowed) {
       reserveRateInput.borrowed = hubBorrowed;
       reserveRateInput.hubBorrowed = hubBorrowed;
     }
-    if (reserveRateInput && hubAgg) {
-      reserveRateInput.hubSupplied = hubAgg.hubSupplied;
+    if (reserveRateInput && hubSupplied) {
+      reserveRateInput.hubSupplied = hubSupplied;
     }
 
     if (reserveRateInput) {
@@ -220,7 +215,7 @@ function computeResultsFromGroups(
         forecastStates,
         crossReservePositions,
         reserveSymbolById,
-        hubSupplied: hubAgg?.hubSupplied,
+        hubSupplied,
         hubBorrowed,
       });
 
@@ -294,7 +289,6 @@ export function simulatePortfolioFromEntries(
   const {
     entries,
     reserves,
-    hubAggregationMap: externalHubMap,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
@@ -306,7 +300,6 @@ export function simulatePortfolioFromEntries(
     return { results: [], summary: aggregatePortfolioSummary([]) };
   }
 
-  const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
   const groupMap = new Map<string, EntryGroup>();
@@ -330,7 +323,7 @@ export function simulatePortfolioFromEntries(
   }
 
   const results = computeResultsFromGroups(
-    groupMap, reserveMap, hubMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+    groupMap, reserveMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
   );
 
   return {

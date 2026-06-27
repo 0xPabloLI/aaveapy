@@ -180,6 +180,7 @@ export const ReserveWithSpreadSchema = z.object({
   hubId: z.string().optional(),
   hubName: z.string().optional(),
   hubBorrowed: z.string().optional(),
+  hubSupplied: z.string().optional(),
   spokeId: z.string().optional(),
   spokeName: z.string().optional(),
 }).passthrough();

@@ -4,7 +4,6 @@ import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
@@ -264,11 +263,6 @@ export const useSharedRateSimulations = ({
 
   const forecastLoading = sideDataMetaQuery.isPending || sideDataMetaQuery.isFetching;
 
-  const hubAggregationMap = useMemo(
-    () => buildHubAggregationMap(reserves),
-    [reserves]
-  );
-
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
@@ -281,17 +275,13 @@ export const useSharedRateSimulations = ({
       let hubBorrowed: string | undefined;
       if (reserve.hubId) {
         hubBorrowed = reserve.hubBorrowed;
+        hubSupplied = reserve.hubSupplied;
         if (reserveRateInput && hubBorrowed) {
           reserveRateInput.borrowed = hubBorrowed;
           reserveRateInput.hubBorrowed = hubBorrowed;
         }
-        const hubKey = getHubAssetKey(reserve);
-        const hubAgg = hubKey ? hubAggregationMap.get(hubKey) : undefined;
-        if (hubAgg) {
-          hubSupplied = hubAgg.hubSupplied;
-          if (reserveRateInput) {
-            reserveRateInput.hubSupplied = hubAgg.hubSupplied;
-          }
+        if (reserveRateInput && hubSupplied) {
+          reserveRateInput.hubSupplied = hubSupplied;
         }
       }
       const hasEffectiveInput =
@@ -338,7 +328,6 @@ export const useSharedRateSimulations = ({
     forecastErrors,
     forecastLoading,
     forecastStates,
-    hubAggregationMap,
     whitelistMerklCampaignIds,
     inputMode,
     isApy,

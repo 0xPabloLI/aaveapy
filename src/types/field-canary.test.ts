@@ -62,6 +62,13 @@ describe('ReserveWithSpread canonical field-name canary', () => {
     expect(mock.hubBorrowed).toBeUndefined();
   });
 
+  it('reserve.hubSupplied is an optional string (V4 Hub-level totalSupplied)', () => {
+    const withHub: ReserveWithSpread = { ...mock, hubSupplied: '99123456789' };
+    expect(typeof withHub.hubSupplied).toBe('string');
+    expect(withHub.hubSupplied).toBe('99123456789');
+    expect(mock.hubSupplied).toBeUndefined();
+  });
+
   it('reserve.optimalUtilization is a number (used in UtilizationIndicator)', () => {
     expect(typeof mock.optimalUtilization).toBe('number');
     expect(mock.optimalUtilization).toBe(90);
