@@ -276,6 +276,11 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'Function Bitcoin',
       symbol: 'FBTC',
     },
+    '0x59bc9fae5d62b19d4f8d07d758047acb9ee19d34': {
+      symbol: 'PT Strata Senior USDe October 22nd 2026',
+      name: 'PT Strata Senior USDe October 2026',
+      iconSymbol: 'ptsrusde',
+    },
 };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
