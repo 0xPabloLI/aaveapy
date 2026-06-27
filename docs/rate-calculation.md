@@ -732,7 +732,7 @@ Positions are grouped by `getReserveKey(reserve)` (= `reserveId.trim()`). Same-r
 For each group:
 
 1. **deep-copy**: `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`
-2. **Hub aggregation** (v4): if `reserve.hubId`, lookup `hubAggregationMap.get(getHubAssetKey(reserve))` and overwrite `reserveRateInput.borrowed`, `.hubBorrowed`, `.hubSupplied`
+2. **Hub field resolution** (v4): if `reserve.hubId`, use `reserve.hubBorrowed` (SDK direct, Hub-level totalBorrowed) for `reserveRateInput.borrowed`/`.hubBorrowed`; use `hubAggregationMap` for `hubSupplied` only (aggregated Σ(spoke_supplied), error <0.001%)
 3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `meritMerklNetPosition` defaults to `true`
 4. **Extract per-position APR**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`
 5. **Build `PortfolioPositionResult`** via `buildPortfolioPositionResult`
@@ -757,7 +757,7 @@ This matches the pre-Phase-2 behavior exactly.
 
 ### Hub aggregation in Portfolio
 
-Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed`/`hubSupplied` replace per-Spoke `borrowed`/`supplied` on the deep-copy, affecting both `simulateNativeRatesAfterActions` (utilization denominator) and `getMeritAnchorTvlUsd` (Merit anchor TVL). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
+Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed` comes from SDK direct (`reserve.hubBorrowed`) and replaces per-Spoke `borrowed`; `hubSupplied` comes from `hubAggregationMap` (Σ(spoke_supplied), error <0.001%) and replaces per-Spoke `supplied`. Together they affect both `simulateNativeRatesAfterActions` (utilization denominator) and `getMeritAnchorTvlUsd` (Merit anchor TVL). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
 
 ---
 

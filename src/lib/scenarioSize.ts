@@ -169,7 +169,7 @@ export const getAvailableToBorrowUsd = ({
  * distinct semantic layers. Per aaveapy-doc/v3-v4-sdk-field-mapping.md:
  *
  *   Hub-level (from r.asset.summary / r.asset.settings, shared across Spokes):
- *     utilizationPct, availableLiquidity, supplyApy, borrowApy,
+ *     utilizationPct, availableLiquidity, hubBorrowed, supplyApy, borrowApy,
  *     reserveFactor, variableRateSlope1/2, optimalUsageRate, baseVariableBorrowRate
  *
  *   Reserve-level (from r.summary / r.settings, per-Spoke):
