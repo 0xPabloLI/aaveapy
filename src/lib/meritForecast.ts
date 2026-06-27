@@ -1,10 +1,9 @@
-import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
+import type { IncentiveMessage, MeritCampaignGroup } from '@/types/aave';
+import { applyPositionCap } from '@/lib/incentiveMath';
+import { isCampaignActive, parseCampaignBoundaryMs } from '@/lib/campaignGroups';
 
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-export type MeritMessage = MeritIncentive['message'];
-export type MeritForecastMode = 'MERIT_BASE' | 'MERIT_SELF_CAP';
-export type MeritForecastEstimateKind = MeritForecastMode | 'MERIT_CURRENT_RATE';
+export type MeritMessage = IncentiveMessage;
+export type MeritForecastEstimateKind = 'TVL_DILUTION' | 'CURRENT_RATE';
 
 export type MeritEstimateSource = 'reserve_tvl' | 'last_round';
 
@@ -16,92 +15,23 @@ export interface MeritForecastPreview {
   regime: 'PLANNED';
   isUnderDistributed: false;
   estimateKind: MeritForecastEstimateKind;
-  /** When set, Base/self base leg used reserve TVL × APR to fix daily rewards (see `anchorTvlUsd`). */
   meritEstimateSource?: MeritEstimateSource;
-  /** Reserve-side USD TVL assumed equal to Merit’s denominator when using `reserve_tvl`. */
   anchorTvlUsd?: number;
   lastRoundRewardUsd?: number;
-  selfCapUsd?: number;
-  selfEligibleUsd?: number;
   usesCurrentRateFallback?: boolean;
 }
 
 interface ForecastMeritCampaignInput {
-  mode: MeritForecastMode;
   depositUsd: number;
   forecastAprPercent?: number;
   startDate?: string;
   endDate?: string;
   lastRoundRewardUsd?: number;
-  /** If set, assumes this USD TVL matches Merit’s rate denominator; daily reward = TVL × APR / 365, then dilutes. */
   anchorTvlUsd?: number;
-  selfCapUsd?: number;
-  baseAprPercent?: number;
-  baseLastRoundRewardUsd?: number;
 }
 
 function sanitizePercent(value: number | undefined): number {
   return Number.isFinite(value) && value! > 0 ? value! : 0;
-}
-
-function parseCampaignBoundaryMs(value: string | undefined, boundary: 'start' | 'end'): number | null {
-  if (!value) return null;
-  if (DATE_ONLY_PATTERN.test(value)) {
-    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
-    const timestamp = Date.parse(normalized);
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-  const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? null : timestamp;
-}
-
-function flattenMessageLines(message?: MeritMessage): string[] {
-  if (!message) return [];
-  if (typeof message === 'string') return [message];
-  if (Array.isArray(message)) {
-    return message.flatMap((item) => flattenMessageLines(item as MeritMessage));
-  }
-  if (typeof message === 'object') {
-    return Object.values(message).flatMap((value) => flattenMessageLines(value as MeritMessage));
-  }
-  return [];
-}
-
-export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
-  baseMessage?: MeritMessage;
-  selfMessage?: MeritMessage;
-} {
-  if (!Array.isArray(message)) {
-    return { baseMessage: message };
-  }
-
-  const base: IncentiveMessage[] = [];
-  const self: IncentiveMessage[] = [];
-  for (const item of message) {
-    const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
-    if (text.includes('self authentication')) {
-      self.push(item);
-    } else {
-      base.push(item);
-    }
-  }
-
-  return {
-    baseMessage: base.length > 0 ? base : undefined,
-    selfMessage: self.length > 0 ? self : undefined,
-  };
-}
-
-export function extractMeritSelfCapUsd(message?: MeritMessage): number | null {
-  const lines = flattenMessageLines(message);
-  for (const line of lines) {
-    if (!line.toLowerCase().includes('self')) continue;
-    const match = line.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-    if (!match) continue;
-    const parsed = Number(match[1].replace(/,/g, ''));
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-  }
-  return null;
 }
 
 export function getMeritCampaignCycleDays(startDate: string | undefined, endDate: string | undefined): number | null {
@@ -140,10 +70,6 @@ function computeMeritBaseEstimate({
   };
 }
 
-/**
- * Assume headline Base APR applies to `anchorTvlUsd` (e.g. reserve supply or borrowed USD).
- * Then implied daily reward is fixed; adding `depositUsd` dilutes APR like Merkl fixed-reward intuition.
- */
 function computeMeritBaseFromAnchorTvl({
   baseAprPercent,
   anchorTvlUsd,
@@ -160,88 +86,18 @@ function computeMeritBaseFromAnchorTvl({
   };
 }
 
-export function forecastMeritCampaign({
-  mode,
+export function forecastMeritApr({
   depositUsd,
   forecastAprPercent,
   startDate,
   endDate,
   lastRoundRewardUsd,
   anchorTvlUsd,
-  selfCapUsd,
-  baseAprPercent,
-  baseLastRoundRewardUsd,
 }: ForecastMeritCampaignInput): MeritForecastPreview | null {
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) return null;
 
   const aprPercent = sanitizePercent(forecastAprPercent);
   if (aprPercent <= 0) return null;
-
-  if (mode === 'MERIT_SELF_CAP') {
-    if (!Number.isFinite(selfCapUsd) || selfCapUsd! <= 0) return null;
-    const eligibleDepositUsd = Math.min(depositUsd, selfCapUsd!);
-    if (eligibleDepositUsd <= 0) return null;
-
-    const latestRoundBaseApr = sanitizePercent(baseAprPercent);
-    if (latestRoundBaseApr > 0) {
-      type BaseEst = { estimatedDailyRewardUsd: number; estimatedImpliedTvlUsd: number };
-      let baseEstimate: BaseEst | null = null;
-      let usedReserveTvl = false;
-      if (Number.isFinite(anchorTvlUsd) && anchorTvlUsd! > 0) {
-        const fromAnchor = computeMeritBaseFromAnchorTvl({
-          baseAprPercent: latestRoundBaseApr,
-          anchorTvlUsd: anchorTvlUsd!,
-        });
-        if (fromAnchor) {
-          baseEstimate = fromAnchor;
-          usedReserveTvl = true;
-        }
-      }
-      if (!baseEstimate && Number.isFinite(baseLastRoundRewardUsd) && baseLastRoundRewardUsd! > 0) {
-        baseEstimate = computeMeritBaseEstimate({
-          baseAprPercent: latestRoundBaseApr,
-          lastRoundRewardUsd: baseLastRoundRewardUsd!,
-          startDate,
-          endDate,
-        });
-      }
-      if (baseEstimate) {
-        const hypotheticalTvl = Math.max(baseEstimate.estimatedImpliedTvlUsd + depositUsd, 0);
-        if (hypotheticalTvl > 0) {
-          const baseForecastAprPercent = (baseEstimate.estimatedDailyRewardUsd * 365 * 100) / hypotheticalTvl;
-          if (Number.isFinite(baseForecastAprPercent) && baseForecastAprPercent > 0) {
-            const effectiveAprPercent = baseForecastAprPercent * (eligibleDepositUsd / depositUsd);
-            return {
-              unavailable: false,
-              hypotheticalTvl,
-              dailyRewards: (baseForecastAprPercent / 100) * (eligibleDepositUsd / 365),
-              apr: effectiveAprPercent / 100,
-              regime: 'PLANNED',
-              isUnderDistributed: false,
-              estimateKind: 'MERIT_SELF_CAP',
-              selfCapUsd,
-              selfEligibleUsd: eligibleDepositUsd,
-              meritEstimateSource: usedReserveTvl ? 'reserve_tvl' : 'last_round',
-              anchorTvlUsd: usedReserveTvl ? anchorTvlUsd : undefined,
-            };
-          }
-        }
-      }
-    }
-
-    const effectiveAprPercent = aprPercent * (eligibleDepositUsd / depositUsd);
-    return {
-      unavailable: false,
-      dailyRewards: (aprPercent / 100) * (eligibleDepositUsd / 365),
-      apr: effectiveAprPercent / 100,
-      regime: 'PLANNED',
-      isUnderDistributed: false,
-      estimateKind: 'MERIT_CURRENT_RATE',
-      selfCapUsd,
-      selfEligibleUsd: eligibleDepositUsd,
-      usesCurrentRateFallback: true,
-    };
-  }
 
   if (Number.isFinite(anchorTvlUsd) && anchorTvlUsd! > 0) {
     const baseEstimate = computeMeritBaseFromAnchorTvl({
@@ -258,7 +114,7 @@ export function forecastMeritCampaign({
           apr: baseEstimate.estimatedDailyRewardUsd * 365 / hypotheticalTvl,
           regime: 'PLANNED',
           isUnderDistributed: false,
-          estimateKind: 'MERIT_BASE',
+          estimateKind: 'TVL_DILUTION',
           meritEstimateSource: 'reserve_tvl',
           anchorTvlUsd: anchorTvlUsd!,
         };
@@ -280,10 +136,10 @@ export function forecastMeritCampaign({
           unavailable: false,
           hypotheticalTvl,
           dailyRewards: baseEstimate.estimatedDailyRewardUsd,
-          apr: hypotheticalTvl > 0 ? baseEstimate.estimatedDailyRewardUsd * 365 / hypotheticalTvl : 0,
+          apr: baseEstimate.estimatedDailyRewardUsd * 365 / hypotheticalTvl,
           regime: 'PLANNED',
           isUnderDistributed: false,
-          estimateKind: 'MERIT_BASE',
+          estimateKind: 'TVL_DILUTION',
           meritEstimateSource: 'last_round',
           lastRoundRewardUsd,
         };
@@ -297,52 +153,59 @@ export function forecastMeritCampaign({
     apr: aprPercent / 100,
     regime: 'PLANNED',
     isUnderDistributed: false,
-    estimateKind: 'MERIT_CURRENT_RATE',
+    estimateKind: 'CURRENT_RATE',
     usesCurrentRateFallback: true,
   };
 }
 
 export function forecastMeritAprPercent(
-  incentive: MeritIncentive,
+  groups: MeritCampaignGroup[] | undefined,
   depositUsd: number,
   anchorTvlUsd?: number,
+  totalPositionUsd?: number,
 ): number {
-  if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
-    return sanitizePercent(incentive.apr) + sanitizePercent(incentive.selfApr);
-  }
+  if (!groups?.length) return 0;
 
-  const baseAprPercent = sanitizePercent(incentive.apr);
-  const selfAprPercent = sanitizePercent(incentive.selfApr);
-  const { selfMessage } = splitMeritMessageBySelfAuth(incentive.message);
-  const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
+  return groups.reduce((sum, group) => {
+    const activeBreakdowns = (group.breakdowns ?? []).filter(
+      (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
+    );
+    return sum + activeBreakdowns.reduce((bdSum, breakdown) => {
+      const aprPercent = sanitizePercent(breakdown.campaignApr);
+      const positionCapUsd = breakdown.positionCap;
 
-  const baseForecast = baseAprPercent > 0
-    ? forecastMeritCampaign({
-        mode: 'MERIT_BASE',
-        depositUsd,
-        forecastAprPercent: baseAprPercent,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
-        lastRoundRewardUsd: incentive.lastRoundRewardUsd,
-        anchorTvlUsd,
-      })
-    : null;
+      if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
+        if (positionCapUsd != null && positionCapUsd > 0) {
+          const positionForCap = totalPositionUsd ?? 0;
+          if (positionForCap > 0) {
+            const { aprPercent: effectiveAprPercent } = applyPositionCap(aprPercent, positionForCap, positionCapUsd);
+            return bdSum + effectiveAprPercent;
+          }
+        }
+        return bdSum + aprPercent;
+      }
 
-  const selfForecast = selfAprPercent > 0
-    ? forecastMeritCampaign({
-        mode: 'MERIT_SELF_CAP',
-        depositUsd,
-        forecastAprPercent: selfAprPercent,
-        selfCapUsd: selfCapUsd ?? undefined,
-        startDate: incentive.startDate,
-        endDate: incentive.endDate,
-        baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-        baseLastRoundRewardUsd: incentive.lastRoundRewardUsd,
-        anchorTvlUsd,
-      })
-    : null;
+      const baseForecast = aprPercent > 0
+        ? forecastMeritApr({
+            depositUsd,
+            forecastAprPercent: aprPercent,
+            startDate: breakdown.campaignStartedAt,
+            endDate: breakdown.campaignEndedAt,
+            anchorTvlUsd,
+          })
+        : null;
 
-  const baseAfterPercent = baseForecast ? baseForecast.apr * 100 : baseAprPercent;
-  const selfAfterPercent = selfForecast ? selfForecast.apr * 100 : selfAprPercent;
-  return baseAfterPercent + selfAfterPercent;
+      const fullAfterPercent = baseForecast ? baseForecast.apr * 100 : aprPercent;
+
+      if (positionCapUsd != null && positionCapUsd > 0) {
+        const positionForCap = totalPositionUsd ?? depositUsd;
+        if (positionForCap > 0) {
+          const { aprPercent: effectiveAprPercent } = applyPositionCap(fullAfterPercent, positionForCap, positionCapUsd);
+          return bdSum + effectiveAprPercent;
+        }
+      }
+
+      return bdSum + fullAfterPercent;
+    }, 0);
+  }, 0);
 }

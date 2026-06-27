@@ -44,15 +44,50 @@
     --ds-title-line: 1.2;
     --ds-chip-h: 1.75rem;
     --ds-button-h: 2.5rem;
+    --ds-button-sm-h: 2.25rem;
+    --ds-button-lg-h: 2.75rem;
+    --ds-control-h: 2rem;
     --ds-icon-button: 1.75rem;
+    --ds-ring-tooltip-max-w: 220px;
     --ds-tooltip-pad: 0.75rem;
     --ds-tooltip-item-pad: 0.5rem;
     --ds-row-pad-y: 0.5rem;
+    /* Reserves table column gap (visible space between two adjacent columns).
+     * Visible gap = right padding of column N + left padding of column N+1.
+     * Each interior cell side pads = gap / 2; edge sides (Token left, Borrow right)
+     * use --ds-space-2 for outer breathing room.
+     *
+     * BREAKPOINT-DRIVEN (L2 of the 4-layer adaptive compression model — see
+     * docs/design/DESIGN-SYSTEM-REFERENCE.md §4 「密集数据表的分层响应式压缩」):
+     *   < 1024 px (narrow desktop) : header  8 / body 10  ← values defined here
+     *   1024 – 1439 px (mid)       : header 10 / body 12  ← @media override below
+     *   ≥ 1440 px (wide)           : header 12 / body 14  ← @media override below
+     * Every tier respects the safety-net floor of ≥ 8 px (plain) / ≥ 10 px
+     * (column with trailing icon). Adjust the values here & in the two @media
+     * blocks below to retune the whole desktop reserves table — never reach
+     * back into individual cells. */
+    --ds-reserves-col-gap-header: 8px;
+    --ds-reserves-col-gap-body: 10px;
+    /* Outer edge padding for the table's first (Token) and last (Borrow)
+     * columns. By design this is 1.5–2× the interior gap/2 so the table's
+     * left and right edges have more breathing room than the column-to-column
+     * seams. Same breakpoint cadence as --ds-reserves-col-gap-*. */
+    --ds-reserves-edge-pad: 12px;
     --ds-card-pad: 1rem;
     --ds-card-pad-sm: 0.75rem;
     --ds-dot: 0.5rem;
     --ds-dot-active: 0.625rem;
     --ds-info-gap: 0.25rem;
+    --ds-seg-track-h: 2rem;
+    --ds-seg-track-pad: 3px;
+    --ds-seg-chip-track-pad: 2px;
+    --ds-seg-seg-min-h: 1.75rem;
+    --ds-seg-seg-min-w: 3.5rem;
+    --ds-seg-chip-seg-min-w: 2.625rem;
+    --ds-seg-seg-pad-x: 0.75rem;
+    --ds-seg-seg-pad-y-pad-x: 0.625rem;
+    --ds-seg-chip-seg-pad-x: 0.5rem;
+    --ds-seg-gap: 0.125rem;
     --ds-shadow-rgb: 0 0 0;
     --ds-gradient-primary: 308 51% 51%;
     --ds-gradient-secondary: 175 71% 47%;
@@ -86,10 +121,41 @@
     --ds-amber-600-rgb: 217 119 6;
     --ds-amber-100-rgb: 254 243 199;
     --ds-amber-300-rgb: 252 211 77;
+    --ds-amber-700-rgb: 180 83 9;
+    --ds-amber-900-rgb: 120 53 15;
+    --ds-paused-rgb: 245 158 11;
     --ds-blue-500-rgb: 59 130 246;
+    --ds-sky-500-rgb: 14 165 233;
     --ds-brand-cyan-rgb: 26 163 199;
     --ds-brand-magenta-rgb: 194 66 177;
     --ds-on-brand-rgb: 255 255 255;
+  }
+}
+
+/* L2 of the 4-layer adaptive compression model: padding-自身-响应式.
+ * The reserves table column gap (and therefore each cell's pl/pr via the
+ * `ds-reserves-cell-*` utility classes) responds to viewport width in three
+ * tiers. Wider viewports get more breathing room; narrower viewports tighten
+ * down to the safety-net floor (≥ 8 px plain / ≥ 10 px with trailing icon).
+ *
+ * IMPORTANT: do NOT introduce per-cell `pl-*` / `pr-*` overrides to "tune" a
+ * single column at a single breakpoint — that defeats the centralised model
+ * and re-creates the original drift problem. To retune, edit *only* the
+ * three sets of values (base + 1024 + 1440) below. See
+ * docs/design/DESIGN-SYSTEM-REFERENCE.md §4 「密集数据表的分层响应式压缩」
+ * for the full design rationale. */
+@media (min-width: 1024px) {
+  :root {
+    --ds-reserves-col-gap-header: 10px;
+    --ds-reserves-col-gap-body: 12px;
+    --ds-reserves-edge-pad: 16px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --ds-reserves-col-gap-header: 12px;
+    --ds-reserves-col-gap-body: 14px;
+    --ds-reserves-edge-pad: 20px;
   }
 }
 
@@ -169,7 +235,7 @@
   .ds-chip {
     height: var(--ds-chip-h);
     font-size: var(--ds-text-11);
-    line-height: 1;
+    line-height: 1 !important;
     display: inline-flex;
     align-items: center;
   }
@@ -274,6 +340,34 @@
     padding-bottom: var(--ds-row-pad-y);
   }
 
+  /* Desktop reserves table cell padding utilities.
+   * See --ds-reserves-col-gap-{header,body} for the source of truth.
+   * Use *-edge-l on the leftmost column (Token) and *-edge-r on the rightmost (Borrow). */
+  .ds-reserves-cell-th {
+    padding-left: calc(var(--ds-reserves-col-gap-header) / 2);
+    padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
+  }
+  .ds-reserves-cell-th-edge-l {
+    padding-left: var(--ds-reserves-edge-pad);
+    padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
+  }
+  .ds-reserves-cell-th-edge-r {
+    padding-left: calc(var(--ds-reserves-col-gap-header) / 2);
+    padding-right: var(--ds-reserves-edge-pad);
+  }
+  .ds-reserves-cell-td {
+    padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
+    padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
+  }
+  .ds-reserves-cell-td-edge-l {
+    padding-left: var(--ds-reserves-edge-pad);
+    padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
+  }
+  .ds-reserves-cell-td-edge-r {
+    padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
+    padding-right: var(--ds-reserves-edge-pad);
+  }
+
   .ds-card-pad {
     padding: var(--ds-card-pad);
   }
@@ -353,11 +447,11 @@
   }
 
   .ds-text-amber-700 {
-    color: rgb(var(--ds-amber-600-rgb) / 0.85);
+    color: rgb(var(--ds-amber-700-rgb));
   }
 
   .ds-text-amber-900 {
-    color: rgb(var(--ds-amber-600-rgb));
+    color: rgb(var(--ds-amber-900-rgb));
   }
 
   .ds-text-amber-500 {
@@ -396,8 +490,36 @@
     background-color: rgb(var(--ds-amber-500-rgb) / 0.1);
   }
 
+  .ds-text-paused {
+    color: rgb(var(--ds-paused-rgb));
+  }
+
+  .ds-bg-paused {
+    background-image: linear-gradient(rgb(var(--ds-paused-rgb) / 0.1), rgb(var(--ds-paused-rgb) / 0.1));
+  }
+
+  .ds-bg-warning-row {
+    @apply bg-amber-50/50 dark:bg-amber-950/20;
+  }
+
+  .ds-bg-critical-row {
+    @apply bg-amber-50/80 dark:bg-amber-950/30;
+  }
+
+  .ds-border-paused-50 {
+    border-color: rgb(var(--ds-paused-rgb) / 0.5);
+  }
+
+  .ds-border-warning-60 {
+    border-color: rgb(var(--ds-amber-500-rgb) / 0.6);
+  }
+
   .ds-bg-blue-500-10 {
     background-color: rgb(var(--ds-blue-500-rgb) / 0.1);
+  }
+
+  .ds-bg-sky-500-8 {
+    background-image: linear-gradient(rgb(var(--ds-sky-500-rgb) / 0.08), rgb(var(--ds-sky-500-rgb) / 0.08));
   }
 
   .ds-bg-teal-500-10 {
@@ -458,6 +580,46 @@
 
   .ds-border-brand-cyan-20 {
     border-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
+  .ds-border-brand-cyan-40 {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .ds-border-brand-cyan {
+    border-color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .hover\:ds-bg-brand-cyan-15:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.15);
+  }
+
+  .ds-bg-brand-cyan-5 {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.06);
+  }
+
+  .ds-bg-brand-cyan {
+    background-color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .hover\:ds-bg-brand-cyan-10:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.1);
+  }
+
+  .hover\:ds-bg-brand-cyan-20:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
+  .hover\:ds-border-brand-cyan-40:hover {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .focus\:ds-border-brand-cyan-40:focus {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .focus\:ds-ring-brand-cyan-20:focus {
+    --tw-ring-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
   }
 
   .ds-ring-brand-cyan-15 {
@@ -537,12 +699,20 @@
     background-color: rgb(var(--ds-purple-500-rgb) / 0.12);
   }
 
+  .dark .ds-bg-sky-500-8 {
+    background-image: linear-gradient(rgb(var(--ds-sky-500-rgb) / 0.25), rgb(var(--ds-sky-500-rgb) / 0.25));
+  }
+
   .dark .ds-border-emerald-200 {
     border-color: rgb(var(--ds-emerald-500-rgb) / 0.3);
   }
 
   .dark .ds-border-purple-200 {
     border-color: rgb(var(--ds-purple-500-rgb) / 0.3);
+  }
+
+  .dark input[type="checkbox"]:checked {
+    accent-color: hsl(var(--foreground));
   }
 }
 
@@ -732,31 +902,59 @@
   }
 
   /* Smooth theme transition for all color-related properties */
-  html.theme-transition,
-  html.theme-transition *,
-  html.theme-transition *::before,
-  html.theme-transition *::after {
+  html.theme-transition {
     transition: background-color 300ms ease-out,
-                border-color 300ms ease-out,
-                color 200ms ease-out,
-                fill 200ms ease-out,
-                stroke 200ms ease-out,
-                box-shadow 300ms ease-out !important;
+                color 200ms ease-out !important;
+  }
+  html.theme-transition body {
+    transition: background-color 300ms ease-out,
+                color 200ms ease-out !important;
   }
 }
 
 /* Custom utility classes for Aave styling */
 @layer utilities {
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--ds-gradient-primary)) 0%, hsl(var(--ds-gradient-secondary)) 100%);
+    background: linear-gradient(135deg, hsl(308 78% 52%) 0%, hsl(178 82% 42%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Dark mode: brighter gradient for better contrast on dark background */
+  /* Dark mode: brighter gradient for better contrast on dark background, matched saturation with light mode */
   .dark .gradient-text {
-    background: linear-gradient(135deg, hsl(308 65% 65%) 0%, hsl(175 80% 55%) 100%);
+    background: linear-gradient(135deg, hsl(308 80% 72%) 0%, hsl(178 85% 60%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hover-gradient-text {
+    transition: color 0.15s ease;
+  }
+  .hover-gradient-text:hover,
+  .group:hover .group-hover-gradient-text {
+    background: linear-gradient(135deg, hsl(320 95% 45%) 0%, hsl(265 90% 55%) 50%, hsl(178 95% 35%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .dark .hover-gradient-text:hover,
+  .dark .group:hover .group-hover-gradient-text {
+    background: linear-gradient(135deg, hsl(320 100% 75%) 0%, hsl(265 100% 78%) 50%, hsl(178 100% 65%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .open-gradient-text[data-state="open"] {
+    background: linear-gradient(135deg, hsl(320 95% 45%) 0%, hsl(265 90% 55%) 50%, hsl(178 95% 35%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .dark .open-gradient-text[data-state="open"] {
+    background: linear-gradient(135deg, hsl(320 100% 75%) 0%, hsl(265 100% 78%) 50%, hsl(178 100% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

@@ -1,5 +1,7 @@
 import { getChainIconSrc } from './chainIcons';
 import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
+import { PT_ICON_FALLBACK_MAP } from './ptIconFallback.generated';
+import { SYMBOL_MAP } from './tokenSymbolMap';
 
 /**
  * Performance Optimization - Phase 3
@@ -62,33 +64,51 @@ export function shouldUseFullPreloadMode(): boolean {
   return connection.type === 'wifi';
 }
 
-/** Principal Token symbol prefix → base icon symbol (we have icons for base only). */
-const PT_ICON_BASE: Record<string, string> = {
-  'pt-usde': 'usde',
-  'pt-eusde': 'eusde',
-  'pt-susde': 'susde',
-  'pt-srusde': 'srusde',
-};
-
 /**
- * Resolve symbol to the icon key used for static assets.
- * PT tokens (pt-usde-*, pt-eusde-*, etc.) share the base token icon to avoid 404s.
+ * Resolve symbol to the icon keys used for static assets, ordered by priority.
+ *
+ * Three layers of resolution:
+ * 1. PT tokens: extract base asset key, with optional upstream mapping
+ *    e.g. pt-susde-28may2026 → ['ptsusde', 'susde']
+ * 2. SYMBOL_MAP fallback: bridge/variant symbols → canonical icon key
+ *    e.g. USD₮ → ['usd₮', 'usdt']   (try original first, then mapped)
+ * 3. Plain symbols pass through: usdc → ['usdc']
  */
-export function getTokenIconSymbolKey(symbol: string): string {
+export function getTokenIconSymbolKeys(symbol: string): string[] {
   const key = symbol.trim().toLowerCase();
-  for (const [prefix, base] of Object.entries(PT_ICON_BASE)) {
-    if (key.startsWith(prefix + '-') || key === prefix) return base;
+
+  const ptMatch = key.match(/^pt-(.+)$/);
+  if (ptMatch) {
+    const rest = ptMatch[1];
+    const baseEnd = rest.indexOf('-');
+    const base = baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
+
+    const upstreamIcon = PT_ICON_FALLBACK_MAP[base];
+    const firstLayer = upstreamIcon ?? `pt${base}`;
+    return [firstLayer, base];
   }
-  return key;
+
+  const mapped = SYMBOL_MAP[symbol.trim()];
+  if (mapped) {
+    const mappedKey = mapped.toLowerCase();
+    return mappedKey !== key ? [key, mappedKey] : [key];
+  }
+
+  return [key];
 }
 
 export function getTokenIconSources(symbol: string): string[] {
-  const symbolKey = getTokenIconSymbolKey(symbol);
-  const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
-  if (manifestFormats && manifestFormats.length > 0) {
-    return manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  const keys = getTokenIconSymbolKeys(symbol);
+  const sources: string[] = [];
+  for (const symbolKey of keys) {
+    const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
+    if (manifestFormats && manifestFormats.length > 0) {
+      sources.push(...manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`));
+    } else {
+      sources.push(...TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`));
+    }
   }
-  return TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  return sources;
 }
 
 export function getPreloadedImageSource(srcs: string[]): string | undefined {

@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target_branch: [dev, main]
+        target_branch: [dev, main, lovable]
     runs-on: ubuntu-latest
     env:
       # One job per branch: drift on `main` and integration on `dev` both get matching bot PRs.
@@ -49,13 +49,16 @@ jobs:
           fi
 
       - name: Setup Node
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Update address-book to latest
+        run: npm update @aave-dao/aave-address-book
 
       - name: Round 1 sync
         id: sync_round1
@@ -126,7 +129,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed == 'true' ||
           steps.verify_round2.outputs.passed == 'true'
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
@@ -152,7 +155,7 @@ jobs:
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync-${{ matrix.target_branch }}';
@@ -168,31 +171,63 @@ jobs:
             });
             core.info(`Triggered fallback workflow_dispatch for ci.yml on ref ${workflowRef}, target_ref ${targetRef}`);
 
-      - name: Create issue when verify still fails
+      - name: Fail job when verify still fails
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
           steps.verify_round2.outputs.passed != 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        run: |
+          echo "Sync Round 1: ${{ steps.sync_round1.outputs.passed }}"
+          echo "Sync Round 2: ${{ steps.sync_round2.outputs.passed }}"
+          echo "Hardcode sync/verify failed after two rounds."
+          exit 1
+
+  report-failure:
+    needs: [hardcode-sync]
+    if: ${{ always() && needs.hardcode-sync.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Aggregate failures and create single issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
-            const syncR1 = '${{ steps.sync_round1.outputs.passed }}';
-            const syncR2 = '${{ steps.sync_round2.outputs.passed }}';
-            const payload = context.payload.client_payload || {};
+
+            // Query all jobs in this workflow run to find failed matrix instances.
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              filter: 'failed'
+            });
+            const failedSyncJobs = jobs.jobs.filter(j =>
+              j.name.startsWith('hardcode-sync') && j.conclusion === 'failure'
+            );
+
+            const branchSections = failedSyncJobs.map(j => {
+              // Matrix job names follow "hardcode-sync (<branch>)" pattern.
+              const branchMatch = j.name.match(/\(([^)]+)\)/);
+              const branch = branchMatch ? branchMatch[1] : 'unknown';
+              return [
+                `### \`${branch}\``,
+                `- [Job #${j.id}](${j.html_url})`,
+                `- Status: ${j.conclusion}`
+              ].join('\n');
+            });
+
             const body = [
-              'Hardcode sync verify failed after two rounds.',
+              'Hardcode sync verify failed after two rounds on one or more branches.',
               '',
-              `Sync Round 1: ${syncR1 === 'true' ? '✅' : '❌'}`,
-              `Sync Round 2: ${syncR2 === 'true' ? '✅' : syncR2 === '' ? '⏭️ skipped' : '❌'}`,
+              ...branchSections,
               '',
               `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              `Target branch: ${process.env.TARGET_BRANCH}`,
-              `Trigger event: ${context.eventName}`,
-              `Payload source: ${payload.sourceRepo || payload.source || '<none>'}`,
-              `Payload ref: ${payload.ref || '<none>'}`,
+              `Trigger: ${context.eventName}`,
               '',
               'Please inspect upstream drift and sync scripts.'
             ].join('\n');
+
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -200,7 +235,7 @@ jobs:
               labels: 'hardcode,drift',
               per_page: 100
             });
-            const existing = issues.find((issue) => issue.title === title);
+            const existing = issues.find(i => i.title === title);
             if (existing) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -219,13 +254,3 @@ jobs:
               });
               core.info('Created a new hardcode verify failure issue');
             }
-
-      - name: Fail job when verify still fails
-        if: >
-          steps.verify_round1.outputs.passed != 'true' &&
-          steps.verify_round2.outputs.passed != 'true'
-        run: |
-          echo "Sync Round 1: ${{ steps.sync_round1.outputs.passed }}"
-          echo "Sync Round 2: ${{ steps.sync_round2.outputs.passed }}"
-          echo "Hardcode sync/verify failed after two rounds."
-          exit 1

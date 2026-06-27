@@ -1,7 +1,10 @@
 # 硬编码与外部依赖清单（前端）
 
-更新时间：2026-04-01  
+更新时间：2026-05-09  
 适用仓库：`aaveapy`（前端）
+
+> ⚠️ 2026-05-09：`@bgd-labs/aave-address-book` 已迁移至 `@aave-dao/aave-address-book`（v4.49.9）。
+> CI 已增加自动升级步骤（见 §2）。
 
 ## 1. 本仓库实际消费的 interface 映射资源
 
@@ -26,10 +29,15 @@
 - `schedule` cron：`20 4 * * *`（每日 04:20 UTC）。
 
 执行步骤（核心）：
-1. `npm run hardcode:sync`
-2. `npm run hardcode:verify`
-3. 失败后再做一轮 sync + verify
-4. verify 通过则自动建 PR；持续失败则建 issue 并 fail job
+1. `npm update @aave-dao/aave-address-book` → 升级到最新 4.x 版本
+2. `npm run hardcode:sync`
+3. `npm run hardcode:verify`
+4. 失败后再做一轮 sync + verify
+5. verify 通过则自动建 PR；持续失败则建 issue 并 fail job
+
+> **为什么需要 `npm update`？**  
+> `npm ci` 从 lockfile 安装（版本锁定），不会自动获取上游新版本。  
+> 增加此步骤后，每次 sync 都基于最新 address-book，lockfile 变更也会一起打包进 bot PR。
 
 只读校验（默认分支，无自动改文件）：`.github/workflows/hardcode-drift-check.yml`，`schedule` 当前为每日 **05:00 UTC**（晚于 sync，便于先出 bot PR）。**在合并该 PR 之前**，默认分支仍可能对「新链」报错——属于预期；合并后即与 live `/markets` 对齐。
 
@@ -51,7 +59,11 @@
 | market name map | `scripts/sync-market-name-map-upstream.mjs` | `scripts/check-market-name-map-upstream.mjs` |
 | chain icon map | `scripts/sync-chain-icon-map-upstream.mjs` | `scripts/check-chain-icon-map-upstream.mjs`（映射须覆盖上游；磁盘缺图时可列入 `scripts/data/pending-chain-icon-bases.json`） |
 | CoinGecko `chainId` → platform id（随 `/markets` 出现的新链） | `scripts/sync-coingecko-platform-map.mjs` | `scripts/check-coingecko-platform-map-upstream.mjs` |
+| Pool 地址（各链 Aave V3 Market Pool 合约地址） | `scripts/sync-pool-addresses-upstream.mjs`（从 GitHub raw `.sol` 解析） | `scripts/check-pool-addresses-upstream.mjs`（对比本地 npm 包 `.sol` + GitHub raw fallback） |
 | token icons | `scripts/sync-token-icons.mjs` | `scripts/sync-token-icons.mjs --check` + `scripts/check-hardcode-icons.mjs` |
+
+> Pool 地址同步源：**`@aave-dao/aave-address-book`** 的 `src/{Market}.sol` 文件中的 `POOL` 常量。
+> 校验时优先读本地 npm 包 `node_modules/@aave-dao/aave-address-book/src/`，缺失则 fallback 到 GitHub raw。
 
 `hardcode:verify` 当前命令链：
 - `check:hardcode-icons`
@@ -110,6 +122,7 @@
 - 离线落盘：`sync-token-icons.mjs` 在 **interface 静态目录未命中** 后使用同一搜索接口
 
 ### 5.3 上游源码与静态资源抓取（脚本）
+- `https://raw.githubusercontent.com/aave-dao/aave-address-book/main/src/{Market}.sol`（Pool 地址权威源；`sync-pool-addresses-upstream.mjs` 和 `check-pool-addresses-upstream.mjs`）
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts`（`SYMBOL_MAP` 合并逻辑见 `scripts/lib/reserve-patches-symbol-map.mjs`）
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx`
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts`

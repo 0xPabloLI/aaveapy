@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
   deriveForecastProgressFlags,
+  forecastMerklApr,
   forecastWithTVL,
+  mergeForecastState,
   merklAprCapPercentToForecastDecimal,
   type MerklForecastProgressState,
   type MerklForecastState,
 } from './merklForecast';
+import type { MerklCampaignBreakdown, MerklForecastWireItem } from '@/types/aave';
 
 const baseState: MerklForecastState = {
   campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
@@ -82,7 +86,7 @@ describe('forecastWithTVL', () => {
       campaignType: 'DUTCH_AUCTION',
       aprCap: null,
       plannedDaily: 500,
-      requiredDaily: 500,
+      requiredDaily: undefined, // DUTCH — falls back to plannedDaily
     };
 
     const result = forecastWithTVL(dutchState, 100_000, nowTs);
@@ -172,5 +176,225 @@ describe('deriveForecastProgressFlags', () => {
     );
 
     expect(flags.isUnderDistributed).toBe(true);
+  });
+});
+
+describe('forecastWithTVL — TARGET_TOTAL_APR', () => {
+  const targetTotalAprBase: MerklForecastState = {
+    campaignType: 'TARGET_TOTAL_APR',
+    aprCap: 0.047, // 4.7% target APR in decimal
+    nativeApyPercent: 3.0,
+    budgetBoundMode: 'MAX_APR',
+    plannedDaily: 4000,
+    requiredDaily: 4000,
+    distributedSoFar: 42000,
+    totalBudget: 100000,
+    latestTvl: 10_000_000,
+    endTimestamp: nowTs + 30 * 86_400,
+  };
+
+  it('computes effectiveAprCap via APR→APY subtraction for MAX_APR', () => {
+    const result = forecastWithTVL(targetTotalAprBase, 100_000, nowTs);
+
+    const targetApyPercent = convertAprToApy(0.047 * 100);
+    const effectiveApyPercent = Math.max(targetApyPercent - 3.0, 0);
+    const effectiveAprCap = apyToApr(effectiveApyPercent) / 100;
+
+    expect(result.apr).toBeCloseTo(effectiveAprCap, 4);
+    expect(result.regime).toBe('APR_CAPPED');
+  });
+
+  it('computes effectiveAprCap and fixRewardableDays for FIX_APR', () => {
+    const fixState: MerklForecastState = {
+      ...targetTotalAprBase,
+      budgetBoundMode: 'FIX_APR',
+    };
+
+    const result = forecastWithTVL(fixState, 100_000, nowTs);
+
+    const targetApyPercent = convertAprToApy(0.047 * 100);
+    const effectiveApyPercent = Math.max(targetApyPercent - 3.0, 0);
+    const effectiveAprCap = apyToApr(effectiveApyPercent) / 100;
+
+    expect(result.apr).toBeCloseTo(effectiveAprCap, 4);
+    expect(result.regime).toBe('PLANNED');
+    expect(result.fixRewardableDays).toBeDefined();
+    expect(result.fixRewardableUntilTs).toBeDefined();
+  });
+
+  it('returns zero effectiveAprCap when nativeAPY >= targetAPR', () => {
+    const noIncentiveState: MerklForecastState = {
+      ...targetTotalAprBase,
+      nativeApyPercent: 5.0, // native 5% > target 4.7%
+    };
+
+    const result = forecastWithTVL(noIncentiveState, 100_000, nowTs);
+
+    expect(result.apr).toBe(0);
+    expect(result.dailyRewards).toBe(0);
+  });
+
+  it('returns zero rewards when TVL is zero', () => {
+    const result = forecastWithTVL(targetTotalAprBase, 0, nowTs);
+
+    expect(result.dailyRewards).toBe(0);
+    expect(result.apr).toBe(0);
+    expect(result.regime).toBe('APR_CAPPED');
+  });
+
+  it('defaults nativeApyPercent to 0 when missing', () => {
+    const noNativeState: MerklForecastState = {
+      ...targetTotalAprBase,
+      nativeApyPercent: undefined,
+    };
+
+    const result = forecastWithTVL(noNativeState, 100_000, nowTs);
+
+    expect(result.apr).toBeCloseTo(0.047, 4);
+  });
+
+  it('detects CATCHING_UP for TARGET_TOTAL_APR + MAX_APR', () => {
+    const catchingUpState: MerklForecastState = {
+      ...targetTotalAprBase,
+      plannedDaily: 1000,
+      requiredDaily: 50000,
+    };
+
+    const result = forecastWithTVL(catchingUpState, 10_000_000_000, nowTs);
+
+    expect(result.regime).toBe('CATCHING_UP');
+  });
+});
+
+describe('forecastMerklApr — TARGET_TOTAL_APR', () => {
+  const targetBreakdown: MerklCampaignBreakdown = {
+    campaignApr: 1.7,
+    campaignStartedAt: '2025-01-01',
+    campaignEndedAt: '2026-12-31',
+    campaignId: '13116567236794890552',
+    campaignType: 'TARGET_TOTAL_APR',
+    aprCap: 4.7,
+    budgetBoundMode: 'MAX_APR',
+    totalBudget: 100000,
+    latestTvl: 10_000_000,
+    plannedDaily: 500,
+  };
+  const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
+
+  it('returns 0 for TARGET_TOTAL_APR when campaignApr is 0', () => {
+    const zeroBreakdown: MerklCampaignBreakdown = {
+      ...targetBreakdown,
+      campaignApr: 0,
+    };
+
+    const result = forecastMerklApr(zeroBreakdown, 0, emptyForecastStates, 1);
+
+    expect(result).toBe(0);
+  });
+
+  it('returns campaignApr directly when positive and inputUsd is 0', () => {
+    const result = forecastMerklApr(targetBreakdown, 0, emptyForecastStates, 1);
+
+    expect(result).toBe(1.7);
+  });
+
+  it('uses forecastWithTVL with nativeApyPercent for scenario input', () => {
+    const result = forecastMerklApr(targetBreakdown, 100_000, emptyForecastStates, 1, 3.0);
+
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThan(4.7);
+  });
+});
+
+describe('mergeForecastState — nativeApyPercent passthrough', () => {
+  const breakdown: MerklCampaignBreakdown = {
+    campaignApr: 1.7,
+    campaignStartedAt: '2025-01-01',
+    campaignEndedAt: '2026-12-31',
+    campaignId: 'test-campaign',
+    campaignType: 'TARGET_TOTAL_APR',
+    aprCap: 4.7,
+    budgetBoundMode: 'MAX_APR',
+  };
+  const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
+
+  it('passes nativeApyPercent through to state', () => {
+    const state = mergeForecastState(breakdown, emptyForecastStates, 1, 3.0);
+
+    expect(state).not.toBeNull();
+    expect(state!.nativeApyPercent).toBe(3.0);
+  });
+
+  it('passes budgetBoundMode from breakdown to state', () => {
+    const state = mergeForecastState(breakdown, emptyForecastStates, 1);
+
+    expect(state).not.toBeNull();
+    expect(state!.budgetBoundMode).toBe('MAX_APR');
+  });
+
+  it('omits nativeApyPercent when not provided', () => {
+    const state = mergeForecastState(breakdown, emptyForecastStates, 1);
+
+    expect(state).not.toBeNull();
+    expect(state!.nativeApyPercent).toBeUndefined();
+  });
+});
+
+describe('mergeForecastState — null return conditions', () => {
+  const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
+
+  it('returns null when campaignId is missing', () => {
+    const breakdown: MerklCampaignBreakdown = {
+      campaignApr: 5,
+      campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2026-12-31',
+    };
+    expect(mergeForecastState(breakdown, emptyForecastStates, 1)).toBeNull();
+  });
+
+  it('returns null when campaignType is missing', () => {
+    const breakdown: MerklCampaignBreakdown = {
+      campaignApr: 5,
+      campaignId: 'test-campaign',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2026-12-31',
+    };
+    expect(mergeForecastState(breakdown, emptyForecastStates, 1)).toBeNull();
+  });
+
+  it('returns non-null when both campaignId and campaignType are present', () => {
+    const breakdown: MerklCampaignBreakdown = {
+      campaignApr: 5,
+      campaignId: 'test-campaign',
+      campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2026-12-31',
+    };
+    expect(mergeForecastState(breakdown, emptyForecastStates, 1)).not.toBeNull();
+  });
+});
+
+describe('forecastMerklApr — fallback when mergeForecastState returns null', () => {
+  const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
+
+  it('returns currentApr when mergeForecastState returns null (no campaignId)', () => {
+    const breakdown: MerklCampaignBreakdown = {
+      campaignApr: 5,
+      campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2026-12-31',
+    };
+    expect(forecastMerklApr(breakdown, 1000, emptyForecastStates, 1)).toBe(5);
+  });
+
+  it('returns currentApr when mergeForecastState returns null (no campaignType)', () => {
+    const breakdown: MerklCampaignBreakdown = {
+      campaignApr: 5,
+      campaignId: 'test-campaign',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2026-12-31',
+    };
+    expect(forecastMerklApr(breakdown, 1000, emptyForecastStates, 1)).toBe(5);
   });
 });

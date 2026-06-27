@@ -1,8 +1,19 @@
 import type { ReserveWithSpread } from '@/types/aave';
-import { formatReserveSizeToken, formatReserveSizeUsd } from '@/lib/formatters';
+import { formatReserveSizeToken, formatReserveSizeUsd, formatScenarioSize } from '@/lib/formatters';
 
 type ScenarioMode = 'usd' | 'token';
 export type DeficitSeverity = 'neutral' | 'warning' | 'critical';
+
+export interface DeficitDisplay {
+  hasDeficit: boolean;
+  deficitUsd: number | null;
+  deficitTokenLabel: string | undefined;
+  deficitInlineValue: string;
+  deficitShareRatio: number | null;
+  deficitSeverity: DeficitSeverity;
+  isNeutralDeficit: boolean;
+  deficitTextClass: string;
+}
 
 const DEFAULT_DECIMALS = 18;
 const TOKEN_DECIMAL_PREVIEW = 6;
@@ -118,6 +129,41 @@ export const getDeficitSeverity = (
   if (ratio >= DEFICIT_WARNING_RATIO) return 'warning';
   return 'neutral';
 };
+
+const DEFICIT_TEXT_CLASSES: Record<DeficitSeverity, string> = {
+  critical: 'ds-text-amber-500',
+  warning: 'ds-text-amber-600',
+  neutral: 'text-muted-foreground/60',
+};
+
+export function computeDeficitDisplay(
+  reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>,
+  tokenPrice: number | null | undefined,
+  totalSuppliedUsd: number | null | undefined,
+  inputMode: ScenarioMode,
+): DeficitDisplay {
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, tokenPrice);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
+  const deficitInlineValue = inputMode === 'usd'
+    ? (hasDeficit ? formatScenarioSize(deficitUsd!, { inputMode: 'usd' }) : '-')
+    : deficitTokenCompact;
+  const deficitShareRatio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitTextClass = DEFICIT_TEXT_CLASSES[deficitSeverity];
+  return {
+    hasDeficit,
+    deficitUsd,
+    deficitTokenLabel,
+    deficitInlineValue,
+    deficitShareRatio,
+    deficitSeverity,
+    isNeutralDeficit,
+    deficitTextClass,
+  };
+}
 
 export const formatReserveDeficitModeValue = (
   reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals' | 'tokenSymbol'>,

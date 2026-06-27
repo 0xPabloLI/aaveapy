@@ -20,7 +20,7 @@ jobs:
         run: sleep 180
 
       - name: Enable auto-merge when checks pass
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -76,8 +76,9 @@ jobs:
                 }
               }
             `;
-            const maxAttempts = 3;
-            const baseDelayMs = 60000;
+            const maxAttempts = 5;
+            const baseDelayMs = 120000;
+            const unstableDelayMs = 180000; // Extra wait for "unstable" status
             for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
               try {
                 await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
@@ -90,7 +91,8 @@ jobs:
                 if (!isUnstable || isLastAttempt) {
                   throw error;
                 }
-                const waitMs = baseDelayMs * attempt;
+                // Use longer delay for "unstable" status on later attempts
+                const waitMs = isUnstable && attempt >= 3 ? unstableDelayMs : baseDelayMs * attempt;
                 core.warning(
                   `PR #${pr.number} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
                 );

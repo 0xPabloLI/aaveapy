@@ -2,7 +2,7 @@
 
 This document summarizes data-loading behavior for the home page and simulation flows.
 
-**Merkl forecast math** (how `forecast.items` from `/meta/side-data` feed `forecastWithTVL` in simulation): see [`rate-calculation-formulas.md`](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl).
+**Merkl forecast math** (how `forecast.items` from `/meta/side-data` feed `forecastWithTVL` in simulation): see [`rate-calculation.md`](./rate-calculation.md#merkl-incentive-forecast-forecastwithtvl).
 
 ## Key Terms
 
@@ -48,12 +48,14 @@ Browser-level `<link rel="preload" as="fetch">` could start API requests during 
 
 ## Home Page API Matrix
 
-| API | Trigger type | Current trigger point | TTL / staleTime | Caches used | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
-| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. Merkl campaign state for incentive simulation: formulas in [`rate-calculation-formulas.md` § Merkl incentive forecast](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl). |
-| `/rate-inputs` | App-level prefetch + hook query | `App.tsx` prefetch + `useReserveRateInputs` in simulation hooks | 1 min (`coreSnapshotApi`) | React Query + localStorage | Used for native rate simulation. |
-| CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | React Query + localStorage | Icon fallback when local/logo URI misses. |
+| API | Trigger type | Current trigger point | TTL / staleTime | gcTime | Caches used | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | default (5 min) | React Query + localStorage | Core snapshot. |
+| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | 15 min | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. Merkl campaign state for incentive simulation: formulas in [`rate-calculation.md` § Merkl incentive forecast](./rate-calculation.md#part-2-merkl-incentive-forecast). |
+| CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | 30 min | React Query + localStorage | Icon fallback when local/logo URI misses. |
+| Forecast token price | Hook query (third-party) | `useRateSimulation` priceQueries (token mode only) | 5 min (`default`) | default (5 min) | React Query only | Transient; no localStorage persistence. |
+
+> **Note:** Rate calculation fields (`availableLiquidity`, `totalVariableDebt`, `deficit`, `reserveFactor`, `optimalUsageRate`, `baseVariableBorrowRate`, `variableRateSlope1`, `variableRateSlope2`) are **embedded in `/markets`** response as part of each reserve's `ReserveWithSpread`. There is no separate `/rate-inputs` endpoint; native rate simulation reads these fields directly from the `/markets` snapshot.
 
 ## Forecast Token Price Backup
 
@@ -87,7 +89,7 @@ Current lookup order is strict: first resolve platform, then try address price, 
 
 | Item | Current behavior |
 | --- | --- |
-| API warm-ups (`/meta/side-data`, `/rate-inputs`) | Not automatically canceled by user interaction once started. |
+| API warm-ups (`/meta/side-data`) | Not automatically canceled by user interaction once started. |
 | Image preloading | Can be deferred/paused by preload controls (`setPreloadPaused`, connection heuristics). |
 | Weak network/save-data mode | Currently affects image preload aggressiveness, not a global "disable all warm-ups" switch. |
 
@@ -105,7 +107,6 @@ Current lookup order is strict: first resolve platform, then try address price, 
 |:---------|:---------|:---------------|
 | P0 | `/markets` prefetch | App bootstrap |
 | P0 | `/meta/side-data` prefetch (forecast, categories, FDV) | App bootstrap |
-| P0 | `/rate-inputs` prefetch | App bootstrap |
 | P1 | Reserve token/chain icon preload | 3000ms after reserves |
 | P2 | Incentive icons preload | 4000ms after reserves |
 
@@ -152,12 +153,10 @@ Frontend types and Zod schemas are aligned with the backend response shapes.
 
 | Endpoint | Frontend usage | Schema / type |
 |----------|----------------|----------------|
-| `GET /markets` | Manual check `snapshot.lastUpdated`, `reserves[]`; no Zod. Uses `snapshot.staleTimeMs` (when present) as React Query `staleTime`, falling back to local TTL. | `MarketsResponse`, `ReserveWithSpread` |
-| `GET /rate-inputs` | Zod `RateInputsResponseSchema` | `RateInputsResponse`, `ReserveRateInput` |
-| `GET /meta/side-data` | Zod `SideDataMetaResponseSchema`. Includes categories, FDV, and forecast (merged endpoint). Uses `min(categories.staleTimeMs, fdv.staleTimeMs, forecast.staleTimeMs)` as React Query `staleTime`, falling back to local TTL. Forecast data is also cached in module in-memory cache and localStorage. **`forecast` → `forecastWithTVL`:** see [`rate-calculation-formulas.md`](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl). | `SideDataMetaResponse` (in useSideDataMeta) |
+| `GET /markets` | Manual check `snapshot.lastUpdated`, `reserves[]`; no Zod. Uses `snapshot.staleTimeMs` (when present) as React Query `staleTime`, falling back to local TTL. Rate calc fields (`availableLiquidity`, `totalVariableDebt`, etc.) are embedded in each reserve's `ReserveWithSpread`. | `MarketsResponse`, `ReserveWithSpread` |
+| `GET /meta/side-data` | Zod `SideDataMetaResponseSchema`. Includes categories, FDV, and forecast (merged endpoint). Uses `min(categories.staleTimeMs, fdv.staleTimeMs, forecast.staleTimeMs)` as React Query `staleTime`, falling back to local TTL. Forecast data is also cached in module in-memory cache and localStorage. **`forecast` → `forecastWithTVL`:** see [`rate-calculation.md`](./rate-calculation.md#merkl-incentive-forecast-forecastwithtvl). | `SideDataMetaResponse` (in useSideDataMeta) |
 
 **Backend fields not used by frontend:**
-- `GET /rate-inputs`: `sources` – `{ subgraphChains, onchainChains, subgraphMissingChains }` (root-level)
 - `GET /meta/side-data` → `fdv.items[]`: `source` – per-item source label (e.g. coingecko)
 
 ---
@@ -167,7 +166,7 @@ Frontend types and Zod schemas are aligned with the backend response shapes.
 Reserve token images (e.g. USDC, WETH) are resolved in this order:
 
 1. **logoURI** – If the reserve has a `logoURI` (from backend or from local config), it is used first.
-   - Local config: `src/ui-config/reservePatches.ts` builds a map from `@bgd-labs/aave-address-book` tokenlist (by `underlyingAsset` → `logoURI`) and optional `underlyingAssetMap` overrides.
+   - Local config: `src/ui-config/reservePatches.ts` builds a map from `@aave-dao/aave-address-book` tokenlist (by `underlyingAsset` → `logoURI`) and optional `underlyingAssetMap` overrides.
    - So if a token's contract address is in the address-book tokenlist with a `logoURI`, that URL is used.
 
 2. **Local static assets** – `getTokenIconSources(symbol)` in `src/lib/preloadUtils.ts` returns paths like `/icons/tokens/{symbol}.svg` (and .webp, .png).

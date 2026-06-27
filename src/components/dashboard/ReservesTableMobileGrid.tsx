@@ -1,5 +1,7 @@
-import type { ScenarioInputMode, RateSimulationResult } from '@/hooks/useRateSimulation';
+import type { ScenarioInputMode, RateSimulationResult } from '@/lib/rateSimulationCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
+import { getReserveKey } from '@/lib/reserveKey';
+import { type PointRateMap } from '@/lib/tydro';
 import { Skeleton } from '@/components/ui/skeleton';
 import MobileReserveCard from './MobileReserveCard';
 import MobileExpandedReserveShell from './MobileExpandedReserveShell';
@@ -11,7 +13,8 @@ interface ReservesTableMobileGridProps {
   reservesCount: number;
   isApy: boolean;
   tydroPointToUsdRate: number;
-  hasSharedScenario: boolean;
+  pointRateMap?: PointRateMap;
+  hasScenarioInput: boolean;
   inputMode: ScenarioInputMode;
   supplyInput: string;
   borrowInput: string;
@@ -26,6 +29,10 @@ interface ReservesTableMobileGridProps {
   onToggleExpand: (reserveId: string) => void;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  isPortfolioMode?: boolean;
+  portfolioReserveIds?: Set<string>;
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  onSelectHub?: (hubId: string) => void;
 }
 
 function MobileReservesSkeletonGrid() {
@@ -34,7 +41,7 @@ function MobileReservesSkeletonGrid() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-8 h-8 rounded-full border-transparent shrink-0" />
+            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border-transparent shrink-0" />
             <div className="space-y-1 flex-1 min-w-0">
               <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
               <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />
@@ -70,7 +77,8 @@ export default function ReservesTableMobileGrid({
   reservesCount,
   isApy,
   tydroPointToUsdRate,
-  hasSharedScenario,
+  pointRateMap,
+  hasScenarioInput,
   inputMode,
   supplyInput,
   borrowInput,
@@ -80,8 +88,12 @@ export default function ReservesTableMobileGrid({
   onToggleExpand,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  isPortfolioMode,
+  portfolioReserveIds,
+  onPortfolioToggle,
+  onSelectHub,
 }: ReservesTableMobileGridProps) {
-  if (isLoading && reservesCount === 0) {
+  if ((isLoading && reservesCount === 0) || (reservesCount > 0 && displayData.length === 0)) {
     return <MobileReservesSkeletonGrid />;
   }
 
@@ -89,9 +101,9 @@ export default function ReservesTableMobileGrid({
 
   for (let i = 0; i < displayData.length; i += 2) {
     const leftReserve = displayData[i];
-    const leftId = `${leftReserve.marketName}-${leftReserve.tokenAddress}`;
+    const leftId = getReserveKey(leftReserve);
     const rightReserve = i + 1 < displayData.length ? displayData[i + 1] : null;
-    const rightId = rightReserve ? `${rightReserve.marketName}-${rightReserve.tokenAddress}` : null;
+    const rightId = rightReserve ? getReserveKey(rightReserve) : null;
 
     const leftExpanded = leftId === expandedReserveId;
     const rightExpanded = rightId !== null && rightId === expandedReserveId;
@@ -102,6 +114,12 @@ export default function ReservesTableMobileGrid({
     const activeReserve = isLeftActive ? leftReserve : rightReserve;
     const activeId = isLeftActive ? leftId : rightId;
 
+    const portfolioProps = (id: string, reserve: ReserveWithSpread) => ({
+      isPortfolioMode: isPortfolioMode ?? false,
+      isInPortfolio: portfolioReserveIds?.has(id) ?? false,
+      onPortfolioToggle,
+    });
+
     const leftCard = (
       <MobileReserveCard
         variant={isLeftActive ? 'upperOnly' : 'full'}
@@ -109,17 +127,20 @@ export default function ReservesTableMobileGrid({
         reserve={leftReserve}
         isApy={isApy}
         tydroPointToUsdRate={tydroPointToUsdRate}
+        pointRateMap={pointRateMap}
         onIncentiveClick={onIncentiveClick}
         isSimulationExpanded={isLeftActive}
         onToggleSimulation={() => onToggleExpand(leftId)}
         simulation={simulationsById[leftId]}
         supplyInput={supplyInput}
         borrowInput={borrowInput}
-        hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
         inputMode={inputMode}
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
         defaultTab={mobileCardDefaultTab}
+        onSelectHub={onSelectHub}
+        {...portfolioProps(leftId, leftReserve)}
       />
     );
 
@@ -130,17 +151,20 @@ export default function ReservesTableMobileGrid({
         reserve={rightReserve}
         isApy={isApy}
         tydroPointToUsdRate={tydroPointToUsdRate}
+        pointRateMap={pointRateMap}
         onIncentiveClick={onIncentiveClick}
         isSimulationExpanded={isRightActive}
         onToggleSimulation={() => onToggleExpand(rightId!)}
         simulation={simulationsById[rightId!]}
         supplyInput={supplyInput}
         borrowInput={borrowInput}
-        hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
         inputMode={inputMode}
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
         defaultTab={mobileCardDefaultTab}
+        onSelectHub={onSelectHub}
+        {...portfolioProps(rightId!, rightReserve)}
       />
     ) : null;
 
@@ -161,17 +185,19 @@ export default function ReservesTableMobileGrid({
                 reserve={activeReserve}
                 isApy={isApy}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                pointRateMap={pointRateMap}
                 onIncentiveClick={onIncentiveClick}
                 isSimulationExpanded
                 onToggleSimulation={() => onToggleExpand(activeId)}
                 simulation={simulationsById[activeId]}
                 supplyInput={supplyInput}
                 borrowInput={borrowInput}
-                hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
                 inputMode={inputMode}
                 onCorrectSupplyInput={onCorrectSupplyInput}
                 onCorrectBorrowInput={onCorrectBorrowInput}
                 defaultTab={mobileCardDefaultTab}
+                {...portfolioProps(activeId, activeReserve)}
               />
             }
           />

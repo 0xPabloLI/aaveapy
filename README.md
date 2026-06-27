@@ -65,7 +65,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start dev server |
+| `npm run dev` | Start dev server (auto-clears Vite dep cache) |
 | `npm run build` | Production build |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
@@ -96,12 +96,23 @@ Quick rule:
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
 
+## Docs Quick Start
+
+| If you need... | Read this first |
+|---|---|
+| Project look and feel | [`docs/design/DESIGN.md`](docs/design/DESIGN.md) |
+| Reusable design rules | [`docs/design/DESIGN-SYSTEM-REFERENCE.md`](docs/design/DESIGN-SYSTEM-REFERENCE.md) |
+| Project-specific UI behavior | [`docs/design/frontend-interaction-guardrails.md`](docs/design/frontend-interaction-guardrails.md) |
+| Engineering conventions to migrate | [`docs/conventions/README.md`](docs/conventions/README.md) |
+| Docs ownership map | [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md) |
+| **Reusable docs index (what to migrate)** | [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md) |
+
 ## Merkl Forecast Notes
 
 - Forecast state is loaded from `GET /meta/side-data` (`forecast.items`).
 - Frontend forecast math only changes hypothetical TVL (based on user input amount * token price).
 - Campaign type and regime are rendered from forecast state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
-- Canonical formulas and semantics: [`docs/rate-calculation-formulas.md`](docs/rate-calculation-formulas.md).
+- Canonical formulas and semantics: [`docs/rate-calculation.md`](docs/rate-calculation.md).
 
 ## CoinGecko Token Price Fallback
 

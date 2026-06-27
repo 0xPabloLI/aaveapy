@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
+import { TokenCategory, MarketListItem } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
-import { memo } from 'react';
+import { getProtocolVersion } from '@/lib/protocolVersion';
+import { getEthSubMarketLabel } from '@/lib/marketLabels';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -17,6 +21,22 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
+  showFrozenOrPaused?: boolean;
+  setShowFrozenOrPaused?: (value: boolean) => void;
+  /** Available hub entries derived from current reserves (id for filtering, name for display). */
+  hubEntries?: { id: string; name: string }[];
+  /** Currently selected hub IDs (empty = "All"). */
+  selectedHubs: string[];
+  /** Set selected hub IDs. */
+  setSelectedHubs: (hubs: string[]) => void;
+  /** Current market view mode. */
+  marketViewMode?: 'chain' | 'hub';
+  /** Set market view mode. */
+  setMarketViewMode?: (mode: 'chain' | 'hub') => void;
+  /** Currently expanded chain name (for Ethereum sub-markets). */
+  expandedChain?: string | null;
+  /** Set expanded chain name. */
+  setExpandedChain?: (chain: string | null) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -27,42 +47,53 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
-  const size = "w-3.5 h-3.5";
+const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
+  const size = 'w-3.5 h-3.5';
   const src = getChainIconSrc(chain);
-
   if (!src) {
     return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
+      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
         {chain.charAt(0)}
       </div>
     );
   }
-
-  return (
-    <img
-      src={src}
-      alt={`${chain} logo`}
-      className={`${size} ${className}`}
-      loading="lazy"
-    />
-  );
+  return <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />;
 });
+ChainIcon.displayName = 'ChainIcon';
 
-const getMarketInfo = (market: MarketListItem) => {
-  if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
-    return {
-      label: ETHEREUM_MARKET_NAMES[market.marketName],
-      chain: 'Ethereum',
-      isEthereum: true,
-    };
+/** Group markets by chainName, preserving Ethereum first, then alphabetical. */
+interface ChainGroup {
+  chainName: string;
+  markets: MarketListItem[];
+  /** Whether this chain has expandable sub-markets */
+  expandable: boolean;
+}
+
+function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGroup[] {
+  if (!marketsList?.length) return [];
+
+  const chainMap = new Map<string, MarketListItem[]>();
+  for (const m of marketsList) {
+    const list = chainMap.get(m.chainName) || [];
+    list.push(m);
+    chainMap.set(m.chainName, list);
   }
-  return {
-    label: market.chainName,
-    chain: market.chainName,
-    isEthereum: false,
-  };
-};
+
+  const groups: ChainGroup[] = [];
+  // Ethereum first
+  const ethMarkets = chainMap.get('Ethereum');
+  if (ethMarkets) {
+    groups.push({ chainName: 'Ethereum', markets: ethMarkets, expandable: ethMarkets.length > 1 });
+    chainMap.delete('Ethereum');
+  }
+  // Remaining chains alphabetically
+  const remaining = Array.from(chainMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+  for (const [chainName, markets] of remaining) {
+    groups.push({ chainName, markets, expandable: false });
+  }
+
+  return groups;
+}
 
 const FilterBar = ({
   searchQuery,
@@ -74,30 +105,115 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
+  showFrozenOrPaused,
+  setShowFrozenOrPaused,
+  hubEntries,
+  selectedHubs,
+  setSelectedHubs,
+  marketViewMode: controlledMarketViewMode,
+  setMarketViewMode: setControlledMarketViewMode,
+  expandedChain: controlledExpandedChain,
+  setExpandedChain: setControlledExpandedChain,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
+  const [internalExpandedChain, setInternalExpandedChain] = useState<string | null>(null);
+  const expandedChain = controlledExpandedChain ?? internalExpandedChain;
+  const setExpandedChain = useCallback((chain: string | null) => {
+    setInternalExpandedChain(chain);
+    setControlledExpandedChain?.(chain);
+  }, [setControlledExpandedChain]);
+
+  /** View mode for the markets row: 'chain' = chain chips, 'hub' = hub chips */
+  const [internalMarketViewMode, setInternalMarketViewMode] = useState<'chain' | 'hub'>('chain');
+  const marketViewMode = controlledMarketViewMode ?? internalMarketViewMode;
+  const setMarketViewMode = useCallback((mode: 'chain' | 'hub') => {
+    setInternalMarketViewMode(mode);
+    setControlledMarketViewMode?.(mode);
+  }, [setControlledMarketViewMode]);
 
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
   }, []);
 
-  const toggleMarket = (marketName: string) => {
-    if (selectedMarkets.includes(marketName)) {
-      setSelectedMarkets(selectedMarkets.filter(m => m !== marketName));
-    } else {
-      setSelectedMarkets([...selectedMarkets, marketName]);
-    }
-  };
+  const chainGroups = useMemo(() => groupMarketsByChain(marketsList), [marketsList]);
+
+  // Derive which chains are fully selected (all their markets are in selectedMarkets)
+  const isChainSelected = useCallback(
+    (group: ChainGroup) => {
+      return group.markets.every((m) => selectedMarkets.includes(m.marketName));
+    },
+    [selectedMarkets],
+  );
+
+  // Check if any sub-market of a chain is selected (but not the whole chain)
+  const hasSubMarketSelected = useCallback(
+    (group: ChainGroup) => {
+      return group.markets.some((m) => selectedMarkets.includes(m.marketName)) && !isChainSelected(group);
+    },
+    [selectedMarkets, isChainSelected],
+  );
+
+  const toggleChain = useCallback(
+    (group: ChainGroup) => {
+      const allNames = group.markets.map((m) => m.marketName);
+      if (isChainSelected(group)) {
+        // Deselect all markets of this chain
+        setSelectedMarkets(selectedMarkets.filter((m) => !allNames.includes(m)));
+      } else {
+        // Select all markets of this chain
+        const withoutChain = selectedMarkets.filter((m) => !allNames.includes(m));
+        setSelectedMarkets([...withoutChain, ...allNames]);
+      }
+    },
+    [selectedMarkets, setSelectedMarkets, isChainSelected],
+  );
+
+  const toggleSubMarket = useCallback(
+    (marketName: string) => {
+      if (selectedMarkets.includes(marketName)) {
+        setSelectedMarkets(selectedMarkets.filter((m) => m !== marketName));
+      } else {
+        setSelectedMarkets([...selectedMarkets, marketName]);
+      }
+    },
+    [selectedMarkets, setSelectedMarkets],
+  );
+
+  const handleAllClick = useCallback(() => {
+    setSelectedMarkets([]);
+    setExpandedChain(null);
+    setSelectedHubs([]);
+  }, [setSelectedMarkets, setSelectedHubs, setExpandedChain]);
+
+  const handleChainLabelClick = useCallback(
+    (group: ChainGroup) => {
+      toggleChain(group);
+    },
+    [toggleChain],
+  );
+
+  const handleExpandToggle = useCallback(
+    (chainName: string) => {
+      setExpandedChain(expandedChain === chainName ? null : chainName);
+    },
+    [setExpandedChain, expandedChain],
+  );
+
+  const handleOtherChainClick = useCallback(
+    (group: ChainGroup) => {
+      toggleChain(group);
+      // Note: Intentionally not collapsing expanded chain to allow viewing
+      // Ethereum sub-markets while filtering other chains
+    },
+    [toggleChain],
+  );
 
   const noMarketsSelected = selectedMarkets.length === 0;
-
-  const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
-  const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
-  const allMarkets = [...ethereumMarkets, ...otherMarkets];
+  const noHubSelected = selectedHubs.length === 0;
 
   // Auto-adapt search placeholder based on input width
   useEffect(() => {
@@ -127,7 +243,7 @@ const FilterBar = ({
       } else {
         newPlaceholder = 'Search';
       }
-      setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
+      setSearchPlaceholder((prev) => (prev !== newPlaceholder ? newPlaceholder : prev));
     };
 
     const debouncedUpdate = () => {
@@ -158,15 +274,18 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
+  const hasHubs = hubEntries && hubEntries.length > 0;
+
   return (
     <div className="space-y-2 md:space-y-2.5">
-      {/* Row 1: Token Categories + Search + APY Toggle */}
-      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
+      {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
+      <div data-testid="tokens-row" className="flex flex-wrap items-center gap-1.5 md:gap-2">
+        <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
         {categories.map((category) => (
-          <button
+          <FilterChip
             key={category.value}
+            selected={selectedCategory === category.value}
             onClick={() => {
               if (selectedCategory === category.value) {
                 setSelectedCategory('all');
@@ -174,18 +293,13 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              selectedCategory === category.value
-                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
           >
             {category.label}
-          </button>
+          </FilterChip>
         ))}
 
-        {/* Search – desktop only */}
-        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
+        {/* Search – inline with categories */}
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 ml-1 hidden md:block">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
@@ -193,17 +307,55 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] md:h-7 ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground md:ds-text-11"
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] md:h-[var(--ds-chip-h)] ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground md:ds-text-11"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-3 h-3" />
+              <Eraser className="w-3 h-3" />
             </button>
           )}
         </div>
+
+        {/* Mobile search – flows inline with category chips, fills remaining row space */}
+        <div className="relative flex-1 min-w-[7rem] md:hidden">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eraser className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* Include frozen/paused assets toggle – desktop only */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`hidden md:inline-flex items-center gap-1 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3 h-3" />
+            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+          </button>
+        )}
 
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
@@ -213,67 +365,208 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      {/* Row 2: Frozen toggle (full label) + APR/APY toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            ref={mobileSearchInputRef}
-            surfaceVariant="magenta"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        {/* Include frozen/paused assets toggle – mobile, with full label */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+          </button>
+        )}
+
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
 
-      {/* Row 3: Markets – all visible */}
-      <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
-        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
+      {/* Row 3: Markets – chain-level chips + optional chain/hub segmented toggle */}
+      <div data-testid="markets-row" className="flex flex-wrap items-center gap-1 md:gap-1.5">
+        <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Markets</span>
 
-        <button
-          onClick={() => setSelectedMarkets([])}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
-            noMarketsSelected
-              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-              : 'text-foreground/80 border border-border hover:text-foreground'
-          }`}
+        {/* "All" button */}
+        <FilterChip
+          selected={noMarketsSelected && noHubSelected}
+          onClick={handleAllClick}
         >
           All
-        </button>
+        </FilterChip>
 
-        {allMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
-                isSelected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
-              }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
+        {/* Chain/Hub segmented toggle – only when hubs exist */}
+        {hasHubs && (
+          <SegmentedToggle
+            options={[
+              { value: 'chain', label: 'Chain' },
+              { value: 'hub', label: 'Hub' },
+            ]}
+            value={marketViewMode}
+            onChange={setMarketViewMode}
+            activeTextClassName="text-foreground"
+            size="chip"
+          />
+        )}
+
+        {marketViewMode === 'hub' && hasHubs
+          ? (
+            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
+            hubEntries!.map((hub) => {
+              const isSelected = selectedHubs.includes(hub.id);
+              return (
+                <FilterChip
+                  key={hub.id}
+                  selected={isSelected}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedHubs(selectedHubs.filter((h) => h !== hub.id));
+                    } else {
+                      setSelectedHubs([...selectedHubs, hub.id]);
+                    }
+                  }}
+                  title={hub.name}
+                >
+                  {hub.name}
+                </FilterChip>
+              );
+            })
+          )
+          : (
+            /* Chain mode: original chain chips */
+            chainGroups.map((group) => {
+              const selected = isChainSelected(group);
+              const subSelected = hasSubMarketSelected(group);
+              const expanded = expandedChain === group.chainName;
+
+              if (group.expandable) {
+                const chipStyle = selected
+                  ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                  : subSelected
+                    ? 'bg-card/50 text-foreground/80 border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                    : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80';
+
+                return (
+                  <Fragment key={group.chainName}>
+                    <div
+                      className={`ds-chip flex items-center rounded-md font-medium transition-colors overflow-hidden ${chipStyle}`}
+                    >
+                      <button
+                        onClick={() => handleChainLabelClick(group)}
+                        className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
+                        title={`${selected ? 'Deselect' : 'Select'} all ${group.chainName} markets`}
+                      >
+                        <ChainIcon chain={group.chainName} />
+                        <span>{group.chainName}</span>
+                      </button>
+                      <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
+                      <button
+                        onClick={() => handleExpandToggle(group.chainName)}
+                        className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
+                        title={expanded ? 'Collapse Ethereum markets' : 'Expand Ethereum markets'}
+                      >
+                        <AnimatePresence mode="wait" initial={false}>
+                          {expanded
+                            ? <motion.span key="left" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronLeft className="w-3 h-3" /></motion.span>
+                            : <motion.span key="right" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronRight className="w-3 h-3" /></motion.span>
+                          }
+                        </AnimatePresence>
+                      </button>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {expanded && group.markets
+                        .slice()
+                        .sort((a, b) => {
+                          const aVersion = getProtocolVersion(a.marketName);
+                          const bVersion = getProtocolVersion(b.marketName);
+                          if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                          if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                          return 0;
+                        })
+                        .map((market, index) => {
+                          const isSubSelected = selectedMarkets.includes(market.marketName);
+                          const version = getProtocolVersion(market.marketName);
+                          const isV4 = version === 'v4';
+                          return (
+                            <motion.button
+                              key={market.marketName}
+                              layout
+                              variants={{
+                                hidden: { width: 0, opacity: 0, scale: 0.98 },
+                                visible: (i: number) => ({
+                                  width: 'auto',
+                                  opacity: 1,
+                                  scale: 1,
+                                  transition: {
+                                    width: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                    opacity: { duration: 0.22, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                    scale: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                  },
+                                }),
+                                exit: (i: number) => ({
+                                  width: 0,
+                                  opacity: 0,
+                                  scale: 0.98,
+                                  transition: {
+                                    width: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                    opacity: { duration: 0.14, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                    scale: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                  },
+                                }),
+                              }}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              custom={index}
+                              transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
+                              onClick={() => toggleSubMarket(market.marketName)}
+                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
+                                isSubSelected
+                                  ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                                  : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
+                              }`}
+                              title={market.marketName}
+                            >
+                              {isV4 && (
+                                <span className="inline-flex items-center px-1 py-0 rounded-full ds-text-9 !leading-none font-medium text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                  V4
+                                </span>
+                              )}
+                              <span>{getEthSubMarketLabel(market.marketName)}</span>
+                            </motion.button>
+                          );
+                        })}
+                    </AnimatePresence>
+                    {expanded && <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />}
+                  </Fragment>
+                );
+              }
+
+              // Non-expandable chain: simple chip selecting all markets of this chain
+              return (
+                <button
+                  key={group.chainName}
+                  onClick={() => handleOtherChainClick(group)}
+                  className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium transition-colors ${
+                    selected
+                      ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                      : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
+                  }`}
+                  title={group.chainName}
+                >
+                  <ChainIcon chain={group.chainName} />
+                  <span>{group.chainName}</span>
+                </button>
+              );
+            })
+          )}
       </div>
     </div>
   );

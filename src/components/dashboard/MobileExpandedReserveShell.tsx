@@ -77,7 +77,9 @@ export default function MobileExpandedReserveShell({
 
         <div
           className={cn(
-            'relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm',
+            // Use ds-card-pad-sm vertical only; tighten horizontal to px-2 so the inner Grid
+            // simulation table gets ~8px more usable width on narrow viewports.
+            'relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm px-2',
             connectorOnLeft ? 'rounded-tl-none rounded-tr-xl' : 'rounded-tr-none rounded-tl-xl',
           )}
           style={{ paddingTop: 'var(--ds-space-2)' }}

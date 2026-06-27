@@ -14,6 +14,7 @@ on:
     branches:
       - main
       - dev
+      - lovable
 
 permissions:
   contents: read
@@ -29,8 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Map branch → site URL and environment target
-      SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || 'https://staging.aaveapy.com' }}
-      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      # lovable has no custom domain; SITE_URL is empty so site_check skips
+      SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || github.ref_name == 'dev' && 'https://staging.aaveapy.com' || '' }}
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'staging' || 'preview' }}
       VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
 
     steps:
@@ -96,6 +98,7 @@ jobs:
 
       - name: Check production domain
         id: site_check
+        if: env.SITE_URL != ''
         run: |
           echo "🌐 Checking ${{ env.ENV_LABEL }} site (${{ env.SITE_URL }})..."
           HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
@@ -117,16 +120,49 @@ jobs:
 
           # Ensure custom domain serves this push's build (not a stale alias)
           EXPECTED_SHA="${{ github.sha }}"
+          REF_NAME="${{ github.ref_name }}"
+
+          page_has_expected_sha() {
+            grep -Fq 'name="aaveapy-deploy-sha"' /tmp/page.html \
+              && grep -Fq "content=\"${EXPECTED_SHA}\"" /tmp/page.html
+          }
+
           if ! grep -Fq 'name="aaveapy-deploy-sha"' /tmp/page.html; then
             echo "❌ Page missing aaveapy-deploy-sha meta — redeploy with current build pipeline"
             exit 1
           fi
-          if ! grep -Fq "content=\"${EXPECTED_SHA}\"" /tmp/page.html; then
-            echo "❌ SITE_URL does not expose expected commit ${EXPECTED_SHA:0:7} — domain may still point at an older deployment"
-            exit 1
+
+          if page_has_expected_sha; then
+            echo "✅ ${{ env.SITE_URL }} accessible, SPA OK, deploy SHA matches push"
+            exit 0
           fi
 
-          echo "✅ ${{ env.SITE_URL }} accessible, SPA OK, deploy SHA matches push"
+          # Staging custom domains often lag behind Vercel READY — poll before failing
+          if [ "$REF_NAME" != "main" ]; then
+            ALIAS_MAX_WAIT=300
+            ALIAS_INTERVAL=15
+            ALIAS_ELAPSED=0
+            echo "⏳ Custom domain SHA mismatch — polling ${SITE_URL} up to ${ALIAS_MAX_WAIT}s for alias catch-up..."
+            while [ $ALIAS_ELAPSED -lt $ALIAS_MAX_WAIT ]; do
+              sleep $ALIAS_INTERVAL
+              ALIAS_ELAPSED=$((ALIAS_ELAPSED + ALIAS_INTERVAL))
+              HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
+                --max-time 30 --retry 2 --retry-delay 5 --retry-all-errors \
+                -L "${{ env.SITE_URL }}")
+              if [ "$HTTP_CODE" -ne 200 ]; then
+                echo "   ${ALIAS_ELAPSED}s — HTTP $HTTP_CODE"
+                continue
+              fi
+              if page_has_expected_sha; then
+                echo "✅ ${{ env.SITE_URL }} deploy SHA matched after ${ALIAS_ELAPSED}s alias catch-up"
+                exit 0
+              fi
+              echo "   ${ALIAS_ELAPSED}s — still serving older deploy-sha"
+            done
+          fi
+
+          echo "❌ SITE_URL does not expose expected commit ${EXPECTED_SHA:0:7} — domain may still point at an older deployment"
+          exit 1
 
       - name: Check API connectivity from frontend
         id: api_check
@@ -162,7 +198,8 @@ jobs:
           fi
 
           echo "🔗 Checking Vercel deployment URL (https://${{ env.DEPLOY_URL }})..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          EXPECTED_SHA="${{ github.sha }}"
+          HTTP_CODE=$(curl -s -o /tmp/deploy-page.html -w "%{http_code}" \
             --max-time 30 --retry 2 --retry-delay 10 --retry-all-errors \
             -L "https://${{ env.DEPLOY_URL }}")
 
@@ -173,7 +210,16 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Deployment URL accessible"
+          if ! grep -Fq 'name="aaveapy-deploy-sha"' /tmp/deploy-page.html; then
+            echo "❌ Deployment URL missing aaveapy-deploy-sha meta"
+            exit 1
+          fi
+          if ! grep -Fq "content=\"${EXPECTED_SHA}\"" /tmp/deploy-page.html; then
+            echo "❌ Deployment URL does not serve commit ${EXPECTED_SHA:0:7}"
+            exit 1
+          fi
+
+          echo "✅ Deployment URL accessible, deploy SHA matches push"
 
       - name: Summary
         if: always()
@@ -198,7 +244,7 @@ jobs:
     if: failure()
     runs-on: ubuntu-latest
     env:
-      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'staging' || 'preview' }}
       VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
     steps:
       - name: Rollback Vercel deployment
@@ -219,7 +265,11 @@ jobs:
           # Instant project rollback aliases production; preview deployments are not safe targets.
           if [ "$REF_NAME" != "main" ]; then
             echo "⚠️ Branch ${REF_NAME} uses Vercel preview — skipping instant project rollback."
-            echo "💡 Redeploy or promote a known-good preview manually if needed."
+            echo "💡 Manual recovery for staging (${{ env.ENV_LABEL }}):"
+            echo "   1. Open Vercel → project → Deployments (preview / branch ${REF_NAME})"
+            echo "   2. Promote the last known-good READY deployment to staging.aaveapy.com"
+            echo "      OR revert commit ${{ github.sha }} on ${REF_NAME} and push"
+            echo "   3. Confirm https://staging.aaveapy.com meta aaveapy-deploy-sha matches the good commit"
             echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -300,7 +350,7 @@ jobs:
 
       - name: Create rollback notification issue
         if: always()
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         with:
           script: |
             const env = '${{ env.ENV_LABEL }}';
@@ -317,24 +367,54 @@ jobs:
               rollbackStatus = '❌ Auto-rollback failed — manual intervention required';
             }
 
-            await github.rest.issues.create({
+            const failureEntry = [
+              `## Repeat Trigger — \`${sha.slice(0, 7)}\``,
+              '',
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| Commit | \`${sha.slice(0, 7)}\` |`,
+              `| Rollback | ${rollbackStatus} |`,
+              `| Workflow Run | [View logs](${runUrl}) |`,
+            ].join('\n');
+
+            const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🚨 ${env} smoke test failed — deployment rolled back`,
-              body: [
-                `## Smoke Test Failure (${env})`,
-                '',
-                `| Field | Value |`,
-                `|-------|-------|`,
-                `| Environment | **${env}** |`,
-                `| Commit | \`${sha.slice(0, 7)}\` |`,
-                `| Rollback | ${rollbackStatus} |`,
-                `| Workflow Run | [View logs](${runUrl}) |`,
-                '',
-                'Check the workflow logs for details on which check failed.',
-                '',
-                '> **Note:** After rollback, Vercel disables auto-assignment of production domains.',
-                '> Push a fix and then run `vercel promote` or re-enable auto-assign in project settings.',
-              ].join('\n'),
-              labels: ['smoke-test-failure'],
+              state: 'open',
+              labels: 'smoke-test-failure',
             });
+
+            const dedupTitle = `🚨 ${env} smoke test failed — deployment rolled back`;
+            const match = existingIssues.data.find(i => i.title === dedupTitle);
+
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body: failureEntry,
+              });
+              core.info(`Dedup: appended to existing issue #${match.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: dedupTitle,
+                body: [
+                  `## Smoke Test Failure (${env})`,
+                  '',
+                  `| Field | Value |`,
+                  `|-------|-------|`,
+                  `| Environment | **${env}** |`,
+                  `| Commit | \`${sha.slice(0, 7)}\` |`,
+                  `| Rollback | ${rollbackStatus} |`,
+                  `| Workflow Run | [View logs](${runUrl}) |`,
+                  '',
+                  'Check the workflow logs for details on which check failed.',
+                  '',
+                  '> **Note:** After rollback, Vercel disables auto-assignment of production domains.',
+                  '> Push a fix and then run `vercel promote` or re-enable auto-assign in project settings.',
+                ].join('\n'),
+                labels: ['smoke-test-failure'],
+              });
+            }

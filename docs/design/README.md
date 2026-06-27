@@ -8,7 +8,6 @@ Use this folder for **normative design and interaction** content.
 | Project visual profile | [`DESIGN.md`](./DESIGN.md) — theme, defaults, topic map |
 | Reusable system rules | [`DESIGN-SYSTEM-REFERENCE.md`](./DESIGN-SYSTEM-REFERENCE.md) |
 | Product-critical behavior | [`frontend-interaction-guardrails.md`](./frontend-interaction-guardrails.md) |
+| Tooltip callout arrow spec | [`tooltip-arrow.md`](./tooltip-arrow.md) — visual spec, SVG impl, auto-flip, comparison with `IncentiveTooltip` |
 
 Canonical **documentation map** (ownership, overlaps): [`../DOCS-INDEX.md`](../DOCS-INDEX.md).
-
-Legacy paths kept for old links (redirects only; edit `DESIGN-SYSTEM-REFERENCE.md` instead): [`ui-interaction-patterns.md`](./ui-interaction-patterns.md), [`toggle-switch-specification.md`](./toggle-switch-specification.md).

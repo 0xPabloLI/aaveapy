@@ -35,6 +35,7 @@ import {
   collectRequiredIconSymbols,
   collectIconSymbolLogoHints,
   getReservePatchesPath,
+  getTokenSymbolMapPath,
   toSortedArray,
 } from './lib/token-icon-symbols.mjs';
 
@@ -42,6 +43,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TOKENS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const RESERVE_PATCHES_PATH = getReservePatchesPath(ROOT);
+const TOKEN_SYMBOL_MAP_PATH = getTokenSymbolMapPath(ROOT);
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
 const INTERFACE_TOKEN_ICONS_BASE = String(
   process.env.INTERFACE_TOKEN_ICONS_BASE ||
@@ -167,22 +169,8 @@ function getExistingIconBaseSet() {
 }
 
 async function fetchMarketsFromUrl(url) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.url = url;
-    throw err;
-  }
-  const payload = await res.json();
-  const rows = Array.isArray(payload?.reserves) ? payload.reserves
-    : Array.isArray(payload?.data) ? payload.data
-    : null;
-  if (!rows) {
-    const err = new Error('response missing reserves/data array');
-    err.url = url;
-    throw err;
-  }
+  const { fetchAndValidateMarkets } = await import('./lib/market-fetch.ts');
+  const { rows } = await fetchAndValidateMarkets(url);
   return rows;
 }
 
@@ -220,24 +208,29 @@ async function loadMarketsRows() {
 
 async function getMissingSymbols() {
   const reservePatchesContent = fs.readFileSync(RESERVE_PATCHES_PATH, 'utf8');
+  const tokenSymbolMapContent = fs.readFileSync(TOKEN_SYMBOL_MAP_PATH, 'utf8');
   const { rows: marketsRows } = await loadMarketsRows();
 
   const requiredSymbols = collectRequiredIconSymbols({
     reservePatchesContent,
+    tokenSymbolMapContent,
     marketsRows,
     tokenListSymbols: [],
     addressBookContext: addressBook,
   });
   const logoHints = collectIconSymbolLogoHints({
     reservePatchesContent,
+    tokenSymbolMapContent,
     marketsRows,
     addressBookContext: addressBook,
     tokenLogoByAddress: new Map(),
   });
 
   const existing = getExistingIconBaseSet();
-  const missing = toSortedArray(requiredSymbols).filter((symbol) => !existing.has(symbol));
-  return { missing, logoHints };
+  const requiredArray = toSortedArray(requiredSymbols);
+  const missing = requiredArray.filter((symbol) => !existing.has(symbol));
+  const orphaned = [...existing].filter((s) => !requiredSymbols.has(s) && s !== 'default').sort();
+  return { missing, orphaned, logoHints };
 }
 
 async function fetchCoingeckoImageUrl(symbol) {
@@ -333,7 +326,14 @@ async function main() {
     console.warn('--extra-only is deprecated and ignored. Symbols are now derived from used interface resources.');
   }
 
-  const { missing, logoHints } = await getMissingSymbols();
+  const { missing, orphaned, logoHints } = await getMissingSymbols();
+
+  if (orphaned.length > 0) {
+    console.warn(
+      `Orphaned token icons (local but not in API): ${orphaned.join(', ')} (${orphaned.length})`
+    );
+  }
+
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;

@@ -1,0 +1,565 @@
+// @vitest-environment happy-dom
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useDebouncedInput, computeCursorAfterSanitize, computeCursorAfterFormat } from './useDebouncedInput';
+
+const DEBOUNCE_MS = 300;
+
+describe('useDebouncedInput', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('onChange (sanitize and format with thousands separators)', () => {
+    it('accepts numeric input and formats with thousands separators', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '12345' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('12,345');
+    });
+
+    it('accepts decimal input', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '12.5' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('12.5');
+    });
+
+    it('rejects non-numeric characters', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '12abc' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('12');
+    });
+
+    it('adds thousands separators during typing', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+    });
+
+    it('formats numbers with thousands separators in real-time', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '100000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('100,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '1000000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000,000');
+    });
+
+    it('handles leading dot as "0."', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '.' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('0.');
+    });
+
+    it('preserves trailing dot for decimal input', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '5.' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('5.');
+    });
+
+    it('preserves trailing dot with thousands separators', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000.' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000.');
+    });
+
+    it('preserves decimal part with thousands separators', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1234.5' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,234.5');
+    });
+
+    it('allows empty string (Backspace to clear)', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('');
+    });
+
+    it('clamps negative input to 0', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '-5' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('0');
+    });
+  });
+
+  describe('debounce behavior', () => {
+    it('does not call onCommit immediately on change', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+    });
+
+    it('calls onCommit with formatted value after debounce delay', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith('10,000');
+    });
+
+    it('resets debounce timer on subsequent changes (only last value committed)', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      act(() => {
+        result.current.handleChange({ target: { value: '2000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith('2,000');
+    });
+
+    it('does not commit if value has not changed since last commit', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('onBlur (immediate commit + format)', () => {
+    it('commits immediately on blur without waiting for debounce', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleBlur({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith('10,000');
+    });
+
+    it('cancels pending debounce timer on blur', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleBlur({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+    });
+
+    it('formats with thousands separators on blur', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1234.5' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleBlur({ target: { value: '1,234.5' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,234.5');
+      expect(onCommit).toHaveBeenCalledWith('1,234.5');
+    });
+
+    it('handles empty value on blur', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleBlur({ target: { value: '' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('');
+      expect(onCommit).toHaveBeenCalledWith('');
+    });
+
+    it('preserves "0." on blur', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleBlur({ target: { value: '0.' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('0.');
+      expect(onCommit).toHaveBeenCalledWith('0.');
+    });
+  });
+
+  describe('onFocus (preserve thousands separators)', () => {
+    it('keeps thousands separators on focus', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleBlur({ target: { value: '10000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+      act(() => {
+        result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+    });
+
+    it('places cursor at end on focus (allows direct decimal point input)', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      const setSelectionRange = vi.fn();
+      act(() => {
+        result.current.inputRef.current = { setSelectionRange } as unknown as HTMLInputElement;
+        result.current.handleFocus({ target: { value: '10,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      expect(setSelectionRange).toHaveBeenCalledWith(6, 6);
+    });
+  });
+
+  describe('Enter key (immediate commit)', () => {
+    it('commits immediately on Enter key press', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleKeyDown({ key: 'Enter' } as React.KeyboardEvent<HTMLInputElement>);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(onCommit).toHaveBeenCalledWith('10,000');
+    });
+
+    it('cancels pending debounce timer on Enter', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleKeyDown({ key: 'Enter' } as React.KeyboardEvent<HTMLInputElement>);
+      });
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores non-Enter keys', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleKeyDown({ key: 'Tab' } as React.KeyboardEvent<HTMLInputElement>);
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('external value sync', () => {
+    it('syncs displayValue when external value prop changes (not focused)', () => {
+      const onCommit = vi.fn();
+      const { result, rerender } = renderHook(
+        ({ value }) => useDebouncedInput({ onCommit, value }),
+        { initialProps: { value: '1,000' } },
+      );
+      expect(result.current.displayValue).toBe('1,000');
+      rerender({ value: '2,000' });
+      expect(result.current.displayValue).toBe('2,000');
+    });
+
+    it('does not overwrite displayValue while user is typing (focused)', () => {
+      const onCommit = vi.fn();
+      const { result, rerender } = renderHook(
+        ({ value }) => useDebouncedInput({ onCommit, value }),
+        { initialProps: { value: '1,000' } },
+      );
+      act(() => {
+        result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      rerender({ value: '1,000' });
+      expect(result.current.displayValue).toBe('5,000');
+    });
+  });
+
+  describe('clear behavior', () => {
+    it('clears displayValue and commits empty string', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleClear();
+      });
+      expect(result.current.displayValue).toBe('');
+      expect(onCommit).toHaveBeenCalledWith('');
+    });
+  });
+
+  describe('select-all-then-type replacement', () => {
+    it('selecting all then typing new value replaces entire content', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('5,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '7', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('7');
+    });
+
+    it('selecting all then typing dot replaces with "0."', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleChange({ target: { value: '.', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('0.');
+    });
+  });
+
+  describe('Backspace behavior (no value jumping)', () => {
+    it('deleting last char from "10,000" yields "1,000"', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('10,000');
+      act(() => {
+        result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('1,000');
+    });
+
+    it('deleting from "1,000" (after blur+focus+backspace) yields "100"', () => {
+      const onCommit = vi.fn();
+      const { result } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '1000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleBlur({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
+      });
+      act(() => {
+        result.current.handleChange({ target: { value: '100' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.displayValue).toBe('100');
+    });
+  });
+
+  describe('cleanup', () => {
+    it('cancels debounce timer on unmount', () => {
+      const onCommit = vi.fn();
+      const { result, unmount } = renderHook(() => useDebouncedInput({ onCommit }));
+      act(() => {
+        result.current.handleChange({ target: { value: '10000' } } as React.ChangeEvent<HTMLInputElement>);
+      });
+      unmount();
+      act(() => {
+        vi.advanceTimersByTime(DEBOUNCE_MS);
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('computeCursorAfterSanitize (AAV-775 pure logic)', () => {
+  it('cursor after decimal stays after decimal when leading zero added', () => {
+    expect(computeCursorAfterSanitize('.', '0.', 1, false)).toBe(2);
+  });
+
+  it('cursor at end of number stays at end', () => {
+    expect(computeCursorAfterSanitize('15', '15', 2, false)).toBe(2);
+  });
+
+  it('cursor in middle of number preserved after sanitize (insert at pos 1)', () => {
+    expect(computeCursorAfterSanitize('15', '105', 1, false)).toBe(1);
+  });
+
+  it('cursor after decimal point preserved', () => {
+    expect(computeCursorAfterSanitize('1.', '1.5', 2, false)).toBe(2);
+  });
+
+  it('cursor after full decimal preserved', () => {
+    expect(computeCursorAfterSanitize('1.5', '1.55', 3, false)).toBe(3);
+  });
+
+  it('cursor at start of number stays at start', () => {
+    expect(computeCursorAfterSanitize('5', '5', 0, false)).toBe(0);
+  });
+
+  it('negative input cursor goes to position 1 (after zero)', () => {
+    expect(computeCursorAfterSanitize('5', '0', 1, true)).toBe(1);
+  });
+
+  it('cursor clamped to sanitized length', () => {
+    expect(computeCursorAfterSanitize('123', '12', 3, false)).toBe(2);
+  });
+
+  it('fullwidth decimal 。 normalized to . and cursor stays after dot (AAV-739)', () => {
+    expect(computeCursorAfterSanitize('1000。', '1000.', 5, false)).toBe(5);
+  });
+
+  it('lone fullwidth decimal 。 becomes 0. and cursor after dot (AAV-739)', () => {
+    expect(computeCursorAfterSanitize('。', '0.', 1, false)).toBe(1);
+  });
+});
+
+describe('computeCursorAfterFormat (thousands separator cursor)', () => {
+  it('cursor at end of "10000" → end of "10,000" (pos 6)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 5)).toBe(6);
+  });
+
+  it('cursor at pos 1 in "10000" → pos 1 in "10,000"', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 1)).toBe(1);
+  });
+
+  it('cursor at pos 3 in "10000" → pos 4 in "10,000" (before comma)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 3)).toBe(4);
+  });
+
+  it('cursor at pos 4 in "10000" → pos 5 in "10,000" (after comma)', () => {
+    expect(computeCursorAfterFormat('10000', '10,000', 4)).toBe(5);
+  });
+
+  it('cursor at end of "1000000" → end of "1,000,000" (pos 9)', () => {
+    expect(computeCursorAfterFormat('1000000', '1,000,000', 7)).toBe(9);
+  });
+
+  it('cursor at pos 4 in "1000000" → pos 5 in "1,000,000" (after first comma)', () => {
+    expect(computeCursorAfterFormat('1000000', '1,000,000', 4)).toBe(5);
+  });
+
+  it('cursor at decimal point position preserved', () => {
+    expect(computeCursorAfterFormat('1234.', '1,234.', 5)).toBe(6);
+  });
+
+  it('cursor after decimal digit preserved', () => {
+    expect(computeCursorAfterFormat('1234.5', '1,234.5', 6)).toBe(7);
+  });
+
+  it('cursor at pos 0 stays at pos 0', () => {
+    expect(computeCursorAfterFormat('12345', '12,345', 0)).toBe(0);
+  });
+
+  it('cursor in decimal part unaffected by thousands separators', () => {
+    expect(computeCursorAfterFormat('1234.56', '1,234.56', 7)).toBe(8);
+  });
+
+  it('CJK fullwidth decimal + thousands separator: cursor after decimal in "1,000."', () => {
+    expect(computeCursorAfterFormat('1000.', '1,000.', 5)).toBe(6);
+  });
+
+  it('CJK fullwidth decimal + thousands separator: cursor in decimal part', () => {
+    expect(computeCursorAfterFormat('1000.5', '1,000.5', 6)).toBe(7);
+  });
+
+  it('short number without comma: cursor preserved as-is (123, pos 2 → 2)', () => {
+    expect(computeCursorAfterFormat('123', '123', 2)).toBe(2);
+  });
+
+  it('short number without comma: cursor at end (12, pos 2 → 2)', () => {
+    expect(computeCursorAfterFormat('12', '12', 2)).toBe(2);
+  });
+});
+
+describe('useDebouncedInput cursor position preservation (AAV-775 integration)', () => {
+  it('handleChange computes cursor and useLayoutEffect restores it via inputRef', () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() => useDebouncedInput({ onCommit, debounceMs: 0 }));
+    act(() => {
+      result.current.handleChange({
+        target: { value: '.', selectionStart: 1 },
+      } as React.ChangeEvent<HTMLInputElement>);
+    });
+    expect(result.current.displayValue).toBe('0.');
+  });
+
+  it('handleChange with middle cursor does not reset displayValue', () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() => useDebouncedInput({ onCommit, debounceMs: 0 }));
+    act(() => {
+      result.current.handleChange({
+        target: { value: '15', selectionStart: 2 },
+      } as React.ChangeEvent<HTMLInputElement>);
+    });
+    expect(result.current.displayValue).toBe('15');
+  });
+});

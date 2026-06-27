@@ -1,0 +1,30 @@
+# Aave APY
+
+> Real-time Aave deposit and borrow APY/APR analytics across every supported chain and market, including Merit, Merkl, and Brevis incentive forecasts.
+
+Aave APY aggregates live reserve data from the Aave protocol (v3 and v4) and overlays incentive programs so users can compare effective yields, simulate position sizes, and plan portfolios across chains. All data is sourced from the public api.aaveapy.com backend.
+
+## Pages
+
+- [Dashboard](/): Compare deposit and borrow APY/APR across all Aave markets with incentive overlays and rate simulation.
+- [DeFi Yield Tracker](/defi-yield-tracker): Free DeFi yield and Aave portfolio tracker across every supported chain, with FAQ.
+
+## Chains
+
+- [Ethereum](/chain/ethereum): Aave APY analytics for Ethereum mainnet markets.
+- [Arbitrum](/chain/arbitrum): Aave APY analytics for Arbitrum One markets.
+- [Base](/chain/base): Aave APY analytics for Base markets.
+- [Optimism](/chain/optimism): Aave APY analytics for Optimism markets.
+- [Polygon](/chain/polygon): Aave APY analytics for Polygon markets.
+- [Avalanche](/chain/avalanche): Aave APY analytics for Avalanche markets.
+- [Gnosis](/chain/gnosis): Aave APY analytics for Gnosis Chain markets.
+- [Scroll](/chain/scroll): Aave APY analytics for Scroll markets.
+- [Metis](/chain/metis): Aave APY analytics for Metis markets.
+- [BNB Chain](/chain/bnb-chain): Aave APY analytics for BNB Chain markets.
+- [Linea](/chain/linea): Aave APY analytics for Linea markets.
+- [zkSync](/chain/zksync): Aave APY analytics for zkSync Era markets.
+- [Celo](/chain/celo): Aave APY analytics for Celo markets.
+- [Sonic](/chain/sonic): Aave APY analytics for Sonic markets.
+- [Soneium](/chain/soneium): Aave APY analytics for Soneium markets.
+- [Ink](/chain/ink): Aave APY analytics for Ink markets, including the Ink incentive APR calculator.
+- [Mantle](/chain/mantle): Aave APY analytics for Mantle markets.

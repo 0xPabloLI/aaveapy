@@ -1,7 +1,7 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Ban, ExternalLink, PauseCircle, Snowflake } from 'lucide-react';
+import { annualPercentToDailyFraction } from '@/lib/rateCalculations';
 import {
-  annualPercentToDailyFraction,
   formatPercent,
   formatScenarioSize,
   formatScenarioSizeDelta,
@@ -9,13 +9,17 @@ import {
   formatSpread,
   formatUsd,
 } from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { formatProtocolCapText } from '@/lib/portfolioCapWarnings';
+import { buildAaveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { convertUsdToInputValue, nativeToUsd } from '@/lib/scenarioSize';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
   SimulationCampaignDetail,
   SimulationSourceDetail,
-} from '@/hooks/useRateSimulation';
+} from '@/lib/rateSimulationCalculator';
 import {
   hasAnyIncentiveBreakdownHref,
   includeIncentiveSourceInBreakdown,
@@ -24,42 +28,13 @@ import {
   type IncentiveSourceRow,
   type SimulationTableRow,
 } from '@/lib/simulationIncentiveTableRows';
-import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import type { ReserveWithSpread, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-
-const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
-  if (!merits || !Array.isArray(merits)) return null;
-  const now = Date.now();
-  for (const merit of merits) {
-    const start = Date.parse(merit.startDate);
-    const end = Date.parse(merit.endDate);
-    if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && merit.link) {
-      return merit.link;
-    }
-  }
-  return null;
-};
-
-const getFirstMerklLink = (opportunities?: MerklOpportunityGroup[]): string | null => {
-  if (!opportunities || !Array.isArray(opportunities)) return null;
-  const now = Date.now();
-  for (const opp of opportunities) {
-    const link = opp.link;
-    if (!link) continue;
-    const hasActive = opp.breakdowns?.some((bd) => {
-      const start = Date.parse(bd.campaignStartedAt);
-      const end = Date.parse(bd.campaignEndedAt);
-      return !Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end;
-    });
-    if (hasActive) return link;
-  }
-  return null;
-};
-
-const getFirstBrevisLink = (brevis?: BrevisIncentive[]): string | null => {
-  return getFirstActiveBrevisLink(brevis);
-};
+import { getFirstActiveMeritLink } from '@/lib/merit';
+import { getFirstActiveMerklLink } from '@/lib/merkl';
+import { getIncentiveSources } from '@/lib/incentiveAggregation';
 
 interface SimulationSubRowProps {
   reserve: ReserveWithSpread;
@@ -194,6 +169,17 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused || reserve.isActive === false);
+  const supplyDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
+    : reserve.isFrozen ? 'Frozen'
+    : isSupplyDisabled(reserve) ? 'Supply unavailable'
+    : null;
+  const borrowDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
+    : reserve.isFrozen ? 'Frozen'
+    : isBorrowDisabled(reserve) ? 'Borrow unavailable'
+    : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
@@ -203,55 +189,71 @@ const SimulationSubRow = ({
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
-  const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
+  const supplySideBlocked = isSupplyDisabled(reserve);
+  const borrowSideBlocked = isBorrowDisabled(reserve);
+  const hasDisabledState = supplySideBlocked || borrowSideBlocked;
 
-  const tokenOnChainLabel =
-    reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]
-      ? `${reserve.tokenSymbol} · ${ETHEREUM_MARKET_NAMES[reserve.marketName]}`
-      : `${reserve.tokenSymbol} · ${reserve.chainName}`;
+  const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
+
+  const tokenOnChainLabel = (() => {
+    const version = getProtocolVersion(reserve.marketName);
+    // V4 and V3 non-Ethereum: extract display name from marketName suffix
+    // e.g., "AaveV4EthereumLido" → "Ethereum Lido", "AaveV3Base" → "Base"
+    if (version === 'v4' || (reserve.marketName?.startsWith('AaveV3') && reserve.chainName !== 'Ethereum')) {
+      const prefix = version === 'v4' ? 'AaveV4' : 'AaveV3';
+      const withoutPrefix = reserve.marketName.replace(new RegExp(`^${prefix}`, 'i'), '');
+      const marketDisplay = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+      return `${reserve.tokenSymbol} · ${marketDisplay}`;
+    }
+    // V3 Ethereum: keep original logic with canonical names
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return `${reserve.tokenSymbol} · ${ETHEREUM_MARKET_NAMES[reserve.marketName]}`;
+    }
+    return `${reserve.tokenSymbol} · ${reserve.chainName}`;
+  })();
 
   const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd, supplyCapUsd } = simulation.marketMetrics;
 
   const handleCorrectToMaxSupply = () => {
     if (!onCorrectSupplyInput || availableSupplyRoomUsd === null) return;
-    onCorrectSupplyInput('');
+    onCorrectSupplyInput(convertUsdToInputValue(availableSupplyRoomUsd, inputMode, simulation.tokenPrice));
   };
 
   const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd, borrowLimitedByLiquidity } = simulation.marketMetrics;
 
   const handleCorrectToMaxBorrow = () => {
     if (!onCorrectBorrowInput || availableBorrowRoomUsd === null) return;
-    onCorrectBorrowInput('');
+    onCorrectBorrowInput(convertUsdToInputValue(availableBorrowRoomUsd, inputMode, simulation.tokenPrice));
   };
 
-  const currentSupplySizeUsd =
-    reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
+  const currentSupplySizeUsd = (() => {
+    const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+    return size != null && Number.isFinite(size) ? size : null;
+  })();
   const afterSupplySizeUsd =
     currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
       ? currentSupplySizeUsd + simulation.supply.inputUsd
       : null;
   const supplyCapBaseExceeded =
     supplyCapUsd !== null && currentSupplySizeUsd !== null && currentSupplySizeUsd > supplyCapUsd;
-  const supplyCapBaseExceededByUsd =
-    supplyCapBaseExceeded ? currentSupplySizeUsd - supplyCapUsd : null;
-  const showSupplyCapWarning = supplyCapExceeded || supplyCapBaseExceeded;
+  const showSupplyCapWarning = (supplyCapExceeded || supplyCapBaseExceeded) && !supplySideBlocked;
   const currentBorrowedSizeUsd =
     simulation.marketMetrics.totalBorrowedUsd != null && Number.isFinite(simulation.marketMetrics.totalBorrowedUsd)
       ? simulation.marketMetrics.totalBorrowedUsd
       : null;
   const borrowCapBaseExceeded =
     borrowCapUsd !== null && currentBorrowedSizeUsd !== null && currentBorrowedSizeUsd > borrowCapUsd;
-  const borrowCapBaseExceededByUsd =
-    borrowCapBaseExceeded ? currentBorrowedSizeUsd - borrowCapUsd : null;
-  const showBorrowCapWarning = borrowCapExceeded || borrowCapBaseExceeded;
+  const showBorrowCapWarning = (borrowCapExceeded || borrowCapBaseExceeded) && !borrowSideBlocked;
 
-  const supplyMeritLink = getFirstMeritLink(reserve.meritSupplys);
-  const supplyMerklLink = getFirstMerklLink(reserve.merklSupplys);
-  const supplyBrevisLink = getFirstBrevisLink(reserve.brevisSupplys);
+  const supplySources = getIncentiveSources(reserve, 'supply');
+  const supplyMeritLink = getFirstActiveMeritLink(supplySources.merit);
+  const supplyMerklLink = getFirstActiveMerklLink(supplySources.merkl);
+  const supplyBrevisLink = getFirstActiveBrevisLink(supplySources.brevis);
 
-  const borrowMeritLink = getFirstMeritLink(reserve.meritBorrows);
-  const borrowMerklLink = getFirstMerklLink(reserve.merklBorrows);
-  const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
+  const borrowSources = getIncentiveSources(reserve, 'borrow');
+  const borrowMeritLink = getFirstActiveMeritLink(borrowSources.merit);
+  const borrowMerklLink = getFirstActiveMerklLink(borrowSources.merkl);
+  const borrowBrevisLink = getFirstActiveBrevisLink(borrowSources.brevis);
 
   const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
   const supplyIncentiveSources: IncentiveSourceRow[] = [
@@ -326,7 +328,7 @@ const SimulationSubRow = ({
   const supplyRows: TableRow[] = [
     {
       rowKey: 'supply-size',
-      label: effectiveCompact ? 'Total supplied' : 'Total',
+      label: effectiveCompact ? 'Supplied' : 'Total',
       current: currentSupplySizeUsd,
       after: afterSupplySizeUsd,
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
@@ -375,7 +377,7 @@ const SimulationSubRow = ({
   const borrowRows: TableRow[] = [
     {
       rowKey: 'borrow-size',
-      label: effectiveCompact ? 'Total borrowed' : 'Total',
+      label: effectiveCompact ? 'Borrowed' : 'Total',
       current: simulation.marketMetrics.totalBorrowedUsd,
       after: simulation.marketMetrics.totalBorrowedUsdAfter,
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,
@@ -449,7 +451,13 @@ const SimulationSubRow = ({
     tight = false,
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
+    disabled = false,
   ) => {
+    // When the side is frozen/paused/disabled, mask After + Delta so the
+    // simulation does not appear to react to user input.
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -462,9 +470,15 @@ const SimulationSubRow = ({
           : 'ml-2 pl-2 border-l'
         : '';
     const cellPy = tight ? 'py-0.5' : 'py-1';
-    const metricCellPx = tight ? 'px-3' : 'px-4';
-    const valueCellPx = tight ? 'px-2.5' : 'px-3';
-    const deltaCellPx = tight ? 'px-3' : 'px-4';
+    /** Compact cell padding: only the outer edges (left of label, right of delta) keep
+     *  visual breathing room; inter-column gaps are squeezed to ~2px so numeric values
+     *  get the maximum width inside their fixed-width columns. */
+    const metricCellPx = tight ? 'pl-2 pr-0.5' : 'px-4';
+    const valueCellPx = tight ? 'px-0.5' : 'px-3';
+    const deltaCellPx = tight ? 'pl-0.5 pr-2' : 'px-4';
+    /** Numeric values stay nowrap; in compact (tight) mode we drop one tier in font size
+     *  so K/M/B-formatted values reliably fit within the table-fixed column widths. */
+    const numericFontClass = tight ? 'ds-text-11' : 'ds-text-12';
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
@@ -479,35 +493,54 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+      <tr data-align-key={mainAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
-              <span
-                className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
-              >
-                {row.label}
-              </span>
+            {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
+                container has no `min-w-0` and the spans are not truncated, so the content
+                visually bleeds into the right-aligned Current column's left-side whitespace
+                when the label cell alone is too narrow (e.g. Celo USDT `Supplied / Cap $19.50M`).
+                The outer table wrapper still hard-clips, so the bleed never causes horizontal
+                scrolling — it only consumes the natural inter-column gap. */}
+            <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
+              {row.href ? (
+                <a
+                  href={row.href}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`ds-text-12 flex items-center gap-1 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400' : `${accentClass} hover:opacity-90`}`}
+                >
+                  <span className="break-words">{row.label}</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                </a>
+              ) : (
+                <span
+                  title={typeof row.label === 'string' ? row.label : undefined}
+                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
+                >
+                  {row.label}
+                </span>
+              )}
               {row.cap !== null && row.cap !== undefined && (
-                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
+                <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
                   / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               )}
             </div>
           </div>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -522,13 +555,13 @@ const SimulationSubRow = ({
       const currentPct = Math.min((currentVal / capVal) * 100, 100);
       const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
       const barColorClass = row.warning
-        ? 'bg-amber-500'
+        ? 'bg-[rgb(var(--ds-amber-600-rgb))]'
         : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
       const afterBarColorClass = row.warning
-        ? 'bg-amber-400/50'
+        ? 'bg-[rgb(var(--ds-amber-500-rgb)/0.5)]'
         : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
       return (
-        <tr data-align-key={capAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <tr data-align-key={capAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
             <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
               <div
@@ -572,7 +605,7 @@ const SimulationSubRow = ({
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
         {row.capNote ? (
-          <tr data-align-key={noteAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
@@ -586,93 +619,269 @@ const SimulationSubRow = ({
     );
   };
 
+  /**
+   * Render one TableRow as Grid cells: 4 main cells + optional cap-progress (col-span-4)
+   * + optional cap-note (col-span-4). Used by the mobile compact layout only.
+   *
+   * Background classes (warning / disabled-section opacity) are applied per-cell because
+   * the wrapping `display: contents` row groups do not paint backgrounds.
+   */
+  const renderCompactGridRow = (
+    row: TableRow,
+    accentClass: string,
+    indentBorderClass: string,
+    sectionClass = '',
+    disabled = false,
+  ) => {
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
+    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
+    const isBreakdownItem = row.isBreakdown;
+    const isSubBreakdown = row.isSubBreakdown === true;
+    const isNestedUnderIncentive = row.nestedUnderIncentive === true;
+    const breakdownIndentClass = isSubBreakdown
+      ? 'ml-4 pl-2 border-l'
+      : isBreakdownItem
+        ? isNestedUnderIncentive
+          ? 'ml-3 pl-2 border-l'
+          : 'ml-2 pl-2 border-l'
+        : '';
+    const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+    const rowBgClass = row.warning ? 'ds-bg-warning-row' : '';
+    const cellBgClass = `${rowBgClass} ${sectionClass}`.trim();
+    const labelCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
+    const valueCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
+
+    const capProgressBar = (() => {
+      if (row.cap == null || row.type !== 'usd') return null;
+      const currentVal = row.current ?? 0;
+      const afterVal = row.after;
+      const capVal = row.cap;
+      const currentPct = Math.min((currentVal / capVal) * 100, 100);
+      const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
+      const barColorClass = row.warning
+        ? 'bg-[rgb(var(--ds-amber-600-rgb))]'
+        : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
+      const afterBarColorClass = row.warning
+        ? 'bg-[rgb(var(--ds-amber-500-rgb)/0.5)]'
+        : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
+      return (
+        <div
+          role="row"
+          data-disabled={disabled ? 'true' : undefined}
+          className={`group col-span-4 pt-0 pb-1 pl-0.5 pr-2 ${cellBgClass}`}
+        >
+          <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
+              style={{ width: `${currentPct}%` }}
+            />
+            {afterPct != null && afterPct > currentPct && (
+              <div
+                className={`absolute inset-y-0 rounded-full ${afterBarColorClass} transition-all duration-300`}
+                style={{ left: `${currentPct}%`, width: `${afterPct - currentPct}%` }}
+              />
+            )}
+          </div>
+        </div>
+      );
+    })();
+
+    return (
+      <Fragment key={row.rowKey}>
+        {/* Main row: 4 grid cells (label / current / after / delta) */}
+        <div role="row" className="contents">
+          <div role="cell" data-disabled={disabled ? 'true' : undefined} className={`group ${labelCellPy} pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
+            <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${indentBorderClass}` : ''}`}>
+              {/* flex flex-wrap + whitespace-nowrap children: keeps each token (label / cap)
+                  unbroken but lets the flex container wrap between them when the label cell
+                  cannot fit both on one line. */}
+              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                {row.href ? (
+                  <a
+                    href={row.href}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`ds-text-12 flex items-center gap-1 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400' : `${accentClass} hover:opacity-90`}`}
+                  >
+                    <span className="break-words">{row.label}</span>
+                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                  </a>
+                ) : (
+                  <span
+                    title={typeof row.label === 'string' ? row.label : undefined}
+                    className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
+                  >
+                    {row.label}
+                  </span>
+                )}
+                {row.cap !== null && row.cap !== undefined && (
+                  <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
+                    / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div role="cell" className={`${valueCellPy} px-0.5 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${accentClass}`}>
+              {formatValue(row.current, row.type)}
+            </span>
+          </div>
+          <div role="cell" className={`${valueCellPy} px-0.5 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : accentClass}`}>
+              {formatValue(row.after, row.type)}
+            </span>
+          </div>
+          <div role="cell" className={`${valueCellPy} pl-0.5 pr-2 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
+              {formatDeltaValue(row.delta, row.type)}
+            </span>
+          </div>
+        </div>
+        {capProgressBar}
+        {row.capNote ? (
+          <div role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
+            <p
+              className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+            >
+              {row.capNote}
+            </p>
+          </div>
+        ) : null}
+      </Fragment>
+    );
+  };
+
+  /**
+   * Mobile compact layout — CSS Grid with `grid-cols-[1fr_auto_auto_auto]`.
+   *
+   * Why Grid (not table-fixed): the label column's `1fr` sizing lets `Supplied / Cap $19.50M`
+   * naturally wrap onto a second line when both pieces cannot fit in one line, instead of
+   * triggering horizontal overflow. Numeric columns use `auto` so they stay just wide enough
+   * for K/M/B-formatted values.
+   *
+   * Each row is a `display: contents` wrapper containing 4 grid cells, optionally followed
+   * by `col-span-4` rows for cap-progress bars and cap notes. Backgrounds (warning highlight,
+   * section opacity) are applied per-cell because `display: contents` containers do not paint.
+   */
   const renderCompactLayout = () => {
-    const compactCellPy = 'py-1';
-    const compactMetricCell = 'px-3';
-    const compactNumCell = 'px-2.5';
-    const compactDeltaCell = 'pl-2.5 pr-3';
-    /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
+    const liquidityWarning = !isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity;
+    const supplySectionClass = '';
+    const borrowSectionClass = '';
+    const headerCellClass = 'bg-muted/30 border-b border-border/50';
     return (
     <div
-      className={`overflow-hidden ${
+      className={`${
         embeddedFromTop
           ? 'rounded-none bg-transparent dark:bg-transparent'
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
-      }`}
+      } overflow-hidden`}
     >
-      <table className="w-full min-w-0 table-fixed">
-        <colgroup>
-          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
-          <col style={{ width: '46%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
-        </colgroup>
-        <thead>
-          <tr className="bg-muted/30 border-b border-border/50">
-            <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
-            </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
-            </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">After</span>
-            </th>
-            <th className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
-          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true))}
-          <tr className={middleColumnWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className="ds-text-12 ds-text-purple-600">Spread</span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatSpread(simulation.spread.after)}
+      <div
+        role="table"
+        aria-label="Simulation breakdown"
+        className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 gap-y-1 w-full min-w-0 ds-text-12 pb-2"
+      >
+        {/* Header row */}
+        <div role="row" className="contents">
+          <div role="columnheader" className={`${headerCellClass} py-1 pl-2 pr-0.5 text-left`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 px-0.5 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 px-0.5 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">After</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 pl-0.5 pr-2 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
+          </div>
+        </div>
+
+        {/* Supply section */}
+        {supplyRows.map((row) =>
+          renderCompactGridRow(
+            row,
+            'ds-text-emerald-600',
+            'border-l-[rgb(var(--ds-emerald-500-rgb))]',
+            supplySectionClass,
+            Boolean(supplyDisabledNotice),
+          ),
+        )}
+
+        {/* Spread row */}
+        <div role="row" className="contents">
+          <div role="cell" className={`py-1 pl-2 pr-0.5 ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className="ds-text-12 ds-text-purple-600">Spread</span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className="ds-text-11 tabular-nums whitespace-nowrap ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+              {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 pl-0.5 pr-2 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            {hasScenarioInput && !isReserveLocked ? (
+              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatDelta(simulation.spread.delta)}
               </span>
-            </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              {hasScenarioInput ? (
-                <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                  {formatDelta(simulation.spread.delta)}
-                </span>
-              ) : null}
-            </td>
-          </tr>
-          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
-                Liquidity
+            ) : null}
+          </div>
+        </div>
+
+        {/* Liquidity row */}
+        <div role="row" className="contents">
+          <div role="cell" className={`py-1 pl-2 pr-0.5 ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-12 ${liquidityWarning ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
+              Liquidity
+            </span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${liquidityWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
+              {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
+              isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null
+                ? 'text-muted-foreground'
+                : liquidityWarning
+                  ? 'text-amber-700 dark:text-amber-400'
+                  : 'ds-text-purple-600'
+            }`}>
+              {isReserveLocked ? '-' : formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 pl-0.5 pr-2 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            {hasScenarioInput && !isReserveLocked ? (
+              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
+                simulation.marketMetrics.availableLiquidityUsdDelta === null
+                  ? 'text-muted-foreground'
+                  : liquidityWarning
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : 'ds-text-purple-600'
+              }`}>
+                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              {hasScenarioInput ? (
-                <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                  {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
-                </span>
-              ) : null}
-            </td>
-          </tr>
-          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true))}
-        </tbody>
-      </table>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Borrow section */}
+        {borrowRows.map((row) =>
+          renderCompactGridRow(
+            row,
+            'ds-text-brand-cyan',
+            'border-l-[rgb(var(--ds-brand-cyan-rgb))]',
+            borrowSectionClass,
+            Boolean(borrowDisabledNotice),
+          ),
+        )}
+      </div>
     </div>
     );
   };
@@ -687,7 +896,16 @@ const SimulationSubRow = ({
     return peerKey ? peerRows.find((r) => r.rowKey === peerKey) : undefined;
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
+  const renderTable = (
+    title: string,
+    rows: TableRow[],
+    accentClass: string,
+    borderClass: string,
+    indentBorderClass: string,
+    isWarning?: boolean,
+    peerRows?: TableRow[],
+    disabledNotice?: string | null,
+  ) => (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -708,11 +926,11 @@ const SimulationSubRow = ({
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
             <th className="px-4 py-1.5 text-right">
-              <span className="ds-text-11 text-muted-foreground">Delta</span>
+              <span className="ds-text-11 text-muted-foreground">Δ</span>
             </th>
           </tr>
         </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2">
+        <tbody className={`[&>tr:last-child>td]:pb-2`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -720,7 +938,7 @@ const SimulationSubRow = ({
             const peerCapInfo = peerHasCapBar || peerHasCapNote
               ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
               : undefined;
-            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo);
+            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
         </tbody>
       </table>
@@ -799,7 +1017,11 @@ const SimulationSubRow = ({
   }, [effectiveCompact, supplyDesktopAlignSignature, borrowDesktopAlignSignature, scenarioAccrual]);
 
   const renderEarnCostTable = () => {
-    const tokenPrice = simulation.tokenPrice ?? reserve.tokenPrice;
+    // Token price from reserve directly (simulation.tokenPrice is derived from the same source via tokenPrices index)
+    const tokenPrice =
+      reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
+        ? reserve.tokenPrice
+        : null;
     const fmt = (value: number | null) =>
       formatSignedScenarioDailyCashflow(value, { inputMode, tokenPrice });
     const supplyPrincipal = simulation.supply.inputUsd;
@@ -934,14 +1156,14 @@ const SimulationSubRow = ({
       return (
       <>
         {row.hasCapSpacer ? (
-          <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={3} className={`pt-0 pb-1 ${valuePx}`}>
               <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
             </td>
           </tr>
         ) : null}
         {row.hasNoteSpacer ? (
-          <tr data-align-key={noteAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} aria-hidden className={row.capWarning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={3} className={`pt-0 ${capRowPb} ${metricPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none ${noteIndentClass}`}
@@ -986,7 +1208,7 @@ const SimulationSubRow = ({
               if (row.isNet) {
                 return (
                   <Fragment key={row.key}>
-                    <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                    <tr data-align-key={mainAlignKey} className={row.capWarning ? 'ds-bg-warning-row' : ''}>
                       <td className={`${cellPy} ${metricPx} min-w-0 align-middle`}>
                         <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
                           {/* Visible: Net label + value */}
@@ -1033,10 +1255,22 @@ const SimulationSubRow = ({
 
               return (
                 <Fragment key={row.key}>
-                  <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                  <tr data-align-key={mainAlignKey} className={row.capWarning ? 'ds-bg-warning-row' : ''}>
                     <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
                       <div className={`min-w-0 ${indentClass}`}>
-                        <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
+                        {row.href ? (
+                          <a
+                            href={row.href}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${sizeClass} ${fontClass} flex items-center gap-1 break-words ${textClass} hover:opacity-90`}
+                          >
+                            <span className="break-words">{row.label}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                          </a>
+                        ) : (
+                          <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
+                        )}
                       </div>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
@@ -1062,7 +1296,46 @@ const SimulationSubRow = ({
 
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
-      {showHeaderBlock && (
+      {hasDisabledState ? (
+        <div className={`flex items-center gap-3 rounded-lg ${
+          reserve.isPaused || reserve.isActive === false
+            ? 'border border-[rgb(var(--ds-paused-rgb)/0.6)] ds-bg-critical-row'
+            : reserve.isFrozen
+              ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
+              : 'border border-muted-foreground/20 bg-muted/40'
+        } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+          {reserve.isPaused ? (
+            <PauseCircle className="w-4 h-4 ds-text-paused shrink-0" />
+          ) : reserve.isActive === false ? (
+            <Ban className="w-4 h-4 ds-text-paused shrink-0" />
+          ) : reserve.isFrozen ? (
+            <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
+          ) : (
+            <Ban className="w-4 h-4 text-muted-foreground shrink-0" />
+          )}
+          <p className={`flex-1 ds-text-12 ${
+            reserve.isPaused
+              ? 'text-amber-800 dark:text-amber-300'
+              : reserve.isActive === false
+                ? 'text-amber-800 dark:text-amber-300'
+                : reserve.isFrozen
+                  ? 'text-sky-800 dark:text-sky-300'
+                  : 'text-muted-foreground'
+          }`}>
+            {reserve.isPaused
+              ? 'Paused: all reserve actions are halted.'
+              : reserve.isActive === false
+                ? 'Inactive: the reserve is not active.'
+                : reserve.isFrozen
+                  ? 'Frozen: deposits and borrows temporarily disabled; exits allowed.'
+                  : supplySideBlocked && borrowSideBlocked
+                    ? 'Supply and borrow are disabled for this reserve.'
+                    : supplySideBlocked
+                      ? 'Supply is disabled for this reserve.'
+                      : 'Borrow is disabled for this reserve.'}
+          </p>
+        </div>
+      ) : showHeaderBlock ? (
         <div
         className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${
           effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
@@ -1072,7 +1345,7 @@ const SimulationSubRow = ({
             Enter supply or borrow amount above to see simulated values.
           </span>
         </div>
-      )}
+      ) : null}
       {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
@@ -1083,15 +1356,15 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {/* Warnings */}
-      {simulation.supply.hasInput && showSupplyCapWarning && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+      {/* Warnings + Tables */}
+          {simulation.supply.hasInput && showSupplyCapWarning && (
+        <div className={`flex items-center gap-3 rounded-lg border border-[rgb(var(--ds-amber-500-rgb)/0.6)] ds-bg-critical-row ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.supply.hasInput && supplyCapExceeded ? (
-              <>Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'supply', availableFormatted: formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }) })}</>
             ) : (
-              <>Current supply exceeds cap by {formatScenarioSize(supplyCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'supply', availableFormatted: formatScenarioSize(availableSupplyRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), currentExceeded: true })}</>
             )}
           </p>
           {simulation.supply.hasInput &&
@@ -1106,13 +1379,13 @@ const SimulationSubRow = ({
       )}
 
       {simulation.borrow.hasInput && showBorrowCapWarning && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+        <div className={`flex items-center gap-3 rounded-lg border border-[rgb(var(--ds-amber-500-rgb)/0.6)] ds-bg-critical-row ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.borrow.hasInput && borrowCapExceeded ? (
-              <>Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'borrow', availableFormatted: formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), limitedByLiquidity: borrowLimitedByLiquidity })}</>
             ) : (
-              <>Current borrow exceeds cap by {formatScenarioSize(borrowCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+              <>{formatProtocolCapText({ side: 'borrow', availableFormatted: formatScenarioSize(availableBorrowRoomUsd, { inputMode, tokenPrice: simulation.tokenPrice }), limitedByLiquidity: borrowLimitedByLiquidity, currentExceeded: true })}</>
             )}
           </p>
           {simulation.borrow.hasInput &&
@@ -1156,7 +1429,7 @@ const SimulationSubRow = ({
             <div className="w-px h-4 bg-border/60" />
             <div className="flex items-center gap-1.5">
               <span className={`ds-text-12 font-bold ${middleColumnWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+              <span className={`ds-text-12 tabular-nums ${middleColumnWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
                 {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
                   <>
@@ -1191,11 +1464,11 @@ const SimulationSubRow = ({
             ref={gridRef}
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
-            <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
+            <div data-disabled={supplySideBlocked ? 'true' : undefined} className="group flex min-w-0 flex-col overflow-hidden">
+              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
-            <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows)}
+            <div data-disabled={borrowSideBlocked ? 'true' : undefined} className="group flex min-w-0 flex-col overflow-hidden">
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}
@@ -1205,25 +1478,16 @@ const SimulationSubRow = ({
       )}
 
       {/* Footer notes */}
-      {(simulation.reserveRateInputLoading || simulation.reserveRateInputError || simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
+      {(simulation.forecastLoading || showPriceMissingNotice || ((simulation.supply.hasInput || simulation.borrow.hasInput) && simulation.forecastUnavailableCampaignCount > 0)) && (
         <div className={`mt-3 space-y-1 ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
-          {simulation.reserveRateInputLoading && !showEmptyStateNote && (
-            <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
-          )}
-          {simulation.reserveRateInputError && !showEmptyStateNote && (
-            <p className="ds-text-11 text-amber-600">
-              Native simulation unavailable: {simulation.reserveRateInputError instanceof Error ? simulation.reserveRateInputError.message : 'failed to fetch'}
-            </p>
-          )}
-          {!showEmptyStateNote && !simulation.hasRateInput && !simulation.reserveRateInputLoading && !simulation.reserveRateInputError && (
-            <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
-          )}
           {simulation.forecastLoading && <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast...</p>}
           {showPriceMissingNotice && (
             <p className="ds-text-11 text-muted-foreground">Price unavailable for {reserve.tokenSymbol}; using current supply for forecast.</p>
           )}
-          {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
-            <p className="ds-text-11 text-muted-foreground">Some Merkl campaigns have no forecast; using current APR.</p>
+          {!simulation.forecastLoading && (simulation.supply.hasInput || simulation.borrow.hasInput) && simulation.forecastUnavailableCampaignCount > 0 && (
+            <p className="ds-text-11 text-muted-foreground">
+              * No forecast data — using current APR.
+            </p>
           )}
         </div>
       )}

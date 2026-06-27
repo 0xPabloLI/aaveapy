@@ -19,7 +19,11 @@ describe('ReservesTableDesktopHeader', () => {
             sizeSortMode="supply"
             sizeSortOrder="desc"
             sizeSortActiveHeadingClass="ds-text-emerald-600 font-bold scale-105"
+            utilSortMode="util"
             utilSortOrder="desc"
+            showUtilSortMenu={false}
+            utilMenuPos={null}
+            utilSortButtonRef={createRef<HTMLButtonElement>()}
             supplySortLabel="Incentive"
             supplySortMode="incentive"
             supplySortOrder="desc"
@@ -31,22 +35,17 @@ describe('ReservesTableDesktopHeader', () => {
             showBorrowSortMenu={false}
             borrowMenuPos={null}
             spreadSortOrder="desc"
-            showSizeSortMenu={false}
-            sizeMenuPos={null}
-            sizeSortButtonRef={createRef<HTMLButtonElement>()}
             supplySortButtonRef={createRef<HTMLButtonElement>()}
             borrowSortButtonRef={createRef<HTMLButtonElement>()}
             onSortToken={() => {}}
             onSortMarket={() => {}}
             onSortPrice={() => {}}
-            onSortUtil={() => {}}
+            onSortSizeDefault={() => {}}
+            onToggleUtilMenu={() => {}}
+            onCloseUtilMenu={() => {}}
+            onSelectUtilSortUtil={() => {}}
+            onSelectUtilSortLiquidity={() => {}}
             onToggleSpreadSort={() => {}}
-            onToggleSizeMenu={() => {}}
-            onCloseSizeMenu={() => {}}
-            onSelectSizeSortSupply={() => {}}
-            onSelectSizeSortBorrow={() => {}}
-            onSelectSizeSortDeficitAmount={() => {}}
-            onSelectSizeSortDeficitRatio={() => {}}
             onToggleSupplyMenu={() => {}}
             onCloseSupplyMenu={() => {}}
             onSelectSupplySortTotal={() => {}}

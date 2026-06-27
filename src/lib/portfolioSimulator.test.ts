@@ -1,0 +1,984 @@
+import { describe, it, expect } from 'vitest';
+import type { ReserveWithSpread } from '@/types/aave';
+import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
+import type { RateCalcInput } from '@/lib/interestRateCalculator';
+import type { SimulationLane } from '@/lib/rateSimulationCalculator';
+import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
+import { buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
+import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
+
+const makeRateCalcReserve = (
+  overrides: Partial<ReserveWithSpread> = {},
+): ReserveWithSpread & RateCalcInput =>
+  ({
+    reserveId: 'r-usdc-v3',
+    marketName: 'AaveV3Ethereum',
+    chainName: 'Ethereum',
+    chainId: 1,
+    tokenSymbol: 'USDC',
+    tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    aTokenAddress: '0x0000000000000000000000000000000000000002',
+    vTokenAddress: '0x0000000000000000000000000000000000000003',
+    decimals: 6,
+    tokenPrice: 1,
+    supplied: '50000000000000',
+    borrowed: '20000000000000',
+    liquidity: '30000000000000',
+    deficit: '0',
+    supplyCap: '100000000000000',
+    borrowCap: '80000000000000',
+    suppliable: '50000000000000',
+    borrowable: '60000000000000',
+    protocolFee: 10,
+    slopeBelowOptimal: 4,
+    slopeAboveOptimal: 75,
+    baseBorrowRate: 0,
+    optimalUtilization: 80,
+    supplyApy: 2.5,
+    borrowApy: 4.8,
+    utilizationPct: 40,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+    ...overrides,
+  }) as ReserveWithSpread & RateCalcInput;
+
+const emptySide: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
+
+const makeEntry = (
+  overrides: Partial<PortfolioReserveEntry> = {},
+): PortfolioReserveEntry => ({
+  reserveId: 'r-usdc-v3',
+  marketName: 'AaveV3Ethereum',
+  chainName: 'Ethereum',
+  tokenSymbol: 'USDC',
+  supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+  borrow: { ...emptySide },
+  hidden: false,
+  isOrphan: false,
+  ...overrides,
+});
+
+const baseEntriesSimArgs = (
+  overrides: Partial<SimulatePortfolioEntriesArgs> = {},
+): SimulatePortfolioEntriesArgs => ({
+  entries: [],
+  reserves: [],
+  isApy: true,
+  whitelistMerklCampaignIds: undefined,
+  tydroPointToUsdRate: 0,
+  forecastStates: {},
+  ...overrides,
+});
+
+describe('buildPerReserveInputsFromEntries', () => {
+  it('aggregates supply+borrow USD per reserveId', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { amount: '500', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [
+      makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
+      makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.get('r-usdc')).toEqual({
+      supplyInput: '1000',
+      borrowInput: '500',
+      inputMode: 'usd',
+      totalSupplyUsd: 1000,
+      totalBorrowUsd: 500,
+    });
+    expect(result.get('r-weth')).toEqual({
+      supplyInput: '2000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      totalSupplyUsd: 2000,
+      totalBorrowUsd: 0,
+    });
+  });
+
+  it('returns empty map for empty entries', () => {
+    const result = buildPerReserveInputsFromEntries([], [makeRateCalcReserve()]);
+    expect(result.size).toBe(0);
+  });
+
+  it('skips entries with zero or invalid amount', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { amount: '0', inputMode: 'usd', walletValue: null }, borrow: { amount: 'abc', inputMode: 'usd', walletValue: null } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('skips entries whose reserve is not found', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-missing', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('defaults borrowInput to "0" when only supply exists', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { amount: '3000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 3000, totalBorrowUsd: 0 });
+  });
+
+  it('defaults supplyInput to "0" when only borrow exists', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 2000 });
+  });
+
+  it('resolves token amount to USD using tokenPrice', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2', inputMode: 'token', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 6000, totalBorrowUsd: 0 });
+  });
+
+  it('ignores hidden entries', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', hidden: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('ignores orphan entries', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', isOrphan: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('builds per-reserve inputs from supply side', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.has(reserveId)).toBe(true);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('5000');
+    expect(input.borrowInput).toBe('0');
+    expect(input.inputMode).toBe('usd');
+    expect(input.totalSupplyUsd).toBe(5000);
+    expect(input.totalBorrowUsd).toBe(0);
+  });
+
+  it('builds per-reserve inputs from borrow side', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.has(reserveId)).toBe(true);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.borrowInput).toBe('3000');
+    expect(input.inputMode).toBe('usd');
+    expect(input.totalSupplyUsd).toBe(0);
+    expect(input.totalBorrowUsd).toBe(3000);
+  });
+
+  it('combines supply and borrow on same reserve', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('5000');
+    expect(input.borrowInput).toBe('3000');
+    expect(input.totalSupplyUsd).toBe(5000);
+    expect(input.totalBorrowUsd).toBe(3000);
+  });
+
+  it('returns empty map when no entries match reserves', () => {
+    const reserve = makeRateCalcReserve({ reserveId: 'r-usdc-v3' });
+    const entries = [
+      makeEntry({ reserveId: 'r-dai-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.size).toBe(0);
+  });
+
+  it('handles multiple reserves independently', () => {
+    const usdcId = 'r-usdc-v3';
+    const usdtId = 'r-usdt-v3';
+    const usdcReserve = makeRateCalcReserve({ reserveId: usdcId, tokenSymbol: 'USDC' });
+    const usdtReserve = makeRateCalcReserve({ reserveId: usdtId, tokenSymbol: 'USDT' });
+    const entries = [
+      makeEntry({ reserveId: usdcId, tokenSymbol: 'USDC', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: usdtId, tokenSymbol: 'USDT', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [usdcReserve, usdtReserve]);
+    expect(result.get(usdcId)!.supplyInput).toBe('5000');
+    expect(result.get(usdcId)!.borrowInput).toBe('0');
+    expect(result.get(usdcId)!.totalSupplyUsd).toBe(5000);
+    expect(result.get(usdcId)!.totalBorrowUsd).toBe(0);
+    expect(result.get(usdtId)!.supplyInput).toBe('0');
+    expect(result.get(usdtId)!.borrowInput).toBe('2000');
+    expect(result.get(usdtId)!.totalSupplyUsd).toBe(0);
+    expect(result.get(usdtId)!.totalBorrowUsd).toBe(2000);
+  });
+
+  it('wallet position with empty amount: delta=0, totalSupplyUsd=walletValue', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.totalSupplyUsd).toBe(1042);
+  });
+
+  it('wallet supply + borrow delta on same reserve: totalSupplyUsd and totalBorrowUsd both recorded', () => {
+    const reserveId = 'r-weth';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 3000 });
+    const entries = [
+      makeEntry({ reserveId, tokenSymbol: 'WETH', supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { amount: '1', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.totalSupplyUsd).toBe(1042);
+    expect(input.borrowInput).toBe('1');
+    expect(input.totalBorrowUsd).toBe(1);
+  });
+
+  it('wallet position unchanged: delta=0, principal=walletValue', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.totalSupplyUsd).toBe(1000);
+  });
+
+  it('wallet position with top-up: delta=positive, principal=effectiveAmount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('500');
+    expect(input.totalSupplyUsd).toBe(1500);
+  });
+
+  it('wallet position with partial withdrawal: delta=negative, principal=effectiveAmount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('-500');
+    expect(input.totalSupplyUsd).toBe(500);
+  });
+
+  it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('2000');
+    expect(input.totalSupplyUsd).toBe(2000);
+  });
+
+  it('mixed wallet + manual entries on same reserve: deltas aggregated', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('1000');
+    expect(input.totalSupplyUsd).toBe(2000);
+  });
+
+  it('borrow with walletValue: delta and principal separated', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '800', inputMode: 'usd', walletValue: 500 } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.borrowInput).toBe('300');
+    expect(input.totalBorrowUsd).toBe(800);
+  });
+});
+
+describe('simulatePortfolioFromEntries', () => {
+  it('v3: borrow increases utilization b supply afterNative rises', () => {
+    const reserve = makeRateCalcReserve();
+    const baseEntries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const withBorrow = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const baseArgs = baseEntriesSimArgs({ entries: baseEntries, reserves: [reserve] });
+    const coupledArgs = baseEntriesSimArgs({ entries: withBorrow, reserves: [reserve] });
+    const baseResult = simulatePortfolioFromEntries(baseArgs);
+    const coupledResult = simulatePortfolioFromEntries(coupledArgs);
+    const baseSupply = baseResult.results.find((r) => r.side === 'supply')!;
+    const coupledSupply = coupledResult.results.find((r) => r.side === 'supply')!;
+    expect(coupledSupply.nativePercent).toBeGreaterThan(baseSupply.nativePercent);
+  });
+
+  it('v3: borrow increases utilization b borrow afterNative rises', () => {
+    const reserve = makeRateCalcReserve();
+    const smallBorrow = [
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const largeBorrow = [
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const smallArgs = baseEntriesSimArgs({ entries: smallBorrow, reserves: [reserve] });
+    const largeArgs = baseEntriesSimArgs({ entries: largeBorrow, reserves: [reserve] });
+    const smallResult = simulatePortfolioFromEntries(smallArgs);
+    const largeResult = simulatePortfolioFromEntries(largeArgs);
+    expect(largeResult.results[0].nativePercent).toBeGreaterThan(
+      smallResult.results[0].nativePercent,
+    );
+  });
+
+  it('v4 Hub: hubAggregationMap raises supply rate vs per-spoke baseline', () => {
+    const reserve = makeRateCalcReserve({
+      reserveId: 'r-usdc-v4',
+      hubId: 'hub-usdc',
+      hubName: 'usdc-hub',
+      hubAddress: '0xHub',
+    });
+    const hubAggregationMap = new Map([
+      [
+        'hub-usdc:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        { hubBorrowed: '40000000000000', hubSupplied: '60000000000000' },
+      ],
+    ]);
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc-v4', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const hubArgs = baseEntriesSimArgs({ entries, reserves: [reserve], hubAggregationMap });
+    const perSpokeResult = simulatePortfolioFromEntries(perSpokeArgs);
+    const hubResult = simulatePortfolioFromEntries(hubArgs);
+    const perSpokeSupply = perSpokeResult.results.find((r) => r.side === 'supply')!;
+    const hubSupply = hubResult.results.find((r) => r.side === 'supply')!;
+    expect(hubSupply.nativePercent).toBeGreaterThan(perSpokeSupply.nativePercent);
+  });
+
+  it('fallback: reserve without rate calc fields uses baseline APY', () => {
+    const reserve = {
+      reserveId: 'r-no-calc',
+      marketName: 'Test',
+      chainName: 'Test',
+      tokenSymbol: 'USDC',
+      supplyApy: 3.0,
+      borrowApy: 5.0,
+      supplyIncentives: [0.5],
+      borrowIncentives: [],
+      tokenPrice: 1,
+    } as ReserveWithSpread;
+    const entries = [
+      makeEntry({
+        reserveId: 'r-no-calc',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toHaveLength(1);
+    expect(results[0].nativePercent).toBe(3.0);
+    expect(results[0].incentivePercent).toBe(0.5);
+  });
+
+  it('multiple reserves compute independently', () => {
+    const usdcReserve = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      supplyApy: 2.5,
+      borrowApy: 4.8,
+    });
+    const wethReserve = makeRateCalcReserve({
+      reserveId: 'r-weth',
+      tokenSymbol: 'WETH',
+      tokenPrice: 3000,
+      supplyApy: 1.2,
+      borrowApy: 3.5,
+    });
+    const entries = [
+      makeEntry({
+        reserveId: 'r-usdc',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-weth',
+        supply: { ...emptySide },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+    ];
+    const args = baseEntriesSimArgs({
+      entries,
+      reserves: [usdcReserve, wethReserve],
+    });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toHaveLength(2);
+    const usdcResult = results.find((r) => r.reserveId === 'r-usdc');
+    const wethResult = results.find((r) => r.reserveId === 'r-weth');
+    expect(usdcResult).toBeDefined();
+    expect(wethResult).toBeDefined();
+    expect(usdcResult!.nativePercent).toBeGreaterThan(0);
+    expect(wethResult!.nativePercent).toBeGreaterThan(0);
+  });
+
+  it('pure borrow without supply position', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({
+        supply: { ...emptySide },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toHaveLength(1);
+    expect(results[0].side).toBe('borrow');
+    expect(results[0].nativePercent).toBeGreaterThan(0);
+    expect(results[0].amountUsd).toBe(5000);
+  });
+
+  it('empty entries returns empty results', () => {
+    const args = baseEntriesSimArgs({ entries: [], reserves: [makeRateCalcReserve()] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+    expect(summary.totalSupplyUsd).toBe(0);
+    expect(summary.totalBorrowUsd).toBe(0);
+  });
+
+  it('skips entries with zero amount', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '0', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
+
+  it('skips entries whose reserve is not found', () => {
+    const reserve = makeRateCalcReserve({ reserveId: 'r-exists' });
+    const entries = [
+      makeEntry({ reserveId: 'r-missing', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
+
+  it('skips hidden entries from results and summary', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
+      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: true }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results).toHaveLength(1);
+    expect(summary.totalSupplyUsd).toBe(10000);
+  });
+
+  it('mixed hidden + visible entries: summary excludes hidden contribution', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null }, hidden: true }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results).toHaveLength(1);
+    expect(results[0].side).toBe('supply');
+    expect(summary.totalBorrowUsd).toBe(0);
+    expect(summary.totalSupplyUsd).toBe(10000);
+  });
+
+  it('computes results from entries with supply and borrow', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results.length).toBeGreaterThan(0);
+    expect(summary.totalSupplyUsd).toBeGreaterThan(0);
+    expect(summary.totalBorrowUsd).toBeGreaterThan(0);
+  });
+
+  it('skips hidden entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ hidden: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
+
+  it('skips orphan entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ isOrphan: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
+
+  describe('cross-reserve net position constraint', () => {
+    it('equal supply+borrow across reserves b Merkl incentive fully offset', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-1';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+        merklBorrows: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 5, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+          },
+        ],
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId: `${campaignId}-s`, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+            netPositionConstraint: {
+              sourceSide: 'supply',
+              offsetReserveIds: [usdcReserveId],
+            },
+          },
+        ],
+      });
+
+      const entries = [
+        makeEntry({
+          reserveId: usdtReserveId,
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+        makeEntry({
+          reserveId: usdcReserveId,
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply');
+      expect(usdtSupply).toBeDefined();
+      expect(usdtSupply!.incentivePercent).toBe(0);
+    });
+
+    it('partial offset b Merkl incentive partially reduced', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-2';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+            netPositionConstraint: {
+              sourceSide: 'supply',
+              offsetReserveIds: [usdcReserveId],
+            },
+          },
+        ],
+      });
+
+      const noBorrowEntries = [
+        makeEntry({
+          reserveId: usdtReserveId,
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const withBorrowEntries = [
+        makeEntry({
+          reserveId: usdtReserveId,
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+        makeEntry({
+          reserveId: usdcReserveId,
+          supply: { ...emptySide },
+          borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+
+      const noBorrowArgs = baseEntriesSimArgs({ entries: noBorrowEntries, reserves: [usdtReserve, usdcReserve] });
+      const withBorrowArgs = baseEntriesSimArgs({ entries: withBorrowEntries, reserves: [usdtReserve, usdcReserve] });
+
+      const noBorrowResult = simulatePortfolioFromEntries(noBorrowArgs);
+      const withBorrowResult = simulatePortfolioFromEntries(withBorrowArgs);
+
+      const noBorrowSupply = noBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+      const withBorrowSupply = withBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+
+      expect(noBorrowSupply.incentivePercent).toBeGreaterThan(0);
+      expect(withBorrowSupply.incentivePercent).toBeGreaterThan(0);
+      expect(withBorrowSupply.incentivePercent).toBeLessThan(noBorrowSupply.incentivePercent);
+    });
+
+    it('no netPositionConstraint b Merkl incentive unaffected by cross-reserve borrow', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-3';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+          },
+        ],
+      });
+
+      const entries = [
+        makeEntry({
+          reserveId: usdtReserveId,
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+        makeEntry({
+          reserveId: usdcReserveId,
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+      expect(usdtSupply.incentivePercent).toBeGreaterThan(0);
+    });
+  });
+  describe('supply wallet-only position with borrow delta (AAV-761 regression)', () => {
+    it('supply has no delta but wallet position exists b supply.incentivePercent shows currentIncentive', () => {
+      const reserveId = 'r-usdc';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const reserve = makeRateCalcReserve({
+        reserveId,
+        tokenPrice: 1,
+        meritSupplys: [
+          {
+            link: 'https://merit.example/campaign',
+            breakdowns: [
+              {
+                campaignApr: 5,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-1',
+              },
+            ],
+          },
+        ],
+      });
+
+      const entries = [
+        makeEntry({
+          reserveId,
+          supply: { amount: '1042', inputMode: 'usd', walletValue: 1042 },
+          borrow: { amount: '1', inputMode: 'usd', walletValue: 1 },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply');
+      expect(supplyResult).toBeDefined();
+      // supply delta = 1042 - 1042 = 0 b hasSupplyInput = false b should show current incentive
+      expect(supplyResult!.incentivePercent).toBeGreaterThan(0);
+
+      const expectedCurrent = buildIncentiveCurrent(
+        reserve, 'supply', true, 0, undefined, {}, undefined,
+        1042, undefined, undefined, undefined,
+      );
+      expect(supplyResult!.incentivePercent).toBeCloseTo(expectedCurrent, 2);
+    });
+
+    it('supply has no delta but wallet position b hasInput=false and afterIncentive is null', () => {
+      const reserveId = 'r-usdc';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const reserve = makeRateCalcReserve({
+        reserveId,
+        tokenPrice: 1,
+        meritSupplys: [
+          {
+            link: 'https://merit.example/campaign',
+            breakdowns: [
+              {
+                campaignApr: 3,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-2',
+              },
+            ],
+          },
+        ],
+      });
+
+      const entries = [
+        makeEntry({
+          reserveId,
+          supply: { amount: '5000', inputMode: 'usd', walletValue: 5000 },
+          borrow: { ...emptySide },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
+      expect(supplyResult).toBeDefined();
+      // hasInput = false b incentivePercent must equal currentIncentive from buildIncentiveCurrent
+      // Note: exact value differs slightly due to anchor TVL from hub aggregation vs direct call
+      const expectedCurrent = buildIncentiveCurrent(
+        reserve, 'supply', true, 0, undefined, {}, undefined,
+        5000, undefined, undefined, undefined,
+      );
+      expect(supplyResult.incentivePercent).toBeCloseTo(expectedCurrent, 2);
+      expect(supplyResult.incentivePercent).toBeGreaterThan(0);
+    });
+
+    it('wallet-only with position cap Merit: incentiveMetric.delta shows wallet dilution (AAV-771)', () => {
+      const reserveId = 'r-selfcap';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      // selfCap = $1,000, wallet = $1,500 → current is diluted
+      const reserve = makeRateCalcReserve({
+        reserveId,
+        tokenPrice: 1,
+        tokenSymbol: 'USDT',
+        chainName: 'Celo',
+        supplied: '1000000000', // 1000 tokens
+        meritSupplys: [
+          {
+            link: 'https://merit.example/campaign',
+            name: 'Merit Self Cap',
+            message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
+            breakdowns: [
+              {
+                campaignApr: 10,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-base-3',
+              },
+              {
+                campaignApr: 8,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+                campaignId: 'merit-self-3',
+                positionCap: 1000,
+              },
+            ],
+          },
+        ],
+      });
+
+      // Wallet-only entry: amount='', walletValue=1500
+      const entries = [
+        makeEntry({
+          reserveId,
+          tokenSymbol: 'USDT',
+          chainName: 'Celo',
+          supply: { amount: '', inputMode: 'usd', walletValue: 1500 },
+          borrow: { ...emptySide },
+        }),
+      ];
+
+      const args = baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false });
+      const { results } = simulatePortfolioFromEntries(args);
+
+      const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
+      expect(supplyResult).toBeDefined();
+
+      // Wallet dilution: deltaIncentive = currentIncentive - headlineIncentive < 0
+      expect(supplyResult.incentiveMetric).toBeDefined();
+      expect(supplyResult.incentiveMetric!.delta).not.toBeNull();
+      expect(supplyResult.incentiveMetric!.delta!).toBeLessThan(0);
+    });
+  });
+});
+
+const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
+  hasInput: true,
+  inputAmount: 10000,
+  inputUsd: 10000,
+  currentNative: 2.8,
+  currentIncentive: 0.9,
+  headlineIncentive: 0.9,
+  currentTotal: 3.7,
+  afterNative: 3.0,
+  afterIncentive: 1.0,
+  afterTotal: 4.0,
+  deltaNative: 0.2,
+  deltaIncentive: 0.1,
+  deltaTotal: 0.3,
+  sources: {
+    protocol: { current: 0, after: 0, delta: 0 },
+    merit: { current: 0, after: 0, delta: 0 },
+    merkl: { current: 0, after: 0, delta: 0 },
+    brevis: { current: 0, after: 0, delta: 0 },
+  },
+  ...overrides,
+});
+
+describe('buildMetricsFromLane', () => {
+  it('extracts native/incentive/total metrics from lane', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.nativeMetric).toEqual({ current: 2.8, after: 3.0, delta: 0.2 });
+    expect(metrics.incentiveMetric).toEqual({ current: 0.9, after: 1.0, delta: 0.1 });
+    expect(metrics.totalMetric).toEqual({ current: 3.7, after: 4.0, delta: 0.3 });
+  });
+
+  it('computes usdPerDayMetric from current and after rates', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.usdPerDayMetric).toBeDefined();
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      (10000 * 3.0 / 100 / 365) + (10000 * 1.0 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
+      metrics.usdPerDayMetric!.after - metrics.usdPerDayMetric!.current,
+      6,
+    );
+  });
+
+  it('computes borrow usdPerDayMetric with correct sign', () => {
+    const lane = makeLane({ currentNative: 5, afterNative: 6, deltaNative: 1, currentIncentive: 0.5, afterIncentive: 0.6, deltaIncentive: 0.1 });
+    const metrics = buildMetricsFromLane(lane, 'borrow', 10000);
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      -(10000 * 5 / 100 / 365) + (10000 * 0.5 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      -(10000 * 6 / 100 / 365) + (10000 * 0.6 / 100 / 365),
+      6,
+    );
+  });
+
+  it('handles null native rates in usdPerDayMetric', () => {
+    const lane = makeLane({ currentNative: null, afterNative: null, deltaNative: null });
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.nativeMetric!.current).toBeNull();
+    expect(metrics.usdPerDayMetric).toBeDefined();
+  });
+
+  it('passes through deltaIncentive even when hasInput=false (AAV-761 dilution gap)', () => {
+    const lane = makeLane({
+      hasInput: false,
+      currentIncentive: 0.9,
+      afterIncentive: 0,
+      deltaIncentive: -0.3,
+      currentTotal: 3.7,
+      afterTotal: 2.8,
+      deltaTotal: -0.9,
+    });
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000);
+    expect(metrics.incentiveMetric.current).toBe(0.9);
+    expect(metrics.incentiveMetric.after).toBeNull();
+    // deltaIncentive is passed through even when hasInput=false — shows wallet dilution gap
+    expect(metrics.incentiveMetric.delta).toBe(-0.3);
+    expect(metrics.totalMetric.current).toBe(3.7);
+    expect(metrics.totalMetric.after).toBeNull();
+    // total delta is still gated by hasInput (no user input = no total delta)
+    expect(metrics.totalMetric.delta).toBeNull();
+    expect(metrics.usdPerDayMetric.after).toBeNull();
+    expect(metrics.usdPerDayMetric.delta).toBeNull();
+  });
+});

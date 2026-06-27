@@ -1,116 +1,160 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
-import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 import {
-  formatPercent,
-  formatSpread,
-  formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
-  getReserveIncentiveValues,
-  resolveVisibleIncentiveBadgeValue,
-} from '@/lib/formatters';
+} from '@/lib/rateCalculations';
+import { formatPercent, formatSpread, formatUsd } from '@/lib/formatters';
+import { getReserveIncentiveValues, resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
-import { compareIncentiveWithNative } from '@/lib/sorters';
+import { sortReserves, type ReserveSortConfig, type ReserveSortValueGetters } from '@/lib/reservesSorter';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
-import ReservesTableTooltipOverlay, { type TooltipState } from './ReservesTableTooltipOverlay';
+import ReservesTableTooltipOverlay from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
 import ReservesTableMobileGrid from './ReservesTableMobileGrid';
 import ReservesTableMobileSortBar, {
-  type MobileSortMenuKey,
   type MobileSortOption,
 } from './ReservesTableMobileSortBar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
-import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 import {
-  scrollExpandedSimulationIntoView,
-  shouldScrollExpandedSimulationIntoView,
-} from '@/lib/scrollExpandedSimulationIntoView';
-import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
+  useReservesTableSort,
+  selectSortOption,
+  toggleSortOrder,
+  toggleSortOrderAscFirst,
+  type SortMode,
+  type SortableColumn,
+} from '@/hooks/reserves-table/useReservesTableSort';
+import { buildSortActions, type SortActions } from '@/hooks/reserves-table/buildSortActions';
+import {
+  useReservesPagination,
+  DEFAULT_VISIBLE_COUNT,
+} from '@/hooks/reserves-table/useReservesPagination';
+import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
+import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
+import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
+import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves-table/usePortfolioToggle';
+import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
+import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
+import { buildPerReserveInputsFromEntries } from '@/lib/portfolioSimulator';
+import { parseNumberInput } from '@/lib/numberFormat';
+import type { PointRateMap } from '@/lib/tydro';
+import type { ReservePositions } from '@/lib/netLendingCrossReserve';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import { getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
+
+import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import { extractCapWarnings, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
+import PortfolioPanel from './PortfolioPanel';
+import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
+  allReserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
+  /** Portfolio simulation mode. */
+  simulationMode?: SimulationMode;
+  onSimulationModeChange?: (mode: SimulationMode) => void;
+  portfolioEntries?: PortfolioReserveEntry[];
+  portfolioActions?: PortfolioSimulationActions;
+  portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  onWalletSync?: () => void;
+  walletLoadState?: WalletLoadState;
+  onRefresh?: () => Promise<void>;
+  dataUpdatedAt?: number;
+  topOppsRef?: React.RefObject<HTMLDivElement | null>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
-type SortMode = 'total' | 'native' | 'incentive';
-
-type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-
-const DEFAULT_VISIBLE_COUNT = 20;
+// Stable sentinel used as a gate dependency for `sortedData` when the active
+// sort column does not read simulation values. Sharing one frozen reference
+// across renders lets `useMemo` skip recomputing on simulation churn.
+const EMPTY_SIMULATIONS_GATE: Readonly<Record<string, unknown>> = Object.freeze({});
 
 const ReservesTable = ({
   reserves,
+  allReserves,
   sortField,
   sortOrder,
   onSort,
   isApy,
   isLoading,
   onSelectMarket,
+  onSelectHub,
   tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
   tokenPrices,
   scrollToReserveId,
+  simulationMode = 'single',
+  onSimulationModeChange,
+  portfolioEntries,
+  portfolioActions,
+  portfolioSnapshots,
+  onWalletSync,
+  walletLoadState,
+  onRefresh,
+  dataUpdatedAt,
+  topOppsRef,
+  campaignAccessStatuses,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
-  const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount'>('supply');
-  const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
-  const sizeSortButtonRef = useRef<HTMLButtonElement>(null);
-  const [sizeMenuPos, setSizeMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
-  const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
-  const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
-  const [borrowSortOrder, setBorrowSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
-  const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
-  const [showExtraSortMenu, setShowExtraSortMenu] = useState(false);
-  const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
-  const supplySortButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Extract forecastStates from side-data (React Query cache — no extra fetch).
+  const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  const forecastStates = useMemo<Record<string, MerklForecastWireItem>>(() => {
+    const forecast = sideDataMetaQuery.data?.forecast;
+    if (!forecast) return {};
+    const states: Record<string, MerklForecastWireItem> = {};
+    forecast.items.forEach((item) => { states[item.campaignId] = item; });
+    return states;
+  }, [sideDataMetaQuery.data?.forecast]);
+
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
-  const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
-  const scenarioPinScheduleTokenRef = useRef(0);
-  const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
-  const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
-  const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
-  const suppressNextToggleReserveIdRef = useRef<string | null>(null);
-  const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
-  const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
-  const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
+  const {
+    expandedReserveId,
+    setExpandedReserveId,
+    collapseExpanded: collapseExpandedOnSort,
+    handleToggleExpand,
+    suppressNextToggleReserveIdRef,
+  } = useReserveExpansion({ isMobile });
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
-  const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const [sharedInputMode, setSharedInputMode] = useState<ScenarioInputMode>('usd');
   const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
-  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
+  const [mobileNetOpen, setMobileNetOpen] = useState(false);
+  const handleMobileNetToggle = useCallback(() => setMobileNetOpen(prev => !prev), []);
+  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
     setSharedInputMode(mode);
@@ -124,128 +168,141 @@ const ReservesTable = ({
     scenarioControlsRef.current?.setBorrowInput(correctedValue);
   }, []);
 
-  useEffect(() => {
-    if (showBorrowSortMenu && borrowSortButtonRef.current) {
-      const rect = borrowSortButtonRef.current.getBoundingClientRect();
-      setBorrowMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
+  const sortState = useReservesTableSort({ collapseExpanded: collapseExpandedOnSort });
+  const {
+    activeSortColumn,
+    setActiveSortColumn,
+    tokenSortOrder,
+    setTokenSortOrder,
+    marketSortOrder,
+    setMarketSortOrder,
+    priceSortOrder,
+    setPriceSortOrder,
+    sizeSortMode,
+    setSizeSortMode,
+    sizeSortOrder,
+    setSizeSortOrder,
+    utilSortOrder,
+    setUtilSortOrder,
+    utilSortMode,
+    setUtilSortMode,
+    supplySortMode,
+    setSupplySortMode,
+    supplySortOrder,
+    setSupplySortOrder,
+    borrowSortMode,
+    setBorrowSortMode,
+    borrowSortOrder,
+    setBorrowSortOrder,
+    spreadSortOrder,
+    setSpreadSortOrder,
+    showUtilSortMenu,
+    setShowUtilSortMenu,
+    utilSortButtonRef,
+    utilMenuPos,
+    showSupplySortMenu,
+    setShowSupplySortMenu,
+    supplySortButtonRef,
+    supplyMenuPos,
+    showBorrowSortMenu,
+    setShowBorrowSortMenu,
+    borrowSortButtonRef,
+    borrowMenuPos,
+    showSizeSortMenu,
+    showExtraSortMenu,
+    setShowExtraSortMenu,
+    handleSortToken,
+    handleSortMarket,
+    handleSortPrice,
+    handleSortSize,
+    handleSortUtil,
+    closeAllMobileSortMenus,
+    toggleMobileSortMenu,
+  } = sortState;
+
+  const sortActions = buildSortActions({
+    activeSortColumn,
+    sizeSortMode,
+    sizeSortOrder,
+    utilSortMode,
+    utilSortOrder,
+    setSizeSortMode,
+    setSizeSortOrder,
+    setUtilSortMode,
+    setUtilSortOrder,
+    setActiveSortColumn,
+    collapseExpandedOnSort,
+  });
+
+  const {
+    tooltipState,
+    handleIncentiveClick,
+    closeTooltip,
+  } = useReservesTooltip();
+
+  const crossReservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
+    const rawSupply = parseNumberInput(debouncedSharedSupplyInput);
+    const rawBorrow = parseNumberInput(debouncedSharedBorrowInput);
+    if (rawSupply === 0 && rawBorrow === 0) return undefined;
+    const map = new Map<string, ReservePositions>();
+    for (const r of reserves) {
+      const tp = r.tokenPrice ?? 0;
+      const supplyUsd = sharedInputMode === 'usd' ? rawSupply : rawSupply * tp;
+      const borrowUsd = sharedInputMode === 'usd' ? rawBorrow : rawBorrow * tp;
+      if (supplyUsd > 0 || borrowUsd > 0) {
+        map.set(r.reserveId, { supplyUsd, borrowUsd });
+      }
     }
-  }, [showBorrowSortMenu]);
+    return map.size > 0 ? map : undefined;
+  }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode]);
 
-  useEffect(() => {
-    if (showSupplySortMenu && supplySortButtonRef.current) {
-      const rect = supplySortButtonRef.current.getBoundingClientRect();
-      setSupplyMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
+  const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
+    if (!crossReservePositions) return undefined;
+    const map = new Map<string, string>();
+    for (const r of reserves) {
+      if (r.tokenSymbol) map.set(r.reserveId, r.tokenSymbol);
     }
-  }, [showSupplySortMenu]);
+    return map.size > 0 ? map : undefined;
+  }, [reserves, crossReservePositions]);
 
-  useEffect(() => {
-    if (showSizeSortMenu && sizeSortButtonRef.current) {
-      const rect = sizeSortButtonRef.current.getBoundingClientRect();
-      setSizeMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showSizeSortMenu]);
+  const isPortfolioMode = simulationMode === 'portfolio';
 
-  const handleToggleExpand = useCallback((reserveId: string) => {
-    if (suppressNextToggleReserveIdRef.current === reserveId) {
-      suppressNextToggleReserveIdRef.current = null;
-      return;
-    }
-    setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
-  }, []);
+  const perReserveInputs = useMemo(
+    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
+    [isPortfolioMode, portfolioEntries, reserves],
+  );
 
-  const handleMarketChipClick = useCallback((reserveId: string) => {
-    // Keep the clicked row expanded across filter updates and ignore a bubbled row toggle once.
-    suppressNextToggleReserveIdRef.current = reserveId;
-    pendingMarketFilterPinReserveIdRef.current = reserveId;
-    setExpandedReserveId(reserveId);
-  }, []);
-
-  const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
-
-  const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
+  const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     tokenPrices,
-    supplyInput: debouncedSharedSupplyInput,
-    borrowInput: debouncedSharedBorrowInput,
+    supplyInput: isPortfolioMode ? '' : debouncedSharedSupplyInput,
+    borrowInput: isPortfolioMode ? '' : debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
     meritMerklNetPosition,
+    crossReservePositions,
+    reserveSymbolById,
+    perReserveInputs,
   });
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
   const expandScrollFollowsScenarioSort = useMemo(() => {
-    if (!hasSharedScenario) return false;
+    if (!hasScenarioInput) return false;
     const col = activeSortColumn ?? 'supply';
     if (col === 'token' || col === 'market' || col === 'price') return false;
     if (col === 'size' && sizeSortMode !== 'supply') return false;
     return true;
-  }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
+  }, [hasScenarioInput, activeSortColumn, sizeSortMode]);
 
-  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean; onSettled?: () => void }) => {
-    const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
-    const instant = opts?.instant ?? false;
-    const escapeId = (raw: string) => (
-      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw
-    );
-    const escapedId = escapeId(reserveId);
-
-    let cancelled = false;
-    let attempt = 0;
-    const maxAttempts = 12;
-    const retryMs = 70;
-    let finalized = false;
-
-    const finalizeAttempt = () => {
-      if (finalized) return;
-      finalized = true;
-      opts?.onSettled?.();
-    };
-
-    const runAttempt = () => {
-      if (cancelled) return;
-      const anchor = document.querySelector(`[data-reserve-expanded-anchor="${escapedId}"]`);
-      const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
-      if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (cancelled) return;
-            // Keep pin-scroll deterministic: one primary pass + at most one
-            // follow-up correction after layout settles. Repeated corrections
-            // create visible "stair-step" jank on long pages.
-            if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
-              finalizeAttempt();
-              return;
-            }
-            scrollExpandedSimulationIntoView(reserveId, {
-              mode,
-              instant,
-            });
-            finalizeAttempt();
-          });
-        });
-        return;
-      }
-      attempt += 1;
-      if (attempt >= maxAttempts) {
-        finalizeAttempt();
-        return;
-      }
-      window.setTimeout(runAttempt, retryMs);
-    };
-
-    const starter = window.setTimeout(runAttempt, delayMs);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(starter);
-      finalizeAttempt();
-    };
-  }, [isMobile]);
-
-  // Helper: Get incentive values for a reserve (supply or borrow)
+  // Helper: Get incentive values for a reserve (supply or borrow).
+  // `forecastStates` is included here so the fallback path (used when
+  // `simulationsById` is the stable empty object — i.e. no scenario input)
+  // matches the previous behavior of `buildIncentiveCurrent`, which always
+  // factored Merkl forecast adjustments into "current" incentive values.
   const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') =>
-    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds });
+    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, pointRateMap });
 
   // Calculate totals for a reserve (frontend calculates incentive totals from details)
   const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
@@ -284,7 +341,7 @@ const ReservesTable = ({
   const getSimulation = (reserve: ReserveWithSpread) => simulationsById[getReserveSimulationId(reserve)];
 
   const pickScenarioValue = (current: number | null, after: number | null): number | null =>
-    hasSharedScenario ? after ?? current : current;
+    after ?? current;
 
   const getDisplaySupplyTotal = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
@@ -351,13 +408,16 @@ const ReservesTable = ({
   const getDisplayUtilization = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) return reserve.utilizationPct ?? null;
-    return pickScenarioValue(simulation.utilization.current, simulation.utilization.after);
+    const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current ?? null;
+    return pickScenarioValue(baseUtilization, simulation.utilization.after);
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
+    const usd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+    if (usd == null || !Number.isFinite(usd)) return usd ?? null;
     return getScenarioSupplySizeUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      supplyCapUsd: reserve.supplyCapUsd,
+      reserveSizeUsd: usd,
+      supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
       rawSupplyInput: debouncedSharedSupplyInput,
       inputMode: sharedInputMode,
       tokenPrice: getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice,
@@ -365,10 +425,21 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
-    return getReserveTotalBorrowedUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      utilizationPct: reserve.utilizationPct,
-    });
+    const simulation = getSimulation(reserve);
+    return simulation?.marketMetrics.totalBorrowedUsd ?? null;
+  };
+
+  const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    return simulation?.marketMetrics.availableLiquidityUsd ?? null;
+  };
+
+  const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {
+    return getSuppliableUsd(reserve);
+  };
+
+  const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
+    return getBorrowableUsd(reserve);
   };
 
   const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {
@@ -383,254 +454,100 @@ const ReservesTable = ({
     });
   };
 
-  // Sort data based on active column and its sort mode
-  const sortedData = useMemo(() => {
-    return [...reserves].sort((a, b) => {
-      let comparison: number;
+  // Token/market/price sort bodies never read `simulation` — they only compare
+  // raw reserve fields. Gating the simulation dep behind the active sort column
+  // prevents background simulation churn (e.g. price-query refreshes during an
+  // open scenario) from triggering a needless full re-sort + table re-render
+  // when the user is sorting alphabetically or by raw price.
+  const sortNeedsSimulation = useMemo(() => {
+    const col = activeSortColumn ?? 'supply';
+    return col !== 'token' && col !== 'market' && col !== 'price';
+  }, [activeSortColumn]);
+  const sortedDataSimGate = sortNeedsSimulation ? simulationsById : EMPTY_SIMULATIONS_GATE;
 
-      // Default to supply total desc when no column is selected
-      const sortColumn = activeSortColumn ?? 'supply';
+  const sortConfig: ReserveSortConfig = useMemo(() => ({
+    activeSortColumn,
+    tokenSortOrder,
+    marketSortOrder,
+    priceSortOrder,
+    sizeSortMode,
+    sizeSortOrder,
+    utilSortMode,
+    utilSortOrder,
+    supplySortMode,
+    supplySortOrder,
+    borrowSortMode,
+    borrowSortOrder,
+    spreadSortOrder,
+  }), [activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder]);
 
-      if (sortColumn === 'token') {
-        const order = tokenSortOrder === 'asc' ? 1 : -1;
-        return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
-      }
-      if (sortColumn === 'market') {
-        const order = marketSortOrder === 'asc' ? 1 : -1;
-        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
-        if (byMarket !== 0) return order * byMarket;
-        return order * a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
-      }
-      if (sortColumn === 'price') {
-        const aP = a.tokenPrice ?? -Infinity;
-        const bP = b.tokenPrice ?? -Infinity;
-        comparison = aP - bP;
-        return priceSortOrder === 'desc' ? -comparison : comparison;
-      }
-      if (sortColumn === 'size') {
-        if (sizeSortMode === 'borrow') {
-          const aT = getTotalBorrowedUsd(a) ?? -Infinity;
-          const bT = getTotalBorrowedUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitRatio') {
-          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
-          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitAmount') {
-          const aT = getDisplayDeficit(a) ?? -Infinity;
-          const bT = getDisplayDeficit(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else {
-          const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
-          const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        }
-        return sizeSortOrder === 'desc' ? -comparison : comparison;
-      }
-      if (sortColumn === 'util') {
-        const aU = getDisplayUtilization(a) ?? -Infinity;
-        const bU = getDisplayUtilization(b) ?? -Infinity;
-        comparison = aU - bU;
-        return utilSortOrder === 'desc' ? -comparison : comparison;
-      }
-
-      if (sortColumn === 'supply') {
-        // Supply sorting
-        if (supplySortMode === 'native') {
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          if (aNative === null && bNative === null) return 0;
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (supplySortMode === 'incentive') {
-          const aIncentive = getDisplaySupplyIncentive(a);
-          const bIncentive = getDisplaySupplyIncentive(b);
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
-          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
-          return compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            supplySortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-        } else {
-          // Total sorting - use totalSupplyApy (Native + Incentive)
-          const aTotal = getDisplaySupplyTotal(a);
-          const bTotal = getDisplaySupplyTotal(b);
-          if (aTotal === null && bTotal === null) return 0;
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        return supplySortOrder === 'desc' ? comparison : -comparison;
-      } else if (sortColumn === 'borrow') {
-        // Borrow sorting
-        if (borrowSortMode === 'native') {
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          if (aNative === null && bNative === null) return 0;
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (borrowSortMode === 'incentive') {
-          const aIncentive = getDisplayBorrowIncentive(a);
-          const bIncentive = getDisplayBorrowIncentive(b);
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
-          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
-          return compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            borrowSortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-        } else {
-          // Total sorting
-          const aTotal = getDisplayBorrowTotal(a);
-          const bTotal = getDisplayBorrowTotal(b);
-          if (aTotal === null && bTotal === null) return 0;
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        return borrowSortOrder === 'desc' ? comparison : -comparison;
-      } else {
-        // Spread sorting (or default when activeSortColumn is null)
-        const aSpread = getDisplaySpread(a);
-        const bSpread = getDisplaySpread(b);
-        if (aSpread === null && bSpread === null) return 0;
-        if (aSpread === null) return 1;
-        if (bSpread === null) return -1;
-        comparison = bSpread - aSpread;
-        return spreadSortOrder === 'desc' ? comparison : -comparison;
-      }
-    });
+  const valueGetters: ReserveSortValueGetters<ReserveWithSpread> = useMemo(() => ({
+    getReserveId: (r) => r.reserveId,
+    getTokenSymbol: (r) => r.tokenSymbol,
+    getMarketName: (r) => r.marketName,
+    getTokenPrice: (r) => r.tokenPrice,
+    getReserveSizeUsd: getDisplayReserveSizeUsd,
+    getTotalBorrowedUsd,
+    getAvailableToBorrowUsd: getDisplayAvailableToBorrowUsd,
+    getSupplyAvailabilityUsd: getDisplaySupplyAvailabilityUsd,
+    getDeficitRatio: getDisplayDeficitRatio,
+    getDeficitAmount: getDisplayDeficit,
+    getSupplyCapUsd: (r) => {
+      const price = getSimulation(r)?.tokenPrice ?? r.tokenPrice;
+      return nativeToUsd(r.supplyCap, r.decimals, price);
+    },
+    getBorrowCapUsd: (r) => {
+      const price = getSimulation(r)?.tokenPrice ?? r.tokenPrice;
+      return nativeToUsd(r.borrowCap, r.decimals, price);
+    },
+    getAvailableLiquidityUsd: getDisplayLiquidityUsd,
+    getUtilization: getDisplayUtilization,
+    getOptimalUtilization: (r) => r.optimalUtilization,
+    getDisplaySupplyTotal,
+    getDisplaySupplyNative,
+    getDisplaySupplyIncentive,
+    hasSupplyIncentiveSource,
+    getDisplayBorrowTotal,
+    getDisplayBorrowNative,
+    getDisplayBorrowIncentive,
+    hasBorrowIncentiveSource,
+    getDisplaySpread,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
+  }), [sortedDataSimGate, hasScenarioInput, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
 
-  /**
-   * Simulation pin scroll — normative spec + implementation steps:
-   * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin scroll".
-   * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
-   */
-  useEffect(() => {
-    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
-    const ids = sortedData.map((r) => getReserveSimulationId(r));
-    const expandedIndex = expandedReserveId
-      ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)
-      : -1;
-    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    const requiredCount =
-      expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
-    const hasRequiredVisibleCount =
-      expandedIndex >= 0 ? currentCount >= requiredCount : false;
+  const sortedData = useMemo(() => {
+    return sortReserves(reserves, sortConfig, valueGetters);
+  }, [reserves, sortConfig, valueGetters]);
 
-    const controllerResult = transitionScenarioPinController(
-      scenarioPinControllerRef.current,
-      {
-        scenarioKey,
-        sortedIds: ids,
-        expandedReserveId,
-        hasScenarioInput: hasSharedScenario,
-        expandScrollFollowsScenarioSort,
-        hasRequiredVisibleCount,
-        isExpandedStillVisible: expandedIndex >= 0,
-      },
-    );
-    scenarioPinControllerRef.current = controllerResult.nextState;
-
-    if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
-
-    cancelFilterPinScrollRef.current?.();
-    cancelFilterPinScrollRef.current = null;
-    cancelScenarioPinScrollRef.current?.();
-    const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
-    scenarioPinScheduleTokenRef.current = scheduleToken;
-    cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(
-      controllerResult.pinReserveId,
-      320,
-      {
-        // Keep first pass smooth; follow-up corrections (if any) remain instant.
-        instant: false,
-        onSettled: () => {
-          if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
-          cancelScenarioPinScrollRef.current = null;
-        },
-      },
-    ) ?? null;
-  }, [
-    debouncedSharedSupplyInput,
-    debouncedSharedBorrowInput,
-    sharedInputMode,
-    meritMerklNetPosition,
-    sortedData,
-    expandedReserveId,
+  const {
+    displayData,
+    showAll,
     minVisibleCount,
-    hasSharedScenario,
+    showAllRows,
+    resetVisibleCount,
+  } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId });
+
+  const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
+    reserves,
+    sortedData,
+    isMobile,
+    expandedReserveId,
+    setExpandedReserveId,
+    minVisibleCount,
+    defaultVisibleCount: DEFAULT_VISIBLE_COUNT,
+    hasScenarioInput,
     expandScrollFollowsScenarioSort,
-    schedulePinScrollToReserve,
-  ]);
+    scenarioKey: {
+      supplyInput: debouncedSharedSupplyInput,
+      borrowInput: debouncedSharedBorrowInput,
+      inputMode: sharedInputMode,
+      meritMerklNetPosition,
+    },
+  });
 
-  useEffect(() => {
-    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
-    if (lastReservesKeyForFilterPinRef.current === null) {
-      lastReservesKeyForFilterPinRef.current = reservesKey;
-      return;
-    }
-    if (reservesKey === lastReservesKeyForFilterPinRef.current) return;
-    lastReservesKeyForFilterPinRef.current = reservesKey;
-
-    const targetReserveId = pendingMarketFilterPinReserveIdRef.current ?? expandedReserveId;
-    if (!targetReserveId) return;
-    const stillVisible = sortedData.some((r) => getReserveSimulationId(r) === targetReserveId);
-    if (!stillVisible) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-      return;
-    }
-
-    pendingMarketFilterPinReserveIdRef.current = null;
-    // Cancel any prior scheduled pin so filter-driven pin is the only jump.
-    // Store the cancel fn in a ref so that unrelated sortedData changes
-    // (which re-run this effect but bail at the reservesKey guard) do
-    // not invoke effect cleanup and cancel the pending scroll.
-    cancelScenarioPinScrollRef.current?.();
-    cancelScenarioPinScrollRef.current = null;
-    cancelFilterPinScrollRef.current?.();
-    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280, { instant: true }) ?? null;
-  }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
-
-  useEffect(() => {
-    return () => {
-      cancelFilterPinScrollRef.current?.();
-      cancelScenarioPinScrollRef.current?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!expandedReserveId) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-      suppressNextToggleReserveIdRef.current = null;
-    }
-  }, [expandedReserveId]);
-
-  useEffect(() => {
-    const existsInReserves = expandedReserveId
-      ? reserves.some((r) => getReserveSimulationId(r) === expandedReserveId)
-      : true;
-    if (!existsInReserves && pendingMarketFilterPinReserveIdRef.current === expandedReserveId) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-    }
-  }, [expandedReserveId, reserves]);
+  // Keep expansion even when reserves change (e.g., market filter applied)
+  // Previously this auto-collapsed when the expanded row was not in the filtered list
+  // Now we preserve the expansion state so it re-appears when switching back markets
 
   const supplySortLabel = {
     total: 'Total',
@@ -647,147 +564,94 @@ const ReservesTable = ({
   const sizeSortAccentClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-700'
-      : sizeSortMode === 'borrow'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
         ? 'ds-text-brand-cyan'
         : 'text-foreground';
+  const utilSortAccentClass =
+    utilSortMode === 'liquidity'
+      ? 'ds-text-purple-700'
+      : 'text-foreground';
   const sizeSortActiveHeadingClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-600 font-bold scale-105'
-      : sizeSortMode === 'borrow'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
         ? 'ds-text-brand-cyan font-bold scale-105'
         : 'text-foreground font-bold scale-105';
   const mobileCardDefaultTab: 'supply' | 'borrow' =
-    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && sizeSortMode === 'borrow')
+    activeSortColumn === 'borrow' || activeSortColumn === 'spread' || (activeSortColumn === 'size' && (sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'))
       ? 'borrow'
       : 'supply';
 
-  const mobileExtraSortChipLabel =
-    activeSortColumn === 'spread'
-      ? 'Spread'
-      : activeSortColumn === 'token'
-        ? 'Token'
-        : activeSortColumn === 'market'
-          ? 'Market'
-          : activeSortColumn === 'price'
-            ? 'Price'
-            : activeSortColumn === 'util'
-              ? 'Utilization'
-              : 'Spread';
+  const mobileExtraSortChipLabel = 'Extra';
 
   const mobileExtraSortActive =
     activeSortColumn === 'spread' ||
     activeSortColumn === 'token' ||
     activeSortColumn === 'market' ||
-    activeSortColumn === 'price' ||
-    activeSortColumn === 'util';
-
-  const toggleSupplySortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('supply');
-    setSupplySortOrder(supplySortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const toggleBorrowSortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('borrow');
-    setBorrowSortOrder(borrowSortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const toggleSpreadSortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('spread');
-    setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const collapseExpandedOnSort = useCallback(() => {
-    setExpandedReserveId(null);
-  }, []);
-
-  const handleSortToken = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('token');
-    setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-  };
-  const handleSortMarket = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('market');
-    setMarketSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-  };
-  const handleSortPrice = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('price');
-    setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-  };
-  const handleSortSize = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('size');
-    setSizeSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-  };
-  const handleSortUtil = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('util');
-    setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-  };
-
-  const closeAllMobileSortMenus = useCallback((except: MobileSortMenuKey | null = null) => {
-    if (except !== 'size') setShowSizeSortMenu(false);
-    if (except !== 'supply') setShowSupplySortMenu(false);
-    if (except !== 'borrow') setShowBorrowSortMenu(false);
-    if (except !== 'extra') setShowExtraSortMenu(false);
-  }, []);
-
-  const toggleMobileSortMenu = useCallback((menu: MobileSortMenuKey) => {
-    closeAllMobileSortMenus(menu);
-    switch (menu) {
-      case 'size':
-        setShowSizeSortMenu((prev) => !prev);
-        break;
-      case 'supply':
-        setShowSupplySortMenu((prev) => !prev);
-        break;
-      case 'borrow':
-        setShowBorrowSortMenu((prev) => !prev);
-        break;
-      case 'extra':
-        setShowExtraSortMenu((prev) => !prev);
-        break;
-    }
-  }, [closeAllMobileSortMenus]);
+    activeSortColumn === 'price';
 
   const sizeSortOptions: MobileSortOption[] = [
     {
       key: 'supply',
-      label: 'Supply',
+      label: 'Supplied',
       isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-emerald-600',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
-        } else {
-          setSizeSortMode('supply');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'supply',
+          setActiveSortColumn, targetColumn: 'size',
+        });
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'supplyAvailability',
+      label: 'Suppliable',
+      isSelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      onSelect: () => {
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'supplyAvailability',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
     {
       key: 'borrow',
-      label: 'Borrow',
+      label: 'Borrowed',
       isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
-        } else {
-          setSizeSortMode('borrow');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'borrow',
+          setActiveSortColumn, targetColumn: 'size',
+        });
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'borrowAvailability',
+      label: 'Borrowable',
+      isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      onSelect: () => {
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'borrowAvailability',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -798,32 +662,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'text-foreground',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
-        } else {
-          setSizeSortMode('deficitAmount');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
-        closeAllMobileSortMenus();
-      },
-    },
-    {
-      key: 'deficitRatio',
-      label: 'Deficit (%)',
-      isSelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'text-foreground',
-      onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
-        } else {
-          setSizeSortMode('deficitRatio');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'deficitAmount',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -836,14 +680,12 @@ const ReservesTable = ({
     order: supplySortOrder,
     activeClassName: 'ds-text-emerald-600',
     onSelect: () => {
-      const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-      if (isAlreadySelected && supplySortOrder === 'desc') {
-        setSupplySortOrder('asc');
-      } else {
-        setSupplySortMode(mode);
-        setActiveSortColumn('supply');
-        setSupplySortOrder('desc');
-      }
+      selectSortOption({
+        isAlreadySelected: supplySortMode === mode && activeSortColumn === 'supply',
+        setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode: setSupplySortMode, targetMode: mode,
+        setActiveSortColumn, targetColumn: 'supply',
+      });
       closeAllMobileSortMenus();
     },
   }));
@@ -855,17 +697,52 @@ const ReservesTable = ({
     order: borrowSortOrder,
     activeClassName: 'ds-text-brand-cyan',
     onSelect: () => {
-      const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-      if (isAlreadySelected && borrowSortOrder === 'desc') {
-        setBorrowSortOrder('asc');
-      } else {
-        setBorrowSortMode(mode);
-        setActiveSortColumn('borrow');
-        setBorrowSortOrder('desc');
-      }
+      selectSortOption({
+        isAlreadySelected: borrowSortMode === mode && activeSortColumn === 'borrow',
+        setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode: setBorrowSortMode, targetMode: mode,
+        setActiveSortColumn, targetColumn: 'borrow',
+      });
       closeAllMobileSortMenus();
     },
   }));
+
+  const utilSortOptions: MobileSortOption[] = [
+    {
+      key: 'util',
+      label: 'Utilization',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'util',
+      order: utilSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        selectSortOption({
+          isAlreadySelected: utilSortMode === 'util' && activeSortColumn === 'util',
+          setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setUtilSortMode, targetMode: 'util',
+          setActiveSortColumn, targetColumn: 'util',
+        });
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'liquidity',
+      label: 'Liquidity',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
+      order: utilSortOrder,
+      activeClassName: 'ds-text-purple-600',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        selectSortOption({
+          isAlreadySelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
+          setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setUtilSortMode, targetMode: 'liquidity',
+          setActiveSortColumn, targetColumn: 'util',
+        });
+        closeAllMobileSortMenus();
+      },
+    },
+  ];
 
   const extraSortOptions: MobileSortOption[] = [
     {
@@ -876,12 +753,11 @@ const ReservesTable = ({
       activeClassName: 'ds-text-purple-600',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'spread' && spreadSortOrder === 'desc') {
-          setSpreadSortOrder('asc');
-        } else {
-          setActiveSortColumn('spread');
-          setSpreadSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'spread',
+          setSortOrder: setSpreadSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setActiveSortColumn, targetColumn: 'spread',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -893,12 +769,11 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'token' && tokenSortOrder === 'asc') {
-          setTokenSortOrder('desc');
-        } else {
-          setActiveSortColumn('token');
-          setTokenSortOrder('asc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'token',
+          setSortOrder: setTokenSortOrder, toggleOrderFn: toggleSortOrderAscFirst, defaultOrder: 'asc',
+          setActiveSortColumn, targetColumn: 'token',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -910,12 +785,11 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'market' && marketSortOrder === 'asc') {
-          setMarketSortOrder('desc');
-        } else {
-          setActiveSortColumn('market');
-          setMarketSortOrder('asc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'market',
+          setSortOrder: setMarketSortOrder, toggleOrderFn: toggleSortOrderAscFirst, defaultOrder: 'asc',
+          setActiveSortColumn, targetColumn: 'market',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -927,192 +801,211 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'price' && priceSortOrder === 'desc') {
-          setPriceSortOrder('asc');
-        } else {
-          setActiveSortColumn('price');
-          setPriceSortOrder('desc');
-        }
-        closeAllMobileSortMenus();
-      },
-    },
-    {
-      key: 'util',
-      label: 'Utilization',
-      isSelected: activeSortColumn === 'util',
-      order: utilSortOrder,
-      activeClassName: 'text-foreground',
-      onSelect: () => {
-        collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortOrder === 'desc') {
-          setUtilSortOrder('asc');
-        } else {
-          setActiveSortColumn('util');
-          setUtilSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'price',
+          setSortOrder: setPriceSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setActiveSortColumn, targetColumn: 'price',
+        });
         closeAllMobileSortMenus();
       },
     },
   ];
 
-  const handleIncentiveClick = useCallback((
-    e: React.MouseEvent,
-    reserve: ReserveWithSpread,
-    type: 'supply' | 'borrow',
-    apy: number | null,
-  ) => {
-    e.stopPropagation();
-    if (apy === null || isNaN(apy)) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const triggerCenterX = rect.left + rect.width / 2;
-    setTooltipState({
-      reserve,
-      type,
-      position: { x: rect.left, y: rect.bottom },
-      triggerCenterX,
-      triggerHeight: rect.height,
-      triggerRect: {
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-      },
-    });
-  }, []);
-
   
 
   const handleRowClick = (reserve: ReserveWithSpread) => {
-    const url = buildAaveReserveUrl({
+    const url = buildAaveUrl({
       marketName: reserve.marketName,
       tokenAddress: reserve.tokenAddress,
+      aaveProReserveId: reserve.aaveProReserveId,
     });
     if (url) {
       openExternalUrl(url, isMobile);
     }
   };
 
-  // Auto-expand to target reserve + 5 rows buffer when scrolling to a specific reserve
-  useEffect(() => {
-    if (scrollToReserveId) {
-      const targetIndex = sortedData.findIndex(
-        (r) => `${r.marketName}-${r.tokenAddress}` === scrollToReserveId
-      );
-      if (targetIndex >= 0) {
-        const neededCount = targetIndex + 6; // target row + 5 buffer rows
-        if (neededCount > DEFAULT_VISIBLE_COUNT) {
-          setMinVisibleCount(neededCount);
-        }
+  const portfolioSimulationContext = useMemo<PortfolioSimulationContext>(() => ({
+    isApy,
+    whitelistMerklCampaignIds,
+    tydroPointToUsdRate,
+    forecastStates,
+  }), [isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates]);
+
+  const {
+    portfolioReserveIds,
+    hiddenReserveIds,
+    handlePortfolioToggle,
+    portfolioResults,
+    portfolioSummary,
+  } = usePortfolioToggle({
+    isPortfolioMode,
+    reserves: allReserves,
+    entries: portfolioEntries,
+    portfolioActions,
+    simulationContext: portfolioSimulationContext,
+  });
+
+  const portfolioCapWarningsMap = useMemo(() => {
+    if (!isPortfolioMode || !portfolioEntries) return undefined;
+    const map = new Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>();
+    const priceById = new Map(reserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
+    const otherSideEntries = portfolioEntries.map(e => ({
+      reserveId: e.reserveId,
+      borrowAmountUsd: parseNumberInput(e.borrow.amount) * (e.borrow.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
+      supplyAmountUsd: parseNumberInput(e.supply.amount) * (e.supply.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
+    }));
+    for (const entry of portfolioEntries) {
+      const rid = entry.reserveId;
+      const sim = simulationsById[rid];
+      if (!sim) continue;
+      const supplyWarnings = extractCapWarnings(rid, 'supply', sim, otherSideEntries);
+      const borrowWarnings = extractCapWarnings(rid, 'borrow', sim, otherSideEntries);
+      if (supplyWarnings.length > 0 || borrowWarnings.length > 0) {
+        map.set(rid, {
+          supply: supplyWarnings.length > 0 ? supplyWarnings : undefined,
+          borrow: borrowWarnings.length > 0 ? borrowWarnings : undefined,
+        });
       }
     }
-  }, [scrollToReserveId, sortedData]);
-
-  // Auto-expand visible count when a row is expanded (persist even after collapse)
-  useEffect(() => {
-    if (!expandedReserveId) return;
-    const expandedIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId
-    );
-    if (expandedIndex < 0) return;
-    const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
-    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    if (neededCount > currentCount) {
-      setMinVisibleCount(Math.min(neededCount, sortedData.length));
-    }
-  }, [expandedReserveId, sortedData, minVisibleCount]);
-
-  // Display data with pagination - must be before conditional returns
-  const displayData = useMemo(() => {
-    const baseCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    if (baseCount >= sortedData.length) return sortedData;
-    return sortedData.slice(0, baseCount);
-  }, [sortedData, minVisibleCount]);
-  
-  const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
+    return map.size > 0 ? map : undefined;
+  }, [isPortfolioMode, portfolioEntries, simulationsById, reserves]);
 
   const scenarioControls = (
-    <ScenarioControls
-      ref={scenarioControlsRef}
-      onDebouncedChange={handleScenarioChange}
-      meritMerklNetPosition={meritMerklNetPosition}
-      onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-    />
+    <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
+      {isMobile ? (
+        <>
+          {!isPortfolioMode ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <ScenarioControls
+                  ref={scenarioControlsRef}
+                  onDebouncedChange={handleScenarioChange}
+                  meritMerklNetPosition={meritMerklNetPosition}
+                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+                  mobileNetOpen={mobileNetOpen}
+                  onMobileNetToggle={handleMobileNetToggle}
+                />
+              </div>
+              {onSimulationModeChange && (
+                <div className="ml-auto shrink-0">
+                  <PortfolioModeToggle
+                    mode={simulationMode}
+                    onModeChange={onSimulationModeChange}
+                    positionCount={portfolioEntries?.length ?? 0}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={allReserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                  capWarningsMap={portfolioCapWarningsMap}
+                />
+              ) : null}
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          {!isPortfolioMode ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <ScenarioControls
+                  ref={scenarioControlsRef}
+                  onDebouncedChange={handleScenarioChange}
+                  meritMerklNetPosition={meritMerklNetPosition}
+                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+                />
+              </div>
+              {onSimulationModeChange && (
+                <div className="ml-auto shrink-0">
+                  <PortfolioModeToggle
+                    mode={simulationMode}
+                    onModeChange={onSimulationModeChange}
+                    positionCount={portfolioEntries?.length ?? 0}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {isLoading && reserves.length === 0 ? (
+                <PortfolioPanelSkeleton />
+              ) : portfolioEntries && portfolioActions ? (
+                <PortfolioPanel
+                  entries={portfolioEntries}
+                  actions={portfolioActions}
+                  reserves={allReserves}
+                  positionResults={portfolioResults}
+                  summary={portfolioSummary}
+                  snapshots={portfolioSnapshots}
+                  onWalletSync={onWalletSync}
+                  walletLoadState={walletLoadState}
+                  simulationMode={simulationMode}
+                  onSimulationModeChange={onSimulationModeChange}
+                  capWarningsMap={portfolioCapWarningsMap}
+                />
+              ) : null}
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 
-  const mobileTableRef = useRef<HTMLDivElement>(null);
-  const desktopTableCardRef = useRef<HTMLDivElement>(null);
-  const desktopTableBottomAnchorRef = useRef<HTMLDivElement>(null);
-  const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
-  const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
-  const [tableInView, setTableInView] = useState(false);
 
-  useEffect(() => {
-    const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
-    if (!target) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setTableInView(entry.isIntersecting),
-      { threshold: 0, rootMargin: '200px 0px 200px 0px' },
-    );
-    io.observe(target);
-    return () => io.disconnect();
-  }, [isMobile]);
+  const {
+    mobileTableRef,
+    desktopTableCardRef,
+    desktopTableBottomAnchorRef,
+    desktopStickyScenarioRef,
+    desktopStickyTheadRef,
+    tableInView,
+  } = useReservesLayoutRefs({ isMobile, isPortfolioMode });
 
-  useEffect(() => {
-    if (isMobile) return;
-    const stickyEl = desktopStickyScenarioRef.current;
-    const theadEl = desktopStickyTheadRef.current;
-    const card = desktopTableCardRef.current;
-    if (!stickyEl || !card) return undefined;
-    const apply = () => {
-      const scenarioH = stickyEl.getBoundingClientRect().height;
-      card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
-      const theadH =
-        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
-      if (theadH > 0) {
-        card.style.setProperty(
-          '--reserves-expanded-main-row-top',
-          `${scenarioH + theadH}px`,
-        );
-      } else {
-        card.style.removeProperty('--reserves-expanded-main-row-top');
-      }
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(stickyEl);
-    if (theadEl instanceof HTMLElement) {
-      ro.observe(theadEl);
-    }
-    return () => {
-      ro.disconnect();
-      card.style.removeProperty('--reserves-sticky-scenario-height');
-      card.style.removeProperty('--reserves-expanded-main-row-top');
-    };
-  }, [isMobile]);
-
-  // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
+  // Mobile card view — compact bottom padding (safe area + small breathing room)
   if (isMobile) {
     return (
-      <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
+      <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
         <div
           data-reserves-sticky-scenario
-          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
+          className={cn(
+            'pt-1 pb-0',
+            // Single mode: bleed to full width + sticky at top.
+            // Portfolio mode: no bleed (panel has its own rounded border/padding)
+            // and no sticky (panel can exceed viewport height — content would be
+            // unscrollable inside a sticky box).
+            !isPortfolioMode && '-mx-[var(--ds-space-3)] px-[var(--ds-space-3)] sticky top-[env(safe-area-inset-top,0px)] z-20',
+          )}
         >
           {scenarioControls}
         </div>
         <ReservesTableMobileSortBar
-          reservesCount={reserves.length}
           activeSortColumn={activeSortColumn}
           sizeSortAccentClass={sizeSortAccentClass}
+          utilSortAccentClass={utilSortAccentClass}
           mobileExtraSortActive={mobileExtraSortActive}
           mobileExtraSortChipLabel={mobileExtraSortChipLabel}
           showSizeSortMenu={showSizeSortMenu}
+          showUtilSortMenu={showUtilSortMenu}
           showSupplySortMenu={showSupplySortMenu}
           showBorrowSortMenu={showBorrowSortMenu}
           showExtraSortMenu={showExtraSortMenu}
           sizeSortOptions={sizeSortOptions}
+          utilSortOptions={utilSortOptions}
           supplySortOptions={supplySortOptions}
           borrowSortOptions={borrowSortOptions}
           extraSortOptions={extraSortOptions}
@@ -1129,7 +1022,8 @@ const ReservesTable = ({
             reservesCount={reserves.length}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
-            hasSharedScenario={hasSharedScenario}
+            pointRateMap={pointRateMap}
+            hasScenarioInput={hasScenarioInput}
             inputMode={sharedInputMode}
             supplyInput={debouncedSharedSupplyInput}
             borrowInput={debouncedSharedBorrowInput}
@@ -1139,6 +1033,10 @@ const ReservesTable = ({
             onToggleExpand={handleToggleExpand}
             onCorrectSupplyInput={handleCorrectSupplyInput}
             onCorrectBorrowInput={handleCorrectBorrowInput}
+            isPortfolioMode={isPortfolioMode}
+            portfolioReserveIds={portfolioReserveIds}
+            onPortfolioToggle={handlePortfolioToggle}
+            onSelectHub={onSelectHub}
           />
         </div>
         
@@ -1148,17 +1046,28 @@ const ReservesTable = ({
           showAll={showAll}
           defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
           variant="mobile"
-          onShowAll={() => setMinVisibleCount(sortedData.length)}
-          onShowLess={() => setMinVisibleCount(null)}
+          onShowAll={showAllRows}
+          onShowLess={resetVisibleCount}
         />
-        
-        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
+
+
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
 
         <ReservesTableFloatingScroll
           tableInView={tableInView}
           variant="mobile"
-          onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onScrollToTop={() => {
+            const el = topOppsRef?.current;
+            if (el) {
+              const y = el.getBoundingClientRect().bottom + window.scrollY;
+              window.scrollTo({ top: y, behavior: 'smooth' });
+            } else {
+              mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}
           onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+          onRefresh={onRefresh}
+          dataUpdatedAt={dataUpdatedAt}
         />
       </div>
     );
@@ -1180,7 +1089,10 @@ const ReservesTable = ({
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
-        className="sticky top-0 z-20 rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]"
+        className={cn(
+          'rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]',
+          !isPortfolioMode && 'sticky top-0 z-20',
+        )}
       >
         {scenarioControls}
       </div>
@@ -1192,15 +1104,25 @@ const ReservesTable = ({
       */}
       <Table className="w-full table-fixed min-w-0" wrapperClassName="overflow-visible">
           <colgroup>
-            {/* 左边三列再宽松，右边三列（Supply/Spread/Borrow）稍紧凑，合计 100% */}
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '10.5%' }} />
-            <col style={{ width: '11.5%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '13.5%' }} />
-            <col style={{ width: '12%' }} />
+            {/* 列顺序：Token → Market → Price → ...（DeFi/lending 协议表惯例：
+             * Asset → Network/Market 紧贴，参考 Aave UI / Compound / Spark / Morpho）。
+             * 优化列宽分布：确保 Utilization 刚好撑开，平衡其他列 */}
+            {/* Token — +1% from Price，给 ↗ + symbol 多一点呼吸 */}
+            <col style={{ width: '14%' }} />
+            {/* Market — +1% from Price，让 chip 离 Price 数字不至于太空 */}
             <col style={{ width: '14.5%' }} />
+            {/* Price — Price 内容固定为 $X.XX 短数字，10% 留给数字左侧的余量过大 */}
+            <col style={{ width: '8%' }} />
+            {/* Size */}
+            <col style={{ width: '12%' }} />
+            {/* Utilization */}
+            <col style={{ width: '13%' }} />
+            {/* Supply */}
+            <col style={{ width: '12.5%' }} />
+            {/* Spread */}
+            <col style={{ width: '12%' }} />
+            {/* Borrow */}
+            <col style={{ width: '14%' }} />
           </colgroup>
           <ReservesTableDesktopHeader
             tableHeaderRef={desktopStickyTheadRef}
@@ -1224,153 +1146,63 @@ const ReservesTable = ({
             showBorrowSortMenu={showBorrowSortMenu}
             borrowMenuPos={borrowMenuPos}
             spreadSortOrder={spreadSortOrder}
-            showSizeSortMenu={showSizeSortMenu}
-            sizeMenuPos={sizeMenuPos}
-            sizeSortButtonRef={sizeSortButtonRef}
             supplySortButtonRef={supplySortButtonRef}
             borrowSortButtonRef={borrowSortButtonRef}
             onSortToken={handleSortToken}
             onSortMarket={handleSortMarket}
             onSortPrice={handleSortPrice}
+            onSortSizeDefault={handleSortSize}
+            utilSortMode={utilSortMode}
             onSortUtil={handleSortUtil}
             onToggleSpreadSort={() => {
               if (activeSortColumn === 'spread') {
-                toggleSpreadSortOrder();
+                setSpreadSortOrder(toggleSortOrder);
               } else {
                 collapseExpandedOnSort();
-                setActiveSortColumn('spread');
-                setSpreadSortOrder('desc');
+                selectSortOption({
+                  isAlreadySelected: false,
+                  setSortOrder: setSpreadSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                  setActiveSortColumn, targetColumn: 'spread',
+                });
               }
-            }}
-            onToggleSizeMenu={() => setShowSizeSortMenu(!showSizeSortMenu)}
-            onCloseSizeMenu={() => setShowSizeSortMenu(false)}
-            onSelectSizeSortSupply={() => {
-              collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
-              } else {
-                setSizeSortMode('supply');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortBorrow={() => {
-              collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
-              } else {
-                setSizeSortMode('borrow');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortDeficitAmount={() => {
-              collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
-              } else {
-                setSizeSortMode('deficitAmount');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortDeficitRatio={() => {
-              collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
-              } else {
-                setSizeSortMode('deficitRatio');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
-              setShowSizeSortMenu(false);
             }}
             onToggleSupplyMenu={() => setShowSupplySortMenu(!showSupplySortMenu)}
             onCloseSupplyMenu={() => setShowSupplySortMenu(false)}
             onSelectSupplySortTotal={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
-              } else {
-                setSupplySortMode('total');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'total' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'total', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onSelectSupplySortNative={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
-              } else {
-                setSupplySortMode('native');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'native' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onSelectSupplySortIncentive={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
-              } else {
-                setSupplySortMode('incentive');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'incentive' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onToggleBorrowMenu={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
             onCloseBorrowMenu={() => setShowBorrowSortMenu(false)}
             onSelectBorrowSortTotal={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
-              } else {
-                setBorrowSortMode('total');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'total' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'total', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
             onSelectBorrowSortNative={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
-              } else {
-                setBorrowSortMode('native');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'native' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
             onSelectBorrowSortIncentive={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
-              } else {
-                setBorrowSortMode('incentive');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'incentive' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
           />
           <TableBody>
-            {isLoading && reserves.length === 0 ? (
+            {(isLoading && reserves.length === 0) || (reserves.length > 0 && displayData.length === 0) ? (
               <ReservesTableDesktopSkeleton />
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
@@ -1381,6 +1213,7 @@ const ReservesTable = ({
                 'supply',
                 isApy,
                 tydroPointToUsdRate,
+                pointRateMap,
               );
               const displayBorrowIncentive = resolveVisibleIncentiveBadgeValue(
                 getDisplayBorrowIncentive(reserve),
@@ -1388,6 +1221,7 @@ const ReservesTable = ({
                 'borrow',
                 isApy,
                 tydroPointToUsdRate,
+                pointRateMap,
               );
               return (
                 <DesktopReserveRow
@@ -1398,6 +1232,7 @@ const ReservesTable = ({
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
                   onMarketChipClick={handleMarketChipClick}
+                  onSelectHub={onSelectHub}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}
                   displaySupplyNative={getDisplaySupplyNative(reserve)}
@@ -1415,6 +1250,11 @@ const ReservesTable = ({
                   isMobile={isMobile}
                   onCorrectSupplyInput={handleCorrectSupplyInput}
                   onCorrectBorrowInput={handleCorrectBorrowInput}
+                  isPortfolioMode={isPortfolioMode}
+                  isInPortfolio={portfolioReserveIds.has(reserveId)}
+                  isHidden={hiddenReserveIds.has(reserveId)}
+                  onPortfolioToggle={handlePortfolioToggle}
+                  sortActions={sortActions}
                 />
               );
             })
@@ -1428,8 +1268,8 @@ const ReservesTable = ({
         showAll={showAll}
         defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
         variant="desktop"
-        onShowAll={() => setMinVisibleCount(sortedData.length)}
-        onShowLess={() => setMinVisibleCount(null)}
+        onShowAll={showAllRows}
+        onShowLess={resetVisibleCount}
       />
       
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
@@ -1439,16 +1279,26 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
 
       <ReservesTableFloatingScroll
         tableInView={tableInView}
         variant="desktop"
-        onScrollToTop={() => desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onScrollToTop={() => {
+          const el = topOppsRef?.current;
+          if (el) {
+            const y = el.getBoundingClientRect().bottom + window.scrollY;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          } else {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }}
         onScrollToBottom={() => {
           const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
           target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }}
+        onRefresh={onRefresh}
+        dataUpdatedAt={dataUpdatedAt}
       />
       </div>
     </div>

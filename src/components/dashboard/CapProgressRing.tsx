@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowDown, ArrowUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,149 @@ interface CapProgressRingProps {
   triggerClassName?: string;
   /** Accessible name when `label` wraps the trigger. */
   triggerAriaLabel?: string;
+  /** When provided, clicking the ring triggers this sort callback instead of showing tooltip only. */
+  onSort?: () => void;
+  /** When provided, clicking the label number sorts by that size. */
+  onSortSize?: () => void;
+  /** Sort state for percentage arrow in tooltip. */
+  isSortActive?: boolean;
+  sortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply size arrow in tooltip. */
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for suppliable arrow in tooltip. */
+  onSortSuppliable?: () => void;
+  isSortSuppliableActive?: boolean;
+  suppliableSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply cap value arrow in tooltip. */
+  onSortSupplyCapValue?: () => void;
+  isSortSupplyCapValueActive?: boolean;
+  supplyCapValueSortOrder?: 'asc' | 'desc';
+}
+
+/** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
+
+function SortArrowButton({
+  onClick,
+  isActive,
+  sortOrder,
+  ariaLabel,
+  className,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+      aria-label={ariaLabel}
+    >
+      {isActive ? (
+        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
+export function CapProgressContent({
+  currentSize,
+  cap,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
+  onSortPercentage,
+  isSortActive,
+  sortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
+  onSortSuppliable,
+  isSortSuppliableActive,
+  suppliableSortOrder,
+  onSortSupplyCapValue,
+  isSortSupplyCapValueActive,
+  supplyCapValueSortOrder,
+}: {
+  currentSize: number;
+  cap: number;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  onSortPercentage?: () => void;
+  isSortActive?: boolean;
+  sortOrder?: 'asc' | 'desc';
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
+  onSortSuppliable?: () => void;
+  isSortSuppliableActive?: boolean;
+  suppliableSortOrder?: 'asc' | 'desc';
+  onSortSupplyCapValue?: () => void;
+  isSortSupplyCapValueActive?: boolean;
+  supplyCapValueSortOrder?: 'asc' | 'desc';
+}) {
+  const percentage = Math.min((currentSize / cap) * 100, 100);
+  const colorClass =
+    percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
+
+  const sortArrow = onSortPercentage
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by supply cap %" className={colorClass} />
+    : null;
+
+  const supplySizeArrow = onSortSupplySize
+    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
+    : null;
+
+  const suppliableArrow = onSortSuppliable
+    ? <SortArrowButton onClick={onSortSuppliable} isActive={!!isSortSuppliableActive} sortOrder={suppliableSortOrder} ariaLabel="Sort by suppliable" className="ds-text-emerald-500" />
+    : null;
+
+  const supplyCapValueArrow = onSortSupplyCapValue
+    ? <SortArrowButton onClick={onSortSupplyCapValue} isActive={!!isSortSupplyCapValueActive} sortOrder={supplyCapValueSortOrder} ariaLabel="Sort by supply cap value" className="ds-text-emerald-500" />
+    : null;
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {supplySizeArrow}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Supply cap</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {supplyCapValueArrow}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Available to supply</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {suppliableArrow}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
+        <span className="text-muted-foreground">% of cap</span>
+        <span className={`font-bold tabular-nums ${colorClass}`}>
+          {percentage.toFixed(1)}%
+          {sortArrow}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 const CapProgressRing = memo(({
@@ -34,6 +178,19 @@ const CapProgressRing = memo(({
   label,
   triggerClassName,
   triggerAriaLabel,
+  onSort,
+  onSortSize,
+  isSortActive,
+  sortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
+  onSortSuppliable,
+  isSortSuppliableActive,
+  suppliableSortOrder,
+  onSortSupplyCapValue,
+  isSortSupplyCapValueActive,
+  supplyCapValueSortOrder,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -46,45 +203,33 @@ const CapProgressRing = memo(({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   const getProgressColor = () => {
-    if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
-    if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
   };
 
-  const getProgressColorClass = () => {
-    if (percentage >= 95) return 'text-amber-600';
-    if (percentage >= 80) return 'text-amber-500';
-    return 'ds-text-emerald-500';
-  };
-
   const tooltipContent = (
-    <TooltipContent side="top" className="max-w-[220px]">
-      <div className="space-y-1 ds-text-12">
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Total supplied</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Supply cap</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Available to supply</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-          <span className="text-muted-foreground">% of cap</span>
-          <span className={`font-bold tabular-nums ${getProgressColorClass()}`}>
-            {percentage.toFixed(1)}%
-          </span>
-        </div>
-      </div>
+    <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
+      <TooltipCalloutArrow />
+      <CapProgressContent
+        currentSize={currentSize}
+        cap={cap}
+        displayMode={displayMode}
+        tokenPrice={tokenPrice}
+        tokenSymbol={tokenSymbol}
+        onSortPercentage={onSort}
+        isSortActive={isSortActive}
+        sortOrder={sortOrder}
+        onSortSupplySize={onSortSize || onSortSupplySize}
+        isSortSupplySizeActive={isSortSupplySizeActive}
+        supplySizeSortOrder={supplySizeSortOrder}
+        onSortSuppliable={onSortSuppliable}
+        isSortSuppliableActive={isSortSuppliableActive}
+        suppliableSortOrder={suppliableSortOrder}
+        onSortSupplyCapValue={onSortSupplyCapValue}
+        isSortSupplyCapValueActive={isSortSupplyCapValueActive}
+        supplyCapValueSortOrder={supplyCapValueSortOrder}
+      />
     </TooltipContent>
   );
 
@@ -145,9 +290,19 @@ const CapProgressRing = memo(({
               triggerClassName,
             )}
             aria-label={triggerAriaLabel}
-            onClick={(event) => event.stopPropagation()}
           >
-            {label}
+            {onSortSize ? (
+              <span
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onSortSize(); }}
+                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSortSize(); } }}
+                aria-label={`Sort by supply size`}
+              >
+                {label}
+              </span>
+            ) : label}
             {ringNode}
           </button>
         </TooltipTrigger>

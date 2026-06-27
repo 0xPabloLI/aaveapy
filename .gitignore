@@ -16,6 +16,9 @@ dist-ssr
 *.local
 .npmrc.local
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env.local
@@ -45,6 +48,17 @@ test-results/
 
 # Cursor local state
 .cursor/hooks/state/continual-learning.json
+
+# Personal agent skill symlinks (absolute paths into ~/.agents)
+.agents/
+.trae/skills/
+
+# Debug scripts and pages (development-only, not committed)
+scripts/debug-*
+scripts/verify-*
+scripts/verify_*
+src/pages/Debug*
+output/
 
 # Local-only notes and drafts (not committed)
 /local/

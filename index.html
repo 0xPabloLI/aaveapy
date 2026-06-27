@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>AAVE APY</title>
+    <title>AAVE APY — Compare Aave Rates Across Chains</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="192x192" href="/aave_apy_logo.png" />
     <link rel="apple-touch-icon" href="/aave_apy_logo.png" />
+    <!-- Canonical and hreflang are emitted per-route via react-helmet-async -->
+    <meta name="google-site-verification" content="UOZF8iLLqS7sDBBu6MJ2XtNKGVFIOHZLhmiFjVqytBk" />
     
     <!-- Preconnect to Google Fonts for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,18 +25,41 @@
     
     <!-- Preload critical API data -->
     <link rel="preconnect" href="https://api.aaveapy.com" crossorigin />
+
+    <!-- Logo is rendered via React <img> in Header.tsx; no preload needed for SPA lazy content -->
     
-    <meta name="description" content="AAVE APY - Track and compare Aave lending and borrowing rates" />
+    <meta name="description" content="Compare Aave V3 lending and borrowing APYs across 17 chains. Track Merit, Merkl, and Brevis incentives in real time." />
     <meta name="author" content="AAVE APY" />
 
-    <meta property="og:title" content="AAVE APY" />
-    <meta property="og:description" content="AAVE APY - Track and compare Aave lending and borrowing rates" />
+    <meta property="og:title" content="AAVE APY - Compare Aave Lending & Borrowing Rates" />
+    <meta property="og:description" content="Compare Aave V3 lending and borrowing APYs across 17 chains. Track Merit, Merkl, and Brevis incentives in real time." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://aaveapy.com/" />
+    <meta property="og:image" content="https://aaveapy.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@AAVE_APY" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="https://aaveapy.com/og-image.jpg" />
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AAVE APY",
+      "url": "https://aaveapy.com/",
+      "description": "Compare Aave V3 lending and borrowing APYs across 17 chains. Track Merit, Merkl, and Brevis incentives in real time.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "AAVE APY",
+        "url": "https://aaveapy.com/",
+        "sameAs": [
+          "https://twitter.com/AAVE_APY"
+        ]
+      }
+    }
+    </script>
   </head>
 
   <body>

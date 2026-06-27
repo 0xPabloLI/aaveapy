@@ -1,4 +1,4 @@
-import type { SimulationCampaignDetail, SimulationSourceDetail } from '@/hooks/useRateSimulation';
+import type { SimulationCampaignDetail, SimulationSourceDetail } from '@/lib/rateSimulationCalculator';
 
 /** Same threshold as table cells: hide noise below ~0.005 percentage points. */
 export const MEANINGFUL_INCENTIVE_PCT = 0.005;

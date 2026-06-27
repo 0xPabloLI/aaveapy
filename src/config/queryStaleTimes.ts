@@ -20,5 +20,8 @@ export const QUERY_STALE_TIMES = {
 } as const;
 
 export const QUERY_GC_TIMES = {
-  coingeckoTokenImage: 7 * 24 * 60 * 60 * 1000,
+  // Side data meta: moderate retention to avoid refetch on navigation.
+  sideDataMeta: 15 * 60 * 1000,
+  // Token images: localStorage provides initialData on remount, no need for long in-memory retention.
+  coingeckoTokenImage: 30 * 60 * 1000,
 } as const;

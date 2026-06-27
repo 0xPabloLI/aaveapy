@@ -1,14 +1,21 @@
 import { parseNumberInput } from './numberFormat';
+import type { ProtocolVersion } from './protocolVersion';
 
 export type ScenarioDisplayMode = 'usd' | 'token';
 
-export const getValidTokenPrice = (...candidates: Array<number | null | undefined>): number | null => {
-  for (const candidate of candidates) {
-    if (candidate != null && Number.isFinite(candidate) && candidate > 0) {
-      return candidate;
-    }
-  }
-  return null;
+export const nativeToUsd = (
+  raw: string | null | undefined,
+  decimals: number | null | undefined,
+  tokenPrice: number | null | undefined,
+): number | null => {
+  if (!raw) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return null;
+  const tokens = value / Math.pow(10, d);
+  return tokens * tokenPrice;
 };
 
 export const getScenarioInputUsd = ({
@@ -24,6 +31,18 @@ export const getScenarioInputUsd = ({
   if (parsed <= 0) return 0;
   if (inputMode === 'usd') return parsed;
   return tokenPrice != null && Number.isFinite(tokenPrice) && tokenPrice > 0 ? parsed * tokenPrice : 0;
+};
+
+export const convertUsdToInputValue = (
+  usd: number,
+  inputMode: ScenarioDisplayMode,
+  tokenPrice: number | null | undefined,
+): string => {
+  if (usd <= 0) return '';
+  if (inputMode === 'token' && tokenPrice != null && Number.isFinite(tokenPrice) && tokenPrice > 0) {
+    return String(usd / tokenPrice);
+  }
+  return String(usd);
 };
 
 export const getScenarioSupplySizeUsd = ({
@@ -58,62 +77,165 @@ export const getScenarioSupplySizeUsd = ({
   return rawAfterSize;
 };
 
-export const getTotalBorrowedUsd = ({
-  reserveSizeUsd,
-  utilizationPct,
-}: {
-  reserveSizeUsd: number | null | undefined;
-  utilizationPct: number | null | undefined;
+/**
+ * Compute total borrowed (USD) directly from the reserve's on-chain
+ * `totalVariableDebt` field (raw token units). This is the source of truth
+ * from the Aave Pool / Spoke contract and matches what users see on
+ * app.aave.com / pro.aave.com.
+ *
+ * For V4, this is a Reserve-level value (per-Spoke). Do NOT derive from
+ * `reserveSizeUsd * utilizationPct / 100` because reserveSize is
+ * Reserve-level while utilizationPct is Hub-level — cross-layer
+ * (see Hub vs Reserve boundary comment above).
+ *
+ * Returns `null` when any required input is missing/invalid so callers can fall
+ * back to the derived calculation (V3 only).
+ */
+export const getReserveTotalBorrowedUsd = (reserve: {
+  borrowed?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
 }): number | null => {
-  if (
-    reserveSizeUsd == null ||
-    utilizationPct == null ||
-    !Number.isFinite(reserveSizeUsd) ||
-    !Number.isFinite(utilizationPct)
-  ) {
-    return null;
-  }
-
-  return reserveSizeUsd * (utilizationPct / 100);
+  const { borrowed, decimals, tokenPrice } = reserve;
+  if (!borrowed) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const raw = Number(borrowed);
+  if (!Number.isFinite(raw) || raw < 0) return null;
+  const tokens = raw / Math.pow(10, d);
+  return tokens * tokenPrice;
 };
 
-export const getPoolLiquidityUsd = ({
-  reserveSizeUsd,
-  totalBorrowedUsd,
-}: {
-  reserveSizeUsd: number | null | undefined;
-  totalBorrowedUsd: number | null | undefined;
+/**
+ * Compute current available liquidity (USD) directly from the reserve's on-chain
+ * `liquidity` field (raw token units). This is the source of truth
+ * from the Aave Pool / Spoke contract and matches what users see on
+ * app.aave.com / pro.aave.com.
+ *
+ * For V4, liquidity is Hub-level (free liquidity shared across Spokes).
+ * Do NOT derive from `reserveSizeUsd - totalBorrowedUsd` — even though both
+ * supplied and borrowed are Reserve-level (same-layer), the result
+ * of that subtraction is a per-Spoke remainder, NOT the Hub-level
+ * liquidity. They are fundamentally different quantities in V4's
+ * architecture (see Hub vs Reserve boundary comment above).
+ *
+ * Returns `null` when any required input is missing/invalid so callers can fall
+ * back to the derived calculation (V3 only).
+ */
+export const getReserveAvailableLiquidityUsd = (reserve: {
+  liquidity?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
 }): number | null => {
-  if (
-    reserveSizeUsd == null ||
-    totalBorrowedUsd == null ||
-    !Number.isFinite(reserveSizeUsd) ||
-    !Number.isFinite(totalBorrowedUsd)
-  ) {
-    return null;
-  }
-
-  return reserveSizeUsd - totalBorrowedUsd;
+  const { liquidity, decimals, tokenPrice } = reserve;
+  if (!liquidity) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const raw = Number(liquidity);
+  if (!Number.isFinite(raw) || raw < 0) return null;
+  const tokens = raw / Math.pow(10, d);
+  return tokens * tokenPrice;
 };
 
 export const getAvailableToBorrowUsd = ({
   borrowedUsd,
   borrowCapUsd,
-  poolLiquidityUsd,
+  availableLiquidityUsd,
 }: {
   borrowedUsd: number | null | undefined;
   borrowCapUsd: number | null | undefined;
-  poolLiquidityUsd: number | null | undefined;
+  availableLiquidityUsd: number | null | undefined;
 }): number | null => {
   const capRemaining =
     borrowCapUsd != null && Number.isFinite(borrowCapUsd) && borrowCapUsd > 0
       ? Math.max(0, borrowCapUsd - (borrowedUsd ?? 0))
       : null;
   const liquidityRemaining =
-    poolLiquidityUsd != null && Number.isFinite(poolLiquidityUsd) ? poolLiquidityUsd : null;
+    availableLiquidityUsd != null && Number.isFinite(availableLiquidityUsd) ? availableLiquidityUsd : null;
 
   if (capRemaining === null && liquidityRemaining === null) return null;
   if (capRemaining === null) return liquidityRemaining;
   if (liquidityRemaining === null) return capRemaining;
   return Math.min(capRemaining, liquidityRemaining);
+};
+
+/* ─── V4-aware unified helpers ───
+ *
+ * ## Hub-level vs Reserve-level data boundary
+ *
+ * Aave V4 introduces a Hub & Spoke architecture where fields belong to two
+ * distinct semantic layers. Per aaveapy-doc/v3-v4-sdk-field-mapping.md:
+ *
+ *   Hub-level (from r.asset.summary / r.asset.settings, shared across Spokes):
+ *     utilizationPct, availableLiquidity, supplyApy, borrowApy,
+ *     reserveFactor, variableRateSlope1/2, optimalUsageRate, baseVariableBorrowRate
+ *
+ *   Reserve-level (from r.summary / r.settings, per-Spoke):
+ *     reserveSize (supplied), supplyCap, borrowCap, totalVariableDebt,
+ *     suppliable (supplyCap - reserveSize, same-layer),
+ *     borrowable (min(borrowCap-debt, availableLiquidity), cross-layer)
+ *
+ * Cross-layer mixing rule:
+ *   - supplyCap(reserve) - reserveSize(reserve) → same-layer, safe for V4
+ *   - borrowCap(reserve) - totalVariableDebt(reserve) → same-layer, safe for V4
+ *   - min(borrowCapRemaining(reserve), availableLiquidity(hub)) → valid for V4
+ *     (verified against on-chain data, except when borrowDisabled=true)
+ *   - reserveSize(reserve) * utilizationPct(hub) → cross-layer for V4,
+ *     unreliable when reserveSize is a per-Spoke slice
+ */
+
+/**
+ * Suppliable USD — how much more can be supplied.
+ * Both Reserve-level: supplyCap and reserveSize are per-Spoke.
+ *
+ * API priority: reserve.suppliable (native token units).
+ * Fallback: supplyCap - supplied (same-layer, safe for V4).
+ *
+ * Result is clamped to ≥ 0 (Math.max).
+ */
+export const getSuppliableUsd = (reserve: {
+  suppliable?: string | null;
+  supplyCap?: string | null;
+  supplied?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+  supplyDisabled?: boolean;
+}): number | null => {
+  if (reserve.supplyDisabled) return 0;
+  const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice);
+  if (fromApi != null) return Math.max(0, fromApi);
+  const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+  if (supplyCapUsd == null || !Number.isFinite(supplyCapUsd) || supplyCapUsd <= 0) return null;
+  if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return null;
+  return Math.max(0, supplyCapUsd - reserveSizeUsd);
+};
+
+/**
+ * Borrowable USD — how much more can be borrowed.
+ *
+ * API priority: reserve.borrowable (native token units).
+ * Fallback: min(borrowCap - borrowed, liquidity).
+ *   Valid for both V3 and V4 (verified against on-chain data).
+ *
+ * Result is clamped to ≥ 0 via getAvailableToBorrowUsd (Math.max).
+ */
+export const getBorrowableUsd = (reserve: {
+  borrowable?: string | null;
+  borrowCap?: string | null;
+  borrowed?: string | null;
+  liquidity?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+  borrowDisabled?: boolean;
+}): number | null => {
+  if (reserve.borrowDisabled) return 0;
+  const fromApi = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice);
+  if (fromApi != null) return Math.max(0, fromApi);
+  const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
+  const borrowedUsd = nativeToUsd(reserve.borrowed, reserve.decimals, reserve.tokenPrice);
+  const availableLiquidityUsd = nativeToUsd(reserve.liquidity, reserve.decimals, reserve.tokenPrice);
+  return getAvailableToBorrowUsd({ borrowedUsd, borrowCapUsd, availableLiquidityUsd });
 };

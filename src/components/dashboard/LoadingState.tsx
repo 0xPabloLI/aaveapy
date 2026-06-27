@@ -32,17 +32,17 @@ function HeaderSkeleton({ isMobile }: { isMobile: boolean }) {
         <Skeleton variant="gradient" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-[var(--ds-space-2)]">
-            <Skeleton variant="gradient" className="h-6 md:h-8 w-28 md:w-36" />
+            <Skeleton variant="gradient" className="h-6 md:h-[var(--ds-control-h)] w-28 md:w-36" />
             {isMobile && <Skeleton variant="subtle" className="w-6 h-6 rounded-full" />}
           </div>
           <Skeleton variant="subtle" className="h-3 md:h-4 w-44 md:w-64 rounded-md" />
         </div>
-        {isMobile && <Skeleton variant="subtle" className="w-8 h-8 rounded-lg shrink-0" />}
+        {isMobile && <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg shrink-0" />}
       </div>
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
         <Skeleton variant="subtle" className="w-4 h-4 rounded-md" />
         <Skeleton variant="subtle" className="h-4 w-32 rounded-md" />
-        <Skeleton variant="subtle" className="w-8 h-8 rounded-lg" />
+        <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg" />
       </div>
     </motion.header>
   );
@@ -85,7 +85,7 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
         >
           {/* Category header: icon + title + subtitle */}
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] md:mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-8 h-8 md:w-9 md:h-9 rounded-lg" />
+            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] md:w-[var(--ds-button-sm-h)] md:h-[var(--ds-button-sm-h)] rounded-lg" />
             <div className="space-y-1 flex-1 min-w-0">
               <Skeleton variant="gradient" className={`h-4 md:h-5 ${cardIndex % 2 === 0 ? 'w-16 md:w-24' : 'w-20 md:w-28'}`} />
               <Skeleton variant="subtle" className="h-2.5 md:h-3 w-20 md:w-32 rounded-md" />
@@ -98,7 +98,7 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
                 key={i}
                 className="grid grid-cols-[auto,minmax(0,1fr),auto] grid-rows-[auto,auto] items-center gap-x-[var(--ds-space-1-5)] md:gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-0-5)] px-[var(--ds-space-2)] md:px-[var(--ds-space-3)] h-12 md:h-14 rounded-lg border border-border/70 bg-card/45 overflow-hidden"
               >
-                <Skeleton variant="gradient" className="w-7 h-7 md:w-8 md:h-8 rounded-full row-span-2 border-transparent" />
+                <Skeleton variant="gradient" className="w-7 h-7 md:w-[var(--ds-control-h)] md:h-[var(--ds-control-h)] rounded-full border-transparent" />
                 <Skeleton variant={isMobile ? 'subtle' : 'default'} className={`h-3.5 md:h-4 rounded-md ${i % 2 === 0 ? 'w-8 md:w-14' : 'w-10 md:w-16'}`} />
                 <Skeleton variant="gradient" className={`h-4 md:h-5 justify-self-end rounded-md ${i % 3 === 0 ? 'w-10 md:w-16' : 'w-12 md:w-[4.5rem]'}`} />
                 <div className="flex items-center gap-[var(--ds-space-0-5)] md:gap-[var(--ds-space-1)] min-w-0">
@@ -175,15 +175,15 @@ function ScenarioControlsSkeleton({ isMobile }: { isMobile: boolean }) {
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex items-center gap-1">
               <Skeleton variant="gradient" className="h-3 w-11 rounded-md shrink-0" />
-              <Skeleton variant="subtle" className="h-9 flex-1 rounded-md" />
+              <Skeleton variant="subtle" className="h-[var(--ds-button-sm-h)] flex-1 rounded-md" />
             </div>
             <div className="flex items-center gap-1">
               <Skeleton variant="gradient" className="h-3 w-11 rounded-md shrink-0" />
-              <Skeleton variant="subtle" className="h-9 flex-1 rounded-md" />
+              <Skeleton variant="subtle" className="h-[var(--ds-button-sm-h)] flex-1 rounded-md" />
             </div>
           </div>
           {/* Clear + settings */}
-          <Skeleton variant="subtle" className="w-8 h-8 rounded-md shrink-0" />
+          <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-md shrink-0" />
         </div>
       </div>
     );
@@ -192,15 +192,15 @@ function ScenarioControlsSkeleton({ isMobile }: { isMobile: boolean }) {
     <div className="w-full rounded-xl bg-card/60 px-3 py-0.5 backdrop-blur-sm">
       <div className="flex w-full items-center gap-3">
         <div className="flex shrink-0 items-center gap-0.5">
-          <Skeleton variant="subtle" className="h-8 w-12 rounded-md" />
-          <Skeleton variant="subtle" className="h-8 w-14 rounded-md" />
+          <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-12 rounded-md" />
+          <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-14 rounded-md" />
         </div>
         <Skeleton variant="gradient" className="h-3 w-12 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 flex-1 min-w-[6rem] rounded-md" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] flex-1 min-w-[6rem] rounded-md" />
         <Skeleton variant="gradient" className="h-3 w-12 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 flex-1 min-w-[6rem] rounded-md" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] flex-1 min-w-[6rem] rounded-md" />
         <Skeleton variant="subtle" className="h-4 w-36 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 w-16 rounded-md shrink-0" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-16 rounded-md shrink-0" />
       </div>
     </div>
   );
@@ -246,7 +246,7 @@ function MobileCardSkeleton() {
       </div>
       {/* Spread toggle */}
       <div className="mt-1.5 px-3">
-        <Skeleton variant="subtle" className="h-8 w-full rounded-lg border-border/60" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-full rounded-lg border-border/60" />
       </div>
     </div>
   );
@@ -301,18 +301,20 @@ function DesktopTableSkeleton() {
         {/* Table */}
         <table className="w-full table-fixed min-w-0">
           <colgroup>
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '10.5%' }} />
-            <col style={{ width: '11.5%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '13.5%' }} />
-            <col style={{ width: '12%' }} />
+            {/* Order: Token → Market → Price → Size → Util → Supply → Spread → Borrow
+             * Widths must mirror ReservesTable.tsx exactly. */}
+            <col style={{ width: '14%' }} />
             <col style={{ width: '14.5%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '12.5%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '14%' }} />
           </colgroup>
           <thead>
             <tr className="border-b border-border/60">
-              {['Token', 'Price', 'Market', 'Size', 'Util', 'Supply', 'Spread', 'Borrow'].map((label, i) => (
+              {['Token', 'Market', 'Price', 'Size', 'Util', 'Supply', 'Spread', 'Borrow'].map((label, i) => (
                 <th key={label} className="py-[var(--ds-space-3)] text-center">
                   <Skeleton
                     variant={i === 5 || i === 7 ? 'gradient' : 'subtle'}
@@ -325,38 +327,38 @@ function DesktopTableSkeleton() {
           <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
             {Array.from({ length: 10 }).map((_, i) => (
               <motion.tr key={i} className="border-b border-border/30" variants={itemVariants}>
-                {/* Token: icon + symbol */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                {/* Token: icon + symbol (left-aligned) */}
+                <td className="ds-reserves-cell-td-edge-l py-[var(--ds-space-3)]">
+                  <div className="flex items-center justify-start gap-[var(--ds-space-2)]">
                     <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
                     <Skeleton variant="default" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-10' : 'w-14'}`} />
                   </div>
                 </td>
-                {/* Price */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-1)]">
-                  <Skeleton variant="subtle" className={`h-4 mx-auto rounded-md ${i % 2 === 0 ? 'w-14' : 'w-10'}`} />
-                </td>
-                {/* Market: chain chip */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-1)]">
+                {/* Market: chain chip (centered) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                 </td>
-                {/* Size: supply + borrow stacked */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
+                {/* Price (right-aligned) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <Skeleton variant="subtle" className={`h-4 ml-auto rounded-md ${i % 2 === 0 ? 'w-14' : 'w-10'}`} />
+                </td>
+                {/* Size: supply + borrow stacked (right-aligned) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                     <Skeleton variant="subtle" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-14' : 'w-16'}`} />
                   </div>
                 </td>
-                {/* Utilization */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <div className="flex items-center justify-center gap-1">
-                    <Skeleton variant="subtle" className="h-4 w-10 rounded-md" />
+                {/* Utilization (right-aligned) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <div className="flex items-center justify-end gap-1">
                     <Skeleton variant="subtle" className="w-2 h-4 rounded-sm border-transparent" />
+                    <Skeleton variant="subtle" className="h-4 w-10 rounded-md" />
                   </div>
                 </td>
-                {/* Supply: total + native+incentive breakdown */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
+                {/* Supply: total + native+incentive breakdown (right-aligned) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-14' : 'w-16'}`} />
                     <div className="flex items-center gap-1">
                       <Skeleton variant="subtle" className="h-3 w-8 rounded-md" />
@@ -364,13 +366,13 @@ function DesktopTableSkeleton() {
                     </div>
                   </div>
                 </td>
-                {/* Spread */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-14' : 'w-12'}`} />
+                {/* Spread (right-aligned) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <Skeleton variant="subtle" className={`h-5 rounded-md ml-auto ${i % 2 === 0 ? 'w-14' : 'w-12'}`} />
                 </td>
-                {/* Borrow: total + native+incentive breakdown */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
-                  <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
+                {/* Borrow: total + native+incentive breakdown (right-aligned) */}
+                <td className="ds-reserves-cell-td-edge-r py-[var(--ds-space-3)]">
+                  <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-14' : 'w-16'}`} />
                     <div className="flex items-center gap-1">
                       <Skeleton variant="subtle" className="h-3 w-8 rounded-md" />
@@ -396,14 +398,18 @@ const LoadingState = () => {
       <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="relative z-10 container mx-auto px-[var(--ds-space-3)] md:px-[var(--ds-space-4)] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)] space-y-3 md:space-y-5">
-        <HeaderSkeleton isMobile={!!isMobile} />
-        <InkCalculatorSkeleton />
-        <TopOpportunitiesSkeleton isMobile={!!isMobile} />
-        <div className="space-y-2 md:space-y-3">
-          <FilterBarSkeleton isMobile={!!isMobile} />
-          {isMobile ? <MobileReservesSkeleton /> : <DesktopTableSkeleton />}
+      <div className="relative z-10 w-full px-[var(--ds-space-3)] md:px-[var(--ds-space-5)] xl:px-[var(--ds-space-8)] 2xl:px-[4.5rem] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)]">
+        <div className="mb-3 md:mb-5">
+          <HeaderSkeleton isMobile={!!isMobile} />
         </div>
+        <main className="space-y-3 md:space-y-5">
+          <InkCalculatorSkeleton />
+          <TopOpportunitiesSkeleton isMobile={!!isMobile} />
+          <div className="space-y-2 md:space-y-3">
+            <FilterBarSkeleton isMobile={!!isMobile} />
+            {isMobile ? <MobileReservesSkeleton /> : <DesktopTableSkeleton />}
+          </div>
+        </main>
       </div>
     </div>
   );

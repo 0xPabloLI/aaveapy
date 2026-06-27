@@ -90,7 +90,8 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
  */
 export function cnDsInputNeutralWell(hasValue: boolean): string {
   return cn(
-    'rounded-md border transition-colors',
+    'rounded-md border outline-none transition-colors',
+    'focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)] focus-within:ring-offset-0',
     hasValue ? 'border-border/80 bg-[hsl(var(--border)/0.22)]' : 'border-border/60 bg-transparent',
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './formatters';
+import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './merklWhitelist';
 import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from './merklCampaigns';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -11,6 +11,7 @@ const daysFromNowIso = (days: number): string => {
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
+    reserveId: 'AaveV3Ink-0xToken',
     marketName: 'AaveV3Ink',
     chainName: 'Ink',
     chainId: 57073,

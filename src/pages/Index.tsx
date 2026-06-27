@@ -1,8 +1,19 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
+import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
+import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
+import { useWallet } from '@/hooks/useWallet';
+import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
+import { useChainDiscovery } from '@/hooks/useChainDiscovery';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
+import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { convertWalletPositionsToEntries } from '@/lib/walletPositionToPortfolio';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
-import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import { SortField, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import type { SortOrder } from '@/lib/sorters';
 import {
   buildTokenCategoryGroups,
   isStablecoinSymbol,
@@ -17,8 +28,9 @@ import ReservesTable from '@/components/dashboard/ReservesTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
-import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { TYDRO_POINT_TO_USD_RATE, buildPointRateMap } from '@/lib/tydro';
 import { AlertTriangle, Send, Github } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   preloadIncentiveIcons,
   setPreloadPaused,
@@ -26,14 +38,14 @@ import {
 } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
+import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
-import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
-import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketCheck';
-const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
+import FaqSection from '@/components/dashboard/FaqSection';
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
@@ -45,12 +57,21 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
+  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
   const [isApy, setIsApy] = useState(true);
+  const [showFrozenOrPaused, setShowFrozenOrPaused] = useState(false);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
-  
+  const [selectedHubs, setSelectedHubs] = useState<string[]>([]);
+  const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
+  const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const topOppsRef = useRef<HTMLDivElement>(null);
+
   const [isRateDragging, setIsRateDragging] = useState(false);
+  const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
+  const portfolio = usePortfolioSimulation();
   const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
+  const { address: walletAddress, isConnected: walletConnected } = useWallet();
+  const { campaignAccessStatuses } = useCampaignAccess(walletAddress);
   const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
     const id = String(campaignId || '').trim();
     if (!id) return;
@@ -62,17 +83,9 @@ const Index = () => {
     });
   }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
-  const [topTooltipState, setTopTooltipState] = useState<{
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  } | null>(null);
+
+
+
   // Always start at FDV default 1 on load/refresh (do not restore from cache)
   const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
   const tydroPointToUsdRate = useMemo(() => {
@@ -80,6 +93,8 @@ const Index = () => {
     if (Number.isNaN(parsed)) return TYDRO_POINT_TO_USD_RATE;
     return Math.max(parsed, 0);
   }, [tydroPointToUsdRateInput]);
+
+  const pointRateMap = useMemo(() => buildPointRateMap(tydroPointToUsdRate), [tydroPointToUsdRate]);
 
   // Persist Tydro rate to localStorage when it changes
   useEffect(() => {
@@ -90,8 +105,11 @@ const Index = () => {
   }, [tydroPointToUsdRateInput]);
 
   // Fetch data - API returns { snapshot, reserves } (breaking change)
-  const { data, isLoading, error, isError, refetch } = useAaveMarkets();
+  const { data, isLoading, error, isError, refetch, dataUpdatedAt } = useAaveMarkets();
   const { data: tokenCategoryOverrides } = useTokenCategories();
+
+  // Trigger runtime chain discovery for any unregistered chains in reserves
+  useChainDiscovery();
 
   const cachedMarkets = useMemo(() => getCachedMarkets(), []);
   const effectiveReservesData = data ?? cachedMarkets;
@@ -110,6 +128,138 @@ const Index = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialParamsAppliedRef = useRef(false);
+
+  // One-time hydration: read initial URL params (chain/category/search) into state.
+  // Fall back to localStorage when URL params are missing, so refresh/reopen restores filters.
+  useEffect(() => {
+    if (initialParamsAppliedRef.current) return;
+
+    let chainParam = searchParams.get('chain');
+    let categoryParam = searchParams.get('category');
+    let searchParam = searchParams.get('search');
+
+    // Fallback to persisted filters when URL params are absent.
+    let persisted: { chain?: string | null; category?: string | null; search?: string | null } | null = null;
+    if (chainParam === null && categoryParam === null && searchParam === null) {
+      try {
+        const raw = typeof window !== 'undefined' ? window.localStorage.getItem('aaveapy:filters') : null;
+        if (raw) persisted = JSON.parse(raw);
+      } catch {
+        persisted = null;
+      }
+      if (persisted) {
+        chainParam = persisted.chain ?? null;
+        categoryParam = persisted.category ?? null;
+        searchParam = persisted.search ?? null;
+      }
+    }
+
+    // Wait for markets list before resolving chain param (so chain → markets mapping works).
+    if (chainParam && effectiveMarketsList.length === 0) return;
+
+    let hasInvalidParam = false;
+
+    if (chainParam) {
+      const chainFilter = chainParam.trim().toLowerCase();
+      if (chainFilter) {
+        const matchedMarketNames = effectiveMarketsList
+          .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
+          .map((m) => m.marketName);
+        if (matchedMarketNames.length > 0) {
+          setSelectedMarkets(matchedMarketNames);
+          setMarketViewMode('chain');
+        } else {
+          hasInvalidParam = true;
+          toast.info(`Chain "${chainParam}" not supported — showing all chains`);
+        }
+      }
+    }
+
+    if (categoryParam) {
+      const cat = categoryParam.trim().toLowerCase() as TokenCategory;
+      if (['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat)) {
+        setSelectedCategory(cat);
+      } else {
+        hasInvalidParam = true;
+        toast.info(`Category "${categoryParam}" not recognized — showing all categories`);
+      }
+    }
+
+    if (searchParam) {
+      setSearchQuery(searchParam.trim());
+    }
+
+    // Clean invalid params from URL so the user gets a valid shareable link.
+    if (hasInvalidParam) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        const chainFilter = chainParam?.trim().toLowerCase() ?? '';
+        const chainMatched =
+          chainFilter &&
+          effectiveMarketsList.some((m) => m.chainName.toLowerCase().includes(chainFilter));
+        if (!chainMatched) next.delete('chain');
+
+        const cat = categoryParam?.trim().toLowerCase() ?? '';
+        const catValid = ['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat);
+        if (!catValid) next.delete('category');
+
+        return next.toString() === prev.toString() ? prev : next;
+      }, { replace: true });
+    }
+
+    initialParamsAppliedRef.current = true;
+  }, [effectiveMarketsList, searchParams, setSearchParams]);
+
+  // Derive chain slug from selected markets — only when all share a single chain.
+  const derivedChainSlug = useMemo(() => {
+    if (selectedMarkets.length === 0 || effectiveMarketsList.length === 0) return null;
+    const chains = new Set<string>();
+    for (const name of selectedMarkets) {
+      const m = effectiveMarketsList.find((x) => x.marketName === name);
+      if (m?.chainName) chains.add(m.chainName);
+    }
+    if (chains.size !== 1) return null;
+    return [...chains][0].toLowerCase().replace(/\s+/g, '-');
+  }, [selectedMarkets, effectiveMarketsList]);
+
+
+  // Two-way sync: push current filter state into URL whenever it changes,
+  // and mirror to localStorage so refresh/reopen restores the same view.
+  useEffect(() => {
+    if (!initialParamsAppliedRef.current) return;
+    const trimmed = searchQuery.trim();
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (derivedChainSlug) next.set('chain', derivedChainSlug);
+      else next.delete('chain');
+      if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
+      else next.delete('category');
+      if (trimmed) next.set('search', trimmed);
+      else next.delete('search');
+      return next.toString() === prev.toString() ? prev : next;
+    }, { replace: true });
+
+    try {
+      if (typeof window !== 'undefined') {
+        const payload = {
+          chain: derivedChainSlug ?? null,
+          category: selectedCategory && selectedCategory !== 'all' ? selectedCategory : null,
+          search: trimmed || null,
+        };
+        if (!payload.chain && !payload.category && !payload.search) {
+          window.localStorage.removeItem('aaveapy:filters');
+        } else {
+          window.localStorage.setItem('aaveapy:filters', JSON.stringify(payload));
+        }
+      }
+    } catch {
+      // ignore storage errors (quota / private mode)
+    }
+  }, [derivedChainSlug, selectedCategory, searchQuery, setSearchParams]);
+
 
   useEffect(() => {
     if (!isUsingCache) {
@@ -131,6 +281,46 @@ const Index = () => {
     [effectiveReservesData?.reserves]
   );
   const hasReserves = stableReserves.length > 0;
+
+  // Wallet position sync (SDK-first + on-chain fallback)
+  const v3AssetsByMarket = useMemo(() => deriveV3AssetsByMarket(stableReserves), [stableReserves]);
+  const v4ReservesBySpoke = useMemo(() => deriveV4ReservesBySpoke(stableReserves), [stableReserves]);
+  const {
+    walletLoadState,
+    result: walletResult,
+    v3SdkFailed,
+    v4SdkFailed,
+  } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
+
+
+  // Auto-import: wallet connect → SDK query → merge → toast
+  useWalletAutoImport({
+    address: walletAddress,
+    isConnected: walletConnected,
+    walletLoadState,
+    walletResult,
+    v3SdkFailed,
+    v4SdkFailed,
+    reserves: stableReserves,
+    portfolioActions: portfolio.actions,
+    onImport: () => setSimulationMode('portfolio'),
+    onDisconnect: () => setSimulationMode('single'),
+  });
+
+  const handleWalletSync = useCallback(() => {
+    if (walletResult.status === 'success' || walletResult.status === 'partial') {
+      const incoming = convertWalletPositionsToEntries(walletResult.data.positions, stableReserves);
+      if (incoming.length === 0) {
+        toast.info('Wallet has no positions');
+        return;
+      }
+      portfolio.actions.forceSyncReserves(incoming);
+      setSimulationMode('portfolio');
+      toast.success(`Synced ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
+    } else if (walletResult.status === 'error') {
+      toast.error('Failed to load wallet positions');
+    }
+  }, [walletResult, stableReserves, portfolio.actions]);
   const preloadMode = useMemo(
     () => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'),
     []
@@ -185,11 +375,12 @@ const Index = () => {
     return true;
   }, []);
 
-  const handleTopCardClick = useCallback((reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
-    const id = `${reserve.marketName}-${reserve.tokenAddress}`;
+  const handleTopCardClick = useCallback((reserve: ReserveWithSpread) => {
+    const id = getReserveKey(reserve);
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');
+    setSelectedHubs([]);
     setPendingScrollReserveId(id);
     scrollToReserveElement(id);
   }, [scrollToReserveElement]);
@@ -202,30 +393,6 @@ const Index = () => {
     }, 200);
     return () => clearTimeout(timer);
   }, [pendingScrollReserveId, scrollToReserveElement]);
-
-  const handleTopIncentiveClick = useCallback((payload: {
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  }) => {
-    setTopTooltipState({
-      reserve: payload.reserve,
-      type: payload.type,
-      position: payload.position,
-      triggerCenterX: payload.triggerCenterX,
-      triggerHeight: payload.triggerHeight,
-      triggerRect: payload.triggerRect,
-      accentBorderClass: payload.accentBorderClass,
-      accentTextClass: payload.accentTextClass,
-      accentBgClass: payload.accentBgClass,
-    });
-  }, []);
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -241,6 +408,21 @@ const Index = () => {
       setSortOrder('desc');
     }
   };
+
+
+  // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
+  const hubEntries = useMemo(() => {
+    const reserves = effectiveReservesData?.reserves ?? [];
+    const map = new Map<string, string>();
+    for (const r of reserves) {
+      if (r.hubId?.trim() && r.hubName?.trim()) {
+        map.set(r.hubId.trim(), r.hubName.trim());
+      }
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  }, [effectiveReservesData?.reserves]);
 
   const filteredReserves = useMemo(() => {
     if (!effectiveReservesData?.reserves) return [];
@@ -266,6 +448,13 @@ const Index = () => {
         }
       }
 
+      // Hub filter (by hubId, not hubName)
+      if (selectedHubs.length > 0) {
+        if (!reserve.hubId || !selectedHubs.includes(reserve.hubId)) {
+          return false;
+        }
+      }
+
       // Category filter
       if (selectedCategory !== 'all') {
         const symbol = reserve.tokenSymbol.toUpperCase();
@@ -285,9 +474,14 @@ const Index = () => {
         }
       }
 
+      // Frozen/Paused filter
+      if (!showFrozenOrPaused && (reserve.isFrozen || reserve.isPaused || reserve.isActive === false)) {
+        return false;
+      }
+
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedHubs, selectedCategory, tokenCategoryGroups, showFrozenOrPaused]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -302,10 +496,10 @@ const Index = () => {
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative z-10 container mx-auto px-[var(--ds-space-3)] md:px-[var(--ds-space-4)] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)] space-y-3 md:space-y-5">
+        <div className="relative z-10 w-full px-[var(--ds-space-3)] md:px-[var(--ds-space-5)] xl:px-[var(--ds-space-8)] 2xl:px-[4.5rem] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)]">
           {/* Cache warning banner */}
           {showCacheWarning && (
-            <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 ds-text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium ds-text-amber-900">
@@ -320,7 +514,7 @@ const Index = () => {
 
           {/* Error banner (only show if no cache available) */}
           {error && !effectiveReservesData && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium text-destructive">
@@ -335,7 +529,7 @@ const Index = () => {
 
           {/* No data warning banner (when there's no data, no error, and no cache) */}
           {!effectiveReservesData && !isLoading && !error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium text-destructive">
@@ -349,10 +543,13 @@ const Index = () => {
           )}
 
           {/* Header */}
-          <Header
-            lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
-          />
+          <div className="mb-3 md:mb-5">
+            <Header
+              lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
+            />
+          </div>
 
+          <main className="space-y-3 md:space-y-5">
           {/* INK Incentive APR Calculator */}
           <>
             <InkAprCalculator
@@ -363,21 +560,26 @@ const Index = () => {
           </>
 
           {/* Top Opportunities */}
-          {stableReserves && stableReserves.length > 0 && (
-            <TopOpportunities
-              reserves={stableReserves}
-              isApy={isApy}
-              isRateDragging={isRateDragging}
-              whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-              categoryGroups={tokenCategoryGroups}
-              onIncentiveClick={handleTopIncentiveClick}
-              onCardClick={handleTopCardClick}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-            />
-          )}
+          <div ref={topOppsRef}>
+            {stableReserves && stableReserves.length > 0 && (
+              <TopOpportunities
+                reserves={stableReserves}
+                isApy={isApy}
+                isRateDragging={isRateDragging}
+                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
+                categoryGroups={tokenCategoryGroups}
+                onCardClick={handleTopCardClick}
+                tydroPointToUsdRate={tydroPointToUsdRate}
+                pointRateMap={pointRateMap}
+                campaignAccessStatuses={campaignAccessStatuses}
+              />
+            )}
+          </div>
 
           {/* Filters + Reserves Table (tighter gap) */}
           <div className="space-y-2 md:space-y-3">
+
             <FilterBar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -388,10 +590,33 @@ const Index = () => {
               isApy={isApy}
               setIsApy={setIsApy}
               marketsList={effectiveMarketsList}
+              showFrozenOrPaused={showFrozenOrPaused}
+              setShowFrozenOrPaused={setShowFrozenOrPaused}
+              hubEntries={hubEntries}
+              selectedHubs={selectedHubs}
+              setSelectedHubs={setSelectedHubs}
+              marketViewMode={marketViewMode}
+              setMarketViewMode={(mode) => {
+                setMarketViewMode(mode);
+                if (mode === 'chain') {
+                  startTransition(() => {
+                    setSelectedHubs([]);
+                  });
+                } else {
+                  startTransition(() => {
+                    setSelectedMarkets([]);
+                    setExpandedChain(null);
+                  });
+                }
+              }}
+              expandedChain={expandedChain}
+              setExpandedChain={setExpandedChain}
+
             />
 
             <ReservesTable
               reserves={filteredReserves}
+              allReserves={stableReserves}
               sortField={sortField}
               sortOrder={sortOrder}
               onSort={handleSort}
@@ -401,34 +626,47 @@ const Index = () => {
                 setSelectedMarkets((prev) =>
                   prev.length === 1 && prev[0] === marketName ? [] : [marketName]
                 );
+                setSelectedHubs([]);
+                setMarketViewMode('chain');
+                const chain = effectiveMarketsList.find((m) => m.marketName === marketName)?.chainName ?? null;
+                setExpandedChain(chain);
+                const el = topOppsRef.current;
+                if (el) {
+                  const y = el.getBoundingClientRect().bottom + window.scrollY;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+              }}
+              onSelectHub={(hubId) => {
+                setSelectedHubs((prev) =>
+                  prev.length === 1 && prev[0] === hubId ? [] : [hubId]
+                );
+                setSelectedMarkets([]);
+                setMarketViewMode('hub');
+                const el = topOppsRef.current;
+                if (el) {
+                  const y = el.getBoundingClientRect().bottom + window.scrollY;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
+              pointRateMap={pointRateMap}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}
               onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}
               scrollToReserveId={pendingScrollReserveId}
+              simulationMode={simulationMode}
+              onSimulationModeChange={setSimulationMode}
+              portfolioEntries={portfolio.entries}
+              portfolioActions={portfolio.actions}
+              portfolioSnapshots={portfolio.snapshots}
+              onWalletSync={handleWalletSync}
+              walletLoadState={walletLoadState}
+              onRefresh={handleRefresh}
+              dataUpdatedAt={dataUpdatedAt}
+              topOppsRef={topOppsRef}
+              campaignAccessStatuses={campaignAccessStatuses}
             />
           </div>
-
-          {topTooltipState && (
-              <IncentiveTooltip
-                reserve={topTooltipState.reserve}
-                type={topTooltipState.type}
-                position={topTooltipState.position}
-                triggerCenterX={topTooltipState.triggerCenterX}
-                triggerHeight={topTooltipState.triggerHeight}
-                triggerRect={topTooltipState.triggerRect}
-                accentBorderClass={topTooltipState.accentBorderClass}
-                accentTextClass={topTooltipState.accentTextClass}
-                accentBgClass={topTooltipState.accentBgClass}
-                onClose={() => setTopTooltipState(null)}
-                isApy={isApy}
-                tydroPointToUsdRate={tydroPointToUsdRate}
-                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                usePortal
-              />
-          )}
 
           {/* Empty state */}
           {filteredReserves.length === 0 && effectiveReservesData && !isLoading && (
@@ -444,23 +682,9 @@ const Index = () => {
             </div>
           )}
 
-          {/* Dev-only debug panels: Merkl Forecast + Rate vs Market check */}
-          {(import.meta.env.DEV || import.meta.env.VITE_SHOW_RATE_CHECK === 'true') && (
-            <div className="space-y-4">
-              <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
-                <MerklForecastPanel
-                  reserves={filteredReserves}
-                  tydroPointToUsdRate={tydroPointToUsdRate}
-                  whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-                  onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                  tokenPrices={tokenPrices}
-                />
-              </Suspense>
-              <div className="max-w-4xl mx-auto">
-                <RateInputsVsMarketCheck />
-              </div>
-            </div>
-          )}
+          {/* FAQ */}
+          <FaqSection />
+          </main>
 
           {/* Footer */}
           <footer className="border-t border-border/50 py-[var(--ds-space-8)]">
@@ -527,7 +751,7 @@ const Index = () => {
                   {...footerLinkTab}
                   aria-label="Join @aaveapy on Telegram"
                   title="Join @aaveapy on Telegram"
-                  className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-[hsl(200_100%_45%/0.12)] hover:text-[hsl(200_100%_45%)] hover:border-[hsl(200_100%_45%/0.4)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-[hsl(200_100%_45%/0.12)] hover:text-[hsl(200_100%_45%)] hover:border-[hsl(200_100%_45%/0.4)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <Send className="w-4 h-4" />
                 </a>
@@ -536,7 +760,7 @@ const Index = () => {
                   {...footerLinkTab}
                   aria-label="View source on GitHub"
                   title="View source on GitHub"
-                  className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <Github className="w-4 h-4" />
                 </a>

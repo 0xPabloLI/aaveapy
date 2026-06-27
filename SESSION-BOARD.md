@@ -1,0 +1,95 @@
+# Session Coordination Board
+
+本文件是多 agent session 的**并行协调看板**。每个 session 启动时**必须**读取本文件、注册自己、检查冲突；结束时**必须**注销。
+
+---
+
+## 协议（每个 session 必须遵守）
+
+### 1. 启动时：注册 + 冲突检测
+
+1. **读取**本文件，查看 `## Active Sessions` 中所有 `status: active` 的条目。
+2. **新增一行**到 Active Sessions 表，填写自己的信息（见下方表格格式）。
+3. **冲突检测**：将自己的 `touch-files`（计划修改的文件/目录）与所有 `status: active` 条目的 `touch-files` 做交集。
+   - **无交集** → `status: active`，正常执行。
+   - **有交集** → `status: blocked`，**只做 plan / 分析 / 只读操作，不要写入任何冲突文件**。在 `notes` 列注明被谁阻塞。
+4. 如果判断不准（比如不确定自己会改哪些文件），先用 `status: planning`，弄清楚范围后再更新。
+
+### 2. 执行中：保持更新
+
+- 如果 scope 变了（新增或减少要改的文件），**立即更新** `touch-files`。
+- 如果发现新的冲突，将自己降级为 `blocked`。
+- 定期检查：被阻塞时，可以重新读取本文件，如果阻塞方已注销，将自己升级为 `active`。
+
+### 3. 结束时：注销
+
+- 任务完成（commit 或放弃）后，**删除自己的行**或将 `status` 改为 `done`。
+- 这样其他被你阻塞的 session 就知道可以继续了。
+
+### 4. 异常处理
+
+- 如果看到一个 `active` 条目的 `registered` 时间超过 **48 小时**且无更新，可以视为僵尸 session，在 `notes` 标注 `stale?` 并继续工作（但谨慎操作对应文件）。
+- 如果你是人类用户，可以随时清理僵尸条目。
+
+---
+
+## Active Sessions
+
+<!-- 格式说明：每个 session 一行，用 | 分隔 -->
+<!-- session-id: 简短唯一标识（如 droid-0408a, cursor-0408b） -->
+<!-- agent: 使用的工具（Droid / Cursor / Codex / Claude Code 等） -->
+<!-- task: 简述要做什么 -->
+<!-- touch-files: 计划修改的文件或目录，逗号分隔；越精确越好 -->
+<!-- status: active / planning / blocked / done -->
+<!-- registered: ISO 时间戳 -->
+<!-- notes: 冲突说明、阻塞原因等 -->
+
+| session-id | agent | task | touch-files | status | registered | notes |
+|------------|-------|------|-------------|--------|------------|-------|
+| codex-0409a | Codex | 整理 Merkl forecast 文档表 | docs/rate-calculation.md, SESSION-BOARD.md | done | 2026-04-09T00:00:00Z | 文档已更新 |
+| codex-0410a | Codex | 前端收口 Merkl API contract 对齐 | src/lib/apiSchemas.ts, src/types/aave.ts, src/lib/tydro.ts, src/lib/tydro.test.ts, src/hooks/useRateSimulation.ts, src/hooks/useRateSimulation.test.ts, src/lib/apiSchemas.test.ts, SESSION-BOARD.md | done | 2026-04-10T00:00:00Z | 承接中断修改，补齐前端契约行为；本地验证通过 |
+| codex-0415b | Codex | 修复 explorer links + 增加真实浏览器校验并更新文档提交 | src/lib/poolExplorerLinks.ts, src/lib/poolExplorerLinks.test.ts, scripts/test-explorer-links.ts, scripts/verify-explorer-links.ts, scripts/, docs/pool-explorer-links.md, .github/workflows/, SESSION-BOARD.md | done | 2026-04-15T20:35:00Z | 已完成并提交 |
+| droid-0421a | Droid | 修复 AssetActionMenu 上翻偏移 + RTL/happy-dom 加固 | src/components/dashboard/AssetActionMenu.tsx, src/components/dashboard/assetActionMenuPosition.ts, src/components/dashboard/assetActionMenuPosition.test.ts, src/components/dashboard/AssetActionMenu.test.tsx, src/components/dashboard/MobileReserveCard.test.tsx, src/components/dashboard/TopOpportunities.test.tsx, src/test/setup.ts, vite.config.ts, scripts/verify-asset-action-menu-position.mjs, package.json, SESSION-BOARD.md | done | 2026-04-21T00:00:00Z | 中心锚点 + offsetHeight；Playwright 实机校验通过；迁移 3 个冒烟测试 + 9 个 AssetActionMenu 交互测试；426/426 pass；已 rebase+push（commits b845bd2, 9d9713f） |
+| codex-0422a | Codex | 修正移动端 symbol 截断规则并补充文档 | src/components/dashboard/MobileReserveCard.tsx, src/components/dashboard/TopOpportunities.tsx, docs/design/frontend-interaction-guardrails.md, docs/design/DESIGN-SYSTEM-REFERENCE.md, SESSION-BOARD.md | done | 2026-04-22T09:20:00Z | 已完成，build 通过 |
+| lovable-0422b | Lovable | 移除 Top Opportunities 残留跳转按钮 | src/components/dashboard/TopOpportunities.tsx, SESSION-BOARD.md | done | 2026-04-22T09:35:00Z | 仅移除 Top Opportunities 内残留 AssetActionMenu，并保留用户要求的精简交互 |
+| lovable-0423a | Lovable | 落地 Market/Hub 两行方案 B 并修复构建 | src/components/dashboard/DesktopReserveRow.tsx, src/components/dashboard/ReservesTableDesktopHeader.test.tsx, src/lib/chainIconManifest.generated.ts, src/lib/tokenIconManifest.generated.ts, supabase/functions, SESSION-BOARD.md | active | 2026-04-23T00:00:00Z | stale?（>48h 无更新，截至 2026-04-27） |
+| amp-0427a | Amp | 修正 fallback-reference 文档与实际代码不符之处 | docs/fallback-reference.md, SESSION-BOARD.md | done | 2026-04-27T00:00:00Z | 已完成文档同步；DesktopReserveRow/MobileReserveCard 的 optimalUtilization 死代码留作后续清理（被 lovable-0423a 阻塞，文档 §2.4 标 TODO） |
+| amp-0427b | Amp | 清理 optimalUtilization 死 fallback（文档 §2.4 TODO） | src/components/dashboard/DesktopReserveRow.tsx, src/components/dashboard/MobileReserveCard.tsx, src/components/dashboard/MobileReserveCard.test.tsx, docs/fallback-reference.md, SESSION-BOARD.md | done | 2026-04-27T00:10:00Z | 删除两处 `?? simulation?.utilization.optimal`；同步修正 MobileReserveCard.test fixture 添加 `optimalUsageRate` 以反映生产同源；lint/test(482 pass)/build 全绿 |
+| amp-0428a | Amp | AAV-190 统一命名 poolLiquidity → availableLiquidityUsd（含 UI 文案） | src/lib/scenarioSize.ts, src/lib/scenarioSize.test.ts, src/components/dashboard/ReservesTable.tsx, src/components/dashboard/DesktopReserveRow.tsx, src/components/dashboard/MobileReserveCard.tsx, src/components/dashboard/MobileReserveSheetContent.tsx, src/components/dashboard/BorrowCapProgressRing.tsx, src/hooks/useRateSimulation.ts, docs/rate-calculation.md, docs/fallback-reference.md, docs/v3-v4-sdk-field-mapping.md, docs/TERMINOLOGY.md, docs/design/frontend-interaction-guardrails.md, SESSION-BOARD.md | done | 2026-04-28T01:25:00Z | 重命名完成：poolLiquidity→availableLiquidityUsd，UI 文案 "Pool liquidity"→"Available liquidity"；lint/test(482 pass)/build 全绿 |
+| codex-0428b | Codex | 补完 AAV-190 文档残留 Pool liquidity → Available liquidity | docs/rate-calculation.md, docs/TERMINOLOGY.md, docs/v3-v4-sdk-field-mapping.md, docs/archive/2026-04-26-utilization-two-levels-design.md, SESSION-BOARD.md | done | 2026-04-28T06:57:00Z | 补完 4 个 doc 文件残留文案；lint/test(482 pass)/build/tsc 全绿 |
+| amp-0430a | Amp | 清理 deadcode 与过时文档（explorer-links 调试残留 / 顶层临时文件 / DOCS-INDEX 同步） | test_explorers.sh, icon-preview.html, .gitignore, scripts/test-explorer-links.*, scripts/test-explorer-links-full.mjs, scripts/verify-explorer-links.ts, scripts/verify-asset-action-menu-position.mjs, scripts/compare-merit-forecast-paths.mjs, docs/conventions/api-base-urls.md, docs/pool-explorer-links.md, docs/DOCS-INDEX.md, SESSION-BOARD.md | done | 2026-04-30T00:00:00Z | 删除 10 个 dead 文件（explorer-links 调试 6 + 顶层临时 2 + 一次性脚本 2）、tsbuildinfo 入 .gitignore、DOCS-INDEX 同步 7 个新增文档 + 全表日期；lint/test(482 pass)/build 全绿；docs/plans/ 旧文件的 worktree 删除是其他 session 留下的，未一并 commit |
+| codex-0502a | Codex | 调整 FilterBar Ethereum 展开布局 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T22:56:31+08:00 | 已完成；验证通过；superpowers bootstrap/use-skill 因本机 Node simdjson 动态库缺失失败 |
+| codex-0502b | Codex | 恢复 FilterBar Ethereum 子市场 push 展开动画 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T23:00:00+08:00 | 已完成；沿用 bundled Node 验证；Magic Patterns MCP 已写入 Codex config 但当前端点需要授权 |
+
+---
+
+## 冲突判断参考
+
+以下是常见的高冲突区域，两个 session 同时改这些区域**几乎必然冲突**：
+
+| 区域 | 典型文件 |
+|------|----------|
+| 利率模拟 | `src/lib/rateSimulation.ts`, `src/hooks/useRateSimulation.ts` |
+| 储备表 | `src/components/reserves/ReservesTable.tsx`, `DesktopReserveRow.tsx` |
+| 移动端储备 | `src/components/reserves/MobileReserveCard.tsx`, `MobileExpandedReserveShell.tsx` |
+| 激励预测 | `src/lib/meritForecast.ts`, `src/lib/brevisForecast.ts`, `src/lib/merklForecast.ts` |
+| 格式化 / 工具 | `src/lib/formatters.ts`, `src/lib/sorters.ts` |
+| 全局样式 | `src/index.css`, `src/App.css`, `tailwind.config.ts` |
+| 路由 / 页面 | `src/pages/Index.tsx` |
+| 类型定义 | `src/types/` 下任意文件 |
+
+如果两个 session 的 `touch-files` 落在**同一区域**，即使不是完全相同的文件，也建议视为冲突（因为经常有隐式依赖）。
+
+---
+
+## 示例
+
+```
+| session-id   | agent  | task                           | touch-files                                          | status  | registered          | notes              |
+|--------------|--------|--------------------------------|------------------------------------------------------|---------|---------------------|--------------------|
+| droid-0408a  | Droid  | 修复 mobile 展开动画           | MobileReserveCard.tsx, MobileExpandedReserveShell.tsx | active  | 2026-04-08T10:30:00 |                    |
+| cursor-0408b | Cursor | 重构利率模拟添加 Brevis 支持   | rateSimulation.ts, brevisForecast.ts, useRateSimulation.ts | active | 2026-04-08T10:45:00 |                    |
+| droid-0408c  | Droid  | 调整 ReservesTable 排序逻辑    | sorters.ts, ReservesTable.tsx                        | blocked | 2026-04-08T11:00:00 | 被 cursor-0408b 阻塞（ReservesTable 间接依赖 rateSimulation） |
+```
+
+当 `cursor-0408b` 完成并注销后，`droid-0408c` 重新读取本文件，发现无冲突，即可将自己改为 `active` 并开始执行。

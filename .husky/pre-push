@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/h"
+
+STASH_COUNT=$(git stash list | wc -l | tr -d ' ')
+if [ "$STASH_COUNT" -gt 3 ]; then
+  echo ""
+  echo "⚠️  WARNING: You have $STASH_COUNT git stashes."
+  echo "   Stale stashes can pollute rebase/merge operations."
+  echo "   Consider cleaning up:"
+  echo "     git stash list          # review stashes"
+  echo "     git stash clear         # delete all (dangerous — review first!)"
+  echo "     git stash drop stash@{N} # delete a specific one"
+  echo ""
+fi

@@ -1,27 +1,25 @@
-import { useState, useEffect, useMemo, useRef, memo, forwardRef } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
+import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ReserveWithSpread } from '@/types/aave';
+import { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 import {
   isStablecoinSymbol,
   isEthRelatedSymbol,
   isBtcRelatedSymbol,
   TokenCategoryGroups,
 } from '@/lib/tokenCategories';
-import { 
-  formatPercent, 
-  formatSpread, 
-  calculateTotalSupplyApy, 
+import { formatPercent, formatSpread } from '@/lib/formatters';
+import {
+  calculateTotalSupplyApy,
   calculateTotalBorrowApy,
   calculateSpreadApy,
   calculateTotalSupplyApr,
   calculateTotalBorrowApr,
   calculateSpreadApr,
-  getReserveIncentiveValues,
-  getReserveMarketDisplayName,
-} from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
+} from '@/lib/rateCalculations';
+import { getReserveIncentiveValues } from '@/lib/incentiveAggregation';
+import type { PointRateMap } from '@/lib/tydro';
+import { getReserveMarketDisplayName } from '@/lib/marketLabels';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -30,6 +28,9 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
+import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
   getApyColorClass,
   getApyAccentClasses,
@@ -45,21 +46,25 @@ interface TopOpportunitiesProps {
   isApy: boolean;
   isRateDragging?: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   categoryGroups: TokenCategoryGroups;
-  onIncentiveClick?: (payload: {
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  }) => void;
-  onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick?: (reserve: ReserveWithSpread) => void;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
+
+type TopOpportunitiesTooltipState = {
+  reserve: ReserveWithTotals;
+  type: 'supply' | 'borrow';
+  position: { x: number; y: number };
+  triggerCenterX: number;
+  triggerHeight: number;
+  triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
+  accentBorderClass?: string;
+  accentTextClass?: string;
+  accentBgClass?: string;
+};
 
 const DISPLAY_COUNT = 5;
 
@@ -132,7 +137,7 @@ interface ReserveIdentityProps {
   marketDisplayName: string;
   isMobile: boolean;
   mini?: boolean;
-  aaveUrl?: string;
+  miniRightContent?: ReactNode;
 }
 
 const ReserveIdentity = memo(({
@@ -144,11 +149,11 @@ const ReserveIdentity = memo(({
   marketDisplayName,
   isMobile,
   mini = false,
-  aaveUrl,
+  miniRightContent,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
-      <div className="flex items-center gap-[var(--ds-space-2)]">
+      <div className="flex items-center gap-[var(--ds-space-1)]">
         <TokenIcon
           symbol={iconSymbol}
           size={24}
@@ -157,8 +162,8 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center">
-            <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+          <div className="flex min-w-0 w-full items-start gap-[var(--ds-space-0-5)]">
+            <span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
@@ -167,7 +172,7 @@ const ReserveIdentity = memo(({
             <span className="truncate">{marketDisplayName}</span>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        {miniRightContent ? <div className="shrink-0 tabular-nums text-right">{miniRightContent}</div> : null}
       </div>
     );
   }
@@ -181,20 +186,10 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <div className="flex items-center min-w-0">
-        <a
-          href={aaveUrl}
-          {...externalLinkTabProps(isMobile)}
-          onClick={(e) => e.stopPropagation()}
-          className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-          aria-label={`Open ${tokenSymbol} on Aave`}
-          title="Open on Aave"
-        >
-          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
-            {tokenSymbol}
-          </span>
-          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
-        </a>
+        <div className="flex items-start min-w-0 w-full gap-[var(--ds-space-1)]">
+          <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-tight ds-text-13">
+          {tokenSymbol}
+        </span>
       </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
@@ -219,6 +214,77 @@ type ReserveWithTotals = ReserveWithSpread & {
   aprSpread: number | null;
 };
 
+interface MiniReserveApyRowProps {
+  isLeverage: boolean;
+  hasIncentive: boolean;
+  apyAccentText: string;
+  apyAccentChip: string;
+  nativeValue: number | null;
+  incentiveValue: number | null;
+  mainValue: number | null;
+  index: number;
+  totalItems: number;
+  isApy: boolean;
+  reserve: ReserveWithTotals;
+  onIncentiveClick: (
+    e: React.MouseEvent,
+    reserve: ReserveWithTotals,
+    type: 'supply' | 'borrow',
+    incentiveValue: number | null,
+    accentValue: number | null
+  ) => void;
+  getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
+}
+
+const MiniReserveApyRow = ({
+  isLeverage,
+  hasIncentive,
+  apyAccentText,
+  apyAccentChip,
+  nativeValue,
+  incentiveValue,
+  mainValue,
+  index,
+  totalItems,
+  isApy,
+  reserve,
+  onIncentiveClick,
+  getSpreadAccentClass,
+}: MiniReserveApyRowProps) => {
+  if (isLeverage) {
+    return (
+      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-11`}>
+        {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
+      </span>
+    );
+  }
+
+  if (!hasIncentive) {
+    return (
+      <span className="ds-text-11 font-medium leading-none text-muted-foreground/55">
+        Base {isApy ? 'APY' : 'APR'} only
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <span className={`ds-text-11 tabular-nums ${apyAccentText}`}>
+        {formatPercent(nativeValue ?? null)}
+      </span>
+      <span className="text-muted-foreground ds-text-11">+</span>
+      <button
+        type="button"
+        onClick={(e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
+        className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 cursor-pointer ${apyAccentChip}`}
+      >
+        <span>{formatPercent(incentiveValue ?? 0)}</span>
+        <IncentiveIcon width={8} height={8} />
+      </button>
+    </>
+  );
+};
+
 interface MiniReserveCardProps {
   reserve: ReserveWithTotals;
   index: number;
@@ -227,7 +293,7 @@ interface MiniReserveCardProps {
   disableMotion?: boolean;
   isApy: boolean;
   isMobile: boolean;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -239,7 +305,7 @@ interface MiniReserveCardProps {
   getApyColorClass: (value: number | null) => string;
   getSpreadColorClass: (value: number | null, index?: number, total?: number) => string;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
-  itemVariants: Record<string, unknown>;
+  itemVariants: import('framer-motion').Variants;
 }
 
 const MiniReserveCard = ({
@@ -262,9 +328,15 @@ const MiniReserveCard = ({
   const mainValue = isLeverage
     ? (isApy ? reserve.apySpread : reserve.aprSpread)
     : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+  const nativeValue = reserve.supplyApy ?? null;
   const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
   const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
   const apyAccent = getApyAccentClasses(mainValue);
+  const mainValueNode = (
+    <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
+      {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
+    </span>
+  );
   const chainIconSrc = getChainIconSrc(reserve.chainName);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
@@ -284,7 +356,7 @@ const MiniReserveCard = ({
             animate: 'visible',
             variants: itemVariants,
           })}
-      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
+      className="rounded-xl border cursor-pointer bg-card border-border/60 active:bg-muted/60 flex flex-col justify-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]"
       onClick={() => onCardClick(reserve)}
     >
       <ReserveIdentity
@@ -296,27 +368,25 @@ const MiniReserveCard = ({
         chainIconSrc={chainIconSrc}
         marketDisplayName={marketDisplayName}
         isMobile={isMobile}
+        miniRightContent={mainValueNode}
       />
 
-      <div className="flex items-baseline justify-between gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
-        <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
-          {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
-        </span>
-        {!isLeverage && hasIncentive && (
-          <button
-            type="button"
-            onClick={(e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
-            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
-          >
-            <span>+{formatPercent(incentiveValue)}</span>
-            <IncentiveIcon width={7} height={7} />
-          </button>
-        )}
-        {isLeverage && (
-          <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
-            {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
-          </span>
-        )}
+      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)] min-h-[1.125rem]">
+        <MiniReserveApyRow
+          isLeverage={isLeverage}
+          hasIncentive={hasIncentive}
+          apyAccentText={apyAccent.text}
+          apyAccentChip={apyAccent.chip}
+          nativeValue={nativeValue}
+          incentiveValue={incentiveValue}
+          mainValue={mainValue}
+          index={index}
+          totalItems={totalItems}
+          isApy={isApy}
+          reserve={reserve}
+          onIncentiveClick={onIncentiveClick}
+          getSpreadAccentClass={getSpreadAccentClass}
+        />
       </div>
     </Wrapper>
   );
@@ -331,7 +401,7 @@ interface ReserveItemProps {
   isApy: boolean;
   isMobile: boolean;
   isRateDragging: boolean;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -343,7 +413,7 @@ interface ReserveItemProps {
   getApyColorClass: (value: number | null) => string;
   getSpreadColorClass: (value: number | null, index?: number, total?: number) => string;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
-  itemVariants: Record<string, unknown>;
+  itemVariants: import('framer-motion').Variants;
 }
 
 const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function ReserveItem({
@@ -377,9 +447,6 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
     name: reserve.tokenName,
   });
   const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
-  const aaveUrl = buildAaveReserveUrl(reserve);
-  // Using foreground color with opacity instead of text-muted-foreground to avoid Droid-Shield false positive
-  const externalLinkIconClassName = 'w-3 h-3 opacity-0 -ml-1 shrink-0 transition-opacity duration-150 group-hover:opacity-70 text-[hsl(var(--muted-foreground))]';
 
   return (
     <motion.div
@@ -394,7 +461,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
       } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
       onClick={() => onCardClick(reserve)}
     >
-      <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
+      <div className={`grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] ${isMobile ? 'gap-y-[var(--ds-space-0-5)]' : 'gap-y-[var(--ds-space-1)]'} flex-1 min-w-0 h-full`}>
         <TokenIcon
           symbol={iconSymbol}
           size={isMobile ? 28 : 32}
@@ -402,20 +469,10 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           className="shrink-0 row-span-2"
           logoURI={logoURI}
         />
-        <div className="flex items-center min-w-0">
-          <a
-            href={aaveUrl}
-            {...externalLinkTabProps(isMobile)}
-            onClick={(e) => e.stopPropagation()}
-            className="group inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-            title="Open on Aave"
-          >
-            <span className="font-semibold text-foreground truncate leading-none ds-text-14">
-              {reserve.tokenSymbol}
-            </span>
-            <ExternalLink className={externalLinkIconClassName} />
-          </a>
+        <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
+          <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-none ds-text-14">
+            {reserve.tokenSymbol}
+          </span>
         </div>
         <div
           className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
@@ -474,10 +531,10 @@ interface CategoryCardProps {
   isApy: boolean;
   isApyChanged: boolean;
   isRateDragging: boolean;
-  headerVariants: Record<string, unknown>;
-  iconVariants: Record<string, unknown>;
-  itemVariants: Record<string, unknown>;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  headerVariants: import('framer-motion').Variants;
+  iconVariants: import('framer-motion').Variants;
+  itemVariants: import('framer-motion').Variants;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -512,7 +569,7 @@ const CategoryCard = ({
   const shouldAnimateList = !isMobile && !isApyChanged;
 
   return (
-    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'px-[var(--ds-space-2)] py-[var(--ds-space-2)]' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
       <CategoryCardHeader
         title={title}
         shortTitle={shortTitle}
@@ -628,13 +685,26 @@ const TopOpportunities = ({
   isApy,
   isRateDragging = false,
   whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
   categoryGroups,
-  onIncentiveClick,
   onCardClick,
   tydroPointToUsdRate,
+  pointRateMap,
+  campaignAccessStatuses,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
+
+  const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  const forecastStates = useMemo<Record<string, MerklForecastWireItem>>(() => {
+    const forecast = sideDataMetaQuery.data?.forecast;
+    if (!forecast) return {};
+    const states: Record<string, MerklForecastWireItem> = {};
+    forecast.items.forEach((item) => { states[item.campaignId] = item; });
+    return states;
+  }, [sideDataMetaQuery.data?.forecast]);
+
   const [isXl, setIsXl] = useState(false);
+  const [tooltipState, setTooltipState] = useState<TopOpportunitiesTooltipState | null>(null);
   const prevIsApyRef = useRef(isApy);
 
   useEffect(() => {
@@ -655,9 +725,11 @@ const TopOpportunities = ({
   const reservesWithTotals = useMemo<ReserveWithTotals[]>(() => reserves.map(reserve => {
     const supplyIncentive = getReserveIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
       whitelistMerklCampaignIds,
+      pointRateMap,
     });
     const borrowIncentive = getReserveIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
       whitelistMerklCampaignIds,
+      pointRateMap,
     });
 
     const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
@@ -678,7 +750,7 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
+  }).filter(r => !r.isFrozen && !r.isPaused && r.isActive !== false), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate, pointRateMap]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...reservesWithTotals]
@@ -766,28 +838,21 @@ const TopOpportunities = ({
     })
   };
 
-  const handleCardClick = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+  const handleCardClick = (reserve: ReserveWithSpread) => {
     if (onCardClick) {
       onCardClick(reserve);
-      return;
-    }
-    if (isMobile) return;
-    const url = buildAaveReserveUrl(reserve);
-    if (url) {
-      openExternalUrl(url, false);
     }
   };
 
-  const handleIncentiveClick = (
+  const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
-    reserve: ReserveWithSpread,
+    reserve: ReserveWithTotals,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
     accentValue: number | null,
   ) => {
     e.stopPropagation();
     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
-    if (!onIncentiveClick) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     if (import.meta.env.DEV) {
@@ -799,7 +864,7 @@ const TopOpportunities = ({
       console.debug('[TopOpportunities] Incentive transform', style.transform);
       console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
     }
-    onIncentiveClick({
+    setTooltipState({
       reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
@@ -817,7 +882,7 @@ const TopOpportunities = ({
       accentTextClass: getAccentTextClass(accentValue),
       accentBgClass: getAccentBgClass(accentValue),
     });
-  };
+  }, []);
 
   // Mobile carousel state
   const [api, setApi] = useState<CarouselApi>();
@@ -895,32 +960,56 @@ const TopOpportunities = ({
   // Desktop only (xl+): grid layout. Mobile + tablet: carousel (swipe) below.
   if (isXl) {
     return (
-      <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 lg:grid-cols-4">
-        {categories.map((category) => (
-          <CategoryCard
-            key={category.categoryKey}
-            title={category.title}
-            shortTitle={category.shortTitle}
-            subtitle={category.subtitle}
-            icon={category.icon}
-            iconColorClass={category.iconColorClass}
-            bgColorClass={category.bgColorClass}
-            reserves={category.reserves}
-            categoryKey={category.categoryKey}
-            type={category.type}
-            emptyMessage={category.emptyMessage}
-            isMobile={isMobile}
+      <>
+        <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 lg:grid-cols-4">
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.categoryKey}
+              title={category.title}
+              shortTitle={category.shortTitle}
+              subtitle={category.subtitle}
+              icon={category.icon}
+              iconColorClass={category.iconColorClass}
+              bgColorClass={category.bgColorClass}
+              reserves={category.reserves}
+              categoryKey={category.categoryKey}
+              type={category.type}
+              emptyMessage={category.emptyMessage}
+              isMobile={isMobile}
+              isApy={isApy}
+              isApyChanged={isApyChanged}
+              isRateDragging={isRateDragging}
+              headerVariants={headerVariants}
+              iconVariants={iconVariants}
+              itemVariants={itemVariants}
+              onCardClick={handleCardClick}
+              onIncentiveClick={handleIncentiveClick}
+            />
+          ))}
+        </div>
+        {tooltipState && (
+          <IncentiveTooltip
+            reserve={tooltipState.reserve}
+            type={tooltipState.type}
+            position={tooltipState.position}
+            triggerCenterX={tooltipState.triggerCenterX}
+            triggerHeight={tooltipState.triggerHeight}
+            triggerRect={tooltipState.triggerRect}
+            accentBorderClass={tooltipState.accentBorderClass}
+            accentTextClass={tooltipState.accentTextClass}
+            accentBgClass={tooltipState.accentBgClass}
+            onClose={() => setTooltipState(null)}
             isApy={isApy}
-            isApyChanged={isApyChanged}
-            isRateDragging={isRateDragging}
-            headerVariants={headerVariants}
-            iconVariants={iconVariants}
-            itemVariants={itemVariants}
-            onCardClick={handleCardClick}
-            onIncentiveClick={handleIncentiveClick}
+            tydroPointToUsdRate={tydroPointToUsdRate}
+            pointRateMap={pointRateMap}
+            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+            forecastStates={forecastStates}
+            campaignAccessStatuses={campaignAccessStatuses}
+            usePortal
           />
-        ))}
-      </div>
+        )}
+      </>
     );
   }
 
@@ -931,17 +1020,18 @@ const TopOpportunities = ({
   ];
 
   return (
-    <div className="relative overflow-x-hidden">
-      <Carousel
-        setApi={setApi}
-        opts={{
-          align: "start",
-          loop: false,
-          dragFree: false,
-          containScroll: "trimSnaps",
-        }}
-        className="w-full"
-      >
+    <>
+      <div className="relative overflow-x-hidden">
+        <Carousel
+          setApi={setApi}
+          opts={{
+            align: "center",
+            loop: false,
+            dragFree: false,
+            containScroll: "keepSnaps",
+          }}
+          className="w-full"
+        >
         {/* Edge light-bands + double chevrons to hint horizontal scroll */}
         {canScrollPrev && (
           <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
@@ -969,7 +1059,7 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
+        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform transform-gpu [backface-visibility:hidden]">
           {mobilePages.map((pageCats, pageIndex) => (
             <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
               <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
@@ -1003,25 +1093,47 @@ const TopOpportunities = ({
         </CarouselContent>
 
         {/* Navigation arrows integrated into edge bands */}
-      </Carousel>
+        </Carousel>
 
-      {/* Pagination indicators - 2 dots for 2 pages */}
-      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)] [--ds-dot:0.375rem] [--ds-dot-active:0.5rem]">
-        {mobilePages.map((_, index) => (
-          <button
-            type="button"
-            key={index}
-            className={`transition-all rounded-full ${
-              current === index
-                ? 'ds-dot-active bg-[rgb(var(--ds-brand-magenta-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
-                : 'ds-dot bg-[rgb(var(--ds-brand-magenta-rgb)/0.25)] hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.45)]'
-            }`}
-            onClick={() => api?.scrollTo(index)}
-            aria-label={`Go to page ${index + 1}`}
-          />
-        ))}
+        {/* Pagination indicators - 2 dots for 2 pages */}
+        <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)] [--ds-dot:0.375rem] [--ds-dot-active:0.5rem]">
+          {mobilePages.map((_, index) => (
+            <button
+              type="button"
+              key={index}
+              className={`transition-all rounded-full ${
+                current === index
+                  ? 'ds-dot-active bg-[rgb(var(--ds-brand-magenta-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
+                  : 'ds-dot bg-[rgb(var(--ds-brand-magenta-rgb)/0.25)] hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.45)]'
+              }`}
+              onClick={() => api?.scrollTo(index)}
+              aria-label={`Go to page ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+      {tooltipState && (
+        <IncentiveTooltip
+          reserve={tooltipState.reserve}
+          type={tooltipState.type}
+          position={tooltipState.position}
+          triggerCenterX={tooltipState.triggerCenterX}
+          triggerHeight={tooltipState.triggerHeight}
+          triggerRect={tooltipState.triggerRect}
+          accentBorderClass={tooltipState.accentBorderClass}
+          accentTextClass={tooltipState.accentTextClass}
+          accentBgClass={tooltipState.accentBgClass}
+          onClose={() => setTooltipState(null)}
+          isApy={isApy}
+          tydroPointToUsdRate={tydroPointToUsdRate}
+          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+          forecastStates={forecastStates}
+          campaignAccessStatuses={campaignAccessStatuses}
+          usePortal
+        />
+      )}
+    </>
   );
 };
 

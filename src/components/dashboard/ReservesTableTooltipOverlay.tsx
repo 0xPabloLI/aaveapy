@@ -1,5 +1,6 @@
 import IncentiveTooltip from './IncentiveTooltip';
-import type { ReserveWithSpread } from '@/types/aave';
+import type { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
+import type { PointRateMap } from '@/lib/tydro';
 
 export interface TooltipState {
   reserve: ReserveWithSpread;
@@ -15,8 +16,11 @@ interface ReservesTableTooltipOverlayProps {
   onClose: () => void;
   isApy: boolean;
   tydroPointToUsdRate: number;
+  pointRateMap?: PointRateMap;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
+  forecastStates?: Record<string, MerklForecastWireItem>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 export default function ReservesTableTooltipOverlay({
@@ -24,8 +28,11 @@ export default function ReservesTableTooltipOverlay({
   onClose,
   isApy,
   tydroPointToUsdRate,
+  pointRateMap,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
+  forecastStates,
+  campaignAccessStatuses,
 }: ReservesTableTooltipOverlayProps) {
   if (!tooltipState) return null;
   return (
@@ -41,8 +48,11 @@ export default function ReservesTableTooltipOverlay({
       onClose={onClose}
       isApy={isApy}
       tydroPointToUsdRate={tydroPointToUsdRate}
+      pointRateMap={pointRateMap}
       whitelistMerklCampaignIds={whitelistMerklCampaignIds}
       onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+      forecastStates={forecastStates}
+      campaignAccessStatuses={campaignAccessStatuses}
     />
   );
 }
