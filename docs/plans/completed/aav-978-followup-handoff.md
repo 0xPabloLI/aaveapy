@@ -1,5 +1,6 @@
 # AAV-978 Follow-up Handoff
 
+**Status**: ✅ Completed (verified 2026-06-27)
 **Parent Issue**: AAV-978 (sumBrevisIncentiveApr 同名不同参)
 **Project**: Incentive Source Upper-Layer Unification
 **Date**: 2026-06-21
