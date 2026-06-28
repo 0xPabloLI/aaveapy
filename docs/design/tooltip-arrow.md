@@ -146,15 +146,15 @@ FDV 按钮、InfoIconButton 均遵循此规则。参见 [frontend-interaction-gu
 | 维度 | 系统① TooltipCalloutArrow | 系统② IncentiveTooltip |
 |---|---|---|
 | **绘制方式** | SVG `<path fill>` + `<path stroke>` | SVG `<path fill>` + `<path stroke>` |
-| **路径格式** | `M9 0 L0 8 L9 16 Z` (fill) / `M9 0 L0 8 L9 16` (stroke) | `M0 10 L8 0 L16 10 Z` (fill) / 同形 (stroke) |
+| **路径格式** | `M9 0 L0 8 L9 16 Z` (fill) / `M9 0 L0 8 L9 16` (stroke) | `M0 9 L8 0 L16 9 Z` (fill) / `M0 9 L8 0 L16 9` (stroke) |
 | **底边** | 不描边（无 seam） ✅ | 不描边（无 seam） ✅ |
-| **方向** | 4 方向，CSS `group-data-[side=...]/tt:` 选中 | 2 方向，React state + `rotate-180` |
+| **方向** | 4 方向，CSS `group-data-[side=...]/tt:` 选中 | 2 方向（top/bottom），`tooltipPlacement` state 条件渲染 |
 | **flip 触发** | Radix `avoidCollisions`，自动写 `data-side` | 自定义 `spaceBelow/spaceAbove + flipThreshold` |
 | **箭头沿 body 边位移** | 固定居中 | 动态跟随 trigger 中心，clamp 到有效范围 |
 | **可被关闭** | 无 — hover 即显示 | 视口 clamp > 6px 时隐藏 |
-| **DOM 数量** | 4 个 SVG（3 个 hidden） | 1 个 SVG |
-| **z-index** | 箭头 `z-20` 在 body 之上 | 同级，无 mask 需求 |
-| **API** | `<TooltipCalloutArrow />`（`side` prop 已废弃） | 内部组件，无对外 API |
+| **DOM 数量** | 4 个 SVG（3 个 hidden） | 2 个 SVG（条件渲染，仅 1 个可见） |
+| **z-index** | 箭头 `z-20` 在 body 之上 | 箭头 `z-20` 在 body 之上 |
+| **API** | `<TooltipCalloutArrow />`（`side` prop 已废弃） | 内联 SVG，无对外 API |
 
 ---
 

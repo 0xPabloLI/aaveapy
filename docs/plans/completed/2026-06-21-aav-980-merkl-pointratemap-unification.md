@@ -1,5 +1,6 @@
 # AAV-980: Unify sumMerklIncentiveApr — dispatch map uses aggregation canonical version
 
+**Status**: ✅ Completed (verified 2026-06-27)
 **Issue**: AAV-980
 **Parent**: AAV-978 (Brevis 同模式统一)
 **Project**: Incentive Source Upper-Layer Unification

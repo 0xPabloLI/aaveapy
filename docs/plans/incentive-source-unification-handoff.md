@@ -1,12 +1,14 @@
 # Handoff: Incentive Source Upper-Layer Unification
 
+**Status**: 🟡 Partial (verified 2026-06-27)
+
 ## Goal
 
 将 Incentive 系统上层消费端的 per-source 分支（~102 处）收敛为统一入口，让 Merit/Merkl/Brevis 三种 source 的调用侧代码从"对每个 source 写一遍"变为"循环一次搞定"。
 
 ## Completed This Session
 
-### Reward Token Icon 本地匹配 + Opp Header Icon 规则 + APR 对齐
+### Reward Token Icon 本地匹配 + Opp Header Icon 规则 + APR 对齐 — ✅ Done
 
 | 改动 | 文件 | 说明 |
 |---|---|---|
@@ -30,9 +32,9 @@ Commit: `dedcb248` — feat(incentive): reward token icon local matching, opp he
 | `incentiveMath.ts` | 完全统一 | `applyPositionCap`, `computePositionCapEligibility` |
 | `incentiveCaps.ts` | 高度统一 | `buildPositionCapEffect`, `applyPositionCapToForecastResult`, `capEffectToSimulationFields` |
 
-### 未统一（上层消费端，~102 处 per-source 分支）
+### 未统一（上层消费端，~102 处 per-source 分支）— 2026-06-27 验证状态
 
-#### 1. Side→source accessor（~12 处重复）
+#### 1. Side→source accessor（~12 处重复）— ❌ 未完成
 
 ```ts
 // 重复模式，出现约 12 处
@@ -62,7 +64,7 @@ function getIncentiveGroups<T extends 'merit' | 'merkl' | 'brevis'>(
 
 风险：**最低**。纯重构，不改变逻辑，只是消除重复。但 return type 因 source 不同（`MeritCampaignGroup[]` vs `MerklOpportunityGroup[]` vs `BrevisIncentive[]`），需要泛型或 overloads。
 
-#### 2. Campaign detail builder（3 个独立函数，大量重复逻辑）
+#### 2. Campaign detail builder（3 个独立函数，大量重复逻辑）— ❌ 未完成
 
 | 函数 | 文件行号 | source |
 |---|---|---|
@@ -105,7 +107,7 @@ function buildCampaignDetails<TGroup, TBreakdown>(
 
 风险：**中等**。3 个 builder 逻辑差异不小，强行统一可能引入不直观的分支。需要 TDD 验证每条路径不回归。
 
-#### 3. Forecast 入口统一（最复杂）
+#### 3. Forecast 入口统一（最复杂）— ❌ 未完成（建议暂缓）
 
 | 函数 | 模块 | 机制 |
 |---|---|---|
@@ -131,7 +133,7 @@ function forecastIncentiveApr(
 
 风险：**高**。3 个引擎机制本质不同，统一入口只是把 per-source 分支从调用侧移到调度函数内部，代码量不减。收益主要是调用侧简洁性（一行代替三行），但增加了间接层。
 
-#### 4. Link 提取（3 个独立函数）
+#### 4. Link 提取（3 个独立函数）— ❌ 未完成
 
 | 函数 | 位置 |
 |---|---|

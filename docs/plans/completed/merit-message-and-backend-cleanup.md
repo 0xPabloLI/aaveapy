@@ -1,6 +1,7 @@
 # Merit Message Distribution + Backend Cleanup Plan
 
-## Status: Backend Done, Frontend Pending
+**Status**: ✅ Completed (verified 2026-06-27, Playwright 除外)
+## Status: Backend Done, Frontend Done
 
 ## Problem Statement
 
@@ -83,5 +84,5 @@
 - [x] 后端 build 通过
 - [x] 后端测试通过（834 total, 0 fail）
 - [x] Dev server curl 验证：meritSupplys 的 self breakdown 含 message 字段，opportunity message 只含非 self 条目
-- [ ] 前端 lint + test + build + tsc 通过（Phase 2）
-- [ ] Playwright 验证：message 分段显示、不出现 JSON 乱码（Phase 2）
+- [x] 前端 lint + test + build + tsc 通过（Phase 2）
+- [ ] Playwright 验证：message 分段显示、不出现 JSON 乱码（Phase 2 — 待手动验证）

@@ -1113,19 +1113,33 @@ const IncentiveTooltip = ({
           ...tooltipSurfaceStyle,
         }}
       >
-        {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
+        {/* Arrow using SVG dual-path (fill + stroke separated) — matches TooltipCalloutArrow approach */}
         {showTooltipArrow && (
-          <div 
-            className={`absolute w-4 h-4 border-border/60 transform bg-card ${
-              tooltipPlacement === 'top'
-                ? '-bottom-2 border-r border-b rotate-45'
-                : '-top-2 border-l border-t rotate-45'
-            }`}
-            style={{ 
-              left: `${arrowLeft}px`,
-              ...tooltipSurfaceStyle,
-            }}
-          />
+          tooltipPlacement === 'top' ? (
+            <svg
+              className="absolute pointer-events-none z-20"
+              style={{ left: `${arrowLeft}px`, bottom: -8 }}
+              width="16"
+              height="9"
+              viewBox="0 0 16 9"
+              aria-hidden
+            >
+              <path d="M0 0 L8 9 L16 0 Z" fill="hsl(var(--card))" />
+              <path d="M0 0 L8 9 L16 0" stroke="hsl(var(--border) / 0.6)" strokeWidth="1" strokeLinejoin="round" fill="none" />
+            </svg>
+          ) : (
+            <svg
+              className="absolute pointer-events-none z-20"
+              style={{ left: `${arrowLeft}px`, top: -8 }}
+              width="16"
+              height="9"
+              viewBox="0 0 16 9"
+              aria-hidden
+            >
+              <path d="M0 9 L8 0 L16 9 Z" fill="hsl(var(--card))" />
+              <path d="M0 9 L8 0 L16 9" stroke="hsl(var(--border) / 0.6)" strokeWidth="1" strokeLinejoin="round" fill="none" />
+            </svg>
+          )
         )}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">

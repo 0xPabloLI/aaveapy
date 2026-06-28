@@ -110,12 +110,12 @@ describe('IncentiveTooltip', () => {
       expect(tooltip!.className).toContain('min-w-[320px]');
     });
 
-    it('renders arrow div (rotated square) when placement allows', () => {
+    it('renders arrow SVG when placement allows', () => {
       const { container } = renderTooltip();
-      const arrow = container.querySelector('div.rotate-45');
+      const arrow = container.querySelector('svg[aria-hidden]');
       expect(arrow).not.toBeNull();
-      expect(arrow!.className).toContain('bg-card');
-      expect(arrow!.className).toContain('border-border/60');
+      expect(arrow!.querySelector('path[fill]')).not.toBeNull();
+      expect(arrow!.querySelector('path[stroke]')).not.toBeNull();
     });
 
     it('positions tooltip using left and top inline styles', () => {

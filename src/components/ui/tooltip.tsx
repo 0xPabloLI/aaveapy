@@ -55,12 +55,10 @@ const TooltipArrow = React.forwardRef<
 TooltipArrow.displayName = TooltipPrimitive.Arrow.displayName;
 
 /**
- * Shared arrow SVG paths (filled triangle + stroke on the two outward edges).
- * Reused by both the Radix-based `TooltipCalloutArrow` and the manually-positioned
- * `IncentiveTooltip` desktop popover. The `direction` prop determines which way
- * the point faces (the base of the triangle is opposite). When rendered inside a
- * Radix `TooltipContent`, it uses `group-data` to auto-flip; elsewhere the caller
- * controls orientation through rotation/scaling.
+ * Arrow SVG paths (filled triangle + stroke on the two outward edges, no base stroke).
+ * Used by `TooltipCalloutArrow`. IncentiveTooltip uses the same dual-path approach
+ * (fill + stroke separated) but renders inline SVGs instead of calling this component,
+ * because its positioning logic differs from Radix's Portal system.
  */
 export function CalloutArrowSvg({
   fill = 'hsl(var(--card))',
