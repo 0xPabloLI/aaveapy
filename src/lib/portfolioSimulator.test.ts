@@ -961,7 +961,7 @@ describe('buildMetricsFromLane', () => {
     expect(metrics.usdPerDayMetric).toBeDefined();
   });
 
-  it('passes through deltaIncentive even when hasInput=false (AAV-761 dilution gap)', () => {
+  it('passes through after/delta even when hasInput=false (AAV-761 F5)', () => {
     const lane = makeLane({
       hasInput: false,
       currentIncentive: 0.9,
@@ -973,14 +973,12 @@ describe('buildMetricsFromLane', () => {
     });
     const metrics = buildMetricsFromLane(lane, 'supply', 10000);
     expect(metrics.incentiveMetric.current).toBe(0.9);
-    expect(metrics.incentiveMetric.after).toBeNull();
-    // deltaIncentive is passed through even when hasInput=false — shows wallet dilution gap
+    expect(metrics.incentiveMetric.after).toBe(0);
     expect(metrics.incentiveMetric.delta).toBe(-0.3);
     expect(metrics.totalMetric.current).toBe(3.7);
-    expect(metrics.totalMetric.after).toBeNull();
-    // total delta is still gated by hasInput (no user input = no total delta)
-    expect(metrics.totalMetric.delta).toBeNull();
-    expect(metrics.usdPerDayMetric.after).toBeNull();
-    expect(metrics.usdPerDayMetric.delta).toBeNull();
+    expect(metrics.totalMetric.after).toBe(2.8);
+    expect(metrics.totalMetric.delta).toBe(-0.9);
+    expect(metrics.usdPerDayMetric.after).not.toBeNull();
+    expect(metrics.usdPerDayMetric.delta).not.toBeNull();
   });
 });
