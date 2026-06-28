@@ -548,7 +548,7 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     expect(result.borrow.sources.protocol?.after).not.toBeNull();
   });
 
-  it('AAV-770 regression fix: supply.afterIncentive is null when only borrow has input (no false-zero)', () => {
+  it('AAV-770: supply.afterIncentive reflects cross-side effect when only borrow has input', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -556,14 +556,14 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
       borrowInput: '500',
     });
 
-    // Per-side guard: no supply input → afterIncentive is null (not 0), UI falls back to current
-    expect(result.supply.afterIncentive).toBeNull();
-    expect(result.supply.deltaIncentive).toBeNull();
+    // AAV-761 F3: hasAnyInput guard preserves cross-side effect
+    expect(result.supply.afterIncentive).not.toBeNull();
+    expect(result.supply.deltaIncentive).not.toBeNull();
     // Native rate still preserves cross-side influence (utilization change)
     expect(result.supply.afterNative).not.toBeNull();
   });
 
-  it('AAV-770 regression fix: borrow.afterIncentive is null when only supply has input (no false-zero)', () => {
+  it('AAV-770: borrow.afterIncentive reflects cross-side effect when only supply has input', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -571,13 +571,13 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
       supplyInput: '1000',
     });
 
-    // Per-side guard: no borrow input → afterIncentive is null (not 0), UI falls back to current
-    expect(result.borrow.afterIncentive).toBeNull();
-    expect(result.borrow.deltaIncentive).toBeNull();
+    // AAV-761 F3: hasAnyInput guard preserves cross-side effect
+    expect(result.borrow.afterIncentive).not.toBeNull();
+    expect(result.borrow.deltaIncentive).not.toBeNull();
     expect(result.borrow.afterNative).not.toBeNull();
   });
 
-  it('cross-side: supply.afterNative is not null when only borrow has input (no supply change)', () => {
+  it('cross-side: supply reflects cross-side effect when only borrow has input', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -587,14 +587,15 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
 
     // Native rate still preserves cross-side influence (utilization change from borrow input)
     expect(result.supply.afterNative).not.toBeNull();
-    // Incentive and total are null when no supply input
-    expect(result.supply.afterIncentive).toBeNull();
-    expect(result.supply.afterTotal).toBeNull();
-    expect(result.supply.deltaNative).toBeNull();
-    expect(result.supply.deltaTotal).toBeNull();
+    // AAV-761 F3: hasAnyInput guard preserves cross-side incentive effect
+    expect(result.supply.afterIncentive).not.toBeNull();
+    expect(result.supply.afterTotal).not.toBeNull();
+    // AAV-761 F3: delta also reflects cross-side influence
+    expect(result.supply.deltaNative).not.toBeNull();
+    expect(result.supply.deltaTotal).not.toBeNull();
   });
 
-  it('cross-side: borrow.afterNative is not null when only supply has input (cross-side influence preserved)', () => {
+  it('cross-side: borrow reflects cross-side effect when only supply has input', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -604,14 +605,15 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
 
     // Native rate still preserves cross-side influence (utilization change from supply input)
     expect(result.borrow.afterNative).not.toBeNull();
-    // Incentive and total are null when no borrow input
-    expect(result.borrow.afterIncentive).toBeNull();
-    expect(result.borrow.afterTotal).toBeNull();
-    expect(result.borrow.deltaNative).toBeNull();
-    expect(result.borrow.deltaTotal).toBeNull();
+    // AAV-761 F3: hasAnyInput guard preserves cross-side incentive effect
+    expect(result.borrow.afterIncentive).not.toBeNull();
+    expect(result.borrow.afterTotal).not.toBeNull();
+    // AAV-761 F3: delta also reflects cross-side influence
+    expect(result.borrow.deltaNative).not.toBeNull();
+    expect(result.borrow.deltaTotal).not.toBeNull();
   });
 
-  it('AAV-761 layer-3: supply delta is null when only borrow has input (hasInput=false side)', () => {
+  it('AAV-761 layer-3: supply delta reflects cross-side effect when only borrow has input (hasInput=false side)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -620,12 +622,12 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     });
 
     expect(result.supply.hasInput).toBe(false);
-    expect(result.supply.deltaNative).toBeNull();
-    expect(result.supply.deltaIncentive).toBeNull();
-    expect(result.supply.deltaTotal).toBeNull();
+    expect(result.supply.deltaNative).not.toBeNull();
+    expect(result.supply.deltaIncentive).not.toBeNull();
+    expect(result.supply.deltaTotal).not.toBeNull();
   });
 
-  it('AAV-761 layer-3: borrow delta is null when only supply has input (hasInput=false side)', () => {
+  it('AAV-761 layer-3: borrow delta reflects cross-side effect when only supply has input (hasInput=false side)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -634,9 +636,9 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     });
 
     expect(result.borrow.hasInput).toBe(false);
-    expect(result.borrow.deltaNative).toBeNull();
-    expect(result.borrow.deltaIncentive).toBeNull();
-    expect(result.borrow.deltaTotal).toBeNull();
+    expect(result.borrow.deltaNative).not.toBeNull();
+    expect(result.borrow.deltaIncentive).not.toBeNull();
+    expect(result.borrow.deltaTotal).not.toBeNull();
   });
 
   it('single simulation: position cap should NOT double-count when supplyInput used alone (no principal)', () => {
@@ -928,8 +930,8 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     expect(result.supply.deltaIncentive!).toBeLessThan(0);
     // Current incentive is diluted (wallet > cap)
     expect(result.supply.currentIncentive).toBeLessThan(result.supply.headlineIncentive);
-    // After incentive is null (per-side guard, no supply input)
-    expect(result.supply.afterIncentive).toBeNull();
+    // After incentive reflects cross-side effect (hasAnyInput=true)
+    expect(result.supply.afterIncentive).not.toBeNull();
   });
 
   it('derives wallet correctly when both totalSupplyUsd and supplyInputUsd are present', () => {
