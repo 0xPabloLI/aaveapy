@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRecentlyEnded, collectRecentlyEndedCampaigns, DEFAULT_LOOKBACK_DAYS } from './recentlyEndedCampaigns';
+import { isRecentlyEnded, collectRecentlyEndedCampaigns } from './recentlyEndedCampaigns';
 import type { MeritCampaignGroup, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 import type { MerklCampaignBreakdown, BrevisIncentive } from '../shared/market-contract/schemas';
 
@@ -25,14 +25,14 @@ function msFromNow(daysOffset: number, timeStr = 'T12:00:00.000Z'): string {
 }
 
 describe('isRecentlyEnded', () => {
-  it('returns true for campaign that ended exactly 7 days ago (boundary)', () => {
-    const endDate = msFromNow(-7);
+  it('returns true for campaign that ended in the past', () => {
+    const endDate = msFromNow(-3);
     expect(isRecentlyEnded(endDate, NOW_MS)).toBe(true);
   });
 
-  it('returns false for campaign that ended 8 days ago', () => {
-    const endDate = msFromNow(-8);
-    expect(isRecentlyEnded(endDate, NOW_MS)).toBe(false);
+  it('returns true for campaign that ended 30 days ago', () => {
+    const endDate = msFromNow(-30);
+    expect(isRecentlyEnded(endDate, NOW_MS)).toBe(true);
   });
 
   it('returns false when endDate is undefined', () => {
@@ -49,13 +49,6 @@ describe('isRecentlyEnded', () => {
     expect(isRecentlyEnded(endDate, NOW_MS)).toBe(false);
   });
 
-  it('respects custom lookbackDays', () => {
-    const threeDaysAgo = msFromNow(-3);
-    expect(isRecentlyEnded(threeDaysAgo, NOW_MS, 3)).toBe(true);
-    const fourDaysAgo = msFromNow(-4);
-    expect(isRecentlyEnded(fourDaysAgo, NOW_MS, 3)).toBe(false);
-  });
-
   it('handles date-only format (end-day normalization)', () => {
     expect(isRecentlyEnded('2026-05-09', NOW_MS)).toBe(true);
   });
@@ -69,14 +62,8 @@ describe('isRecentlyEnded', () => {
   });
 });
 
-describe('DEFAULT_LOOKBACK_DAYS', () => {
-  it('is 7', () => {
-    expect(DEFAULT_LOOKBACK_DAYS).toBe(7);
-  });
-});
-
 describe('collectRecentlyEndedCampaigns', () => {
-  it('collects only Merit campaigns that ended within the window', () => {
+  it('collects only Merit campaigns that have ended', () => {
     const activeMerit: MeritCampaignGroup = {
       link: 'https://merit.example/active',
       name: 'Active Merit',
@@ -97,19 +84,9 @@ describe('collectRecentlyEndedCampaigns', () => {
         campaignId: 'merit-ended',
       }],
     };
-    const oldEndedMerit: MeritCampaignGroup = {
-      link: 'https://merit.example/old',
-      name: 'Old Ended Merit',
-      breakdowns: [{
-        campaignApr: 2,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2026-04-01',
-        campaignId: 'merit-old',
-      }],
-    };
 
     const reserve = mockReserve({
-      meritSupplys: [activeMerit, recentlyEndedMerit, oldEndedMerit],
+      meritSupplys: [activeMerit, recentlyEndedMerit],
     });
 
     const result = collectRecentlyEndedCampaigns(reserve, 'supply', NOW_MS);
@@ -240,5 +217,23 @@ describe('collectRecentlyEndedCampaigns', () => {
     expect(result[0].campaigns).toHaveLength(2);
     expect(result[0].campaigns[0].apr).toBe(3);
     expect(result[0].campaigns[1].apr).toBe(2);
+  });
+
+  it('includes startDate in collected campaigns', () => {
+    const endedMerit: MeritCampaignGroup = {
+      link: 'https://merit.example',
+      name: 'Ended Merit',
+      breakdowns: [{
+        campaignApr: 3,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2026-05-12',
+        campaignId: 'merit-ended',
+      }],
+    };
+
+    const reserve = mockReserve({ meritSupplys: [endedMerit] });
+    const result = collectRecentlyEndedCampaigns(reserve, 'supply', NOW_MS);
+
+    expect(result[0].campaigns[0].startDate).toBe('2026-01-01');
   });
 });

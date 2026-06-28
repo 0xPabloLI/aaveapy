@@ -258,22 +258,25 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
                     </a>
                   )}
                 </div>
-                {source.campaigns.map((campaign: RecentlyEndedCampaign, ci: number) => (
+                {source.campaigns.map((campaign: RecentlyEndedCampaign, ci: number) => {
+                  const dateRangeText = campaign.startDate && formatDateSafe(campaign.startDate)
+                    ? `${formatDateSafe(campaign.startDate)} - ${formatDateSafe(campaign.endDate)}`
+                    : `Ended: ${formatDateSafe(campaign.endDate)}`;
+                  return (
                   <div
                     key={`ended-${sourceIndex}-c-${ci}`}
                     className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
                   >
-                    <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
-                      <p className="ds-tooltip-body break-words min-w-0 text-zinc-400">
-                        Ended: {formatDateSafe(campaign.endDate)}
-                      </p>
-                      <span className="ds-tooltip-body tabular-nums font-semibold whitespace-nowrap text-zinc-500">
+                    <div className="ds-tooltip-body grid grid-cols-[1fr_auto] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
+                      <span className="break-words min-w-0">{dateRangeText}</span>
+                      <span className="tabular-nums font-semibold whitespace-nowrap text-zinc-500">
                         {formatPercent(0)}
                       </span>
                     </div>
                     {renderCampaignMessage(campaign.message, `ended-${sourceIndex}-c-${ci}`)}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
