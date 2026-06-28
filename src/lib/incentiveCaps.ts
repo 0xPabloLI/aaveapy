@@ -115,7 +115,7 @@ export function buildMaxRewardCapEffect(): IncentiveCapEffect {
 /** Net eligible note: effective incentive is discounted because only the net portion (supply - borrow) is eligible. */
 export function buildNetEligibleNote(netUsd: number, grossUsd: number): string | null {
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
-  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
+  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} eligible after offsets`;
 }
 
 export interface CrossReserveNetNoteInput {
@@ -166,9 +166,13 @@ export function appendNotes(
 ): string | undefined {
   const parts: string[] = [];
   if (note) parts.push(note);
-  if (crossReserveNote) parts.push(crossReserveNote);
-  if (netNote) parts.push(netNote);
-  return parts.length > 0 ? parts.join(' · ') : undefined;
+  const offsetParts: string[] = [];
+  if (crossReserveNote) offsetParts.push(crossReserveNote);
+  if (netNote) offsetParts.push(netNote);
+  if (offsetParts.length > 0) {
+    parts.push(offsetParts.join(' · '));
+  }
+  return parts.length > 0 ? parts.join('; ') : undefined;
 }
 
 export function checkForecastAvailability(
@@ -186,5 +190,5 @@ export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
   const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
   const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
-  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)} (${sideLabel}${offsets})`;
+  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} eligible after offsets (${sideLabel}${offsets})`;
 }

@@ -169,12 +169,12 @@ describe('appendNotes', () => {
     expect(appendNotes('cap note', null, null)).toBe('cap note');
   });
 
-  it('joins note + crossReserveNote with middle dot', () => {
-    expect(appendNotes('cap', 'cross', null)).toBe('cap · cross');
+  it('joins note + crossReserveNote with semicolon', () => {
+    expect(appendNotes('cap', 'cross', null)).toBe('cap; cross');
   });
 
-  it('joins all three notes with middle dot', () => {
-    expect(appendNotes('cap', 'cross', 'net')).toBe('cap · cross · net');
+  it('joins all three notes with semicolon between cap and offsets', () => {
+    expect(appendNotes('cap', 'cross', 'net')).toBe('cap; cross · net');
   });
 
   it('handles string crossReserveNote', () => {

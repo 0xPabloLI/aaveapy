@@ -227,3 +227,9 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **统一 per-source sum 后必须逐参数校验映射**：旧 calculator `sumMerklIncentiveApr(opportunities, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates?, groupMultiplier?, campaignAccessStatuses?)` → 新 aggregation `sumMerklIncentiveApr(opportunities?, pointToUsdRate?, options?)`。review 发现 `sumAfter` 遗漏了 `campaignAccessStatuses`（旧代码第 7 个参数，新代码在 `options` 中），导致黑名单 campaign 在 after 计算中未被过滤。**教训：签名迁移时必须逐参数对照，options 对象比位置参数更容易漏传。**
 - **`getPointToUsdRate` 的 fallback 语义必须与 symbol 归属一致**：`tydroPointToUsdRate` 是 TydroInk 专属换算率，`getPointToUsdRate` 在 symbol 不在 map 中返回 0 是正确的——不同 symbol 不应 fallback 到另一个 symbol 的 rate。"查不到" = "不知道" = 0，而非"用另一个 rate 凑数"。
 - **`groupMultiplier` 需要加到 aggregation 版才能统一**：aggregation 版 `sumMerklIncentiveApr` 原先缺少 `groupMultiplier` 支持，但 `sumActiveCampaignBreakdownValues` 已支持。统一前需确认 aggregation 版具备 calculator 版的所有能力，否则统一后会丢功能。
+
+## Learned Lessons: CI openapi-sync push rejected race condition (AAV-1034)
+
+- **`git push` 前必须 `git pull --rebase`**：CI 中任何自动 commit+push 的 job，在 checkout 到 push 之间分支可能已有新 commit，直接 push 会被 rejected。`git pull --rebase origin ${{ github.ref_name }}` 确保 sync commit rebase 到最新 HEAD 后再 push。
+- **openapi-check 和 openapi-sync 并行导致死循环**：check 先 fail，sync 后 push 但被 reject（因为新 commit 已推入），下次 CI 仍用旧 spec → check 又 fail。修复 rebase 后 push 成功，循环打破。
+- **GitHub Actions `run: |` 块默认 `set -e`**：`git pull --rebase` 失败会停止执行，不会走到 `git push`，所以 rebase 冲突时不会 force push，安全性有保证。
