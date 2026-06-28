@@ -2,19 +2,13 @@ import { parseCampaignBoundaryMs } from './campaignGroups';
 import { getIncentiveSources } from './incentiveAggregation';
 import type { ReserveWithSpread } from '@/types/aave';
 
-export const DEFAULT_LOOKBACK_DAYS = 7;
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 export function isRecentlyEnded(
   endDate: string | undefined,
   nowMs = Date.now(),
-  lookbackDays = DEFAULT_LOOKBACK_DAYS,
 ): boolean {
   const endMs = parseCampaignBoundaryMs(endDate, 'end');
   if (endMs === null) return false;
-  const lookbackMs = lookbackDays * MS_PER_DAY;
-  return endMs >= nowMs - lookbackMs && endMs < nowMs;
+  return endMs < nowMs;
 }
 
 export interface RecentlyEndedSource {
@@ -37,7 +31,6 @@ export function collectRecentlyEndedCampaigns(
   reserve: ReserveWithSpread,
   supplyOrBorrow: 'supply' | 'borrow',
   nowMs = Date.now(),
-  lookbackDays = DEFAULT_LOOKBACK_DAYS,
 ): RecentlyEndedSource[] {
   const sources: RecentlyEndedSource[] = [];
 
@@ -46,7 +39,7 @@ export function collectRecentlyEndedCampaigns(
     for (const group of meritList) {
       const breakdowns = group.breakdowns ?? [];
       const endedBreakdowns = breakdowns.filter((b) =>
-        isRecentlyEnded(b.campaignEndedAt, nowMs, lookbackDays),
+        isRecentlyEnded(b.campaignEndedAt, nowMs),
       );
       if (endedBreakdowns.length === 0) continue;
 
@@ -73,7 +66,7 @@ export function collectRecentlyEndedCampaigns(
       if (!group.breakdowns?.length) continue;
 
       const endedBreakdowns = group.breakdowns.filter((b) =>
-        isRecentlyEnded(b.campaignEndedAt, nowMs, lookbackDays),
+        isRecentlyEnded(b.campaignEndedAt, nowMs),
       );
 
       if (endedBreakdowns.length === 0) continue;
@@ -100,7 +93,7 @@ export function collectRecentlyEndedCampaigns(
 
       if (brevisBreakdowns.length > 0) {
         const endedBreakdowns = brevisBreakdowns.filter((b) =>
-          isRecentlyEnded(b.campaignEndedAt, nowMs, lookbackDays),
+          isRecentlyEnded(b.campaignEndedAt, nowMs),
         );
 
         if (endedBreakdowns.length === 0) continue;
@@ -118,7 +111,7 @@ export function collectRecentlyEndedCampaigns(
           link: brevis.link,
           campaigns,
         });
-      } else if (brevis.campaignEndedAt && isRecentlyEnded(brevis.campaignEndedAt, nowMs, lookbackDays)) {
+      } else if (brevis.campaignEndedAt && isRecentlyEnded(brevis.campaignEndedAt, nowMs)) {
         sources.push({
           sourceType: 'brevis',
           name: brevis.name || 'Brevis Incentive',
