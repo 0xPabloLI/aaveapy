@@ -62,7 +62,6 @@ interface IncentiveTooltipProps {
 
 interface IncentiveCampaign {
   value: number;
-  dateRange?: string;
   startDate?: string;
   endDate?: string;
   message?: string | Record<string, unknown> | unknown[];
@@ -85,7 +84,6 @@ interface IncentiveSource {
   bgColor: string;
   sourceType?: 'Protocol' | 'ACI' | 'Merkl' | 'Brevis';
   link?: string;
-  dateRange?: string;
   message?: string | Record<string, unknown> | unknown[];
   requiredTokens?: string[] | string;
   campaigns?: IncentiveCampaign[];
@@ -443,7 +441,7 @@ const IncentiveTooltip = ({
 
     sources.forEach((source) => {
       const key = buildSourceGroupKey(source);
-      const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
+      const campaigns = source.campaigns ?? [{ value: source.value, message: source.message, sourceType: source.sourceType }];
       const existing = grouped.get(key);
 
       if (!existing) {
@@ -498,7 +496,6 @@ const IncentiveTooltip = ({
           const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
           return {
             value,
-            dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
             startDate: breakdown.campaignStartedAt,
             endDate: breakdown.campaignEndedAt,
             message: breakdown.message ?? group.message,
@@ -517,19 +514,6 @@ const IncentiveTooltip = ({
           bgColor: 'bg-muted/60',
           sourceType: 'ACI',
           link: group.link,
-          dateRange: formatDateRange(
-            ...activeBreakdowns.reduce<[string | undefined, string | undefined]>(
-              ([earliestStart, latestEnd], bd) => {
-                const s = bd.campaignStartedAt;
-                const e = bd.campaignEndedAt;
-                return [
-                  !earliestStart || (s && s < earliestStart) ? s : earliestStart,
-                  !latestEnd || (e && e > latestEnd) ? e : latestEnd,
-                ];
-              },
-              [undefined, undefined],
-            ),
-          ) || undefined,
           campaigns: meritCampaigns,
         });
       });
@@ -551,7 +535,6 @@ const IncentiveTooltip = ({
             const value = isApy ? convertAprToApy(apr) : apr;
             return {
               value,
-              dateRange: formatDateRange(startDate, endDate) || undefined,
               startDate,
               endDate,
               campaignId: breakdown.campaignId,
@@ -573,19 +556,6 @@ const IncentiveTooltip = ({
           sourceType: 'Brevis',
           link: brevis.link,
           message,
-          dateRange: formatDateRange(
-            ...campaigns.reduce<[string | undefined, string | undefined]>(
-              ([earliestStart, latestEnd], c) => {
-                const s = c.startDate;
-                const e = c.endDate;
-                return [
-                  !earliestStart || (s && s < earliestStart) ? s : earliestStart,
-                  !latestEnd || (e && e > latestEnd) ? e : latestEnd,
-                ];
-              },
-              [undefined, undefined],
-            ),
-          ) || undefined,
           campaigns,
         });
       });
@@ -615,23 +585,21 @@ const IncentiveTooltip = ({
               sourceType: 'Merkl',
               link: getMerklLink(opportunity),
               message: opportunity.message,
-              dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                 campaigns: [{
-                   value: included ? displayValue : 0,
-                   rawValue: displayValue,
-                   whitelistOnly,
-                   included,
-                   dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
-                   startDate: breakdown.campaignStartedAt,
-                   endDate: breakdown.campaignEndedAt,
-                   campaignId: breakdown.campaignId,
-                   sourceType: 'Merkl',
-              campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
-                    aprCap: breakdown.aprCap,
-                    rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                    rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                 }],
+                  campaigns: [{
+                    value: included ? displayValue : 0,
+                    rawValue: displayValue,
+                    whitelistOnly,
+                    included,
+                    startDate: breakdown.campaignStartedAt,
+                    endDate: breakdown.campaignEndedAt,
+                    campaignId: breakdown.campaignId,
+                    sourceType: 'Merkl',
+               campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
+                     aprCap: breakdown.aprCap,
+                     rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
+                     rewardTokenSymbol: breakdown.rewardTokenSymbol,
+                  }],
             });
           }
         });
@@ -741,7 +709,9 @@ const IncentiveTooltip = ({
   };
 
   const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string, showApr?: boolean) => {
-    const dateRangeText = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : '';
+    const dateRangeText = campaign.startDate && campaign.endDate && formatDateRange(campaign.startDate, campaign.endDate)
+      ? `Campaign time: ${formatDateRange(campaign.startDate, campaign.endDate)}`
+      : '';
     return (
       <>
         {dateRangeText && (
@@ -779,7 +749,7 @@ const IncentiveTooltip = ({
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
-      source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, sourceType: source.sourceType }];
+      source.campaigns ?? [{ value: source.value, sourceType: source.sourceType }];
     const campaigns = [...campaignsBase].sort((a, b) => {
       const aExcluded = a.whitelistOnly === true && a.included === false;
       const bExcluded = b.whitelistOnly === true && b.included === false;
