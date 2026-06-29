@@ -94,16 +94,16 @@ describe('CampaignGroup netPositionConstraint field-name canary', () => {
   const group: CampaignGroup = {
     link: 'https://merkl.xyz',
     breakdowns: [],
-    opportunityType: 'AAVE_NET_LENDING',
+    opportunityId: '9830701213305656660',
     netPositionConstraint: {
       sourceSide: 'supply',
       offsetReserveIds: ['1:0xPool:0xUsde', '1:0xPool:0xGho'],
     },
   };
 
-  it('group.opportunityType is an optional string', () => {
-    expect(typeof group.opportunityType).toBe('string');
-    expect(group.opportunityType).toBe('AAVE_NET_LENDING');
+  it('group.opportunityId is an optional string', () => {
+    expect(typeof group.opportunityId).toBe('string');
+    expect(group.opportunityId).toBe('9830701213305656660');
   });
 
   it('group.netPositionConstraint.sourceSide is supply or borrow', () => {

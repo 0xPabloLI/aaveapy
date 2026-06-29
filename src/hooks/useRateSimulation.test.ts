@@ -1650,7 +1650,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
         campaignId: 'net-lend-1',
       },
     ],
-    opportunityType: 'AAVE_NET_LENDING',
+    opportunityId: '9830701213305656660',
     netPositionConstraint: {
       sourceSide: 'supply',
       offsetReserveIds: [usdeReserveId],
@@ -1813,7 +1813,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
         campaignId: 'net-lend-note-1',
       },
     ],
-    opportunityType: 'AAVE_NET_LENDING',
+    opportunityId: '9830701213305656660',
     netPositionConstraint: {
       sourceSide: 'supply',
       offsetReserveIds: [usdeReserveId],
@@ -1939,7 +1939,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
         campaignId: 'net-lend-same',
       },
     ],
-    opportunityType: 'AAVE_NET_LENDING',
+    opportunityId: '9830701213305656660',
     netPositionConstraint: {
       sourceSide: 'supply',
       offsetReserveIds: [],
@@ -2075,7 +2075,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
           campaignId: 'net-borrow-same',
         },
       ],
-      opportunityType: 'AAVE_NET_LENDING',
+      opportunityId: '9830701213305656660',
       netPositionConstraint: {
         sourceSide: 'borrow',
         offsetReserveIds: [],
@@ -2125,7 +2125,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
           campaignId: 'combined-1',
         },
       ],
-      opportunityType: 'AAVE_NET_LENDING',
+      opportunityId: '9830701213305656660',
       netPositionConstraint: {
         sourceSide: 'supply',
         offsetReserveIds: [offsetReserveId],

@@ -57,7 +57,7 @@ export const MerklOpportunityGroupSchema = z.object({
   name: z.string().optional(),
   message: z.string().optional(),
   breakdowns: z.array(MerklCampaignBreakdownSchema),
-  opportunityType: z.string().optional(),
+  opportunityId: z.string().optional(),
   netPositionConstraint: z.object({
     sourceSide: z.enum(['supply', 'borrow']),
     offsetReserveIds: z.array(z.string()),

@@ -43,7 +43,7 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
   name?: string;
   message?: string;
   breakdowns: TBreakdown[];
-  opportunityType?: string; // Kept: high debug value (aav_68_plan.md); future Ethena looping needs it
+  opportunityId?: string;
   netPositionConstraint?: NetPositionConstraint | null;
 }
 
