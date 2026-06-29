@@ -1446,7 +1446,7 @@ export function buildRateSimulationResult({
       : undefined;
     const firstMerklOpp = (currentData.merkl as MerklOpportunityGroup[] | undefined)?.[0];
     const merklCrossNote = firstMerklOpp ? merklCrossReserveNote(side)(firstMerklOpp) : null;
-    const merklOffsetNote = [merklCrossNote, merklNetNote].filter(Boolean).join(' · ') || undefined;
+    const merklOffsetNote = merklCrossNote ?? merklNetNote ?? undefined;
 
     lanes[side] = {
       hasInput: blocked ? false : sideHasInput,
