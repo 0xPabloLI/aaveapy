@@ -20,7 +20,14 @@ export interface IncentiveCapWarning {
   notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
-export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning;
+export interface IncentiveOffsetWarning {
+  kind: 'incentive_offset';
+  side: 'supply' | 'borrow';
+  source: 'brevis' | 'merit' | 'merkl';
+  notes?: import('./incentiveCaps').IncentiveNote[];
+}
+
+export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning | IncentiveOffsetWarning;
 
 interface OtherSideEntry {
   reserveId: string;
@@ -104,12 +111,9 @@ function extractIncentiveCapWarnings(
     } else if (!seenSourcesForOffset.has('brevis') && sources.brevis.notes?.length) {
       seenSourcesForOffset.add('brevis');
       warnings.push({
-        kind: 'incentive_cap',
+        kind: 'incentive_offset',
         side,
         source: 'brevis',
-        capUsd: 0,
-        isCapBinding: false,
-        adjustToUsd: 0,
         notes: sources.brevis.notes,
       });
     }
@@ -136,12 +140,9 @@ function extractIncentiveCapWarnings(
     } else if (!seenSourcesForOffset.has('merit') && sources.merit.notes?.length) {
       seenSourcesForOffset.add('merit');
       warnings.push({
-        kind: 'incentive_cap',
+        kind: 'incentive_offset',
         side,
         source: 'merit',
-        capUsd: 0,
-        isCapBinding: false,
-        adjustToUsd: 0,
         notes: sources.merit.notes,
       });
     }
@@ -168,12 +169,9 @@ function extractIncentiveCapWarnings(
     } else if (!seenSourcesForOffset.has('merkl') && sources.merkl.notes?.length) {
       seenSourcesForOffset.add('merkl');
       warnings.push({
-        kind: 'incentive_cap',
+        kind: 'incentive_offset',
         side,
         source: 'merkl',
-        capUsd: 0,
-        isCapBinding: false,
-        adjustToUsd: 0,
         notes: sources.merkl.notes,
       });
     }
