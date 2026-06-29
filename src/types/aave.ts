@@ -49,6 +49,7 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
 
 export interface MerklCampaignBreakdown extends ForecastableBreakdown {
   campaignId: string;
+  campaignDatabaseId?: string;
 }
 
 export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;
