@@ -24,7 +24,6 @@ import {
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
-import { collectRecentlyEndedCampaigns, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';
@@ -75,6 +74,11 @@ interface IncentiveCampaign {
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
   positionCap?: number;
+  recentlyEnded?: {
+    startDate?: string;
+    endDate: string;
+    campaignId?: string;
+  }[];
 }
 
 interface IncentiveSource {
@@ -143,20 +147,65 @@ function formatDateSafe(dateString?: string): string | null {
 }
 
 interface RecentlyEndedSectionProps {
-  reserve: ReserveWithSpread;
-  type: 'supply' | 'borrow';
+  incentiveSources: IncentiveSource[];
   isDark: boolean;
   isMobile: boolean;
 }
 
-function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEndedSectionProps) {
+function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEndedSectionProps) {
   const [expanded, setExpanded] = useState(false);
-  const sources = useMemo(
-    () => collectRecentlyEndedCampaigns(reserve, type),
-    [reserve, type],
-  );
 
-  if (sources.length === 0) return null;
+  const allEndedItems = useMemo(() => {
+    const items: Array<{
+      sourceType: IncentiveSource['sourceType'];
+      sourceName: string;
+      sourceLink?: string;
+      startDate?: string;
+      endDate: string;
+      campaignId?: string;
+    }> = [];
+
+    for (const source of incentiveSources) {
+      for (const campaign of source.campaigns ?? []) {
+        if (!campaign.recentlyEnded?.length) continue;
+        for (const re of campaign.recentlyEnded) {
+          items.push({
+            sourceType: source.sourceType,
+            sourceName: source.name,
+            sourceLink: source.link,
+            startDate: re.startDate,
+            endDate: re.endDate,
+            campaignId: re.campaignId,
+          });
+        }
+      }
+    }
+
+    return items;
+  }, [incentiveSources]);
+
+  const groupedBySource = useMemo(() => {
+    const map = new Map<string, {
+      sourceType: IncentiveSource['sourceType'];
+      sourceName: string;
+      sourceLink?: string;
+      items: typeof allEndedItems;
+    }>();
+    for (const item of allEndedItems) {
+      const key = `${item.sourceType ?? 'unknown'}:${item.sourceName}`;
+      const group = map.get(key) ?? {
+        sourceType: item.sourceType,
+        sourceName: item.sourceName,
+        sourceLink: item.sourceLink,
+        items: [],
+      };
+      group.items.push(item);
+      map.set(key, group);
+    }
+    return Array.from(map.values());
+  }, [allEndedItems]);
+
+  if (allEndedItems.length === 0) return null;
 
   const renderCampaignMessage = (message: unknown, keyPrefix: string) => {
     if (!message) return null;
@@ -207,7 +256,7 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
       >
         <span className="flex items-center gap-[var(--ds-space-1-5)]">
           <Clock className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
-          <span>Recently Ended ({sources.length})</span>
+          <span>Recently Ended ({allEndedItems.length})</span>
         </span>
         <ChevronDown
           className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}
@@ -215,9 +264,9 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
       </button>
       {expanded && (
         <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
-          {sources.map((source, sourceIndex) => {
-            const iconSrc = source.sourceType !== 'merit'
-              ? getSourceIcon(source.sourceType === 'merkl' ? 'Merkl' : 'Brevis', isDark)
+          {groupedBySource.map((group, sourceIndex) => {
+            const iconSrc = group.sourceType !== 'merit'
+              ? getSourceIcon(group.sourceType === 'merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
               : null;
 
             return (
@@ -234,19 +283,19 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
                       >
                         <img
                           src={iconSrc}
-                          alt={source.sourceType}
+                          alt={group.sourceType ?? ''}
                           className="h-[11px] w-auto max-w-[60px]"
                           loading="eager"
                         />
                       </span>
                     )}
                     <span className="ds-tooltip-title text-zinc-400 break-words block min-w-0">
-                      {source.name}
+                      {group.sourceName}
                     </span>
                   </div>
-                  {source.link && (
+                  {group.sourceLink && (
                     <a
-                      href={source.link}
+                      href={group.sourceLink}
                       {...externalLinkTabProps(isMobile)}
                       onClick={(e) => e.stopPropagation()}
                       className="flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-40 hover:opacity-60 text-zinc-400 bg-zinc-500/10"
@@ -256,22 +305,37 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
                     </a>
                   )}
                 </div>
-                {source.campaigns.map((campaign: RecentlyEndedCampaign, ci: number) => {
-                  const dateRangeText = campaign.startDate && formatDateSafe(campaign.startDate)
-                    ? `${formatDateSafe(campaign.startDate)} - ${formatDateSafe(campaign.endDate)}`
-                    : `Ended: ${formatDateSafe(campaign.endDate)}`;
+                {group.items.map((item, ci: number) => {
+                  const dateRangeText = item.startDate && formatDateSafe(item.startDate)
+                    ? `${formatDateSafe(item.startDate)} - ${formatDateSafe(item.endDate)}`
+                    : `Ended: ${formatDateSafe(item.endDate)}`;
+                  const merklCampaignUrl = item.campaignId && group.sourceType === 'Merkl'
+                    ? `https://app.merkl.xyz/opportunities?campaignId=${item.campaignId}`
+                    : undefined;
                   return (
                   <div
                     key={`ended-${sourceIndex}-c-${ci}`}
                     className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
                   >
                     <div className="ds-tooltip-body grid grid-cols-[1fr_auto] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
-                      <span className="break-words min-w-0">{dateRangeText}</span>
+                      <span className="break-words min-w-0">
+                        {merklCampaignUrl ? (
+                          <a
+                            href={merklCampaignUrl}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="hover:underline text-zinc-400 hover:text-zinc-300 transition-colors"
+                          >
+                            {dateRangeText}
+                          </a>
+                        ) : (
+                          dateRangeText
+                        )}
+                      </span>
                       <span className="tabular-nums font-semibold whitespace-nowrap text-zinc-500">
                         {formatPercent(0)}
                       </span>
                     </div>
-                    {renderCampaignMessage(campaign.message, `ended-${sourceIndex}-c-${ci}`)}
                   </div>
                   );
                 })}
@@ -565,8 +629,28 @@ const IncentiveTooltip = ({
     if (opportunities && Array.isArray(opportunities)) {
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
-        opportunity.breakdowns.forEach((breakdown) => {
-          if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
+
+        const liveBreakdowns: typeof opportunity.breakdowns = [];
+        const endedBreakdowns: typeof opportunity.breakdowns = [];
+
+        for (const bd of opportunity.breakdowns) {
+          if (isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) {
+            liveBreakdowns.push(bd);
+          } else {
+            endedBreakdowns.push(bd);
+          }
+        }
+
+        const endedByRewardToken = new Map<string, typeof endedBreakdowns>();
+        for (const eb of endedBreakdowns) {
+          const symbol = eb.rewardTokenSymbol?.trim().toLowerCase() || '';
+          if (!symbol) continue;
+          const list = endedByRewardToken.get(symbol) ?? [];
+          list.push(eb);
+          endedByRewardToken.set(symbol, list);
+        }
+
+        for (const breakdown of liveBreakdowns) {
           const effectiveRate = pointRateMap
             ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
             : tydroPointToUsdRate;
@@ -577,6 +661,16 @@ const IncentiveTooltip = ({
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
+            const symbol = breakdown.rewardTokenSymbol?.trim().toLowerCase() || '';
+            const matchedEnded = endedByRewardToken.get(symbol);
+            const recentlyEnded = matchedEnded?.map((eb) => ({
+              startDate: eb.campaignStartedAt,
+              endDate: eb.campaignEndedAt,
+              campaignId: eb.campaignId,
+            }));
+            if (matchedEnded) {
+              endedByRewardToken.delete(symbol);
+            }
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
               value: included ? displayValue : 0,
@@ -599,10 +693,11 @@ const IncentiveTooltip = ({
                      aprCap: breakdown.aprCap,
                      rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                      rewardTokenSymbol: breakdown.rewardTokenSymbol,
+                     ...(recentlyEnded?.length ? { recentlyEnded } : {}),
                   }],
             });
           }
-        });
+        }
       });
     }
 
@@ -1053,8 +1148,7 @@ const IncentiveTooltip = ({
                   </div>
                 )}
                 <RecentlyEndedSection
-                  reserve={reserve}
-                  type={type}
+                  incentiveSources={incentiveSources}
                   isDark={isDark}
                   isMobile={true}
                 />
@@ -1140,8 +1234,7 @@ const IncentiveTooltip = ({
             </div>
           )}
           <RecentlyEndedSection
-            reserve={reserve}
-            type={type}
+            incentiveSources={incentiveSources}
             isDark={isDark}
             isMobile={false}
           />
