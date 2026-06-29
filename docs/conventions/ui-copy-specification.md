@@ -73,11 +73,25 @@ Position caps are classified by **scope** (not by source):
 
 When `isCombineCap: true`, the cap is shared across supply and borrow positions — the `adjustToUsd` subtracts the other side's amount from the cap.
 
+### Campaign name in capNote
+
+| Source | Campaign | `campaignName` | Example capNote |
+|---|---|---|---|
+| Merit | Base (no positionCap) | `'Merit'` | `Merit incentive on first $1,000.00` |
+| Merit | Self (positionCap > 0) | `'Merit double yield'` | `Merit double yield incentive on first $1,000.00` |
+| Brevis | Any | `'Brevis'` | `Incentive on first $1,000.00` |
+
+The `campaignName` prefix distinguishes base vs double-yield campaigns within the same source. `bdLabel` (campaign row label) is extracted in priority order:
+1. `breakdown.message.action` (e.g. `"Self Authentication"` → `"Self Authentication"`)
+2. `group.message` (via `extractActionLabelFromMeritMessage`)
+3. Fallback: `"{groupName} (base)"` or `"{groupName} (double yield)"` when multiple breakdowns exist
+
 ### Full templates
 
 | Condition | Template | Example |
 |---|---|---|
 | Solo cap | `Incentive on first {X}` | `Incentive on first $1,000.00` |
+| Solo cap with campaignName | `{campaignName} incentive on first {X}` | `Merit double yield incentive on first $1,000.00` |
 | Combine cap | `Incentive on first {X} · combine` | `Incentive on first $5,000.00 · combine` |
 | + budget remaining | `Incentive on first {X} · ~{N}d earn` | `Incentive on first $1,000.00 · ~50d earn` |
 | + campaign ending | `Incentive on first {X} · ~{N}d to end` | `Incentive on first $1,000.00 · ~60d to end` |
@@ -104,12 +118,27 @@ Both Merit position cap and Brevis position cap flow through `applyPositionCapTo
 | `buildFixRewardCapEffect` | pool_budget | `~{N}d earn` | `~7d earn` |
 | `buildMaxRewardCapEffect` | apr_cap | `APR capped for low TVL` | `APR capped for low TVL` |
 
-### Net eligible note
+### Net eligible note (offsetNote)
 
 | Builder | Template | Example |
 |---|---|---|
 | `buildNetEligibleNote` | `Net eligible {net} of {gross}` | `Net eligible $500 of $1,000` |
 | `buildCrossReserveNetEligibleNote` | `Net eligible {net} of {gross} ({side} minus {symbols} {offsets})` | `Net eligible $500 of $1,000 (supply minus USDC+DAI borrows)` |
+
+offsetNote is currently at **source level** in the data model, but propagated to campaign rows for display:
+- When `hideAggregateWhenCampaigns: true`, the aggregate row is hidden; offsetNote is attached to the first campaign row.
+- When a single campaign exists, offsetNote is included on that row directly.
+
+### Portfolio CapWarningRow rendering
+
+| Condition | Color | Icon |
+|---|---|---|
+| `kind === 'protocol_cap'` | amber | AlertTriangle |
+| `kind === 'incentive_cap' && capWarning` | amber | none |
+| `kind === 'incentive_cap' && !capWarning` (offsetNote-only) | muted | none |
+
+capNote and offsetNote are joined with `│` (U+2502 BOX DRAWINGS LIGHT VERTICAL) on the same line in Portfolio.
+offsetNote-only entries (no capWarning, no capNote) display the offsetNote in muted color without a capNote label.
 
 ---
 
@@ -125,5 +154,6 @@ Both Merit position cap and Brevis position cap flow through `applyPositionCapTo
 
 | Date | Change | Commit |
 |---|---|---|
+| 2026-06-29 | Add campaignName (Merit/Merit double yield), bdLabel extraction order, offsetNote propagation rules, Portfolio CapWarningRow color/icon spec, `│` separator | `d9f3ff15` |
 | 2026-06-18 | Document `currentExceeded` data flow; position cap classified by scope (supply/borrow/combine) not source; rename `isSharedSupplyBorrow` → `isCombineCap`, `· supply + borrow` → `· combine` | _(pending)_ |
 | 2026-06-18 | Initial spec — protocol cap, incentive cap, button copy | `bdf3afe5` |
