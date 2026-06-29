@@ -15,7 +15,7 @@ import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import { formatProtocolCapText, type IncentiveCapWarning, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
+import { formatProtocolCapText, type IncentiveCapWarning, type IncentiveOffsetWarning, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 const DELTA_EPSILON = 0.005;
 
@@ -318,7 +318,7 @@ function SideInput({
   );
 }
 
-function formatCapWarningLabel(w: IncentiveCapWarning, _side: 'supply' | 'borrow'): string {
+function formatCapWarningLabel(w: IncentiveCapWarning): string {
   if (w.notes?.[0]?.text) return w.notes[0].text;
   if (w.isCapBinding) return `Incentive on first ${formatUsd(w.capUsd)} only`;
   return '';
@@ -340,11 +340,11 @@ function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWar
             </Fragment>
           );
         }
-        const incentiveW = w as IncentiveCapWarning;
+        const notes = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).notes : (w as IncentiveOffsetWarning).notes;
         return (
           <Fragment key={`${w.kind}-${i}`}>
             <div className="flex items-center gap-1 min-w-0 flex-wrap">
-              {incentiveW.notes?.map((note, ni) => (
+              {notes?.map((note, ni) => (
                 <Fragment key={`note-${ni}`}>
                   {ni > 0 && <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>}
                   <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>

@@ -114,6 +114,8 @@ export function incentiveSourceToTableRows(
   nestedUnderIncentive = false,
 ): SimulationTableRow[] {
   const prefix = `${side}-${sourceIndex}`;
+  const campaigns = src.campaigns;
+  const sourceNotesForMainRow = !campaigns?.length ? src.notes : undefined;
   const main: SimulationTableRow = {
     rowKey: `${prefix}-agg`,
     label: src.label,
@@ -125,9 +127,8 @@ export function incentiveSourceToTableRows(
     isBreakdown: true,
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
-    notes: src.notes,
+    notes: sourceNotesForMainRow,
   };
-  const campaigns = src.campaigns;
   if (!campaigns?.length) return [main];
   if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
     const c = campaigns[0];
