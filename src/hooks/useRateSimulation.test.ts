@@ -738,10 +738,10 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    const capNote = result.supply.sources.brevis.campaigns?.[0]?.capNote;
-    expect(capNote).toBeDefined();
-    expect(capNote).toMatch(/~\d+d to end/);
-    const m = capNote!.match(/~(\d+)d to end/);
+    const noteText = result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text;
+    expect(noteText).toBeDefined();
+    expect(noteText).toMatch(/~\d+d to end/);
+    const m = noteText!.match(/~(\d+)d to end/);
     expect(m).not.toBeNull();
     const n = Number(m![1]);
     expect(n).toBeGreaterThanOrEqual(48);
@@ -939,10 +939,13 @@ describe('buildRateSimulationResult', () => {
     // Both sides should see the reduced APR
     expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(0.5, 1);
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 only · combine',
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'Incentive on first $5,000.00 only',
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'combine',
+    );
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text);
   });
 
   it('shows shared cap note on both sides when only one side has scenario input', () => {
@@ -993,13 +996,19 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 only · combine',
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'Incentive on first $5,000.00 only',
     );
-    expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 only · combine',
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'combine',
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
+    expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'Incentive on first $5,000.00 only',
+    );
+    expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
+      'combine',
+    );
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text);
     expect(result.supply.sources.brevis.after).not.toBeNull();
     expect(result.borrow.sources.brevis.after).toBeCloseTo(1, 0);
   });
@@ -1103,7 +1112,7 @@ describe('buildRateSimulationResult', () => {
 
     expect(result.supply.sources.brevis.after).toBeCloseTo(1, 0);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(1.2, 1);
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).not.toContain('supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).not.toContain('supply + borrow');
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
   });
@@ -1198,8 +1207,8 @@ describe('buildRateSimulationResult', () => {
     });
 
     const rows = result.supply.sources.merkl.campaigns ?? [];
-    expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBeUndefined();
-    expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBeUndefined();
+    expect(rows.find((r) => r.id.includes('dutch1'))?.notes).toBeUndefined();
+    expect(rows.find((r) => r.id.includes('dutch2'))?.notes).toBeUndefined();
   });
 
   it('does not count DUTCH_AUCTION toward forecastUnavailableCampaignCount', () => {
@@ -1839,8 +1848,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote).toBeUndefined();
-    expect(result.supply.sources.merkl.offsetNote).toContain('USDe');
+    expect(merklCampaigns![0].notes?.find(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap')).toBeUndefined();
+    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text).toContain('USDe');
   });
 
   it('no cross-reserve note when no reserveSymbolById', () => {
@@ -1867,8 +1876,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
-    expect(result.supply.sources.merkl.offsetNote ?? '').not.toContain('USDe');
+    expect(merklCampaigns![0].notes?.[0]?.text ?? '').not.toContain('cross-reserve');
+    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text ?? '').not.toContain('USDe');
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 
@@ -1911,8 +1920,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
-    expect(result.supply.sources.merkl.offsetNote ?? '').not.toContain('cross-reserve');
+    expect(merklCampaigns![0].notes?.[0]?.text ?? '').not.toContain('cross-reserve');
+    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text ?? '').not.toContain('cross-reserve');
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 });

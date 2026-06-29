@@ -15,7 +15,7 @@ import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioReserveEntry, PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import { formatProtocolCapText, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
+import { formatProtocolCapText, type IncentiveCapWarning, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 
 const DELTA_EPSILON = 0.005;
 
@@ -318,11 +318,8 @@ function SideInput({
   );
 }
 
-function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'): string {
-  if (w.kind === 'protocol_cap') {
-    return formatProtocolCapText({ side, availableFormatted: formatUsd(w.adjustToUsd), limitedByLiquidity: w.limitedByLiquidity });
-  }
-  if (w.capNote) return w.capNote;
+function formatCapWarningLabel(w: IncentiveCapWarning, _side: 'supply' | 'borrow'): string {
+  if (w.notes?.[0]?.text) return w.notes[0].text;
   if (w.isCapBinding) return `Incentive on first ${formatUsd(w.capUsd)} only`;
   return '';
 }
@@ -343,27 +340,11 @@ function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWar
             </Fragment>
           );
         }
-        if (!w.notes?.length) {
-          const label = formatCapWarningLabel(w, side);
-          const isCapWarning = w.capWarning;
-          return (
-            <Fragment key={`${w.kind}-${i}`}>
-              <div className={cn('flex items-center gap-1 min-w-0 flex-wrap', isCapWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
-                {label && <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{label}</span>}
-                {w.offsetNote && (
-                  <>
-                    <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>
-                    <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'text-muted-foreground')}>{w.offsetNote}</span>
-                  </>
-                )}
-              </div>
-            </Fragment>
-          );
-        }
+        const incentiveW = w as IncentiveCapWarning;
         return (
           <Fragment key={`${w.kind}-${i}`}>
             <div className="flex items-center gap-1 min-w-0 flex-wrap">
-              {w.notes.map((note, ni) => (
+              {incentiveW.notes?.map((note, ni) => (
                 <Fragment key={`note-${ni}`}>
                   {ni > 0 && <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>}
                   <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>

@@ -12,8 +12,8 @@ export interface IncentiveNote {
 }
 
 /**
- * Domain-layer model for incentive constraints that surface as simulation `capNote` / `capWarning`.
- * API field names stay unchanged (e.g. `positionCap`); UI props stay `capNote` / `capWarning`.
+ * Domain-layer model for incentive constraints that surface as `IncentiveNote[]` on campaigns/sources.
+ * API field names stay unchanged (e.g. `positionCap`).
  */
 export type IncentiveCapKind =
   | 'position_cap'
@@ -41,23 +41,6 @@ export interface IncentiveCapEffect {
 export interface SimulationCapMetrics {
   positionCapUsd?: number;
   isCombineCap?: boolean;
-}
-
-export function capEffectToSimulationFields(
-  effect: IncentiveCapEffect,
-): { capNote: string; capWarning: boolean; capMetrics?: SimulationCapMetrics } {
-  let capMetrics: SimulationCapMetrics | undefined;
-  if (effect.kind === 'position_cap' && effect.metrics?.positionCapUsd != null) {
-    capMetrics = { positionCapUsd: effect.metrics.positionCapUsd };
-    if (effect.metrics.isCombineCap) {
-      capMetrics.isCombineCap = true;
-    }
-  }
-  return {
-    capNote: effect.noteParts.join(' · '),
-    capWarning: effect.warning,
-    capMetrics,
-  };
 }
 
 const CAP_KIND_TO_NOTE_TYPE: Record<IncentiveCapKind, IncentiveNoteType> = {
@@ -159,8 +142,7 @@ export interface CrossReserveNetNoteInput {
 
 export interface PositionCapForecastResult {
   aprPercent: number;
-  capNote?: string;
-  capWarning: boolean;
+  notes?: IncentiveNote[];
   capMetrics?: SimulationCapMetrics;
 }
 
@@ -177,9 +159,9 @@ export function applyPositionCapToForecastResult(
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
-    return { aprPercent: nominalAprPercent, capWarning: false };
+    return { aprPercent: nominalAprPercent };
   }
-  const { aprPercent, isCapBinding, eligibleUsd } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
+  const { aprPercent, isCapBinding } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
   const effect = buildPositionCapEffect({
     positionCapUsd: capUsd,
     isCombineCap: options?.isCombineCap ?? false,
@@ -189,24 +171,15 @@ export function applyPositionCapToForecastResult(
     remainingDays: options?.remainingDays ?? null,
     campaignName: options?.campaignName,
   });
-  const fields = capEffectToSimulationFields(effect);
-  return { aprPercent, ...fields };
-}
-
-export function appendNotes(
-  note: string | undefined,
-  crossReserveNote: string | null | undefined,
-  netNote: string | null | undefined,
-): string | undefined {
-  const parts: string[] = [];
-  if (note) parts.push(note);
-  const offsetParts: string[] = [];
-  if (crossReserveNote) offsetParts.push(crossReserveNote);
-  if (netNote) offsetParts.push(netNote);
-  if (offsetParts.length > 0) {
-    parts.push(offsetParts.join(' · '));
+  const notes = [capEffectToNote(effect)];
+  let capMetrics: SimulationCapMetrics | undefined;
+  if (effect.metrics?.positionCapUsd != null) {
+    capMetrics = { positionCapUsd: effect.metrics.positionCapUsd };
+    if (effect.metrics.isCombineCap) {
+      capMetrics.isCombineCap = true;
+    }
   }
-  return parts.length > 0 ? parts.join('; ') : undefined;
+  return { aprPercent, notes, capMetrics };
 }
 
 export function checkForecastAvailability(

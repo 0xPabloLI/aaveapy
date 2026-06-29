@@ -4,55 +4,11 @@ import {
   buildPositionCapEffect,
   buildMaxRewardCapEffect,
   buildFixRewardCapEffect,
-  capEffectToSimulationFields,
   capEffectToNote,
   netEligibleToNote,
   applyPositionCapToForecastResult,
-  appendNotes,
   checkForecastAvailability,
 } from './incentiveCaps';
-
-describe('capEffectToSimulationFields', () => {
-  it('joins note parts and passes warning through', () => {
-    const eff = buildFixRewardCapEffect(12.3);
-    expect(capEffectToSimulationFields(eff)).toEqual({
-      capNote: '~12d earn',
-      capWarning: false,
-      capMetrics: undefined,
-    });
-  });
-
-  it('carries capMetrics from position_cap effect', () => {
-    const eff = buildPositionCapEffect({
-      positionCapUsd: 1000,
-      isCombineCap: false,
-      isCapBinding: false,
-      remainingBudget: null,
-      dailyRewardUsd: null,
-      remainingDays: null,
-    });
-    const fields = capEffectToSimulationFields(eff);
-    expect(fields.capMetrics).toEqual({ positionCapUsd: 1000 });
-  });
-
-  it('carries capMetrics with isCombineCap from position_cap', () => {
-    const eff = buildPositionCapEffect({
-      positionCapUsd: 5000,
-      isCombineCap: true,
-      isCapBinding: true,
-      remainingBudget: null,
-      dailyRewardUsd: null,
-      remainingDays: null,
-    });
-    const fields = capEffectToSimulationFields(eff);
-    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isCombineCap: true });
-  });
-
-  it('returns undefined capMetrics for non-position-cap effects', () => {
-    const eff = buildMaxRewardCapEffect();
-    expect(capEffectToSimulationFields(eff).capMetrics).toBeUndefined();
-  });
-});
 
 describe('buildPositionCapEffect', () => {
   it('uses combine label when shared', () => {
@@ -64,11 +20,12 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: 100,
       remainingDays: 200,
     });
-    const fields = capEffectToSimulationFields(eff);
-    expect(fields.capNote).toBe(
+    const note = capEffectToNote(eff);
+    expect(note.text).toBe(
       'Incentive on first $5,000.00 only · combine · ~100d earn',
     );
-    expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isCombineCap: true });
+    expect(note.color).toBe('muted');
+    expect(eff.metrics).toEqual({ positionCapUsd: 5000, isCombineCap: true, remainingDays: 200 });
   });
 
   it('uses single-side label when not shared', () => {
@@ -80,10 +37,10 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: 100,
       remainingDays: 50,
     });
-    const { capNote, capWarning, capMetrics } = capEffectToSimulationFields(eff);
-    expect(capNote).toBe('Incentive on first $5,000.00 only · ~50d earn');
-    expect(capWarning).toBe(true);
-    expect(capMetrics).toEqual({ positionCapUsd: 5000 });
+    const note = capEffectToNote(eff);
+    expect(note.text).toBe('Incentive on first $5,000.00 only · ~50d earn');
+    expect(note.color).toBe('amber');
+    expect(eff.metrics).toEqual({ positionCapUsd: 5000, remainingDays: 50 });
   });
 
   it('falls back to calendar days when no budget data', () => {
@@ -95,7 +52,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: 60,
     });
-    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $5,000.00 only · ~60d to end');
+    expect(capEffectToNote(eff).text).toBe('Incentive on first $5,000.00 only · ~60d to end');
   });
 
   it('omits earn segment when neither horizon is positive', () => {
@@ -107,19 +64,21 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: null,
     });
-    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $100.00 only');
+    expect(capEffectToNote(eff).text).toBe('Incentive on first $100.00 only');
   });
 });
 
 describe('FIX_REWARD and MAX_REWARD cap helpers', () => {
   it('buildFixRewardCapEffect formats days', () => {
-    expect(capEffectToSimulationFields(buildFixRewardCapEffect(7)).capNote).toBe('~7d earn');
+    expect(capEffectToNote(buildFixRewardCapEffect(7)).text).toBe('~7d earn');
   });
 
   it('buildMaxRewardCapEffect is warning', () => {
-    expect(capEffectToSimulationFields(buildMaxRewardCapEffect())).toEqual({
-      capNote: 'APR capped for low TVL',
-      capWarning: true,
+    const note = capEffectToNote(buildMaxRewardCapEffect());
+    expect(note).toEqual({
+      type: 'apr_cap',
+      text: 'APR capped for low TVL',
+      color: 'amber',
     });
   });
 });
@@ -128,30 +87,28 @@ describe('applyPositionCapToForecastResult', () => {
   it('returns unscaled APR when capUsd is undefined', () => {
     const result = applyPositionCapToForecastResult(10, 5000, undefined);
     expect(result.aprPercent).toBe(10);
-    expect(result.capNote).toBeUndefined();
-    expect(result.capWarning).toBe(false);
+    expect(result.notes).toBeUndefined();
   });
 
   it('returns unscaled APR when capUsd is 0', () => {
     const result = applyPositionCapToForecastResult(10, 5000, 0);
     expect(result.aprPercent).toBe(10);
-    expect(result.capNote).toBeUndefined();
-    expect(result.capWarning).toBe(false);
+    expect(result.notes).toBeUndefined();
   });
 
-  it('scales APR and generates capNote when position exceeds cap', () => {
+  it('scales APR and generates notes when position exceeds cap', () => {
     const result = applyPositionCapToForecastResult(10, 5000, 1000);
     expect(result.aprPercent).toBeCloseTo(2, 6);
-    expect(result.capNote).toBeDefined();
-    expect(result.capWarning).toBe(true);
+    expect(result.notes).toHaveLength(1);
+    expect(result.notes?.[0]?.color).toBe('amber');
     expect(result.capMetrics?.positionCapUsd).toBe(1000);
   });
 
-  it('generates capNote but no capWarning when position is below cap', () => {
+  it('generates notes with muted color when position is below cap', () => {
     const result = applyPositionCapToForecastResult(10, 500, 1000);
     expect(result.aprPercent).toBe(10);
-    expect(result.capNote).toBeDefined();
-    expect(result.capWarning).toBe(false);
+    expect(result.notes).toHaveLength(1);
+    expect(result.notes?.[0]?.color).toBe('muted');
   });
 
   it('includes isCombineCap in capMetrics', () => {
@@ -159,28 +116,6 @@ describe('applyPositionCapToForecastResult', () => {
       isCombineCap: true,
     });
     expect(result.capMetrics?.isCombineCap).toBe(true);
-  });
-});
-
-describe('appendNotes', () => {
-  it('returns undefined when all notes are empty', () => {
-    expect(appendNotes(undefined, null, null)).toBeUndefined();
-  });
-
-  it('returns single note', () => {
-    expect(appendNotes('cap note', null, null)).toBe('cap note');
-  });
-
-  it('joins note + crossReserveNote with semicolon', () => {
-    expect(appendNotes('cap', 'cross', null)).toBe('cap; cross');
-  });
-
-  it('joins all three notes with semicolon between cap and offsets', () => {
-    expect(appendNotes('cap', 'cross', 'net')).toBe('cap; cross · net');
-  });
-
-  it('handles string crossReserveNote', () => {
-    expect(appendNotes(undefined, 'cross', null)).toBe('cross');
   });
 });
 

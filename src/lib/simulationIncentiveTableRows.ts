@@ -56,18 +56,15 @@ export interface SimulationTableRow {
   href?: string | null;
   isBreakdown?: boolean;
   isSubBreakdown?: boolean;
-  capNote?: string;
-  capWarning?: boolean;
   warning?: boolean;
   nestedUnderIncentive?: boolean;
-  offsetNote?: string;
   notes?: IncentiveNote[];
 }
 
 export interface IncentiveSourceRow extends SimulationSourceDetail {
   label: string;
   href: string | null;
-  /** When one campaign, merge into the source row so capNote shows under the main label (Brevis cap/duration). */
+  /** When one campaign, merge into the source row so notes show under the main label (Brevis cap/duration). */
   mergeSingleCampaignRow?: boolean;
   /** Hide source aggregate row when campaigns exist; only list campaign rows (fallback href on src). */
   hideAggregateWhenCampaigns?: boolean;
@@ -128,7 +125,6 @@ export function incentiveSourceToTableRows(
     isBreakdown: true,
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
-    offsetNote: src.offsetNote,
     notes: src.notes,
   };
   const campaigns = src.campaigns;
@@ -147,9 +143,6 @@ export function incentiveSourceToTableRows(
           isBreakdown: true,
           isSubBreakdown: nestedUnderIncentive,
           nestedUnderIncentive,
-          capNote: c.capNote,
-          capWarning: c.capWarning,
-          offsetNote: src.offsetNote,
           notes: c.notes,
         },
       ];
@@ -166,16 +159,13 @@ export function incentiveSourceToTableRows(
       isBreakdown: true,
       isSubBreakdown: true,
       nestedUnderIncentive,
-      capNote: c.capNote,
-      capWarning: c.capWarning,
-      offsetNote: ci === 0 ? src.offsetNote : undefined,
       notes: c.notes,
     }));
   }
   return [
     main,
-    ...campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
-      rowKey: `${prefix}-c-${ci}-${c.id}`,
+    ...campaigns.map((c: SimulationCampaignDetail) => ({
+      rowKey: `${prefix}-c-${campaigns.indexOf(c)}-${c.id}`,
       label: c.label,
       current: c.current,
       after: c.after,
@@ -185,8 +175,6 @@ export function incentiveSourceToTableRows(
       isBreakdown: true,
       isSubBreakdown: true,
       nestedUnderIncentive,
-      capNote: c.capNote,
-      capWarning: c.capWarning,
       notes: c.notes,
     })),
   ];
