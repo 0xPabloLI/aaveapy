@@ -65,6 +65,7 @@ interface IncentiveCampaign {
   endDate?: string;
   message?: string | Record<string, unknown> | unknown[];
   campaignId?: string;
+  campaignUrl?: string;
   sourceType?: IncentiveSource['sourceType'];
   whitelistOnly?: boolean;
   included?: boolean;
@@ -78,6 +79,7 @@ interface IncentiveCampaign {
     startDate?: string;
     endDate: string;
     campaignId?: string;
+    campaignUrl?: string;
   }[];
 }
 
@@ -163,6 +165,7 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       startDate?: string;
       endDate: string;
       campaignId?: string;
+      campaignUrl?: string;
     }> = [];
 
     for (const source of incentiveSources) {
@@ -176,6 +179,7 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
             startDate: re.startDate,
             endDate: re.endDate,
             campaignId: re.campaignId,
+            campaignUrl: re.campaignUrl,
           });
         }
       }
@@ -309,32 +313,27 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                   const dateRangeText = item.startDate && formatDateSafe(item.startDate)
                     ? `${formatDateSafe(item.startDate)} - ${formatDateSafe(item.endDate)}`
                     : `Ended: ${formatDateSafe(item.endDate)}`;
-                  const merklCampaignUrl = item.campaignId && group.sourceType === 'Merkl' && group.sourceLink
-                    ? `${group.sourceLink.replace(/\/$/, '')}/campaigns/${item.campaignId}`
-                    : undefined;
                   return (
                   <div
                     key={`ended-${sourceIndex}-c-${ci}`}
                     className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
                   >
-                    <div className="ds-tooltip-body grid grid-cols-[1fr_auto] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
-                      <span className="break-words min-w-0">
-                        {merklCampaignUrl ? (
-                          <a
-                            href={merklCampaignUrl}
-                            {...externalLinkTabProps(isMobile)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="hover:underline text-zinc-400 hover:text-zinc-300 transition-colors"
-                          >
-                            {dateRangeText}
-                          </a>
-                        ) : (
-                          dateRangeText
-                        )}
-                      </span>
+                    <div className="ds-tooltip-body grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
+                      <span className="break-words min-w-0">{dateRangeText}</span>
                       <span className="tabular-nums font-semibold whitespace-nowrap text-zinc-500">
                         {formatPercent(0)}
                       </span>
+                      {item.campaignUrl ? (
+                        <a
+                          href={item.campaignUrl}
+                          {...externalLinkTabProps(isMobile)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400"
+                          title="View campaign"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : <div />}
                     </div>
                   </div>
                   );
@@ -661,13 +660,19 @@ const IncentiveTooltip = ({
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
+            const oppLink = getMerklLink(opportunity);
+            const campaignUrl = oppLink ? `${oppLink.replace(/\/$/, '')}/campaigns/${breakdown.campaignId}` : undefined;
             const symbol = breakdown.rewardTokenSymbol?.trim().toLowerCase() || '';
             const matchedEnded = endedByRewardToken.get(symbol);
-            const recentlyEnded = matchedEnded?.map((eb) => ({
-              startDate: eb.campaignStartedAt,
-              endDate: eb.campaignEndedAt,
-              campaignId: eb.campaignId,
-            }));
+            const recentlyEnded = matchedEnded?.map((eb) => {
+              const endedUrl = oppLink ? `${oppLink.replace(/\/$/, '')}/campaigns/${eb.campaignId}` : undefined;
+              return {
+                startDate: eb.campaignStartedAt,
+                endDate: eb.campaignEndedAt,
+                campaignId: eb.campaignId,
+                ...(endedUrl ? { campaignUrl: endedUrl } : {}),
+              };
+            });
             if (matchedEnded) {
               endedByRewardToken.delete(symbol);
             }
@@ -677,7 +682,7 @@ const IncentiveTooltip = ({
               color: 'text-foreground',
               bgColor: 'bg-muted/60',
               sourceType: 'Merkl',
-              link: getMerklLink(opportunity),
+              link: oppLink,
               message: opportunity.message,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                   campaigns: [{
@@ -688,6 +693,7 @@ const IncentiveTooltip = ({
                     startDate: breakdown.campaignStartedAt,
                     endDate: breakdown.campaignEndedAt,
                     campaignId: breakdown.campaignId,
+                    ...(campaignUrl ? { campaignUrl } : {}),
                     sourceType: 'Merkl',
                campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
                      aprCap: breakdown.aprCap,
@@ -812,7 +818,6 @@ const IncentiveTooltip = ({
         {dateRangeText && (
           <div className={`ds-tooltip-body mt-[var(--ds-space-1)] grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
             <span className="break-words min-w-0">{dateRangeText}</span>
-            <div />
             {showApr && (() => {
               const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
               return (
@@ -829,6 +834,17 @@ const IncentiveTooltip = ({
               </span>
               );
             })()}
+            {campaign.campaignUrl ? (
+              <a
+                href={campaign.campaignUrl}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(e) => e.stopPropagation()}
+                className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-muted-foreground"
+                title="View campaign"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : <div />}
           </div>
         )}
         {renderCampaignTypeDescription(campaign)}
