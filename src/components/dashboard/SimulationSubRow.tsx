@@ -604,6 +604,17 @@ const SimulationSubRow = ({
       <Fragment key={row.rowKey}>
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
+        {row.offsetNote ? (
+          <tr data-align-key={noteAlignKey}>
+            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+              <p
+                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} text-muted-foreground`}
+              >
+                {row.offsetNote}
+              </p>
+            </td>
+          </tr>
+        ) : null}
         {row.capNote ? (
           <tr data-align-key={noteAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>

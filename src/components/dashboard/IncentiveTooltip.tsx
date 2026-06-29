@@ -652,7 +652,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Target total — {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            Target total: {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );
@@ -739,7 +739,7 @@ const IncentiveTooltip = ({
         {renderCampaignTypeDescription(campaign)}
         {campaign.positionCap != null && campaign.positionCap > 0 && (
           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
-            Position cap {formatUsd(campaign.positionCap)}
+            Incentive on first {formatUsd(campaign.positionCap)} only
           </p>
         )}
         {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}

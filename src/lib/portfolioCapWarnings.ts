@@ -18,6 +18,7 @@ export interface IncentiveCapWarning {
   adjustToUsd: number;
   isCombineCap?: boolean;
   capNote?: string;
+  offsetNote?: string;
 }
 
 export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning;
@@ -76,7 +77,7 @@ export function extractCapWarnings(
 function extractIncentiveCapWarnings(
   reserveId: string,
   side: 'supply' | 'borrow',
-  sources: { merit: { campaigns?: SimulationCampaignDetail[] }; brevis: { campaigns?: SimulationCampaignDetail[] }; merkl: { campaigns?: SimulationCampaignDetail[] } },
+  sources: { merit: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string }; brevis: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string }; merkl: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string } },
   otherSideEntries: OtherSideEntry[],
 ): IncentiveCapWarning[] {
   const warnings: IncentiveCapWarning[] = [];
@@ -97,6 +98,7 @@ function extractIncentiveCapWarnings(
         adjustToUsd,
         isCombineCap: c.capMetrics.isCombineCap || undefined,
         capNote: c.capNote,
+        offsetNote: sources.brevis.offsetNote,
       });
     }
   }
@@ -116,6 +118,7 @@ function extractIncentiveCapWarnings(
         adjustToUsd,
         isCombineCap: c.capMetrics.isCombineCap || undefined,
         capNote: c.capNote,
+        offsetNote: sources.merit.offsetNote,
       });
     }
   }

@@ -58,8 +58,8 @@ export interface SimulationTableRow {
   capNote?: string;
   capWarning?: boolean;
   warning?: boolean;
-  /** First breakdown level under an aggregate Incentive row (indent). */
   nestedUnderIncentive?: boolean;
+  offsetNote?: string;
 }
 
 export interface IncentiveSourceRow extends SimulationSourceDetail {
@@ -126,6 +126,7 @@ export function incentiveSourceToTableRows(
     isBreakdown: true,
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
+    offsetNote: src.offsetNote,
   };
   const campaigns = src.campaigns;
   if (!campaigns?.length) return [main];

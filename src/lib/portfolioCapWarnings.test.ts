@@ -159,7 +159,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00',
+      capNote: 'Incentive on first $1,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 1000 },
     };
@@ -187,7 +187,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00',
+      capNote: 'Incentive on first $2,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 2000 },
     };
@@ -214,7 +214,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $5,000.00 · combine',
+      capNote: 'Incentive on first $5,000.00 only · combine',
       capWarning: true,
       capMetrics: { positionCapUsd: 5000, isCombineCap: true },
     };
@@ -243,7 +243,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00',
+      capNote: 'Incentive on first $1,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 1000 },
     };
@@ -275,7 +275,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 4,
       delta: -1,
-      capNote: 'Incentive on first $10,000.00',
+      capNote: 'Incentive on first $10,000.00 only',
       capWarning: false,
       capMetrics: { positionCapUsd: 10000 },
     };
@@ -320,7 +320,7 @@ describe('extractCapWarnings', () => {
       current: 3,
       after: 2,
       delta: -1,
-      capNote: 'Incentive on first $1,000.00',
+      capNote: 'Incentive on first $1,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 1000 },
     };
@@ -330,7 +330,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00',
+      capNote: 'Incentive on first $2,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 2000 },
     };
@@ -357,7 +357,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00',
+      capNote: 'Incentive on first $1,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 1000 },
     };
@@ -367,7 +367,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00',
+      capNote: 'Incentive on first $2,000.00 only',
       capWarning: true,
       capMetrics: { positionCapUsd: 2000 },
     };
@@ -395,7 +395,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 · combine',
+      capNote: 'Incentive on first $1,000.00 only · combine',
       capWarning: true,
       capMetrics: { positionCapUsd: 1000, isCombineCap: true },
     };

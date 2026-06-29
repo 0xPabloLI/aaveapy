@@ -58,12 +58,16 @@ export function buildPositionCapEffect(input: {
   remainingBudget: number | null;
   dailyRewardUsd: number | null;
   remainingDays: number | null;
+  campaignName?: string;
 }): IncentiveCapEffect {
   const parts: string[] = [];
+  const capPrefix = input.campaignName
+    ? `${input.campaignName} incentive on first ${formatUsd(input.positionCapUsd)} only`
+    : `Incentive on first ${formatUsd(input.positionCapUsd)} only`;
   parts.push(
     input.isCombineCap
-      ? `Incentive on first ${formatUsd(input.positionCapUsd)} · combine`
-      : `Incentive on first ${formatUsd(input.positionCapUsd)}`,
+      ? `${capPrefix} · combine`
+      : capPrefix,
   );
   if (input.remainingBudget != null && input.dailyRewardUsd != null && input.remainingDays != null) {
     const earnDays = computeBudgetRemainingDays(input.remainingBudget, input.dailyRewardUsd, input.remainingDays);
@@ -115,7 +119,7 @@ export function buildMaxRewardCapEffect(): IncentiveCapEffect {
 /** Net eligible note: effective incentive is discounted because only the net portion (supply - borrow) is eligible. */
 export function buildNetEligibleNote(netUsd: number, grossUsd: number): string | null {
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
-  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} eligible after offsets`;
+  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} net eligible`;
 }
 
 export interface CrossReserveNetNoteInput {
@@ -141,6 +145,7 @@ export function applyPositionCapToForecastResult(
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
+    campaignName?: string;
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
@@ -154,6 +159,7 @@ export function applyPositionCapToForecastResult(
     remainingBudget: options?.remainingBudget ?? null,
     dailyRewardUsd: options?.dailyRewardUsd ?? null,
     remainingDays: options?.remainingDays ?? null,
+    campaignName: options?.campaignName,
   });
   const fields = capEffectToSimulationFields(effect);
   return { aprPercent, ...fields };
@@ -190,5 +196,5 @@ export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
   const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
   const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
-  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} eligible after offsets (${sideLabel}${offsets})`;
+  return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} net eligible (${sideLabel}${offsets})`;
 }

@@ -156,6 +156,7 @@ const countForecastUnavailable = (rows: SimulationCampaignDetail[]): number =>
 
 export interface SimulationSourceDetail extends SimulationMetric {
   campaigns?: SimulationCampaignDetail[];
+  offsetNote?: string;
 }
 
 export interface SimulationLane {
@@ -645,6 +646,7 @@ export const buildMeritCampaignDetails = (
               fullAfter,
               totalPositionUsd ?? inputUsd,
               positionCapUsd,
+              { campaignName: groupName },
             );
             baseAfter = capResult.aprPercent * eligibilityRatio;
             if (capResult.capNote) {
@@ -664,7 +666,7 @@ export const buildMeritCampaignDetails = (
         current: baseCurrent,
         after: baseAfter,
         delta,
-        capNote: appendNotes(capNote, null, netNote),
+        capNote: capNote,
         capWarning,
         capMetrics,
         href: groupHref,
@@ -759,7 +761,7 @@ export const buildMerklCampaignDetails = (
         current,
         after,
         delta,
-        capNote: appendNotes(capNote, merklCrossReserveNote ? merklCrossReserveNote(opportunity) : null, netNote),
+        capNote: capNote,
         capWarning,
         capMetrics,
         href: oppLink ?? null,
@@ -853,8 +855,9 @@ export const buildBrevisCampaignDetails = (
 export const attachCampaigns = (
   metric: SimulationMetric,
   campaigns: SimulationCampaignDetail[],
+  offsetNote?: string,
 ): SimulationSourceDetail =>
-  campaigns.length > 0 ? { ...metric, campaigns } : { ...metric };
+  campaigns.length > 0 || offsetNote ? { ...metric, campaigns: campaigns.length > 0 ? campaigns : undefined, offsetNote } : { ...metric };
 
 export const buildIncentiveAfter = (
   reserve: ReserveWithSpread,
@@ -1388,6 +1391,16 @@ export function buildRateSimulationResult({
       sr[key] = { current, after, campaigns };
     }
 
+    const meritOffsetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
+      ? buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)
+      : undefined;
+    const merklNetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
+      ? buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)
+      : undefined;
+    const firstMerklOpp = (currentData.merkl as MerklOpportunityGroup[] | undefined)?.[0];
+    const merklCrossNote = firstMerklOpp ? merklCrossReserveNote(side)(firstMerklOpp) : null;
+    const merklOffsetNote = [merklCrossNote, merklNetNote].filter(Boolean).join(' · ') || undefined;
+
     lanes[side] = {
       hasInput: blocked ? false : sideHasInput,
       inputAmount: blocked ? 0 : (isSupply ? supplyAmount : borrowAmount),
@@ -1404,8 +1417,8 @@ export function buildRateSimulationResult({
       deltaTotal: blocked ? null : (afterTotal !== null && currentTotal !== null ? afterTotal - currentTotal : null),
       sources: {
         protocol: protocolDetail,
-        merit: attachCampaigns(buildMetric(sr.merit.current, sr.merit.after), sr.merit.campaigns),
-        merkl: attachCampaigns(buildMetric(sr.merkl.current, sr.merkl.after), sr.merkl.campaigns),
+        merit: attachCampaigns(buildMetric(sr.merit.current, sr.merit.after), sr.merit.campaigns, meritOffsetNote),
+        merkl: attachCampaigns(buildMetric(sr.merkl.current, sr.merkl.after), sr.merkl.campaigns, merklOffsetNote),
         brevis: attachCampaigns(buildMetric(sr.brevis.current, sr.brevis.after), sr.brevis.campaigns),
       },
     };

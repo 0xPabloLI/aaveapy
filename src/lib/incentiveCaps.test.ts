@@ -64,7 +64,7 @@ describe('buildPositionCapEffect', () => {
     });
     const fields = capEffectToSimulationFields(eff);
     expect(fields.capNote).toBe(
-      'Incentive on first $5,000.00 · combine · ~100d earn',
+      'Incentive on first $5,000.00 only · combine · ~100d earn',
     );
     expect(fields.capMetrics).toEqual({ positionCapUsd: 5000, isCombineCap: true });
   });
@@ -79,7 +79,7 @@ describe('buildPositionCapEffect', () => {
       remainingDays: 50,
     });
     const { capNote, capWarning, capMetrics } = capEffectToSimulationFields(eff);
-    expect(capNote).toBe('Incentive on first $5,000.00 · ~50d earn');
+    expect(capNote).toBe('Incentive on first $5,000.00 only · ~50d earn');
     expect(capWarning).toBe(true);
     expect(capMetrics).toEqual({ positionCapUsd: 5000 });
   });
@@ -93,7 +93,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: 60,
     });
-    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $5,000.00 · ~60d to end');
+    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $5,000.00 only · ~60d to end');
   });
 
   it('omits earn segment when neither horizon is positive', () => {
@@ -105,7 +105,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: null,
     });
-    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $100.00');
+    expect(capEffectToSimulationFields(eff).capNote).toBe('Incentive on first $100.00 only');
   });
 });
 

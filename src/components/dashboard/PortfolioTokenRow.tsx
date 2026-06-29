@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react';
+import { Fragment, memo, useCallback, useRef } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
@@ -322,17 +322,24 @@ function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'
   if (w.kind === 'protocol_cap') {
     return formatProtocolCapText({ side, availableFormatted: formatUsd(w.adjustToUsd), limitedByLiquidity: w.limitedByLiquidity });
   }
-  return w.capNote ?? `Incentive on first ${formatUsd(w.capUsd)}`;
+  return w.capNote ?? `Incentive on first ${formatUsd(w.capUsd)} only`;
 }
 
 function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWarning[]; side: 'supply' | 'borrow'; isMobile: boolean }) {
   return (
     <div className={cn('flex flex-col gap-0.5', isMobile ? 'pl-11' : 'pl-12')}>
       {warnings.map((w, i) => (
-        <div key={`${w.kind}-${i}`} className="flex items-center gap-1 text-amber-600 dark:text-amber-400 min-w-0">
-          <AlertTriangle className="size-3 shrink-0" aria-hidden />
-          <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{formatCapWarningLabel(w, side)}</span>
-        </div>
+        <Fragment key={`${w.kind}-${i}`}>
+          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 min-w-0">
+            <AlertTriangle className="size-3 shrink-0" aria-hidden />
+            <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{formatCapWarningLabel(w, side)}</span>
+          </div>
+          {w.kind === 'incentive_cap' && w.offsetNote && (
+            <div className={cn(isMobile ? 'pl-4' : 'pl-4', 'text-muted-foreground')}>
+              <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11')}>{w.offsetNote}</span>
+            </div>
+          )}
+        </Fragment>
       ))}
     </div>
   );
