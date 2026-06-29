@@ -146,6 +146,7 @@ export function incentiveSourceToTableRows(
         nestedUnderIncentive,
         capNote: c.capNote,
         capWarning: c.capWarning,
+        offsetNote: src.offsetNote,
       },
     ];
   }
@@ -163,6 +164,7 @@ export function incentiveSourceToTableRows(
       nestedUnderIncentive,
       capNote: c.capNote,
       capWarning: c.capWarning,
+      ...(ci === 0 && src.offsetNote ? { offsetNote: src.offsetNote } : {}),
     }));
   }
   return [
