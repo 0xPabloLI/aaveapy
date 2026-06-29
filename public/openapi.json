@@ -542,9 +542,6 @@
                             "campaignId": {
                               "type": "string"
                             },
-                            "campaignDatabaseId": {
-                              "type": "string"
-                            },
                             "whitelistOnly": {
                               "type": "boolean"
                             },
@@ -660,9 +657,6 @@
                             "campaignId": {
                               "type": "string"
                             },
-                            "campaignDatabaseId": {
-                              "type": "string"
-                            },
                             "whitelistOnly": {
                               "type": "boolean"
                             },
@@ -776,9 +770,6 @@
                               "type": "string"
                             },
                             "campaignId": {
-                              "type": "string"
-                            },
-                            "campaignDatabaseId": {
                               "type": "string"
                             },
                             "whitelistOnly": {
@@ -1948,9 +1939,6 @@
                       "campaignId": {
                         "type": "string"
                       },
-                      "campaignDatabaseId": {
-                        "type": "string"
-                      },
                       "whitelistOnly": {
                         "type": "boolean"
                       },
@@ -2066,9 +2054,6 @@
                       "campaignId": {
                         "type": "string"
                       },
-                      "campaignDatabaseId": {
-                        "type": "string"
-                      },
                       "whitelistOnly": {
                         "type": "boolean"
                       },
@@ -2182,9 +2167,6 @@
                         "type": "string"
                       },
                       "campaignId": {
-                        "type": "string"
-                      },
-                      "campaignDatabaseId": {
                         "type": "string"
                       },
                       "whitelistOnly": {
@@ -2868,9 +2850,6 @@
           "campaignId": {
             "type": "string"
           },
-          "campaignDatabaseId": {
-            "type": "string"
-          },
           "whitelistOnly": {
             "type": "boolean"
           },
@@ -2944,9 +2923,6 @@
                   "type": "string"
                 },
                 "campaignId": {
-                  "type": "string"
-                },
-                "campaignDatabaseId": {
                   "type": "string"
                 },
                 "whitelistOnly": {

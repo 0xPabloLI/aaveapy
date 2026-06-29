@@ -40,7 +40,6 @@ export const MerklCampaignBreakdownSchema = z.object({
   campaignStartedAt: z.string(),
   campaignEndedAt: z.string(),
   campaignId: z.string(),
-  campaignDatabaseId: z.string().optional(),
   whitelistOnly: z.boolean().optional(),
   pointsPerThousandUsd: z.number().optional(),
   rewardTokenSymbol: z.string().optional(),
