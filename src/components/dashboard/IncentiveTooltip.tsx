@@ -309,8 +309,8 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                   const dateRangeText = item.startDate && formatDateSafe(item.startDate)
                     ? `${formatDateSafe(item.startDate)} - ${formatDateSafe(item.endDate)}`
                     : `Ended: ${formatDateSafe(item.endDate)}`;
-                  const merklCampaignUrl = item.campaignId && group.sourceType === 'Merkl'
-                    ? `https://app.merkl.xyz/opportunities?campaignId=${item.campaignId}`
+                  const merklCampaignUrl = item.campaignId && group.sourceType === 'Merkl' && group.sourceLink
+                    ? `${group.sourceLink.replace(/\/$/, '')}/campaigns/${item.campaignId}`
                     : undefined;
                   return (
                   <div
@@ -747,7 +747,7 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Target total: {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            Target total {isApy ? 'APY' : 'APR'}: {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );

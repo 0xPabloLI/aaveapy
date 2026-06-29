@@ -359,6 +359,20 @@ describe('IncentiveTooltip', () => {
       expect(container.textContent).toContain('Merkl');
     });
 
+    it('shows APY label when isApy=true', () => {
+      const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: true });
+      const descEl = container.querySelector('[data-campaign-desc="TARGET_TOTAL_APR"]');
+      expect(descEl!.textContent).toContain('Target total APY:');
+    });
+
+    it('shows APR label when isApy=false', () => {
+      const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
+      const { container } = renderTooltip({ ...defaultProps, reserve, isApy: false });
+      const descEl = container.querySelector('[data-campaign-desc="TARGET_TOTAL_APR"]');
+      expect(descEl!.textContent).toContain('Target total APR:');
+    });
+
     it('renders TARGET_TOTAL_APR with muted label and accent value', () => {
       const reserve = merklCampaignReserve('TARGET_TOTAL_APR');
       const { container } = renderTooltip({ ...defaultProps, reserve, isApy: true });
