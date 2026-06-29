@@ -940,7 +940,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 · combine',
+      'Incentive on first $5,000.00 only · combine',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
   });
@@ -994,10 +994,10 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 · combine',
+      'Incentive on first $5,000.00 only · combine',
     );
     expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain(
-      'Incentive on first $5,000.00 · combine',
+      'Incentive on first $5,000.00 only · combine',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
     expect(result.supply.sources.brevis.after).not.toBeNull();
@@ -1839,7 +1839,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].capNote).toContain('USDe');
+    expect(merklCampaigns![0].capNote).toBeUndefined();
+    expect(result.supply.sources.merkl.offsetNote).toContain('USDe');
   });
 
   it('no cross-reserve note when no reserveSymbolById', () => {
@@ -1867,6 +1868,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
     expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
+    expect(result.supply.sources.merkl.offsetNote ?? '').not.toContain('USDe');
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 
@@ -1910,6 +1912,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
     expect(merklCampaigns![0].capNote ?? '').not.toContain('cross-reserve');
+    expect(result.supply.sources.merkl.offsetNote ?? '').not.toContain('cross-reserve');
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 });

@@ -215,7 +215,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
       expect(container.innerHTML).toContain('Supply USDT');
       expect(container.textContent).toContain('7.73%');
-      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('Earn extra rewards');
     });
 
@@ -483,7 +483,7 @@ describe('IncentiveTooltip', () => {
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$5,000');
     });
 
@@ -506,7 +506,7 @@ describe('IncentiveTooltip', () => {
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).not.toContain('Position cap');
+      expect(container.textContent).not.toContain('Incentive on first');
     });
 
     it('renders position cap for Merit self auth campaign', () => {
@@ -526,7 +526,7 @@ describe('IncentiveTooltip', () => {
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Position cap');
+      expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
     });
   });
