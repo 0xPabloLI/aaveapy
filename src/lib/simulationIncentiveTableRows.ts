@@ -1,4 +1,5 @@
 import type { SimulationCampaignDetail, SimulationSourceDetail } from '@/lib/rateSimulationCalculator';
+import type { IncentiveNote } from '@/lib/incentiveCaps';
 
 /** Same threshold as table cells: hide noise below ~0.005 percentage points. */
 export const MEANINGFUL_INCENTIVE_PCT = 0.005;
@@ -60,6 +61,7 @@ export interface SimulationTableRow {
   warning?: boolean;
   nestedUnderIncentive?: boolean;
   offsetNote?: string;
+  notes?: IncentiveNote[];
 }
 
 export interface IncentiveSourceRow extends SimulationSourceDetail {
@@ -127,28 +129,30 @@ export function incentiveSourceToTableRows(
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
     offsetNote: src.offsetNote,
+    notes: src.notes,
   };
   const campaigns = src.campaigns;
   if (!campaigns?.length) return [main];
   if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
     const c = campaigns[0];
-    return [
-      {
-        rowKey: `${prefix}-merged`,
-        label: src.label,
-        current: src.current,
-        after: src.after,
-        delta: src.delta,
-        type: 'rate',
-        href: c.href ?? src.href,
-        isBreakdown: true,
-        isSubBreakdown: nestedUnderIncentive,
-        nestedUnderIncentive,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-        offsetNote: src.offsetNote,
-      },
-    ];
+      return [
+        {
+          rowKey: `${prefix}-merged`,
+          label: src.label,
+          current: src.current,
+          after: src.after,
+          delta: src.delta,
+          type: 'rate',
+          href: c.href ?? src.href,
+          isBreakdown: true,
+          isSubBreakdown: nestedUnderIncentive,
+          nestedUnderIncentive,
+          capNote: c.capNote,
+          capWarning: c.capWarning,
+          offsetNote: src.offsetNote,
+          notes: c.notes,
+        },
+      ];
   }
   if (src.hideAggregateWhenCampaigns) {
     return campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
@@ -164,7 +168,8 @@ export function incentiveSourceToTableRows(
       nestedUnderIncentive,
       capNote: c.capNote,
       capWarning: c.capWarning,
-      ...(ci === 0 && src.offsetNote ? { offsetNote: src.offsetNote } : {}),
+      offsetNote: ci === 0 ? src.offsetNote : undefined,
+      notes: c.notes,
     }));
   }
   return [
@@ -182,6 +187,7 @@ export function incentiveSourceToTableRows(
       nestedUnderIncentive,
       capNote: c.capNote,
       capWarning: c.capWarning,
+      notes: c.notes,
     })),
   ];
 }

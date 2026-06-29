@@ -1,4 +1,5 @@
 import type { RateSimulationComputedResult, SimulationCampaignDetail } from './rateSimulationCalculator';
+import { netEligibleToNote } from './incentiveCaps';
 
 export interface ProtocolCapWarning {
   kind: 'protocol_cap';
@@ -20,6 +21,7 @@ export interface IncentiveCapWarning {
   capNote?: string;
   capWarning?: boolean;
   offsetNote?: string;
+  notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
 export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning;
@@ -103,6 +105,7 @@ function extractIncentiveCapWarnings(
         capNote: c.capNote,
         capWarning: c.capWarning,
         offsetNote: sources.brevis.offsetNote,
+        notes: c.notes,
       });
     } else if (!seenSourcesForOffset.has('brevis') && sources.brevis.offsetNote) {
       seenSourcesForOffset.add('brevis');
@@ -114,6 +117,7 @@ function extractIncentiveCapWarnings(
         isCapBinding: false,
         adjustToUsd: 0,
         offsetNote: sources.brevis.offsetNote,
+        notes: sources.brevis.offsetNote ? [netEligibleToNote(sources.brevis.offsetNote)] : undefined,
       });
     }
   }
@@ -136,6 +140,7 @@ function extractIncentiveCapWarnings(
         capNote: c.capNote,
         capWarning: c.capWarning,
         offsetNote: sources.merit.offsetNote,
+        notes: c.notes,
       });
     } else if (!seenSourcesForOffset.has('merit') && sources.merit.offsetNote) {
       seenSourcesForOffset.add('merit');
@@ -147,6 +152,7 @@ function extractIncentiveCapWarnings(
         isCapBinding: false,
         adjustToUsd: 0,
         offsetNote: sources.merit.offsetNote,
+        notes: sources.merit.offsetNote ? [netEligibleToNote(sources.merit.offsetNote)] : undefined,
       });
     }
   }
@@ -169,6 +175,7 @@ function extractIncentiveCapWarnings(
         capNote: c.capNote,
         capWarning: c.capWarning,
         offsetNote: sources.merkl.offsetNote,
+        notes: c.notes,
       });
     } else if (!seenSourcesForOffset.has('merkl') && sources.merkl.offsetNote) {
       seenSourcesForOffset.add('merkl');
@@ -180,6 +187,7 @@ function extractIncentiveCapWarnings(
         isCapBinding: false,
         adjustToUsd: 0,
         offsetNote: sources.merkl.offsetNote,
+        notes: sources.merkl.offsetNote ? [netEligibleToNote(sources.merkl.offsetNote)] : undefined,
       });
     }
   }
