@@ -5,6 +5,8 @@ import {
   buildMaxRewardCapEffect,
   buildFixRewardCapEffect,
   capEffectToSimulationFields,
+  capEffectToNote,
+  netEligibleToNote,
   applyPositionCapToForecastResult,
   appendNotes,
   checkForecastAvailability,
@@ -215,5 +217,60 @@ describe('checkForecastAvailability', () => {
       { apr: 5 },
       { 'camp-1': { apr: 5 } },
     )).toBe(false);
+  });
+});
+
+describe('capEffectToNote', () => {
+  it('converts position_cap effect to IncentiveNote', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    const note = capEffectToNote(eff);
+    expect(note).toEqual({
+      type: 'position_cap',
+      text: expect.stringContaining('Incentive on first'),
+      color: 'amber',
+    });
+  });
+
+  it('converts pool_budget effect with muted color', () => {
+    const eff = buildFixRewardCapEffect(30);
+    const note = capEffectToNote(eff);
+    expect(note).toEqual({ type: 'pool_budget', text: '~30d earn', color: 'muted' });
+  });
+
+  it('converts apr_cap effect with amber color', () => {
+    const eff = buildMaxRewardCapEffect();
+    const note = capEffectToNote(eff);
+    expect(note).toEqual({ type: 'apr_cap', text: 'APR capped for low TVL', color: 'amber' });
+  });
+
+  it('includes campaignName in position_cap note text', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      isCombineCap: false,
+      isCapBinding: false,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+      campaignName: 'Merit double yield',
+    });
+    expect(capEffectToNote(eff).text).toContain('Merit double yield');
+  });
+});
+
+describe('netEligibleToNote', () => {
+  it('creates net_eligible note with muted color', () => {
+    const note = netEligibleToNote('$500 of $1,000 net eligible');
+    expect(note).toEqual({
+      type: 'net_eligible',
+      text: '$500 of $1,000 net eligible',
+      color: 'muted',
+    });
   });
 });

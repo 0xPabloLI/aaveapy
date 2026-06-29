@@ -1,6 +1,16 @@
 import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 
+export type IncentiveNoteType = 'position_cap' | 'pool_budget' | 'apr_cap' | 'net_eligible';
+
+export type IncentiveNoteColor = 'amber' | 'muted';
+
+export interface IncentiveNote {
+  type: IncentiveNoteType;
+  text: string;
+  color: IncentiveNoteColor;
+}
+
 /**
  * Domain-layer model for incentive constraints that surface as simulation `capNote` / `capWarning`.
  * API field names stay unchanged (e.g. `positionCap`); UI props stay `capNote` / `capWarning`.
@@ -48,6 +58,24 @@ export function capEffectToSimulationFields(
     capWarning: effect.warning,
     capMetrics,
   };
+}
+
+const CAP_KIND_TO_NOTE_TYPE: Record<IncentiveCapKind, IncentiveNoteType> = {
+  position_cap: 'position_cap',
+  pool_budget: 'pool_budget',
+  apr_cap: 'apr_cap',
+};
+
+export function capEffectToNote(effect: IncentiveCapEffect): IncentiveNote {
+  return {
+    type: CAP_KIND_TO_NOTE_TYPE[effect.kind],
+    text: effect.noteParts.join(' · '),
+    color: effect.warning ? 'amber' : 'muted',
+  };
+}
+
+export function netEligibleToNote(text: string): IncentiveNote {
+  return { type: 'net_eligible', text, color: 'muted' };
 }
 
 /** Per-user position cap from API `positionCap`. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
