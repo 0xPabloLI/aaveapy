@@ -332,19 +332,45 @@ function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWar
     <div className={cn('flex flex-col gap-0.5', isMobile ? 'pl-11' : 'pl-12')}>
       {warnings.map((w, i) => {
         const isProtocol = w.kind === 'protocol_cap';
-        const isCapWarning = isProtocol || (w.kind === 'incentive_cap' && w.capWarning);
-        const label = formatCapWarningLabel(w, side);
+        if (isProtocol) {
+          const label = formatProtocolCapText({ side, availableFormatted: formatUsd(w.adjustToUsd), limitedByLiquidity: w.limitedByLiquidity });
+          return (
+            <Fragment key={`${w.kind}-${i}`}>
+              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 min-w-0">
+                <AlertTriangle className="size-3 shrink-0" aria-hidden />
+                <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{label}</span>
+              </div>
+            </Fragment>
+          );
+        }
+        if (!w.notes?.length) {
+          const label = formatCapWarningLabel(w, side);
+          const isCapWarning = w.capWarning;
+          return (
+            <Fragment key={`${w.kind}-${i}`}>
+              <div className={cn('flex items-center gap-1 min-w-0 flex-wrap', isCapWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
+                {label && <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{label}</span>}
+                {w.offsetNote && (
+                  <>
+                    <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>
+                    <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'text-muted-foreground')}>{w.offsetNote}</span>
+                  </>
+                )}
+              </div>
+            </Fragment>
+          );
+        }
         return (
           <Fragment key={`${w.kind}-${i}`}>
-            <div className={cn('flex items-center gap-1 min-w-0 flex-wrap', isCapWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
-              {isProtocol && <AlertTriangle className="size-3 shrink-0" aria-hidden />}
-              {label && <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{label}</span>}
-              {!isProtocol && w.offsetNote && (
-                <>
-                  <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>
-                  <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'text-muted-foreground')}>{w.offsetNote}</span>
-                </>
-              )}
+            <div className="flex items-center gap-1 min-w-0 flex-wrap">
+              {w.notes.map((note, ni) => (
+                <Fragment key={`note-${ni}`}>
+                  {ni > 0 && <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>}
+                  <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
+                    {note.text}
+                  </span>
+                </Fragment>
+              ))}
             </div>
           </Fragment>
         );

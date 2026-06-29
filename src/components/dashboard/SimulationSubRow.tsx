@@ -604,7 +604,17 @@ const SimulationSubRow = ({
       <Fragment key={row.rowKey}>
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
-        {row.offsetNote ? (
+        {row.notes?.map((note, ni) => (
+          <tr key={`${row.rowKey}-note-${ni}`} data-align-key={noteAlignKey} className={note.color === 'amber' ? 'ds-bg-warning-row' : ''}>
+            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+              <p
+                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+              >
+                {note.text}
+              </p>
+            </td>
+          </tr>
+        )) ?? (row.offsetNote ? (
           <tr data-align-key={noteAlignKey}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
               <p
@@ -614,8 +624,8 @@ const SimulationSubRow = ({
               </p>
             </td>
           </tr>
-        ) : null}
-        {row.capNote ? (
+        ) : null)}
+        {!row.notes && row.capNote ? (
           <tr data-align-key={noteAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
               <p
@@ -752,7 +762,15 @@ const SimulationSubRow = ({
           </div>
         </div>
         {capProgressBar}
-        {row.capNote ? (
+        {row.notes?.map((note, ni) => (
+          <div key={`note-${ni}`} role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${note.color === 'amber' ? 'ds-bg-warning-row' : ''}`}>
+            <p
+              className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+            >
+              {note.text}
+            </p>
+          </div>
+        )) ?? (row.capNote ? (
           <div role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
             <p
               className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
@@ -760,7 +778,7 @@ const SimulationSubRow = ({
               {row.capNote}
             </p>
           </div>
-        ) : null}
+        ) : null)}
       </Fragment>
     );
   };
