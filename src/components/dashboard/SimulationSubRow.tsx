@@ -449,14 +449,14 @@ const SimulationSubRow = ({
     accentClass: string,
     borderColorClass: string,
     tight = false,
-    peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
+    peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNoteText?: string },
     alignBand?: DesktopAlignBand | null,
     disabled = false,
   ) => {
     // When the side is frozen/paused/disabled, mask After + Delta so the
     // simulation does not appear to react to user input.
     if (disabled) {
-      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
@@ -484,8 +484,8 @@ const SimulationSubRow = ({
 
     /** Indent cap note to match label column hierarchy; row uses colspan so note can use full table width. */
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
-    const labelCellPy = row.capNote ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
-    const valueCellPy = row.capNote ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const labelCellPy = row.notes?.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const valueCellPy = row.notes?.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
     const capRowPb = tight ? 'pb-0.5' : 'pb-1';
     const resolvedAlignBand = alignBand ?? getDesktopAlignBandFromRowKey(row.rowKey);
     const mainAlignKey = getDesktopAlignKey(resolvedAlignBand, 'main');
@@ -590,11 +590,11 @@ const SimulationSubRow = ({
       </tr>
     ) : null;
 
-    const capNotePlaceholder = !row.capNote && peerCapInfo?.hasCapNote ? (
+    const capNotePlaceholder = !row.notes?.length && peerCapInfo?.hasCapNote ? (
       <tr data-align-key={noteAlignKey} aria-hidden>
         <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
           <p className="ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none">
-            {peerCapInfo.capNote ?? '.'}
+            {peerCapInfo.capNoteText ?? '.'}
           </p>
         </td>
       </tr>
@@ -614,28 +614,7 @@ const SimulationSubRow = ({
               </p>
             </td>
           </tr>
-        )) ?? (row.offsetNote ? (
-          <tr data-align-key={noteAlignKey}>
-            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
-              <p
-                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} text-muted-foreground`}
-              >
-                {row.offsetNote}
-              </p>
-            </td>
-          </tr>
-        ) : null)}
-        {!row.notes && row.capNote ? (
-          <tr data-align-key={noteAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
-            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
-              <p
-                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-              >
-                {row.capNote}
-              </p>
-            </td>
-          </tr>
-        ) : capNotePlaceholder}
+        )) ?? capNotePlaceholder}
       </Fragment>
     );
   };
@@ -655,7 +634,7 @@ const SimulationSubRow = ({
     disabled = false,
   ) => {
     if (disabled) {
-      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
@@ -671,8 +650,8 @@ const SimulationSubRow = ({
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
     const rowBgClass = row.warning ? 'ds-bg-warning-row' : '';
     const cellBgClass = `${rowBgClass} ${sectionClass}`.trim();
-    const labelCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
-    const valueCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
+    const labelCellPy = row.notes?.length ? 'pt-0.5 pb-0' : 'py-1';
+    const valueCellPy = row.notes?.length ? 'pt-0.5 pb-0' : 'py-1';
 
     const capProgressBar = (() => {
       if (row.cap == null || row.type !== 'usd') return null;
@@ -770,15 +749,7 @@ const SimulationSubRow = ({
               {note.text}
             </p>
           </div>
-        )) ?? (row.capNote ? (
-          <div role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
-            <p
-              className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-            >
-              {row.capNote}
-            </p>
-          </div>
-        ) : null)}
+        ))}
       </Fragment>
     );
   };
@@ -963,9 +934,9 @@ const SimulationSubRow = ({
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
-            const peerHasCapNote = Boolean(peer?.capNote);
+            const peerHasCapNote = Boolean(peer?.notes?.length);
             const peerCapInfo = peerHasCapBar || peerHasCapNote
-              ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
+              ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNoteText: peer?.notes?.[0]?.text }
               : undefined;
             return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
@@ -980,10 +951,10 @@ const SimulationSubRow = ({
   const showHeaderBlock = showEmptyStateNote;
   const scenarioAccrual = simulation.scenarioUsdAccrual;
   const supplyDesktopAlignSignature = supplyRows
-    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.capNote ?? ''}`)
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.notes?.[0]?.text ?? ''}`)
     .join('|');
   const borrowDesktopAlignSignature = borrowRows
-    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.capNote ?? ''}`)
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.notes?.[0]?.text ?? ''}`)
     .join('|');
 
   useEffect(() => {
@@ -1089,8 +1060,8 @@ const SimulationSubRow = ({
       const borrowRow = borrowRowByKey.get(borrowKey);
       return {
         hasCapSpacer: supplyRow?.cap != null || borrowRow?.cap != null,
-        hasNoteSpacer: Boolean(supplyRow?.capNote || borrowRow?.capNote),
-        notePlaceholder: getLongestNote([supplyRow?.capNote, borrowRow?.capNote]),
+        hasNoteSpacer: Boolean(supplyRow?.notes?.length || borrowRow?.notes?.length),
+        notePlaceholder: getLongestNote([supplyRow?.notes?.[0]?.text, borrowRow?.notes?.[0]?.text]),
         capWarning: Boolean(supplyRow?.warning || borrowRow?.warning),
         maxCap: Math.max(supplyRow?.cap ?? 0, borrowRow?.cap ?? 0),
       };

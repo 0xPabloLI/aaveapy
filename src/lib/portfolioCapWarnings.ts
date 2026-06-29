@@ -1,5 +1,4 @@
 import type { RateSimulationComputedResult, SimulationCampaignDetail } from './rateSimulationCalculator';
-import { netEligibleToNote } from './incentiveCaps';
 
 export interface ProtocolCapWarning {
   kind: 'protocol_cap';
@@ -18,9 +17,6 @@ export interface IncentiveCapWarning {
   isCapBinding: boolean;
   adjustToUsd: number;
   isCombineCap?: boolean;
-  capNote?: string;
-  capWarning?: boolean;
-  offsetNote?: string;
   notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
@@ -80,7 +76,7 @@ export function extractCapWarnings(
 function extractIncentiveCapWarnings(
   reserveId: string,
   side: 'supply' | 'borrow',
-  sources: { merit: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string }; brevis: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string }; merkl: { campaigns?: SimulationCampaignDetail[]; offsetNote?: string } },
+  sources: { merit: { campaigns?: SimulationCampaignDetail[]; notes?: import('./incentiveCaps').IncentiveNote[] }; brevis: { campaigns?: SimulationCampaignDetail[]; notes?: import('./incentiveCaps').IncentiveNote[] }; merkl: { campaigns?: SimulationCampaignDetail[]; notes?: import('./incentiveCaps').IncentiveNote[] } },
   otherSideEntries: OtherSideEntry[],
 ): IncentiveCapWarning[] {
   const warnings: IncentiveCapWarning[] = [];
@@ -89,7 +85,8 @@ function extractIncentiveCapWarnings(
 
   const brevisCampaigns = sources.brevis.campaigns ?? [];
   for (const c of brevisCampaigns) {
-    if (c.capWarning && c.capMetrics?.positionCapUsd != null) {
+    const hasCapNote = c.notes?.some(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap');
+    if (hasCapNote && c.capMetrics?.positionCapUsd != null) {
       if (seenSourcesForCap.has('brevis')) continue;
       seenSourcesForCap.add('brevis');
       seenSourcesForOffset.add('brevis');
@@ -99,15 +96,12 @@ function extractIncentiveCapWarnings(
         side,
         source: 'brevis',
         capUsd: c.capMetrics.positionCapUsd,
-        isCapBinding: true,
+        isCapBinding: c.notes?.some(n => n.color === 'amber') ?? true,
         adjustToUsd,
         isCombineCap: c.capMetrics.isCombineCap || undefined,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-        offsetNote: sources.brevis.offsetNote,
         notes: c.notes,
       });
-    } else if (!seenSourcesForOffset.has('brevis') && sources.brevis.offsetNote) {
+    } else if (!seenSourcesForOffset.has('brevis') && sources.brevis.notes?.length) {
       seenSourcesForOffset.add('brevis');
       warnings.push({
         kind: 'incentive_cap',
@@ -116,15 +110,15 @@ function extractIncentiveCapWarnings(
         capUsd: 0,
         isCapBinding: false,
         adjustToUsd: 0,
-        offsetNote: sources.brevis.offsetNote,
-        notes: sources.brevis.offsetNote ? [netEligibleToNote(sources.brevis.offsetNote)] : undefined,
+        notes: sources.brevis.notes,
       });
     }
   }
 
   const meritCampaigns = sources.merit.campaigns ?? [];
   for (const c of meritCampaigns) {
-    if (c.capWarning && c.capMetrics?.positionCapUsd != null) {
+    const hasCapNote = c.notes?.some(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap');
+    if (hasCapNote && c.capMetrics?.positionCapUsd != null) {
       if (seenSourcesForCap.has('merit')) continue;
       seenSourcesForCap.add('merit');
       seenSourcesForOffset.add('merit');
@@ -134,15 +128,12 @@ function extractIncentiveCapWarnings(
         side,
         source: 'merit',
         capUsd: c.capMetrics.positionCapUsd,
-        isCapBinding: true,
+        isCapBinding: c.notes?.some(n => n.color === 'amber') ?? true,
         adjustToUsd,
         isCombineCap: c.capMetrics.isCombineCap || undefined,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-        offsetNote: sources.merit.offsetNote,
         notes: c.notes,
       });
-    } else if (!seenSourcesForOffset.has('merit') && sources.merit.offsetNote) {
+    } else if (!seenSourcesForOffset.has('merit') && sources.merit.notes?.length) {
       seenSourcesForOffset.add('merit');
       warnings.push({
         kind: 'incentive_cap',
@@ -151,15 +142,15 @@ function extractIncentiveCapWarnings(
         capUsd: 0,
         isCapBinding: false,
         adjustToUsd: 0,
-        offsetNote: sources.merit.offsetNote,
-        notes: sources.merit.offsetNote ? [netEligibleToNote(sources.merit.offsetNote)] : undefined,
+        notes: sources.merit.notes,
       });
     }
   }
 
   const merklCampaigns = sources.merkl.campaigns ?? [];
   for (const c of merklCampaigns) {
-    if (c.capWarning && c.capMetrics?.positionCapUsd != null) {
+    const hasCapNote = c.notes?.some(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap');
+    if (hasCapNote && c.capMetrics?.positionCapUsd != null) {
       if (seenSourcesForCap.has('merkl')) continue;
       seenSourcesForCap.add('merkl');
       seenSourcesForOffset.add('merkl');
@@ -169,15 +160,12 @@ function extractIncentiveCapWarnings(
         side,
         source: 'merkl',
         capUsd: c.capMetrics.positionCapUsd,
-        isCapBinding: true,
+        isCapBinding: c.notes?.some(n => n.color === 'amber') ?? true,
         adjustToUsd,
         isCombineCap: c.capMetrics.isCombineCap || undefined,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-        offsetNote: sources.merkl.offsetNote,
         notes: c.notes,
       });
-    } else if (!seenSourcesForOffset.has('merkl') && sources.merkl.offsetNote) {
+    } else if (!seenSourcesForOffset.has('merkl') && sources.merkl.notes?.length) {
       seenSourcesForOffset.add('merkl');
       warnings.push({
         kind: 'incentive_cap',
@@ -186,8 +174,7 @@ function extractIncentiveCapWarnings(
         capUsd: 0,
         isCapBinding: false,
         adjustToUsd: 0,
-        offsetNote: sources.merkl.offsetNote,
-        notes: sources.merkl.offsetNote ? [netEligibleToNote(sources.merkl.offsetNote)] : undefined,
+        notes: sources.merkl.notes,
       });
     }
   }

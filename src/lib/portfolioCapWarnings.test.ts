@@ -159,8 +159,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const result = makeSimResult({
@@ -187,8 +186,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -214,8 +212,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $5,000.00 only · combine',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $5,000.00 only · combine', color: 'amber' }],
       capMetrics: { positionCapUsd: 5000, isCombineCap: true },
     };
     const result = makeSimResult({
@@ -243,8 +240,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const result = makeSimResult({
@@ -268,15 +264,14 @@ describe('extractCapWarnings', () => {
     expect(warnings[1].kind).toBe('incentive_cap');
   });
 
-  it('skips incentive cap campaigns without capWarning', () => {
+  it('creates IncentiveCapWarning with isCapBinding=false for non-binding cap campaigns', () => {
     const brevisCampaign: SimulationCampaignDetail = {
       id: 'brevis-0-b1',
       label: 'Brevis',
       current: 5,
       after: 4,
       delta: -1,
-      capNote: 'Incentive on first $10,000.00 only',
-      capWarning: false,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $10,000.00 only', color: 'muted' }],
       capMetrics: { positionCapUsd: 10000 },
     };
     const result = makeSimResult({
@@ -288,7 +283,10 @@ describe('extractCapWarnings', () => {
         },
       },
     });
-    expect(extractCapWarnings('r1', 'supply', result, [])).toEqual([]);
+    const warnings = extractCapWarnings('r1', 'supply', result, []);
+    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    expect(icw).toBeDefined();
+    expect(icw.isCapBinding).toBe(false);
   });
 
   it('skips incentive cap campaigns without capMetrics', () => {
@@ -298,8 +296,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: '~60d to end',
-      capWarning: false,
+      notes: [{ type: 'pool_budget', text: '~60d to end', color: 'muted' }],
     };
     const result = makeSimResult({
       supply: {
@@ -320,8 +317,7 @@ describe('extractCapWarnings', () => {
       current: 3,
       after: 2,
       delta: -1,
-      capNote: 'Incentive on first $1,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const c2: SimulationCampaignDetail = {
@@ -330,8 +326,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -357,8 +352,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const meritCampaign: SimulationCampaignDetail = {
@@ -367,8 +361,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      capNote: 'Incentive on first $2,000.00 only',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -395,8 +388,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      capNote: 'Incentive on first $1,000.00 only · combine',
-      capWarning: true,
+      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only · combine', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000, isCombineCap: true },
     };
     const result = makeSimResult({

@@ -272,7 +272,7 @@ describe('PortfolioTokenRow render', () => {
         isCapBinding: true,
         adjustToUsd: 5_000,
         isCombineCap: true,
-        capNote: 'Incentive on first $5,000 · supply + borrow',
+        notes: [{ type: 'position_cap', text: 'Incentive on first $5,000 · supply + borrow', color: 'amber' }],
       };
       render(
         <PortfolioTokenRow

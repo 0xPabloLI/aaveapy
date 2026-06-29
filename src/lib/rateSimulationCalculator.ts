@@ -23,16 +23,13 @@ import {
   forecastMeritApr,
 } from '@/lib/meritForecast';
 import {
-  buildPositionCapEffect,
   buildFixRewardCapEffect,
   buildMaxRewardCapEffect,
   buildNetEligibleNote,
   buildCrossReserveNetEligibleNote,
-  capEffectToSimulationFields,
   capEffectToNote,
   netEligibleToNote,
   applyPositionCapToForecastResult,
-  appendNotes,
   checkForecastAvailability,
 } from '@/lib/incentiveCaps';
 import { applyPositionCap } from '@/lib/incentiveMath';
@@ -144,8 +141,6 @@ export interface SimulationCampaignDetail {
   current: number | null;
   after: number | null;
   delta: number | null;
-  capNote?: string;
-  capWarning?: boolean;
   capMetrics?: import('./incentiveCaps').SimulationCapMetrics;
   notes?: import('./incentiveCaps').IncentiveNote[];
   href?: string | null;
@@ -157,7 +152,6 @@ const countForecastUnavailable = (rows: SimulationCampaignDetail[]): number =>
 
 export interface SimulationSourceDetail extends SimulationMetric {
   campaigns?: SimulationCampaignDetail[];
-  offsetNote?: string;
   notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
@@ -630,8 +624,6 @@ export const buildMeritCampaignDetails = (
       const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
       const bdLabel = bdActionLabel ?? extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? (positionCapUsd != null && positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
       let baseAfter: number | null = null;
-      let capNote: string | undefined;
-      let capWarning = false;
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
       let notes: import('./incentiveCaps').IncentiveNote[] | undefined;
 
@@ -653,19 +645,8 @@ export const buildMeritCampaignDetails = (
               { campaignName: positionCapUsd != null && positionCapUsd > 0 ? 'Merit double yield' : 'Merit' },
             );
             baseAfter = capResult.aprPercent * eligibilityRatio;
-            if (capResult.capNote) {
-              ({ capNote, capWarning, capMetrics } = capResult);
-              const effect = buildPositionCapEffect({
-                positionCapUsd,
-                isCombineCap: false,
-                isCapBinding: capResult.capWarning,
-                remainingBudget: null,
-                dailyRewardUsd: null,
-                remainingDays: null,
-                campaignName: positionCapUsd != null && positionCapUsd > 0 ? 'Merit double yield' : 'Merit',
-              });
-              notes = [capEffectToNote(effect)];
-            }
+            capMetrics = capResult.capMetrics;
+            notes = capResult.notes;
           } else {
             baseAfter = fullAfter * eligibilityRatio;
           }
@@ -680,8 +661,6 @@ export const buildMeritCampaignDetails = (
         current: baseCurrent,
         after: baseAfter,
         delta,
-        capNote: capNote,
-        capWarning,
         capMetrics,
         notes,
         href: groupHref,
@@ -731,8 +710,6 @@ export const buildMerklCampaignDetails = (
       const currentApr = sanitizePercent(forecastMerklApr(bd, 0, forecastStates, effectiveRate, nativeApyPercent));
       const current = isApy ? convertAprToApy(currentApr) : currentApr;
       let after: number | null = null;
-      let capNote: string | undefined;
-      let capWarning = false;
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
       let notes: import('./incentiveCaps').IncentiveNote[] | undefined;
 
@@ -758,11 +735,9 @@ export const buildMerklCampaignDetails = (
           const isMaxLike = merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode !== 'FIX_APR');
           if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             const fixEffect = buildFixRewardCapEffect(forecast.fixRewardableDays);
-            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(fixEffect));
             notes = [capEffectToNote(fixEffect)];
           } else if (isMaxLike && forecast.regime === 'APR_CAPPED') {
             const maxEffect = buildMaxRewardCapEffect();
-            ({ capNote, capWarning, capMetrics } = capEffectToSimulationFields(maxEffect));
             notes = [capEffectToNote(maxEffect)];
           }
         }
@@ -779,8 +754,6 @@ export const buildMerklCampaignDetails = (
         current,
         after,
         delta,
-        capNote: capNote,
-        capWarning,
         capMetrics,
         notes,
         href: oppLink ?? null,
@@ -813,8 +786,6 @@ export const buildBrevisCampaignDetails = (
     const nominal = resolveBrevisCurrentApr(resolved, forecastStates);
     const current = isApy ? convertAprToApy(nominal) : nominal;
     let after: number | null = null;
-    let capNote: string | undefined;
-    let capWarning = false;
     let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
     let notes: import('./incentiveCaps').IncentiveNote[] | undefined;
     const combined = getBrevisCombinedDepositUsd(source, breakdown, sharedDepositsByCampaignId);
@@ -848,21 +819,9 @@ export const buildBrevisCampaignDetails = (
       aprPercent = capResult.aprPercent;
       after = isApy ? convertAprToApy(aprPercent) : aprPercent;
 
-      if (capResult.capNote) {
-        ({ capNote, capWarning, capMetrics } = capResult);
-        if (resolved.positionCap) {
-          const effect = buildPositionCapEffect({
-            positionCapUsd: resolved.positionCap,
-            isCombineCap: combined !== undefined,
-            isCapBinding: capResult.capWarning,
-            remainingBudget: resolved.totalBudget != null && resolved.totalBudget > 0
-              ? resolved.totalBudget - (resolved.positionCap ?? 0)
-              : null,
-            dailyRewardUsd: positionUsd * (aprPercent / 100) / 365,
-            remainingDays: endMs !== null && endMs > nowMs ? (endMs - nowMs) / 86_400_000 : null,
-          });
-          notes = [capEffectToNote(effect)];
-        }
+      if (capResult.notes) {
+        capMetrics = capResult.capMetrics;
+        notes = capResult.notes;
       }
     } else if (hasAnyInput) {
       after = null;
@@ -875,8 +834,6 @@ export const buildBrevisCampaignDetails = (
       current,
       after,
       delta,
-      capNote,
-      capWarning,
       capMetrics,
       notes,
       forecastUnavailable: forecastUnavailable || undefined,
@@ -889,20 +846,19 @@ export const buildBrevisCampaignDetails = (
 export const attachCampaigns = (
   metric: SimulationMetric,
   campaigns: SimulationCampaignDetail[],
-  offsetNote?: string,
+  sourceNotes?: IncentiveNote[],
 ): SimulationSourceDetail => {
-  if (campaigns.length === 0 && !offsetNote) return { ...metric };
-  const offsetNoteItem = offsetNote ? netEligibleToNote(offsetNote) : undefined;
-  const enriched = offsetNoteItem
+  if (campaigns.length === 0 && !sourceNotes?.length) return { ...metric };
+  const enriched = sourceNotes?.length
     ? campaigns.map((c, i) => ({
         ...c,
-        notes: [...(c.notes ?? []), ...(i === 0 ? [offsetNoteItem] : [])],
+        notes: [...(c.notes ?? []), ...(i === 0 ? sourceNotes : [])],
       }))
     : campaigns;
   return {
     ...metric,
     campaigns: enriched.length > 0 ? enriched : undefined,
-    offsetNote,
+    notes: sourceNotes,
   };
 };
 
@@ -1439,14 +1395,14 @@ export function buildRateSimulationResult({
     }
 
     const meritOffsetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
-      ? buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)
+      ? [netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)]
       : undefined;
     const merklNetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
-      ? buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)
+      ? netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)
       : undefined;
     const firstMerklOpp = (currentData.merkl as MerklOpportunityGroup[] | undefined)?.[0];
     const merklCrossNote = firstMerklOpp ? merklCrossReserveNote(side)(firstMerklOpp) : null;
-    const merklOffsetNote = merklCrossNote ?? merklNetNote ?? undefined;
+    const merklOffsetNote = merklCrossNote ? [netEligibleToNote(merklCrossNote)] : merklNetNote ? [merklNetNote] : undefined;
 
     lanes[side] = {
       hasInput: blocked ? false : sideHasInput,

@@ -989,16 +989,16 @@ describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
     const rows = buildMeritCampaignDetails(merits, false, 5000, true);
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
-    expect(selfRow!.capNote).toBeDefined();
-    expect(selfRow!.capWarning).toBe(true);
+    expect(selfRow!.notes?.[0]?.text).toBeDefined();
+    expect(selfRow!.notes?.[0]?.color).toBe('amber');
   });
 
   it('generates capNote but no capWarning when deposit is below cap', () => {
     const rows = buildMeritCampaignDetails(merits, false, 500, true);
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
-    expect(selfRow!.capNote).toBeDefined();
-    expect(selfRow!.capWarning).toBeFalsy();
+    expect(selfRow!.notes?.[0]?.text).toBeDefined();
+    expect(selfRow!.notes?.[0]?.color).toBe('muted');
   });
 });
 
@@ -1040,7 +1040,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const withoutForecast = rows.find((r) => r.id.includes('camp-without-forecast'));
     expect(withoutForecast).toBeDefined();
     expect(withoutForecast!.forecastUnavailable).toBe(true);
-    expect(withoutForecast!.capNote ?? '').not.toContain('No forecast data');
+    expect(withoutForecast!.notes?.[0]?.text ?? '').not.toContain('No forecast data');
   });
 
   it('does not mark campaign as forecastUnavailable when forecastStates has the campaignId', () => {
@@ -1059,7 +1059,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const noIdRow = rows.find((r) => r.id.includes('-x'));
     expect(noIdRow).toBeDefined();
     expect(noIdRow!.forecastUnavailable).toBe(true);
-    expect(noIdRow!.capNote ?? '').not.toContain('No forecast data');
+    expect(noIdRow!.notes?.[0]?.text ?? '').not.toContain('No forecast data');
   });
 
   it('sets forecastUnavailable flag even when hasAnyInput is false (capNote not affected)', () => {
@@ -1068,7 +1068,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const unavailableRows = rows.filter((r) => r.forecastUnavailable);
     expect(unavailableRows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      expect(row.capNote ?? '').not.toContain('No forecast data');
+      expect(row.notes?.[0]?.text ?? '').not.toContain('No forecast data');
     }
   });
 });
@@ -1091,7 +1091,7 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBe(true);
-    expect(rows[0].capNote ?? '').not.toContain('No forecast data');
+    expect(rows[0].notes?.[0]?.text ?? '').not.toContain('No forecast data');
   });
 
   it('does not mark brevis campaign as forecastUnavailable when forecastStates has the campaign', () => {
