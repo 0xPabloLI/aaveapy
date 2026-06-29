@@ -322,25 +322,33 @@ function formatCapWarningLabel(w: PortfolioCapWarning, side: 'supply' | 'borrow'
   if (w.kind === 'protocol_cap') {
     return formatProtocolCapText({ side, availableFormatted: formatUsd(w.adjustToUsd), limitedByLiquidity: w.limitedByLiquidity });
   }
-  return w.capNote ?? `Incentive on first ${formatUsd(w.capUsd)} only`;
+  if (w.capNote) return w.capNote;
+  if (w.isCapBinding) return `Incentive on first ${formatUsd(w.capUsd)} only`;
+  return '';
 }
 
 function CapWarningRow({ warnings, side, isMobile }: { warnings: PortfolioCapWarning[]; side: 'supply' | 'borrow'; isMobile: boolean }) {
   return (
     <div className={cn('flex flex-col gap-0.5', isMobile ? 'pl-11' : 'pl-12')}>
-      {warnings.map((w, i) => (
-        <Fragment key={`${w.kind}-${i}`}>
-          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 min-w-0">
-            <AlertTriangle className="size-3 shrink-0" aria-hidden />
-            <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{formatCapWarningLabel(w, side)}</span>
-          </div>
-          {w.kind === 'incentive_cap' && w.offsetNote && (
-            <div className={cn(isMobile ? 'pl-4' : 'pl-4', 'text-muted-foreground')}>
-              <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11')}>{w.offsetNote}</span>
+      {warnings.map((w, i) => {
+        const isProtocol = w.kind === 'protocol_cap';
+        const isCapWarning = isProtocol || (w.kind === 'incentive_cap' && w.capWarning);
+        const label = formatCapWarningLabel(w, side);
+        return (
+          <Fragment key={`${w.kind}-${i}`}>
+            <div className={cn('flex items-center gap-1 min-w-0 flex-wrap', isCapWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
+              {isProtocol && <AlertTriangle className="size-3 shrink-0" aria-hidden />}
+              {label && <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'truncate')}>{label}</span>}
+              {!isProtocol && w.offsetNote && (
+                <>
+                  <span className="text-muted-foreground/40 select-none">{'\u2502'}</span>
+                  <span className={cn(isMobile ? 'ds-text-10' : 'ds-text-11', 'text-muted-foreground')}>{w.offsetNote}</span>
+                </>
+              )}
             </div>
-          )}
-        </Fragment>
-      ))}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }

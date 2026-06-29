@@ -625,7 +625,8 @@ export const buildMeritCampaignDetails = (
         effectiveBaseApr = cappedApr;
       }
       const baseCurrent = meritAprToDisplay(effectiveBaseApr, isApy);
-      const bdLabel = extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? `${groupName} #${bdIndex + 1}` : groupName);
+      const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
+      const bdLabel = bdActionLabel ?? extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? (positionCapUsd != null && positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
       let baseAfter: number | null = null;
       let capNote: string | undefined;
       let capWarning = false;
@@ -646,7 +647,7 @@ export const buildMeritCampaignDetails = (
               fullAfter,
               totalPositionUsd ?? inputUsd,
               positionCapUsd,
-              { campaignName: groupName },
+              { campaignName: positionCapUsd != null && positionCapUsd > 0 ? 'Merit double yield' : 'Merit' },
             );
             baseAfter = capResult.aprPercent * eligibilityRatio;
             if (capResult.capNote) {
