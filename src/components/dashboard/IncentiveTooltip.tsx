@@ -491,8 +491,8 @@ const IncentiveTooltip = ({
     backgroundImage: 'linear-gradient(180deg, hsl(var(--card)), hsl(var(--card)))',
   } as const;
 
-  const getMerklLink = (opportunity: MerklOpportunityGroup): string | undefined => {
-    return opportunity.link;
+  const getMerklOppLink = (opportunity: MerklOpportunityGroup): string | undefined => {
+    return opportunity.opportunityId ? `https://app.merkl.xyz/opportunities/${opportunity.opportunityId}` : undefined;
   };
 
   const buildSourceGroupKey = (source: IncentiveSource): string => {
@@ -660,12 +660,12 @@ const IncentiveTooltip = ({
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
-            const oppLink = getMerklLink(opportunity);
-            const campaignUrl = oppLink ? `${oppLink.replace(/\/$/, '')}/campaigns/${breakdown.campaignId}` : undefined;
+            const oppLink = getMerklOppLink(opportunity);
+            const campaignUrl = oppLink ? `${oppLink}/campaigns/${breakdown.campaignId}` : undefined;
             const symbol = breakdown.rewardTokenSymbol?.trim().toLowerCase() || '';
             const matchedEnded = endedByRewardToken.get(symbol);
             const recentlyEnded = matchedEnded?.map((eb) => {
-              const endedUrl = oppLink ? `${oppLink.replace(/\/$/, '')}/campaigns/${eb.campaignId}` : undefined;
+              const endedUrl = oppLink ? `${oppLink}/campaigns/${eb.campaignId}` : undefined;
               return {
                 startDate: eb.campaignStartedAt,
                 endDate: eb.campaignEndedAt,
