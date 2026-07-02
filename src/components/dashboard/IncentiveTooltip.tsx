@@ -75,12 +75,9 @@ interface IncentiveCampaign {
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
   positionCap?: number;
-  recentlyEnded?: {
-    startDate?: string;
-    endDate: string;
-    campaignId?: string;
-    campaignUrl?: string;
-  }[];
+  recentlyEndedAt?: string;
+  recentlyStartedAt?: string;
+  recentlyEndedCampaignId?: string;
 }
 
 interface IncentiveSource {
@@ -162,26 +159,22 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       sourceType: IncentiveSource['sourceType'];
       sourceName: string;
       sourceLink?: string;
-      startDate?: string;
-      endDate: string;
-      campaignId?: string;
-      campaignUrl?: string;
+      recentlyStartedAt?: string;
+      recentlyEndedAt?: string;
+      recentlyEndedCampaignId?: string;
     }> = [];
 
     for (const source of incentiveSources) {
       for (const campaign of source.campaigns ?? []) {
-        if (!campaign.recentlyEnded?.length) continue;
-        for (const re of campaign.recentlyEnded) {
-          items.push({
-            sourceType: source.sourceType,
-            sourceName: source.name,
-            sourceLink: source.link,
-            startDate: re.startDate,
-            endDate: re.endDate,
-            campaignId: re.campaignId,
-            campaignUrl: re.campaignUrl,
-          });
-        }
+        if (!campaign.recentlyEndedAt || !campaign.recentlyEndedCampaignId) continue;
+        items.push({
+          sourceType: source.sourceType,
+          sourceName: source.name,
+          sourceLink: source.link,
+          recentlyStartedAt: campaign.recentlyStartedAt,
+          recentlyEndedAt: campaign.recentlyEndedAt,
+          recentlyEndedCampaignId: campaign.recentlyEndedCampaignId,
+        });
       }
     }
 
@@ -310,9 +303,11 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                   )}
                 </div>
                 {group.items.map((item, ci: number) => {
-                  const dateRangeText = item.startDate && formatDateSafe(item.startDate)
-                    ? `${formatDateSafe(item.startDate)} - ${formatDateSafe(item.endDate)}`
-                    : `Ended: ${formatDateSafe(item.endDate)}`;
+                  const dateRangeText = item.recentlyStartedAt && formatDateSafe(item.recentlyStartedAt)
+                    ? `${formatDateSafe(item.recentlyStartedAt)} - ${formatDateSafe(item.recentlyEndedAt)}`
+                    : `Ended: ${formatDateSafe(item.recentlyEndedAt)}`;
+                  const endedCampaignUrl = item.sourceLink && item.recentlyEndedCampaignId
+                    ? `${item.sourceLink}/campaigns/${item.recentlyEndedCampaignId}` : undefined;
                   return (
                   <div
                     key={`ended-${sourceIndex}-c-${ci}`}
@@ -323,9 +318,9 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                       <span className="tabular-nums font-semibold whitespace-nowrap text-zinc-500">
                         {formatPercent(0)}
                       </span>
-                      {item.campaignUrl ? (
+                      {endedCampaignUrl ? (
                         <a
-                          href={item.campaignUrl}
+                          href={endedCampaignUrl}
                           {...externalLinkTabProps(isMobile)}
                           onClick={(e) => e.stopPropagation()}
                           className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400"
@@ -629,27 +624,8 @@ const IncentiveTooltip = ({
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
 
-        const liveBreakdowns: typeof opportunity.breakdowns = [];
-        const endedBreakdowns: typeof opportunity.breakdowns = [];
-
-        for (const bd of opportunity.breakdowns) {
-          if (isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) {
-            liveBreakdowns.push(bd);
-          } else {
-            endedBreakdowns.push(bd);
-          }
-        }
-
-        const endedByRewardToken = new Map<string, typeof endedBreakdowns>();
-        for (const eb of endedBreakdowns) {
-          const symbol = eb.rewardTokenSymbol?.trim().toLowerCase() || '';
-          if (!symbol) continue;
-          const list = endedByRewardToken.get(symbol) ?? [];
-          list.push(eb);
-          endedByRewardToken.set(symbol, list);
-        }
-
-        for (const breakdown of liveBreakdowns) {
+        for (const breakdown of opportunity.breakdowns) {
+          if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
           const effectiveRate = pointRateMap
             ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
             : tydroPointToUsdRate;
@@ -662,20 +638,6 @@ const IncentiveTooltip = ({
             const displayValue = isApy ? convertAprToApy(apr) : apr;
             const oppLink = getMerklOppLink(opportunity);
             const campaignUrl = oppLink ? `${oppLink}/campaigns/${breakdown.campaignId}` : undefined;
-            const symbol = breakdown.rewardTokenSymbol?.trim().toLowerCase() || '';
-            const matchedEnded = endedByRewardToken.get(symbol);
-            const recentlyEnded = matchedEnded?.map((eb) => {
-              const endedUrl = oppLink ? `${oppLink}/campaigns/${eb.campaignId}` : undefined;
-              return {
-                startDate: eb.campaignStartedAt,
-                endDate: eb.campaignEndedAt,
-                campaignId: eb.campaignId,
-                ...(endedUrl ? { campaignUrl: endedUrl } : {}),
-              };
-            });
-            if (matchedEnded) {
-              endedByRewardToken.delete(symbol);
-            }
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
               value: included ? displayValue : 0,
@@ -699,7 +661,9 @@ const IncentiveTooltip = ({
                      aprCap: breakdown.aprCap,
                      rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                      rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                     ...(recentlyEnded?.length ? { recentlyEnded } : {}),
+                     recentlyEndedAt: breakdown.recentlyEndedAt,
+                     recentlyStartedAt: breakdown.recentlyStartedAt,
+                     recentlyEndedCampaignId: breakdown.recentlyEndedCampaignId,
                   }],
             });
           }
