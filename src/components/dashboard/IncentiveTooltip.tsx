@@ -75,9 +75,11 @@ interface IncentiveCampaign {
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
   positionCap?: number;
-  recentlyEndedAt?: string;
-  recentlyStartedAt?: string;
-  recentlyEndedCampaignId?: string;
+  lastEndedCampaign?: {
+    startedAt: string;
+    endedAt: string;
+    campaignId: string;
+  };
 }
 
 interface IncentiveSource {
@@ -159,21 +161,21 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       sourceType: IncentiveSource['sourceType'];
       sourceName: string;
       sourceLink?: string;
-      recentlyStartedAt?: string;
-      recentlyEndedAt?: string;
-      recentlyEndedCampaignId?: string;
+      lastEndedCampaign?: {
+        startedAt: string;
+        endedAt: string;
+        campaignId: string;
+      };
     }> = [];
 
     for (const source of incentiveSources) {
       for (const campaign of source.campaigns ?? []) {
-        if (!campaign.recentlyEndedAt || !campaign.recentlyEndedCampaignId) continue;
+        if (!campaign.lastEndedCampaign) continue;
         items.push({
           sourceType: source.sourceType,
           sourceName: source.name,
           sourceLink: source.link,
-          recentlyStartedAt: campaign.recentlyStartedAt,
-          recentlyEndedAt: campaign.recentlyEndedAt,
-          recentlyEndedCampaignId: campaign.recentlyEndedCampaignId,
+          lastEndedCampaign: campaign.lastEndedCampaign,
         });
       }
     }
@@ -303,11 +305,11 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                   )}
                 </div>
                 {group.items.map((item, ci: number) => {
-                  const dateRangeText = item.recentlyStartedAt && formatDateSafe(item.recentlyStartedAt)
-                    ? `${formatDateSafe(item.recentlyStartedAt)} - ${formatDateSafe(item.recentlyEndedAt)}`
-                    : `Ended: ${formatDateSafe(item.recentlyEndedAt)}`;
-                  const endedCampaignUrl = item.sourceLink && item.recentlyEndedCampaignId
-                    ? `${item.sourceLink}/campaigns/${item.recentlyEndedCampaignId}` : undefined;
+                  const dateRangeText = item.lastEndedCampaign.startedAt && formatDateSafe(item.lastEndedCampaign.startedAt)
+                    ? `${formatDateSafe(item.lastEndedCampaign.startedAt)} - ${formatDateSafe(item.lastEndedCampaign.endedAt)}`
+                    : `Ended: ${formatDateSafe(item.lastEndedCampaign.endedAt)}`;
+                  const endedCampaignUrl = item.sourceLink && item.lastEndedCampaign.campaignId
+                    ? `${item.sourceLink}/campaigns/${item.lastEndedCampaign.campaignId}` : undefined;
                   return (
                   <div
                     key={`ended-${sourceIndex}-c-${ci}`}
@@ -661,9 +663,7 @@ const IncentiveTooltip = ({
                      aprCap: breakdown.aprCap,
                      rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                      rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                     recentlyEndedAt: breakdown.recentlyEndedAt,
-                     recentlyStartedAt: breakdown.recentlyStartedAt,
-                     recentlyEndedCampaignId: breakdown.recentlyEndedCampaignId,
+                      lastEndedCampaign: breakdown.lastEndedCampaign,
                   }],
             });
           }
