@@ -50,6 +50,9 @@ export const MerklCampaignBreakdownSchema = z.object({
   latestTvl: z.number().optional(),
   plannedDaily: z.number().optional(),
   budgetBoundMode: z.string().optional(),
+  recentlyEndedAt: z.string().optional(),
+  recentlyStartedAt: z.string().optional(),
+  recentlyEndedCampaignId: z.string().optional(),
 });
 
 export const MerklOpportunityGroupSchema = z.object({
