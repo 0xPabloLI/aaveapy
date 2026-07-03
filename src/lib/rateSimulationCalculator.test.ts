@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails } from './rateSimulationCalculator';
+import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns } from './rateSimulationCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -1367,5 +1367,42 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
 
     expect(withWallet.borrow.sources.merit!.current)
       .toBeLessThan(noWallet.borrow.sources.merit!.current);
+  });
+});
+
+describe('attachCampaigns: sourceNotes propagation to all campaigns', () => {
+  const metric = { current: 1, after: 2, delta: 1 };
+  const sourceNote: import('./incentiveCaps').IncentiveNote = { type: 'net_eligible', text: '$500 of $1,000 net eligible', color: 'muted' };
+  const campaigns = [
+    { id: 'c1', label: 'Campaign 1', current: 0.5, after: 0.6, delta: 0.1 },
+    { id: 'c2', label: 'Campaign 2', current: 0.3, after: 0.4, delta: 0.1 },
+    { id: 'c3', label: 'Campaign 3', current: 0.2, after: 0.3, delta: 0.1 },
+  ];
+
+  it('attaches sourceNotes to every campaign row', () => {
+    const result = attachCampaigns(metric, campaigns, [sourceNote]);
+    expect(result.campaigns).toHaveLength(3);
+    for (const c of result.campaigns!) {
+      expect(c.notes).toContainEqual(sourceNote);
+    }
+  });
+
+  it('preserves existing campaign notes alongside sourceNotes', () => {
+    const campaignWithNote = { ...campaigns[0], notes: [{ type: 'position_cap' as const, text: 'cap hit', color: 'amber' as const }] };
+    const result = attachCampaigns(metric, [campaignWithNote, campaigns[1]], [sourceNote]);
+    expect(result.campaigns![0].notes).toHaveLength(2);
+    expect(result.campaigns![1].notes).toHaveLength(1);
+    expect(result.campaigns![0].notes).toContainEqual(sourceNote);
+  });
+
+  it('returns sourceNotes on the source-level notes field', () => {
+    const result = attachCampaigns(metric, campaigns, [sourceNote]);
+    expect(result.notes).toEqual([sourceNote]);
+  });
+
+  it('returns campaigns unchanged when no sourceNotes', () => {
+    const result = attachCampaigns(metric, campaigns);
+    expect(result.campaigns).toEqual(campaigns);
+    expect(result.notes).toBeUndefined();
   });
 });

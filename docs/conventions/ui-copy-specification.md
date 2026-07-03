@@ -126,7 +126,7 @@ Both Merit position cap and Brevis position cap flow through `applyPositionCapTo
 | `buildCrossReserveNetEligibleNote` | `Net eligible {net} of {gross} ({side} minus {symbols} {offsets})` | `Net eligible $500 of $1,000 (supply minus USDC+DAI borrows)` |
 
 offsetNote is currently at **source level** in the data model, but propagated to campaign rows for display:
-- When `hideAggregateWhenCampaigns: true`, the aggregate row is hidden; offsetNote is attached to the first campaign row.
+- When `hideAggregateWhenCampaigns: true`, the aggregate row is hidden; offsetNote is attached to **every** campaign row (so users can see which source each campaign belongs to).
 - When a single campaign exists, offsetNote is included on that row directly.
 
 ### Portfolio CapWarningRow rendering

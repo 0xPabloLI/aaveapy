@@ -852,7 +852,7 @@ export const attachCampaigns = (
   const enriched = sourceNotes?.length
     ? campaigns.map((c, i) => ({
         ...c,
-        notes: [...(c.notes ?? []), ...(i === 0 ? sourceNotes : [])],
+        notes: [...(c.notes ?? []), ...(sourceNotes ?? [])],
       }))
     : campaigns;
   return {

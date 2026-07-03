@@ -62,7 +62,7 @@ ACI Incentive           3.5%          ← source aggregate 行
 
 1. As a Reserve Table user, I want to see which campaign a position cap belongs to, so that I can understand which incentive is capped
 2. As a Reserve Table user, I want position cap warnings and offset explanations in different visual styles, so that I can distinguish limits from explanations
-3. As a Reserve Table user, I want offset notes shown once per source (not repeated per campaign), so that the display is not redundant
+3. As a Reserve Table user, I want offset notes shown on every campaign row under the same source, so that I can identify which source each campaign belongs to
 4. As a Portfolio user, I want to see both position cap warnings and offset explanations, so that I understand why my incentive is discounted
 5. As a Portfolio user, I want offset notes in a different color than warnings, so that I can tell explanatory text from actionable warnings
 6. As a user, I want "net eligible" wording that clearly states it's about the net portion, so that I understand the offset concept
