@@ -24,12 +24,12 @@ This does not affect ReservesTable Shared Scenario, where inputs are pure increm
 
 ### Scenario Table
 
-| Scenario | Wallet | Adjusted To | Delta | Rate Used | Yield Calculation |
-|----------|--------|-------------|-------|-----------|-------------------|
-| Unchanged | $1000 | $1000 | $0 | current | currentRate × $1000 |
-| Add | $1000 | $1500 | +$500 | after(+500) | afterRate × $1500 |
-| Withdraw | $1000 | $500 | -$500 | after(-500) | afterRate × $500 |
-| Manual (no wallet) | — | $2000 | +$2000 | after(+2000) | afterRate × $2000 |
+| Scenario | Wallet | Adjusted To | Delta | Rate Used | Yield (after) | USD/day current | USD/day delta |
+|----------|--------|-------------|-------|-----------|----------------|-----------------|---------------|
+| Unchanged | $1000 | $1000 | $0 | current | currentRate × $1000 | currentRate × $1000 | $0 |
+| Add | $1000 | $1500 | +$500 | after(+500) | afterRate × $1500 | currentRate × $1000 | afterRate×$1500 − currentRate×$1000 |
+| Withdraw | $1000 | $500 | -$500 | after(-500) | afterRate × $500 | currentRate × $1000 | afterRate×$500 − currentRate×$1000 |
+| Manual (no wallet) | — | $2000 | +$2000 | after(+2000) | afterRate × $2000 | afterRate × $2000 | $0 |
 
 ### Delta Sync Policy
 
@@ -66,7 +66,16 @@ Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a
 
 ### Inline Delta Display (AAV-635)
 
-`PortfolioSimulationMetric` type carries `{ current, after, delta }` triples for each position and summary metric. `buildMetricsFromLane(simResult, side, amountUsd)` extracts metrics from `SimulationLane`. Positions render inline delta badge (after value + small delta); `PortfolioSummaryCard` renders delta for Total Supply/Borrow, Net Daily Earn, Net APY.
+`PortfolioSimulationMetric` type carries `{ current, after, delta }` triples for each position and summary metric. `buildMetricsFromLane(simResult, side, amountUsd, isApy, walletUsd)` extracts metrics from `SimulationLane`. Positions render inline delta badge (after value + small delta); `PortfolioSummaryCard` renders delta for Total Supply/Borrow, Net Daily Earn, Net APY.
+
+### USD/day Metric Stock-Flow Separation
+
+`usdPerDayMetric` distinguishes current vs after principal:
+- **current** = `walletUsd × currentRate` — what the wallet position earns at current rates
+- **after** = `amountUsd × afterRate` — what the adjusted position earns after simulation
+- **delta** = after − current — reflects BOTH rate change AND position change
+
+When `walletUsd` is omitted (manual entry with no wallet), `current` falls back to `amountUsd` (delta = 0, since there is no "before" state). `aggregatePortfolioSummary` uses `r.walletUsd ?? r.amountUsd` for `currentTotalSupplyUsd`/`currentTotalBorrowUsd` to maintain consistency.
 
 ## Related Issues
 
