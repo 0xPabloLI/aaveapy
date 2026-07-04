@@ -1465,7 +1465,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     // expected current = 10 * 0.424 ≈ 4.24
     // With Bug 1 (grossUsd=0 → crossReserveRatio=1): current = 10 * 0.999 ≈ 10
     // After fix: current ≈ 4.24
-    expect(perSourceMerklCurrent).toBeCloseTo(4.24, 0);
+    expect(perSourceMerklCurrent).toBeCloseTo(4.24, 1);
   });
 
   it('Bug 1: without wallet position, cross-reserve returns 1 (no scaling)', () => {
@@ -1520,5 +1520,87 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     const perSourceSum = merklCurrent + protocolCurrent;
 
     expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 1);
+  });
+
+  it('headline incentive also includes eligibility scaling (AAV-1060 review fix)', () => {
+    const crossReservePositions = new Map([
+      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+
+    const withConstraint = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1042,
+      totalBorrowUsd: 1,
+      crossReservePositions,
+    });
+
+    const noConstraint: ReserveWithSpread = {
+      ...MERKL_CONSTRAINT_RESERVE,
+      merklSupplys: [{
+        name: 'Standard merkl',
+        breakdowns: [{
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'std-test',
+        }],
+        opportunityId: '998',
+      }],
+    };
+
+    const withoutConstraint = buildRateSimulationResult({
+      reserve: noConstraint,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1042,
+      totalBorrowUsd: 1,
+    });
+
+    expect(withConstraint.supply.currentIncentive).toBeLessThan(withoutConstraint.supply.currentIncentive);
+  });
+
+  it('merklCrossReserveNote uses total position for grossUsd when supplyInputUsd=0 but wallet exists', () => {
+    const crossReservePositions = new Map([
+      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+
+    const result = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '1',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1042,
+      totalBorrowUsd: 1,
+      crossReservePositions,
+    });
+
+    const merklNotes = result.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeDefined();
+    expect(merklNotes!.length).toBeGreaterThan(0);
+    const noteText = merklNotes![0].text;
+    expect(noteText).toContain('$1,042');
+    expect(noteText).toContain('net eligible');
   });
 });
