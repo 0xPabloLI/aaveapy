@@ -50,7 +50,7 @@ When `walletValue` changes (chain re-sync), **delta is held constant** — user 
 ### Negative
 - `buildRateSimulationResult` signature change: all callers must supply `totalSupplyUsd`/`totalBorrowUsd`
 - UI must display delta (increment input) alongside effective amount, adding complexity
-- Effective amount now shown directly in delta input row (replacing 🔒walletValue): muted when synced, foreground when modified, tooltip for wallet value (AAV-626)
+- Effective amount shown as plain text in delta input row (E1a design): wallet(muted) → effective(side-color+bold) when modified; wallet-only(muted) when synced; tooltip shows wallet value on hover (AAV-626)
 - Incentive APRs use stale data for wallet positions (known limitation, not fixed here — data source timeliness, not calculation logic)
 
 ## Alternatives Considered
