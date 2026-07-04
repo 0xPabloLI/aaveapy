@@ -47,22 +47,23 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
+const ChainIcon = memo(({ chainId, chainName, className = '' }: { chainId: number; chainName: string; className?: string }) => {
   const size = 'w-3.5 h-3.5';
-  const src = getChainIconSrc(chain);
+  const src = getChainIconSrc(chainId);
   if (!src) {
     return (
       <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
-        {chain.charAt(0)}
+        {chainName.charAt(0)}
       </div>
     );
   }
-  return <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />;
+  return <img src={src} alt={`${chainName} logo`} className={`${size} ${className}`} loading="lazy" />;
 });
 ChainIcon.displayName = 'ChainIcon';
 
 /** Group markets by chainName, preserving Ethereum first, then alphabetical. */
 interface ChainGroup {
+  chainId: number;
   chainName: string;
   markets: MarketListItem[];
   /** Whether this chain has expandable sub-markets */
@@ -72,24 +73,27 @@ interface ChainGroup {
 function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGroup[] {
   if (!marketsList?.length) return [];
 
-  const chainMap = new Map<string, MarketListItem[]>();
+  const chainMap = new Map<string, { chainId: number; markets: MarketListItem[] }>();
   for (const m of marketsList) {
-    const list = chainMap.get(m.chainName) || [];
-    list.push(m);
-    chainMap.set(m.chainName, list);
+    const existing = chainMap.get(m.chainName);
+    if (existing) {
+      existing.markets.push(m);
+    } else {
+      chainMap.set(m.chainName, { chainId: m.chainId, markets: [m] });
+    }
   }
 
   const groups: ChainGroup[] = [];
   // Ethereum first
-  const ethMarkets = chainMap.get('Ethereum');
-  if (ethMarkets) {
-    groups.push({ chainName: 'Ethereum', markets: ethMarkets, expandable: ethMarkets.length > 1 });
+  const ethEntry = chainMap.get('Ethereum');
+  if (ethEntry) {
+    groups.push({ chainId: ethEntry.chainId, chainName: 'Ethereum', markets: ethEntry.markets, expandable: ethEntry.markets.length > 1 });
     chainMap.delete('Ethereum');
   }
   // Remaining chains alphabetically
   const remaining = Array.from(chainMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-  for (const [chainName, markets] of remaining) {
-    groups.push({ chainName, markets, expandable: false });
+  for (const [chainName, { chainId, markets }] of remaining) {
+    groups.push({ chainId, chainName, markets, expandable: false });
   }
 
   return groups;
@@ -462,7 +466,7 @@ const FilterBar = ({
                         className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
                         title={`${selected ? 'Deselect' : 'Select'} all ${group.chainName} markets`}
                       >
-                        <ChainIcon chain={group.chainName} />
+                        <ChainIcon chainId={group.chainId} chainName={group.chainName} />
                         <span>{group.chainName}</span>
                       </button>
                       <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
@@ -561,7 +565,7 @@ const FilterBar = ({
                   }`}
                   title={group.chainName}
                 >
-                  <ChainIcon chain={group.chainName} />
+                  <ChainIcon chainId={group.chainId} chainName={group.chainName} />
                   <span>{group.chainName}</span>
                 </button>
               );

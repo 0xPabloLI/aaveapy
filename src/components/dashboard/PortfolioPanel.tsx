@@ -28,6 +28,8 @@ import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLab
 
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
+import PortfolioTokenRowPrototype from './PortfolioTokenRowPrototype';
+import { useSearchParams } from 'react-router-dom';
 import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
@@ -83,7 +85,7 @@ function SearchResultRow({
   const reserveId = getReserveKey(reserve);
   const alreadyAdded = existingEntries.some((e) => e.reserveId === reserveId);
 
-  const chainSrc = getChainIconSrc(reserve.chainName);
+  const chainSrc = getChainIconSrc(reserve.chainId);
   const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
 
   return (
@@ -198,6 +200,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   capWarningsMap,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const prototypeVariant = (searchParams.get('variant') as 'A' | 'B' | 'C') ?? null;
   const { isConnected: walletConnected } = useWallet();
   const { connectWatchAddress } = useWatchModeConnect();
   const [searchQuery, setSearchQuery] = useState('');
@@ -562,6 +566,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     key={reserveId}
                     reserveId={reserveId}
                     tokenSymbol={r.tokenSymbol}
+                    chainId={r.chainId}
                     chainName={r.chainName}
                     marketName={r.marketName}
                     onAdd={handleAddToken}
@@ -626,10 +631,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
                 } : RESERVE_UNAVAILABLE_NOTICE;
               };
+              const RowComponent = prototypeVariant ? PortfolioTokenRowPrototype : PortfolioTokenRow;
               const renderRows = (entries: PortfolioReserveEntry[]) => (
                 <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
                   {entries.map((entry) => (
-                    <PortfolioTokenRow
+                    <RowComponent
                       key={entry.reserveId}
                       entry={entry}
                       actions={actions}
@@ -637,6 +643,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       tokenPriceInUsd={reserveIdToReserve.get(entry.reserveId)?.tokenPrice}
                       disabledNotice={getDisabledNotice(entry)}
                       capWarnings={capWarningsMap?.get(entry.reserveId)}
+                      {...(prototypeVariant ? { variant: prototypeVariant } : {})}
                     />
                   ))}
                 </div>
@@ -721,6 +728,51 @@ const PortfolioPanel = memo(function PortfolioPanel({
             onClose={() => setShowCompare(false)}
           />
         </Suspense>
+      )}
+
+      {/* Prototype switcher — remove after A/B/C decision */}
+      {prototypeVariant && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-border bg-card/95 shadow-lg px-4 py-2 backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => {
+              const prev = prototypeVariant === 'A' ? 'C' : prototypeVariant === 'B' ? 'A' : 'B';
+              searchParams.set('variant', prev);
+              window.location.search = searchParams.toString();
+            }}
+            className="rounded-full p-1 hover:bg-muted transition-colors ds-text-12"
+            aria-label="Previous variant"
+          >
+            ←
+          </button>
+          <span className="ds-text-12 font-semibold tabular-nums min-w-[160px] text-center">
+            Variant {prototypeVariant} — {prototypeVariant === 'A' ? 'Current (effective left)' : prototypeVariant === 'B' ? '🔒 Wallet left + tooltip' : '→ Effective right'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const next = prototypeVariant === 'A' ? 'B' : prototypeVariant === 'B' ? 'C' : 'A';
+              searchParams.set('variant', next);
+              window.location.search = searchParams.toString();
+            }}
+            className="rounded-full p-1 hover:bg-muted transition-colors ds-text-12"
+            aria-label="Next variant"
+          >
+            →
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('variant');
+              window.location.href = url.toString();
+            }}
+            className="rounded-full p-1 hover:bg-muted transition-colors ds-text-10 text-muted-foreground ml-2"
+            aria-label="Exit prototype mode"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );

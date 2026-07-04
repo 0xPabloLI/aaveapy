@@ -43,10 +43,10 @@ export function usePreloadReserveAssets(
       return iconSymbol;
     });
 
-    const chainNames = [...new Set(reservesToPreload.map(reserve => reserve.chainName))];
+    const chainIds = [...new Set(reservesToPreload.map(reserve => reserve.chainId))];
 
     preloadTokenIcons(tokenSymbols);
-    preloadChainIcons(chainNames);
+    preloadChainIcons(chainIds);
 
     hasPreloaded.current = true;
   }, [reserves, limit, enabled, isSuccess, preloadMode]);
@@ -76,10 +76,10 @@ export function usePreloadOnHover(
       return iconSymbol;
     });
 
-    const chainNames = [...new Set(reserves.map(reserve => reserve.chainName))];
+    const chainIds = [...new Set(reserves.map(reserve => reserve.chainId))];
 
     preloadTokenIcons(tokenSymbols);
-    preloadChainIcons(chainNames);
+    preloadChainIcons(chainIds);
 
     hasPreloaded.current = true;
   }, [reserves, isHovering]);

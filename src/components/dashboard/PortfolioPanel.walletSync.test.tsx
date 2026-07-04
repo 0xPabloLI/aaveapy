@@ -13,6 +13,7 @@ import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { MemoryRouter } from 'react-router-dom';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { useWallet } from '@/hooks/useWallet';
@@ -83,6 +84,7 @@ function renderPanel(props: {
   onWalletSync?: () => void;
 }) {
   return render(
+    <MemoryRouter>
     <WagmiProvider config={testWagmiConfig}>
       <QueryClientProvider client={new QueryClient()}>
         <RainbowKitProvider>
@@ -97,7 +99,8 @@ function renderPanel(props: {
           </TooltipProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
-    </WagmiProvider>,
+    </WagmiProvider>
+    </MemoryRouter>,
   );
 }
 

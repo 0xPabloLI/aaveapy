@@ -3,21 +3,20 @@
 
 export type SeoChainConfig = {
   slug: string;
-  // Display label used in headings and copy.
   displayName: string;
-  // Names matched against reserve.chainName (case-insensitive substring),
-  // used to deep-link into the dashboard prefiltered to this chain.
+  chainId: number;
   chainNameMatchers: string[];
-  title: string; // <60 chars
-  description: string; // <160 chars
-  intro: string; // longer paragraph for the page body
-  highlights: string[]; // short bullets shown on the page
+  title: string;
+  description: string;
+  intro: string;
+  highlights: string[];
 };
 
 export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'ethereum',
     displayName: 'Ethereum',
+    chainId: 1,
     chainNameMatchers: ['ethereum'],
     title: 'Ethereum Aave APY — Live Rates for ETH, USDC & WBTC',
     description:
@@ -33,6 +32,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'arbitrum',
     displayName: 'Arbitrum',
+    chainId: 42161,
     chainNameMatchers: ['arbitrum'],
     title: 'Arbitrum Aave APY — Live Rates for ETH, USDC & ARB',
     description:
@@ -48,6 +48,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'base',
     displayName: 'Base',
+    chainId: 8453,
     chainNameMatchers: ['base'],
     title: 'Base Aave APY — Live Rates for ETH, USDC & cbETH',
     description:
@@ -63,6 +64,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'optimism',
     displayName: 'Optimism',
+    chainId: 10,
     chainNameMatchers: ['optimism'],
     title: 'Optimism Aave APY — Live Rates for ETH, USDC & OP',
     description:
@@ -78,6 +80,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'polygon',
     displayName: 'Polygon',
+    chainId: 137,
     chainNameMatchers: ['polygon'],
     title: 'Polygon Aave APY — Live Rates for POL, USDC & WBTC',
     description:
@@ -93,6 +96,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'avalanche',
     displayName: 'Avalanche',
+    chainId: 43114,
     chainNameMatchers: ['avalanche'],
     title: 'Avalanche Aave APY — Live Rates for AVAX, USDC & WBTC',
     description:
@@ -108,6 +112,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'gnosis',
     displayName: 'Gnosis Chain',
+    chainId: 100,
     chainNameMatchers: ['gnosis'],
     title: 'Gnosis Chain Aave APY — Live Rates for sDAI, GNO & USDC',
     description:
@@ -123,6 +128,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'scroll',
     displayName: 'Scroll',
+    chainId: 534352,
     chainNameMatchers: ['scroll'],
     title: 'Scroll Aave APY — Live zkEVM Rates for ETH & USDC',
     description:
@@ -138,6 +144,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'metis',
     displayName: 'Metis',
+    chainId: 1088,
     chainNameMatchers: ['metis'],
     title: 'Metis Aave APY — Live Rates for ETH, USDC & METIS',
     description:
@@ -153,6 +160,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'bnb-chain',
     displayName: 'BNB Chain',
+    chainId: 56,
     chainNameMatchers: ['bnb', 'binance'],
     title: 'BNB Chain Aave APY — Live Rates for BNB, USDC & WBTC',
     description:
@@ -168,6 +176,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'linea',
     displayName: 'Linea',
+    chainId: 59144,
     chainNameMatchers: ['linea'],
     title: 'Linea Aave APY — Consensys zkEVM Rates for ETH & USDC',
     description:
@@ -183,6 +192,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'zksync',
     displayName: 'zkSync Era',
+    chainId: 324,
     chainNameMatchers: ['zksync'],
     title: 'zkSync Era Aave APY — ZK Rollup Rates for ETH & USDC',
     description:
@@ -198,6 +208,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'celo',
     displayName: 'Celo',
+    chainId: 42220,
     chainNameMatchers: ['celo'],
     title: 'Celo Aave APY — Live Rates for CELO, USDC & cUSD',
     description:
@@ -213,6 +224,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'sonic',
     displayName: 'Sonic',
+    chainId: 146,
     chainNameMatchers: ['sonic'],
     title: 'Sonic Aave APY — High-Speed Rates for ETH & USDC',
     description:
@@ -228,6 +240,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'soneium',
     displayName: 'Soneium',
+    chainId: 1868,
     chainNameMatchers: ['soneium'],
     title: 'Soneium Aave APY — Sony L2 Rates for ETH & USDC',
     description:
@@ -243,6 +256,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'ink',
     displayName: 'Ink',
+    chainId: 57073,
     chainNameMatchers: ['ink'],
     title: 'Ink Aave APY — Live Rates with Ink Airdrop Rewards',
     description:
@@ -258,6 +272,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   {
     slug: 'mantle',
     displayName: 'Mantle',
+    chainId: 5000,
     chainNameMatchers: ['mantle'],
     title: 'Mantle Aave APY — Live Rates for mETH, USDC & ETH',
     description:

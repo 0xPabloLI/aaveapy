@@ -17,7 +17,7 @@ const ChainPage = () => {
   }
 
   const canonical = `${SITE_ORIGIN}/chain/${chain.slug}`;
-  const iconSrc = getChainIconSrc(chain.displayName) ?? getChainIconSrc(chain.chainNameMatchers[0]);
+  const iconSrc = getChainIconSrc(chain.chainId);
   const dashboardHref = `/?chain=${encodeURIComponent(chain.chainNameMatchers[0])}`;
 
   const jsonLd = {

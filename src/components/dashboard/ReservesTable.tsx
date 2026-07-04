@@ -15,7 +15,6 @@ import { formatPercent, formatSpread, formatUsd } from '@/lib/formatters';
 import { getReserveIncentiveValues, resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { sortReserves, type ReserveSortConfig, type ReserveSortValueGetters } from '@/lib/reservesSorter';
-import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';

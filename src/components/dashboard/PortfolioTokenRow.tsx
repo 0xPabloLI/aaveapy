@@ -369,7 +369,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   capWarnings,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
-  const chainSrc = getChainIconSrc(entry.chainName);
+  const chainSrc = getChainIconSrc(entry.chainId);
   const marketLabel = getMarketChipLabel(entry.marketName, entry.chainName);
   const showV4 = isV4Market(entry.marketName);
   const hubChipClass = getHubChipClass(showV4);

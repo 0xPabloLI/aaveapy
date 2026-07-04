@@ -6,6 +6,7 @@ import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { MemoryRouter } from 'react-router-dom';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -95,6 +96,12 @@ const makeActions = (): PortfolioSimulationActions => ({
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
 
+function renderWithRouter(ui: React.ReactElement) {
+  return render(
+    <MemoryRouter>{ui}</MemoryRouter>,
+  );
+}
+
 describe('PortfolioPanel', () => {
   afterEach(() => cleanup());
 
@@ -106,7 +113,7 @@ describe('PortfolioPanel', () => {
 
   it('renders search input when panel mounts', () => {
     const reserves = [makeReserve('USDC'), makeReserve('USDT')];
-    render(
+    renderWithRouter(
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
@@ -127,7 +134,7 @@ describe('PortfolioPanel', () => {
   it('calls addReserve when token is added from search', () => {
     const reserves = [makeReserve('USDC')];
     const actions = makeActions();
-    render(
+    renderWithRouter(
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
@@ -154,7 +161,7 @@ describe('PortfolioPanel', () => {
     const entries: PortfolioReserveEntry[] = [
       { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE, amount: '2000' }, hidden: false, isOrphan: false },
     ];
-    render(
+    renderWithRouter(
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
@@ -174,7 +181,7 @@ describe('PortfolioPanel', () => {
 
   it('renders empty state when no entries are added', () => {
     const reserves = [makeReserve('USDC')];
-    const { container } = render(
+    const { container } = renderWithRouter(
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
@@ -203,7 +210,7 @@ describe('PortfolioPanel', () => {
       it(`blocks addReserve for ${name} reserve via search`, () => {
         const reserves = [{ ...makeReserve('stETH'), ...override }];
         const actions = makeActions();
-        render(
+        renderWithRouter(
           <WagmiProvider config={testWagmiConfig}>
             <QueryClientProvider client={new QueryClient()}>
               <RainbowKitProvider>
@@ -241,7 +248,7 @@ describe('PortfolioPanel', () => {
 
     it('disables side inputs when reserve is missing from reserves prop', () => {
       const entries = [entryFor('USDC')];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -262,7 +269,7 @@ describe('PortfolioPanel', () => {
 
     it('shows Reserve unavailable notice when reserve is not in reserves prop', () => {
       const entries = [entryFor('USDC')];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -284,7 +291,7 @@ describe('PortfolioPanel', () => {
     it('enables side inputs when reserve IS in reserves prop', () => {
       const reserves = [makeReserve('USDC')];
       const entries = [entryFor('USDC')];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -308,7 +315,7 @@ describe('PortfolioPanel', () => {
         makeReserve('USDC', 'AaveV3Ethereum'),
         makeReserve('USDC', 'AaveV3Arbitrum'),
       ];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -333,7 +340,7 @@ describe('PortfolioPanel', () => {
   describe('input surface compliance (DESIGN.md §4)', () => {
     it('search input uses cnDsInputSurface neutral/magenta classes', () => {
       const reserves = [makeReserve('USDC')];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -359,7 +366,7 @@ describe('PortfolioPanel', () => {
 
     it('snapshot name input uses cnDsInputSurface neutral classes', () => {
       const reserves = [makeReserve('USDC')];
-      render(
+      renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>
@@ -386,7 +393,7 @@ describe('PortfolioPanel', () => {
 
   describe('hidden divider position (AAV-773)', () => {
     const renderPanel = (entries: PortfolioReserveEntry[], reserves: ReserveWithSpread[] = []) => {
-      return render(
+      return renderWithRouter(
         <WagmiProvider config={testWagmiConfig}>
           <QueryClientProvider client={new QueryClient()}>
             <RainbowKitProvider>

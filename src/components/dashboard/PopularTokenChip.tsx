@@ -13,6 +13,7 @@ import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 interface PopularTokenChipProps {
   reserveId: string;
   tokenSymbol: string;
+  chainId: number;
   chainName: string;
   marketName: string;
   onAdd: (reserveId: string) => void;
@@ -21,11 +22,12 @@ interface PopularTokenChipProps {
 const PopularTokenChip = memo(function PopularTokenChip({
   reserveId,
   tokenSymbol,
+  chainId,
   chainName,
   marketName,
   onAdd,
 }: PopularTokenChipProps) {
-  const chainSrc = getChainIconSrc(chainName);
+  const chainSrc = getChainIconSrc(chainId);
   const marketLabel = getMarketChipLabel(marketName, chainName);
   const v4 = isV4Market(marketName);
 

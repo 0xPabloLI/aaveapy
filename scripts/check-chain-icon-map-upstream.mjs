@@ -23,15 +23,15 @@ async function loadUpstreamNetworksConfig() {
 
 function parseLocalChainIconMap(chainIconsContent) {
   const objectMatch = chainIconsContent.match(
-    /(?:export\s+)?const chainIconMap:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
+    /(?:export\s+)?const chainIconMap:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/
   );
   if (!objectMatch) {
     throw new Error('Failed to parse chainIconMap from src/lib/chainIconMap.ts');
   }
   const map = new Map();
-  const pairs = objectMatch[1].matchAll(/([a-z0-9_]+)\s*:\s*'([^']+)'/gi);
+  const pairs = objectMatch[1].matchAll(/(\d+)\s*:\s*'([^']+)'/g);
   for (const match of pairs) {
-    map.set(match[1].toLowerCase(), match[2]);
+    map.set(Number(match[1]), match[2]);
   }
   return map;
 }
@@ -45,8 +45,6 @@ function parseExpectedProdNetworks(networksConfigContent) {
   const lines = content.split('\n');
 
   const expected = [];
-  // outerDepth tracks the top-level prodNetworkConfig object braces so we stop
-  // when it closes instead of scanning into subsequent exports (e.g. testnet configs).
   let outerDepth = 0;
   let outerStarted = false;
   let inBlock = false;
@@ -54,7 +52,6 @@ function parseExpectedProdNetworks(networksConfigContent) {
   let current = null;
 
   for (const line of lines) {
-    // Track the top-level object depth
     const opens = countChar(line, '{');
     const closes = countChar(line, '}');
     if (!outerStarted && opens > 0) {
@@ -63,9 +60,7 @@ function parseExpectedProdNetworks(networksConfigContent) {
     if (outerStarted) {
       outerDepth += opens;
       outerDepth -= closes;
-      // Stop once the prodNetworkConfig object is fully closed
       if (outerDepth <= 0) {
-        // Process any final block closure on this line before breaking
         if (inBlock) {
           depth += opens;
           depth -= closes;
@@ -78,7 +73,7 @@ function parseExpectedProdNetworks(networksConfigContent) {
     }
 
     if (!inBlock) {
-      const start = line.match(/^\s*\[ChainId\.[a-zA-Z0-9_]+\]:\s*\{/);
+      const start = line.match(/^\s*\[(ChainId\.[a-zA-Z0-9_]+|[a-zA-Z0-9_]+\.id)\]:\s*\{/);
       if (!start) continue;
       inBlock = true;
       depth = 1;
@@ -116,7 +111,6 @@ function iconBaseFromPath(iconPath) {
   return path.basename(iconPath).replace(/\.[^.]+$/, '');
 }
 
-/** Lowercase base names that have at least one icon file on disk. */
 function listLocalNetworkIconBases() {
   const bases = new Set();
   if (!fs.existsSync(NETWORKS_ICONS_DIR)) {
@@ -141,6 +135,21 @@ async function loadPendingIconBases() {
   return new Set(data.map((x) => String(x).toLowerCase()));
 }
 
+const REGISTRY_PATH = path.join(ROOT, 'src/lib/chainRegistry.ts');
+
+async function loadRegistryChainIds() {
+  const content = await readFile(REGISTRY_PATH, 'utf8');
+  const moduleNames = [...content.matchAll(/abModule:\s+(AaveV\d[A-Za-z]+)/g)].map(m => m[1]);
+  const uniqueNames = [...new Set(moduleNames)];
+  const ab = await import('@aave-dao/aave-address-book');
+  const ids = new Set();
+  for (const name of uniqueNames) {
+    const chainId = ab[name]?.CHAIN_ID;
+    if (typeof chainId === 'number') ids.add(chainId);
+  }
+  return ids;
+}
+
 async function main() {
   const [upstreamContent, localContent, pendingBases] = await Promise.all([
     loadUpstreamNetworksConfig(),
@@ -159,8 +168,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Build a set of icon base names the local map covers.
-  // This avoids maintaining a manual alias table for upstream chain name variants.
   const localIconValues = new Set(localMap.values());
   const mappingErrors = [];
   const assetErrors = [];
@@ -180,6 +187,7 @@ async function main() {
   }
 
   console.log(`Upstream prod networks parsed: ${expectedNetworks.length}`);
+  console.log(`Local chainIconMap entries (by chainId): ${localMap.size}`);
   console.log(`Local chainIconMap icon values: ${localIconValues.size}`);
   console.log(`Local network icon files (bases): ${onDiskBases.size}`);
   console.log(`Pending icon bases (allowed without file): ${pendingBases.size}`);
@@ -204,6 +212,23 @@ async function main() {
 
   console.log('chainIconMap covers all upstream prod network icons.');
   console.log('On-disk network icons (or pending allowlist) cover all mapped bases.');
+
+  // Cross-check: chainRegistry chainIds ↔ chainIconMap chainIds
+  const registryIds = await loadRegistryChainIds();
+  const iconMapIds = new Set(localMap.keys());
+  const inRegistryNotIcon = [...registryIds].filter(id => !iconMapIds.has(id));
+  const inIconNotRegistry = [...iconMapIds].filter(id => !registryIds.has(id));
+  if (inRegistryNotIcon.length > 0 || inIconNotRegistry.length > 0) {
+    console.error('\nchainRegistry ↔ chainIconMap chainId mismatch:');
+    for (const id of inRegistryNotIcon) {
+      console.error(`  - chainId ${id}: in chainRegistry but NOT in chainIconMap`);
+    }
+    for (const id of inIconNotRegistry) {
+      console.error(`  - chainId ${id}: in chainIconMap but NOT in chainRegistry`);
+    }
+    process.exit(1);
+  }
+  console.log(`chainRegistry ↔ chainIconMap: all ${registryIds.size} chainIds aligned.`);
 }
 
 main().catch((error) => {

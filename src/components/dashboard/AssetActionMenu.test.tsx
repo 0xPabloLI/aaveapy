@@ -18,6 +18,7 @@ function setup(overrides: Partial<Parameters<typeof AssetActionMenu>[0]> = {}) {
       tokenSymbol={TOKEN_SYMBOL}
       tokenAddress={TOKEN_ADDRESS}
       marketName={MARKET_NAME}
+      chainId={1}
       isMobile={false}
       {...overrides}
     />,

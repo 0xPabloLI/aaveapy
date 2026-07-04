@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
@@ -112,14 +113,16 @@ function renderPanel(snapshots?: PortfolioSnapshot[]) {
     <WagmiProvider config={testWagmiConfig}>
       <QueryClientProvider client={new QueryClient()}>
         <RainbowKitProvider>
-          <TooltipProvider>
-            <PortfolioPanel
-              entries={[]}
-              actions={makeActions()}
-              reserves={[makeReserve('USDC')]}
-              snapshots={snapshots}
-            />
-          </TooltipProvider>
+          <MemoryRouter>
+            <TooltipProvider>
+              <PortfolioPanel
+                entries={[]}
+                actions={makeActions()}
+                reserves={[makeReserve('USDC')]}
+                snapshots={snapshots}
+              />
+            </TooltipProvider>
+          </MemoryRouter>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>,
