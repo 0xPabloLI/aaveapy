@@ -66,6 +66,7 @@ export function buildMetricsFromLane(
   side: 'supply' | 'borrow',
   amountUsd: number,
   isApy: boolean = false,
+  walletUsd?: number,
 ): BuildPositionResultMetrics {
   const nativeMetric: PortfolioSimulationMetric = {
     current: lane.currentNative,
@@ -83,9 +84,10 @@ export function buildMetricsFromLane(
     delta: lane.deltaTotal,
   };
 
+  const currentPrincipalUsd = walletUsd ?? amountUsd;
   const currentUsdPerDay = computePositionUsdPerDay(
     side,
-    amountUsd,
+    currentPrincipalUsd,
     lane.currentNative ?? 0,
     lane.currentIncentive,
     isApy,
@@ -232,45 +234,49 @@ function computeResultsFromGroups(
 
       for (const slot of group.supplySlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const walletUsd = slot.sideData.walletValue;
         const nativePercent = simResult.supply.afterNative
           ?? simResult.supply.currentNative ?? reserve.supplyApy ?? 0;
         const incentivePercent = simResult.supply.afterIncentive
           ?? simResult.supply.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy);
+        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy, walletUsd ?? undefined);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable, walletUsd),
         );
       }
 
       for (const slot of group.borrowSlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const walletUsd = slot.sideData.walletValue;
         const nativePercent = simResult.borrow.afterNative
           ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
         const incentivePercent = simResult.borrow.afterIncentive
           ?? simResult.borrow.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy);
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy, walletUsd ?? undefined);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, walletUsd),
         );
       }
     } else {
       for (const slot of group.supplySlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.supplyApy ?? 0;
         const incentiveArr = reserve.supplyIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, undefined, isApy),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd),
         );
       }
 
       for (const slot of group.borrowSlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, undefined, isApy),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd),
         );
       }
     }

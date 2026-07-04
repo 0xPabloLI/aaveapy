@@ -26,6 +26,8 @@ interface StubReserve {
   displayBorrowIncentive: number | null;
   borrowHasIncentiveSource: boolean;
   displaySpread: number | null;
+  supplyDisabled: boolean;
+  borrowDisabled: boolean;
 }
 
 const stubValueGetters: ReserveSortValueGetters<StubReserve> = {
@@ -53,6 +55,8 @@ const stubValueGetters: ReserveSortValueGetters<StubReserve> = {
   getDisplayBorrowIncentive: (r) => r.displayBorrowIncentive,
   hasBorrowIncentiveSource: (r) => r.borrowHasIncentiveSource,
   getDisplaySpread: (r) => r.displaySpread,
+  isSupplyDisabled: (r) => r.supplyDisabled,
+  isBorrowDisabled: (r) => r.borrowDisabled,
 };
 
 function makeConfig(overrides: Partial<ReserveSortConfig> = {}): ReserveSortConfig {
@@ -100,6 +104,8 @@ function stub(overrides: Partial<StubReserve> = {}): StubReserve {
     displayBorrowIncentive: 1,
     borrowHasIncentiveSource: true,
     displaySpread: 2,
+    supplyDisabled: false,
+    borrowDisabled: false,
     ...overrides,
   };
 }
@@ -570,38 +576,190 @@ describe('sortReserves', () => {
     it('native mode: null values sort last in desc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyNative: null });
       const b = stub({ reserveId: 'r2', displaySupplyNative: 5 });
-      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg)).toBeGreaterThan(0);
+      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
     });
 
     it('native mode: both null falls back to reserveId tiebreaker', () => {
       const a = stub({ reserveId: 'r1', displaySupplyNative: null });
       const b = stub({ reserveId: 'r2', displaySupplyNative: null });
-      const result = compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg);
+      const result = compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg);
       expect(result).toBeLessThan(0);
     });
 
     it('total mode: sorts by total in desc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyTotal: 3 });
       const b = stub({ reserveId: 'r2', displaySupplyTotal: 7 });
-      expect(compareSupplyOrBorrow(a, b, 'total', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg)).toBeGreaterThan(0);
+      expect(compareSupplyOrBorrow(a, b, 'total', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
     });
 
     it('total mode: sorts by total in asc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyTotal: 3 });
       const b = stub({ reserveId: 'r2', displaySupplyTotal: 7 });
-      expect(compareSupplyOrBorrow(a, b, 'total', 'asc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg)).toBeLessThan(0);
+      expect(compareSupplyOrBorrow(a, b, 'total', 'asc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeLessThan(0);
     });
 
     it('incentive mode: delegates to compareIncentiveWithNative', () => {
       const a = stub({ reserveId: 'r1', displaySupplyIncentive: 0, displaySupplyNative: 5, supplyHasIncentiveSource: false });
       const b = stub({ reserveId: 'r2', displaySupplyIncentive: 0, displaySupplyNative: 1, supplyHasIncentiveSource: true });
-      expect(compareSupplyOrBorrow(a, b, 'incentive', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg)).toBeGreaterThan(0);
+      expect(compareSupplyOrBorrow(a, b, 'incentive', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
     });
 
     it('works for borrow side with borrow getters', () => {
       const a = stub({ reserveId: 'r1', displayBorrowNative: null });
       const b = stub({ reserveId: 'r2', displayBorrowNative: 5 });
-      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplayBorrowNative, vg.getDisplayBorrowIncentive, vg.getDisplayBorrowTotal, vg.hasBorrowIncentiveSource, vg)).toBeGreaterThan(0);
+      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplayBorrowNative, vg.getDisplayBorrowIncentive, vg.getDisplayBorrowTotal, vg.hasBorrowIncentiveSource, vg.isBorrowDisabled, vg)).toBeGreaterThan(0);
+    });
+  });
+
+  describe('disabled-first sorting', () => {
+    describe('supply sort with disabled', () => {
+      it('disabled supply sorts after enabled supply (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
+          stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('disabled supply sorts after enabled supply (asc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
+          stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'asc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('both disabled: sorts by value normally', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
+          stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: true }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r1');
+        expect(result[1].reserveId).toBe('r2');
+      });
+
+      it('disabled with higher value still sorts after enabled with lower value', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySupplyTotal: 100, supplyDisabled: true }),
+          stub({ reserveId: 'r2', displaySupplyTotal: 1, supplyDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+    });
+
+    describe('borrow sort with disabled', () => {
+      it('disabled borrow sorts after enabled borrow (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('disabled borrow sorts after enabled borrow (asc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'asc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('both disabled: sorts by value normally', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: true }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r1');
+        expect(result[1].reserveId).toBe('r2');
+      });
+    });
+
+    describe('spread sort with disabled', () => {
+      it('supply disabled: sorts after enabled (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true }),
+          stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('borrow disabled: sorts after enabled (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySpread: 10, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displaySpread: 5, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('either side disabled: sorts after enabled (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true, borrowDisabled: false }),
+          stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false, borrowDisabled: false }),
+          stub({ reserveId: 'r3', displaySpread: 8, supplyDisabled: false, borrowDisabled: true }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+        expect(result[2].reserveId).toBe('r3');
+      });
+
+      it('both sides disabled: sorts after enabled (desc)', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r2');
+        expect(result[1].reserveId).toBe('r1');
+      });
+
+      it('both disabled: sorts by value normally', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: true, borrowDisabled: true }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r1');
+        expect(result[1].reserveId).toBe('r2');
+      });
+    });
+
+    describe('mixed scenarios', () => {
+      it('supply disabled does not affect borrow sort', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displayBorrowTotal: 10, supplyDisabled: true, borrowDisabled: false }),
+          stub({ reserveId: 'r2', displayBorrowTotal: 5, supplyDisabled: false, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r1');
+        expect(result[1].reserveId).toBe('r2');
+      });
+
+      it('borrow disabled does not affect supply sort', () => {
+        const reserves = [
+          stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: false, borrowDisabled: true }),
+          stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false, borrowDisabled: false }),
+        ];
+        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        expect(result[0].reserveId).toBe('r1');
+        expect(result[1].reserveId).toBe('r2');
+      });
     });
   });
 });

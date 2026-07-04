@@ -63,9 +63,9 @@ export function aggregatePortfolioSummary(
 
     if (r.totalMetric && r.totalMetric.current !== null) {
       if (r.side === 'supply') {
-        currentTotalSupplyUsd = (currentTotalSupplyUsd ?? 0) + r.amountUsd;
+        currentTotalSupplyUsd = (currentTotalSupplyUsd ?? 0) + (r.walletUsd ?? r.amountUsd);
       } else {
-        currentTotalBorrowUsd = (currentTotalBorrowUsd ?? 0) + r.amountUsd;
+        currentTotalBorrowUsd = (currentTotalBorrowUsd ?? 0) + (r.walletUsd ?? r.amountUsd);
       }
     }
   }
@@ -177,6 +177,7 @@ export function buildPortfolioPositionResult(
   metrics?: BuildPositionResultMetrics,
   isApy: boolean = false,
   forecastUnavailableCampaignCount?: number,
+  walletUsd?: number | null,
 ): PortfolioPositionResult {
   const totalPercent = side === 'supply'
     ? nativeAprPercent + incentiveAprPercent
@@ -193,6 +194,7 @@ export function buildPortfolioPositionResult(
     reserveId,
     side,
     amountUsd,
+    walletUsd: walletUsd ?? null,
     nativePercent: nativeAprPercent,
     incentivePercent: incentiveAprPercent,
     totalPercent,

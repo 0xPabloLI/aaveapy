@@ -941,15 +941,46 @@ describe('buildMetricsFromLane', () => {
     );
   });
 
-  it('computes borrow usdPerDayMetric with correct sign', () => {
+  it('computes usdPerDayMetric current with walletUsd (stock-flow separation)', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 15000, false, 10000);
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      (15000 * 3.0 / 100 / 365) + (15000 * 1.0 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
+      metrics.usdPerDayMetric!.after! - metrics.usdPerDayMetric!.current!,
+      6,
+    );
+  });
+
+  it('computes usdPerDayMetric delta reflecting both rate and position change', () => {
+    const lane = makeLane({ afterNative: 2.8, afterIncentive: 0.9, afterTotal: 3.7, deltaNative: 0, deltaIncentive: 0, deltaTotal: 0 });
+    const metrics = buildMetricsFromLane(lane, 'supply', 15000, false, 10000);
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
+      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      (15000 * 2.8 / 100 / 365) + (15000 * 0.9 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.delta).toBeGreaterThan(0);
+  });
+
+  it('computes borrow usdPerDayMetric with walletUsd', () => {
     const lane = makeLane({ currentNative: 5, afterNative: 6, deltaNative: 1, currentIncentive: 0.5, afterIncentive: 0.6, deltaIncentive: 0.1 });
-    const metrics = buildMetricsFromLane(lane, 'borrow', 10000);
+    const metrics = buildMetricsFromLane(lane, 'borrow', 15000, false, 10000);
     expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
       -(10000 * 5 / 100 / 365) + (10000 * 0.5 / 100 / 365),
       6,
     );
     expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      -(10000 * 6 / 100 / 365) + (10000 * 0.6 / 100 / 365),
+      -(15000 * 6 / 100 / 365) + (15000 * 0.6 / 100 / 365),
       6,
     );
   });
