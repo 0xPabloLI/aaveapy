@@ -2379,23 +2379,6 @@ describe('buildRateSimulationResult fallback behavior', () => {
 });
 
 describe('buildRateSimulationResult — APR capped note only when cap actually reduces after APR', () => {
-  const lowTvlMaxGroup: MerklOpportunityGroup = {
-    name: 'Low TVL MAX campaign',
-    breakdowns: [
-      {
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'max-low-tvl',
-        campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        plannedDaily: 1_000,
-        aprCap: 10,
-        totalBudget: 100_000,
-        latestTvl: 1_000,
-      },
-    ],
-  };
-
   const baseReserveForAprCap = {
     reserveId: 'Test-0xAPRCAP',
     marketName: 'Test',
@@ -2412,7 +2395,6 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     borrowIncentives: [],
     meritSupplys: [],
     meritBorrows: [],
-    merklSupplys: [lowTvlMaxGroup],
     merklBorrows: [],
     brevisSupplys: [],
     brevisBorrows: [],
@@ -2426,10 +2408,27 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     protocolFee: 15,
   };
 
-  it('shows APR capped note when cap actually reduces after APR', () => {
+  it('shows APR capped note when after APR is lower than current due to cap', () => {
+    const group: MerklOpportunityGroup = {
+      name: 'Low TVL MAX campaign',
+      breakdowns: [
+        {
+          campaignApr: 50,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'max-headline-vs-cap',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          plannedDaily: 1_000,
+          aprCap: 10,
+          totalBudget: 100_000,
+          latestTvl: 1_000,
+        },
+      ],
+    };
+
     const forecastStates: Record<string, MerklForecastWireItem> = {
-      'max-low-tvl': {
-        campaignId: 'max-low-tvl',
+      'max-headline-vs-cap': {
+        campaignId: 'max-headline-vs-cap',
         requiredDaily: 1_000,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
@@ -2437,8 +2436,8 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     };
 
     const result = buildRateSimulationResult({
-      reserve: baseReserveForAprCap,
-      reserveRateInput: baseReserveForAprCap,
+      reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },
@@ -2453,42 +2452,42 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
 
     const campaign = result.supply.sources.merkl.campaigns?.[0];
     expect(campaign).toBeDefined();
+    expect(campaign!.after).toBeLessThan(campaign!.current);
     const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
     expect(aprCapNote).toBeDefined();
     expect(aprCapNote!.text).toBe('APR capped for low TVL');
   });
 
-  it('does not show APR capped note when cap does not reduce after APR', () => {
-    const highTvlGroup: MerklOpportunityGroup = {
-      name: 'High TVL MAX campaign',
+  it('does not show APR capped note when after equals current (cap was already binding)', () => {
+    const group: MerklOpportunityGroup = {
+      name: 'Low TVL MAX campaign — cap already reflected in headline',
       breakdowns: [
         {
           campaignApr: 10,
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: '2099-01-01T00:00:00.000Z',
-          campaignId: 'max-high-tvl',
+          campaignId: 'max-cap-equals-headline',
           campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          plannedDaily: 100,
-          aprCap: 100,
-          totalBudget: 1_000_000,
-          latestTvl: 100_000_000,
+          plannedDaily: 1_000,
+          aprCap: 10,
+          totalBudget: 100_000,
+          latestTvl: 1_000,
         },
       ],
     };
 
-    const reserve = { ...baseReserveForAprCap, merklSupplys: [highTvlGroup] };
     const forecastStates: Record<string, MerklForecastWireItem> = {
-      'max-high-tvl': {
-        campaignId: 'max-high-tvl',
-        requiredDaily: 100,
+      'max-cap-equals-headline': {
+        campaignId: 'max-cap-equals-headline',
+        requiredDaily: 1_000,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
     };
 
     const result = buildRateSimulationResult({
-      reserve,
-      reserveRateInput: reserve,
+      reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },
@@ -2503,6 +2502,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
 
     const campaign = result.supply.sources.merkl.campaigns?.[0];
     expect(campaign).toBeDefined();
+    expect(campaign!.after).toBe(campaign!.current);
     const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
     expect(aprCapNote).toBeUndefined();
   });

@@ -736,12 +736,9 @@ export const buildMerklCampaignDetails = (
           if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             const fixEffect = buildFixRewardCapEffect(forecast.fixRewardableDays);
             notes = [capEffectToNote(fixEffect)];
-          } else if (isMaxLike && forecast.regime === 'APR_CAPPED') {
-            const uncapped = forecastWithTVL(merged, hypotheticalTvl, undefined, { ignoreCap: true });
-            if (forecast.apr < uncapped.apr) {
-              const maxEffect = buildMaxRewardCapEffect();
-              notes = [capEffectToNote(maxEffect)];
-            }
+          } else if (isMaxLike && forecast.regime === 'APR_CAPPED' && after < current) {
+            const maxEffect = buildMaxRewardCapEffect();
+            notes = [capEffectToNote(maxEffect)];
           }
         }
       } else if (hasAnyInput) {
