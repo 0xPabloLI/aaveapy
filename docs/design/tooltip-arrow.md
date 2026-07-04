@@ -99,6 +99,39 @@
 - **移动**：点击 badge 打开 → bottom sheet 样式，顶部 sticky header + X 按钮关闭
 - **不改为 hover**：内容含交互元素（whitelist 勾选框、外部链接），hover 会导致鼠标移入时 tooltip 消失
 
+### 4.3 外部链接箭头布局规则
+
+`IncentiveTooltip` 的 source name 与 campaign time 都可能包含外部链接（`ExternalLink` 图标）。当文字换行时，箭头必须：
+
+1. **垂直居中于整个文字块**，而不是紧贴第一行末尾；
+2. **与文字保持统一 gap**，单行和多行时的视觉间距一致；
+3. **不占据整行宽度**，避免被推到容器最右侧远离文字。
+
+**实现模式**（source header / campaign time 共用）：
+
+```tsx
+<span className="min-w-0 inline-flex items-center gap-[var(--ds-space-1-5)]">
+  <span className="break-words min-w-0">{text}</span>
+  {link ? (
+    <a href={link} rel="noopener noreferrer" target="_blank">
+      <ExternalLink className="w-3.5 h-3.5" />
+    </a>
+  ) : null}
+</span>
+```
+
+**关键点**：
+
+- 外层用 `inline-flex items-center`（**不要** `flex-wrap`），让 arrow 作为独立 flex item 与文字块等高后垂直居中；
+- 文字单独包在 `<span className="break-words min-w-0">` 里，保证换行只发生在文字 span 内部；
+- APR / 数值用 `ml-auto` 推到行尾，这样 arrow 到数值之间的空白是 flex 剩余空间，而不是文字到 arrow 的距离；
+- 桌面端和移动端（bottom sheet）使用同一套 `IncentiveSourceRow`，无需单独维护两份布局。
+
+**反模式**：
+
+- ❌ `inline-flex flex-wrap items-center` 把 arrow 和文字片段放在同一 flex 行：换行时 arrow 会贴到第一行末尾，视觉上远离下方文字。
+- ❌ `block` / `grid-cols-[1fr]` 让文字或箭头容器占满整行：会把 arrow 推到容器最右，与文字脱节。
+
 ---
 
 ## 5. 系统③ DesktopTooltip / MobileTooltip 规范
@@ -265,6 +298,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - [ ] 系统①：所有 `TooltipContent` 的 `side` prop 符合 §3 排版规范
 - [ ] 系统①：所有 `TooltipCalloutArrow` 不传 `side` prop
 - [ ] 系统②：激励 badge 点击能打开，遮罩点击能关闭，移动端为 bottom sheet
+- [ ] 系统②：source name / campaign time 文字换行时，外部链接箭头垂直居中于文字块，且不紧贴第一行末尾
 - [ ] 系统③：`DesktopTooltip` hover 正常出现/消失，`MobileTooltip` 点击正常
 - [ ] 排序下拉框：两端均使用 `w-max` 内容驱动宽度，无 `minWidth` 残留
 - [ ] 排序下拉框：桌面端 `max-w-[min(18rem,calc(100vw-2rem))]`，移动端 `max-w-[min(18rem,calc(100vw-1.5rem))]`
