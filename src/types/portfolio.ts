@@ -72,6 +72,8 @@ export interface PortfolioPositionResult {
   side: PortfolioSide;
   /** USD value of position (resolved from token amount × price or direct USD input). */
   amountUsd: number;
+  /** Wallet-synced onchain USD value. null = not from wallet (manual entry). */
+  walletUsd: number | null;
   /** Native APY/APR percent after simulation (supply or borrow side). */
   nativePercent: number;
   /** Incentive APR/APY percent after simulation. */

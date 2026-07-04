@@ -71,6 +71,8 @@ export interface ReserveSortValueGetters<R> {
   getDisplayBorrowIncentive: (reserve: R) => number | null;
   hasBorrowIncentiveSource: (reserve: R) => boolean;
   getDisplaySpread: (reserve: R) => number | null;
+  isSupplyDisabled: (reserve: R) => boolean;
+  isBorrowDisabled: (reserve: R) => boolean;
 }
 
 function orderMultiplier(order: SortOrder): number {
@@ -220,8 +222,14 @@ export function compareSupplyOrBorrow<R>(
   getIncentive: (r: R) => number | null,
   getTotal: (r: R) => number | null,
   hasIncentiveSource: (r: R) => boolean,
+  isDisabled: (r: R) => boolean,
   vg: ReserveSortValueGetters<R>,
 ): number {
+  const aDisabled = isDisabled(a);
+  const bDisabled = isDisabled(b);
+  if (aDisabled !== bDisabled) {
+    return aDisabled ? 1 : -1;
+  }
   if (sortMode === 'native') {
     const result = compareNullableNumbers(getNative(a), getNative(b), order);
     if (result !== 0) return result;
@@ -251,6 +259,15 @@ function compareBySpread<R>(
   order: SortOrder,
   vg: ReserveSortValueGetters<R>,
 ): number {
+  const aSupplyDisabled = vg.isSupplyDisabled(a);
+  const bSupplyDisabled = vg.isSupplyDisabled(b);
+  const aBorrowDisabled = vg.isBorrowDisabled(a);
+  const bBorrowDisabled = vg.isBorrowDisabled(b);
+  const aDisabled = aSupplyDisabled || aBorrowDisabled;
+  const bDisabled = bSupplyDisabled || bBorrowDisabled;
+  if (aDisabled !== bDisabled) {
+    return aDisabled ? 1 : -1;
+  }
   const aSpread = vg.getDisplaySpread(a);
   const bSpread = vg.getDisplaySpread(b);
   const result = compareNullableNumbers(aSpread, bSpread, order);
@@ -286,14 +303,14 @@ export function sortReserves<R>(
       return compareSupplyOrBorrow(
         a, b, config.supplySortMode, config.supplySortOrder,
         vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal,
-        vg.hasSupplyIncentiveSource, vg,
+        vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg,
       );
     }
     if (sortColumn === 'borrow') {
       return compareSupplyOrBorrow(
         a, b, config.borrowSortMode, config.borrowSortOrder,
         vg.getDisplayBorrowNative, vg.getDisplayBorrowIncentive, vg.getDisplayBorrowTotal,
-        vg.hasBorrowIncentiveSource, vg,
+        vg.hasBorrowIncentiveSource, vg.isBorrowDisabled, vg,
       );
     }
     return compareBySpread(a, b, config.spreadSortOrder, vg);
