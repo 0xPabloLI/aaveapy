@@ -95,7 +95,6 @@ interface IncentiveSource {
   requiredTokens?: string[] | string;
   campaigns?: IncentiveCampaign[];
   rewardTokenIconUrl?: string;
-  offsetNote?: string;
 }
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -110,11 +109,6 @@ const darkSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, stri
   Brevis: '/icons/partners/brevis-white.svg',
   Merkl: '/icons/partners/merkl-white.svg',
   ACI: '/icons/partners/aci-white.svg',
-};
-
-const extractOffsetNoteFromMessage = (message: IncentiveSource['message']): string | undefined => {
-  if (typeof message === 'string' && message.trim()) return message.trim();
-  return undefined;
 };
 
 const getSourceIcon = (
@@ -662,7 +656,6 @@ const IncentiveTooltip = ({
               link: oppLink,
               message: opportunity.message,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-              ...(opportunity.netPositionConstraint && opportunity.message ? { offsetNote: extractOffsetNoteFromMessage(opportunity.message) } : {}),
                    campaigns: [{
                      value: included ? displayValue : 0,
                      rawValue: displayValue,
@@ -887,9 +880,6 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {source.offsetNote && (
-            <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">{source.offsetNote}</p>
-          )}
         </>
       );
     }
@@ -937,9 +927,6 @@ const IncentiveTooltip = ({
               </li>
             ))}
           </ul>
-        )}
-        {source.offsetNote && (
-          <p className="ds-tooltip-body text-muted-foreground">{source.offsetNote}</p>
         )}
       </div>
     );
