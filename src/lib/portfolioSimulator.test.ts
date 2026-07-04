@@ -1012,4 +1012,18 @@ describe('buildMetricsFromLane', () => {
     expect(metrics.usdPerDayMetric.after).not.toBeNull();
     expect(metrics.usdPerDayMetric.delta).not.toBeNull();
   });
+
+  it('computes usdPerDayMetric with walletUsd=0 for manual entry (no wallet)', () => {
+    const lane = makeLane();
+    const metrics = buildMetricsFromLane(lane, 'supply', 10000, false, 0);
+    expect(metrics.usdPerDayMetric!.current).toBe(0);
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
+      (10000 * 3.0 / 100 / 365) + (10000 * 1.0 / 100 / 365),
+      6,
+    );
+    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
+      metrics.usdPerDayMetric!.after!,
+      6,
+    );
+  });
 });

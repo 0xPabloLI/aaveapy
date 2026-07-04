@@ -234,27 +234,27 @@ function computeResultsFromGroups(
 
       for (const slot of group.supplySlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const walletUsd = slot.sideData.walletValue;
+        const walletUsd = slot.sideData.walletValue ?? 0;
         const nativePercent = simResult.supply.afterNative
           ?? simResult.supply.currentNative ?? reserve.supplyApy ?? 0;
         const incentivePercent = simResult.supply.afterIncentive
           ?? simResult.supply.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy, walletUsd ?? undefined);
+        const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable, walletUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable, slot.sideData.walletValue),
         );
       }
 
       for (const slot of group.borrowSlots) {
         const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const walletUsd = slot.sideData.walletValue;
+        const walletUsd = slot.sideData.walletValue ?? 0;
         const nativePercent = simResult.borrow.afterNative
           ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
         const incentivePercent = simResult.borrow.afterIncentive
           ?? simResult.borrow.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy, walletUsd ?? undefined);
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, walletUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue),
         );
       }
     } else {
