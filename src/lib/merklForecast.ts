@@ -61,15 +61,19 @@ export function merklAprCapPercentToForecastDecimal(
 export const forecastWithTVL = (
   forecastState: MerklForecastState,
   tvl: number,
-  nowTs = Math.floor(Date.now() / 1000)
+  nowTs = Math.floor(Date.now() / 1000),
+  options?: { ignoreCap?: boolean }
 ): MerklForecastResult => {
   const safeTvl = safe(tvl);
+  const ignoreCap = options?.ignoreCap ?? false;
   const isMaxRewardCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
   const isFixRewardCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
   const isTargetTotalAprCampaign = forecastState.campaignType === 'TARGET_TOTAL_APR';
   const isRateLimitedCampaign = isMaxRewardCampaign || isFixRewardCampaign;
 
   if (safeTvl <= 0) {
+    // Note: when used for APR-capped note check, hypotheticalTvl >= inputUsd > 0,
+    // so this early return is never hit and ignoreCap does not need to change regime here.
     return {
       dailyRewards: 0,
       apr: 0,
@@ -92,7 +96,7 @@ export const forecastWithTVL = (
     const aprCapDecimal = safe(forecastState.aprCap ?? 0);
     const targetApyPercent = convertAprToApy(aprCapDecimal * 100);
     const effectiveApyPercent = Math.max(targetApyPercent - nativeApy, 0);
-    const effectiveAprCap = apyToApr(effectiveApyPercent) / 100;
+    const effectiveAprCap = ignoreCap ? Infinity : apyToApr(effectiveApyPercent) / 100;
 
     const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
     const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
@@ -143,8 +147,8 @@ export const forecastWithTVL = (
 
   const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
   const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
-  const aprCap = safe(forecastState.aprCap ?? 0);
-  const aprBasedDaily = (safeTvl * aprCap) / DAYS_PER_YEAR;
+  const rawAprCap = safe(forecastState.aprCap ?? 0);
+  const aprBasedDaily = (safeTvl * rawAprCap) / DAYS_PER_YEAR;
 
   if (isFixRewardCampaign) {
     const dailyRewards = Math.min(aprBasedDaily, remainingBudget);
@@ -167,10 +171,12 @@ export const forecastWithTVL = (
   }
 
   // MAX_REWARD path: requiredDaily may diverge from plannedDaily (catch-up).
+  const aprCap = ignoreCap ? Infinity : rawAprCap;
+  const maxAprBasedDaily = (safeTvl * aprCap) / DAYS_PER_YEAR;
   const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
-  const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
+  const dailyRewards = Math.min(requiredDaily, maxAprBasedDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
-  const capBinding = aprBasedDaily < requiredDaily;
+  const capBinding = maxAprBasedDaily < requiredDaily;
   const isCatchingUp = requiredDaily > plannedDaily * 1.01;
 
   let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';

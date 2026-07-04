@@ -737,8 +737,11 @@ export const buildMerklCampaignDetails = (
             const fixEffect = buildFixRewardCapEffect(forecast.fixRewardableDays);
             notes = [capEffectToNote(fixEffect)];
           } else if (isMaxLike && forecast.regime === 'APR_CAPPED') {
-            const maxEffect = buildMaxRewardCapEffect();
-            notes = [capEffectToNote(maxEffect)];
+            const uncapped = forecastWithTVL(merged, hypotheticalTvl, undefined, { ignoreCap: true });
+            if (forecast.apr < uncapped.apr) {
+              const maxEffect = buildMaxRewardCapEffect();
+              notes = [capEffectToNote(maxEffect)];
+            }
           }
         }
       } else if (hasAnyInput) {

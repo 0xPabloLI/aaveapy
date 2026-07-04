@@ -234,3 +234,10 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **openapi-check 和 openapi-sync 并行导致死循环**：check 先 fail，sync 后 push 但被 reject（因为新 commit 已推入），下次 CI 仍用旧 spec → check 又 fail。修复 rebase 后 push 成功，循环打破。
 - **GitHub Actions `run: |` 块默认 `set -e`**：`git pull --rebase` 失败会停止执行，不会走到 `git push`，所以 rebase 冲突时不会 force push，安全性有保证。
 - **`git pull --rebase` 前必须 stash unstaged changes**：npm scripts（如 `openapi:fetch` 触发的 `generate-icon-manifests + vitest`）会在工作目录产生未追踪文件，导致 rebase 失败。修复：`git stash --include-untracked` → `git pull --rebase` → `git stash pop || true`。
+
+## Learned Lessons: APR capped note 显示条件 (AAV-1059)
+
+- **`regime === 'APR_CAPPED'` 不等于"cap 实际压低了 after APR"**：`forecastWithTVL` 返回 `APR_CAPPED` regime 只表示 `aprBasedDaily < requiredDaily`（cap 在数学上是 binding 的），但如果 `cappedAfter >= uncappedAfter`，说明 cap 没有实质压低值（比如 capped 和 uncapped 路径都走到了相同的 `dailyRewards`），此时显示 "APR capped for low TVL" note 是误导。**教训：note 显示条件必须是"cap 实际减少了用户能看到的值"，而非"cap 在数学上是 binding 的"。**
+- **判断 cap 是否实际压低值的方法**：比较 `forecastWithTVL(state, tvl)` 和 `forecastWithTVL(state, tvl, undefined, { ignoreCap: true })` 的 `apr` 值，前者小于后者才显示 note。`ignoreCap` 将 `aprCap`/`effectiveAprCap` 设为 `Infinity`，使 `aprBasedDaily` 永远不成为 binding constraint。
+- **`ignoreCap` 不应影响 FIX_REWARD 路径**：FIX 的 `aprCap` 是固定发放率（不是上限），`ignoreCap` 只应在 MAX_REWARD 和 TARGET_TOTAL_APR+MAX_APR 路径生效。实现方式：FIX 路径用 `rawAprCap`，MAX 路径才用 `ignoreCap ? Infinity : rawAprCap`。
+- **MAX_REWARD 和 TARGET_TOTAL_APR 的 cap 不需要区分文案**：两者对用户来说都是"池子 TVL 低导致 APR 被压低"，行动指引一样，不需要不同的 note 文案。

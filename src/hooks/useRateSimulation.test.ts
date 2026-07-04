@@ -2377,3 +2377,133 @@ describe('buildRateSimulationResult fallback behavior', () => {
     expect(result.marketMetrics.availableLiquidityUsd).toBeGreaterThan(0);
   });
 });
+
+describe('buildRateSimulationResult — APR capped note only when cap actually reduces after APR', () => {
+  const lowTvlMaxGroup: MerklOpportunityGroup = {
+    name: 'Low TVL MAX campaign',
+    breakdowns: [
+      {
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'max-low-tvl',
+        campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        plannedDaily: 1_000,
+        aprCap: 10,
+        totalBudget: 100_000,
+        latestTvl: 1_000,
+      },
+    ],
+  };
+
+  const baseReserveForAprCap = {
+    reserveId: 'Test-0xAPRCAP',
+    marketName: 'Test',
+    chainName: 'Ethereum',
+    chainId: 1,
+    tokenName: 'TKN',
+    tokenSymbol: 'TKN',
+    tokenAddress: '0x00000000000000000000000000000000000000AA',
+    aTokenAddress: '0x00000000000000000000000000000000000000AB',
+    vTokenAddress: '0x00000000000000000000000000000000000000AC',
+    supplyApy: 3.0,
+    borrowApy: 5.0,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [lowTvlMaxGroup],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+    liquidity: '5000000000000000000000',
+    utilizationPct: 45,
+    optimalUtilization: 80,
+    decimals: 18,
+    supplied: '10000000000000000000000',
+    borrowed: '4500000000000000000000',
+    tokenPrice: 1,
+    protocolFee: 15,
+  };
+
+  it('shows APR capped note when cap actually reduces after APR', () => {
+    const forecastStates: Record<string, MerklForecastWireItem> = {
+      'max-low-tvl': {
+        campaignId: 'max-low-tvl',
+        requiredDaily: 1_000,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildRateSimulationResult({
+      reserve: baseReserveForAprCap,
+      reserveRateInput: baseReserveForAprCap,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      pointRateMap: { tydroinkpoints: 1 },
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates,
+      meritMerklNetPosition: false,
+      crossReservePositions: undefined,
+      reserveSymbolById: undefined,
+    });
+
+    const campaign = result.supply.sources.merkl.campaigns?.[0];
+    expect(campaign).toBeDefined();
+    const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
+    expect(aprCapNote).toBeDefined();
+    expect(aprCapNote!.text).toBe('APR capped for low TVL');
+  });
+
+  it('does not show APR capped note when cap does not reduce after APR', () => {
+    const highTvlGroup: MerklOpportunityGroup = {
+      name: 'High TVL MAX campaign',
+      breakdowns: [
+        {
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'max-high-tvl',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          plannedDaily: 100,
+          aprCap: 100,
+          totalBudget: 1_000_000,
+          latestTvl: 100_000_000,
+        },
+      ],
+    };
+
+    const reserve = { ...baseReserveForAprCap, merklSupplys: [highTvlGroup] };
+    const forecastStates: Record<string, MerklForecastWireItem> = {
+      'max-high-tvl': {
+        campaignId: 'max-high-tvl',
+        requiredDaily: 100,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: reserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      pointRateMap: { tydroinkpoints: 1 },
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates,
+      meritMerklNetPosition: false,
+      crossReservePositions: undefined,
+      reserveSymbolById: undefined,
+    });
+
+    const campaign = result.supply.sources.merkl.campaigns?.[0];
+    expect(campaign).toBeDefined();
+    const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
+    expect(aprCapNote).toBeUndefined();
+  });
+});
