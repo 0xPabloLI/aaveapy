@@ -4,7 +4,7 @@ This document is intentionally short. It points to canonical policy sources and 
 
 ## Current policy
 
-- **npm routine update PRs:** disabled via `.github/dependabot.yml` (`open-pull-requests-limit: 0`).
+- **npm routine update PRs:** not configured — all npm dependency upgrades are handled by `hardcode-sync` CI (daily `npm update @aave-dao/aave-address-book` + full sync).
 - **GitHub Actions routine update PRs:** enabled weekly with limit `5` for pinned third-party action SHA bumps.
 - **Security updates:** controlled separately in GitHub repository settings (`Code security and analysis`).
 
