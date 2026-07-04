@@ -990,8 +990,8 @@ describe('IncentiveTooltip', () => {
       expect(campaignAprs.length).toBeGreaterThanOrEqual(1);
       const headerRow = headerApr!.parentElement!;
       const campaignRow = campaignAprs[0].parentElement!;
-      expect(headerRow.className).toContain('grid-cols-[1fr_auto_auto]');
-      expect(campaignRow.className).toContain('grid-cols-[1fr_auto_auto]');
+      expect(headerRow.className).toContain('grid-cols-[1fr_5rem]');
+      expect(campaignRow.className).toContain('grid-cols-[1fr_5rem]');
     });
   });
 });

@@ -273,8 +273,8 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                 key={`ended-${sourceIndex}`}
                 className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
               >
-                <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                  <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1">
+                <div className="grid grid-cols-[1fr_5rem] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+                  <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0">
                     {iconSrc && (
                       <span
                         className="flex items-center justify-center rounded-md ring-1 ring-zinc-500/30 shadow-sm flex-shrink-0 bg-muted/60 min-w-[44px] px-[6px] py-[5px]"
@@ -291,18 +291,18 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                     <span className="ds-tooltip-title text-zinc-400 break-words block min-w-0">
                       {group.sourceName}
                     </span>
+                    {group.sourceLink && (
+                      <a
+                        href={group.sourceLink}
+                        {...externalLinkTabProps(isMobile)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-40 hover:opacity-60 text-zinc-400 bg-zinc-500/10 flex-shrink-0"
+                        title="Open link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
                   </div>
-                  {group.sourceLink && (
-                    <a
-                      href={group.sourceLink}
-                      {...externalLinkTabProps(isMobile)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-40 hover:opacity-60 text-zinc-400 bg-zinc-500/10"
-                      title="Open link"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
                 </div>
                 {group.items.map((item, ci: number) => {
                   const dateRangeText = item.lastEndedCampaign.startedAt && formatDateSafe(item.lastEndedCampaign.startedAt)
@@ -315,22 +315,21 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                     key={`ended-${sourceIndex}-c-${ci}`}
                     className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
                   >
-                    <div className="ds-tooltip-body grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
-                      <span className="break-words min-w-0">{dateRangeText}</span>
-                      <span className="tabular-nums font-semibold whitespace-nowrap text-zinc-500">
-                        {formatPercent(0)}
+                    <div className="ds-tooltip-body grid grid-cols-[1fr_5rem] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
+                      <span className="break-words min-w-0 flex items-center gap-1.5">
+                        {dateRangeText}
+                        {endedCampaignUrl ? (
+                          <a
+                            href={endedCampaignUrl}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400 flex-shrink-0"
+                            title="View campaign"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : null}
                       </span>
-                      {endedCampaignUrl ? (
-                        <a
-                          href={endedCampaignUrl}
-                          {...externalLinkTabProps(isMobile)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400"
-                          title="View campaign"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : <div />}
                     </div>
                   </div>
                   );
@@ -777,15 +776,28 @@ const IncentiveTooltip = ({
     const dateRangeText = campaign.startDate && campaign.endDate && formatDateRange(campaign.startDate, campaign.endDate)
       ? `Campaign time: ${formatDateRange(campaign.startDate, campaign.endDate)}`
       : '';
+    const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
+    const gridCols = showApr ? 'grid-cols-[1fr_5rem]' : 'grid-cols-[1fr]';
     return (
       <>
         {dateRangeText && (
-          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] grid grid-cols-[1fr_auto_auto] items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
-            <span className="break-words min-w-0">{dateRangeText}</span>
-            {showApr && (() => {
-              const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
-              return (
-              <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap">
+          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] grid ${gridCols} items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
+            <span className="break-words min-w-0 flex items-center gap-1.5">
+              {dateRangeText}
+              {campaign.campaignUrl ? (
+                <a
+                  href={campaign.campaignUrl}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-muted-foreground flex-shrink-0"
+                  title="View campaign"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : null}
+            </span>
+            {showApr && (
+              <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap justify-self-end">
                 {campaignIconSrc && (
                   <img
                     src={campaignIconSrc}
@@ -796,19 +808,7 @@ const IncentiveTooltip = ({
                 )}
                 <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>{formatPercent(campaign.value)}</span>
               </span>
-              );
-            })()}
-            {campaign.campaignUrl ? (
-              <a
-                href={campaign.campaignUrl}
-                {...externalLinkTabProps(isMobile)}
-                onClick={(e) => e.stopPropagation()}
-                className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-muted-foreground"
-                title="View campaign"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            ) : <div />}
+            )}
           </div>
         )}
         {renderCampaignTypeDescription(campaign)}
@@ -1046,7 +1046,7 @@ const IncentiveTooltip = ({
         } ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
         style={animated ? { animationDelay: `${index * 45}ms` } : undefined}
       >
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+        <div className="grid grid-cols-[1fr_5rem] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
           <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 pr-1">
             {iconSrc && (
               <span
@@ -1069,21 +1069,19 @@ const IncentiveTooltip = ({
             <span className="ds-tooltip-title text-foreground break-words block min-w-0">
               {source.name}
             </span>
+            {source.link ? (
+              <a
+                href={source.link}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(e) => e.stopPropagation()}
+                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0 flex-shrink-0`}
+                title="Open link"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            ) : null}
           </div>
-          {source.link ? (
-            <a
-              href={source.link}
-              {...externalLinkTabProps(isMobile)}
-              onClick={(e) => e.stopPropagation()}
-              className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-              title="Open link"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          ) : (
-            <div />
-          )}
-          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5`}>
+          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 justify-self-end`}>
             {headerRewardTokenIcon && (
               <img
                 src={headerRewardTokenIcon}
