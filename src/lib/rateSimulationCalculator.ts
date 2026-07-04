@@ -1142,6 +1142,11 @@ export function buildRateSimulationResult({
 
   // AAV-1060: Eligibility ratio and merklGroupMultiplier must be computed before
   // buildIncentiveCurrent so that aggregate current matches per-source current.
+  // totalSupplyUsd/totalBorrowUsd are already resolved by the caller.
+  // Callers are responsible for providing the correct total position:
+  // - Portfolio mode: wallet + delta (from PerReserveInput)
+  // - Single simulation: input USD (caller resolves: input IS total)
+  // - No input: undefined (no position to dilute/accrue)
   const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
   const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
   const supplyGrossForEligibility = totalSupplyUsd ?? supplyInputUsd;
@@ -1199,14 +1204,14 @@ export function buildRateSimulationResult({
     };
   };
 
-  // Headline (undiluted, static) incentives — raw API values, no TVL forecast, no dilution.
+  // Headline (undiluted by position cap, but eligibility-scaled) incentives. — raw API values, no TVL forecast, no dilution.
   // Used as reference for deltaIncentive when wallet position exists (dilution gap).
   const supplyHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap });
+    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: merklGroupMultiplier('supply'), pointRateMap })
+    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: merklGroupMultiplier('supply'), pointRateMap });
   const borrowHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap });
+    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: merklGroupMultiplier('borrow'), pointRateMap })
+    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: merklGroupMultiplier('borrow'), pointRateMap });
   const supplyCurrentIncentive = buildIncentiveCurrent(
     reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
     walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, merklGroupMultiplier('supply'),
