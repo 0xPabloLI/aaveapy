@@ -75,7 +75,7 @@ Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a
 - **after** = `amountUsd × afterRate` — what the adjusted position earns after simulation
 - **delta** = after − current — reflects BOTH rate change AND position change
 
-When `walletUsd` is omitted (manual entry with no wallet), `current` falls back to `amountUsd` (delta = 0, since there is no "before" state). `aggregatePortfolioSummary` uses `r.walletUsd ?? r.amountUsd` for `currentTotalSupplyUsd`/`currentTotalBorrowUsd` to maintain consistency.
+When `walletValue = null` (manual entry, no wallet), `walletUsd = 0` — there is no existing position, so `current = 0` and `delta = after` (pure new earnings). `aggregatePortfolioSummary` uses `r.walletUsd ?? r.amountUsd` for `currentTotalSupplyUsd`/`currentTotalBorrowUsd` to maintain consistency.
 
 ## Related Issues
 
