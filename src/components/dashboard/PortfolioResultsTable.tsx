@@ -70,7 +70,19 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className="w-full ds-text-11">
+      <table className="w-full ds-text-11" style={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          <col className="w-[18%]" />
+          <col className="w-[10%]" />
+          <col className="w-[9%]" />
+          <col className="w-[6%]" />
+          <col className="w-[9%]" />
+          <col className="w-[6%]" />
+          <col className="w-[9%]" />
+          <col className="w-[6%]" />
+          <col className="w-[9%]" />
+          <col className="w-[6%]" />
+        </colgroup>
         <thead>
           <tr className="bg-muted/40 text-muted-foreground">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
