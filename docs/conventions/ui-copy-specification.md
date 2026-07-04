@@ -146,7 +146,6 @@ offsetNote-only entries (no capWarning, no capNote) display the offsetNote in mu
 |---|---|---|
 | Position cap (with campaignName) | `{campaignName} incentive on first {X} only` | `Self Authentication incentive on first $1,000.00 only` |
 | Position cap (without campaignName) | `Incentive on first {X} only` | `Incentive on first $1,000.00 only` |
-| Offset note | `{opportunity.message}` (when `netPositionConstraint` exists) | `Earn rewards on your net lending position (GHO supply minus GHO, USDT0 borrows) on Aave on Plasma` |
 
 `campaignName` is populated per source:
 - **Merit**: `extractActionLabelFromMeritMessage(breakdown.message)` → `extractActionLabelFromMeritMessage(group.message)` → fallback `"${groupName} base"` or `"${groupName} double yield"`
@@ -154,7 +153,7 @@ offsetNote-only entries (no capWarning, no capNote) display the offsetNote in mu
 - **Merkl**: `opportunity.name` (same as source name)
 - **Protocol**: no campaignName (no position cap in protocol incentives)
 
-Offset note only appears for Merkl sources with `netPositionConstraint`. The tooltip displays `opportunity.message` as a muted text paragraph below the campaigns section.
+The tooltip does not render a separate offset note — `opportunity.message` is already displayed via `sourceMessageLines` (bullet points). Adding a separate offset note would duplicate the same content.
 
 ---
 
