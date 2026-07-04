@@ -786,13 +786,12 @@ const IncentiveTooltip = ({
       ? `Campaign time: ${formatDateRange(campaign.startDate, campaign.endDate)}`
       : '';
     const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
-    const gridCols = showApr ? 'grid-cols-[1fr_5rem]' : 'grid-cols-[1fr]';
     return (
       <>
         {dateRangeText && (
-          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] grid ${gridCols} items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
-            <span className="break-words min-w-0 flex items-center gap-1.5">
-              {dateRangeText}
+          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] flex items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
+            <span className="min-w-0 inline-flex items-center gap-1.5">
+              <span className="break-words min-w-0">{dateRangeText}</span>
               {campaign.campaignUrl ? (
                 <a
                   href={campaign.campaignUrl}
@@ -806,7 +805,7 @@ const IncentiveTooltip = ({
               ) : null}
             </span>
             {showApr && (
-              <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap justify-self-end">
+              <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap ml-auto">
                 {campaignIconSrc && (
                   <img
                     src={campaignIconSrc}
@@ -1055,29 +1054,27 @@ const IncentiveTooltip = ({
         } ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
         style={animated ? { animationDelay: `${index * 45}ms` } : undefined}
       >
-        <div className="grid grid-cols-[1fr_5rem] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 pr-1">
-            {iconSrc && (
-              <span
-                className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
-              >
-                <img
-                  src={iconSrc}
-                  alt={`${source.sourceType} logo`}
-                  title={source.sourceType}
-                  className={logoClass}
-                  loading="eager"
-                />
-              </span>
-            )}
-            {isBrevis && !iconSrc && (
-              <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
-                Brevis
-              </span>
-            )}
-            <span className="ds-tooltip-title text-foreground break-words block min-w-0">
-              {source.name}
+        <div className="flex items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+          {iconSrc && (
+            <span
+              className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
+            >
+              <img
+                src={iconSrc}
+                alt={`${source.sourceType} logo`}
+                title={source.sourceType}
+                className={logoClass}
+                loading="eager"
+              />
             </span>
+          )}
+          {isBrevis && !iconSrc && (
+            <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
+              Brevis
+            </span>
+          )}
+          <span className="ds-tooltip-title text-foreground min-w-0 inline-flex items-center gap-[var(--ds-space-1-5)]">
+            <span className="break-words min-w-0">{source.name}</span>
             {source.link ? (
               <a
                 href={source.link}
@@ -1089,8 +1086,8 @@ const IncentiveTooltip = ({
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             ) : null}
-          </div>
-          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 justify-self-end`}>
+          </span>
+          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 ml-auto`}>
             {headerRewardTokenIcon && (
               <img
                 src={headerRewardTokenIcon}
