@@ -1073,8 +1073,8 @@ const IncentiveTooltip = ({
               Brevis
             </span>
           )}
-          <span className="ds-tooltip-title text-foreground min-w-0 inline-flex items-center gap-[var(--ds-space-1-5)]">
-            <span className="break-words min-w-0">{source.name}</span>
+          <span className="ds-tooltip-title text-foreground min-w-0 flex items-center flex-1 gap-[var(--ds-space-1-5)]">
+            <span className="break-words min-w-0 flex-1">{source.name}</span>
             {source.link ? (
               <a
                 href={source.link}
