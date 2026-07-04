@@ -990,7 +990,7 @@ describe('IncentiveTooltip', () => {
       expect(campaignAprs.length).toBeGreaterThanOrEqual(1);
       const headerRow = headerApr!.parentElement!;
       const campaignRow = campaignAprs[0].parentElement!;
-      expect(headerRow.className).toContain('grid-cols-[1fr_auto]');
+      expect(headerRow.className).toContain('flex');
       expect(campaignRow.className).toContain('flex');
       expect(headerRow.className).not.toContain('grid-cols-[1fr_5rem]');
       expect(campaignRow.className).not.toContain('grid-cols-[1fr_5rem]');
