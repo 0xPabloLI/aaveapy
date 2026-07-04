@@ -29,13 +29,6 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-const formatDeltaUsdDay = (value: number | null | undefined): string | null => {
-  if (value === null || value === undefined || Number.isNaN(value)) return null;
-  if (Math.abs(value) < 0.005) return null;
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${value.toFixed(2)}`;
-};
-
 const DeltaCell = memo(function DeltaCell({
   value,
   accentClass,
@@ -50,7 +43,7 @@ const DeltaCell = memo(function DeltaCell({
   );
 });
 
-const COL_COUNT = 10;
+const COL_COUNT = 8;
 
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
   entries,
@@ -73,16 +66,15 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
     <div className="rounded-lg border border-border/50 overflow-x-auto">
       <table className="w-full ds-text-11" style={{ tableLayout: 'fixed' }}>
         <colgroup>
-          <col className="w-[18%]" />
-          <col className="w-[10%]" />
-          <col className="w-[9%]" />
-          <col className="w-[6%]" />
-          <col className="w-[9%]" />
-          <col className="w-[6%]" />
-          <col className="w-[9%]" />
-          <col className="w-[6%]" />
-          <col className="w-[9%]" />
-          <col className="w-[6%]" />
+          <col className="w-[22%]" />
+          <col className="w-[12%]" />
+          <col className="w-[11%]" />
+          <col className="w-[7%]" />
+          <col className="w-[11%]" />
+          <col className="w-[7%]" />
+          <col className="w-[11%]" />
+          <col className="w-[7%]" />
+          <col className="w-[12%]" />
         </colgroup>
         <thead>
           <tr className="bg-muted/40 text-muted-foreground">
@@ -95,7 +87,6 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
             <th className="px-2 py-1.5 text-right font-semibold">Total</th>
             <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">USD/day</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
           </tr>
         </thead>
         <tbody>
@@ -159,7 +150,6 @@ const ResultRow = memo(function ResultRow({
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
-  const usdDayDelta = formatDeltaUsdDay(row.usdPerDayMetric?.delta ?? null);
 
   return (
     <tr className="border-t border-border/30 transition-colors hover:bg-muted/20">
@@ -202,7 +192,6 @@ const ResultRow = memo(function ResultRow({
       <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground/70 whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
-      <DeltaCell value={usdDayDelta} />
     </tr>
   );
 });
