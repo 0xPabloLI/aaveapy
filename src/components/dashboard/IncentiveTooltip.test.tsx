@@ -971,7 +971,7 @@ describe('IncentiveTooltip', () => {
       expect(merklHeader).toBeDefined();
     });
 
-    it('uses grid layout for vertical APR alignment between opp header and campaign rows', () => {
+    it('uses flex layout so header and campaign APR values align to the right', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
         merklSupplys: [{
@@ -990,8 +990,10 @@ describe('IncentiveTooltip', () => {
       expect(campaignAprs.length).toBeGreaterThanOrEqual(1);
       const headerRow = headerApr!.parentElement!;
       const campaignRow = campaignAprs[0].parentElement!;
-      expect(headerRow.className).toContain('grid-cols-[1fr_5rem]');
-      expect(campaignRow.className).toContain('grid-cols-[1fr_5rem]');
+      expect(headerRow.className).toContain('flex');
+      expect(campaignRow.className).toContain('flex');
+      expect(headerRow.className).not.toContain('grid-cols-[1fr_5rem]');
+      expect(campaignRow.className).not.toContain('grid-cols-[1fr_5rem]');
     });
   });
 });
