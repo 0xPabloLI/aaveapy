@@ -26,8 +26,9 @@ function formatUsd(value: number): string {
 }
 
 function formatUsdPerDay(value: number): string {
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}/day`;
+  if (value < 0) return `-$${Math.abs(value).toFixed(2)}/day`;
+  if (value > 0) return `+$${value.toFixed(2)}/day`;
+  return '$0.00/day';
 }
 
 const formatDeltaUsd = (value: number | null | undefined): string | null => {
@@ -78,8 +79,7 @@ const MetricCell = memo(function MetricCell({
 const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   summary,
 }: PortfolioSummaryCardProps) {
-  const netPositive = summary.netUsdPerDay >= 0;
-  const netColor = netPositive ? 'ds-text-emerald-600' : 'text-destructive';
+  const netColor = 'text-foreground';
   const isMobile = useIsMobile();
 
   const supplyDelta = summary.totalSupplyUsdMetric

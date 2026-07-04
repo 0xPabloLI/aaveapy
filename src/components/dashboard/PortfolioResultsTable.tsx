@@ -18,8 +18,9 @@ function formatUsdCompact(value: number): string {
 }
 
 function formatUsdDay(value: number): string {
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}`;
+  if (value < 0) return `-$${Math.abs(value).toFixed(2)}`;
+  if (value > 0) return `+$${value.toFixed(2)}`;
+  return '$0.00';
 }
 
 const formatDeltaPercent = (value: number | null | undefined): string | null => {
@@ -171,7 +172,7 @@ const ResultRow = memo(function ResultRow({
           </div>
         </div>
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums text-foreground font-medium">
+      <td className={cn('px-2 py-1.5 text-right tabular-nums font-medium', accentClass)}>
         {formatUsdCompact(row.amountUsd)}
       </td>
       <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
