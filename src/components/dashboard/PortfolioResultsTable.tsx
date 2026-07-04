@@ -18,7 +18,7 @@ function formatUsdCompact(value: number): string {
 }
 
 function formatUsdDay(value: number): string {
-  const prefix = value > 0 ? '+' : value < 0 ? '' : '';
+  const prefix = value > 0 ? '+' : '';
   return `${prefix}$${Math.abs(value).toFixed(2)}`;
 }
 
@@ -38,11 +38,13 @@ const formatDeltaUsdDay = (value: number | null | undefined): string | null => {
 
 const DeltaCell = memo(function DeltaCell({
   value,
+  accentClass,
 }: {
   value: string | null;
+  accentClass?: string;
 }) {
   return (
-    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? 'text-foreground/70' : 'text-muted-foreground')}>
+    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? (accentClass ?? 'text-foreground/70') : 'text-muted-foreground')}>
       {value ?? '—'}
     </td>
   );
@@ -145,11 +147,15 @@ interface ResultRowData extends PortfolioPositionResult {
   marketName: string;
 }
 
+const SUPPLY_ACCENT = 'ds-text-emerald-600';
+const BORROW_ACCENT = 'ds-text-brand-cyan';
+
 const ResultRow = memo(function ResultRow({
   row,
 }: {
   row: ResultRowData;
 }) {
+  const accentClass = row.side === 'supply' ? SUPPLY_ACCENT : BORROW_ACCENT;
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
@@ -170,7 +176,7 @@ const ResultRow = memo(function ResultRow({
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-semibold text-foreground truncate">{row.tokenSymbol}</span>
+            <span className={cn('font-semibold truncate', accentClass)}>{row.tokenSymbol}</span>
             <span className="ds-text-10 text-muted-foreground truncate">{row.chainName}</span>
           </div>
         </div>
@@ -178,21 +184,21 @@ const ResultRow = memo(function ResultRow({
       <td className="px-2 py-1.5 text-right tabular-nums text-foreground font-medium">
         {formatUsdCompact(row.amountUsd)}
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
+      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
         {formatPercent(row.nativePercent)}
       </td>
-      <DeltaCell value={nativeDelta} />
-      <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
+      <DeltaCell value={nativeDelta} accentClass={accentClass} />
+      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
         {formatPercent(row.incentivePercent)}
         {row.forecastUnavailableCampaignCount != null && row.forecastUnavailableCampaignCount > 0 && (
           <span className="ds-text-9 text-muted-foreground ml-0.5" title="No forecast data — using current APR">*</span>
         )}
       </td>
-      <DeltaCell value={incentiveDelta} />
-      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-foreground whitespace-nowrap">
+      <DeltaCell value={incentiveDelta} accentClass={accentClass} />
+      <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', accentClass)}>
         {formatPercent(row.totalPercent)}
       </td>
-      <DeltaCell value={totalDelta} />
+      <DeltaCell value={totalDelta} accentClass={accentClass} />
       <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground/70 whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
