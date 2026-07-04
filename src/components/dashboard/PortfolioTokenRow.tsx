@@ -242,6 +242,9 @@ function SideInput({
         )}
       </Tooltip>
       {hasWallet && (() => {
+        const walletDisplay = sideData.inputMode === 'usd'
+          ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
+          : formatNumberInput(formatConvertedAmount(sideData.walletValue!));
         const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
           ? sideData.walletValue! + sideData.deltaRawUsd
           : (sideData.inputMode === 'usd'
@@ -253,21 +256,33 @@ function SideInput({
         const deltaUsdForSign = effectiveUsdForSign - sideData.walletValue!;
         const priceUnavailable = sideData.inputMode !== 'usd' && tokenPriceInUsd === undefined;
         const isModified = !priceUnavailable && Math.abs(deltaUsdForSign) >= 0.005;
+        const effectiveColor = isBorrow
+          ? 'text-[rgb(var(--ds-brand-cyan-rgb))]'
+          : 'text-emerald-600';
+        if (!isModified) {
+          return (
+            <span
+              className="shrink-0 ds-text-10 tabular-nums text-muted-foreground/70 font-normal"
+              aria-label={`Wallet: ${walletDisplay}`}
+            >
+              {walletDisplay}
+            </span>
+          );
+        }
         return (
           <Tooltip>
             <TooltipTrigger asChild>
               <span
-                className={cn(
-                  'shrink-0 ds-text-10 tabular-nums',
-                  isModified ? 'text-foreground' : 'text-muted-foreground/70',
-                )}
-                aria-label={`Effective amount, wallet: ${formatNumberInput(formatConvertedAmount(sideData.walletValue!))}`}
+                className="shrink-0 ds-text-10 tabular-nums inline-flex items-center gap-0.5"
+                aria-label={`Effective: ${effectiveDisplay}, wallet: ${walletDisplay}`}
               >
-                {effectiveDisplay}
+                <span className="text-muted-foreground/70 font-normal">{walletDisplay}</span>
+                <span className="text-border">→</span>
+                <span className={cn(effectiveColor, 'font-bold')}>{effectiveDisplay}</span>
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="ds-text-11">
-              Wallet: {formatNumberInput(formatConvertedAmount(sideData.walletValue!))}
+              Wallet: {walletDisplay}
             </TooltipContent>
           </Tooltip>
         );

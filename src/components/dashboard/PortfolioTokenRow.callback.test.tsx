@@ -357,8 +357,9 @@ describe('PortfolioTokenRow callbacks', () => {
           />,
           { wrapper: Wrapper },
         );
-        const effectiveSpan = screen.getByLabelText(/Effective amount/);
-        const text = effectiveSpan.textContent ?? '';
+        const effectiveSpan = screen.getByLabelText(/Effective/);
+        const effectiveText = effectiveSpan.querySelector('.font-bold')?.textContent ?? effectiveSpan.textContent ?? '';
+        const text = effectiveText;
         const cleaned = text.replace(/,/g, '');
         if (cleaned.includes('.')) {
           const sigDigits = (cleaned.replace(/^0+/, '').replace('.', '').replace(/0+$/, '')).length;
@@ -382,8 +383,9 @@ describe('PortfolioTokenRow callbacks', () => {
           />,
           { wrapper: Wrapper },
         );
-        const effectiveSpan = screen.getByLabelText(/Effective amount/);
-        const text = effectiveSpan.textContent ?? '';
+        const effectiveSpan = screen.getByLabelText(/Effective/);
+        const effectiveText = effectiveSpan.querySelector('.font-bold')?.textContent ?? effectiveSpan.textContent ?? '';
+        const text = effectiveText;
         const cleaned = text.replace(/,/g, '');
         if (cleaned.includes('.')) {
           const sigDigits = (cleaned.replace(/^0+/, '').replace('.', '').replace(/0+$/, '')).length;
