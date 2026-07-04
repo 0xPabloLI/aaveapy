@@ -322,9 +322,11 @@ export const buildIncentiveCurrent = (
   hubBorrowed?: string,
   /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
   pointRateMap?: PointRateMap,
+  /** AAV-1060: Merkl eligibility multiplier (net position constraint). Must match buildIncentiveAfter. */
+  merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
 ): number => {
   const { protocol, merit, merkl, brevis } = getIncentiveSources(reserve, side);
-  const options = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap };
+  const merklOptions = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier, pointRateMap };
 
   const walletPositionUsd = side === 'supply' ? walletSupplyUsd : walletBorrowUsd;
 
@@ -339,15 +341,15 @@ export const buildIncentiveCurrent = (
     // that would dilute TVL.
     const meritPercent = sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd);
     const otherPercent = isApy
-      ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, options)
-      : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, options);
+      ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions)
+      : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions);
     return meritPercent + otherPercent;
   }
 
   // Headline: static rates, no dilution
   return isApy
-    ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, options)
-    : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, options);
+    ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, merklOptions)
+    : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, merklOptions);
 };
 
 export const sumNumberArray = (values?: number[], isApy = false): number => {
@@ -1138,6 +1140,65 @@ export function buildRateSimulationResult({
     ? totalBorrowUsd - borrowInputUsd
     : undefined);
 
+  // AAV-1060: Eligibility ratio and merklGroupMultiplier must be computed before
+  // buildIncentiveCurrent so that aggregate current matches per-source current.
+  const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
+  const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
+  const supplyGrossForEligibility = totalSupplyUsd ?? supplyInputUsd;
+  const supplyBorrowForEligibility = totalBorrowUsd ?? borrowInputUsd;
+  const supplyNetForEligibility = Math.max(supplyGrossForEligibility - supplyBorrowForEligibility, 0);
+  const supplyEligibilityRatio = supplyGrossForEligibility > 0 ? supplyNetForEligibility / supplyGrossForEligibility : 1;
+  const borrowGrossForEligibility = totalBorrowUsd ?? borrowInputUsd;
+  const borrowSupplyForEligibility = totalSupplyUsd ?? supplyInputUsd;
+  const borrowNetForEligibility = Math.max(borrowGrossForEligibility - borrowSupplyForEligibility, 0);
+  const borrowEligibilityRatio = borrowGrossForEligibility > 0 ? borrowNetForEligibility / borrowGrossForEligibility : 1;
+
+  const supplyMeritMerklInputUsd = meritMerklNetPosition ? supplyNetInputUsd : supplyInputUsd;
+  const borrowMeritMerklInputUsd = meritMerklNetPosition ? borrowNetInputUsd : borrowInputUsd;
+  const supplyMeritMerklEligibilityRatio = meritMerklNetPosition ? supplyEligibilityRatio : 1;
+  const borrowMeritMerklEligibilityRatio = meritMerklNetPosition ? borrowEligibilityRatio : 1;
+
+  const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
+    const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
+    const sameReserveRatio = side === 'supply' ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio;
+    return (group) => {
+      const constraint = group.netPositionConstraint;
+      const crossReserveRatio = constraint && crossReservePositions && crossReservePositions.size > 0
+        ? computeCrossReserveEligibilityRatio({
+            sourceSide: constraint.sourceSide,
+            sourceGrossUsd: grossUsd,
+            constraint,
+            crossReservePositions,
+          })
+        : 1;
+      const sameReserveFactor = constraint ? sameReserveRatio : 1;
+      return crossReserveRatio * sameReserveFactor;
+    };
+  };
+
+  const merklCrossReserveNote = (side: RateSide): ((group: MerklOpportunityGroup) => string | null) => {
+    const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
+    return (group) => {
+      const constraint = group.netPositionConstraint;
+      if (!constraint || !crossReservePositions || crossReservePositions.size === 0 || !reserveSymbolById) return null;
+      const netUsd = computeCrossReserveNetEligible({
+        sourceSide: constraint.sourceSide,
+        sourceGrossUsd: grossUsd,
+        constraint,
+        crossReservePositions,
+      });
+      const offsetSymbols = constraint.offsetReserveIds
+        .map((id) => reserveSymbolById?.get(id) ?? id)
+        .filter(Boolean);
+      return buildCrossReserveNetEligibleNote({
+        netUsd,
+        grossUsd,
+        sourceSide: constraint.sourceSide,
+        offsetSymbols,
+      });
+    };
+  };
+
   // Headline (undiluted, static) incentives — raw API values, no TVL forecast, no dilution.
   // Used as reference for deltaIncentive when wallet position exists (dilution gap).
   const supplyHeadlineIncentive = isApy
@@ -1148,19 +1209,19 @@ export function buildRateSimulationResult({
     : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, pointRateMap });
   const supplyCurrentIncentive = buildIncentiveCurrent(
     reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, merklGroupMultiplier('supply'),
   );
   const borrowCurrentIncentive = buildIncentiveCurrent(
     reserve, 'borrow', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, merklGroupMultiplier('borrow'),
   );
   const supplyCurrentIncentiveApr = buildIncentiveCurrent(
     reserve, 'supply', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, merklGroupMultiplier('supply'),
   );
   const borrowCurrentIncentiveApr = buildIncentiveCurrent(
     reserve, 'borrow', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap,
+    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, merklGroupMultiplier('borrow'),
   );
 
   const supplyCurrentTotal = isApy
@@ -1190,73 +1251,6 @@ export function buildRateSimulationResult({
   // Net eligible amounts: supply net eligible = max(supply - borrow, 0),
   // borrow incentive eligible = max(borrow - supply, 0).
   // Gross amounts are used by incentive sources that reward both sides independently.
-  const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
-  const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
-  // totalSupplyUsd/totalBorrowUsd are already resolved by the caller.
-  // Callers are responsible for providing the correct total position:
-  // - Portfolio mode: wallet + delta (from PerReserveInput)
-  // - Single simulation: input USD (caller resolves: input IS total)
-  // - No input: undefined (no position to dilute/accrue)
-  // Eligibility ratio: fraction of gross capital that is net-eligible.
-  // Pool-level APR applies only to the eligible portion; scale to effective APR on gross capital.
-  // AAV-761: use total position (wallet + delta) when available, fallback to delta-only for single sim.
-  const supplyGrossForEligibility = totalSupplyUsd ?? supplyInputUsd;
-  const supplyBorrowForEligibility = totalBorrowUsd ?? borrowInputUsd;
-  const supplyNetForEligibility = Math.max(supplyGrossForEligibility - supplyBorrowForEligibility, 0);
-  const supplyEligibilityRatio = supplyGrossForEligibility > 0 ? supplyNetForEligibility / supplyGrossForEligibility : 1;
-  const borrowGrossForEligibility = totalBorrowUsd ?? borrowInputUsd;
-  const borrowSupplyForEligibility = totalSupplyUsd ?? supplyInputUsd;
-  const borrowNetForEligibility = Math.max(borrowGrossForEligibility - borrowSupplyForEligibility, 0);
-  const borrowEligibilityRatio = borrowGrossForEligibility > 0 ? borrowNetForEligibility / borrowGrossForEligibility : 1;
-
-  const supplyMeritMerklInputUsd = meritMerklNetPosition ? supplyNetInputUsd : supplyInputUsd;
-  const borrowMeritMerklInputUsd = meritMerklNetPosition ? borrowNetInputUsd : borrowInputUsd;
-  const supplyMeritMerklEligibilityRatio = meritMerklNetPosition ? supplyEligibilityRatio : 1;
-  const borrowMeritMerklEligibilityRatio = meritMerklNetPosition ? borrowEligibilityRatio : 1;
-
-  const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
-    const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;
-    const sameReserveRatio = side === 'supply' ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio;
-    return (group) => {
-      const constraint = group.netPositionConstraint;
-      const crossReserveRatio = constraint && crossReservePositions && crossReservePositions.size > 0
-        ? computeCrossReserveEligibilityRatio({
-            sourceSide: constraint.sourceSide,
-            sourceGrossUsd: grossUsd,
-            constraint,
-            crossReservePositions,
-          })
-        : 1;
-      const sameReserveFactor = constraint ? sameReserveRatio : 1;
-      return crossReserveRatio * sameReserveFactor;
-    };
-  };
-
-  const merklCrossReserveNote = (side: RateSide): ((group: MerklOpportunityGroup) => string | null) => {
-    const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;
-    return (group) => {
-      const constraint = group.netPositionConstraint;
-      if (!constraint || !crossReservePositions || crossReservePositions.size === 0 || !reserveSymbolById) return null;
-      const netUsd = computeCrossReserveNetEligible({
-        sourceSide: constraint.sourceSide,
-        sourceGrossUsd: grossUsd,
-        constraint,
-        crossReservePositions,
-      });
-      const offsetSymbols = constraint.offsetReserveIds
-        .map((id) => reserveSymbolById?.get(id) ?? id)
-        .filter(Boolean);
-      return buildCrossReserveNetEligibleNote({
-        netUsd,
-        grossUsd,
-        sourceSide: constraint.sourceSide,
-        offsetSymbols,
-      });
-    };
-  };
-
-  // ── B phase: Incentive after (hasAnyInput → calc, else null) ──
-
   type SourceKey = 'merit' | 'merkl' | 'brevis';
 
   interface SideSourceContext {

@@ -14,162 +14,157 @@ Merkl DUTCH_AUCTION campaign 的 `campaignApr = 0`（headline 为零），需要
 
 ## 根因分析
 
-### 数据流追踪
+### Bug 1: `merklGroupMultiplier` 的 `grossUsd` 用 delta-only，cross-reserve eligibility 跳过
 
-```
-Portfolio 输入:
-  supplyInputUsd = 0 (无新 delta)
-  borrowInputUsd = 1 (有 borrow delta)
-  totalSupplyUsd = 1042 (wallet position)
+**位置**: `rateSimulationCalculator.ts:1221`
 
-→ supplyNetInputUsd = max(0 - 1, 0) = 0          [行 1199, delta-only]
-→ supplyNetForEligibility = max(1042 - borrow, 0)   [行 1211, total-based]
-
-→ supplyMeritMerklInputUsd = supplyNetInputUsd = 0   [行 1218, delta-only!]
-→ supplyEligibilityRatio = supplyNetForEligibility / supplyGrossForEligibility  [行 1212, total-based]
-
-→ buildForecastMerklOpportunities(inputUsd = 0)       [行 1312]
-  → forecastMerklApr(breakdown, inputUsd=0, ...)
-    → inputUsd <= 0 && currentApr == 0
-    → forecastWithTVL(merged, latestTvl)               ← 计算出 2.65%
-```
-
-等等——如果 `forecastMerklApr` 返回 2.65%，为什么 `sumAfter` 返回 0？
-
-**真正的根因不在 `forecastMerklApr`，而在 `sumCurrent`**：
-
-```
-sumCurrent (行 1306-1309):
-  sumMerklIncentiveApr(data, rate, { forecastStates, merklGroupMultiplier })
-  → sumActiveCampaignBreakdownValues(opportunities, {
-      mapValue: forecastMerklApr(breakdown, 0, forecastStates, rate)  ← 返回 2.65%
-      groupMultiplier: merklGroupMultiplier                            ← 这是关键！
-    })
+```ts
+const merklGroupMultiplier = (side: RateSide) => {
+  const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd; // delta-only = 0!
+  // ...
+  return (group) => {
+    const crossReserveRatio = constraint && crossReservePositions && ...
+      ? computeCrossReserveEligibilityRatio({
+          sourceSide: constraint.sourceSide,
+          sourceGrossUsd: grossUsd,  // 0!
+          constraint,
+          crossReservePositions,
+        })
+      : 1;
+    const sameReserveFactor = constraint ? sameReserveRatio : 1;
+    return crossReserveRatio * sameReserveFactor;
+  };
+};
 ```
 
-`merklGroupMultiplier` (行 1223-1238) 计算的是 **eligibility ratio**：
+`computeCrossReserveEligibilityRatio`（netLendingCrossReserve.ts:34）在 `sourceGrossUsd <= 0` 时返回 1（跳过缩放）。
 
-```js
-merklGroupMultiplier = (side) => {
-  const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;  // 0 for supply!
-  const sameReserveRatio = supplyMeritMerklEligibilityRatio;              // 基于 total position
-  const crossReserveRatio = ...;
+**后果**：wallet supply $1042，cross-reserve borrow $600，正确 ratio = (1042-600)/1042 ≈ 0.42。但 `sourceGrossUsd=0` → ratio=1 → **完全不缩放**，用户看到全额 APR 而非被 cross-reserve offset 缩放后的值。
 
-  const sameReserveFactor = constraint ? sameReserveRatio : 1;
-  return crossReserveRatio * sameReserveFactor;
+**同样问题存在于 `merklCrossReserveNote`**（行 1238-1249），也用 `supplyInputUsd` 作为 `sourceGrossUsd`。
+
+**修复**：`grossUsd` 改为 `supplyGrossForEligibility`（total-based），与 `sameReserveRatio` 的口径一致。
+
+### Bug 2: `buildIncentiveCurrent` 的 Merkl 部分 没有 `merklGroupMultiplier`
+
+**位置**: `rateSimulationCalculator.ts:336-344`
+
+```ts
+if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
+  const meritPercent = sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd);
+  const otherPercent = isApy
+    ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, options)
+    : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, options);
+  return meritPercent + otherPercent;
 }
 ```
 
-**`grossUsd` 用的是 `supplyInputUsd`（= 0），而 `sameReserveRatio` 基于 total position 算。** 但 `merklGroupMultiplier` 只在有 `netPositionConstraint` 的 group 上应用 `sameReserveRatio`。没有 constraint 的 group 返回 1。
+`calculateTotalIncentiveApr/Apy` → `sumMerklIncentiveApr(data, rate, options)` — `options` 没有 `merklGroupMultiplier`。
 
-所以 `merklGroupMultiplier` 本身不是问题——它只在有 constraint 时缩放。
-
-### 真正的 bug 位置
-
-重新回到 `buildIncentiveAfter` (行 885-910)：
-
-```js
-const forecastedMerkl = buildForecastMerklOpportunities({
-  inputUsd: netInputUsd,  // = supplyMeritMerklInputUsd = 0
-  ...
-});
-// forecastedMerkl 的 breakdown.campaignApr 被 forecastMerklApr 替换为 forecast 值
-// 对于 DUTCH_AUCTION + campaignApr=0 + inputUsd=0: forecastMerklApr 返回 2.65%
-
-return sumMerklIncentiveApr(forecastedMerkl, ...)  // 应该返回 2.65%
+**对比 `buildIncentiveAfter`**（行 905-907）：
+```ts
+sumMerklIncentiveApr(forecastedMerkl, tydroPointToUsdRate, {
+  whitelistMerklCampaignIds, merklGroupMultiplier, campaignAccessStatuses, pointRateMap
+})
 ```
 
-但 `sumMerklIncentiveApr` 内部 `sumActiveCampaignBreakdownValues` 的 `getStartDate` 返回 `breakdown.campaignStartedAt`——如果 API 数据有这个字段，`isCampaignActive` 应该通过。
+`buildIncentiveAfter` **有** `merklGroupMultiplier`，`buildIncentiveCurrent` **没有**。
 
-**在 production API 上，Merkl breakdown 都有 `campaignStartedAt`，计算应返回正确值。**
+**后果**：
+- `currentIncentive`（aggregate）= Merkl headline（无 eligibility 缩放）
+- `afterIncentive`（aggregate）= Merkl forecast × eligibility ratio
+- 当 eligibility ratio < 1 时，`after < current`，`Math.min(after, current)` 截断到 after
+- dispatch map 的 per-source `current` **有** `merklGroupMultiplier` → per-source sum < aggregate current → **per-source sum 与 aggregate current 不一致**
 
-### 结论：bug 是否存在取决于数据源
+**这也意味着行 1297 的测试 `expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 1)` 在有 netPositionConstraint 时可能失败**（但当前测试数据没有 constraint 所以通过了）。
 
-1. **Production API**: Merkl breakdown 有 `campaignStartedAt`，`forecastMerklApr` 正确返回 2.65%，`sumMerklIncentiveApr` 返回正确值
-2. **Staging API**: 没有 Merkl 数据，无法验证
-3. **用户报告的场景**: 可能是 campaign 已结束（`campaignEndedAt` 过期），或 forecast state 不完整
+**修复**：`buildIncentiveCurrent` 的 Merkl 部分也需要传 `merklGroupMultiplier`。但 `buildIncentiveCurrent` 是独立函数，不知道 portfolio context 中的 `merklGroupMultiplier`。需要把 `merklGroupMultiplier` 作为参数传入。
 
-### 但还有一个语义问题
+### 非Bug: forecast 计算本身是正确的
 
-即使数值正确，**`meritMerklInputUsd = 0` 意味着 forecast APR 是基于当前 TVL 计算的，不包含用户 wallet position 对 TVL 的贡献**。
+`forecastMerklApr(breakdown, 0, forecastStates, rate)` 走 `inputUsd<=0 && currentApr==0` 分支 → `forecastWithTVL(merged, latestTvl)` → 正确的 2.65%。
 
-这是**正确的**行为——wallet position 已经在 `latestTvl` 中，不应再加到 `inputUsd`（否则 double-count）。
+`buildForecastMerklOpportunities(inputUsd=0)` 也会触发 forecast → `sumMerklIncentiveApr` 对 forecasted 数据做 sum → 正确值。
 
-**真正的语义问题**是：当 wallet position 存在但 `inputUsd = 0` 时：
-- `forecastMerklApr` 返回的是 **headline forecast APR**（基于总 TVL，不包含任何 position cap dilution）
-- 但 Merit 的 `sumCurrent` 已经对 wallet position 做了 cap dilution（`applyPositionCap`）
-- **Merkl 没有等价的 wallet position dilution 逻辑**
+**`meritMerklInputUsd = 0` 对 forecast 本身没有错误**——wallet position 已在 `latestTvl` 中，不应加到 `inputUsd`（否则 double-count）。
 
-这是 Merkl 和 Merit 之间的不一致：
-- Merit: `sumCurrent(inputUsd=0, totalPositionUsd=walletPositionUsd)` → cap dilution
-- Merkl: `sumCurrent` 没有 `totalPositionUsd` 参数 → 无 cap dilution
+### 非Bug: Merkl 不需要 Merit 的 position cap dilution
 
-Merkl 的 `netPositionConstraint` 只影响 eligibility ratio（乘法缩放），不影响 forecast 计算本身。
+Merit 有 `depositCeilingUsd` → 超过 cap 的部分不赚 incentive → 需要 `applyPositionCap` 稀释。
+Merkl DUTCH_AUCTION 没有 position cap → 所有 deposit 都按同样 APR 赚 incentive → 不需要 dilution。
+
+但 Merkl **有** `netPositionConstraint` → supply < borrow 时 incentive 应被缩放 → 这个缩放必须基于 total position（wallet + delta），不能只看 delta。
 
 ## 决策
 
-### 方案 A: Merkl `meritMerklInputUsd` 改用 total position 而非 delta-only
+### 方案: 修复 Bug 1 + Bug 2
 
-当 `totalSupplyUsd` 存在且 `hasAnyInput=true` 时，`supplyMeritMerklInputUsd` 改为 `max(totalSupplyUsd - totalBorrowUsd, 0)`。
+**Bug 1 修复**：`merklGroupMultiplier` 和 `merklCrossReserveNote` 的 `grossUsd` 从 delta-only（`supplyInputUsd`/`borrowInputUsd`）改为 total-based（`supplyGrossForEligibility`/`borrowGrossForEligibility`）。
 
-**风险**: TVL double-count。`forecastMerklApr` 会把 `inputUsd` 加到 `latestTvl` 上，但 `latestTvl` 已经包含了 wallet position。结果 APR 被低估。
+```ts
+// Before:
+const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;
 
-**不可行**。
+// After:
+const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
+```
 
-### 方案 B: Merkl 加 wallet position dilution（类似 Merit 的 `applyPositionCap`）
+这与 `sameReserveRatio`（行 1222）的口径一致——`supplyMeritMerklEligibilityRatio` 基于 `supplyGrossForEligibility` 计算，`crossReserveRatio` 也应该用同样的分母。
 
-给 `forecastMerklApr` / `sumMerklIncentiveApr` 加 `totalPositionUsd` 参数，对 forecast 结果做 `applyPositionCap` 稀释。
+**Bug 2 修复**：`buildIncentiveCurrent` 增加 `merklGroupMultiplier` 参数，传入 Merkl 的 eligibility 缩放函数。
 
-**问题**: Merkl DUTCH_AUCTION 没有 position cap 概念。Merit 有 cap 是因为 Merit 协议对存款有上限约束；Merkl 没有。这个 dilution 的语义不成立。
+```ts
+// buildIncentiveCurrent 签名增加:
+merklGroupMultiplier?: (group: MerklOpportunityGroup) => number
 
-**不可行**（至少不能直接复用 Merit 的 cap dilution）。
+// wallet 分支中:
+const otherPercent = isApy
+  ? sumMerklIncentiveApy(merkl, tydroPointToUsdRate, { ..., merklGroupMultiplier })
+  : sumMerklIncentiveApr(merkl, tydroPointToUsdRate, { ..., merklGroupMultiplier });
+```
 
-### 方案 C: 分离 "forecast inputUsd" 和 "offset inputUsd"
+headline 分支（行 348-350）同理。
 
-当前 `meritMerklInputUsd` 同时用于两个目的：
-1. 传给 `forecastMerklApr` 作为 hypothetical deposit 量（不应包含 wallet）
-2. 传给 `buildMeritCampaignDetails` / `buildMerklCampaignDetails` 作为 offset 计算的输入（应该包含 wallet）
+**调用侧**（行 1149-1167）需要构造 `merklGroupMultiplier` 并传入。当前 `buildIncentiveCurrent` 在 `buildRateSimulationResult` 中被调用时，`merklGroupMultiplier` 还未定义（它在行 1220 才定义）。需要把 `merklGroupMultiplier` 的构造提取到 `buildIncentiveCurrent` 调用之前，或者在 `buildIncentiveCurrent` 内部构造。
 
-**方案 C-1**: Merkl `sumAfter` 中，当 `meritMerklInputUsd = 0` 但 `totalSupplyUsd > 0` 时，用 `totalSupplyUsd` 替代 `meritMerklInputUsd` 传给 `buildForecastMerklOpportunities`——但不用来加 TVL，而是用来**确保 forecast 被触发**（即 `inputUsd > 0` 走 forecast 分支而非 `inputUsd <= 0` 的 fallback）。
+### 不修改的部分
 
-等等，`inputUsd <= 0 && currentApr == 0` 分支已经会做 `forecastWithTVL(merged, latestTvl)` 计算 forecast。所以 forecast 是被触发的。
+- `meritMerklInputUsd` 保持 delta-only（不改用 total position）——避免 TVL double-count
+- Merkl 不加 position cap dilution——Merkl 没有 cap 概念
+- `forecastMerklApr` 的 `inputUsd=0` 分支逻辑正确，不修改
 
-### 重新审视问题
+## 影响范围
 
-让我重新确认：**在 production 环境下，Portfolio 模式 + wallet supply + no supply delta + borrow delta，Merkl DUTCH_AUCTION 的 incentive APR 到底是不是 0？**
+### Bug 1 影响
 
-从代码分析：
-1. `buildIncentiveCurrent` → `sumMerklIncentiveApr` → `forecastMerklApr(bd, 0, forecastStates, rate)` → `forecastWithTVL(merged, latestTvl)` → **2.65%** ✓
-2. `buildIncentiveAfter` → `buildForecastMerklOpportunities(inputUsd=0)` → `forecastMerklApr(bd, 0, ...)` → **2.65%** ✓
-3. `afterIncentive = Math.min(2.65%, 2.65%) = 2.65%` ✓
-4. `deltaIncentive = hasInput ? after - current : walletDilution` → `2.65% - 2.65% = 0%`
+| 场景 | 影响 |
+|------|------|
+| `supplyInputUsd > 0` | 不受影响（`grossUsd = supplyInputUsd` 有值） |
+| `supplyInputUsd = 0` + wallet position + cross-reserve constraint | **修复**：cross-reserve ratio 从 1 变为正确值 |
+| `supplyInputUsd = 0` + 无 cross-reserve constraint | 不受影响（`sameReserveFactor = 1`，cross-reserve ratio 不参与） |
 
-**deltaIncentive = 0 是正确的**——after 和 current 相同（都是基于当前 TVL 的 forecast），没有变化。
+### Bug 2 影响
 
-但 `afterIncentive = 2.65%` 应该在 UI 上显示。**如果用户看到 0，那是 UI 显示层的问题，不是计算层。**
+| 场景 | 影响 |
+|------|------|
+| wallet position + netPositionConstraint | **修复**：aggregate current 和 per-source current 一致 |
+| 无 wallet position | 不受影响（走 headline 分支，无 multiplier） |
+| wallet position + 无 netPositionConstraint | 轻微影响（multiplier=1，结果不变） |
 
-### 真正需要确认的
+## 测试计划
 
-用户看到的 "0" 到底是：
-1. `afterIncentive = 0`（计算层 bug）
-2. `currentIncentive = 0`（current 计算层 bug）
-3. delta 显示为 0 但实际 APR 有值（显示层 bug）
-4. campaign 已结束导致 `isCampaignActive` 返回 false
-
-**需要用户在 production 环境验证后才能确定修复方向。**
-
-## 待确认问题
-
-1. 用户看到 0 的环境：production 还是 staging？具体哪个 reserve？
-2. 看到的是 `currentIncentive = 0` 还是 `afterIncentive = 0`？
-3. 是否是 campaign 已结束（`campaignEndedAt` 已过期）？
-4. Merkl 的 `netPositionConstraint` 是否对 Ink WETH 生效？
+1. Calculator 层新增：`supplyInputUsd=0` + `totalSupplyUsd=1042` + `netPositionConstraint` + cross-reserve offset
+2. 验证 `merklGroupMultiplier` 返回值 < 1（被 cross-reserve offset 缩放）
+3. 验证 `buildIncentiveCurrent` 的 Merkl 值 = per-source `sumCurrent` 的 Merkl 值
+4. 验证 `perSourceSum ≈ currentIncentive`（行 1295-1297 的断言在 constraint 场景下也通过）
+5. Hook 层现有测试不受影响（用 `supplyInput='1000'`，不触发 bug）
 
 ## 参考
 
-- `src/lib/rateSimulationCalculator.ts:1196-1221` — netInputUsd vs netForEligibility
-- `src/lib/rateSimulationCalculator.ts:1310-1318` — Merkl sumAfter 用 meritMerklInputUsd
-- `src/lib/merklForecast.ts:285-308` — forecastMerklApr 的 inputUsd 分支
-- `src/lib/incentiveAggregation.ts:79-101` — sumMerklIncentiveApr
-- `src/lib/campaignGroups.ts:21-32` — isCampaignActive 对 campaignStartedAt 的依赖
+- `src/lib/rateSimulationCalculator.ts:1220-1236` — `merklGroupMultiplier`（Bug 1）
+- `src/lib/rateSimulationCalculator.ts:1238-1249` — `merklCrossReserveNote`（Bug 1）
+- `src/lib/rateSimulationCalculator.ts:336-344` — `buildIncentiveCurrent` wallet 分支（Bug 2）
+- `src/lib/rateSimulationCalculator.ts:348-350` — `buildIncentiveCurrent` headline 分支（Bug 2）
+- `src/lib/netLendingCrossReserve.ts:32-37` — `computeCrossReserveEligibilityRatio` sourceGrossUsd<=0 返回 1
+- `src/lib/incentiveAggregation.ts:79-101` — `sumMerklIncentiveApr`
 - AAV-761, AAV-771 — wallet position dilution 相关修复
