@@ -151,16 +151,17 @@ describe('PortfolioTokenRow render', () => {
 
   it('shows token amount in token input mode', () => {
     renderRow({
-      supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
+      supplyOverrides: { amount: '100', walletValue: 2500, inputMode: 'token' },
       tokenPriceInUsd: 50,
     });
-    const el = screen.getByLabelText(/effective.*100.*wallet/i);
+    const el = screen.getByLabelText(/effective.*100.*wallet.*50/i);
+    expect(el.textContent).toContain('50');
     expect(el.textContent).toContain('100');
   });
 
   it('shows wallet only when token price is unavailable in token mode (not modified)', () => {
     renderRow({
-      supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
+      supplyOverrides: { amount: '100', walletValue: 2500, inputMode: 'token' },
       tokenPriceInUsd: undefined,
     });
     const el = screen.getByLabelText(/wallet/i);
@@ -181,6 +182,29 @@ describe('PortfolioTokenRow render', () => {
     });
     expect(screen.queryByLabelText(/wallet/i)).toBeNull();
     expect(screen.queryByLabelText(/effective/i)).toBeNull();
+  });
+
+  it('shows borrow wallet → effective with cyan color when modified', () => {
+    renderRow({
+      borrowOverrides: { amount: '3000', walletValue: 2000, inputMode: 'usd' },
+    });
+    const el = screen.getByLabelText(/effective.*3,000.*wallet.*2,000/i);
+    expect(el).toBeTruthy();
+    expect(el.textContent).toContain('2,000');
+    expect(el.textContent).toContain('→');
+    expect(el.textContent).toContain('3,000');
+    const effectiveSpan = el.querySelector('.ds-text-brand-cyan');
+    expect(effectiveSpan).toBeTruthy();
+    expect(effectiveSpan?.textContent).toBe('3,000');
+  });
+
+  it('shows borrow wallet only with muted color when synced', () => {
+    renderRow({
+      borrowOverrides: { amount: '2000', walletValue: 2000, inputMode: 'usd' },
+    });
+    const el = screen.getByLabelText(/wallet.*2,000/i);
+    expect(el).toBeTruthy();
+    expect(el.className).toContain('text-muted-foreground');
   });
 
   it('minus button is not absolute-positioned (inline on the left)', () => {
