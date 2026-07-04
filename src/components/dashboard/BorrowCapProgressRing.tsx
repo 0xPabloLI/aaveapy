@@ -6,6 +6,8 @@ import { formatScenarioSize } from '@/lib/formatters';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
+export const LOW_LIQUIDITY_THRESHOLD_USD = 10_000;
+
 function SortArrowButton({
   onClick,
   isActive,
@@ -154,7 +156,7 @@ export function BorrowCapProgressContent({
     : null;
 
   const availableLiquidityArrow = onSortAvailableLiquidity
-    ? <SortArrowButton onClick={onSortAvailableLiquidity} isActive={!!isSortAvailableLiquidityActive} sortOrder={availableLiquiditySortOrder} ariaLabel="Sort by available liquidity" className={availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
+    ? <SortArrowButton onClick={onSortAvailableLiquidity} isActive={!!isSortAvailableLiquidityActive} sortOrder={availableLiquiditySortOrder} ariaLabel="Sort by available liquidity" className={availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
     : null;
 
   return (
@@ -175,7 +177,7 @@ export function BorrowCapProgressContent({
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available liquidity</span>
-        <span className={`font-medium tabular-nums ${availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
+        <span className={`font-medium tabular-nums ${availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
           {formatScenarioSize(availableLiquidityUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })}
           {availableLiquidityArrow}
         </span>
