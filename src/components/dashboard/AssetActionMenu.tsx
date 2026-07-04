@@ -32,7 +32,7 @@ export interface AssetActionMenuProps {
   /** Chain name for explorer URL fallback (needed for V4 markets). */
   chainName?: string;
   /** Chain ID for icon lookup. */
-  chainId?: number;
+  chainId: number;
   /** V4 Hub contract address (for explorer links). */
   hubAddress?: string;
   /** V4 Spoke contract address (for explorer links). */
@@ -86,7 +86,7 @@ export function AssetActionMenu({
   if (!tokenAddress) return null;
 
   const chainName = reserveChainName ?? deriveChainFromMarketName(marketName);
-  const chainIconSrc = chainId != null ? getChainIconSrc(chainId) : undefined;
+  const chainIconSrc = getChainIconSrc(chainId);
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
   const tydroUrl = buildTydroReserveUrl({ marketName, tokenAddress });

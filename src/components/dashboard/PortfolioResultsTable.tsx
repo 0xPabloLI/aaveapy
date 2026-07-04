@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
+import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioPositionResult, PortfolioReserveEntry } from '@/types/portfolio';
 
@@ -60,7 +61,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   const entryMap = new Map(entries.map(e => [e.reserveId, e]));
   const rows: ResultRowData[] = results.map((r) => {
     const entry = entryMap.get(r.reserveId);
-    return { ...r, tokenSymbol: entry?.tokenSymbol ?? '?', chainName: entry?.chainName ?? '', marketName: entry?.marketName ?? '' };
+    return { ...r, tokenSymbol: entry?.tokenSymbol ?? '?', chainName: entry?.chainName ?? '', chainId: entry?.chainId ?? -1, marketName: entry?.marketName ?? '' };
   });
 
   const supplyRows = rows.filter((r) => r.side === 'supply');
@@ -142,6 +143,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
 interface ResultRowData extends PortfolioPositionResult {
   tokenSymbol: string;
   chainName: string;
+  chainId: number;
   marketName: string;
 }
 
@@ -164,7 +166,16 @@ const ResultRow = memo(function ResultRow({
     <tr className="border-t border-border/30 transition-colors hover:bg-muted/20">
       <td className="px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
-          <TokenIcon symbol={row.tokenSymbol} size={16} />
+          <div className="relative">
+            <TokenIcon symbol={row.tokenSymbol} size={16} />
+            {row.chainId > 0 && (
+              <img
+                src={getChainIconSrc(row.chainId)}
+                alt=""
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full"
+              />
+            )}
+          </div>
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-foreground truncate">{row.tokenSymbol}</span>
             <span className="ds-text-10 text-muted-foreground truncate">{row.chainName}</span>

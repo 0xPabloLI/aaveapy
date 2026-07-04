@@ -7,6 +7,7 @@ const makeEntry = (
 ): PortfolioReserveEntry => ({
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
+  chainId: 1,
   tokenSymbol: 'USDC',
   supply: { amount: '1000', inputMode: 'usd', walletValue: null },
   borrow: { amount: '', inputMode: 'usd', walletValue: null },

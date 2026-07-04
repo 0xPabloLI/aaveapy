@@ -97,6 +97,7 @@ describe('convertWalletPositionsToEntries', () => {
     expect(result[0].isOrphan).toBe(true)
     expect(result[0].marketName).toBe('')
     expect(result[0].chainName).toBe('')
+    expect(result[0].chainId).toBe(-1)
   })
 
   it('handles position with amountUsd = 0', () => {

@@ -5,6 +5,7 @@ import type { PortfolioReserveEntry } from '@/types/portfolio'
 const makeEntry = (o: Partial<PortfolioReserveEntry> & { reserveId: string }): PortfolioReserveEntry => ({
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
+  chainId: 1,
   tokenSymbol: 'USDC',
   supply: { amount: '1000', inputMode: 'usd', walletValue: null },
   borrow: { amount: '', inputMode: 'usd', walletValue: null },
