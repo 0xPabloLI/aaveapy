@@ -169,7 +169,7 @@ The tooltip does not render a separate offset note — `opportunity.message` is 
 
 | Date | Change | Commit |
 |---|---|---|
-| 2026-07-04 | Add IncentiveTooltip position cap (campaignName prefix + "only") and offset note rendering rules | _(pending)_ |
+| 2026-07-04 | Add IncentiveTooltip position cap (campaignName prefix + "only"); no separate offset note (sourceMessageLines already renders it) | `fa8afc69` |
 | 2026-06-29 | Add campaignName (Merit/Merit double yield), bdLabel extraction order, offsetNote propagation rules, Portfolio CapWarningRow color/icon spec, `│` separator | `d9f3ff15` |
 | 2026-06-18 | Document `currentExceeded` data flow; position cap classified by scope (supply/borrow/combine) not source; rename `isSharedSupplyBorrow` → `isCombineCap`, `· supply + borrow` → `· combine` | _(pending)_ |
 | 2026-06-18 | Initial spec — protocol cap, incentive cap, button copy | `bdf3afe5` |
