@@ -140,6 +140,22 @@ offsetNote is currently at **source level** in the data model, but propagated to
 capNote and offsetNote are joined with `│` (U+2502 BOX DRAWINGS LIGHT VERTICAL) on the same line in Portfolio.
 offsetNote-only entries (no capWarning, no capNote) display the offsetNote in muted color without a capNote label.
 
+### IncentiveTooltip rendering
+
+| Element | Template | Example |
+|---|---|---|
+| Position cap (with campaignName) | `{campaignName} incentive on first {X} only` | `Self Authentication incentive on first $1,000.00 only` |
+| Position cap (without campaignName) | `Incentive on first {X} only` | `Incentive on first $1,000.00 only` |
+| Offset note | `{opportunity.message}` (when `netPositionConstraint` exists) | `Earn rewards on your net lending position (GHO supply minus GHO, USDT0 borrows) on Aave on Plasma` |
+
+`campaignName` is populated per source:
+- **Merit**: `extractActionLabelFromMeritMessage(breakdown.message)` → `extractActionLabelFromMeritMessage(group.message)` → fallback `"${groupName} base"` or `"${groupName} double yield"`
+- **Brevis**: `getBrevisDisplayLabel(brevis, ...)` (same as source name)
+- **Merkl**: `opportunity.name` (same as source name)
+- **Protocol**: no campaignName (no position cap in protocol incentives)
+
+Offset note only appears for Merkl sources with `netPositionConstraint`. The tooltip displays `opportunity.message` as a muted text paragraph below the campaigns section.
+
 ---
 
 ## 3. UI Button Copy
@@ -154,6 +170,7 @@ offsetNote-only entries (no capWarning, no capNote) display the offsetNote in mu
 
 | Date | Change | Commit |
 |---|---|---|
+| 2026-07-04 | Add IncentiveTooltip position cap (campaignName prefix + "only") and offset note rendering rules | _(pending)_ |
 | 2026-06-29 | Add campaignName (Merit/Merit double yield), bdLabel extraction order, offsetNote propagation rules, Portfolio CapWarningRow color/icon spec, `│` separator | `d9f3ff15` |
 | 2026-06-18 | Document `currentExceeded` data flow; position cap classified by scope (supply/borrow/combine) not source; rename `isSharedSupplyBorrow` → `isCombineCap`, `· supply + borrow` → `· combine` | _(pending)_ |
 | 2026-06-18 | Initial spec — protocol cap, incentive cap, button copy | `bdf3afe5` |

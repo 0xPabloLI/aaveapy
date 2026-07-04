@@ -23,6 +23,7 @@ import {
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
+import { extractActionLabelFromMeritMessage } from '@/lib/rateSimulationCalculator';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -75,6 +76,7 @@ interface IncentiveCampaign {
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
   positionCap?: number;
+  campaignName?: string;
   lastEndedCampaign?: {
     startedAt: string;
     endedAt: string;
@@ -93,6 +95,7 @@ interface IncentiveSource {
   requiredTokens?: string[] | string;
   campaigns?: IncentiveCampaign[];
   rewardTokenIconUrl?: string;
+  offsetNote?: string;
 }
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -107,6 +110,11 @@ const darkSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, stri
   Brevis: '/icons/partners/brevis-white.svg',
   Merkl: '/icons/partners/merkl-white.svg',
   ACI: '/icons/partners/aci-white.svg',
+};
+
+const extractOffsetNoteFromMessage = (message: IncentiveSource['message']): string | undefined => {
+  if (typeof message === 'string' && message.trim()) return message.trim();
+  return undefined;
 };
 
 const getSourceIcon = (
@@ -553,6 +561,10 @@ const IncentiveTooltip = ({
 
         const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = activeBreakdowns.map((breakdown, bdIndex) => {
           const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
+          const groupName = group.name?.trim() || 'Merit';
+          const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
+          const bdGroupLabel = extractActionLabelFromMeritMessage(group.message);
+          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCap != null && breakdown.positionCap > 0 ? `${groupName} double yield` : `${groupName} base`) : groupName);
           return {
             value,
             startDate: breakdown.campaignStartedAt,
@@ -561,6 +573,7 @@ const IncentiveTooltip = ({
             sourceType: 'ACI',
             campaignType: breakdown.campaignType,
             ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
+            campaignName: bdLabel,
           };
         });
 
@@ -602,6 +615,7 @@ const IncentiveTooltip = ({
               aprCap: breakdown.aprCap ?? brevis.aprCap,
               ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {}),
               ...(brevis.positionCap != null && brevis.positionCap > 0 && breakdown.positionCap == null ? { positionCap: brevis.positionCap } : {}),
+              campaignName: name,
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -648,22 +662,24 @@ const IncentiveTooltip = ({
               link: oppLink,
               message: opportunity.message,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                  campaigns: [{
-                    value: included ? displayValue : 0,
-                    rawValue: displayValue,
-                    whitelistOnly,
-                    included,
-                    startDate: breakdown.campaignStartedAt,
-                    endDate: breakdown.campaignEndedAt,
-                    campaignId: breakdown.campaignId,
-                    ...(campaignUrl ? { campaignUrl } : {}),
-                    sourceType: 'Merkl',
-               campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
-                     aprCap: breakdown.aprCap,
-                     rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                     rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                      lastEndedCampaign: breakdown.lastEndedCampaign,
-                  }],
+              ...(opportunity.netPositionConstraint && opportunity.message ? { offsetNote: extractOffsetNoteFromMessage(opportunity.message) } : {}),
+                   campaigns: [{
+                     value: included ? displayValue : 0,
+                     rawValue: displayValue,
+                     whitelistOnly,
+                     included,
+                     startDate: breakdown.campaignStartedAt,
+                     endDate: breakdown.campaignEndedAt,
+                     campaignId: breakdown.campaignId,
+                     ...(campaignUrl ? { campaignUrl } : {}),
+                     sourceType: 'Merkl',
+                campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
+                      aprCap: breakdown.aprCap,
+                      rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
+                      rewardTokenSymbol: breakdown.rewardTokenSymbol,
+                       lastEndedCampaign: breakdown.lastEndedCampaign,
+                       campaignName: opportunity.name || 'Merkl',
+                   }],
             });
           }
         }
@@ -814,7 +830,7 @@ const IncentiveTooltip = ({
         {renderCampaignTypeDescription(campaign)}
         {campaign.positionCap != null && campaign.positionCap > 0 && (
           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
-            Incentive on first {formatUsd(campaign.positionCap)} only
+            {campaign.campaignName ? `${campaign.campaignName} incentive on first ${formatUsd(campaign.positionCap)} only` : `Incentive on first ${formatUsd(campaign.positionCap)} only`}
           </p>
         )}
         {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}
@@ -871,6 +887,9 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
+          {source.offsetNote && (
+            <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">{source.offsetNote}</p>
+          )}
         </>
       );
     }
@@ -918,6 +937,9 @@ const IncentiveTooltip = ({
               </li>
             ))}
           </ul>
+        )}
+        {source.offsetNote && (
+          <p className="ds-tooltip-body text-muted-foreground">{source.offsetNote}</p>
         )}
       </div>
     );
