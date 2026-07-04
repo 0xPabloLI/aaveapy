@@ -44,6 +44,7 @@ describe('convertWalletPositionsToEntries', () => {
       reserveId: 'eth-usdc-v3',
       marketName: 'AaveV3Ethereum',
       chainName: 'Ethereum',
+      chainId: 1,
       tokenSymbol: 'USDC',
       supply: { amount: '5000', inputMode: 'usd', walletValue: 5000, source: 'onchain-v3' },
       borrow: { amount: '', inputMode: 'usd', walletValue: null },

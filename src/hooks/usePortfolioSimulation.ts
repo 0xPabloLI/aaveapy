@@ -142,6 +142,7 @@ export interface PortfolioSimulationActions {
     reserveId: string;
     marketName: string;
     chainName: string;
+    chainId: number;
     tokenSymbol: string;
     restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
   }) => void;
@@ -183,6 +184,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       reserveId: string;
       marketName: string;
       chainName: string;
+      chainId: number;
       tokenSymbol: string;
       restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
     }) => {
@@ -203,6 +205,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
             reserveId: params.reserveId,
             marketName: params.marketName,
             chainName: params.chainName,
+            chainId: params.chainId,
             tokenSymbol: params.tokenSymbol,
             supply: { ...EMPTY_SIDE },
             borrow: { ...EMPTY_SIDE },

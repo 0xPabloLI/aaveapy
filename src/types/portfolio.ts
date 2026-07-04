@@ -54,6 +54,7 @@ export interface PortfolioReserveEntry {
   reserveId: string;
   marketName: string;
   chainName: string;
+  chainId: number;
   tokenSymbol: string;
   supply: PortfolioSideData;
   borrow: PortfolioSideData;

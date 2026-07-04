@@ -84,6 +84,7 @@ export const usePortfolioToggle = ({
             reserveId: reserve.reserveId,
             marketName: reserve.marketName,
             chainName: reserve.chainName,
+            chainId: reserve.chainId,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
           });
@@ -110,6 +111,7 @@ export const usePortfolioToggle = ({
             reserveId: reserve.reserveId,
             marketName: reserve.marketName,
             chainName: reserve.chainName,
+            chainId: reserve.chainId,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
           });
