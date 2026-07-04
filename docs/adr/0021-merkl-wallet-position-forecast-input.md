@@ -133,6 +133,16 @@ headline 分支（行 348-350）同理。
 - Merkl 不加 position cap dilution——Merkl 没有 cap 概念
 - `forecastMerklApr` 的 `inputUsd=0` 分支逻辑正确，不修改
 
+### Review 修复: headline incentive 也需要 `merklGroupMultiplier`
+
+Code review 发现 `supplyHeadlineIncentive`/`borrowHeadlineIncentive` 的 `calculateTotalIncentiveApr/Apy` 没传 `merklGroupMultiplier`，而 `buildIncentiveCurrent` 已传。
+
+**影响**：`deltaIncentive = currentIncentive - headlineIncentive` 在 wallet dilution gap 路径（`hasInput=false` + wallet）下，`current` 有缩放而 `headline` 没有 → 差值混入缩放差异，语义不正确。
+
+**修复**：headline incentive 调用也传入 `merklGroupMultiplier`，确保 `deltaIncentive` 三态分路的每一路（simulation delta / wallet dilution gap / null）中 `current` 和 `headline` 使用同一缩放。
+
+**测试**：新增 `headline incentive also includes eligibility scaling` 测试，验证有 constraint 时的 headline < 无 constraint 时的 headline。
+
 ## 影响范围
 
 ### Bug 1 影响
@@ -158,13 +168,17 @@ headline 分支（行 348-350）同理。
 3. 验证 `buildIncentiveCurrent` 的 Merkl 值 = per-source `sumCurrent` 的 Merkl 值
 4. 验证 `perSourceSum ≈ currentIncentive`（行 1295-1297 的断言在 constraint 场景下也通过）
 5. Hook 层现有测试不受影响（用 `supplyInput='1000'`，不触发 bug）
+6. 验证 `merklCrossReserveNote` 使用 total position 作为 grossUsd（note 显示 `$1,042` 而非 `$0`）
+7. 验证 headline incentive 传入 `merklGroupMultiplier`，有 constraint 时的 headline < 无 constraint 时的 headline
+8. 浏览器验证：Ink 链 Merkl incentive APR 非零显示（Playwright + watchMode wallet）
 
 ## 参考
 
-- `src/lib/rateSimulationCalculator.ts:1220-1236` — `merklGroupMultiplier`（Bug 1）
-- `src/lib/rateSimulationCalculator.ts:1238-1249` — `merklCrossReserveNote`（Bug 1）
-- `src/lib/rateSimulationCalculator.ts:336-344` — `buildIncentiveCurrent` wallet 分支（Bug 2）
-- `src/lib/rateSimulationCalculator.ts:348-350` — `buildIncentiveCurrent` headline 分支（Bug 2）
+- `src/lib/rateSimulationCalculator.ts:1146-1203` — eligibility ratio + `merklGroupMultiplier` + `merklCrossReserveNote`（提前计算，Bug 1 修复）
+- `src/lib/rateSimulationCalculator.ts:1207-1216` — headline incentive 调用（Review 修复：加了 `merklGroupMultiplier`）
+- `src/lib/rateSimulationCalculator.ts:1213-1228` — `buildIncentiveCurrent` 调用（Bug 2 修复：加了 `merklGroupMultiplier` 参数）
+- `src/lib/rateSimulationCalculator.ts:305-354` — `buildIncentiveCurrent` 函数签名（Bug 2：新增 `merklGroupMultiplier` 参数）
+- `src/lib/rateSimulationCalculator.test.ts:1410+` — AAV-1060 测试（5 个：Bug 1×2 + Bug 2 + headline + merklCrossReserveNote）
 - `src/lib/netLendingCrossReserve.ts:32-37` — `computeCrossReserveEligibilityRatio` sourceGrossUsd<=0 返回 1
 - `src/lib/incentiveAggregation.ts:79-101` — `sumMerklIncentiveApr`
 - AAV-761, AAV-771 — wallet position dilution 相关修复
