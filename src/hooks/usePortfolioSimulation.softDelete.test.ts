@@ -12,6 +12,7 @@ import type { PortfolioReserveEntry } from '@/types/portfolio'
 const baseEntry = (o: Partial<PortfolioReserveEntry> & { reserveId: string }): PortfolioReserveEntry => ({
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
+  chainId: 1,
   tokenSymbol: 'WETH',
   supply: { amount: '', inputMode: 'usd', walletValue: null },
   borrow: { amount: '', inputMode: 'usd', walletValue: null },
@@ -99,6 +100,7 @@ describe('usePortfolioSimulation.addReserve auto-unhide', () => {
         reserveId: 'reserve-weth',
         marketName: 'AaveV3Ethereum',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'WETH',
       })
     })
@@ -116,6 +118,7 @@ describe('usePortfolioSimulation.addReserve auto-unhide', () => {
         reserveId: 'r-frozen',
         marketName: 'AaveV3Ethereum',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'WETH',
         restrictedStatus: 'frozen',
       })
@@ -128,6 +131,7 @@ describe('usePortfolioSimulation.addReserve auto-unhide', () => {
         reserveId: 'r-frozen',
         marketName: 'AaveV3Ethereum',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'WETH',
       })
     })
@@ -244,6 +248,7 @@ describe('usePortfolioSimulation full cycle: delete → re-add → force sync', 
         reserveId: 'reserve-weth',
         marketName: 'AaveV3Ethereum',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'WETH',
       })
     })

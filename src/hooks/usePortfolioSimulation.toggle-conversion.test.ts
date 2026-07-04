@@ -16,6 +16,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -50,6 +51,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -79,6 +81,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -115,6 +118,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -144,6 +148,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -173,6 +178,7 @@ describe('updateReserve — amount conversion', () => {
         reserveId: 'res-1',
         marketName: 'Aave V3',
         chainName: 'Ethereum',
+        chainId: 1,
         tokenSymbol: 'USDC',
       });
     });
@@ -202,6 +208,7 @@ describe('importReserves — auto-complete missing sides', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
           supply: { amount: '1737', inputMode: 'usd', walletValue: 1737, source: 'sdk' },
           borrow: { amount: '', inputMode: 'usd', walletValue: null },
@@ -228,6 +235,7 @@ describe('importReserves — auto-complete missing sides', () => {
           reserveId: 'r-gho',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'GHO',
           supply: { amount: '', inputMode: 'usd', walletValue: null },
           borrow: { amount: '9674', inputMode: 'usd', walletValue: 9674, source: 'sdk' },
@@ -253,6 +261,7 @@ describe('importReserves — auto-complete missing sides', () => {
           reserveId: 'r-usdt0',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'USDT0',
           supply: { amount: '10000', inputMode: 'usd', walletValue: 10000, source: 'sdk' },
           borrow: { amount: '5000', inputMode: 'usd', walletValue: 5000, source: 'sdk' },
@@ -278,6 +287,7 @@ describe('importReserves — auto-complete missing sides', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
           supply: { amount: '1000', inputMode: 'usd', walletValue: 1000, source: 'sdk' },
           borrow: { amount: '', inputMode: 'usd', walletValue: null },
@@ -288,6 +298,7 @@ describe('importReserves — auto-complete missing sides', () => {
           reserveId: 'r-gho',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'GHO',
           supply: { amount: '', inputMode: 'usd', walletValue: null },
           borrow: { amount: '2000', inputMode: 'usd', walletValue: 2000, source: 'sdk' },
