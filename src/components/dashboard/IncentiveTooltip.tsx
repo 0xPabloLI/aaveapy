@@ -1054,40 +1054,42 @@ const IncentiveTooltip = ({
         } ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
         style={animated ? { animationDelay: `${index * 45}ms` } : undefined}
       >
-        <div className="flex items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
-          {iconSrc && (
-            <span
-              className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
-            >
-              <img
-                src={iconSrc}
-                alt={`${source.sourceType} logo`}
-                title={source.sourceType}
-                className={logoClass}
-                loading="eager"
-              />
-            </span>
-          )}
-          {isBrevis && !iconSrc && (
-            <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
-              Brevis
-            </span>
-          )}
-          <span className="ds-tooltip-title text-foreground min-w-0 flex items-center flex-1 gap-[var(--ds-space-1-5)]">
-            <span className="break-words min-w-0 flex-1">{source.name}</span>
-            {source.link ? (
-              <a
-                href={source.link}
-                {...externalLinkTabProps(isMobile)}
-                onClick={(e) => e.stopPropagation()}
-                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0 flex-shrink-0`}
-                title="Open link"
+        <div className="grid grid-cols-[1fr_auto] items-center justify-items-start gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0">
+            {iconSrc && (
+              <span
+                className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
               >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            ) : null}
-          </span>
-          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 ml-auto`}>
+                <img
+                  src={iconSrc}
+                  alt={`${source.sourceType} logo`}
+                  title={source.sourceType}
+                  className={logoClass}
+                  loading="eager"
+                />
+              </span>
+            )}
+            {isBrevis && !iconSrc && (
+              <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
+                Brevis
+              </span>
+            )}
+            <span className="ds-tooltip-title text-foreground min-w-0 inline-flex items-center gap-[var(--ds-space-1-5)]">
+              <span className="break-words min-w-0">{source.name}</span>
+              {source.link ? (
+                <a
+                  href={source.link}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0 flex-shrink-0 mr-2`}
+                  title="Open link"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : null}
+            </span>
+          </div>
+          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 justify-self-end`}>
             {headerRewardTokenIcon && (
               <img
                 src={headerRewardTokenIcon}
