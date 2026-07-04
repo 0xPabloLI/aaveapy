@@ -178,13 +178,14 @@ export function buildPortfolioPositionResult(
   isApy: boolean = false,
   forecastUnavailableCampaignCount?: number,
   walletUsd?: number | null,
+  effectiveUsd?: number,
 ): PortfolioPositionResult {
   const totalPercent = side === 'supply'
     ? nativeAprPercent + incentiveAprPercent
     : nativeAprPercent - incentiveAprPercent;
   const usdPerDay = computePositionUsdPerDay(
     side,
-    amountUsd,
+    effectiveUsd ?? amountUsd,
     nativeAprPercent,
     incentiveAprPercent,
     isApy,
