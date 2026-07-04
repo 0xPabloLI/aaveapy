@@ -190,7 +190,7 @@ const ResultRow = memo(function ResultRow({
         {formatPercent(row.totalPercent)}
       </td>
       <DeltaCell value={totalDelta} accentClass={accentClass} />
-      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground/70 whitespace-nowrap">
+      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
     </tr>
