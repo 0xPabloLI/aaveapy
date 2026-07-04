@@ -33,18 +33,16 @@ const formatDeltaUsdDay = (value: number | null | undefined): string | null => {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
   if (Math.abs(value) < 0.005) return null;
   const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}`;
+  return `${prefix}$${value.toFixed(2)}`;
 };
 
 const DeltaCell = memo(function DeltaCell({
   value,
-  accentClass,
 }: {
   value: string | null;
-  accentClass: string;
 }) {
   return (
-    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? accentClass : 'text-muted-foreground')}>
+    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? 'text-foreground/70' : 'text-muted-foreground')}>
       {value ?? '—'}
     </td>
   );
@@ -110,7 +108,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
                 </td>
               </tr>
               {supplyRows.map((r, i) => (
-                <ResultRow key={`${r.reserveId}-supply-${i}`} row={r} accentClass="ds-text-emerald-600" />
+                <ResultRow key={`${r.reserveId}-supply-${i}`} row={r} />
               ))}
             </>
           )}
@@ -125,7 +123,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
                 </td>
               </tr>
               {borrowRows.map((r, i) => (
-                <ResultRow key={`${r.reserveId}-borrow-${i}`} row={r} accentClass="ds-text-brand-cyan" />
+                <ResultRow key={`${r.reserveId}-borrow-${i}`} row={r} />
               ))}
             </>
           )}
@@ -149,14 +147,9 @@ interface ResultRowData extends PortfolioPositionResult {
 
 const ResultRow = memo(function ResultRow({
   row,
-  accentClass,
 }: {
   row: ResultRowData;
-  accentClass: string;
 }) {
-  const isBorrow = row.side === 'borrow';
-  const dayColor = row.usdPerDay > 0 ? 'ds-text-emerald-600' : row.usdPerDay < 0 ? 'text-destructive' : 'text-muted-foreground';
-
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
@@ -168,7 +161,7 @@ const ResultRow = memo(function ResultRow({
         <div className="flex items-center gap-1.5">
           <div className="relative">
             <TokenIcon symbol={row.tokenSymbol} size={16} />
-            {row.chainId > 0 && (
+            {row.chainId > 0 && getChainIconSrc(row.chainId) && (
               <img
                 src={getChainIconSrc(row.chainId)}
                 alt=""
@@ -188,22 +181,22 @@ const ResultRow = memo(function ResultRow({
       <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
         {formatPercent(row.nativePercent)}
       </td>
-      <DeltaCell value={nativeDelta} accentClass={accentClass} />
+      <DeltaCell value={nativeDelta} />
       <td className="px-2 py-1.5 text-right tabular-nums text-foreground whitespace-nowrap">
         {formatPercent(row.incentivePercent)}
         {row.forecastUnavailableCampaignCount != null && row.forecastUnavailableCampaignCount > 0 && (
           <span className="ds-text-9 text-muted-foreground ml-0.5" title="No forecast data — using current APR">*</span>
         )}
       </td>
-      <DeltaCell value={incentiveDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600')}>
+      <DeltaCell value={incentiveDelta} />
+      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-foreground whitespace-nowrap">
         {formatPercent(row.totalPercent)}
       </td>
-      <DeltaCell value={totalDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-semibold whitespace-nowrap', dayColor)}>
+      <DeltaCell value={totalDelta} />
+      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground/70 whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
-      <DeltaCell value={usdDayDelta} accentClass={accentClass} />
+      <DeltaCell value={usdDayDelta} />
     </tr>
   );
 });
