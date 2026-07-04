@@ -15,6 +15,7 @@ import { formatPercent, formatSpread, formatUsd } from '@/lib/formatters';
 import { getReserveIncentiveValues, resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { sortReserves, type ReserveSortConfig, type ReserveSortValueGetters } from '@/lib/reservesSorter';
+import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
@@ -239,7 +240,14 @@ const ReservesTable = ({
     closeTooltip,
   } = useReservesTooltip();
 
+  const isPortfolioMode = simulationMode === 'portfolio';
+
   const crossReservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
+    // Do not build crossReservePositions in shared scenario mode.
+    // In shared scenario, the same input is copied to all reserves, which causes
+    // incorrect cross-reserve offset calculations (e.g., $1,000 borrow counted multiple times).
+    // Portfolio mode already passes undefined here (shared inputs are empty in portfolio mode).
+    if (!isPortfolioMode) return undefined;
     const rawSupply = parseNumberInput(debouncedSharedSupplyInput);
     const rawBorrow = parseNumberInput(debouncedSharedBorrowInput);
     if (rawSupply === 0 && rawBorrow === 0) return undefined;
@@ -253,7 +261,7 @@ const ReservesTable = ({
       }
     }
     return map.size > 0 ? map : undefined;
-  }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode]);
+  }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, isPortfolioMode]);
 
   const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
     if (!crossReservePositions) return undefined;
@@ -263,8 +271,6 @@ const ReservesTable = ({
     }
     return map.size > 0 ? map : undefined;
   }, [reserves, crossReservePositions]);
-
-  const isPortfolioMode = simulationMode === 'portfolio';
 
   const perReserveInputs = useMemo(
     () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
@@ -511,6 +517,8 @@ const ReservesTable = ({
     getDisplayBorrowIncentive,
     hasBorrowIncentiveSource,
     getDisplaySpread,
+    isSupplyDisabled,
+    isBorrowDisabled,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [sortedDataSimGate, hasScenarioInput, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
 
