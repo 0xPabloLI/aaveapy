@@ -49,9 +49,9 @@ const response: MarketsResponse = {
 describe('buildMarketsList', () => {
   it('derives unique market-chain pairs and sorts by market name', () => {
     expect(buildMarketsList(response)).toEqual([
-      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
-      { marketName: 'AaveV3Base', chainName: 'Base' },
-      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum', chainId: 42161 },
+      { marketName: 'AaveV3Base', chainName: 'Base', chainId: 8453 },
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1 },
     ]);
   });
 });

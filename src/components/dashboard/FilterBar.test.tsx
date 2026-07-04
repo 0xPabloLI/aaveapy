@@ -15,9 +15,9 @@ vi.mock('@/components/dashboard/AprApyToggle', () => ({
 }));
 
 const ETH_MULTI_MARKETS = [
-  { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
-  { marketName: 'AaveV4Ethereum', chainName: 'Ethereum' },
-  { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+  { marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1 },
+  { marketName: 'AaveV4Ethereum', chainName: 'Ethereum', chainId: 1 },
+  { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum', chainId: 42161 },
 ];
 
 function TestWrapper({
@@ -31,7 +31,7 @@ function TestWrapper({
   initialCategory?: TokenCategory;
   initialMarkets?: string[];
   initialHubs?: string[];
-  marketsList?: { marketName: string; chainName: string }[];
+  marketsList?: { marketName: string; chainName: string; chainId: number }[];
   expandedChain?: string | null;
   setExpandedChain?: (chain: string | null) => void;
 }) {

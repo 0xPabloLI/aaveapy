@@ -14,6 +14,7 @@ export function buildMarketsList(marketsResponse?: MarketsResponse | null): Mark
       uniqueMarkets.set(key, {
         marketName: reserve.marketName,
         chainName: reserve.chainName,
+        chainId: reserve.chainId,
       });
     }
   }
