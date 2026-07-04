@@ -272,6 +272,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         reserveId,
         marketName: reserve.marketName,
         chainName: reserve.chainName ?? reserve.marketName,
+        chainId: reserve.chainId,
         tokenSymbol: reserve.tokenSymbol,
       });
 

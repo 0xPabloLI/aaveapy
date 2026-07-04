@@ -67,7 +67,7 @@ function makeErrorResult(): DegradedResult {
 const address = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`
 const emptyReserves: ReserveWithSpread[] = []
 const convertedEntries: PortfolioReserveEntry[] = [
-  { reserveId: 'r1', marketName: '', chainName: '', tokenSymbol: 'USDC', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '', inputMode: 'usd', walletValue: null }, hidden: false, isOrphan: false },
+  { reserveId: 'r1', marketName: '', chainName: '', chainId: 0, tokenSymbol: 'USDC', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '', inputMode: 'usd', walletValue: null }, hidden: false, isOrphan: false },
 ]
 
 describe('useWalletAutoImport', () => {

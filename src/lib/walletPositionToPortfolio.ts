@@ -28,6 +28,7 @@ export function convertWalletPositionsToEntries(
         reserveId: wp.reserveId,
         marketName: reserve?.marketName ?? '',
         chainName: reserve?.chainName ?? '',
+        chainId: reserve?.chainId ?? 0,
         tokenSymbol: wp.tokenSymbol,
         supply: { ...EMPTY_SIDE },
         borrow: { ...EMPTY_SIDE },
