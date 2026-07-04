@@ -237,7 +237,8 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Learned Lessons: APR capped note 显示条件 (AAV-1059)
 
-- **`regime === 'APR_CAPPED'` 不等于"cap 实际压低了 after APR"**：`forecastWithTVL` 返回 `APR_CAPPED` regime 只表示 `aprBasedDaily < requiredDaily`（cap 在数学上是 binding 的），但如果 `cappedAfter >= uncappedAfter`，说明 cap 没有实质压低值（比如 capped 和 uncapped 路径都走到了相同的 `dailyRewards`），此时显示 "APR capped for low TVL" note 是误导。**教训：note 显示条件必须是"cap 实际减少了用户能看到的值"，而非"cap 在数学上是 binding 的"。**
-- **判断 cap 是否实际压低值的方法**：比较 `forecastWithTVL(state, tvl)` 和 `forecastWithTVL(state, tvl, undefined, { ignoreCap: true })` 的 `apr` 值，前者小于后者才显示 note。`ignoreCap` 将 `aprCap`/`effectiveAprCap` 设为 `Infinity`，使 `aprBasedDaily` 永远不成为 binding constraint。
+- **`regime === 'APR_CAPPED'` 不等于"cap 对用户产生了新影响"**：`forecastWithTVL` 返回 `APR_CAPPED` 只表示 `aprBasedDaily < requiredDaily`（cap 在数学上是 binding 的），但低 TVL 池子 current 就已经是 cap 后的值（`campaignApr ≈ aprCap`），after 也等于 aprCap，`after === current`。此时 note 只是重复已知信息，无新增价值。**教训：note 显示条件必须是"cap 使 after 低于了 current"，而非"cap 在数学上是 binding 的"。**
+- **`after < uncappedAfter` 是 no-op 判定**：低 TVL 时 uncapped after 极大（`requiredDaily * 365 / tvl`），`after < uncappedAfter` 永远成立，等价于原来的 `regime === 'APR_CAPPED'`。正确判定是 `after < current`：只有当 headline APR（current）高于 cap 后的实际 APR（after）时，note 才有意义。
+- **`after < current` 的语义**：current 来自 `campaignApr`（headline，API 返回的展示值），after 来自 `forecastWithTVL`（cap 后实际值）。当 `campaignApr > aprCap` 时 current > after，说明 headline 夸大了实际收益，note 告知用户"你看到的 APR 被 cap 压低了"。当 `campaignApr ≈ aprCap` 时 after ≈ current，headline 已经反映了 cap，note 无新信息。
 - **`ignoreCap` 不应影响 FIX_REWARD 路径**：FIX 的 `aprCap` 是固定发放率（不是上限），`ignoreCap` 只应在 MAX_REWARD 和 TARGET_TOTAL_APR+MAX_APR 路径生效。实现方式：FIX 路径用 `rawAprCap`，MAX 路径才用 `ignoreCap ? Infinity : rawAprCap`。
 - **MAX_REWARD 和 TARGET_TOTAL_APR 的 cap 不需要区分文案**：两者对用户来说都是"池子 TVL 低导致 APR 被压低"，行动指引一样，不需要不同的 note 文案。
