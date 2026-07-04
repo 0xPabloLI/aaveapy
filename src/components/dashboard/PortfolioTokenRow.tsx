@@ -244,7 +244,7 @@ function SideInput({
       {hasWallet && (() => {
         const walletDisplay = sideData.inputMode === 'usd'
           ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
-          : formatNumberInput(formatConvertedAmount(sideData.walletValue!));
+          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(sideData.walletValue!)));
         const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
           ? sideData.walletValue! + sideData.deltaRawUsd
           : (sideData.inputMode === 'usd'
@@ -257,7 +257,7 @@ function SideInput({
         const priceUnavailable = sideData.inputMode !== 'usd' && tokenPriceInUsd === undefined;
         const isModified = !priceUnavailable && Math.abs(deltaUsdForSign) >= 0.005;
         const effectiveColor = isBorrow
-          ? 'text-[rgb(var(--ds-brand-cyan-rgb))]'
+          ? 'ds-text-brand-cyan'
           : 'text-emerald-600';
         if (!isModified) {
           return (
@@ -277,7 +277,7 @@ function SideInput({
                 aria-label={`Effective: ${effectiveDisplay}, wallet: ${walletDisplay}`}
               >
                 <span className="text-muted-foreground/70 font-normal">{walletDisplay}</span>
-                <span className="text-border">→</span>
+                <span className="text-muted-foreground/40">→</span>
                 <span className={cn(effectiveColor, 'font-bold')}>{effectiveDisplay}</span>
               </span>
             </TooltipTrigger>
