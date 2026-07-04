@@ -77,6 +77,24 @@ Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a
 
 When `walletValue = null` (manual entry, no wallet), `walletUsd = 0` — there is no existing position, so `current = 0` and `delta = after` (pure new earnings). `aggregatePortfolioSummary` uses `r.walletUsd ?? r.amountUsd` for `currentTotalSupplyUsd`/`currentTotalBorrowUsd` to maintain consistency.
 
+### USD/day Available Room Clamp
+
+USD/day principal is clamped by available supply/borrow room:
+- **Supply**: `cappedUsd = min(amountUsd, availableSupplyRoomUsd)` — cannot earn on more than the protocol can accept
+- **Borrow**: `cappedUsd = min(amountUsd, availableBorrowRoomUsd)` — cannot pay interest on more than the protocol can lend
+
+`availableSupplyRoomUsd`/`availableBorrowRoomUsd` come from `buildRateSimulationResult`'s `marketMetrics`. When room is insufficient, USD/day reflects the capped position, preventing unrealistic projections.
+
+### Net Daily Earn Display
+
+- **Color**: `text-foreground` (neutral) — does not change with positive/negative sign
+- **Format**: `formatUsdPerDay` correctly prefixes negative values with `-` (borrow cost) and positive with `+` (supply earnings)
+- **No delta column**: USD/day delta is removed — it was semantically ambiguous (mixed rate+position change for wallet+delta, redundant for manual, zero for unchanged)
+
+### Amount Column Color
+
+Amount (`amountUsd`) uses Supply/Borrow accent colors (`ds-text-supply`/`ds-text-borrow`) to visually associate each row with its side.
+
 ## Related Issues
 
 AAV-563 (wallet import double-count), AAV-635 (inline delta display), AAV-468 (parent portfolio epic)
