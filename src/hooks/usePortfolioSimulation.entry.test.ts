@@ -10,6 +10,7 @@ function makeEntry(overrides: Partial<PortfolioReserveEntry> & { reserveId: stri
   return {
     marketName: 'AaveV3Ethereum',
     chainName: 'Ethereum',
+    chainId: 1,
     tokenSymbol: 'USDC',
     supply: { ...emptySide },
     borrow: { ...emptySide },
@@ -31,6 +32,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
         })
       })
@@ -54,6 +56,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
         })
       })
@@ -62,6 +65,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
         })
       })
@@ -78,6 +82,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-frozen',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'FROZ',
           restrictedStatus: 'frozen',
         })
@@ -96,6 +101,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-weth',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'WETH',
         })
       })
@@ -112,6 +118,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-paused',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'PAUS',
           restrictedStatus: 'paused',
         })
@@ -128,8 +135,8 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       act(() => { result.current.actions.setActive(true) })
 
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
-        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'GHO' })
       })
 
       expect(result.current.entries).toHaveLength(2)
@@ -147,7 +154,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => {
@@ -163,7 +170,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => {
@@ -179,7 +186,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => {
@@ -201,7 +208,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => { result.current.actions.hideReserve('r-weth') })
@@ -214,7 +221,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => { result.current.actions.hideReserve('r-weth') })
@@ -327,6 +334,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-manual',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'MANUAL',
         })
       })
@@ -362,6 +370,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           reserveId: 'r-manual',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
+          chainId: 1,
           tokenSymbol: 'MANUAL',
         })
       })
@@ -446,8 +455,8 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       act(() => { result.current.actions.setActive(true) })
 
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
-        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'GHO' })
       })
 
       expect(result.current.entries).toHaveLength(2)
@@ -483,7 +492,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       act(() => { result.current.actions.setActive(true) })
 
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
       })
 
       act(() => { result.current.actions.removeReserve('r-nonexistent') })
@@ -498,7 +507,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       act(() => { result.current.actions.setActive(true) })
 
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-manual', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'MAN' })
+        result.current.actions.addReserve({ reserveId: 'r-manual', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'MAN' })
       })
       act(() => {
         result.current.actions.importReserves([
@@ -523,8 +532,8 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       act(() => { result.current.actions.setActive(true) })
 
       act(() => {
-        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
-        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, tokenSymbol: 'GHO' })
       })
 
       expect(result.current.entries).toHaveLength(2)
