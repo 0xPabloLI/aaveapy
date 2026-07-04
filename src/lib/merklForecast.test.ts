@@ -145,6 +145,63 @@ describe('forecastWithTVL', () => {
     const result = forecastWithTVL(fallbackState, 10_000_000_000, nowTs);
     expect(result.dailyRewards).toBeCloseTo(baseState.plannedDaily!, 10);
   });
+
+  describe('ignoreCap option', () => {
+    it('returns uncapped APR for MAX_REWARD when ignoreCap is true', () => {
+      const result = forecastWithTVL(baseState, 1_000, nowTs);
+      const uncapped = forecastWithTVL(baseState, 1_000, nowTs, { ignoreCap: true });
+
+      expect(result.regime).toBe('APR_CAPPED');
+      expect(result.apr).toBeCloseTo(baseState.aprCap!, 10);
+
+      expect(uncapped.regime).not.toBe('APR_CAPPED');
+      expect(uncapped.apr).toBeGreaterThan(result.apr);
+      expect(uncapped.dailyRewards).toBeCloseTo(baseState.requiredDaily!, 10);
+    });
+
+    it('returns uncapped APR for TARGET_TOTAL_APR + MAX_APR when ignoreCap is true', () => {
+      const state: MerklForecastState = {
+        campaignType: 'TARGET_TOTAL_APR',
+        aprCap: 0.047,
+        nativeApyPercent: 3.0,
+        budgetBoundMode: 'MAX_APR',
+        plannedDaily: 4000,
+        requiredDaily: 4000,
+        latestTvl: 100_000,
+        endTimestamp: nowTs + 30 * 86_400,
+      };
+
+      const result = forecastWithTVL(state, 100_000, nowTs);
+      const uncapped = forecastWithTVL(state, 100_000, nowTs, { ignoreCap: true });
+
+      expect(result.regime).toBe('APR_CAPPED');
+      expect(uncapped.regime).not.toBe('APR_CAPPED');
+      expect(uncapped.apr).toBeGreaterThan(result.apr);
+    });
+
+    it('does not affect FIX_REWARD campaigns', () => {
+      const fixState: MerklForecastState = {
+        ...baseState,
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 0.005,
+      };
+
+      const result = forecastWithTVL(fixState, 100_000, nowTs);
+      const uncapped = forecastWithTVL(fixState, 100_000, nowTs, { ignoreCap: true });
+
+      expect(uncapped.apr).toBeCloseTo(result.apr, 10);
+      expect(uncapped.regime).toBe('PLANNED');
+    });
+
+    it('does not affect PLANNED regime when cap is not binding', () => {
+      const result = forecastWithTVL(baseState, 10_000_000_000, nowTs);
+      const uncapped = forecastWithTVL(baseState, 10_000_000_000, nowTs, { ignoreCap: true });
+
+      expect(result.regime).toBe('PLANNED');
+      expect(uncapped.regime).toBe('PLANNED');
+      expect(uncapped.apr).toBeCloseTo(result.apr, 10);
+    });
+  });
 });
 
 describe('deriveForecastProgressFlags', () => {
