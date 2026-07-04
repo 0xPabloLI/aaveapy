@@ -201,6 +201,7 @@ export interface MarketsResponse {
 export interface MarketListItem {
   marketName: string;
   chainName: string;
+  chainId: number;
 }
 
 export interface TokenPriceEntry {
