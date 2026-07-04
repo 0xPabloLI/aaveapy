@@ -29,6 +29,7 @@ function makeEntry(overrides: Partial<PortfolioReserveEntry> = {}): PortfolioRes
     reserveId: 'reserve-1',
     marketName: 'AaveV3Ethereum',
     chainName: 'Ethereum',
+    chainId: 1,
     tokenSymbol: 'USDC',
     supply: { amount: '5000', inputMode: 'usd', walletValue: null, deltaSign: 1 },
     borrow: { amount: '', inputMode: 'usd', walletValue: null },
