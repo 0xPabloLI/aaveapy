@@ -88,10 +88,6 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   const borrowDelta = summary.totalBorrowUsdMetric
     ? formatDeltaUsd(summary.totalBorrowUsdMetric.delta)
     : null;
-  const netDailyDelta = summary.netUsdPerDayMetric
-    ? formatDeltaUsd(summary.netUsdPerDayMetric.delta)
-    : null;
-
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
       <MetricCell
@@ -111,7 +107,6 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
       <MetricCell
         label="Net Daily Earn"
         value={formatUsdPerDay(summary.netUsdPerDay)}
-        delta={netDailyDelta}
         icon={<DollarSign className="size-3" aria-hidden />}
         valueClass={netColor}
       />
