@@ -215,7 +215,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
       expect(container.innerHTML).toContain('Supply USDT');
       expect(container.textContent).toContain('7.73%');
-      expect(container.textContent).toContain('Supply USDT double yield incentive on first');
+      expect(container.textContent).toContain('Supply USDT (double yield) incentive on first');
       expect(container.textContent).toContain('Earn extra rewards');
     });
 

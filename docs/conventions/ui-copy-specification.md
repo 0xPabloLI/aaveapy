@@ -148,7 +148,7 @@ offsetNote-only entries (no capWarning, no capNote) display the offsetNote in mu
 | Position cap (without campaignName) | `Incentive on first {X} only` | `Incentive on first $1,000.00 only` |
 
 `campaignName` is populated per source:
-- **Merit**: `extractActionLabelFromMeritMessage(breakdown.message)` → `extractActionLabelFromMeritMessage(group.message)` → fallback `"${groupName} base"` or `"${groupName} double yield"`
+- **Merit**: `extractActionLabelFromMeritMessage(breakdown.message)` → `extractActionLabelFromMeritMessage(group.message)` → fallback `"${groupName} (base)"` or `"${groupName} (double yield)"`
 - **Brevis**: `getBrevisDisplayLabel(brevis, ...)` (same as source name)
 - **Merkl**: `opportunity.name` (same as source name)
 - **Protocol**: no campaignName (no position cap in protocol incentives)
