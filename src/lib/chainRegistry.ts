@@ -29,6 +29,7 @@ import {
   ink,
   megaeth,
   plasma,
+  monad,
 } from 'wagmi/chains'
 import {
   AaveV3Ethereum,
@@ -51,6 +52,7 @@ import {
   AaveV3Scroll,
   AaveV3MegaEth,
   AaveV3Plasma,
+  AaveV3Monad,
   AaveV4Ethereum,
 } from '@aave-dao/aave-address-book'
 import { setRegistryChecker, setStaticRpcUrlGetter, setWagmiChainRpcUrlGetter } from './userData/chainDiscovery'
@@ -98,6 +100,7 @@ const ENTRIES: readonly ChainEntry[] = [
   { abModule: AaveV3Scroll, wagmiChain: scroll, publicRpcUrls: ['https://rpc.scroll.io', 'https://scroll-rpc.publicnode.com', 'https://scroll.drpc.org', 'https://1rpc.io/scroll'] },
   { abModule: AaveV3MegaEth, wagmiChain: megaeth, publicRpcUrls: ['https://mainnet.megaeth.com/rpc', 'https://megaeth.drpc.org'] },
   { abModule: AaveV3Plasma, wagmiChain: plasma, publicRpcUrls: ['https://rpc.plasma.to', 'https://plasma.drpc.org', 'https://plasma.api.onfinality.io/public'] },
+  { abModule: AaveV3Monad, wagmiChain: monad, publicRpcUrls: ['https://rpc.monad.xyz', 'https://monad.drpc.org'] },
   { abModule: AaveV4Ethereum, wagmiChain: mainnet, publicRpcUrls: [] },
 ] as const
 

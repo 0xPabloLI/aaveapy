@@ -337,7 +337,7 @@ const MiniReserveCard = ({
       {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
     </span>
   );
-  const chainIconSrc = getChainIconSrc(reserve.chainName);
+  const chainIconSrc = getChainIconSrc(reserve.chainId);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
     symbol: reserve.tokenSymbol,
@@ -440,7 +440,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
   const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
   const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
   const apyAccent = getApyAccentClasses(mainValue);
-  const chainIconSrc = getChainIconSrc(reserve.chainName);
+  const chainIconSrc = getChainIconSrc(reserve.chainId);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
     symbol: reserve.tokenSymbol,

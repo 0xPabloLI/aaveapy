@@ -25,7 +25,7 @@ import {
 import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
-import BorrowCapProgressRing from './BorrowCapProgressRing';
+import BorrowCapProgressRing, { LOW_LIQUIDITY_THRESHOLD_USD } from './BorrowCapProgressRing';
 import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import AssetActionMenu from './AssetActionMenu';
@@ -37,17 +37,17 @@ import { cn } from '@/lib/utils';
 import type { SortActions } from '@/hooks/reserves-table/buildSortActions';
 
 /* ─── Memoised chain icon ─── */
-const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
+const ChainIcon = memo(({ chainId, chainName, className = '' }: { chainId: number; chainName: string; className?: string }) => {
   const size = 'w-3.5 h-3.5';
-  const src = getChainIconSrc(chain);
+  const src = getChainIconSrc(chainId);
   if (!src) {
     return (
       <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
-        {chain.charAt(0)}
+        {chainName.charAt(0)}
       </div>
     );
   }
-  return <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />;
+  return <img src={src} alt={`${chainName} logo`} className={`${size} ${className}`} loading="lazy" />;
 });
 ChainIcon.displayName = 'ChainIcon';
 
@@ -346,6 +346,7 @@ const DesktopReserveRow = memo(({
                   marketName={reserve.marketName}
                   aaveProReserveId={reserve.aaveProReserveId}
                   chainName={reserve.chainName}
+                  chainId={reserve.chainId}
                   hubAddress={reserve.hubAddress}
                   spokeAddress={reserve.spokeAddress}
                   isMobile={isMobile}
@@ -410,7 +411,7 @@ const DesktopReserveRow = memo(({
                   aria-label={`Filter by ${marketDisplayName} market`}
                   title={`Filter by ${marketDisplayName}`}
                 >
-                  <ChainIcon chain={reserve.chainName} />
+                  <ChainIcon chainId={reserve.chainId} chainName={reserve.chainName} />
                   <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
                 </button>
                 {tydroMarketUrl ? (
@@ -684,7 +685,7 @@ const DesktopReserveRow = memo(({
                 <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] cursor-default">
                   <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
                     <span className={`ds-text-13 font-bold tabular-nums ${
-                      (availableLiquidityUsd != null && availableLiquidityUsd < 10000)
+                      (availableLiquidityUsd != null && availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD)
                         ? 'text-amber-600'
                         : 'ds-text-purple-600'
                     }`}>
@@ -717,6 +718,11 @@ const DesktopReserveRow = memo(({
                   optimalSortOrder={sortActions.optimal.sortOrder}
                   formulaLabel="U"
                 />
+                {availableLiquidityUsd != null && availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD && (
+                  <div className="ds-text-10 text-center text-amber-600 dark:text-amber-500 leading-snug pt-1 border-t border-border/50 mt-1">
+                    Low liquidity — withdrawals may be delayed
+                  </div>
+                )}
               </TooltipContent>
             </Tooltip>
           </div>

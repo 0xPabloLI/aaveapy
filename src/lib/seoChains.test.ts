@@ -57,6 +57,7 @@ describe('SEO_CHAINS', () => {
     for (const chain of SEO_CHAINS) {
       expect(chain.slug.length).toBeGreaterThan(0);
       expect(chain.displayName.length).toBeGreaterThan(0);
+      expect(chain.chainId).toBeGreaterThan(0);
       expect(chain.title.length).toBeGreaterThan(0);
       expect(chain.description.length).toBeGreaterThan(0);
       expect(chain.intro.length).toBeGreaterThan(0);

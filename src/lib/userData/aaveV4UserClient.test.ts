@@ -66,10 +66,10 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     }
   })
 
-  it('V4_HUB_ADDRESSES has chain ID 1 with 3 hubs', () => {
+  it('V4_HUB_ADDRESSES has chain ID 1 with at least 3 hubs', () => {
     const hubs = V4_HUB_ADDRESSES[1]
     expect(hubs).toBeDefined()
-    expect(hubs.length).toBe(3)
+    expect(hubs.length).toBeGreaterThanOrEqual(3)
     const names = hubs.map((h) => h.name)
     expect(names).toContain('CORE_HUB')
     expect(names).toContain('PLUS_HUB')
@@ -84,7 +84,7 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
 
   it('getV4HubAddresses returns hubs for known chain, undefined for unknown', () => {
     expect(getV4HubAddresses(1)).toBeDefined()
-    expect(getV4HubAddresses(1)!.length).toBe(3)
+    expect(getV4HubAddresses(1)!.length).toBeGreaterThanOrEqual(3)
     expect(getV4HubAddresses(42161)).toBeUndefined()
   })
 

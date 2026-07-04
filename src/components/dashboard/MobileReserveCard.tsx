@@ -19,7 +19,7 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 import CapProgressRing, { CapProgressContent } from './CapProgressRing';
-import BorrowCapProgressRing, { BorrowCapProgressContent } from './BorrowCapProgressRing';
+import BorrowCapProgressRing, { BorrowCapProgressContent, LOW_LIQUIDITY_THRESHOLD_USD } from './BorrowCapProgressRing';
 import AssetActionMenu from './AssetActionMenu';
 
 import DeficitShieldIcon from './DeficitShieldIcon';
@@ -554,7 +554,7 @@ const MobileReserveCard = memo(({
     pointRateMap,
   );
 
-  const chainIconSrc = getChainIconSrc(reserve.chainName);
+  const chainIconSrc = getChainIconSrc(reserve.chainId);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
     symbol: reserve.tokenSymbol,
@@ -702,6 +702,7 @@ const MobileReserveCard = memo(({
                     marketName={reserve.marketName}
                     aaveProReserveId={reserve.aaveProReserveId}
                     chainName={reserve.chainName}
+                    chainId={reserve.chainId}
                     hubAddress={reserve.hubAddress}
                     spokeAddress={reserve.spokeAddress}
                     isMobile
@@ -863,7 +864,7 @@ const MobileReserveCard = memo(({
               {/* Liquidity text on left */}
               <span className="flex items-center gap-1">
                 <span className="ds-text-10 text-muted-foreground/70">Liquidity</span>
-                <span className={`ds-text-10 font-medium tabular-nums ${availableLiquidityUsd !== null && availableLiquidityUsd !== undefined ? (availableLiquidityUsd < 10000 ? 'text-amber-600' : 'text-purple-500') : 'text-muted-foreground/70'}`}>
+                <span className={`ds-text-10 font-medium tabular-nums ${availableLiquidityUsd !== null && availableLiquidityUsd !== undefined ? (availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'text-amber-600' : 'text-purple-500') : 'text-muted-foreground/70'}`}>
                   {formatScenarioSize(availableLiquidityUsd ?? null, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
                 </span>
               </span>

@@ -238,8 +238,8 @@ export function preloadTokenIcons(symbols: string[]): void {
 /**
  * Preload chain/network icons
  */
-export function preloadChainIcons(chains: string[]): void {
-  const iconSrcs = chains.map((chain) => getChainIconSrc(chain)).filter((src): src is string => !!src);
+export function preloadChainIcons(chainIds: number[]): void {
+  const iconSrcs = chainIds.map((chainId) => getChainIconSrc(chainId)).filter((src): src is string => !!src);
 
   preloadImagesIdle([...new Set(iconSrcs)]);
 }

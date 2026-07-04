@@ -1,4 +1,4 @@
-import { chainIconMap, normalizeChainName } from './chainIconMap';
+import { chainIconMap } from './chainIconMap';
 import { CHAIN_ICON_MANIFEST } from './chainIconManifest.generated';
 
 function resolveChainIconPathFromBase(iconBase: string): string | undefined {
@@ -9,9 +9,8 @@ function resolveChainIconPathFromBase(iconBase: string): string | undefined {
   return `/icons/networks/${key}.${ext}`;
 }
 
-export const getChainIconSrc = (chain: string) => {
-  const normalized = normalizeChainName(chain);
-  const iconName = chainIconMap[normalized];
+export const getChainIconSrc = (chainId: number) => {
+  const iconName = chainIconMap[chainId];
   if (!iconName) return undefined;
   return resolveChainIconPathFromBase(iconName);
 };
