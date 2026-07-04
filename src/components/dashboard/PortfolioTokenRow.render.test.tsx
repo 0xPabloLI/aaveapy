@@ -125,24 +125,28 @@ describe('PortfolioTokenRow render', () => {
     expect(subgridEl?.classList.contains('grid-cols-subgrid')).toBe(true);
   });
 
-  it('shows effective amount with muted color when synced (delta ≈ 0)', () => {
+  it('shows wallet value with muted color when synced (delta ≈ 0)', () => {
     renderRow({
       supplyOverrides: { amount: '5000', walletValue: 5000, inputMode: 'usd' },
     });
-    const el = screen.getByLabelText(/effective amount/i);
+    const el = screen.getByLabelText(/wallet.*5,000/i);
     expect(el).toBeTruthy();
     expect(el.textContent).toBe('5,000');
     expect(el.className).toContain('text-muted-foreground');
   });
 
-  it('shows effective amount with foreground color when modified (delta ≠ 0)', () => {
+  it('shows wallet → effective with side color when modified (delta ≠ 0)', () => {
     renderRow({
       supplyOverrides: { amount: '7500', walletValue: 5000, inputMode: 'usd' },
     });
-    const el = screen.getByLabelText(/effective amount/i);
+    const el = screen.getByLabelText(/effective.*7,500.*wallet.*5,000/i);
     expect(el).toBeTruthy();
-    expect(el.textContent).toBe('7,500');
-    expect(el.className).toContain('text-foreground');
+    expect(el.textContent).toContain('5,000');
+    expect(el.textContent).toContain('→');
+    expect(el.textContent).toContain('7,500');
+    const effectiveSpan = el.querySelector('.text-emerald-600');
+    expect(effectiveSpan).toBeTruthy();
+    expect(effectiveSpan?.textContent).toBe('7,500');
   });
 
   it('shows token amount in token input mode', () => {
@@ -150,32 +154,33 @@ describe('PortfolioTokenRow render', () => {
       supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
       tokenPriceInUsd: 50,
     });
-    const el = screen.getByLabelText(/effective amount/i);
-    expect(el.textContent).toBe('100');
+    const el = screen.getByLabelText(/effective.*100.*wallet/i);
+    expect(el.textContent).toContain('100');
   });
 
-  it('uses muted color when token price is unavailable in token mode', () => {
+  it('shows wallet only when token price is unavailable in token mode (not modified)', () => {
     renderRow({
       supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
       tokenPriceInUsd: undefined,
     });
-    const el = screen.getByLabelText(/effective amount/i);
+    const el = screen.getByLabelText(/wallet/i);
     expect(el.className).toContain('text-muted-foreground');
   });
 
-  it('aria-label includes wallet value for screen readers', () => {
+  it('aria-label includes wallet value for screen readers when modified', () => {
     renderRow({
       supplyOverrides: { amount: '7500', walletValue: 5000, inputMode: 'usd' },
     });
-    const el = screen.getByLabelText(/effective amount.*wallet.*5,000/i);
+    const el = screen.getByLabelText(/effective.*7,500.*wallet.*5,000/i);
     expect(el).toBeTruthy();
   });
 
-  it('does not show effective amount for manual positions (no wallet)', () => {
+  it('does not show wallet/effective for manual positions (no wallet)', () => {
     renderRow({
       supplyOverrides: { amount: '5000', walletValue: null },
     });
-    expect(screen.queryByLabelText(/effective amount/i)).toBeNull();
+    expect(screen.queryByLabelText(/wallet/i)).toBeNull();
+    expect(screen.queryByLabelText(/effective/i)).toBeNull();
   });
 
   it('minus button is not absolute-positioned (inline on the left)', () => {
