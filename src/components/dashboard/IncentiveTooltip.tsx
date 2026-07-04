@@ -558,7 +558,7 @@ const IncentiveTooltip = ({
           const groupName = group.name?.trim() || 'Merit';
           const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
           const bdGroupLabel = extractActionLabelFromMeritMessage(group.message);
-          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCap != null && breakdown.positionCap > 0 ? `${groupName} double yield` : `${groupName} base`) : groupName);
+          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCap != null && breakdown.positionCap > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
           return {
             value,
             startDate: breakdown.campaignStartedAt,
