@@ -143,6 +143,27 @@ Code review 发现 `supplyHeadlineIncentive`/`borrowHeadlineIncentive` 的 `calc
 
 **测试**：新增 `headline incentive also includes eligibility scaling` 测试，验证有 constraint 时的 headline < 无 constraint 时的 headline。
 
+### Review 修复 #2: Brevis position cap 使用 totalPositionUsd fallback
+
+AAV-1060 设计审视发现 `sumForecastBrevisIncentiveApr` 和 `buildBrevisCampaignDetails` 的 `positionUsd` 用 `combined ?? inputUsd`（delta-only fallback），当 `combined`（shared deposits）不存在但 `totalPositionUsd` 有值时（如 single simulation），Brevis cap 基于 delta 而非 total position。
+
+Brevis position cap 和 Merit position cap 是同质概念——两者都约束 per-user APR 基于用户总仓位，不是基于 delta。因此 Brevis 也应该用 total-based position。
+
+**修复**：`positionUsd` fallback 链改为 `combined ?? totalPositionUsd ?? inputUsd`。两个函数（`sumForecastBrevisIncentiveApr` 和 `buildBrevisCampaignDetails`）新增 `totalPositionUsd?: number` 参数。
+
+**测试**：新增 3 个测试验证 totalPositionUsd fallback 行为。
+
+### 非Bug 验证: headline 含 forecast 不影响 deltaIncentive (#6/#11-13)
+
+审视中质疑 headline incentive 传了 `forecastStates`，可能导致 `deltaIncentive = current - headline` 混入 forecast 变化。逐 source 验证后确认：
+
+- **Merkl/Brevis**：headline 和 current 都含 forecast → 差值抵消为 0
+- **Merit current**：`sumForecastMeritIncentiveApr(depositUsd=0)` 跳过 forecast 路径（`meritForecast.ts:177`），只做 position cap dilution → 不含 forecast
+- **Merit headline**：`sumMeritIncentiveApr` 用纯 `campaignApr`，无 forecast 无 cap → 不含 forecast
+- **结论**：`current - headline` = 纯 Merit position cap dilution gap，无 forecast 混入
+
+**教训**：差值语义需要逐 source 验证抵消关系，不能仅凭"两边参数不同"就断言有 bug。
+
 ## 影响范围
 
 ### Bug 1 影响
@@ -171,6 +192,9 @@ Code review 发现 `supplyHeadlineIncentive`/`borrowHeadlineIncentive` 的 `calc
 6. 验证 `merklCrossReserveNote` 使用 total position 作为 grossUsd（note 显示 `$1,042` 而非 `$0`）
 7. 验证 headline incentive 传入 `merklGroupMultiplier`，有 constraint 时的 headline < 无 constraint 时的 headline
 8. 浏览器验证：Ink 链 Merkl incentive APR 非零显示（Playwright + watchMode wallet）
+9. Brevis position cap：`inputUsd=0` + `totalPositionUsd=20000` + `positionCap=5000` → after < headline（total-based cap 生效）
+10. Brevis position cap：`inputUsd=0` + `totalPositionUsd=undefined` + `positionCap=5000` → after = headline（无 total position，cap 不生效）
+11. Brevis position cap：`combined=3000` + `totalPositionUsd=20000` → combined 优先于 totalPositionUsd
 
 ## 参考
 
@@ -179,6 +203,9 @@ Code review 发现 `supplyHeadlineIncentive`/`borrowHeadlineIncentive` 的 `calc
 - `src/lib/rateSimulationCalculator.ts:1213-1228` — `buildIncentiveCurrent` 调用（Bug 2 修复：加了 `merklGroupMultiplier` 参数）
 - `src/lib/rateSimulationCalculator.ts:305-354` — `buildIncentiveCurrent` 函数签名（Bug 2：新增 `merklGroupMultiplier` 参数）
 - `src/lib/rateSimulationCalculator.test.ts:1410+` — AAV-1060 测试（5 个：Bug 1×2 + Bug 2 + headline + merklCrossReserveNote）
+- `src/lib/rateSimulationCalculator.test.ts:1118+` — AAV-1060 #10 Brevis position cap 测试（3 个：totalPositionUsd fallback + combined 优先级 + buildBrevisCampaignDetails）
+- `src/lib/rateSimulationCalculator.ts:504-530` — `sumForecastBrevisIncentiveApr`（#10：新增 `totalPositionUsd` 参数，fallback 链改为 `combined ?? totalPositionUsd ?? inputUsd`）
+- `src/lib/rateSimulationCalculator.ts:772-846` — `buildBrevisCampaignDetails`（#10：同上）
 - `src/lib/netLendingCrossReserve.ts:32-37` — `computeCrossReserveEligibilityRatio` sourceGrossUsd<=0 返回 1
 - `src/lib/incentiveAggregation.ts:79-101` — `sumMerklIncentiveApr`
 - AAV-761, AAV-771 — wallet position dilution 相关修复
