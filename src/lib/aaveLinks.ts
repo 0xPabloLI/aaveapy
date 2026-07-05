@@ -31,6 +31,7 @@ const MARKET_NAME_MAP: Record<string, string> = {
   AaveV2Polygon: 'proto_polygon',
   AaveV2Fuji: 'proto_fuji',
   AaveV3XLayer: 'proto_xlayer_v3',
+  AaveV3Monad: 'proto_monad_v3',
 };
 
 const resolveMarketName = (marketName: string): string | null => {
