@@ -295,6 +295,9 @@
                             "positionCap": {
                               "type": "number"
                             },
+                            "isCombineCap": {
+                              "type": "boolean"
+                            },
                             "aprCap": {
                               "anyOf": [
                                 {
@@ -439,6 +442,9 @@
                             "positionCap": {
                               "type": "number"
                             },
+                            "isCombineCap": {
+                              "type": "boolean"
+                            },
                             "aprCap": {
                               "anyOf": [
                                 {
@@ -579,6 +585,12 @@
                             "budgetBoundMode": {
                               "type": "string"
                             },
+                            "positionCap": {
+                              "type": "number"
+                            },
+                            "isCombineCap": {
+                              "type": "boolean"
+                            },
                             "lastEndedCampaign": {
                               "type": "object",
                               "properties": {
@@ -712,6 +724,12 @@
                             },
                             "budgetBoundMode": {
                               "type": "string"
+                            },
+                            "positionCap": {
+                              "type": "number"
+                            },
+                            "isCombineCap": {
+                              "type": "boolean"
                             },
                             "lastEndedCampaign": {
                               "type": "object",
@@ -847,6 +865,12 @@
                             "budgetBoundMode": {
                               "type": "string"
                             },
+                            "positionCap": {
+                              "type": "number"
+                            },
+                            "isCombineCap": {
+                              "type": "boolean"
+                            },
                             "lastEndedCampaign": {
                               "type": "object",
                               "properties": {
@@ -968,6 +992,9 @@
                                 "positionCap": {
                                   "type": "number"
                                 },
+                                "isCombineCap": {
+                                  "type": "boolean"
+                                },
                                 "rewardTokenSymbol": {
                                   "type": "string"
                                 }
@@ -1039,6 +1066,9 @@
                                 "positionCap": {
                                   "type": "number"
                                 },
+                                "isCombineCap": {
+                                  "type": "boolean"
+                                },
                                 "rewardTokenSymbol": {
                                   "type": "string"
                                 }
@@ -1082,6 +1112,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "isCombineCap": {
+                            "type": "boolean"
                           },
                           "campaignId": {
                             "type": "string"
@@ -1150,6 +1183,9 @@
                                 "positionCap": {
                                   "type": "number"
                                 },
+                                "isCombineCap": {
+                                  "type": "boolean"
+                                },
                                 "rewardTokenSymbol": {
                                   "type": "string"
                                 }
@@ -1221,6 +1257,9 @@
                                 "positionCap": {
                                   "type": "number"
                                 },
+                                "isCombineCap": {
+                                  "type": "boolean"
+                                },
                                 "rewardTokenSymbol": {
                                   "type": "string"
                                 }
@@ -1264,6 +1303,9 @@
                           },
                           "positionCap": {
                             "type": "number"
+                          },
+                          "isCombineCap": {
+                            "type": "boolean"
                           },
                           "campaignId": {
                             "type": "string"
@@ -1749,6 +1791,9 @@
                       "positionCap": {
                         "type": "number"
                       },
+                      "isCombineCap": {
+                        "type": "boolean"
+                      },
                       "aprCap": {
                         "anyOf": [
                           {
@@ -1893,6 +1938,9 @@
                       "positionCap": {
                         "type": "number"
                       },
+                      "isCombineCap": {
+                        "type": "boolean"
+                      },
                       "aprCap": {
                         "anyOf": [
                           {
@@ -2033,6 +2081,12 @@
                       "budgetBoundMode": {
                         "type": "string"
                       },
+                      "positionCap": {
+                        "type": "number"
+                      },
+                      "isCombineCap": {
+                        "type": "boolean"
+                      },
                       "lastEndedCampaign": {
                         "type": "object",
                         "properties": {
@@ -2166,6 +2220,12 @@
                       },
                       "budgetBoundMode": {
                         "type": "string"
+                      },
+                      "positionCap": {
+                        "type": "number"
+                      },
+                      "isCombineCap": {
+                        "type": "boolean"
                       },
                       "lastEndedCampaign": {
                         "type": "object",
@@ -2301,6 +2361,12 @@
                       "budgetBoundMode": {
                         "type": "string"
                       },
+                      "positionCap": {
+                        "type": "number"
+                      },
+                      "isCombineCap": {
+                        "type": "boolean"
+                      },
                       "lastEndedCampaign": {
                         "type": "object",
                         "properties": {
@@ -2422,6 +2488,9 @@
                           "positionCap": {
                             "type": "number"
                           },
+                          "isCombineCap": {
+                            "type": "boolean"
+                          },
                           "rewardTokenSymbol": {
                             "type": "string"
                           }
@@ -2493,6 +2562,9 @@
                           "positionCap": {
                             "type": "number"
                           },
+                          "isCombineCap": {
+                            "type": "boolean"
+                          },
                           "rewardTokenSymbol": {
                             "type": "string"
                           }
@@ -2536,6 +2608,9 @@
                     },
                     "positionCap": {
                       "type": "number"
+                    },
+                    "isCombineCap": {
+                      "type": "boolean"
                     },
                     "campaignId": {
                       "type": "string"
@@ -2604,6 +2679,9 @@
                           "positionCap": {
                             "type": "number"
                           },
+                          "isCombineCap": {
+                            "type": "boolean"
+                          },
                           "rewardTokenSymbol": {
                             "type": "string"
                           }
@@ -2675,6 +2753,9 @@
                           "positionCap": {
                             "type": "number"
                           },
+                          "isCombineCap": {
+                            "type": "boolean"
+                          },
                           "rewardTokenSymbol": {
                             "type": "string"
                           }
@@ -2718,6 +2799,9 @@
                     },
                     "positionCap": {
                       "type": "number"
+                    },
+                    "isCombineCap": {
+                      "type": "boolean"
                     },
                     "campaignId": {
                       "type": "string"
@@ -2877,6 +2961,9 @@
                 "positionCap": {
                   "type": "number"
                 },
+                "isCombineCap": {
+                  "type": "boolean"
+                },
                 "aprCap": {
                   "anyOf": [
                     {
@@ -3001,6 +3088,12 @@
           "budgetBoundMode": {
             "type": "string"
           },
+          "positionCap": {
+            "type": "number"
+          },
+          "isCombineCap": {
+            "type": "boolean"
+          },
           "lastEndedCampaign": {
             "type": "object",
             "properties": {
@@ -3094,6 +3187,12 @@
                 },
                 "budgetBoundMode": {
                   "type": "string"
+                },
+                "positionCap": {
+                  "type": "number"
+                },
+                "isCombineCap": {
+                  "type": "boolean"
                 },
                 "lastEndedCampaign": {
                   "type": "object",
@@ -3198,6 +3297,9 @@
           "positionCap": {
             "type": "number"
           },
+          "isCombineCap": {
+            "type": "boolean"
+          },
           "rewardTokenSymbol": {
             "type": "string"
           }
@@ -3262,6 +3364,9 @@
                 "positionCap": {
                   "type": "number"
                 },
+                "isCombineCap": {
+                  "type": "boolean"
+                },
                 "rewardTokenSymbol": {
                   "type": "string"
                 }
@@ -3305,6 +3410,9 @@
           },
           "positionCap": {
             "type": "number"
+          },
+          "isCombineCap": {
+            "type": "boolean"
           },
           "campaignId": {
             "type": "string"

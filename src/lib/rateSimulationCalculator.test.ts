@@ -1073,6 +1073,131 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
   });
 });
 
+describe('buildMerklCampaignDetails — positionCap', () => {
+  const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
+
+  it('applies position cap dilution when breakdown has positionCap and positionUsd > positionCap', () => {
+    const opportunities = [
+      {
+        name: 'Merkl Capped',
+        link: 'https://example.com',
+        breakdowns: [
+          {
+            campaignId: 'capped-camp',
+            campaignApr: 10,
+            campaignStartedAt: '2025-01-01',
+            campaignEndedAt: '2030-12-31',
+            positionCap: 500,
+            isCombineCap: false,
+          },
+        ],
+      },
+    ];
+    const rows = buildMerklCampaignDetails(
+      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
+      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
+      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
+      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
+      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
+      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
+    );
+    const row = rows[0];
+    expect(row).toBeDefined();
+    expect(row!.after).toBeLessThan(10);
+    expect(row!.capMetrics).toBeDefined();
+  });
+
+  it('does not dilute when positionUsd <= positionCap', () => {
+    const opportunities = [
+      {
+        name: 'Merkl Capped',
+        link: 'https://example.com',
+        breakdowns: [
+          {
+            campaignId: 'capped-camp',
+            campaignApr: 10,
+            campaignStartedAt: '2025-01-01',
+            campaignEndedAt: '2030-12-31',
+            positionCap: 2000,
+            isCombineCap: false,
+          },
+        ],
+      },
+    ];
+    const rows = buildMerklCampaignDetails(
+      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
+      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
+      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
+      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
+      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
+      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
+    );
+    const row = rows[0];
+    expect(row).toBeDefined();
+    expect(row!.after).toBeCloseTo(10, 1);
+  });
+
+  it('uses netForEligibility when netPositionConstraint exists', () => {
+    const opportunities = [
+      {
+        name: 'Merkl Net',
+        link: 'https://example.com',
+        netPositionConstraint: { sourceSide: 'supply', offsetReserveIds: ['r1'] },
+        breakdowns: [
+          {
+            campaignId: 'net-camp',
+            campaignApr: 10,
+            campaignStartedAt: '2025-01-01',
+            campaignEndedAt: '2030-12-31',
+            positionCap: 500,
+            isCombineCap: false,
+          },
+        ],
+      },
+    ];
+    const rows = buildMerklCampaignDetails(
+      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
+      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
+      /* eligibilityRatio */ 1, /* grossInputUsd */ 2000,
+      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
+      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
+      /* pointRateMap */ undefined, /* grossForEligibility */ 2000, /* netForEligibility */ 1000,
+    );
+    const row = rows[0];
+    expect(row).toBeDefined();
+    expect(row!.after).toBeLessThan(10);
+  });
+
+  it('skips position cap when breakdown has no positionCap', () => {
+    const opportunities = [
+      {
+        name: 'Merkl No Cap',
+        link: 'https://example.com',
+        breakdowns: [
+          {
+            campaignId: 'no-cap-camp',
+            campaignApr: 10,
+            campaignStartedAt: '2025-01-01',
+            campaignEndedAt: '2030-12-31',
+          },
+        ],
+      },
+    ];
+    const rows = buildMerklCampaignDetails(
+      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
+      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
+      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
+      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
+      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
+      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
+    );
+    const row = rows[0];
+    expect(row).toBeDefined();
+    expect(row!.after).toBeCloseTo(10, 1);
+    expect(row!.capMetrics).toBeUndefined();
+  });
+});
+
 describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
   it('marks brevis campaign as forecastUnavailable when forecastStates is provided but lacks campaignId', () => {
     const brevis = [
