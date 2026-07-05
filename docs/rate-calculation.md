@@ -997,3 +997,28 @@ JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 ### 7.8 `SimulationLane` Field Names
 
 `SimulationLane` has no `after`/`delta` fields. Only: `afterTotal`/`deltaTotal`, `afterNative`/`deltaNative`, `afterIncentive`/`deltaIncentive`.
+
+### 7.9 Wallet Position Inclusion Matrix
+
+Wallet position (`walletSupplyUsd`/`walletBorrowUsd`, derived as `totalSupplyUsd - supplyInputUsd`) is included in some calculation paths but excluded from others. The core design principle: **"pushing the rate curve" uses delta-only; "subject to cap/constraint" uses total position.**
+
+| # | Calculation Path | Wallet Included? | Variable | Rationale |
+|---|---|---|---|---|
+| 1 | Merit/Merkl forecast input (`meritMerklInputUsd`) | **No** (delta-only) | `supplyNetInputUsd` = max(supplyInput - borrowInput, 0) | Wallet already in `latestTvl`; adding to `inputUsd` → TVL double-count |
+| 2 | Eligibility ratio (`sameReserveRatio`) | **Yes** (total-based) | `supplyGrossForEligibility` = totalSupplyUsd ?? supplyInputUsd | "What fraction of total position is net-eligible" — must use total |
+| 3 | Cross-reserve eligibility (`merklGroupMultiplier`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | AAV-1060: delta-only grossUsd=0 skipped cross-reserve scaling |
+| 4 | Cross-reserve note (`merklCrossReserveNote`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | Shows "$X of $Y net eligible" with total position as $Y |
+| 5 | Current incentive — wallet branch | **Yes** (wallet-only, no delta) | `walletPositionUsd` = walletSupplyUsd | Current = "what wallet currently earns"; position cap dilution on existing position |
+| 6 | Current incentive — headline branch | **No** | Raw API data, no wallet param | Headline = undiluted API display value; reference for deltaIncentive gap |
+| 7 | After incentive | **Yes** (total-based) | `totalPositionUsd` = totalSupplyUsd | After = "what total position (wallet+delta) would earn" |
+| 8 | Merit position cap (per-campaign current) | **Yes** (wallet-only) | `walletPositionUsd` | Existing position subject to cap |
+| 9 | Merit position cap (per-campaign after) | **Yes** (total-based) | `totalPositionUsd ?? inputUsd` | Simulated total position subject to cap |
+| 10 | Brevis position cap | **No** (delta-only) | `effectiveInputUsd` = combined ?? inputUsd | Brevis cap limits cumulative reward, not position size; uses deposit not total |
+| 11 | `deltaIncentive` — simulation path | **Indirect** | `afterIncentive - currentIncentive` | Wallet flows in via #5 (current) and #7 (after) |
+| 12 | `deltaIncentive` — wallet dilution gap path | **Indirect** | `currentIncentive - headlineIncentive` | Wallet only in current (#5), not in headline (#6) → gap = dilution |
+| 13 | `deltaIncentive` — no wallet path | **No** | `null` | No data to display |
+
+**Key semantic pairs**:
+- `meritMerklInputUsd` (delta) vs `supplyGrossForEligibility` (total): input drives rate curve; eligibility measures position composition
+- `walletPositionUsd` (current) vs `totalPositionUsd` (after): current reflects existing position; after reflects simulated total
+- `headlineIncentive` (no wallet) vs `currentIncentive` (wallet): gap between them = wallet dilution effect
