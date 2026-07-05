@@ -453,15 +453,16 @@ describe('formatPercent', () => {
     expect(formatters.formatPercent(-Infinity)).toBe('-');
   });
 
-  it('caps extremely large M% values', () => {
-    expect(formatters.formatPercent(1_000_000)).toBe('1.00M%');
-    expect(formatters.formatPercent(999_990_000)).toBe('999.99M%');
-    expect(formatters.formatPercent(1_000_000_000)).toBe('>999.99M%');
-    expect(formatters.formatPercent(321_032_686_389_358)).toBe('>999.99M%');
+  it('caps extremely large values at >10K%', () => {
+    expect(formatters.formatPercent(9_999)).toBe('10K%');
+    expect(formatters.formatPercent(10_000)).toBe('>10K%');
+    expect(formatters.formatPercent(1_000_000)).toBe('>10K%');
+    expect(formatters.formatPercent(321_032_686_389_358)).toBe('>10K%');
   });
 
-  it('caps extremely large negative M% values', () => {
-    expect(formatters.formatPercent(-1_000_000_000)).toBe('<-999.99M%');
+  it('caps extremely large negative values at <-10K%', () => {
+    expect(formatters.formatPercent(-10_000)).toBe('<-10K%');
+    expect(formatters.formatPercent(-1_000_000_000)).toBe('<-10K%');
   });
 });
 
