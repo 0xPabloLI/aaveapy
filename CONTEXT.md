@@ -135,12 +135,19 @@ Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单�
 UI 显示 `"Incentive on first $X"`（与 Merit Self Position Cap 统一文案）。可能 shared（supply + borrow 共享）。
 _Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `positionCap`）
 
+**Position Cap (Merkl)**:
+Per-user 净仓位中可获 incentive 的金额上限。Merkl `maxDeposit` campaign 的 net position cap（`computeMethod === "maxDeposit"`），限制用户 net position（supply - borrow）中可获 incentive 的金额（API 字段 `positionCap`）。
+`isCombineCap` 固定为 `false`（Merkl 是单侧/净仓位 cap，非 supply+borrow 共享）。
+`positionUsd` 推导：当 `netPositionConstraint` 存在时用 `netForEligibility`（net position），否则用 `grossInputUsd ?? inputUsd`。
+与 Merit/Brevis 共享 `applyPositionCapToForecastResult`，统一 cap 叠加逻辑。
+_Avoid_: Max Deposit Cap（这是 Merkl API 字段名 `maxDeposit`，领域层统一用 Position Cap）
+
 **Supply Cap / Borrow Cap**:
 Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Merit Self Position Cap / Brevis Position Cap）是不同概念。
 _Avoid_: Supply Ceiling, Borrow Ceiling
 
 **Portfolio Cap Warning**:
-Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`；API 字段 `positionCap`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
+Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`、Merkl `positionCap`；API 字段 `positionCap`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
 _Avoid_: Cap Error, Cap Alert（这不是错误/警告，是提醒）；red/danger 色（用 amber）
 
 ## Identity

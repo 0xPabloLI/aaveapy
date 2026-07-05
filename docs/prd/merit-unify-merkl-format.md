@@ -161,7 +161,7 @@ These are **business differences**, not format differences. They are expressed t
 |---|---|---|---|
 | Whitelist/Blacklist | None | Has `whitelistOnly`, `campaignAccessStatuses` | None |
 | Points path | None | Has `pointsPerThousandUsd`, `pointToUsdRate` | None |
-| Position cap | Self breakdown only | None | Has `positionCap` |
+| Position cap | Self breakdown only | Has `positionCap` (from `maxDeposit`, net position cap, `isCombineCap=false`) | Has `positionCap` |
 | Forecast model | DUTCH_AUCTION path | All four campaignType paths | FIX_REWARD path |
 | Reward token icon | None | Has `rewardTokenIconUrl` | None (future: symbol mapping) |
 

@@ -132,7 +132,7 @@ src/hooks/useRateSimulation.ts
 | Cap Type | Scope | Mechanism | Source |
 |----------|-------|-----------|--------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap (Merit & Brevis) | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，共享 `applyPositionCap`，作为正交叠加层后处理 | `meritForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
+| Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，共享 `applyPositionCap`，作为正交叠加层后处理。Merit supply-only cap (`isCombineCap=false`)；Merkl net position cap (`isCombineCap=false`, `positionUsd=netSupply`, from `maxDeposit`)；Brevis shared cap (`isCombineCap=true`, supply+borrow 共享额度) | `meritForecast.ts` / `merklForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
 
 ### Tydro Points
 

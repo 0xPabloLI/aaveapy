@@ -13,6 +13,7 @@ import { TYDRO_POINT_TO_USD_RATE, getPointToUsdRate, type PointRateMap } from '@
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
+import { applyPositionCapToForecastResult } from '@/lib/incentiveCaps';
 
 export interface IncentiveCalculationOptions {
   /** Merkl campaign IDs the user opted into for whitelist-only APR */
@@ -25,6 +26,8 @@ export interface IncentiveCalculationOptions {
   pointRateMap?: PointRateMap;
   /** Per-group multiplier for Merkl opportunity groups (e.g., cross-reserve eligibility). AAV-980 */
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number;
+  /** User's total position in USD for position cap dilution (Merkl maxDeposit campaigns). */
+  positionUsd?: number;
 }
 
 export interface IncentiveSources {
@@ -81,7 +84,7 @@ export const sumMerklIncentiveApr = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const { pointRateMap } = options;
+  const { pointRateMap, positionUsd } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
@@ -91,9 +94,12 @@ export const sumMerklIncentiveApr = (
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
         : pointToUsdRate;
-      const apr = options.forecastStates
+      let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
+      if (!isNaN(apr) && apr >= 0 && breakdown.positionCap != null && breakdown.positionCap > 0 && positionUsd != null && positionUsd > 0) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, breakdown.positionCap, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+      }
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
     groupMultiplier: options.merklGroupMultiplier,
@@ -105,7 +111,7 @@ export const sumMerklIncentiveApy = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const { pointRateMap } = options;
+  const { pointRateMap, positionUsd } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
@@ -115,9 +121,12 @@ export const sumMerklIncentiveApy = (
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
         : pointToUsdRate;
-      const apr = options.forecastStates
+      let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
+      if (!isNaN(apr) && apr >= 0 && breakdown.positionCap != null && breakdown.positionCap > 0 && positionUsd != null && positionUsd > 0) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, breakdown.positionCap, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+      }
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
     groupMultiplier: options.merklGroupMultiplier,
