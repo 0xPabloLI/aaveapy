@@ -5,10 +5,15 @@
  * - 1K-999K:    0 decimals + K (e.g. 12K%)
  * - >= 1M:      2 decimals + M (e.g. 12.35M%)
  */
+const PERCENT_M_CAP = 999.99;
+
 function smartPercent(value: number): string {
+  if (!Number.isFinite(value)) return '-';
   const absValue = Math.abs(value);
   if (absValue >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M%`;
+    const mValue = value / 1_000_000;
+    if (Math.abs(mValue) > PERCENT_M_CAP) return `${value < 0 ? '<-' : '>'}${PERCENT_M_CAP}M%`;
+    return `${mValue.toFixed(2)}M%`;
   }
   if (absValue >= 1_000) {
     return `${Math.round(value / 1_000)}K%`;

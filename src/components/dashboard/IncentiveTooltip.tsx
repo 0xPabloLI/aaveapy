@@ -120,14 +120,15 @@ const getSourceIcon = (
   return map[sourceType];
 };
 
-function resolveRewardTokenIconSrc(symbol?: string, fallbackUrl?: string): string | undefined {
+function resolveRewardTokenIconSrc(symbol?: string, preferredUrl?: string): string | undefined {
+  if (preferredUrl) return preferredUrl;
   if (symbol) {
     const key = symbol.trim().toLowerCase();
     if (TOKEN_ICON_MANIFEST[key]) {
       return `/icons/tokens/${key}.${TOKEN_ICON_MANIFEST[key][0]}`;
     }
   }
-  return fallbackUrl;
+  return undefined;
 }
 
 function campaignsHaveUniformIcon(campaigns: IncentiveCampaign[]): boolean {
@@ -885,6 +886,16 @@ const IncentiveTooltip = ({
 
     return (
       <div className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1-5)]">
+        {sourceMessageLines.length > 0 && (
+          <ul className="space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+            {sourceMessageLines.map((line, lineIndex) => (
+              <li key={`${keyPrefix}-src-msg-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         {campaigns.map((campaign, campaignIndex) => {
           const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
           const merklWlToggleKey =
@@ -917,16 +928,6 @@ const IncentiveTooltip = ({
             </div>
           );
         })}
-        {sourceMessageLines.length > 0 && (
-          <ul className="space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-            {sourceMessageLines.map((line, lineIndex) => (
-              <li key={`${keyPrefix}-src-msg-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     );
   };
