@@ -1009,13 +1009,13 @@ Wallet position (`walletSupplyUsd`/`walletBorrowUsd`, derived as `totalSupplyUsd
 | 3 | Cross-reserve eligibility (`merklGroupMultiplier`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | AAV-1060: delta-only grossUsd=0 skipped cross-reserve scaling |
 | 4 | Cross-reserve note (`merklCrossReserveNote`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | Shows "$X of $Y net eligible" with total position as $Y |
 | 5 | Current incentive — wallet branch | **Yes** (wallet-only, no delta) | `walletPositionUsd` = walletSupplyUsd | Current = "what wallet currently earns"; position cap dilution on existing position |
-| 6 | Current incentive — headline branch | **No** | Raw API data, no wallet param | Headline = undiluted API display value; reference for deltaIncentive gap |
+| 6 | Current incentive — headline branch | **No** | Raw API data + forecast (same as current), no wallet param | Headline = undiluted API display value; both headline & current contain Merkl/Brevis forecast (cancels out in deltaIncentive), but headline lacks Merit position cap dilution |
 | 7 | After incentive | **Yes** (total-based) | `totalPositionUsd` = totalSupplyUsd | After = "what total position (wallet+delta) would earn" |
 | 8 | Merit position cap (per-campaign current) | **Yes** (wallet-only) | `walletPositionUsd` | Existing position subject to cap |
 | 9 | Merit position cap (per-campaign after) | **Yes** (total-based) | `totalPositionUsd ?? inputUsd` | Simulated total position subject to cap |
-| 10 | Brevis position cap | **No** (delta-only) | `effectiveInputUsd` = combined ?? inputUsd | Brevis cap limits cumulative reward, not position size; uses deposit not total |
+| 10 | Brevis position cap | **Yes** (total-based) | `positionUsd` = combined ?? totalPositionUsd ?? inputUsd | AAV-1060 #10: Brevis cap is homologous to Merit position cap — both constrain per-user APR based on total position, not delta alone |
 | 11 | `deltaIncentive` — simulation path | **Indirect** | `afterIncentive - currentIncentive` | Wallet flows in via #5 (current) and #7 (after) |
-| 12 | `deltaIncentive` — wallet dilution gap path | **Indirect** | `currentIncentive - headlineIncentive` | Wallet only in current (#5), not in headline (#6) → gap = dilution |
+| 12 | `deltaIncentive` — wallet dilution gap path | **Indirect** | `currentIncentive - headlineIncentive` | Wallet only in current (#5), not in headline (#6) → gap = Merit position cap dilution. Merkl/Brevis forecast cancels out (both sides contain it). Merit forecast also cancels: current uses `sumForecastMeritIncentiveApr(depositUsd=0)` which skips forecast (only applies cap), headline uses `sumMeritIncentiveApr` (pure campaignApr, no forecast no cap) |
 | 13 | `deltaIncentive` — no wallet path | **No** | `null` | No data to display |
 
 **Key semantic pairs**:

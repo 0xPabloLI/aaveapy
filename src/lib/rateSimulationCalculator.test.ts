@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns } from './rateSimulationCalculator';
+import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns, sumForecastBrevisIncentiveApr } from './rateSimulationCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -1113,6 +1113,57 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBeFalsy();
+  });
+});
+
+describe('Brevis position cap — totalPositionUsd fallback (AAV-1060 #10)', () => {
+  const brevisWithCap = [
+    {
+      campaignId: 'brevis-cap-1',
+      campaignApr: 10,
+      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2030-12-31',
+      message: 'Brevis Cap Test',
+      positionCap: 5000,
+      totalBudget: null,
+    },
+  ];
+
+  it('uses totalPositionUsd as fallback when combined deposits are absent', () => {
+    const resultWithTotal = sumForecastBrevisIncentiveApr(
+      brevisWithCap, false, 0, undefined, undefined, 20000,
+    );
+    const resultWithInputOnly = sumForecastBrevisIncentiveApr(
+      brevisWithCap, false, 0, undefined, undefined, undefined,
+    );
+    expect(resultWithTotal).toBeLessThan(10);
+    expect(resultWithInputOnly).toBe(10);
+  });
+
+  it('prefers combined deposits over totalPositionUsd', () => {
+    const sharedDeposits = new Map([['brevis-cap-1', 3000]]);
+    const resultWithCombined = sumForecastBrevisIncentiveApr(
+      brevisWithCap, false, 0, sharedDeposits, undefined, 20000,
+    );
+    const resultWithTotalOnly = sumForecastBrevisIncentiveApr(
+      brevisWithCap, false, 0, undefined, undefined, 20000,
+    );
+    expect(resultWithCombined).not.toBe(resultWithTotalOnly);
+  });
+
+  it('buildBrevisCampaignDetails uses totalPositionUsd for position cap', () => {
+    const rowsWithTotal = buildBrevisCampaignDetails(
+      brevisWithCap, false, 0, undefined, true, undefined, 20000,
+    );
+    const rowsWithInputOnly = buildBrevisCampaignDetails(
+      brevisWithCap, false, 0, undefined, true, undefined, undefined,
+    );
+    expect(rowsWithTotal.length).toBe(1);
+    expect(rowsWithInputOnly.length).toBe(1);
+    expect(rowsWithTotal[0].current).toBe(10);
+    expect(rowsWithTotal[0].after).toBeLessThan(10);
+    expect(rowsWithInputOnly[0].current).toBe(10);
   });
 });
 
