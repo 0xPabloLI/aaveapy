@@ -447,6 +447,22 @@ describe('formatPercent', () => {
   it('returns "-" for NaN', () => {
     expect(formatters.formatPercent(NaN)).toBe('-');
   });
+
+  it('returns "-" for Infinity', () => {
+    expect(formatters.formatPercent(Infinity)).toBe('-');
+    expect(formatters.formatPercent(-Infinity)).toBe('-');
+  });
+
+  it('caps extremely large M% values', () => {
+    expect(formatters.formatPercent(1_000_000)).toBe('1.00M%');
+    expect(formatters.formatPercent(999_990_000)).toBe('999.99M%');
+    expect(formatters.formatPercent(1_000_000_000)).toBe('>999.99M%');
+    expect(formatters.formatPercent(321_032_686_389_358)).toBe('>999.99M%');
+  });
+
+  it('caps extremely large negative M% values', () => {
+    expect(formatters.formatPercent(-1_000_000_000)).toBe('<-999.99M%');
+  });
 });
 
 describe('convertAprToApy', () => {

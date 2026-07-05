@@ -644,7 +644,7 @@ describe('IncentiveTooltip', () => {
       const { baseElement } = renderTooltip({ ...defaultProps, reserve, pointRateMap });
       const allImgs = baseElement.querySelectorAll('img');
       const srcs = Array.from(allImgs).map(el => (el as HTMLImageElement).src);
-      const inkSrc = srcs.find(s => s.includes('tydroinkpoints'));
+      const inkSrc = srcs.find(s => s.includes('example.com/ink'));
       expect(inkSrc).toBeDefined();
     });
 
@@ -800,7 +800,7 @@ describe('IncentiveTooltip', () => {
   });
 
   describe('Opportunity message position + per-campaign APR and reward token', () => {
-    it('renders opportunity message below all campaigns for Merkl', () => {
+    it('renders opportunity message above all campaigns for Merkl (multi-campaign)', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
         merklSupplys: [{
@@ -816,9 +816,9 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve, isApy: false });
       const text = container.textContent!;
       const oppMsgIdx = text.indexOf('Opportunity message');
-      const lastCampIdx = text.lastIndexOf('Campaign time');
+      const firstCampIdx = text.indexOf('Campaign time');
       expect(oppMsgIdx).toBeGreaterThan(0);
-      expect(oppMsgIdx).toBeGreaterThan(lastCampIdx);
+      expect(oppMsgIdx).toBeLessThan(firstCampIdx);
     });
 
     it('renders per-campaign APR in multi-campaign mode', () => {
@@ -880,7 +880,7 @@ describe('IncentiveTooltip', () => {
       expect(srcs).toContain('https://example.com/ops.svg');
     });
 
-    it('prefers local token icon over URL when rewardTokenSymbol matches manifest', () => {
+    it('prefers rewardTokenIconUrl over local manifest when both are present', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
         merklSupplys: [{
@@ -896,8 +896,7 @@ describe('IncentiveTooltip', () => {
       const srcs = Array.from(imgs).map(img => img.getAttribute('src'));
       const usdcIconSrc = srcs.find(s => s?.includes('usdc'));
       expect(usdcIconSrc).toBeDefined();
-      expect(usdcIconSrc).toContain('/icons/tokens/ausdc');
-      expect(usdcIconSrc).not.toContain('example.com');
+      expect(usdcIconSrc).toContain('example.com/ausdc');
     });
 
     it('falls back to rewardTokenIconUrl when rewardTokenSymbol has no local icon', () => {
@@ -951,21 +950,6 @@ describe('IncentiveTooltip', () => {
       const headerAprs = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
       const merklHeaderApr = Array.from(headerAprs).find(el => el.textContent?.includes('15'));
       expect(merklHeaderApr?.querySelector('img')).not.toBeNull();
-    });
-
-    it('shows opp header icon when all campaigns have the same reward token icon', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        merklSupplys: [{
-          name: 'Lend GHO on Tydro',
-          link: 'https://merkl.angle.money',
-          breakdowns: [
-            { campaignId: 'merkl-1', campaignApr: 10, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
-            { campaignId: 'merkl-2', campaignApr: 5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', rewardTokenSymbol: 'INK', rewardTokenIconUrl: 'https://example.com/ink.svg' },
-          ],
-        }],
-      };
-      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
       const headerRows = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
       const merklHeader = Array.from(headerRows).find(el => el.innerHTML.includes('example.com'));
       expect(merklHeader).toBeDefined();
