@@ -33,6 +33,7 @@ const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   56: 'binance-smart-chain',
   100: 'xdai',
   137: 'polygon-pos',
+  143: 'monad',
   146: 'sonic',
   196: 'x-layer',
   250: 'fantom',
