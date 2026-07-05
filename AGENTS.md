@@ -250,3 +250,9 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **headline incentive 必须与 current incentive 使用同一 `merklGroupMultiplier`**：`supplyHeadlineIncentive`/`borrowHeadlineIncentive` 原来不传 `merklGroupMultiplier`，而 `buildIncentiveCurrent` 已传。`deltaIncentive = currentIncentive - headlineIncentive` 在 wallet dilution gap 路径下缩放口径不一致。**教训：`deltaIncentive` 三态分路的每一路（simulation delta / wallet dilution gap / null）都要求 `current` 和 `headline` 使用同一缩放——否则差值的语义会混入缩放差异。**
 - **`merklCrossReserveNote` 的 `grossUsd` 也需 total-based**：note 中显示的 `$1,042`（总仓位）而非 `$0`（delta），让用户看到正确的 net eligible 比例。Bug 1 修复的 `supplyGrossForEligibility` 自动覆盖了 note 逻辑。**教训：修复一个变量名时，检查同一变量的所有消费点——函数签名参数可能只传一次，但内部多路分支可能依赖不同的语义。**
 - **被删除的 caller contract 注释必须恢复**：`totalSupplyUsd` 三种调用方合约说明（Portfolio: wallet+delta / Single: input=total / No input: undefined）在代码搬迁时被删除。**教训：有合约语义的注释必须跟着变量走，搬迁代码时先复制注释再删除原位。**
+
+## Learned Lessons: 极端 APR 显示、reward token icon 优先级、opp-level message 位置
+
+- **`smartPercent` 必须有上限 cap**：短期高 APR incident（如 Merkl TVL 极低时）可产生 `321032686389358.88M%` 这样荒谬的显示。`>= 1M` 分支原来只做 `/1_000_000 + M%` 无上限。修复：`PERCENT_M_CAP = 999.99`，超过显示 `>999.99M%`/`<-999.99M%`；`Infinity`/`-Infinity` 返回 `-`。**教训：格式化函数必须有上限截断 + 非有限值守卫，不能假设业务层数据总在合理范围。**
+- **reward token icon 应优先用 source 提供的 URL 而非本地 manifest**：Merkl 返回 `rewardTokenIconUrl`（如 `aCelUSDT.jpeg`）是链感知的 icon，与 Merkl 官网一致；本地 manifest 的 `ausdt.png` 是通用 aToken icon，视觉不同。`resolveRewardTokenIconSrc` 改为 `preferredUrl` 优先、本地 manifest 兜底。Merit/Brevis 不提供 `rewardTokenIconUrl`，不受影响。**教训：当 source 提供了"官方" icon URL 时，用它比本地映射更准确；本地 manifest 的角色应从"优先"降为"fallback"。参数名应反映实际语义（`preferredUrl` 而非 `fallbackUrl`）。**
+- **多 campaign 时 opp-level message 放在底部会被误认为最后一个 campaign 的附属信息**：视觉上用户无法区分"这是 source 级共享信息"还是"这是最后一个 campaign 的说明"。修复：多 campaign 时将 `sourceMessageLines` 渲染移到 source header 和 campaign rows 之间。单 campaign 不变（message 仍在 campaign content 内，跟在 time 行后面）。**教训：UI 元素的视觉位置必须传达其语义层级——source 级信息应在 source 级区域，不能"寄生"在子级区域的末尾。**
