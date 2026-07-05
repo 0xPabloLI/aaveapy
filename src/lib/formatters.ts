@@ -2,19 +2,15 @@
  * Smart-format a percentage value with controlled display length.
  * - < 100:      2 decimals (e.g. 5.67%)
  * - 100-999:    1 decimal  (e.g. 123.4%)
- * - 1K-999K:    0 decimals + K (e.g. 12K%)
- * - >= 1M:      2 decimals + M (e.g. 12.35M%)
+ * - 1K-9.99K:  0 decimals + K (e.g. 12K%)
+ * - >= 10K:     capped display (e.g. >10K% / <-10K%)
  */
-const PERCENT_M_CAP = 999.99;
+const PERCENT_K_CAP = 10;
 
 function smartPercent(value: number): string {
   if (!Number.isFinite(value)) return '-';
   const absValue = Math.abs(value);
-  if (absValue >= 1_000_000) {
-    const mValue = value / 1_000_000;
-    if (Math.abs(mValue) > PERCENT_M_CAP) return `${value < 0 ? '<-' : '>'}${PERCENT_M_CAP}M%`;
-    return `${mValue.toFixed(2)}M%`;
-  }
+  if (absValue >= 10_000) return `${value < 0 ? '<-' : '>'}${PERCENT_K_CAP}K%`;
   if (absValue >= 1_000) {
     return `${Math.round(value / 1_000)}K%`;
   }
