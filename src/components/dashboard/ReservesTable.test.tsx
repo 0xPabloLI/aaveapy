@@ -167,18 +167,23 @@ function MarketFilteredTable() {
     : reserves;
 
   return (
-    <ReservesTable
-      reserves={filteredReserves}
-      allReserves={reserves}
-      sortField={null}
-      sortOrder="desc"
-      onSort={() => {}}
-      isApy
-      onSelectMarket={setSelectedMarket}
-      tydroPointToUsdRate={0}
-      whitelistMerklCampaignIds={new Set<string>()}
-      onToggleWhitelistMerklCampaign={() => {}}
-    />
+    <>
+      <button type="button" onClick={() => setSelectedMarket(null)}>
+        clear market filter
+      </button>
+      <ReservesTable
+        reserves={filteredReserves}
+        allReserves={reserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        onSelectMarket={setSelectedMarket}
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+      />
+    </>
   );
 }
 
@@ -209,6 +214,23 @@ describe('ReservesTable market chip filtering', () => {
     expect(container.innerHTML).not.toContain('100dvh');
     expect(screen.getByLabelText('Filter by Bluechip market')).toBeInTheDocument();
     expect(screen.queryByLabelText('Filter by Prime market')).not.toBeInTheDocument();
+  });
+
+  it('physically gates expanded-only layout to rows visible in the current dataset', () => {
+    const { container } = renderWithQueryClient(<MarketFilteredTable />);
+
+    fireEvent.click(screen.getByText('toggle-USDC'));
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    expect(container.innerHTML).toContain('100dvh');
+
+    fireEvent.click(screen.getByLabelText('Filter by Prime market'));
+    expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toContain('100dvh');
+    expect(screen.getByLabelText('Filter by Prime market')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('clear market filter'));
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    expect(container.innerHTML).toContain('100dvh');
   });
 });
 
