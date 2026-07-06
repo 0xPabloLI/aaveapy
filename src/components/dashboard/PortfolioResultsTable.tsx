@@ -64,7 +64,12 @@ const DeltaCell = memo(function DeltaCell({
 
 const COL_COUNT = PORTFOLIO_COL_COUNT;
 
-const HEADER_BAND = 'bg-muted/60';
+const NATIVE_HEADER_BAND = 'bg-emerald-500/8 dark:bg-emerald-500/10';
+const INCENTIVE_HEADER_BAND = 'bg-cyan-500/8 dark:bg-cyan-500/10';
+const TOTAL_HEADER_BAND = 'bg-emerald-500/8 dark:bg-emerald-500/10';
+
+// Muted fallback for the non-cluster header cells (Token, Amount, USD/day).
+const HEADER_BASE = 'bg-muted/40';
 
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
   entries,
