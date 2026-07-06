@@ -86,25 +86,17 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   const netColor = 'text-foreground';
   const isMobile = useIsMobile();
 
-  const supplyDelta = summary.totalSupplyUsdMetric
-    ? formatDeltaUsd(summary.totalSupplyUsdMetric.delta)
-    : null;
-  const borrowDelta = summary.totalBorrowUsdMetric
-    ? formatDeltaUsd(summary.totalBorrowUsdMetric.delta)
-    : null;
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
       <MetricCell
         label="Total Supply"
         value={formatUsd(summary.totalSupplyUsd)}
-        delta={supplyDelta}
         icon={<TrendingUp className="size-3 ds-text-emerald-600" aria-hidden />}
         valueClass="ds-text-emerald-600"
       />
       <MetricCell
         label="Total Borrow"
         value={formatUsd(summary.totalBorrowUsd)}
-        delta={borrowDelta}
         icon={<TrendingDown className="size-3 ds-text-brand-cyan" aria-hidden />}
         valueClass="ds-text-brand-cyan"
       />
@@ -114,6 +106,7 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
         icon={<DollarSign className="size-3" aria-hidden />}
         valueClass={netColor}
       />
+
       <div className="flex flex-col gap-0.5">
         <span className="ds-text-10 text-muted-foreground font-medium flex items-center gap-1">
           <Percent className="size-3" aria-hidden />
