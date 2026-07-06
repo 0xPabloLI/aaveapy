@@ -4,6 +4,12 @@ import { formatPercent } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioPositionResult, PortfolioReserveEntry } from '@/types/portfolio';
+import {
+  PortfolioColgroup,
+  PORTFOLIO_COL_COUNT,
+  PF_VALUE_CELL,
+  PF_DELTA_CELL,
+} from './portfolioColumns';
 
 interface PortfolioResultsTableProps {
   entries: PortfolioReserveEntry[];
@@ -30,9 +36,9 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-// Fixed cell padding tokens — identical between thead and tbody so header aligns with body.
-const VALUE_CELL = 'px-2 py-1.5 text-right tabular-nums whitespace-nowrap';
-const DELTA_CELL = 'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap';
+// Local aliases for the shared padding tokens (kept for backward compat inside this file).
+const VALUE_CELL = PF_VALUE_CELL;
+const DELTA_CELL = PF_DELTA_CELL;
 
 const DeltaCell = memo(function DeltaCell({
   value,
@@ -56,7 +62,7 @@ const DeltaCell = memo(function DeltaCell({
   );
 });
 
-const COL_COUNT = 9;
+const COL_COUNT = PORTFOLIO_COL_COUNT;
 
 const HEADER_BAND = 'bg-muted/60';
 
@@ -80,19 +86,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
       <table className="w-full ds-text-11 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
-        <colgroup>
-          {/* Fixed pixel widths — Token/Amount kept tight and adjacent;
-              three APY clusters share identical widths so header ↔ body align strictly. */}
-          <col style={{ width: '104px' }} />
-          <col style={{ width: '84px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col />
-        </colgroup>
+        <PortfolioColgroup />
         <thead>
           <tr className="bg-muted/40 text-muted-foreground border-b border-border/50">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
