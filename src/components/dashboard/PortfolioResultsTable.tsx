@@ -58,6 +58,8 @@ const DeltaCell = memo(function DeltaCell({
 
 const COL_COUNT = 9;
 
+const HEADER_BAND = 'bg-muted/60';
+
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
   entries,
   results,
