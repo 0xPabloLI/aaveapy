@@ -58,6 +58,8 @@ const DeltaCell = memo(function DeltaCell({
 
 const COL_COUNT = 9;
 
+const HEADER_BAND = 'bg-muted/60';
+
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
   entries,
   results,
@@ -94,16 +96,16 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
           <tr className="bg-muted/40 text-muted-foreground border-b border-border/50">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
             <th className="pl-0 pr-2 py-1.5 text-left font-semibold">Amount</th>
-            <th className={cn(VALUE_CELL, 'font-semibold')}>Native</th>
-            <th className={cn(DELTA_CELL, 'font-normal text-muted-foreground/70')}>
+            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Native</th>
+            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, 'font-semibold')}>Incentive</th>
-            <th className={cn(DELTA_CELL, 'font-normal text-muted-foreground/70')}>
+            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Incentive</th>
+            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, 'font-semibold')}>Total</th>
-            <th className={cn(DELTA_CELL, 'font-normal text-muted-foreground/70')}>
+            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Total</th>
+            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
             <th className={cn(VALUE_CELL, 'font-semibold')}>USD/day</th>
