@@ -526,6 +526,18 @@ const ReservesTable = ({
     return sortReserves(reserves, sortConfig, valueGetters);
   }, [reserves, sortConfig, valueGetters]);
 
+  // If the currently expanded reserve is no longer present in the sorted list
+  // (e.g. user changed chain/market/search filter after expanding a row), clear
+  // the expansion. Otherwise the ~100dvh sticky spacer below the table keeps
+  // rendering and produces a large blank area under the (now shorter) table.
+  useEffect(() => {
+    if (!expandedReserveId) return;
+    const stillPresent = sortedData.some(
+      (r) => getReserveSimulationId(r) === expandedReserveId,
+    );
+    if (!stillPresent) setExpandedReserveId(null);
+  }, [expandedReserveId, sortedData, setExpandedReserveId]);
+
   const {
     displayData,
     showAll,
