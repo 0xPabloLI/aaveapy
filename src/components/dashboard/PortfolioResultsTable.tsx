@@ -185,7 +185,7 @@ const ResultRow = memo(function ResultRow({
 
   return (
     <tr className="group border-t border-border/30 hover:bg-muted/10">
-      <td className="pl-2.5 pr-1 py-1.5">
+      <td className={cn('pl-2.5 pr-1 py-1.5', bandClass)}>
         <div className="flex items-center gap-1.5">
           <div className="relative">
             <TokenIcon symbol={row.tokenSymbol} size={16} />
@@ -203,7 +203,7 @@ const ResultRow = memo(function ResultRow({
           </div>
         </div>
       </td>
-      <td className={cn('pl-0 pr-2 py-1.5 text-left tabular-nums font-medium', accentClass)}>
+      <td className={cn('pl-0 pr-2 py-1.5 text-left tabular-nums font-medium', bandClass, accentClass)}>
         {formatUsdCompact(row.amountUsd)}
       </td>
       <td className={cn(VALUE_CELL, bandClass, accentClass)}>
@@ -221,7 +221,7 @@ const ResultRow = memo(function ResultRow({
         {formatPercent(row.totalPercent)}
       </td>
       <DeltaCell value={totalDelta} accentClass={accentClass} bandClass={bandClass} />
-      <td className={cn('px-2 py-1 text-right tabular-nums font-semibold whitespace-nowrap', accentClass)}>
+      <td className={cn('px-2 py-1 text-right tabular-nums font-semibold whitespace-nowrap', bandClass, accentClass)}>
         {formatUsdDay(row.usdPerDay)}
       </td>
     </tr>
