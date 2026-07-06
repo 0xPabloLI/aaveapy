@@ -4,6 +4,12 @@ import { formatPercent } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioPositionResult, PortfolioReserveEntry } from '@/types/portfolio';
+import {
+  PortfolioColgroup,
+  PORTFOLIO_COL_COUNT,
+  PF_VALUE_CELL,
+  PF_DELTA_CELL,
+} from './portfolioColumns';
 
 interface PortfolioResultsTableProps {
   entries: PortfolioReserveEntry[];
