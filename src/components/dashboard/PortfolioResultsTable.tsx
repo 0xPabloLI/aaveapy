@@ -94,8 +94,8 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
         <PortfolioColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className="pl-2.5 pr-1 py-1.5 text-left font-semibold bg-muted/40">Token</th>
-            <th className="pl-0 pr-2 py-1.5 text-left font-semibold bg-muted/40">Amount</th>
+            <th className={cn('pl-2.5 pr-1 py-1.5 text-left font-semibold', HEADER_BASE)}>Token</th>
+            <th className={cn('pl-0 pr-2 py-1.5 text-left font-semibold', HEADER_BASE)}>Amount</th>
             <th className={cn(VALUE_CELL, NATIVE_HEADER_BAND, 'font-semibold')}>Native</th>
             <th className={cn(DELTA_CELL, NATIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
@@ -108,7 +108,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
             <th className={cn(DELTA_CELL, TOTAL_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, 'bg-muted/40 font-semibold')}>USD/day</th>
+            <th className={cn(VALUE_CELL, HEADER_BASE, 'font-semibold')}>USD/day</th>
           </tr>
         </thead>
         <tbody>
