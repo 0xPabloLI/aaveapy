@@ -89,7 +89,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
         <PortfolioColgroup />
         <thead>
           <tr className="bg-muted/40 text-muted-foreground border-b border-border/50">
-            <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
+            <th className="pl-2.5 pr-1 py-1.5 text-left font-semibold">Token</th>
             <th className="pl-0 pr-2 py-1.5 text-left font-semibold">Amount</th>
             <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Native</th>
             <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
