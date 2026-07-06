@@ -215,7 +215,7 @@ describe('ReservesTable market chip filtering', () => {
     fireEvent.click(screen.getByLabelText('Filter by Bluechip market'));
 
     expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
-    expect(container.innerHTML).not.toContain('100dvh');
+    expect(screen.queryByTestId('reserves-expanded-scroll-spacer')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Filter by Bluechip market')).toBeInTheDocument();
     expect(screen.queryByLabelText('Filter by Prime market')).not.toBeInTheDocument();
   });
@@ -225,16 +225,16 @@ describe('ReservesTable market chip filtering', () => {
 
     fireEvent.click(screen.getByText('toggle-USDC'));
     expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
-    expect(container.innerHTML).toContain('100dvh');
+    expect(screen.getByTestId('reserves-expanded-scroll-spacer')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Filter by Prime market'));
     expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
-    expect(container.innerHTML).not.toContain('100dvh');
+    expect(screen.queryByTestId('reserves-expanded-scroll-spacer')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Filter by Prime market')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('clear market filter'));
     expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
-    expect(container.innerHTML).toContain('100dvh');
+    expect(screen.getByTestId('reserves-expanded-scroll-spacer')).toBeInTheDocument();
   });
 });
 

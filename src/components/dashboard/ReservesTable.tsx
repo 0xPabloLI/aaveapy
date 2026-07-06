@@ -1295,7 +1295,11 @@ const ReservesTable = ({
 
       {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
       {visibleExpandedReserveId && (
-        <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
+        <div
+          aria-hidden
+          data-testid="reserves-expanded-scroll-spacer"
+          style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }}
+        />
       )}
 
       <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
