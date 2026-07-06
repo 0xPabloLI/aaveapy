@@ -7,7 +7,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
-_Last inventory pass: 2026-05-19._
+_Last inventory pass: 2026-07-06._
 
 ## Canonical Structure
 
@@ -84,6 +84,13 @@ _Last inventory pass: 2026-05-19._
 - Canonical: `docs/specs/reserve-table-market-hub-filtering.md`
 - Canonical: `docs/specs/v4-reserveId-uniqueness.md`
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
+
+### Plans and PRDs
+
+- Active plans: `docs/plans/frontend-triage-2026-06/` (7 phases, indexed by `00-overview.md`)
+- Completed plans: `docs/plans/completed/` (8 handoff documents for done issues)
+- Active PRDs: `docs/prd/PRD-simulation-sources-dispatch.md`, `docs/prd/input-surface-normalization.md`
+- Completed PRDs: `docs/prd/completed/` (7 PRDs for done issues: AAV-761, AAV-978, AAV-979, AAV-833, AAV-952, brevis-sum-unification, incentive-note-copy)
 
 ### Ops and historical plans
 
