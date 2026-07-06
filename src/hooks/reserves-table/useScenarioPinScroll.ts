@@ -94,6 +94,30 @@ export function useScenarioPinScroll(
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
   const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
 
+  // Dev-mode: pipe controller transitions to console with a stable prefix so
+  // the timeline can be filtered in DevTools. Guarded so prod bundles pay
+  // nothing (both the sink registration and the console call are stripped
+  // when `import.meta.env.DEV` is false via Vite's constant folding).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    setScenarioPinDebugSink((trace) => {
+      // eslint-disable-next-line no-console
+      console.debug('[scenarioPin]', {
+        phase: trace.phase,
+        scenarioChanged: trace.scenarioChanged,
+        hasRequiredVisibleCount: trace.hasRequiredVisibleCount,
+        isExpandedStillVisible: trace.isExpandedStillVisible,
+        sortedIds: trace.sortedIds,
+        pendingBefore: trace.pendingBefore,
+        pendingAfter: trace.pendingAfter,
+        shouldSchedulePin: trace.shouldSchedulePin,
+        pinReserveId: trace.pinReserveId,
+      });
+    });
+    return () => setScenarioPinDebugSink(null);
+  }, []);
+
+
   const schedulePinScrollToReserve = useCallback(
     (reserveId: string, delayMs: number, opts?: SchedulePinScrollOpts) => {
       const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
