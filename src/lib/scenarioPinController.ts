@@ -68,7 +68,7 @@ export function transitionScenarioPinController(
 ): ScenarioPinControllerResult {
   const pendingBefore = state.pendingScenarioPin;
   if (!state.baselineReady) {
-    return {
+    const result: ScenarioPinControllerResult = {
       nextState: {
         baselineReady: true,
         lastScenarioKey: input.scenarioKey,
@@ -79,6 +79,18 @@ export function transitionScenarioPinController(
       shouldSchedulePin: false,
       pinReserveId: null,
     };
+    scenarioPinDebugSink?.({
+      phase: 'baseline',
+      scenarioChanged: false,
+      hasRequiredVisibleCount: input.hasRequiredVisibleCount,
+      isExpandedStillVisible: input.isExpandedStillVisible,
+      sortedIds: input.sortedIds,
+      pendingBefore,
+      pendingAfter: null,
+      shouldSchedulePin: false,
+      pinReserveId: null,
+    });
+    return result;
   }
 
   const scenarioChanged = input.scenarioKey !== state.lastScenarioKey;
