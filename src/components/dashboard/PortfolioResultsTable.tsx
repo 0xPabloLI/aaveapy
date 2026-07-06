@@ -33,12 +33,26 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
 const DeltaCell = memo(function DeltaCell({
   value,
   accentClass,
+  bandClass,
+  isFirst,
+  isLast,
 }: {
   value: string | null;
   accentClass?: string;
+  bandClass?: string;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   return (
-    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? (accentClass ?? 'text-foreground/70') : 'text-muted-foreground')}>
+    <td
+      className={cn(
+        'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap',
+        bandClass,
+        isFirst && 'border-l border-border/40',
+        isLast && 'border-r border-border/40',
+        value ? (accentClass ?? 'text-foreground/70') : 'text-gray-300 dark:text-muted-foreground/40',
+      )}
+    >
       {value ?? '—'}
     </td>
   );
