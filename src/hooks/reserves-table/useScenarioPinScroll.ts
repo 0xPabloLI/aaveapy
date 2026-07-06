@@ -5,6 +5,7 @@ import { getReserveSimulationId } from '@/lib/rateSimulationCalculator';
 import type { ScenarioInputMode } from '@/components/dashboard/ScenarioControls';
 import {
   createScenarioPinControllerState,
+  setScenarioPinDebugSink,
   transitionScenarioPinController,
 } from '@/lib/scenarioPinController';
 import {
