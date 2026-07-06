@@ -31,6 +31,8 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
 };
 
 const BAND_BORDER = 'border-y border-border/40';
+const BAND_BORDER_RIGHT = 'border-r border-border/40';
+const BAND_BORDER_LEFT = 'border-l border-border/40';
 
 const DeltaCell = memo(function DeltaCell({
   value,
@@ -47,9 +49,9 @@ const DeltaCell = memo(function DeltaCell({
     <td
       className={cn(
         'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap',
-        bandClass,
         BAND_BORDER,
-        isLast && 'border-r border-border/40',
+        bandClass,
+        isLast && BAND_BORDER_RIGHT,
         value ? (accentClass ?? 'text-foreground/70') : 'text-gray-300 dark:text-muted-foreground/40',
       )}
     >
@@ -79,28 +81,34 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className="w-full ds-text-11" style={{ tableLayout: 'fixed' }}>
+      <table className="w-full ds-text-11 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
         <colgroup>
-          <col className="w-[17%]" />
-          <col className="w-[11%]" />
-          <col className="w-[11%]" />
+          <col className="w-[13%]" />
+          <col className="w-[10%]" />
+          <col className="w-[12%]" />
           <col className="w-[7%]" />
-          <col className="w-[11%]" />
+          <col className="w-[12%]" />
           <col className="w-[7%]" />
-          <col className="w-[11%]" />
+          <col className="w-[12%]" />
           <col className="w-[7%]" />
-          <col className="w-[18%]" />
+          <col className="w-[20%]" />
         </colgroup>
         <thead>
           <tr className="bg-muted/40 text-muted-foreground">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Amount</th>
-            <th className="px-2 py-1.5 text-right font-semibold border-l border-t border-border/40">Native</th>
-            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-border/40">Δ</th>
+            <th className="pl-0 pr-2 py-1.5 text-left font-semibold">Amount</th>
+            <th className={cn('px-2 py-1.5 text-right font-semibold border-t border-border/40', BAND_BORDER_LEFT)}>Native</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-border/40">
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
             <th className="px-2 py-1.5 text-right font-semibold border-t border-border/40">Incentive</th>
-            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-border/40">Δ</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-border/40">
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
             <th className="px-2 py-1.5 text-right font-semibold border-t border-border/40">Total</th>
-            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-r border-border/40">Δ</th>
+            <th className={cn('px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-t border-border/40', BAND_BORDER_RIGHT)}>
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
             <th className="px-2 py-1.5 text-right font-semibold">USD/day</th>
           </tr>
         </thead>
@@ -170,7 +178,7 @@ const ResultRow = memo(function ResultRow({
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
 
   return (
-    <tr className="group border-t border-border/30 transition-colors hover:bg-muted/10">
+    <tr className="group border-t border-border/30 hover:bg-muted/10">
       <td className="px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
           <div className="relative">
@@ -189,10 +197,10 @@ const ResultRow = memo(function ResultRow({
           </div>
         </div>
       </td>
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-medium', accentClass)}>
+      <td className={cn('pl-0 pr-2 py-1.5 text-left tabular-nums font-medium', accentClass)}>
         {formatUsdCompact(row.amountUsd)}
       </td>
-      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap border-l border-border/40', BAND_BORDER, bandClass, accentClass)}>
+      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', BAND_BORDER_LEFT, BAND_BORDER, bandClass, accentClass)}>
         {formatPercent(row.nativePercent)}
       </td>
       <DeltaCell value={nativeDelta} accentClass={accentClass} bandClass={bandClass} />
