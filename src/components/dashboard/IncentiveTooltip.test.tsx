@@ -568,6 +568,31 @@ describe('IncentiveTooltip', () => {
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
       expect(container.textContent).toContain('net position');
+      expect(container.textContent).not.toContain('combined position');
+    });
+
+    it('renders position cap for Merkl without netPositionConstraint (per-side cap)', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignApr: 1.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'merkl-1',
+            positionCap: 500,
+            isCombineCap: false,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Incentive on first');
+      expect(container.textContent).toContain('$500');
+      expect(container.textContent).toContain('supply only');
+      expect(container.textContent).not.toContain('combined position');
+      expect(container.textContent).not.toContain('net position');
     });
   });
 
