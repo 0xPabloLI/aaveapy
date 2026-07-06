@@ -37,8 +37,8 @@ describe('portfolio column geometry (layout alignment guard)', () => {
     expect(PORTFOLIO_COL_WIDTHS[7]).toBe(PF_DELTA_W);
   });
 
-  it('last column (USD/day) is flex (no fixed width)', () => {
-    expect(PORTFOLIO_COL_WIDTHS[8]).toBeUndefined();
+  it('Token column (0) is flex — absorbs remaining table width', () => {
+    expect(PORTFOLIO_COL_WIDTHS[0]).toBeUndefined();
   });
 
   it('PortfolioColgroup renders one <col> per configured width', () => {
