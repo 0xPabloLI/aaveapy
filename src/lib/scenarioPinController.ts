@@ -36,10 +36,37 @@ export function createScenarioPinControllerState(): ScenarioPinControllerState {
   };
 }
 
+/**
+ * Structured trace of a controller transition. Emitted through
+ * `scenarioPinDebugSink` in dev builds so we can reconstruct why a pin
+ * did/didn't fire without adding console spam to production bundles.
+ */
+export interface ScenarioPinControllerTrace {
+  phase: 'baseline' | 'transition';
+  scenarioChanged: boolean;
+  hasRequiredVisibleCount: boolean;
+  isExpandedStillVisible: boolean;
+  sortedIds: string[];
+  pendingBefore: ScenarioPinControllerState['pendingScenarioPin'];
+  pendingAfter: ScenarioPinControllerState['pendingScenarioPin'];
+  shouldSchedulePin: boolean;
+  pinReserveId: string | null;
+}
+
+export type ScenarioPinDebugSink = (trace: ScenarioPinControllerTrace) => void;
+
+let scenarioPinDebugSink: ScenarioPinDebugSink | null = null;
+
+/** Register (or clear with `null`) a dev-time trace sink. Not called in prod. */
+export function setScenarioPinDebugSink(sink: ScenarioPinDebugSink | null): void {
+  scenarioPinDebugSink = sink;
+}
+
 export function transitionScenarioPinController(
   state: ScenarioPinControllerState,
   input: ScenarioPinControllerInput,
 ): ScenarioPinControllerResult {
+  const pendingBefore = state.pendingScenarioPin;
   if (!state.baselineReady) {
     return {
       nextState: {
