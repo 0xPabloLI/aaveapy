@@ -494,11 +494,13 @@ describe('IncentiveTooltip', () => {
           message: 'Brevis rewards',
           link: 'https://brevis.network',
           positionCap: 5000,
+          isCombineCap: true,
         }],
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$5,000');
+      expect(container.textContent).toContain('combined position');
     });
 
     it('does not render position cap when positionCap is absent', () => {
@@ -542,6 +544,30 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
+      expect(container.textContent).toContain('supply only');
+    });
+
+    it('renders position cap for Merkl with net position constraint', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          netPositionConstraint: { sourceSide: 'supply', offsetReserveIds: ['1:0xabc'] },
+          breakdowns: [{
+            campaignApr: 1.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'merkl-1',
+            positionCap: 1000,
+            isCombineCap: false,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Incentive on first');
+      expect(container.textContent).toContain('$1,000');
+      expect(container.textContent).toContain('net position');
     });
   });
 
