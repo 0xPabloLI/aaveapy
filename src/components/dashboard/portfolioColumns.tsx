@@ -18,8 +18,8 @@
  */
 
 export const PORTFOLIO_COL_WIDTHS = [
-  '104px',
-  '84px',
+  '88px',   // Token
+  '80px',   // Amount
   '82px',
   '54px',
   '82px',
