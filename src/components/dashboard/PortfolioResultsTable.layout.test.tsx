@@ -108,7 +108,7 @@ describe('PortfolioResultsTable layout uniformity', () => {
     }
   });
 
-  it('supply and borrow rows each apply a uniform band tint across all cells', () => {
+  it('APY cluster cells (cols 2-7) share a uniform band tint; white-zone cells (0, 1, 8) do not', () => {
     const { container } = render(
       <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
     );
@@ -118,14 +118,20 @@ describe('PortfolioResultsTable layout uniformity', () => {
       if (!isDataRow(row)) continue;
 
       const cells = getCells(row);
-      const firstBand = Array.from(cells[0].classList).find((c) =>
+      const bandClass = Array.from(cells[2].classList).find((c) =>
         c.startsWith('bg-emerald-') || c.startsWith('bg-cyan-'),
       );
-      expect(firstBand).toBeTruthy();
+      expect(bandClass).toBeTruthy();
 
-      for (const cell of cells) {
-        expect(cell.classList.contains(firstBand!)).toBe(true);
-      }
+      // APY cluster (Native, Native Δ, Incentive, Incentive Δ, Total, Total Δ)
+      [2, 3, 4, 5, 6, 7].forEach((idx) => {
+        expect(cells[idx].classList.contains(bandClass!)).toBe(true);
+      });
+
+      // White-zone columns (Token, Amount, USD/day) must NOT carry the band tint
+      [0, 1, 8].forEach((idx) => {
+        expect(cells[idx].classList.contains(bandClass!)).toBe(false);
+      });
     }
   });
 
