@@ -500,7 +500,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$5,000');
-      expect(container.textContent).toContain('combined position');
+      expect(container.textContent).toContain('of combined supply + borrow');
     });
 
     it('does not render position cap when positionCap is absent', () => {
@@ -544,7 +544,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('net position only');
+      expect(container.textContent).toContain('of net supply − borrow only');
     });
 
     it('renders position cap for Merkl with net position constraint', () => {
@@ -567,8 +567,8 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('net position');
-      expect(container.textContent).not.toContain('combined position');
+      expect(container.textContent).toContain('of net supply − borrow');
+      expect(container.textContent).not.toContain('combined supply + borrow');
     });
 
     it('renders position cap for Merkl without netPositionConstraint (per-side cap)', () => {
@@ -591,8 +591,8 @@ describe('IncentiveTooltip', () => {
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$500');
       expect(container.textContent).toContain('supply only');
-      expect(container.textContent).not.toContain('combined position');
-      expect(container.textContent).not.toContain('net position');
+      expect(container.textContent).not.toContain('combined supply + borrow');
+      expect(container.textContent).not.toContain('net supply − borrow');
     });
   });
 

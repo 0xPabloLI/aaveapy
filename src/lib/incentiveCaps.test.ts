@@ -22,7 +22,7 @@ describe('buildPositionCapEffect', () => {
     });
     const note = capEffectToNote(eff);
     expect(note.text).toBe(
-      'Incentive on first $5,000.00 only · combine · ~100d earn',
+      'Incentive on first $5,000.00 only · combined supply + borrow · ~100d earn',
     );
     expect(note.color).toBe('muted');
     expect(eff.metrics).toEqual({ positionCapUsd: 5000, isCombineCap: true, remainingDays: 200 });

@@ -77,7 +77,7 @@ export function buildPositionCapEffect(input: {
     : `Incentive on first ${formatUsd(input.positionCapUsd)} only`;
   parts.push(
     input.isCombineCap
-      ? `${capPrefix} · combine`
+      ? `${capPrefix} · combined supply + borrow`
       : capPrefix,
   );
   if (input.remainingBudget != null && input.dailyRewardUsd != null && input.remainingDays != null) {
