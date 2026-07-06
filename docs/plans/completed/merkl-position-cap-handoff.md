@@ -190,3 +190,49 @@ merit/merkl/brevis 各有独立的 `sumCurrent`/`sumAfter`/`buildDetails` 实现
    需要重新评估 positionUsd 的语义
 5. **WETH 的 positionCapUsd 是 20.15 WETH × WETH price**——后端需要实时 price 换算，
    不能硬编码 token price
+
+---
+
+## 6. 已完成实现细节
+
+### 后端（commit 3b45f97 + 9ac2d5f, branch: railway）
+
+1. `extractPositionCapFromCampaign(campaign)` — 从 `computeSettings.maxDeposit` 提取，用 `targetToken.decimals` 换算 + price 转 USD
+2. `BaseCampaignBreakdown` 加 `positionCap?: number` + `isCombineCap?: boolean`
+3. `ApiMeritCampaignBreakdown`/`ApiBrevisBreakdown` Pick 列表加 `isCombineCap`
+4. `ApiMerklBreakdown` 是完整类型别名（`type ApiMerklBreakdown = MerklCampaignBreakdown`），从 `BaseCampaignBreakdown` 继承 `positionCap`/`isCombineCap`，序列化层泛型 T 透传所有字段
+5. OpenAPI schema: merkl 加 `positionCap`/`isCombineCap`，merit/brevis 加 `isCombineCap`
+6. 9 个单元测试全通过
+
+### 前端（commit b551d3f3, branch: lovable）
+
+1. `BaseCampaignBreakdown` 加 `isCombineCap?: boolean`；`BrevisIncentive` 加 `isCombineCap`
+2. Zod schemas: Merkl/Brevis/Merit breakdown 都加了 `isCombineCap`，Merkl 加了 `positionCap`
+3. `buildMerklCampaignDetails`（rateSimulationCalculator.ts L748-764）: position cap 后处理
+   - `positionUsd` 推导：当 `netPositionConstraint` 存在 → `netForEligibility`（net position）；否则 → `grossInputUsd ?? inputUsd`（gross position）
+   - 调 `applyPositionCapToForecastResult`，传 `isCombineCap: breakdown.isCombineCap ?? false`
+4. `sumMerklIncentiveApr/Apy`（incentiveAggregation.ts）: 改用 `applyPositionCapToForecastResult` + 传 `isCombineCap`
+5. Notes 合并而非覆盖：`[...(notes ?? []), ...capResult.notes]`，防止 APR_CAPPED notes 被 position cap notes 覆盖
+6. 8 个单元测试全通过（4 detail + 4 aggregate），参数有行内注释
+7. Code review 5 项 issue 已全部修复
+
+### isCombineCap 最终设计
+
+- **Merkl**: `isCombineCap = false`（maxDeposit 是 net position cap，非 supply+borrow 共享）
+- **Merit**: `isCombineCap = false`（supply-only cap）
+- **Brevis**: `isCombineCap = true`（sharedCap，supply+borrow 共享额度）
+- 前端不依赖 source 名称判断 position cap 语义，只依赖 `isCombineCap` 字段和 `netPositionConstraint`
+
+### 当前状态（2026-07-06）
+
+- 后端已部署到 Railway staging
+- **Merkl 当前有 2 个活跃的 AAVE_NET_LENDING maxDeposit campaign**（Celo USDT + WETH，2026-07-04 创建，hookType=20）+ 2 个 ERC20LOGPROCESSOR（World Chain，hookType=10，非 Aave 相关）
+- Celo USDT: `maxDeposit=1000000000`（6 decimals）= 1,000 USDT
+- Celo WETH: `maxDeposit=20150000000000000000`（18 decimals）= 20.15 WETH
+- 后端下次刷新 Merkl 数据后，staging API 应自动出现 `positionCap`/`isCombineCap`
+
+### 遗留：IncentiveTooltip Merkl positionCap 漏传
+
+- `IncentiveTooltip.tsx` L660-676 构建 Merkl campaign 时未传 `positionCap`，而 Merit（L570）和 Brevis（L611-612）都传了
+- 渲染逻辑已有（L824-828）：`campaign.positionCap != null && campaign.positionCap > 0` → 显示 "Incentive on first $X only"
+- 修复：在 Merkl campaigns 构建中加 `...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap } : {})`
