@@ -88,6 +88,7 @@ const simulation: RateSimulationResult = {
   borrow: {
     currentNative: 3.1,
     currentIncentive: 0.2,
+    headlineIncentive: 0.2,
     currentTotal: 2.9,
     afterNative: 3.4,
     afterIncentive: 0.1,
