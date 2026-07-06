@@ -546,6 +546,13 @@ const ReservesTable = ({
     resetVisibleCount,
   } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId: visibleExpandedReserveId });
 
+  const renderedExpandedReserveId = useMemo(() => {
+    if (!visibleExpandedReserveId) return null;
+    return displayData.some((r) => getReserveSimulationId(r) === visibleExpandedReserveId)
+      ? visibleExpandedReserveId
+      : null;
+  }, [displayData, visibleExpandedReserveId]);
+
   const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
     reserves,
     sortedData,
@@ -1036,7 +1043,7 @@ const ReservesTable = ({
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
           <ReservesTableMobileGrid
             displayData={displayData}
-            expandedReserveId={visibleExpandedReserveId}
+            expandedReserveId={renderedExpandedReserveId}
             isLoading={isLoading}
             reservesCount={reserves.length}
             isApy={isApy}
@@ -1247,7 +1254,7 @@ const ReservesTable = ({
                   key={reserveId}
                   reserve={reserve}
                   reserveId={reserveId}
-                  isExpanded={visibleExpandedReserveId === reserveId}
+                  isExpanded={renderedExpandedReserveId === reserveId}
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
                   onMarketChipClick={handleMarketChipClick}
@@ -1294,7 +1301,7 @@ const ReservesTable = ({
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
       {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
-      {visibleExpandedReserveId && (
+      {renderedExpandedReserveId && (
         <div
           aria-hidden
           data-testid="reserves-expanded-scroll-spacer"
