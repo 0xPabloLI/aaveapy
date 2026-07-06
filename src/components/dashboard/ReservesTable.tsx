@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
