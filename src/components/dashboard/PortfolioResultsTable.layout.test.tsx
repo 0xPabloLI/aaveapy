@@ -74,6 +74,11 @@ function getCells(row: Element) {
   return Array.from(row.querySelectorAll('td'));
 }
 
+/** Section-header rows (e.g. "Supply", "Borrow") have a single colspan td. */
+function isDataRow(row: Element): boolean {
+  return getCells(row).length === PORTFOLIO_COL_COUNT;
+}
+
 describe('PortfolioResultsTable layout uniformity', () => {
   it('every data cell uses the same vertical padding (py-1)', () => {
     const { container } = render(
@@ -84,12 +89,9 @@ describe('PortfolioResultsTable layout uniformity', () => {
     expect(rows.length).toBeGreaterThan(0);
 
     for (const row of rows) {
-      const cells = getCells(row);
-      if (cells.length === 0) continue; // skip section-header rows (single colspan td)
-
-      for (const cell of cells) {
-        const classList = Array.from(cell.classList);
-        expect(classList).toContain('py-1');
+      if (!isDataRow(row)) continue;
+      for (const cell of getCells(row)) {
+        expect(Array.from(cell.classList)).toContain('py-1');
       }
     }
   });
@@ -101,8 +103,7 @@ describe('PortfolioResultsTable layout uniformity', () => {
 
     const rows = getRows(container);
     for (const row of rows) {
-      const cells = getCells(row);
-      if (cells.length === 0) continue;
+      if (!isDataRow(row)) continue;
       expect(row.classList.contains('border-t')).toBe(true);
     }
   });
@@ -114,9 +115,9 @@ describe('PortfolioResultsTable layout uniformity', () => {
 
     const rows = getRows(container);
     for (const row of rows) {
-      const cells = getCells(row);
-      if (cells.length === 0) continue;
+      if (!isDataRow(row)) continue;
 
+      const cells = getCells(row);
       const firstBand = Array.from(cells[0].classList).find((c) =>
         c.startsWith('bg-emerald-') || c.startsWith('bg-cyan-'),
       );
@@ -135,13 +136,11 @@ describe('PortfolioResultsTable layout uniformity', () => {
 
     const rows = getRows(container);
     for (const row of rows) {
+      if (!isDataRow(row)) continue;
       const cells = getCells(row);
-      if (cells.length === 0) continue;
       // Columns 2, 4, 6 are value columns.
       [2, 4, 6].forEach((idx) => {
-        const cell = cells[idx];
-        expect(cell).toBeTruthy();
-        expect(Array.from(cell.classList)).toContain('px-2');
+        expect(Array.from(cells[idx].classList)).toContain('px-2');
       });
     }
   });
@@ -153,13 +152,11 @@ describe('PortfolioResultsTable layout uniformity', () => {
 
     const rows = getRows(container);
     for (const row of rows) {
+      if (!isDataRow(row)) continue;
       const cells = getCells(row);
-      if (cells.length === 0) continue;
       // Columns 3, 5, 7 are delta columns.
       [3, 5, 7].forEach((idx) => {
-        const cell = cells[idx];
-        expect(cell).toBeTruthy();
-        expect(Array.from(cell.classList)).toContain('px-1.5');
+        expect(Array.from(cells[idx].classList)).toContain('px-1.5');
       });
     }
   });
