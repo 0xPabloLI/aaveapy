@@ -168,8 +168,9 @@ interface ResultRowData extends PortfolioPositionResult {
 const SUPPLY_ACCENT = 'ds-text-emerald-600';
 const BORROW_ACCENT = 'ds-text-brand-cyan';
 // Band tints applied to the three APY clusters so header ↔ body reads as one column group.
-const SUPPLY_BAND = 'bg-emerald-500/6 dark:bg-emerald-500/8 group-hover:bg-emerald-500/12';
-const BORROW_BAND = 'bg-cyan-500/6 dark:bg-cyan-500/8 group-hover:bg-cyan-500/12';
+// Strengthened to match header tint intensity for stronger visual grouping.
+const SUPPLY_BAND = 'bg-emerald-500/10 dark:bg-emerald-500/12 group-hover:bg-emerald-500/16';
+const BORROW_BAND = 'bg-cyan-500/10 dark:bg-cyan-500/12 group-hover:bg-cyan-500/16';
 
 const ResultRow = memo(function ResultRow({
   row,
