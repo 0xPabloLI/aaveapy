@@ -94,8 +94,8 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
         <PortfolioColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className={cn('pl-2.5 pr-1 py-1.5 text-left font-semibold', HEADER_BASE)}>Token</th>
-            <th className={cn('pl-0 pr-2 py-1.5 text-left font-semibold', HEADER_BASE)}>Amount</th>
+            <th className={cn('pl-2.5 pr-1 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
+            <th className={cn('pl-0 pr-2 py-1 text-left font-semibold', HEADER_BASE)}>Amount</th>
             <th className={cn(VALUE_CELL, NATIVE_HEADER_BAND, 'font-semibold')}>Native</th>
             <th className={cn(DELTA_CELL, NATIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
@@ -185,7 +185,7 @@ const ResultRow = memo(function ResultRow({
 
   return (
     <tr className="group border-t border-border/30 hover:bg-muted/10">
-      <td className={cn('pl-2.5 pr-1 py-1.5', bandClass)}>
+      <td className={cn('pl-2.5 pr-1 py-1', bandClass)}>
         <div className="flex items-center gap-1.5">
           <div className="relative">
             <TokenIcon symbol={row.tokenSymbol} size={16} />
@@ -203,7 +203,7 @@ const ResultRow = memo(function ResultRow({
           </div>
         </div>
       </td>
-      <td className={cn('pl-0 pr-2 py-1.5 text-left tabular-nums font-medium', bandClass, accentClass)}>
+      <td className={cn('pl-0 pr-2 py-1 text-left tabular-nums font-medium', bandClass, accentClass)}>
         {formatUsdCompact(row.amountUsd)}
       </td>
       <td className={cn(VALUE_CELL, bandClass, accentClass)}>
