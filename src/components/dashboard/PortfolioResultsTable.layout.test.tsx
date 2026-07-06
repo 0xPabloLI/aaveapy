@@ -10,11 +10,16 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import type { PortfolioReserveEntry, PortfolioPositionResult } from '@/types/portfolio';
+import { PORTFOLIO_COL_COUNT } from './portfolioColumns';
 
 vi.mock('@/components/primitives/TokenIcon', () => ({
   TokenIcon: ({ symbol, size }: { symbol: string; size?: number }) => (
     <span data-testid="token-icon" data-symbol={symbol} data-size={size} />
   ),
+}));
+
+vi.mock('@/lib/chainIcons', () => ({
+  getChainIconSrc: () => null,
 }));
 
 const mockEntry: PortfolioReserveEntry = {
