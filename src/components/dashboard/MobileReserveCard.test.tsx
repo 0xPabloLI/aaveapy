@@ -67,6 +67,7 @@ const simulation: RateSimulationResult = {
   supply: {
     currentNative: 2.1,
     currentIncentive: 0.3,
+    headlineIncentive: 0.3,
     currentTotal: 2.4,
     afterNative: 2.5,
     afterIncentive: 0.4,
