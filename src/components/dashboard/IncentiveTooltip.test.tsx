@@ -544,7 +544,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('supply only');
+      expect(container.textContent).toContain('net position only');
     });
 
     it('renders position cap for Merkl with net position constraint', () => {
