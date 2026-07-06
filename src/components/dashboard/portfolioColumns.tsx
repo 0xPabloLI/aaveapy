@@ -52,5 +52,5 @@ export function PortfolioColgroup() {
 
 // Shared padding tokens — used by both summary and results table so
 // cell edges align pixel-for-pixel across the two tables.
-export const PF_VALUE_CELL = 'px-2 py-1.5 text-right tabular-nums whitespace-nowrap';
-export const PF_DELTA_CELL = 'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap';
+export const PF_VALUE_CELL = 'px-2 py-1 text-right tabular-nums whitespace-nowrap';
+export const PF_DELTA_CELL = 'px-1.5 py-1 text-right tabular-nums whitespace-nowrap';
