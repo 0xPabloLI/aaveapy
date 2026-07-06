@@ -1,18 +1,22 @@
 /**
  * PortfolioSummaryCard — displays aggregated portfolio metrics:
  * Total Supply, Total Borrow, Net Daily Earn, Supply/Borrow Weighted APY.
- * When delta metrics are available, inline delta is shown after the value.
+ *
+ * Total Supply / Total Borrow 是绝对总量（含 manual + wallet + delta 的合并 amount），
+ * 不显示 delta——delta 是"当前 amount vs 钱包快照"的差，只对单个 wallet position 行有语义。
+ * 在包含 manual 仓位的聚合总量上叠加 delta 会误导用户（manual 部分没有 wallet 基线）。
  */
 import { memo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { PortfolioSummary, PortfolioSimulationMetric } from '@/types/portfolio';
+import type { PortfolioSummary } from '@/types/portfolio';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary;
 }
+
 
 function formatUsd(value: number): string {
   if (value === 0) return '$0';
@@ -31,12 +35,8 @@ function formatUsdPerDay(value: number): string {
   return '$0.00/day';
 }
 
-const formatDeltaUsd = (value: number | null | undefined): string | null => {
-  if (value === null || value === undefined || Number.isNaN(value)) return null;
-  if (Math.abs(value) < 0.005) return null;
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}`;
-};
+
+
 
 const MetricCell = memo(function MetricCell({
   label,
@@ -82,25 +82,17 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
   const netColor = 'text-foreground';
   const isMobile = useIsMobile();
 
-  const supplyDelta = summary.totalSupplyUsdMetric
-    ? formatDeltaUsd(summary.totalSupplyUsdMetric.delta)
-    : null;
-  const borrowDelta = summary.totalBorrowUsdMetric
-    ? formatDeltaUsd(summary.totalBorrowUsdMetric.delta)
-    : null;
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
       <MetricCell
         label="Total Supply"
         value={formatUsd(summary.totalSupplyUsd)}
-        delta={supplyDelta}
         icon={<TrendingUp className="size-3 ds-text-emerald-600" aria-hidden />}
         valueClass="ds-text-emerald-600"
       />
       <MetricCell
         label="Total Borrow"
         value={formatUsd(summary.totalBorrowUsd)}
-        delta={borrowDelta}
         icon={<TrendingDown className="size-3 ds-text-brand-cyan" aria-hidden />}
         valueClass="ds-text-brand-cyan"
       />
@@ -110,6 +102,7 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
         icon={<DollarSign className="size-3" aria-hidden />}
         valueClass={netColor}
       />
+
       <div className="flex flex-col gap-0.5">
         <span className="ds-text-10 text-muted-foreground font-medium flex items-center gap-1">
           <Percent className="size-3" aria-hidden />
