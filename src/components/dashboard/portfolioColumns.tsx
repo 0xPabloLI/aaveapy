@@ -17,16 +17,24 @@
  *   8 USD/day       (flex — fills remainder)
  */
 
+// Shared widths for the three APY clusters (Native / Incentive / Total).
+// Each cluster shares one value-column width + one delta-column width,
+// so the three groups render as visually identical column pairs.
+export const PF_TOKEN_W = '88px';
+export const PF_AMOUNT_W = '80px';
+export const PF_VALUE_W = '82px';   // Native / Incentive / Total value column
+export const PF_DELTA_W = '54px';   // Δ column shared across all three clusters
+
 export const PORTFOLIO_COL_WIDTHS = [
-  '88px',   // Token
-  '80px',   // Amount
-  '82px',
-  '54px',
-  '82px',
-  '54px',
-  '82px',
-  '54px',
-  undefined, // flex
+  PF_TOKEN_W,    // 0 Token
+  PF_AMOUNT_W,   // 1 Amount
+  PF_VALUE_W,    // 2 Native
+  PF_DELTA_W,    // 3 Native Δ
+  PF_VALUE_W,    // 4 Incentive
+  PF_DELTA_W,    // 5 Incentive Δ
+  PF_VALUE_W,    // 6 Total
+  PF_DELTA_W,    // 7 Total Δ
+  undefined,     // 8 USD/day (flex)
 ] as const;
 
 export const PORTFOLIO_COL_COUNT = PORTFOLIO_COL_WIDTHS.length;
