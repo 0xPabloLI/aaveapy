@@ -86,19 +86,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
       <table className="w-full ds-text-11 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
-        <colgroup>
-          {/* Fixed pixel widths — Token/Amount kept tight and adjacent;
-              three APY clusters share identical widths so header ↔ body align strictly. */}
-          <col style={{ width: '104px' }} />
-          <col style={{ width: '84px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col style={{ width: '82px' }} />
-          <col style={{ width: '54px' }} />
-          <col />
-        </colgroup>
+        <PortfolioColgroup />
         <thead>
           <tr className="bg-muted/40 text-muted-foreground border-b border-border/50">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
