@@ -1,18 +1,22 @@
 /**
  * PortfolioSummaryCard — displays aggregated portfolio metrics:
  * Total Supply, Total Borrow, Net Daily Earn, Supply/Borrow Weighted APY.
- * When delta metrics are available, inline delta is shown after the value.
+ *
+ * Total Supply / Total Borrow 是绝对总量（含 manual + wallet + delta 的合并 amount），
+ * 不显示 delta——delta 是"当前 amount vs 钱包快照"的差，只对单个 wallet position 行有语义。
+ * 在包含 manual 仓位的聚合总量上叠加 delta 会误导用户（manual 部分没有 wallet 基线）。
  */
 import { memo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { PortfolioSummary, PortfolioSimulationMetric } from '@/types/portfolio';
+import type { PortfolioSummary } from '@/types/portfolio';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary;
 }
+
 
 function formatUsd(value: number): string {
   if (value === 0) return '$0';
