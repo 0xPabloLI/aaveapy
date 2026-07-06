@@ -36,9 +36,9 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-// Fixed cell padding tokens — identical between thead and tbody so header aligns with body.
-const VALUE_CELL = 'px-2 py-1.5 text-right tabular-nums whitespace-nowrap';
-const DELTA_CELL = 'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap';
+// Local aliases for the shared padding tokens (kept for backward compat inside this file).
+const VALUE_CELL = PF_VALUE_CELL;
+const DELTA_CELL = PF_DELTA_CELL;
 
 const DeltaCell = memo(function DeltaCell({
   value,
@@ -62,7 +62,7 @@ const DeltaCell = memo(function DeltaCell({
   );
 });
 
-const COL_COUNT = 9;
+const COL_COUNT = PORTFOLIO_COL_COUNT;
 
 const HEADER_BAND = 'bg-muted/60';
 
