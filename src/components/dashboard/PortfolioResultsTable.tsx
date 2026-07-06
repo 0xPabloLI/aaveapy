@@ -93,22 +93,22 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
       <table className="w-full ds-text-11 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
         <PortfolioColgroup />
         <thead>
-          <tr className="bg-muted/40 text-muted-foreground border-b border-border/50">
-            <th className="pl-2.5 pr-1 py-1.5 text-left font-semibold">Token</th>
-            <th className="pl-0 pr-2 py-1.5 text-left font-semibold">Amount</th>
-            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Native</th>
-            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+          <tr className="text-muted-foreground border-b border-border/50">
+            <th className="pl-2.5 pr-1 py-1.5 text-left font-semibold bg-muted/40">Token</th>
+            <th className="pl-0 pr-2 py-1.5 text-left font-semibold bg-muted/40">Amount</th>
+            <th className={cn(VALUE_CELL, NATIVE_HEADER_BAND, 'font-semibold')}>Native</th>
+            <th className={cn(DELTA_CELL, NATIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Incentive</th>
-            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+            <th className={cn(VALUE_CELL, INCENTIVE_HEADER_BAND, 'font-semibold')}>Incentive</th>
+            <th className={cn(DELTA_CELL, INCENTIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, HEADER_BAND, 'font-semibold')}>Total</th>
-            <th className={cn(DELTA_CELL, HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+            <th className={cn(VALUE_CELL, TOTAL_HEADER_BAND, 'font-semibold')}>Total</th>
+            <th className={cn(DELTA_CELL, TOTAL_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
               <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
             </th>
-            <th className={cn(VALUE_CELL, 'font-semibold')}>USD/day</th>
+            <th className={cn(VALUE_CELL, 'bg-muted/40 font-semibold')}>USD/day</th>
           </tr>
         </thead>
         <tbody>
