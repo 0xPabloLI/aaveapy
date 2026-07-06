@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { useState, type ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ReservesTable from './ReservesTable';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -186,6 +186,10 @@ function MarketFilteredTable() {
     </>
   );
 }
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('ReservesTable market chip filtering', () => {
   beforeEach(() => {
