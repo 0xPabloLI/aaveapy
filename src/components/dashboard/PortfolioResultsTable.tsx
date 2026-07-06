@@ -95,12 +95,12 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
           <tr className="bg-muted/40 text-muted-foreground">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
             <th className="px-2 py-1.5 text-right font-semibold">Amount</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Native</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-2 py-1.5 text-right font-semibold border-l border-border/40">Native</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">Incentive</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">Total</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-r border-border/40">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">USD/day</th>
           </tr>
         </thead>
