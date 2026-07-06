@@ -101,10 +101,21 @@ export function transitionScenarioPinController(
       input.expandScrollFollowsScenarioSort ||
       (state.lastHasScenarioInput && !input.hasScenarioInput);
     if (shouldFollowScenarioPin && input.expandedReserveId) {
+      // Preserve baselineSortedIds across debounced scenarioKey changes when the
+      // pin target is unchanged. Overwriting with state.lastSortedIds would
+      // adopt the already-reordered list from the previous scenario tick as the
+      // new baseline, causing orderChangedForPending to spuriously return false
+      // on the next transition and dropping the pin. The true baseline is the
+      // sortedIds captured before the first input in this pin session.
+      const preservedBaseline =
+        pendingScenarioPin &&
+        pendingScenarioPin.reserveId === input.expandedReserveId
+          ? pendingScenarioPin.baselineSortedIds
+          : state.lastSortedIds;
       pendingScenarioPin = {
         scenarioKey: input.scenarioKey,
         reserveId: input.expandedReserveId,
-        baselineSortedIds: state.lastSortedIds,
+        baselineSortedIds: preservedBaseline,
       };
     } else {
       pendingScenarioPin = null;
