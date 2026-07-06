@@ -214,6 +214,23 @@ export function useScenarioPinScroll(
 
     if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
 
+    if (import.meta.env.DEV) {
+      const escape = (raw: string) =>
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw;
+      const targetRow = document.querySelector(
+        `tr[data-reserve-id="${escape(controllerResult.pinReserveId)}"]`,
+      );
+      const topY = targetRow instanceof HTMLElement ? targetRow.getBoundingClientRect().top : null;
+      // eslint-disable-next-line no-console
+      console.debug('[scenarioPin] schedule', {
+        reserveId: controllerResult.pinReserveId,
+        topY,
+        expandedIndex,
+        requiredCount,
+        currentCount,
+      });
+    }
+
     cancelFilterPinScrollRef.current?.();
     cancelFilterPinScrollRef.current = null;
     cancelScenarioPinScrollRef.current?.();
