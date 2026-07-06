@@ -1,0 +1,155 @@
+// @vitest-environment happy-dom
+/**
+ * Layout uniformity regression guard for PortfolioResultsTable.
+ *
+ * Catches future spacing / border / padding drift that breaks row and
+ * column visual alignment. If someone changes py-*, px-*, or border
+ * classes on one cell but forgets the others, these assertions fail.
+ */
+import { describe, it, expect } from 'vitest';
+import { render } from '@testing-library/react';
+import PortfolioResultsTable from './PortfolioResultsTable';
+import type { PortfolioReserveEntry, PortfolioPositionResult } from '@/types/portfolio';
+
+const mockEntry: PortfolioReserveEntry = {
+  reserveId: 'usdc-ethereum-aave-v3',
+  marketName: 'AAVE V3',
+  chainName: 'Ethereum',
+  chainId: 1,
+  tokenSymbol: 'USDC',
+  supply: { amount: '10000', inputMode: 'usd', walletValue: null, source: 'manual' },
+  borrow: { amount: '5000', inputMode: 'usd', walletValue: null, source: 'manual' },
+  hidden: false,
+  isOrphan: false,
+  restrictedStatus: null,
+};
+
+const mockResults: PortfolioPositionResult[] = [
+  {
+    reserveId: 'usdc-ethereum-aave-v3',
+    side: 'supply',
+    amountUsd: 10_000,
+    walletUsd: null,
+    nativePercent: 0.03,
+    incentivePercent: 0.02,
+    totalPercent: 0.05,
+    usdPerDay: 1.37,
+    nativeMetric: { current: 0.03, after: 0.0315, delta: 0.0015 },
+    incentiveMetric: { current: 0.02, after: 0.02, delta: 0 },
+    totalMetric: { current: 0.05, after: 0.0515, delta: 0.0015 },
+    usdPerDayMetric: { current: 1.37, after: 1.41, delta: 0.04 },
+  },
+  {
+    reserveId: 'usdc-ethereum-aave-v3',
+    side: 'borrow',
+    amountUsd: 5_000,
+    walletUsd: null,
+    nativePercent: 0.04,
+    incentivePercent: 0.01,
+    totalPercent: 0.05,
+    usdPerDay: -0.68,
+    nativeMetric: { current: 0.04, after: 0.042, delta: 0.002 },
+    incentiveMetric: { current: 0.01, after: 0.01, delta: 0 },
+    totalMetric: { current: 0.05, after: 0.052, delta: 0.002 },
+    usdPerDayMetric: { current: -0.68, after: -0.71, delta: -0.03 },
+  },
+];
+
+function getRows(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('tbody tr'));
+}
+
+function getCells(row: Element) {
+  return Array.from(row.querySelectorAll('td'));
+}
+
+describe('PortfolioResultsTable layout uniformity', () => {
+  it('every data cell uses the same vertical padding (py-1)', () => {
+    const { container } = render(
+      <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
+    );
+
+    const rows = getRows(container);
+    expect(rows.length).toBeGreaterThan(0);
+
+    for (const row of rows) {
+      const cells = getCells(row);
+      if (cells.length === 0) continue; // skip section-header rows (single colspan td)
+
+      for (const cell of cells) {
+        const classList = Array.from(cell.classList);
+        expect(classList).toContain('py-1');
+      }
+    }
+  });
+
+  it('every data row has the same top border class', () => {
+    const { container } = render(
+      <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
+    );
+
+    const rows = getRows(container);
+    for (const row of rows) {
+      const cells = getCells(row);
+      if (cells.length === 0) continue;
+      expect(row.classList.contains('border-t')).toBe(true);
+    }
+  });
+
+  it('supply and borrow rows each apply a uniform band tint across all cells', () => {
+    const { container } = render(
+      <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
+    );
+
+    const rows = getRows(container);
+    for (const row of rows) {
+      const cells = getCells(row);
+      if (cells.length === 0) continue;
+
+      const firstBand = Array.from(cells[0].classList).find((c) =>
+        c.startsWith('bg-emerald-') || c.startsWith('bg-cyan-'),
+      );
+      expect(firstBand).toBeTruthy();
+
+      for (const cell of cells) {
+        expect(cell.classList.contains(firstBand!)).toBe(true);
+      }
+    }
+  });
+
+  it('value columns (Native, Incentive, Total) share px-2 horizontal padding', () => {
+    const { container } = render(
+      <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
+    );
+
+    const rows = getRows(container);
+    for (const row of rows) {
+      const cells = getCells(row);
+      if (cells.length === 0) continue;
+      // Columns 2, 4, 6 are value columns.
+      [2, 4, 6].forEach((idx) => {
+        const cell = cells[idx];
+        expect(cell).toBeTruthy();
+        expect(Array.from(cell.classList)).toContain('px-2');
+      });
+    }
+  });
+
+  it('delta columns (Native Δ, Incentive Δ, Total Δ) share px-1.5 horizontal padding', () => {
+    const { container } = render(
+      <PortfolioResultsTable entries={[mockEntry]} results={mockResults} />,
+    );
+
+    const rows = getRows(container);
+    for (const row of rows) {
+      const cells = getCells(row);
+      if (cells.length === 0) continue;
+      // Columns 3, 5, 7 are delta columns.
+      [3, 5, 7].forEach((idx) => {
+        const cell = cells[idx];
+        expect(cell).toBeTruthy();
+        expect(Array.from(cell.classList)).toContain('px-1.5');
+      });
+    }
+  });
+});
