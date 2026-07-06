@@ -204,12 +204,35 @@ _Avoid_: explorer URL、scan URL、chain browser（跟 aaveapy 自有链概念�
 `AssetActionMenu` 中 4 个 explorer item（`token-explorer` / `pool-explorer` / `hub-explorer` / `spoke-explorer`）trailing 位置展示的视觉 = 链网络 icon + 该 explorer base 对应 brand icon **并排叠放**（12×12，1/3 overlap）。从 `getExplorerIconSrc(base)` 拉 brand 图标，与 chain icon 共同渲染。Asset 缺失时静默 fallback：仅 explorer 缺失 → 只显示 chain icon；仅 chain 缺失 → 只显示 explorer icon；双空 → 隐藏整个 trailing slot。不 console.warn（运行时噪音与已建模的 missing 状态重复）。
 _Avoid_: 在 trailing 位置放链网络 icon 单独表示 explorer（缺失 explorer brand 识别）、`!warn when icon missing`（破坏 `silent fallback` 约定）
 
-## Wallet Portfolio
+## Simulation Modes
 
-**Portfolio Mode**:
-Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere. In Portfolio mode, the toggle renders inside the `PortfolioPanel` header row alongside action buttons; in Single mode, it renders in the `ReservesTable` scenario controls area.
-**Sticky behavior**: In Portfolio mode, the scenario bar (containing PortfolioPanel) is **not sticky** on both desktop and mobile — it scrolls naturally with the page. This prevents the panel from trapping content when it exceeds viewport height. Single mode keeps the scenario bar sticky at viewport top. See ADR-0013.
-_Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
+前端 rate simulation 有两种互斥模式，由 `SimulationMode = 'single' | 'portfolio'` 控制，通过 `PortfolioModeToggle` 切换。
+
+**Single Mode** (`SimulationMode = 'single'`):
+默认模式。`ReservesTable` 顶部渲染 **Shared Scenario 输入条**（一对全局 supply/borrow 输入 + $/T 切换 + APR/APY 切换），输入值以「纯增量」形式**统一施加到所有 reserve** 上。`useSharedRateSimulations` 接收 `supplyInput`/`borrowInput` 一对值，`perReserveInputs` 为 undefined。Stock-Flow 语义下传 `totalSupplyUsd = supplyInputUsd`（无链上存量概念）。
+_Avoid_: Single simulation、Shared mode（作为模式名——"Shared Scenario" 是这个模式下的**输入形态**，模式名统一叫 Single Mode）
+
+**Shared Scenario**:
+Single Mode 下那一对全局 supply/borrow 输入的**输入形态**（不是独立模式）。特征：单一输入值广播到所有 reserve、纯增量语义（不叠加链上存量）、以 sticky 输入条形式常驻。仅在 Single Mode 下存在。
+_Avoid_: 把 "Shared Scenario" 当模式名（它是 Single Mode 的输入形态）；跟 Portfolio Mode 的 per-reserve 输入并存
+
+**Portfolio Mode** (`SimulationMode = 'portfolio'`):
+Multi-reserve simulation。用户在 `PortfolioPanel` 中管理**每个 reserve 独立的 supply/borrow 仓位**（可来自钱包 sync 或手动添加）。ReservesTable 顶部 Shared Scenario 输入条**清空并让位**给 per-reserve 语义——`supplyInput`/`borrowInput` 传空串，`perReserveInputs`（由 `buildPerReserveInputs` 从 portfolio positions 聚合而来）驱动每行独立模拟。UI 文案统一用 "Portfolio"，绝不出现 "Batch"。`PortfolioModeToggle` 在 Portfolio 开启时渲染于 `PortfolioPanel` header 行内，Single 时渲染于 `ReservesTable` scenario 控件区。详见 ADR-0005（per-reserve inputs 互斥语义）、ADR-0013（sticky 行为）、ADR-0014（Supply-Borrow Inseparability）。
+_Avoid_: Batch Mode、Batch toggle、"Build your batch portfolio"、在 Portfolio 模式下继续消费 Shared Scenario 输入（互斥不叠加）
+
+**Mode Mutual Exclusion**:
+两种模式互斥而非叠加：Portfolio 开启时 Shared Scenario 输入被清空、`perReserveInputs` 生效；Single 时 `perReserveInputs` = undefined、Shared Scenario 输入生效。无 fallback 优先级，也无第三种"混合"模式。见 ADR-0005。
+_Avoid_: 让 per-reserve input 作为 Shared Scenario 的 override / fallback（会产生 partial-shared 边界态）
+
+**Sticky Scenario Bar**:
+仅 Single Mode 下 ReservesTable 的 scenario bar（含 Shared Scenario 输入条 + column header）在滚动时 pin 到视口顶部（`data-reserves-sticky-scenario` / `data-reserves-sticky-thead`）。Portfolio Mode 下 scenario bar **不 sticky**——桌面和移动端都随页面自然滚动，避免 PortfolioPanel 超出视口时挤占内容区。见 ADR-0013。
+_Avoid_: 在 Portfolio 模式下让 PortfolioPanel sticky（会 trap 内容）；把 sticky 状态跟 `hasScenarioInput` 耦合（sticky 是模式属性，非输入属性）
+
+**Expanded Row Pin (Scenario-Driven Re-sort)**:
+Single Mode 下 Shared Scenario 输入变化触发列表重排时，若当前有展开行且 pin 条件满足（`expandScrollFollowsScenarioSort` 且 `pendingScenarioPin` 有效），`scenarioPinController` 会在下一帧通过 `scrollExpandedSimulationIntoView` 把展开行滚到 sticky 栏底部下方。**触发输入仅限 Shared Scenario 那对 supply/borrow**——token filter / chain filter / market filter / column sort 切换均不触发 pin（它们是用户主动排序意图，pin 会掩盖用户操作）。Portfolio Mode 下无此行为（scenario bar 不 sticky，pin 参考系不存在；per-reserve 输入变化也不重排全表）。详见 `scenarioPinController.ts` 状态机与 ADR-0013。
+_Avoid_: 让非 scenario 输入（filter、column sort）触发 pin（语义不符 + 覆盖用户排序意图）；在 Portfolio 模式下调用 pin 逻辑
+
+## Wallet Portfolio
 
 **Filter-Portfolio Independence**:
 Token filter 和 chain filter 不影响 Portfolio simulation 的数据。`ReservesTable` 接收两个 reserve 列表：`reserves`（filtered，用于表格行显示）和 `allReserves`（完整，用于 Portfolio 模拟）。Portfolio 模式下两条独立路径：`usePortfolioToggle({ reserves: allReserves })` 生成模拟结果，`PortfolioPanel reserves={allReserves}` 渲染 entries 和搜索——两者都不受 filter 影响。表格行的 `simulationsById`（来自 `useSharedRateSimulations({ reserves })`）用 filtered reserves 是正确的性能优化：被过滤掉的行不可见，不需要模拟数据。见 AAV-749。
