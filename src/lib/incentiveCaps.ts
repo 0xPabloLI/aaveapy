@@ -69,12 +69,9 @@ export function buildPositionCapEffect(input: {
   remainingBudget: number | null;
   dailyRewardUsd: number | null;
   remainingDays: number | null;
-  campaignName?: string;
 }): IncentiveCapEffect {
   const parts: string[] = [];
-  const capPrefix = input.campaignName
-    ? `${input.campaignName} incentive on first ${formatUsd(input.positionCapUsd)} only`
-    : `Incentive on first ${formatUsd(input.positionCapUsd)} only`;
+  const capPrefix = `Incentive limited to first ${formatUsd(input.positionCapUsd)}`;
   parts.push(
     input.isCombineCap
       ? `${capPrefix} · combined supply + borrow`
@@ -155,7 +152,6 @@ export function applyPositionCapToForecastResult(
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
-    campaignName?: string;
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
@@ -169,7 +165,6 @@ export function applyPositionCapToForecastResult(
     remainingBudget: options?.remainingBudget ?? null,
     dailyRewardUsd: options?.dailyRewardUsd ?? null,
     remainingDays: options?.remainingDays ?? null,
-    campaignName: options?.campaignName,
   });
   const notes = [capEffectToNote(effect)];
   let capMetrics: SimulationCapMetrics | undefined;

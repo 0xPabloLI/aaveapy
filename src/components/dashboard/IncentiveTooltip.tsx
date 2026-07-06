@@ -78,7 +78,6 @@ interface IncentiveCampaign {
   positionCap?: number;
   isCombineCap?: boolean;
   isNetPositionCap?: boolean;
-  campaignName?: string;
   lastEndedCampaign?: {
     startedAt: string;
     endedAt: string;
@@ -569,8 +568,7 @@ const IncentiveTooltip = ({
             message: breakdown.message ?? group.message,
             sourceType: 'ACI',
             campaignType: breakdown.campaignType,
-            ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: true } : {}),
-            campaignName: bdLabel,
+             ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: true } : {}),
           };
         });
 
@@ -612,7 +610,6 @@ const IncentiveTooltip = ({
               aprCap: breakdown.aprCap ?? brevis.aprCap,
               ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? brevis.isCombineCap ?? true } : {}),
               ...(brevis.positionCap != null && brevis.positionCap > 0 && breakdown.positionCap == null ? { positionCap: brevis.positionCap, isCombineCap: brevis.isCombineCap ?? true } : {}),
-              campaignName: name,
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -674,9 +671,8 @@ const IncentiveTooltip = ({
                         ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}),
                        rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                        rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                        lastEndedCampaign: breakdown.lastEndedCampaign,
-                        campaignName: opportunity.name || 'Merkl',
-                   }],
+                         lastEndedCampaign: breakdown.lastEndedCampaign,
+                    }],
             });
           }
         }

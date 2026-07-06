@@ -940,7 +940,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(0.5, 1);
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'Incentive on first $5,000.00 only',
+      'Incentive limited to first $5,000.00',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'combine',
@@ -997,13 +997,13 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'Incentive on first $5,000.00 only',
+      'Incentive limited to first $5,000.00',
     );
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'combine',
     );
     expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'Incentive on first $5,000.00 only',
+      'Incentive limited to first $5,000.00',
     );
     expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'combine',

@@ -159,7 +159,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const result = makeSimResult({
@@ -186,7 +186,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $2,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -212,7 +212,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $5,000.00 only · combine', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $5,000.00 · combine', color: 'amber' }],
       capMetrics: { positionCapUsd: 5000, isCombineCap: true },
     };
     const result = makeSimResult({
@@ -240,7 +240,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const result = makeSimResult({
@@ -271,7 +271,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 4,
       delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $10,000.00 only', color: 'muted' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $10,000.00', color: 'muted' }],
       capMetrics: { positionCapUsd: 10000 },
     };
     const result = makeSimResult({
@@ -317,7 +317,7 @@ describe('extractCapWarnings', () => {
       current: 3,
       after: 2,
       delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const c2: SimulationCampaignDetail = {
@@ -326,7 +326,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $2,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -352,7 +352,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
     const meritCampaign: SimulationCampaignDetail = {
@@ -361,7 +361,7 @@ describe('extractCapWarnings', () => {
       current: 2,
       after: 1,
       delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $2,000.00 only', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $2,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 2000 },
     };
     const result = makeSimResult({
@@ -388,7 +388,7 @@ describe('extractCapWarnings', () => {
       current: 5,
       after: 3,
       delta: -2,
-      notes: [{ type: 'position_cap', text: 'Incentive on first $1,000.00 only · combine', color: 'amber' }],
+      notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00 · combine', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000, isCombineCap: true },
     };
     const result = makeSimResult({

@@ -645,7 +645,7 @@ export const buildMeritCampaignDetails = (
               fullAfter,
               totalPositionUsd ?? inputUsd,
               positionCapUsd,
-              { campaignName: positionCapUsd != null && positionCapUsd > 0 ? 'Merit double yield' : 'Merit' },
+              { },
             );
             baseAfter = capResult.aprPercent * eligibilityRatio;
             capMetrics = capResult.capMetrics;
