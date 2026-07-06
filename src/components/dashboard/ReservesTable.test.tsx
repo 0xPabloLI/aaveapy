@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { useState, type ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ReservesTable from './ReservesTable';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -167,20 +167,29 @@ function MarketFilteredTable() {
     : reserves;
 
   return (
-    <ReservesTable
-      reserves={filteredReserves}
-      allReserves={reserves}
-      sortField={null}
-      sortOrder="desc"
-      onSort={() => {}}
-      isApy
-      onSelectMarket={setSelectedMarket}
-      tydroPointToUsdRate={0}
-      whitelistMerklCampaignIds={new Set<string>()}
-      onToggleWhitelistMerklCampaign={() => {}}
-    />
+    <>
+      <button type="button" onClick={() => setSelectedMarket(null)}>
+        clear market filter
+      </button>
+      <ReservesTable
+        reserves={filteredReserves}
+        allReserves={reserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        onSelectMarket={setSelectedMarket}
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+      />
+    </>
   );
 }
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('ReservesTable market chip filtering', () => {
   beforeEach(() => {
@@ -201,14 +210,31 @@ describe('ReservesTable market chip filtering', () => {
   });
 
   it('filters by market without expanding a collapsed row or rendering the desktop spacer', () => {
-    const { container } = renderWithQueryClient(<MarketFilteredTable />);
+    renderWithQueryClient(<MarketFilteredTable />);
 
     fireEvent.click(screen.getByLabelText('Filter by Bluechip market'));
 
     expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
-    expect(container.innerHTML).not.toContain('100dvh');
+    expect(screen.queryByTestId('reserves-expanded-scroll-spacer')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Filter by Bluechip market')).toBeInTheDocument();
     expect(screen.queryByLabelText('Filter by Prime market')).not.toBeInTheDocument();
+  });
+
+  it('physically gates expanded-only layout to rows visible in the current dataset', () => {
+    const { container } = renderWithQueryClient(<MarketFilteredTable />);
+
+    fireEvent.click(screen.getByText('toggle-USDC'));
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    expect(screen.getByTestId('reserves-expanded-scroll-spacer')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Filter by Prime market'));
+    expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reserves-expanded-scroll-spacer')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Filter by Prime market')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('clear market filter'));
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    expect(screen.getByTestId('reserves-expanded-scroll-spacer')).toBeInTheDocument();
   });
 });
 

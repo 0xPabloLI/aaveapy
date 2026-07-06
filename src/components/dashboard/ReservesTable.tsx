@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -526,17 +526,17 @@ const ReservesTable = ({
     return sortReserves(reserves, sortConfig, valueGetters);
   }, [reserves, sortConfig, valueGetters]);
 
-  // If the currently expanded reserve is no longer present in the sorted list
-  // (e.g. user changed chain/market/search filter after expanding a row), clear
-  // the expansion. Otherwise the ~100dvh sticky spacer below the table keeps
-  // rendering and produces a large blank area under the (now shorter) table.
-  useEffect(() => {
-    if (!expandedReserveId) return;
-    const stillPresent = sortedData.some(
-      (r) => getReserveSimulationId(r) === expandedReserveId,
-    );
-    if (!stillPresent) setExpandedReserveId(null);
-  }, [expandedReserveId, sortedData, setExpandedReserveId]);
+  // Presentation must never render from a stale expansion id. Keep the raw id
+  // as memory (so an expanded row can reappear when filters are undone), but
+  // only expose it to UI/spacer/scroll logic when that reserve exists in the
+  // current sorted dataset. This makes the desktop 100dvh spacer structurally
+  // impossible to render for a filtered-out row.
+  const visibleExpandedReserveId = useMemo(() => {
+    if (!expandedReserveId) return null;
+    return sortedData.some((r) => getReserveSimulationId(r) === expandedReserveId)
+      ? expandedReserveId
+      : null;
+  }, [expandedReserveId, sortedData]);
 
   const {
     displayData,
@@ -544,13 +544,20 @@ const ReservesTable = ({
     minVisibleCount,
     showAllRows,
     resetVisibleCount,
-  } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId });
+  } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId: visibleExpandedReserveId });
+
+  const renderedExpandedReserveId = useMemo(() => {
+    if (!visibleExpandedReserveId) return null;
+    return displayData.some((r) => getReserveSimulationId(r) === visibleExpandedReserveId)
+      ? visibleExpandedReserveId
+      : null;
+  }, [displayData, visibleExpandedReserveId]);
 
   const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
     reserves,
     sortedData,
     isMobile,
-    expandedReserveId,
+    expandedReserveId: visibleExpandedReserveId,
     setExpandedReserveId,
     minVisibleCount,
     defaultVisibleCount: DEFAULT_VISIBLE_COUNT,
@@ -1036,7 +1043,7 @@ const ReservesTable = ({
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
           <ReservesTableMobileGrid
             displayData={displayData}
-            expandedReserveId={expandedReserveId}
+            expandedReserveId={renderedExpandedReserveId}
             isLoading={isLoading}
             reservesCount={reserves.length}
             isApy={isApy}
@@ -1247,7 +1254,7 @@ const ReservesTable = ({
                   key={reserveId}
                   reserve={reserve}
                   reserveId={reserveId}
-                  isExpanded={expandedReserveId === reserveId}
+                  isExpanded={renderedExpandedReserveId === reserveId}
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
                   onMarketChipClick={handleMarketChipClick}
@@ -1294,8 +1301,12 @@ const ReservesTable = ({
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
       {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
-      {expandedReserveId && (
-        <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
+      {renderedExpandedReserveId && (
+        <div
+          aria-hidden
+          data-testid="reserves-expanded-scroll-spacer"
+          style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }}
+        />
       )}
 
       <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
