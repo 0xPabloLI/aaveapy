@@ -35,12 +35,8 @@ function formatUsdPerDay(value: number): string {
   return '$0.00/day';
 }
 
-const formatDeltaUsd = (value: number | null | undefined): string | null => {
-  if (value === null || value === undefined || Number.isNaN(value)) return null;
-  if (Math.abs(value) < 0.005) return null;
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}`;
-};
+
+
 
 const MetricCell = memo(function MetricCell({
   label,
