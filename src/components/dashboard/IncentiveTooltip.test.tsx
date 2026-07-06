@@ -500,7 +500,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$5,000');
-      expect(container.textContent).toContain('combined position');
+      expect(container.textContent).toContain('of combined supply + borrow');
     });
 
     it('does not render position cap when positionCap is absent', () => {
@@ -544,7 +544,7 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('supply only');
+      expect(container.textContent).toContain('of net supply − borrow only');
     });
 
     it('renders position cap for Merkl with net position constraint', () => {
@@ -567,7 +567,32 @@ describe('IncentiveTooltip', () => {
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Incentive on first');
       expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('net position');
+      expect(container.textContent).toContain('of net supply − borrow');
+      expect(container.textContent).not.toContain('combined supply + borrow');
+    });
+
+    it('renders position cap for Merkl without netPositionConstraint (per-side cap)', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Merkl Campaign',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignApr: 1.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            campaignId: 'merkl-1',
+            positionCap: 500,
+            isCombineCap: false,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({ ...defaultProps, reserve });
+      expect(container.textContent).toContain('Incentive on first');
+      expect(container.textContent).toContain('$500');
+      expect(container.textContent).toContain('supply only');
+      expect(container.textContent).not.toContain('combined supply + borrow');
+      expect(container.textContent).not.toContain('net supply − borrow');
     });
   });
 
