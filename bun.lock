@@ -5,7 +5,7 @@
     "": {
       "name": "aaveapy",
       "dependencies": {
-        "@aave-dao/aave-address-book": "^4.52.8",
+        "@aave-dao/aave-address-book": "^4.57.2",
         "@aave/react": "^4.2.0",
         "@aave/react-v3": "npm:@aave/react@^0.9.1",
         "@hookform/resolvers": "^5.2.2",
@@ -117,7 +117,7 @@
 
     "@0no-co/graphqlsp": ["@0no-co/graphqlsp@1.15.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@0no-co/graphqlsp/-/graphqlsp-1.15.4.tgz", { "dependencies": { "@gql.tada/internal": "^1.0.0", "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0" }, "peerDependencies": { "typescript": "^5.0.0 || ^6.0.0" } }, "sha512-Nt1DVHcZ08lKRKwhiU0amXH77fSdrO6DzyjLE0DkCxfbM/N1SAs32d76y1xtCzM5H9eT0iDS7SdksgRXWJu05g=="],
 
-    "@aave-dao/aave-address-book": ["@aave-dao/aave-address-book@4.52.8", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@aave-dao/aave-address-book/-/aave-address-book-4.52.8.tgz", { "peerDependencies": { "viem": "^2.23.5" } }, "sha512-EjsghtHg8Mtwh0XcToUBu9pyB/atX/FzNqw6n7feCikVBxsA5ZguPqMp8vqavxzDrBdik9xHeIOBcWsknNb7aw=="],
+    "@aave-dao/aave-address-book": ["@aave-dao/aave-address-book@4.57.3", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@aave-dao/aave-address-book/-/aave-address-book-4.57.3.tgz", { "peerDependencies": { "viem": "^2.23.5" } }, "sha512-BjVAx4xoovSZGKiyKHjsS57SsOzEYsrNo078kAWUM1JXm3wA/vyoGG7nkP8AfH7i1XWop2rcT3ZS1BnJKVpryw=="],
 
     "@aave/client": ["@aave/client@4.2.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@aave/client/-/client-4.2.0.tgz", { "dependencies": { "@aave/core": "1.1.0", "@aave/graphql": "1.2.0", "@aave/types": "1.0.0", "@urql/core": "^6.0.1", "@urql/exchange-graphcache": "^8.1.0", "graphql": "^16.11.0", "wonka": "^6.3.5" }, "peerDependencies": { "@privy-io/server-auth": "^1.28.8", "@safe-global/safe-apps-sdk": ">=9.0.0", "ethers": "^6.14.4", "thirdweb": "^5.105.25", "viem": "^2.47.0" }, "optionalPeers": ["@privy-io/server-auth", "@safe-global/safe-apps-sdk", "ethers", "thirdweb", "viem"] }, "sha512-XIGJGnRYpzL+j7tFDG9Vkj+ELDanUpKdEINPZ/pteSlc5mTAY0dA1gtjrH4HUrS/Ct4IexA7mAJgXI6Eq3Nggg=="],
 
