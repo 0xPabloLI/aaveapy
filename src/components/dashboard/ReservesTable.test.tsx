@@ -210,7 +210,7 @@ describe('ReservesTable market chip filtering', () => {
   });
 
   it('filters by market without expanding a collapsed row or rendering the desktop spacer', () => {
-    const { container } = renderWithQueryClient(<MarketFilteredTable />);
+    renderWithQueryClient(<MarketFilteredTable />);
 
     fireEvent.click(screen.getByLabelText('Filter by Bluechip market'));
 
