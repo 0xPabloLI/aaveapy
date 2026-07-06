@@ -223,11 +223,10 @@ describe('scenario pin controller', () => {
    *       此时 orderChangedForPending 用 [b,a,c] vs [b,a,c] → false → pin 丢失。
    *
    * 用户主观感受：连打两次输入后，展开行没有 pin 到 sticky 栏下方；
-   * 只打一次时正常。语义上 b 相对于「用户上次看到的顺序 [a,b,c]」已经上移，
-   * 修复后 t3 应当 schedule pin。当前实现无法感知这个「跨输入的累积重排」，
-   * 所以本用例目前预期失败（`it.fails`），fix 落地后应改回 `it`。
+   * 只打一次时正常。语义上 b 相对于「用户上次看到的顺序 [a,b,c]」已经上移。
+   * 修复后（保留 baselineSortedIds 跨 scenarioKey），t3 会 schedule pin。
    */
-  it.fails(
+  it(
     'preserves pin across rapid scenario inputs when reorder is buffered by visible-count window',
     () => {
       let state = createScenarioPinControllerState();
