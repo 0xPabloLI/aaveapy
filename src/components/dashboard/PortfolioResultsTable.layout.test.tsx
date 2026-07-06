@@ -6,10 +6,16 @@
  * column visual alignment. If someone changes py-*, px-*, or border
  * classes on one cell but forgets the others, these assertions fail.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import type { PortfolioReserveEntry, PortfolioPositionResult } from '@/types/portfolio';
+
+vi.mock('@/components/primitives/TokenIcon', () => ({
+  TokenIcon: ({ symbol, size }: { symbol: string; size?: number }) => (
+    <span data-testid="token-icon" data-symbol={symbol} data-size={size} />
+  ),
+}));
 
 const mockEntry: PortfolioReserveEntry = {
   reserveId: 'usdc-ethereum-aave-v3',
