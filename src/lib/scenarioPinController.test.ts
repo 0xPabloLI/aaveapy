@@ -286,5 +286,53 @@ describe('scenario pin controller', () => {
       expect(bufferResolved.pinReserveId).toBe('b');
     },
   );
+
+  /**
+   * Pagination-window edge case: 展开行落在 visible-count buffer 的边界
+   * （首次输入 buffer 未满，第二次输入 buffer 刚好满）。语义要求：只要
+   * baseline 顺序（用户上次看到的）和最新顺序不同，pin 必须 schedule。
+   *
+   * 与 `it.fails` 用例的区别：这里第二次输入既触发 scenario 变化又让 buffer
+   * 解开，属于「刚好落在窗口边缘」的常见交互，不是跨输入累积重排。
+   */
+  it('schedules pin when expanded row sits at pagination window edge and buffer resolves on second input', () => {
+    let state = createScenarioPinControllerState();
+
+    state = step(state, {
+      scenarioKey: '100\0',
+      sortedIds: ['a', 'b', 'c', 'd'],
+      expandedReserveId: 'c',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    }).nextState;
+
+    // t1: 输入触发重排 + expandedIndex 增大，buffer 未满
+    const edgeMiss = step(state, {
+      scenarioKey: '200\0',
+      sortedIds: ['a', 'b', 'c', 'd'],
+      expandedReserveId: 'c',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: false,
+      isExpandedStillVisible: true,
+    });
+    state = edgeMiss.nextState;
+    expect(edgeMiss.shouldSchedulePin).toBe(false);
+
+    // t2: 第二次输入触发重排，buffer 刚好满
+    const edgeHit = step(state, {
+      scenarioKey: '300\0',
+      sortedIds: ['c', 'a', 'b', 'd'],
+      expandedReserveId: 'c',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    expect(edgeHit.shouldSchedulePin).toBe(true);
+    expect(edgeHit.pinReserveId).toBe('c');
+  });
 });
 
