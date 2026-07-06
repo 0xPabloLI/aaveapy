@@ -33,12 +33,26 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
 const DeltaCell = memo(function DeltaCell({
   value,
   accentClass,
+  bandClass,
+  isFirst,
+  isLast,
 }: {
   value: string | null;
   accentClass?: string;
+  bandClass?: string;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   return (
-    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? (accentClass ?? 'text-foreground/70') : 'text-muted-foreground')}>
+    <td
+      className={cn(
+        'px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap',
+        bandClass,
+        isFirst && 'border-l border-border/40',
+        isLast && 'border-r border-border/40',
+        value ? (accentClass ?? 'text-foreground/70') : 'text-gray-300 dark:text-muted-foreground/40',
+      )}
+    >
       {value ?? '—'}
     </td>
   );
@@ -81,12 +95,12 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
           <tr className="bg-muted/40 text-muted-foreground">
             <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
             <th className="px-2 py-1.5 text-right font-semibold">Amount</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Native</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-2 py-1.5 text-right font-semibold border-l border-border/40">Native</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">Incentive</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">Total</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
+            <th className="px-1.5 py-1.5 text-right font-normal ds-text-10 text-muted-foreground/70 border-r border-border/40">Δ</th>
             <th className="px-2 py-1.5 text-right font-semibold">USD/day</th>
           </tr>
         </thead>
@@ -141,6 +155,8 @@ interface ResultRowData extends PortfolioPositionResult {
 
 const SUPPLY_ACCENT = 'ds-text-emerald-600';
 const BORROW_ACCENT = 'ds-text-brand-cyan';
+const SUPPLY_BAND = 'bg-emerald-500/5 group-hover:bg-emerald-500/10';
+const BORROW_BAND = 'bg-cyan-500/5 group-hover:bg-cyan-500/10';
 
 const ResultRow = memo(function ResultRow({
   row,
@@ -148,12 +164,13 @@ const ResultRow = memo(function ResultRow({
   row: ResultRowData;
 }) {
   const accentClass = row.side === 'supply' ? SUPPLY_ACCENT : BORROW_ACCENT;
+  const bandClass = row.side === 'supply' ? SUPPLY_BAND : BORROW_BAND;
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
 
   return (
-    <tr className="border-t border-border/30 transition-colors hover:bg-muted/20">
+    <tr className="group border-t border-border/30 transition-colors hover:bg-muted/10">
       <td className="px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
           <div className="relative">
@@ -175,21 +192,21 @@ const ResultRow = memo(function ResultRow({
       <td className={cn('px-2 py-1.5 text-right tabular-nums font-medium', accentClass)}>
         {formatUsdCompact(row.amountUsd)}
       </td>
-      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
+      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap border-l border-border/40 transition-colors', bandClass, accentClass)}>
         {formatPercent(row.nativePercent)}
       </td>
-      <DeltaCell value={nativeDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
+      <DeltaCell value={nativeDelta} accentClass={accentClass} bandClass={cn('transition-colors', bandClass)} />
+      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap transition-colors', bandClass, accentClass)}>
         {formatPercent(row.incentivePercent)}
         {row.forecastUnavailableCampaignCount != null && row.forecastUnavailableCampaignCount > 0 && (
           <span className="ds-text-9 text-muted-foreground ml-0.5" title="No forecast data — using current APR">*</span>
         )}
       </td>
-      <DeltaCell value={incentiveDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', accentClass)}>
+      <DeltaCell value={incentiveDelta} accentClass={accentClass} bandClass={cn('transition-colors', bandClass)} />
+      <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap transition-colors', bandClass, accentClass)}>
         {formatPercent(row.totalPercent)}
       </td>
-      <DeltaCell value={totalDelta} accentClass={accentClass} />
+      <DeltaCell value={totalDelta} accentClass={accentClass} bandClass={cn('transition-colors', bandClass)} isLast />
       <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
