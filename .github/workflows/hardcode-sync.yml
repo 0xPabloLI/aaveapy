@@ -163,7 +163,7 @@ jobs:
 
             const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
 
-            if (context.event.inputs?.target_branch === 'dev' || '${{ env.TARGET_BRANCH }}' === 'dev') {
+            if ('${{ env.TARGET_BRANCH }}' === 'dev') {
               try {
                 await github.rest.pulls.createReview({
                   owner,
