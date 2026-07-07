@@ -208,7 +208,7 @@ describe('IncentiveTooltip', () => {
           message: 'Earn extra rewards',
           breakdowns: [
             { campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-12-31', campaignId: 'celo-supply-usdt-base', campaignType: 'DUTCH_AUCTION' },
-            { campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-12-31', campaignId: 'celo-supply-usdt-self', campaignType: 'DUTCH_AUCTION', positionCap: 1000 },
+            { campaignApr: 3.8, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-12-31', campaignId: 'celo-supply-usdt-self', campaignType: 'DUTCH_AUCTION', positionCapUsd: 1000 },
           ],
         }],
       };
@@ -493,7 +493,7 @@ describe('IncentiveTooltip', () => {
           campaignEndedAt: '2027-12-31',
           message: 'Brevis rewards',
           link: 'https://brevis.network',
-          positionCap: 5000,
+          positionCapUsd: 5000,
           isCombineCap: true,
         }],
       };
@@ -537,7 +537,7 @@ describe('IncentiveTooltip', () => {
             campaignStartedAt: '2026-01-01',
             campaignEndedAt: '2027-12-31',
             campaignId: 'merit-self',
-            positionCap: 1000,
+            positionCapUsd: 1000,
           }],
         }],
       };
@@ -559,7 +559,7 @@ describe('IncentiveTooltip', () => {
             campaignStartedAt: '2026-01-01',
             campaignEndedAt: '2027-12-31',
             campaignId: 'merkl-1',
-            positionCap: 1000,
+            positionCapUsd: 1000,
             isCombineCap: false,
           }],
         }],
@@ -582,7 +582,7 @@ describe('IncentiveTooltip', () => {
             campaignStartedAt: '2026-01-01',
             campaignEndedAt: '2027-12-31',
             campaignId: 'merkl-1',
-            positionCap: 500,
+            positionCapUsd: 500,
             isCombineCap: false,
           }],
         }],
@@ -743,7 +743,7 @@ describe('IncentiveTooltip', () => {
               campaignEndedAt: '2027-12-31',
               campaignId: 'celo-supply-usdt-self',
               campaignType: 'DUTCH_AUCTION',
-              positionCap: 1000,
+              positionCapUsd: 1000,
               message: '[{"action":"Self Authentication","description":"Double your yield by verifying your humanity"}]',
             },
           ],
@@ -779,7 +779,7 @@ describe('IncentiveTooltip', () => {
               campaignStartedAt: '2026-01-01',
               campaignEndedAt: '2027-12-31',
               campaignId: 'celo-supply-usdt-self',
-              positionCap: 1000,
+              positionCapUsd: 1000,
               message: 'Self breakdown message',
             },
           ],
@@ -880,7 +880,7 @@ describe('IncentiveTooltip', () => {
           link: 'https://example.com',
           breakdowns: [
             { campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', campaignId: 'base' },
-            { campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', campaignId: 'self', positionCap: 1000 },
+            { campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31', campaignId: 'self', positionCapUsd: 1000 },
           ],
         }],
       };

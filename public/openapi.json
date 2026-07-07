@@ -292,7 +292,10 @@
                             "campaignType": {
                               "type": "string"
                             },
-                            "positionCap": {
+                            "positionCapNative": {
+                              "type": "string"
+                            },
+                            "positionCapUsd": {
                               "type": "number"
                             },
                             "isCombineCap": {
@@ -439,7 +442,10 @@
                             "campaignType": {
                               "type": "string"
                             },
-                            "positionCap": {
+                            "positionCapNative": {
+                              "type": "string"
+                            },
+                            "positionCapUsd": {
                               "type": "number"
                             },
                             "isCombineCap": {
@@ -585,7 +591,10 @@
                             "budgetBoundMode": {
                               "type": "string"
                             },
-                            "positionCap": {
+                            "positionCapNative": {
+                              "type": "string"
+                            },
+                            "positionCapUsd": {
                               "type": "number"
                             },
                             "isCombineCap": {
@@ -725,7 +734,10 @@
                             "budgetBoundMode": {
                               "type": "string"
                             },
-                            "positionCap": {
+                            "positionCapNative": {
+                              "type": "string"
+                            },
+                            "positionCapUsd": {
                               "type": "number"
                             },
                             "isCombineCap": {
@@ -865,7 +877,10 @@
                             "budgetBoundMode": {
                               "type": "string"
                             },
-                            "positionCap": {
+                            "positionCapNative": {
+                              "type": "string"
+                            },
+                            "positionCapUsd": {
                               "type": "number"
                             },
                             "isCombineCap": {
@@ -989,7 +1004,7 @@
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "positionCap": {
+                                "positionCapUsd": {
                                   "type": "number"
                                 },
                                 "isCombineCap": {
@@ -1063,7 +1078,7 @@
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "positionCap": {
+                                "positionCapUsd": {
                                   "type": "number"
                                 },
                                 "isCombineCap": {
@@ -1110,7 +1125,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -1180,7 +1195,7 @@
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "positionCap": {
+                                "positionCapUsd": {
                                   "type": "number"
                                 },
                                 "isCombineCap": {
@@ -1254,7 +1269,7 @@
                                 "totalBudget": {
                                   "type": "number"
                                 },
-                                "positionCap": {
+                                "positionCapUsd": {
                                   "type": "number"
                                 },
                                 "isCombineCap": {
@@ -1301,7 +1316,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -1788,7 +1803,10 @@
                       "campaignType": {
                         "type": "string"
                       },
-                      "positionCap": {
+                      "positionCapNative": {
+                        "type": "string"
+                      },
+                      "positionCapUsd": {
                         "type": "number"
                       },
                       "isCombineCap": {
@@ -1935,7 +1953,10 @@
                       "campaignType": {
                         "type": "string"
                       },
-                      "positionCap": {
+                      "positionCapNative": {
+                        "type": "string"
+                      },
+                      "positionCapUsd": {
                         "type": "number"
                       },
                       "isCombineCap": {
@@ -2081,7 +2102,10 @@
                       "budgetBoundMode": {
                         "type": "string"
                       },
-                      "positionCap": {
+                      "positionCapNative": {
+                        "type": "string"
+                      },
+                      "positionCapUsd": {
                         "type": "number"
                       },
                       "isCombineCap": {
@@ -2221,7 +2245,10 @@
                       "budgetBoundMode": {
                         "type": "string"
                       },
-                      "positionCap": {
+                      "positionCapNative": {
+                        "type": "string"
+                      },
+                      "positionCapUsd": {
                         "type": "number"
                       },
                       "isCombineCap": {
@@ -2361,7 +2388,10 @@
                       "budgetBoundMode": {
                         "type": "string"
                       },
-                      "positionCap": {
+                      "positionCapNative": {
+                        "type": "string"
+                      },
+                      "positionCapUsd": {
                         "type": "number"
                       },
                       "isCombineCap": {
@@ -2485,7 +2515,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -2559,7 +2589,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -2606,7 +2636,7 @@
                     "totalBudget": {
                       "type": "number"
                     },
-                    "positionCap": {
+                    "positionCapUsd": {
                       "type": "number"
                     },
                     "isCombineCap": {
@@ -2676,7 +2706,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -2750,7 +2780,7 @@
                           "totalBudget": {
                             "type": "number"
                           },
-                          "positionCap": {
+                          "positionCapUsd": {
                             "type": "number"
                           },
                           "isCombineCap": {
@@ -2797,7 +2827,7 @@
                     "totalBudget": {
                       "type": "number"
                     },
-                    "positionCap": {
+                    "positionCapUsd": {
                       "type": "number"
                     },
                     "isCombineCap": {
@@ -2958,7 +2988,10 @@
                 "campaignType": {
                   "type": "string"
                 },
-                "positionCap": {
+                "positionCapNative": {
+                  "type": "string"
+                },
+                "positionCapUsd": {
                   "type": "number"
                 },
                 "isCombineCap": {
@@ -3088,7 +3121,10 @@
           "budgetBoundMode": {
             "type": "string"
           },
-          "positionCap": {
+          "positionCapNative": {
+            "type": "string"
+          },
+          "positionCapUsd": {
             "type": "number"
           },
           "isCombineCap": {
@@ -3188,7 +3224,10 @@
                 "budgetBoundMode": {
                   "type": "string"
                 },
-                "positionCap": {
+                "positionCapNative": {
+                  "type": "string"
+                },
+                "positionCapUsd": {
                   "type": "number"
                 },
                 "isCombineCap": {
@@ -3294,7 +3333,7 @@
           "totalBudget": {
             "type": "number"
           },
-          "positionCap": {
+          "positionCapUsd": {
             "type": "number"
           },
           "isCombineCap": {
@@ -3361,7 +3400,7 @@
                 "totalBudget": {
                   "type": "number"
                 },
-                "positionCap": {
+                "positionCapUsd": {
                   "type": "number"
                 },
                 "isCombineCap": {
@@ -3408,7 +3447,7 @@
           "totalBudget": {
             "type": "number"
           },
-          "positionCap": {
+          "positionCapUsd": {
             "type": "number"
           },
           "isCombineCap": {

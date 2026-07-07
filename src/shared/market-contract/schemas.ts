@@ -20,7 +20,8 @@ export const MeritCampaignBreakdownSchema = z.object({
   campaignEndedAt: z.string(),
   campaignId: z.string(),
   campaignType: z.string().optional(),
-  positionCap: z.number().optional(),
+  positionCapNative: z.string().optional(),
+  positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   aprCap: z.number().nullable().optional(),
   rewardTokenSymbol: z.string().optional(),
@@ -51,7 +52,8 @@ export const MerklCampaignBreakdownSchema = z.object({
   latestTvl: z.number().optional(),
   plannedDaily: z.number().optional(),
   budgetBoundMode: z.string().optional(),
-  positionCap: z.number().optional(),
+  positionCapNative: z.string().optional(),
+  positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   lastEndedCampaign: z.object({
     startedAt: z.string(),
@@ -81,7 +83,7 @@ export const BrevisCampaignBreakdownSchema = z.object({
   aprCap: z.number().nullable().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
-  positionCap: z.number().optional(),
+  positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   rewardTokenSymbol: z.string().optional(),
 }).passthrough();
@@ -98,7 +100,7 @@ export const BrevisIncentiveSchema = z.object({
   aprCap: z.number().nullable().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
-  positionCap: z.number().optional(),
+  positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   campaignId: z.string().optional(),
 }).passthrough();

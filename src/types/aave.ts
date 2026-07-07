@@ -17,7 +17,8 @@ export interface BaseCampaignBreakdown {
   campaignStartedAt: string;
   campaignEndedAt: string;
   campaignId?: string;
-  positionCap?: number;
+  positionCapNative?: string;
+  positionCapUsd?: number;
   isCombineCap?: boolean;
 }
 
@@ -73,7 +74,7 @@ export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakd
   aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
-  positionCap?: number;
+  positionCapUsd?: number;
   isCombineCap?: boolean;
   campaignId?: string;
 }

@@ -45,7 +45,7 @@ describe('brevis field accessors', () => {
     const brevis = makeBrevis();
     expect(getBrevisLatestTvl(brevis)).toBeUndefined();
     expect(getBrevisTotalBudget(brevis)).toBeUndefined();
-    expect(getBrevisResolvedBreakdown(brevis).positionCap).toBeUndefined();
+    expect(getBrevisResolvedBreakdown(brevis).positionCapUsd).toBeUndefined();
   });
 
   it('returns undefined when message is absent', () => {
@@ -57,11 +57,11 @@ describe('brevis field accessors', () => {
     const brevis = makeBrevis({
       latestTvl: 150_000,
       totalBudget: 9000,
-      positionCap: 5000,
+      positionCapUsd: 5000,
     });
     expect(getBrevisLatestTvl(brevis)).toBe(150_000);
     expect(getBrevisTotalBudget(brevis)).toBe(9000);
-    expect(getBrevisResolvedBreakdown(brevis).positionCap).toBe(5000);
+    expect(getBrevisResolvedBreakdown(brevis).positionCapUsd).toBe(5000);
   });
 });
 

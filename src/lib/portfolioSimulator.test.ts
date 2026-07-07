@@ -859,7 +859,7 @@ describe('simulatePortfolioFromEntries', () => {
                 campaignStartedAt: recentPast,
                 campaignEndedAt: farFuture,
                 campaignId: 'merit-self-3',
-                positionCap: 1000,
+                positionCapUsd: 1000,
               },
             ],
           },
