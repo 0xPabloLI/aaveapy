@@ -51,7 +51,14 @@ test-results/
 
 # Personal agent skill symlinks (absolute paths into ~/.agents)
 .agents/
+.agent/
 .trae/skills/
+.claude/skills/
+.codex/
+.cursor/skills/
+.github/skills/
+.impeccable/
+.opencode/
 
 # Debug scripts and pages (development-only, not committed)
 scripts/debug-*
