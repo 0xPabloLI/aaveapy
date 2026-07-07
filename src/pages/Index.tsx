@@ -29,7 +29,7 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE, buildPointRateMap } from '@/lib/tydro';
-import { AlertTriangle, Send, Github } from 'lucide-react';
+import { AlertTriangle, Send, GithubIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   preloadIncentiveIcons,
@@ -762,7 +762,7 @@ const Index = () => {
                   title="View source on GitHub"
                   className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  <Github className="w-4 h-4" />
+                  <GithubIcon className="w-4 h-4" />
                 </a>
               </div>
             </div>
