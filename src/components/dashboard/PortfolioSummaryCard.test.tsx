@@ -21,10 +21,9 @@ describe('PortfolioSummaryCard', () => {
 
   it('renders the four metric cells', () => {
     render(<PortfolioSummaryCard summary={makeSummary()} />);
-    expect(screen.getByText('Total Supply')).toBeInTheDocument();
-    expect(screen.getByText('Total Borrow')).toBeInTheDocument();
+    expect(screen.getByText('Total Supply / Borrow')).toBeInTheDocument();
     expect(screen.getByText('Net Daily Earn')).toBeInTheDocument();
-    expect(screen.getByText('Supply / Borrow APY')).toBeInTheDocument();
+    expect(screen.getByText('Weighted APY')).toBeInTheDocument();
   });
 
   it('no longer renders simulation disclaimer (moved to PortfolioPanel header)', () => {

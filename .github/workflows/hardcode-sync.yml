@@ -148,6 +148,95 @@ jobs:
             automerge
             hardcode
 
+      - name: Approve and enable auto-merge for bot PR
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = Number('${{ steps.cpr.outputs.pull-request-number }}');
+            if (!prNumber) {
+              core.info('No PR created; skip approve/auto-merge.');
+              return;
+            }
+
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if ('${{ env.TARGET_BRANCH }}' === 'dev') {
+              try {
+                await github.rest.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  event: 'APPROVE',
+                  body: 'Automated approval by hardcode-sync workflow (GITHUB_TOKEN).',
+                });
+                core.info(`Approved PR #${prNumber}`);
+              } catch (error) {
+                core.warning(`Auto-approve failed for PR #${prNumber}: ${error.message}`);
+              }
+            }
+
+            try {
+              await github.graphql(
+                `mutation EnableAutoMerge($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                    pullRequest { number }
+                  }
+                }`,
+                { pullRequestId: pr.data.node_id }
+              );
+              core.info(`Enabled auto-merge for PR #${prNumber}`);
+              return;
+            } catch (error) {
+              const message = String(error.message || error);
+              core.warning(`Enable auto-merge failed for PR #${prNumber}: ${message}`);
+
+              const isUnstable = message.toLowerCase().includes('unstable status');
+              if (isUnstable) {
+                const statusQuery = `query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $number) { mergeStateStatus }
+                  }
+                }`;
+                const statusData = await github.graphql(statusQuery, { owner, repo, number: prNumber });
+                const mergeStatus = statusData.repository.pullRequest.mergeStateStatus;
+
+                if (mergeStatus === 'CLEAN') {
+                  try {
+                    await github.rest.pulls.merge({
+                      owner, repo, pull_number: prNumber,
+                      merge_method: 'squash',
+                    });
+                    core.info(`PR #${prNumber} was CLEAN; merged directly as fallback.`);
+                    return;
+                  } catch (mergeError) {
+                    core.warning(`Direct merge also failed for PR #${prNumber}: ${mergeError.message}`);
+                  }
+                } else if (mergeStatus === 'UNKNOWN') {
+                  for (let attempt = 1; attempt <= 3; attempt++) {
+                    await new Promise((r) => setTimeout(r, 10000));
+                    try {
+                      await github.graphql(
+                        `mutation EnableAutoMerge($pullRequestId: ID!) {
+                          enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                            pullRequest { number }
+                          }
+                        }`,
+                        { pullRequestId: pr.data.node_id }
+                      );
+                      core.info(`Enabled auto-merge for PR #${prNumber} on retry ${attempt}/3`);
+                      return;
+                    } catch (retryError) {
+                      core.warning(`Retry ${attempt}/3 failed: ${retryError.message}`);
+                    }
+                  }
+                }
+                core.warning(`Could not enable auto-merge or merge PR #${prNumber} directly. mergeStateStatus=${mergeStatus}`);
+              }
+            }
+
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         run: |

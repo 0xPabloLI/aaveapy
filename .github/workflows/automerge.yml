@@ -2,7 +2,6 @@ name: Auto Merge
 
 on:
   pull_request_target:
-    # Include `opened` so PRs created with labels (e.g. bot PRs) still evaluate the job `if`.
     types: [opened, labeled, reopened, synchronize, ready_for_review]
 
 permissions:
@@ -16,10 +15,7 @@ jobs:
       github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     steps:
-      - name: Cooldown for async review bots
-        run: sleep 180
-
-      - name: Enable auto-merge when checks pass
+      - name: Enable auto-merge (enable-early)
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -32,6 +28,7 @@ jobs:
                     id
                     number
                     reviewDecision
+                    mergeStateStatus
                     autoMergeRequest {
                       enabledAt
                     }
@@ -61,6 +58,7 @@ jobs:
               core.info(`Auto-merge already enabled for PR #${pr.number}`);
               return;
             }
+
             const enableAutoMergeMutation = `
               mutation($pullRequestId: ID!) {
                 enablePullRequestAutoMerge(input: {
@@ -69,33 +67,57 @@ jobs:
                 }) {
                   pullRequest {
                     number
-                    autoMergeRequest {
-                      enabledAt
-                    }
                   }
                 }
               }
             `;
-            const maxAttempts = 5;
-            const baseDelayMs = 120000;
-            const unstableDelayMs = 180000; // Extra wait for "unstable" status
-            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-              try {
-                await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-                core.info(`Enabled auto-merge for PR #${pr.number} on attempt ${attempt}/${maxAttempts}`);
+
+            try {
+              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
+              core.info(`Enabled auto-merge for PR #${pr.number}`);
+              return;
+            } catch (error) {
+              const message = String(error.message || error);
+              const isUnstable = message.toLowerCase().includes('unstable status');
+
+              if (!isUnstable) {
+                core.warning(`Enable auto-merge failed for PR #${pr.number}: ${message}`);
                 return;
-              } catch (error) {
-                const message = String(error && error.message ? error.message : error);
-                const isUnstable = message.toLowerCase().includes('unstable status');
-                const isLastAttempt = attempt === maxAttempts;
-                if (!isUnstable || isLastAttempt) {
-                  throw error;
-                }
-                // Use longer delay for "unstable" status on later attempts
-                const waitMs = isUnstable && attempt >= 3 ? unstableDelayMs : baseDelayMs * attempt;
-                core.warning(
-                  `PR #${pr.number} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
-                );
-                await new Promise((resolve) => setTimeout(resolve, waitMs));
               }
+
+              core.info(`PR #${pr.number} unstable status; checking mergeStateStatus...`);
+              const mergeStatus = prInfo.mergeStateStatus;
+
+              if (mergeStatus === 'CLEAN') {
+                try {
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number,
+                    merge_method: 'squash',
+                  });
+                  core.info(`PR #${pr.number} was CLEAN; merged directly as fallback.`);
+                  return;
+                } catch (mergeError) {
+                  core.warning(`Direct merge failed for PR #${pr.number}: ${mergeError.message}`);
+                  return;
+                }
+              }
+
+              if (mergeStatus === 'UNKNOWN') {
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                  await new Promise((r) => setTimeout(r, 10000));
+                  try {
+                    await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
+                    core.info(`Enabled auto-merge for PR #${pr.number} on retry ${attempt}/3`);
+                    return;
+                  } catch (retryError) {
+                    core.warning(`Retry ${attempt}/3 failed: ${retryError.message}`);
+                  }
+                }
+                core.warning(`Could not enable auto-merge for PR #${pr.number} after 3 retries. mergeStateStatus=${mergeStatus}`);
+                return;
+              }
+
+              core.warning(`Could not enable auto-merge for PR #${pr.number}. mergeStateStatus=${mergeStatus}`);
             }

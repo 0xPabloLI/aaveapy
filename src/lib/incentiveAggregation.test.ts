@@ -441,3 +441,62 @@ describe('sumMerklIncentiveApr — positionCapUsd', () => {
     expect(result).toBeCloseTo(10, 6);
   });
 });
+
+describe('sumMerklIncentiveApr — positionCapNative path', () => {
+  const makeNativeCappedMerklOpp = (positionCapNative: string) => makeMerklOpportunity({
+    breakdowns: [{
+      campaignId: 'capped-merkl-native',
+      campaignApr: 10,
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2030-12-31',
+      positionCapNative,
+    }],
+  });
+
+  it('converts positionCapNative to USD and applies dilution', () => {
+    const opportunities = [makeNativeCappedMerklOpp('500000000')];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      tokenPrice: 1,
+      decimals: 6,
+    });
+    expect(result).toBeCloseTo(10 * (500 / 1000), 6);
+  });
+
+  it('falls back to DEFAULT_TOKEN_DECIMALS when decimals undefined', () => {
+    const opportunities = [makeNativeCappedMerklOpp('500000000000000000000')];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      tokenPrice: 1,
+    });
+    expect(result).toBeCloseTo(10 * (500 / 1000), 6);
+  });
+
+  it('prefers positionCapNative over positionCapUsd when both present', () => {
+    const opportunities = [makeMerklOpportunity({
+      breakdowns: [{
+        campaignId: 'capped-both',
+        campaignApr: 10,
+        campaignStartedAt: '2025-01-01',
+        campaignEndedAt: '2030-12-31',
+        positionCapNative: '500000000',
+        positionCapUsd: 9999,
+      }],
+    })];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      tokenPrice: 1,
+      decimals: 6,
+    });
+    expect(result).toBeCloseTo(10 * (500 / 1000), 6);
+  });
+
+  it('skips conversion when tokenPrice missing and no positionCapUsd fallback', () => {
+    const opportunities = [makeNativeCappedMerklOpp('500000000')];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      decimals: 6,
+    });
+    expect(result).toBeCloseTo(10, 6);
+  });
+});

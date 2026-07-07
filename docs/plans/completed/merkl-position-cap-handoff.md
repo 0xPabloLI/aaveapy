@@ -118,12 +118,13 @@ positionCapUsd = Number(maxDeposit) / 10^underlyingDecimals × tokenPrice
 - `isCombineCap=false` → 直接返回 `positionCapUsd`
 - `isCombineCap=true` → 返回 `max(positionCapUsd - otherSideUsd, 0)`，即扣减对侧已占用的额度
 
-**Merkl 的 maxDeposit 是 net position cap，不是 combine cap**：
-- `AAVE_NET_LENDING` 类型本身就是 supply - borrow 的净值
-- `maxDeposit` 限制的是 net lending position（supply 减 borrow 后的净值）
+**Merkl 的 maxDeposit 是 per-side per-user balance cap，不是 net position cap 也不是 combine cap**：
+- Merkl scoring 按 side 独立——supply 和 borrow 各有自己的 scoring balance
+- `maxDeposit` 限制的是**单侧** scoring balance（如 supply 侧的 maxDeposit 只 cap supply balance）
+- `netPositionConstraint` 是独立的跨 reserve net scoring 概念（supply 减去 offset reserves 的 borrow），与 `isCombineCap` 无关
 - 这和 combine cap（supply+borrow 共享额度）完全不同
 - 因此 `isCombineCap = false`
-- 但调用 `applyPositionCapToForecastResult` 时，`positionUsd` 应传 **net position**（supplyUsd - borrowUsd），而非 supplyUsd
+- `positionUsd` 传给 `applyPositionCapToForecastResult` 时，在有 `netPositionConstraint` 的情况下传 net position（经 `computeCrossReserveEligibilityRatio` 缩放后的值），无 `netPositionConstraint` 时传单侧 position
 
 ### Q3 回答：rateSimulationCalculator 是否区分 source？
 
@@ -141,7 +142,7 @@ merit/merkl/brevis 各有独立的 `sumCurrent`/`sumAfter`/`buildDetails` 实现
 
 8. **`docs/prd/merit-unify-merkl-format.md`** — 差异表更新：
    - Position cap 行 Merkl 列从 "None" 改为 "Has `positionCap` (from `maxDeposit`)"
-   - 加注释：Merkl 的 maxDeposit 是 net position cap（isCombineCap=true），与 Merit 的 supply-only cap 语义不同
+   - 加注释：Merkl 的 maxDeposit 是 per-side per-user balance cap（isCombineCap=false），不是 net position cap（那是 netPositionConstraint 的概念），也不是 combine cap
 
 ---
 
@@ -218,9 +219,9 @@ merit/merkl/brevis 各有独立的 `sumCurrent`/`sumAfter`/`buildDetails` 实现
 
 ### isCombineCap 最终设计
 
-- **Merkl**: `isCombineCap = false`（maxDeposit 是 net position cap，非 supply+borrow 共享）
+- **Merkl**: `isCombineCap = false`（maxDeposit 是 per-side per-user balance cap，非 supply+borrow 共享。`netPositionConstraint` 是独立的跨 reserve net scoring 概念，不影响 isCombineCap）
 - **Merit**: `isCombineCap = false`（supply-only cap）
-- **Brevis**: `isCombineCap = true`（sharedCap，supply+borrow 共享额度）
+- **Brevis**: `isCombineCap = true`（sharedCap，supply+borrow 共享额度，从描述文案 "combined total of up to $X in collateral and/or debt" 推断）
 - 前端不依赖 source 名称判断 position cap 语义，只依赖 `isCombineCap` 字段和 `netPositionConstraint`
 
 ### 当前状态（2026-07-06）

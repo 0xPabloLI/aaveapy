@@ -33,6 +33,7 @@ import {
   checkForecastAvailability,
   resolvePositionCapUsd,
 } from '@/lib/incentiveCaps';
+import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 import { applyPositionCap } from '@/lib/incentiveMath';
 import {
   getBrevisCampaignBreakdowns,
@@ -1085,7 +1086,7 @@ export function buildRateSimulationResult({
   // Must use per-Spoke borrowed (reserve.borrowed), not Hub-level (reserveRateInput.borrowed)
   const currentTotalBorrowedUsd = tokenPrice && reserve.borrowed
     ? (() => {
-        const decimals = reserve.decimals ?? 18;
+        const decimals = reserve.decimals ?? DEFAULT_TOKEN_DECIMALS;
         const scale = Math.pow(10, decimals);
         const totalDebt = Number(reserve.borrowed) / scale;
         return totalDebt * tokenPrice;
@@ -1104,7 +1105,7 @@ export function buildRateSimulationResult({
   const availableLiquidityForBorrowUsd = borrowBlocked ? null
     : liquiditySource.liquidity != null && tokenPrice
       ? (() => {
-          const decimals = liquiditySource.decimals ?? 18;
+          const decimals = liquiditySource.decimals ?? DEFAULT_TOKEN_DECIMALS;
           const scale = Math.pow(10, decimals);
           const liquidityRaw = Number(liquiditySource.liquidity) / scale;
             return liquidityRaw * tokenPrice + effectiveSupplyInputUsd;
@@ -1616,7 +1617,7 @@ export function buildRateSimulationResult({
 
     // ─── A 类字段: On-chain current snapshot (有 fallback) ───
 
-    const decimals = reserveRateInput.decimals ?? 18;
+    const decimals = reserveRateInput.decimals ?? DEFAULT_TOKEN_DECIMALS;
     const scale = Math.pow(10, decimals);
 
     const liquidityRaw = Number(reserveRateInput.liquidity) / scale;

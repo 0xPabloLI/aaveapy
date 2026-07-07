@@ -49,9 +49,18 @@ test-results/
 # Cursor local state
 .cursor/hooks/state/continual-learning.json
 
-# Personal agent skill symlinks (absolute paths into ~/.agents)
+# Personal agent skill symlinks and hooks (absolute paths into ~/.agents)
 .agents/
+.agent/
 .trae/skills/
+.claude/
+.codex/
+.cursor/skills/
+.cursor/hooks.json
+.github/skills/
+.github/hooks/
+.impeccable/
+.opencode/
 
 # Debug scripts and pages (development-only, not committed)
 scripts/debug-*

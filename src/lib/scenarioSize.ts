@@ -1,5 +1,6 @@
 import { parseNumberInput } from './numberFormat';
 import type { ProtocolVersion } from './protocolVersion';
+import { DEFAULT_TOKEN_DECIMALS } from './tokenDefaults';
 
 export type ScenarioDisplayMode = 'usd' | 'token';
 
@@ -9,7 +10,7 @@ export const nativeToUsd = (
   tokenPrice: number | null | undefined,
 ): number | null => {
   if (!raw) return null;
-  const d = decimals ?? 18;
+  const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
   if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const value = Number(raw);
@@ -98,7 +99,7 @@ export const getReserveTotalBorrowedUsd = (reserve: {
 }): number | null => {
   const { borrowed, decimals, tokenPrice } = reserve;
   if (!borrowed) return null;
-  const d = decimals ?? 18;
+  const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
   if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const raw = Number(borrowed);
@@ -130,7 +131,7 @@ export const getReserveAvailableLiquidityUsd = (reserve: {
 }): number | null => {
   const { liquidity, decimals, tokenPrice } = reserve;
   if (!liquidity) return null;
-  const d = decimals ?? 18;
+  const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
   if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const raw = Number(liquidity);
