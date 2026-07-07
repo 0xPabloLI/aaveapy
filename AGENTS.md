@@ -1,5 +1,35 @@
 # Repository Guidelines (Slim)
 
+## Design Context
+
+### Users
+进阶 DeFi 用户——有一定链上经验，了解 APY/APR/Spread/Supply/Borrow 等基本概念，但需要工具辅助跨链比较和投资决策。使用场景：日常监控 Aave V3 多链市场、比较借贷利率、追踪 Merit/Merkl/Brevis 激励收益、模拟利率变化和仓位效果。
+
+### Brand Personality
+温暖亲和、精准可靠、数据驱动。三个关键词：**Warm / Precise / Trustworthy**。界面应该像一位专业的金融顾问——用数据说话，但用温暖的方式呈现，让用户感到被照顾而非被淹没。品牌焦点色为品红→青色的渐变（`--ds-brand-magenta-rgb` → `--ds-brand-cyan-rgb`），传达"理性中有温度"的气质。
+
+### Aesthetic Direction
+- **视觉基调**：温暖雾白底 + 深炭黑暗色模式，琥珀金主色（Primary），品红→青渐变作为品牌签名
+- **色彩语义严格**：琥珀=警告、红=错误、翡翠绿=Supply/成功、青色=Borrow、紫色=Spread、蓝色=Portfolio
+- **信息密度优先**：4 层响应式压缩确保数据始终可读，硬切换行而非省略号
+- **暖色光晕**：Tooltip 表面带暖色径向光 + 网格线，体现"温度"而非冷冰冰的数据面板
+- **参考与反参考**：当前设计方向已对齐，无额外参考或反参考
+
+### Design Principles
+1. **Warm Precision** — 数据精准呈现，但用温暖的方式。颜色、间距、排版都要传达"专业但不冷漠"
+2. **Semantic Color Discipline** — 语义色仅用于其对应含义，普通数据用中性色。禁止 `text-gray-`/`bg-gray-`/`border-gray-` 等非语义灰
+3. **Dense but Breathable** — 高信息密度的同时保证可读性。4 层响应式压缩（列宽→padding→内容→断点切换），最小文字-边框间距 8px
+4. **Progressive Disclosure** — 核心数据一眼可见，细节按需展开（Reserve row → Simulation sub-row → Incentive tooltip）
+5. **Mobile as First-Class Citizen** — 移动端禁止 `hover:`，改用 `active:`；浮层用 bottom sheet；触控目标 ≥44px
+
+### Design Token Quick Reference
+- **字体**：Source Sans Pro (sans) / Source Serif Pro (serif) / Source Code Pro (mono)
+- **字号**：8px–36px（`--ds-text-8` ~ `--ds-text-36`），标题 `clamp(20px, 2vw+10px, 24px)`
+- **间距**：4px 基准（`--ds-space-1` = 4px），最大 64px
+- **圆角**：基于 `--radius` (1rem) 派生 lg/md/sm
+- **阴影**：7 级（2xs→2xl），暗色比亮色更深
+- **详细规范**：`docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）
+
 ## Project Snapshot
 - Frontend app: React + TypeScript + Vite for Aave market analysis UI.
 - Main data sources: backend `GET /markets` and `GET /meta/side-data`.
@@ -267,3 +297,17 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **多可选参数函数的测试调用必须逐参数对照签名**：`buildMerklCampaignDetails` 有 16 个参数，测试中 `eligibilityRatio`（第 8 位，默认=1）被传了 `1000`，`grossInputUsd`（第 9 位）被传了 `undefined`——错位一个位置。结果 `after = campaignApr * 1000 * 1 = 10000` 而非预期的 10。**教训：超过 5 个参数的函数调用，写测试时必须逐参数对签名注释，或改用 options 对象模式。参数错位的症状是"值异常大/小"且恰好等于 `expected * wrongParam`。**
 - **跨前后端功能必须走 PRD → Issues → Implement 流程**：Merkl position cap 涉及后端类型/提取/OpenAPI schema + 前端类型/Zod schema/计算逻辑/测试，是跨前后端的复杂功能。跳过 PRD 直接写代码导致：(1) 没有 scope 边界，改动蔓延；(2) 没有 issue 追踪，进度不透明；(3) 没有 code review checkpoint；(4) 没有 dev server 验证。**教训：涉及 3+ 文件/跨层级的改动，必须先写 PRD 确认 scope，拆 issue 逐步实现，每步 review + 验证。**
 - **Position Cap 统一入口不值得做**：4 个调用点（Merit×2, Merkl×1, Brevis×1）的 `positionUsd` 推导逻辑各不同（Merit: `totalPositionUsd ?? inputUsd`，Merkl: `netForEligibility ?? (grossInputUsd ?? inputUsd)`，Brevis: `effectiveInputUsd`），options 差异也大（Brevis 传 remainingBudget/dailyRewardUsd/remainingDays，Merit 传 campaignName，Merkl 只传 isCombineCap）。`applyPositionCapToForecastResult` 本身已是统一入口。**教训：当调用前参数推导和调用后处理差异大于共享逻辑时，强行统一 wrapper 增加间接层认知成本，不如保持各点独立调用统一底层函数。**
+
+## Learned Lessons: isCombineCap 语义 vs netPositionConstraint (AAV-1075/1076)
+
+- **`isCombineCap` 和 `netPositionConstraint` 是两个独立概念**：`isCombineCap` = position cap 是否跨 supply+borrow 共享（同一 token 同一侧的 cap 语义）；`netPositionConstraint` = Merkl scoring 是否跨 reserve 做 net 计算（不同 token 之间的 scoring 规则）。两者可共存（如 Celo USDT Merkl supply 同时有 `positionCapNative` 和 `netPositionConstraint`），互不影响。
+- **Merkl `isCombineCap = false` 是语义推导，不是硬编码**：Merkl scoring 按 side 独立——supply 和 borrow 各有自己的 scoring balance。`maxDeposit` 限制的是**单侧** scoring balance，不是 net position cap，也不是 combine cap。因此 `isCombineCap = false` 是从 Merkl scoring 语义推导出来的正确值。`computeMethod = "maxDeposit"` 是有 position cap 的充分必要条件。
+- **Brevis `isCombineCap` 从描述文案推断**：描述文案含 "combined total of up to $X in collateral and/or debt" → `isCombineCap = true`。如果未来有非 combined 的 Brevis campaign，需要从描述中用正则提取。当前硬编码 `true` 是因为 Brevis 目前只有 MetaMask Card campaign。
+- **旧文档中 "Merkl maxDeposit 是 net position cap" 的描述有误**：已修正为 "per-side per-user balance cap"。`netPositionConstraint` 是独立字段，不是 maxDeposit 的语义。
+
+## Learned Lessons: `decimals ?? 18` 统一入口 (AAV-1075/1076)
+
+- **后端 `/markets` API 对 66% 的 reserve 不返回 `decimals`**：当 `decimals = 18`（默认值）时省略，前端必须 fallback。
+- **`DEFAULT_TOKEN_DECIMALS` 必须统一入口**：提取到 `src/lib/tokenDefaults.ts`，所有使用 `decimals ?? 18` 的地方统一 import。避免某天改默认值时遗漏一处导致 native→USD 换算错误。
+- **`resolvePositionCapUsd` 之前在 `decimals = undefined` 时不换算——这是 bug**：Merkl 的 `positionCapNative` 需要 decimals 换算，但 reserve 没有 decimals 时直接跳过换算、回退到 `positionCapUsd`（Merkl 不提供），导致 position cap 静默不生效。修复：`resolvePositionCapUsd` 在 `decimals` 缺失时使用 `DEFAULT_TOKEN_DECIMALS`（18）。
+- **涉及文件**：`tokenDefaults.ts`（常量定义）、`incentiveCaps.ts`、`scenarioSize.ts`、`deficit.ts`、`rateSimulationCalculator.ts`、`userPositionMapper.ts`。

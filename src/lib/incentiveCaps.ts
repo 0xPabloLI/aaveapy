@@ -1,10 +1,11 @@
 import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
+import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 
 export function convertPositionCapNativeToUsd(
   positionCapNative: string,
   tokenPrice: number,
-  decimals: number,
+  decimals: number = DEFAULT_TOKEN_DECIMALS,
 ): number | null {
   if (tokenPrice <= 0 || decimals < 0) return null;
   try {
@@ -27,8 +28,8 @@ export function resolvePositionCapUsd(
   tokenPrice?: number,
   decimals?: number,
 ): number | undefined {
-  if (positionCapNative != null && tokenPrice != null && decimals != null) {
-    const converted = convertPositionCapNativeToUsd(positionCapNative, tokenPrice, decimals);
+  if (positionCapNative != null && tokenPrice != null && tokenPrice > 0) {
+    const converted = convertPositionCapNativeToUsd(positionCapNative, tokenPrice, decimals ?? DEFAULT_TOKEN_DECIMALS);
     if (converted != null) return converted;
   }
   return positionCapUsd;

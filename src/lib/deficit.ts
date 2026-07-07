@@ -1,5 +1,6 @@
 import type { ReserveWithSpread } from '@/types/aave';
 import { formatReserveSizeToken, formatReserveSizeUsd, formatScenarioSize } from '@/lib/formatters';
+import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 
 type ScenarioMode = 'usd' | 'token';
 export type DeficitSeverity = 'neutral' | 'warning' | 'critical';
@@ -15,7 +16,6 @@ export interface DeficitDisplay {
   deficitTextClass: string;
 }
 
-const DEFAULT_DECIMALS = 18;
 const TOKEN_DECIMAL_PREVIEW = 6;
 const TOKEN_DECIMAL_FOR_NUMBER = 8;
 const DEFICIT_WARNING_RATIO = 0.08;
@@ -39,7 +39,7 @@ const parseNonNegativeBigInt = (value: string | null | undefined): bigint | null
 };
 
 const normalizeDecimals = (value: number | null | undefined): number => {
-  if (!Number.isFinite(value)) return DEFAULT_DECIMALS;
+  if (!Number.isFinite(value)) return DEFAULT_TOKEN_DECIMALS;
   const normalized = Math.floor(Number(value));
   return Math.min(Math.max(normalized, 0), 36);
 };

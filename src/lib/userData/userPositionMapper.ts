@@ -3,6 +3,7 @@ import type { V4UserPosition } from './aaveV4UserClient'
 import type { ReserveWithSpread } from '@/types/aave'
 import type { ReserveMap, ReserveChainTokenMap } from '@/lib/reserveKey'
 import { buildReserveMap, toChainTokenKey } from '@/lib/reserveKey'
+import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults'
 
 export type WalletPositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4'
 
@@ -120,7 +121,7 @@ export function resolvePositionMeta(
     reserveId: reserve.reserveId,
     tokenSymbol: reserve.tokenSymbol,
     tokenPrice: reserve.tokenPrice ?? 0,
-    decimals: reserve.decimals ?? 18,
+    decimals: reserve.decimals ?? DEFAULT_TOKEN_DECIMALS,
   }
 }
 
@@ -146,7 +147,7 @@ export function resolvePositionMetaByReserveId(
         reserveId: reserve.reserveId,
         tokenSymbol: reserve.tokenSymbol,
         tokenPrice: reserve.tokenPrice ?? 0,
-        decimals: reserve.decimals ?? 18,
+        decimals: reserve.decimals ?? DEFAULT_TOKEN_DECIMALS,
       }
     }
   }
