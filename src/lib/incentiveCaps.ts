@@ -1,6 +1,39 @@
 import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 
+export function convertPositionCapNativeToUsd(
+  positionCapNative: string,
+  tokenPrice: number,
+  decimals: number,
+): number | null {
+  if (tokenPrice <= 0 || decimals < 0) return null;
+  try {
+    const rawBigInt = BigInt(positionCapNative);
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const wholePart = rawBigInt / divisor;
+    const fracPart = rawBigInt % divisor;
+    const nativeAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
+    if (!Number.isFinite(nativeAmount) || nativeAmount <= 0) return null;
+    const usd = nativeAmount * tokenPrice;
+    return Number.isFinite(usd) && usd > 0 ? usd : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolvePositionCapUsd(
+  positionCapNative: string | undefined,
+  positionCapUsd: number | undefined,
+  tokenPrice?: number,
+  decimals?: number,
+): number | undefined {
+  if (positionCapNative != null && tokenPrice != null && decimals != null) {
+    const converted = convertPositionCapNativeToUsd(positionCapNative, tokenPrice, decimals);
+    if (converted != null) return converted;
+  }
+  return positionCapUsd;
+}
+
 export type IncentiveNoteType = 'position_cap' | 'pool_budget' | 'apr_cap' | 'net_eligible';
 
 export type IncentiveNoteColor = 'amber' | 'muted';
@@ -13,7 +46,7 @@ export interface IncentiveNote {
 
 /**
  * Domain-layer model for incentive constraints that surface as `IncentiveNote[]` on campaigns/sources.
- * API field names stay unchanged (e.g. `positionCap`).
+ * API field names: `positionCapNative` (raw amount) / `positionCapUsd` (USD).
  */
 export type IncentiveCapKind =
   | 'position_cap'
@@ -61,7 +94,7 @@ export function netEligibleToNote(text: string): IncentiveNote {
   return { type: 'net_eligible', text, color: 'muted' };
 }
 
-/** Per-user position cap from API `positionCap`. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
+/** Per-user position cap. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
 export function buildPositionCapEffect(input: {
   positionCapUsd: number;
   isCombineCap: boolean;
@@ -69,12 +102,9 @@ export function buildPositionCapEffect(input: {
   remainingBudget: number | null;
   dailyRewardUsd: number | null;
   remainingDays: number | null;
-  campaignName?: string;
 }): IncentiveCapEffect {
   const parts: string[] = [];
-  const capPrefix = input.campaignName
-    ? `${input.campaignName} incentive on first ${formatUsd(input.positionCapUsd)} only`
-    : `Incentive on first ${formatUsd(input.positionCapUsd)} only`;
+  const capPrefix = `Incentive limited to first ${formatUsd(input.positionCapUsd)}`;
   parts.push(
     input.isCombineCap
       ? `${capPrefix} · combined supply + borrow`
@@ -155,7 +185,6 @@ export function applyPositionCapToForecastResult(
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
-    campaignName?: string;
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
@@ -169,7 +198,6 @@ export function applyPositionCapToForecastResult(
     remainingBudget: options?.remainingBudget ?? null,
     dailyRewardUsd: options?.dailyRewardUsd ?? null,
     remainingDays: options?.remainingDays ?? null,
-    campaignName: options?.campaignName,
   });
   const notes = [capEffectToNote(effect)];
   let capMetrics: SimulationCapMetrics | undefined;

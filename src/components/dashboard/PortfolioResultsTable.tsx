@@ -4,6 +4,12 @@ import { formatPercent } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioPositionResult, PortfolioReserveEntry } from '@/types/portfolio';
+import {
+  PortfolioColgroup,
+  PORTFOLIO_COL_COUNT,
+  PF_VALUE_CELL,
+  PF_DELTA_CELL,
+} from './portfolioColumns';
 
 interface PortfolioResultsTableProps {
   entries: PortfolioReserveEntry[];
@@ -30,21 +36,40 @@ const formatDeltaPercent = (value: number | null | undefined): string | null => 
   return `${prefix}${value.toFixed(2)}%`;
 };
 
+// Local aliases for the shared padding tokens (kept for backward compat inside this file).
+const VALUE_CELL = PF_VALUE_CELL;
+const DELTA_CELL = PF_DELTA_CELL;
+
 const DeltaCell = memo(function DeltaCell({
   value,
   accentClass,
+  bandClass,
 }: {
   value: string | null;
   accentClass?: string;
+  bandClass?: string;
 }) {
   return (
-    <td className={cn('px-1.5 py-1.5 text-right tabular-nums ds-text-10 whitespace-nowrap', value ? (accentClass ?? 'text-foreground/70') : 'text-muted-foreground')}>
+    <td
+      className={cn(
+        DELTA_CELL,
+        bandClass,
+        value ? (accentClass ?? 'text-foreground/70') : 'text-gray-300 dark:text-muted-foreground/40',
+      )}
+    >
       {value ?? '—'}
     </td>
   );
 });
 
-const COL_COUNT = 8;
+const COL_COUNT = PORTFOLIO_COL_COUNT;
+
+const NATIVE_HEADER_BAND = 'bg-emerald-500/8 dark:bg-emerald-500/10';
+const INCENTIVE_HEADER_BAND = 'bg-cyan-500/8 dark:bg-cyan-500/10';
+const TOTAL_HEADER_BAND = 'bg-emerald-500/8 dark:bg-emerald-500/10';
+
+// Muted fallback for the non-cluster header cells (Token, Amount, USD/day).
+const HEADER_BASE = 'bg-muted/40';
 
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
   entries,
@@ -65,42 +90,31 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className="w-full ds-text-11" style={{ tableLayout: 'fixed' }}>
-        <colgroup>
-          <col className="w-[22%]" />
-          <col className="w-[12%]" />
-          <col className="w-[11%]" />
-          <col className="w-[7%]" />
-          <col className="w-[11%]" />
-          <col className="w-[7%]" />
-          <col className="w-[11%]" />
-          <col className="w-[7%]" />
-          <col className="w-[12%]" />
-        </colgroup>
+      <table className="w-full ds-text-11 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
+        <PortfolioColgroup />
         <thead>
-          <tr className="bg-muted/40 text-muted-foreground">
-            <th className="px-2.5 py-1.5 text-left font-semibold">Token</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Amount</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Native</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Incentive</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
-            <th className="px-2 py-1.5 text-right font-semibold">Total</th>
-            <th className="px-1.5 py-1.5 text-right font-semibold ds-text-10">Δ</th>
-            <th className="px-2 py-1.5 text-right font-semibold">USD/day</th>
+          <tr className="text-muted-foreground border-b border-border/50">
+            <th className={cn('pl-2.5 pr-1 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
+            <th className={cn('pl-0 pr-2 py-1 text-left font-semibold', HEADER_BASE)}>Amount</th>
+            <th className={cn(VALUE_CELL, NATIVE_HEADER_BAND, 'font-semibold')}>Native</th>
+            <th className={cn(DELTA_CELL, NATIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
+            <th className={cn(VALUE_CELL, INCENTIVE_HEADER_BAND, 'font-semibold')}>Incentive</th>
+            <th className={cn(DELTA_CELL, INCENTIVE_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
+            <th className={cn(VALUE_CELL, TOTAL_HEADER_BAND, 'font-semibold')}>Total</th>
+            <th className={cn(DELTA_CELL, TOTAL_HEADER_BAND, 'font-normal text-muted-foreground/70')}>
+              <abbr title="Delta" aria-label="Delta" className="no-underline">Δ</abbr>
+            </th>
+            <th className={cn(VALUE_CELL, HEADER_BASE, 'font-semibold')}>USD/day</th>
           </tr>
         </thead>
         <tbody>
           {supplyRows.length > 0 && (
             <>
-              <tr>
-                <td
-                  colSpan={COL_COUNT}
-                  className="px-2.5 pt-2 pb-0.5 ds-text-10 font-semibold uppercase tracking-wide ds-text-emerald-600"
-                >
-                  Supply
-                </td>
-              </tr>
+              <SectionHeader label="Supply" tone="supply" />
               {supplyRows.map((r, i) => (
                 <ResultRow key={`${r.reserveId}-supply-${i}`} row={r} />
               ))}
@@ -108,14 +122,7 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
           )}
           {borrowRows.length > 0 && (
             <>
-              <tr>
-                <td
-                  colSpan={COL_COUNT}
-                  className="px-2.5 pt-2 pb-0.5 ds-text-10 font-semibold uppercase tracking-wide ds-text-brand-cyan"
-                >
-                  Borrow
-                </td>
-              </tr>
+              <SectionHeader label="Borrow" tone="borrow" />
               {borrowRows.map((r, i) => (
                 <ResultRow key={`${r.reserveId}-borrow-${i}`} row={r} />
               ))}
@@ -132,6 +139,25 @@ const PortfolioResultsTable = memo(function PortfolioResultsTable({
   );
 });
 
+function SectionHeader({ label, tone }: { label: string; tone: 'supply' | 'borrow' }) {
+  const bg = tone === 'supply' ? 'bg-emerald-500/12 dark:bg-emerald-500/15' : 'bg-cyan-500/12 dark:bg-cyan-500/15';
+  const text = tone === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan';
+  return (
+    <tr>
+      <td
+        colSpan={COL_COUNT}
+        className={cn(
+          'px-2.5 py-1 ds-text-10 font-semibold uppercase tracking-wide border-t border-border/40',
+          bg,
+          text,
+        )}
+      >
+        {label}
+      </td>
+    </tr>
+  );
+}
+
 interface ResultRowData extends PortfolioPositionResult {
   tokenSymbol: string;
   chainName: string;
@@ -141,6 +167,10 @@ interface ResultRowData extends PortfolioPositionResult {
 
 const SUPPLY_ACCENT = 'ds-text-emerald-600';
 const BORROW_ACCENT = 'ds-text-brand-cyan';
+// Band tints applied to the three APY clusters so header ↔ body reads as one column group.
+// Strengthened to match header tint intensity for stronger visual grouping.
+const SUPPLY_BAND = 'bg-emerald-500/10 dark:bg-emerald-500/12 group-hover:bg-emerald-500/16';
+const BORROW_BAND = 'bg-cyan-500/10 dark:bg-cyan-500/12 group-hover:bg-cyan-500/16';
 
 const ResultRow = memo(function ResultRow({
   row,
@@ -148,13 +178,14 @@ const ResultRow = memo(function ResultRow({
   row: ResultRowData;
 }) {
   const accentClass = row.side === 'supply' ? SUPPLY_ACCENT : BORROW_ACCENT;
+  const bandClass = row.side === 'supply' ? SUPPLY_BAND : BORROW_BAND;
   const nativeDelta = formatDeltaPercent(row.nativeMetric?.delta ?? null);
   const incentiveDelta = formatDeltaPercent(row.incentiveMetric?.delta ?? null);
   const totalDelta = formatDeltaPercent(row.totalMetric?.delta ?? null);
 
   return (
-    <tr className="border-t border-border/30 transition-colors hover:bg-muted/20">
-      <td className="px-2.5 py-1.5">
+    <tr className="group border-t border-border/30 hover:bg-muted/10">
+      <td className="pl-2.5 pr-1 py-1">
         <div className="flex items-center gap-1.5">
           <div className="relative">
             <TokenIcon symbol={row.tokenSymbol} size={16} />
@@ -172,25 +203,25 @@ const ResultRow = memo(function ResultRow({
           </div>
         </div>
       </td>
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-medium', accentClass)}>
+      <td className="pl-0 pr-2 py-1 text-left tabular-nums font-medium">
         {formatUsdCompact(row.amountUsd)}
       </td>
-      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
+      <td className={cn(VALUE_CELL, bandClass, accentClass)}>
         {formatPercent(row.nativePercent)}
       </td>
-      <DeltaCell value={nativeDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums whitespace-nowrap', accentClass)}>
+      <DeltaCell value={nativeDelta} accentClass={accentClass} bandClass={bandClass} />
+      <td className={cn(VALUE_CELL, bandClass, accentClass)}>
         {formatPercent(row.incentivePercent)}
         {row.forecastUnavailableCampaignCount != null && row.forecastUnavailableCampaignCount > 0 && (
           <span className="ds-text-9 text-muted-foreground ml-0.5" title="No forecast data — using current APR">*</span>
         )}
       </td>
-      <DeltaCell value={incentiveDelta} accentClass={accentClass} />
-      <td className={cn('px-2 py-1.5 text-right tabular-nums font-bold whitespace-nowrap', accentClass)}>
+      <DeltaCell value={incentiveDelta} accentClass={accentClass} bandClass={bandClass} />
+      <td className={cn(VALUE_CELL, 'font-bold', bandClass, accentClass)}>
         {formatPercent(row.totalPercent)}
       </td>
-      <DeltaCell value={totalDelta} accentClass={accentClass} />
-      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-foreground whitespace-nowrap">
+      <DeltaCell value={totalDelta} accentClass={accentClass} bandClass={bandClass} />
+      <td className="px-2 py-1 text-right tabular-nums font-semibold whitespace-nowrap">
         {formatUsdDay(row.usdPerDay)}
       </td>
     </tr>

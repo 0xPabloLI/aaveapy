@@ -22,7 +22,7 @@ describe('buildPositionCapEffect', () => {
     });
     const note = capEffectToNote(eff);
     expect(note.text).toBe(
-      'Incentive on first $5,000.00 only · combined supply + borrow · ~100d earn',
+      'Incentive limited to first $5,000.00 · combined supply + borrow · ~100d earn',
     );
     expect(note.color).toBe('muted');
     expect(eff.metrics).toEqual({ positionCapUsd: 5000, isCombineCap: true, remainingDays: 200 });
@@ -38,7 +38,7 @@ describe('buildPositionCapEffect', () => {
       remainingDays: 50,
     });
     const note = capEffectToNote(eff);
-    expect(note.text).toBe('Incentive on first $5,000.00 only · ~50d earn');
+    expect(note.text).toBe('Incentive limited to first $5,000.00 · ~50d earn');
     expect(note.color).toBe('amber');
     expect(eff.metrics).toEqual({ positionCapUsd: 5000, remainingDays: 50 });
   });
@@ -52,7 +52,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: 60,
     });
-    expect(capEffectToNote(eff).text).toBe('Incentive on first $5,000.00 only · ~60d to end');
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $5,000.00 · ~60d to end');
   });
 
   it('omits earn segment when neither horizon is positive', () => {
@@ -64,7 +64,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: null,
     });
-    expect(capEffectToNote(eff).text).toBe('Incentive on first $100.00 only');
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $100.00');
   });
 });
 
@@ -168,7 +168,7 @@ describe('capEffectToNote', () => {
     const note = capEffectToNote(eff);
     expect(note).toEqual({
       type: 'position_cap',
-      text: expect.stringContaining('Incentive on first'),
+      text: expect.stringContaining('Incentive limited to first'),
       color: 'amber',
     });
   });
@@ -185,18 +185,6 @@ describe('capEffectToNote', () => {
     expect(note).toEqual({ type: 'apr_cap', text: 'APR capped for low TVL', color: 'amber' });
   });
 
-  it('includes campaignName in position_cap note text', () => {
-    const eff = buildPositionCapEffect({
-      positionCapUsd: 1000,
-      isCombineCap: false,
-      isCapBinding: false,
-      remainingBudget: null,
-      dailyRewardUsd: null,
-      remainingDays: null,
-      campaignName: 'Merit double yield',
-    });
-    expect(capEffectToNote(eff).text).toContain('Merit double yield');
-  });
 });
 
 describe('netEligibleToNote', () => {

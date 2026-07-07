@@ -14,7 +14,7 @@ export type BrevisResolvedBreakdown = {
   aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
-  positionCap?: number;
+  positionCapUsd?: number;
   campaignId?: string;
 };
 
@@ -44,7 +44,7 @@ const makeSingleBreakdown = (brevis: BrevisIncentive): BrevisCampaignBreakdown =
   aprCap: brevis.aprCap,
   latestTvl: brevis.latestTvl,
   totalBudget: brevis.totalBudget,
-  positionCap: brevis.positionCap,
+  positionCapUsd: brevis.positionCapUsd,
   campaignId: brevis.campaignId ?? '',
 });
 
@@ -103,7 +103,7 @@ export const getBrevisResolvedBreakdown = (
     aprCap: effectiveAprCap,
     latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
     totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
-    positionCap: firstFiniteNumber(breakdown?.positionCap, brevis.positionCap),
+    positionCapUsd: firstFiniteNumber(breakdown?.positionCapUsd, brevis.positionCapUsd),
     campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
   };
 };

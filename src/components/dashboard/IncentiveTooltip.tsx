@@ -23,6 +23,7 @@ import {
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
+import { resolvePositionCapUsd } from '@/lib/incentiveCaps';
 import { extractActionLabelFromMeritMessage } from '@/lib/rateSimulationCalculator';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
@@ -75,10 +76,9 @@ interface IncentiveCampaign {
   aprCap?: number | null;
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
-  positionCap?: number;
+  positionCapUsd?: number;
   isCombineCap?: boolean;
   isNetPositionCap?: boolean;
-  campaignName?: string;
   lastEndedCampaign?: {
     startedAt: string;
     endedAt: string;
@@ -561,7 +561,7 @@ const IncentiveTooltip = ({
           const groupName = group.name?.trim() || 'Merit';
           const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
           const bdGroupLabel = extractActionLabelFromMeritMessage(group.message);
-          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCap != null && breakdown.positionCap > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
+          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
           return {
             value,
             startDate: breakdown.campaignStartedAt,
@@ -569,8 +569,7 @@ const IncentiveTooltip = ({
             message: breakdown.message ?? group.message,
             sourceType: 'ACI',
             campaignType: breakdown.campaignType,
-            ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: true } : {}),
-            campaignName: bdLabel,
+             ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? { positionCapUsd: breakdown.positionCapUsd, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: true } : {}),
           };
         });
 
@@ -610,9 +609,8 @@ const IncentiveTooltip = ({
               sourceType: 'Brevis' as const,
               campaignType: breakdown.campaignType ?? brevis.campaignType,
               aprCap: breakdown.aprCap ?? brevis.aprCap,
-              ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? brevis.isCombineCap ?? true } : {}),
-              ...(brevis.positionCap != null && brevis.positionCap > 0 && breakdown.positionCap == null ? { positionCap: brevis.positionCap, isCombineCap: brevis.isCombineCap ?? true } : {}),
-              campaignName: name,
+              ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? { positionCapUsd: breakdown.positionCapUsd, isCombineCap: breakdown.isCombineCap ?? brevis.isCombineCap ?? true } : {}),
+              ...(brevis.positionCapUsd != null && brevis.positionCapUsd > 0 && breakdown.positionCapUsd == null ? { positionCapUsd: brevis.positionCapUsd, isCombineCap: brevis.isCombineCap ?? true } : {}),
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -671,12 +669,11 @@ const IncentiveTooltip = ({
                      sourceType: 'Merkl',
                  campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
                        aprCap: breakdown.aprCap,
-                        ...(breakdown.positionCap != null && breakdown.positionCap > 0 ? { positionCap: breakdown.positionCap, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}),
+                          ...(() => { const capUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, reserve.tokenPrice, reserve.decimals); return capUsd != null && capUsd > 0 ? { positionCapUsd: capUsd, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}; })(),
                        rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                        rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                        lastEndedCampaign: breakdown.lastEndedCampaign,
-                        campaignName: opportunity.name || 'Merkl',
-                   }],
+                         lastEndedCampaign: breakdown.lastEndedCampaign,
+                    }],
             });
           }
         }
@@ -824,9 +821,9 @@ const IncentiveTooltip = ({
           </div>
         )}
         {renderCampaignTypeDescription(campaign)}
-         {campaign.positionCap != null && campaign.positionCap > 0 && (
+         {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
            <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
-              Incentive on first {formatUsd(campaign.positionCap)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only
+              Incentive on first {formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only
            </p>
         )}
         {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}

@@ -13,7 +13,7 @@ import { TYDRO_POINT_TO_USD_RATE, getPointToUsdRate, type PointRateMap } from '@
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
-import { applyPositionCapToForecastResult } from '@/lib/incentiveCaps';
+import { applyPositionCapToForecastResult, resolvePositionCapUsd } from '@/lib/incentiveCaps';
 
 export interface IncentiveCalculationOptions {
   /** Merkl campaign IDs the user opted into for whitelist-only APR */
@@ -28,6 +28,10 @@ export interface IncentiveCalculationOptions {
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number;
   /** User's total position in USD for position cap dilution (Merkl maxDeposit campaigns). */
   positionUsd?: number;
+  /** Reserve token price for converting positionCapNative to USD (Merkl). */
+  tokenPrice?: number;
+  /** Reserve token decimals for converting positionCapNative to USD (Merkl). */
+  decimals?: number;
 }
 
 export interface IncentiveSources {
@@ -84,7 +88,7 @@ export const sumMerklIncentiveApr = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const { pointRateMap, positionUsd } = options;
+  const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
@@ -97,8 +101,9 @@ export const sumMerklIncentiveApr = (
       let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
-      if (!isNaN(apr) && apr >= 0 && breakdown.positionCap != null && breakdown.positionCap > 0 && positionUsd != null && positionUsd > 0) {
-        apr = applyPositionCapToForecastResult(apr, positionUsd, breakdown.positionCap, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+      const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
+      if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
@@ -111,7 +116,7 @@ export const sumMerklIncentiveApy = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const { pointRateMap, positionUsd } = options;
+  const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
@@ -124,8 +129,9 @@ export const sumMerklIncentiveApy = (
       let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
-      if (!isNaN(apr) && apr >= 0 && breakdown.positionCap != null && breakdown.positionCap > 0 && positionUsd != null && positionUsd > 0) {
-        apr = applyPositionCapToForecastResult(apr, positionUsd, breakdown.positionCap, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+      const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
+      if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },

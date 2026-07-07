@@ -215,6 +215,8 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`formatProtocolCapText` 是 Reserve Table 和 Portfolio 的共享入口**：两处使用同一函数生成 protocol cap warning 文案，未来改文案只改一处。函数接受 `availableFormatted: string`（预格式化），因为 Reserve Table 用 `formatScenarioSize`（支持 USD/Token 模式），Portfolio 用 `formatUsd`（纯 USD）。
 - **`currentExceeded` 语义变更**：旧 SimulationSubRow 用 `"exceeds cap by $X"` 描述超出量（`exceededByUsd`），新文案统一为 `"Current {Supply|Borrow} limited to $X available"` 描述可用量（`availableRoomUsd`）。数值从 exceededBy 变成了 availableRoom，语义和数值都不同——这是有意的设计决策，"limited to X available" 信息量更大。
 - **测试 describe 嵌套要注意**：Vitest 允许 describe 内嵌套 describe，但如果嵌套位置错误会导致 it 块归属到错误的 describe。新增 describe 块时要确保放在正确的外层 describe 之外。
+- **Position cap note 文案 `"incentive on first $X only"` 有歧义**：`"only"` 紧跟金额，容易被读成整个短语的尾修饰而非修饰 incentive。改为 `"Incentive limited to first $X"` 更 native——`"limited to"` 是金融 UI 标准表述，语义无歧义。
+- **Position cap note 不传 campaignName**：campaignName 参数只在 Merit 传了硬编码字符串（`"Merit double yield"`/`"Merit"`），Merkl 只在 IncentiveTooltip 传了 `opportunity.name`，Brevis 从未传入——三处不一致。Note 已出现在 source header 下方，用户知道是哪个 source。移除 campaignName 后文案统一为 `"Incentive limited to first $X"`，更简洁。IncentiveTooltip 的 `campaignName` 字段也从未被消费（`.campaignName` 无匹配），一并清理。
 
 ## Learned Lessons: 同名 per-source sum 函数口径不一致 (AAV-978)
 

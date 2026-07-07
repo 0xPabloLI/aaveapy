@@ -5,6 +5,7 @@ import { getReserveSimulationId } from '@/lib/rateSimulationCalculator';
 import type { ScenarioInputMode } from '@/components/dashboard/ScenarioControls';
 import {
   createScenarioPinControllerState,
+  setScenarioPinDebugSink,
   transitionScenarioPinController,
 } from '@/lib/scenarioPinController';
 import {
@@ -92,6 +93,30 @@ export function useScenarioPinScroll(
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
   const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
+
+  // Dev-mode: pipe controller transitions to console with a stable prefix so
+  // the timeline can be filtered in DevTools. Guarded so prod bundles pay
+  // nothing (both the sink registration and the console call are stripped
+  // when `import.meta.env.DEV` is false via Vite's constant folding).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    setScenarioPinDebugSink((trace) => {
+      // eslint-disable-next-line no-console
+      console.debug('[scenarioPin]', {
+        phase: trace.phase,
+        scenarioChanged: trace.scenarioChanged,
+        hasRequiredVisibleCount: trace.hasRequiredVisibleCount,
+        isExpandedStillVisible: trace.isExpandedStillVisible,
+        sortedIds: trace.sortedIds,
+        pendingBefore: trace.pendingBefore,
+        pendingAfter: trace.pendingAfter,
+        shouldSchedulePin: trace.shouldSchedulePin,
+        pinReserveId: trace.pinReserveId,
+      });
+    });
+    return () => setScenarioPinDebugSink(null);
+  }, []);
+
 
   const schedulePinScrollToReserve = useCallback(
     (reserveId: string, delayMs: number, opts?: SchedulePinScrollOpts) => {
@@ -188,6 +213,23 @@ export function useScenarioPinScroll(
     scenarioPinControllerRef.current = controllerResult.nextState;
 
     if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
+
+    if (import.meta.env.DEV) {
+      const escape = (raw: string) =>
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw;
+      const targetRow = document.querySelector(
+        `tr[data-reserve-id="${escape(controllerResult.pinReserveId)}"]`,
+      );
+      const topY = targetRow instanceof HTMLElement ? targetRow.getBoundingClientRect().top : null;
+      // eslint-disable-next-line no-console
+      console.debug('[scenarioPin] schedule', {
+        reserveId: controllerResult.pinReserveId,
+        topY,
+        expandedIndex,
+        requiredCount,
+        currentCount,
+      });
+    }
 
     cancelFilterPinScrollRef.current?.();
     cancelFilterPinScrollRef.current = null;

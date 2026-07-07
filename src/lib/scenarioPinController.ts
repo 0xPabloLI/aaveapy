@@ -36,12 +36,39 @@ export function createScenarioPinControllerState(): ScenarioPinControllerState {
   };
 }
 
+/**
+ * Structured trace of a controller transition. Emitted through
+ * `scenarioPinDebugSink` in dev builds so we can reconstruct why a pin
+ * did/didn't fire without adding console spam to production bundles.
+ */
+export interface ScenarioPinControllerTrace {
+  phase: 'baseline' | 'transition';
+  scenarioChanged: boolean;
+  hasRequiredVisibleCount: boolean;
+  isExpandedStillVisible: boolean;
+  sortedIds: string[];
+  pendingBefore: ScenarioPinControllerState['pendingScenarioPin'];
+  pendingAfter: ScenarioPinControllerState['pendingScenarioPin'];
+  shouldSchedulePin: boolean;
+  pinReserveId: string | null;
+}
+
+export type ScenarioPinDebugSink = (trace: ScenarioPinControllerTrace) => void;
+
+let scenarioPinDebugSink: ScenarioPinDebugSink | null = null;
+
+/** Register (or clear with `null`) a dev-time trace sink. Not called in prod. */
+export function setScenarioPinDebugSink(sink: ScenarioPinDebugSink | null): void {
+  scenarioPinDebugSink = sink;
+}
+
 export function transitionScenarioPinController(
   state: ScenarioPinControllerState,
   input: ScenarioPinControllerInput,
 ): ScenarioPinControllerResult {
+  const pendingBefore = state.pendingScenarioPin;
   if (!state.baselineReady) {
-    return {
+    const result: ScenarioPinControllerResult = {
       nextState: {
         baselineReady: true,
         lastScenarioKey: input.scenarioKey,
@@ -52,6 +79,18 @@ export function transitionScenarioPinController(
       shouldSchedulePin: false,
       pinReserveId: null,
     };
+    scenarioPinDebugSink?.({
+      phase: 'baseline',
+      scenarioChanged: false,
+      hasRequiredVisibleCount: input.hasRequiredVisibleCount,
+      isExpandedStillVisible: input.isExpandedStillVisible,
+      sortedIds: input.sortedIds,
+      pendingBefore,
+      pendingAfter: null,
+      shouldSchedulePin: false,
+      pinReserveId: null,
+    });
+    return result;
   }
 
   const scenarioChanged = input.scenarioKey !== state.lastScenarioKey;
@@ -62,10 +101,21 @@ export function transitionScenarioPinController(
       input.expandScrollFollowsScenarioSort ||
       (state.lastHasScenarioInput && !input.hasScenarioInput);
     if (shouldFollowScenarioPin && input.expandedReserveId) {
+      // Preserve baselineSortedIds across debounced scenarioKey changes when the
+      // pin target is unchanged. Overwriting with state.lastSortedIds would
+      // adopt the already-reordered list from the previous scenario tick as the
+      // new baseline, causing orderChangedForPending to spuriously return false
+      // on the next transition and dropping the pin. The true baseline is the
+      // sortedIds captured before the first input in this pin session.
+      const preservedBaseline =
+        pendingScenarioPin &&
+        pendingScenarioPin.reserveId === input.expandedReserveId
+          ? pendingScenarioPin.baselineSortedIds
+          : state.lastSortedIds;
       pendingScenarioPin = {
         scenarioKey: input.scenarioKey,
         reserveId: input.expandedReserveId,
-        baselineSortedIds: state.lastSortedIds,
+        baselineSortedIds: preservedBaseline,
       };
     } else {
       pendingScenarioPin = null;
@@ -99,7 +149,7 @@ export function transitionScenarioPinController(
     }
   }
 
-  return {
+  const result: ScenarioPinControllerResult = {
     nextState: {
       baselineReady: true,
       lastScenarioKey: input.scenarioKey,
@@ -110,4 +160,16 @@ export function transitionScenarioPinController(
     shouldSchedulePin,
     pinReserveId,
   };
+  scenarioPinDebugSink?.({
+    phase: 'transition',
+    scenarioChanged,
+    hasRequiredVisibleCount: input.hasRequiredVisibleCount,
+    isExpandedStillVisible: input.isExpandedStillVisible,
+    sortedIds: input.sortedIds,
+    pendingBefore,
+    pendingAfter: pendingScenarioPin,
+    shouldSchedulePin,
+    pinReserveId,
+  });
+  return result;
 }

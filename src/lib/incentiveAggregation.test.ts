@@ -405,25 +405,25 @@ describe('sumMerklIncentiveApy', () => {
   });
 });
 
-describe('sumMerklIncentiveApr — positionCap', () => {
-  const makeCappedMerklOpp = (positionCap?: number) => makeMerklOpportunity({
+describe('sumMerklIncentiveApr — positionCapUsd', () => {
+  const makeCappedMerklOpp = (positionCapUsd?: number) => makeMerklOpportunity({
     breakdowns: [{
       campaignId: 'capped-merkl',
       campaignApr: 10,
       campaignStartedAt: '2025-01-01',
       campaignEndedAt: '2030-12-31',
-      ...(positionCap != null ? { positionCap } : {}),
+      ...(positionCapUsd != null ? { positionCapUsd } : {}),
     }],
   });
 
-  it('applies position cap dilution when positionUsd > positionCap', () => {
+  it('applies position cap dilution when positionUsd > positionCapUsd', () => {
     const opportunities = [makeCappedMerklOpp(500)];
     const result = sumMerklIncentiveApr(opportunities, 1, { positionUsd: 1000 });
     expect(result).toBeLessThan(10);
     expect(result).toBeCloseTo(10 * (500 / 1000), 6);
   });
 
-  it('does not dilute when positionUsd <= positionCap', () => {
+  it('does not dilute when positionUsd <= positionCapUsd', () => {
     const opportunities = [makeCappedMerklOpp(2000)];
     const result = sumMerklIncentiveApr(opportunities, 1, { positionUsd: 1000 });
     expect(result).toBeCloseTo(10, 6);
@@ -435,7 +435,7 @@ describe('sumMerklIncentiveApr — positionCap', () => {
     expect(result).toBeCloseTo(10, 6);
   });
 
-  it('does not dilute when breakdown has no positionCap', () => {
+  it('does not dilute when breakdown has no positionCapUsd', () => {
     const opportunities = [makeCappedMerklOpp()];
     const result = sumMerklIncentiveApr(opportunities, 1, { positionUsd: 1000 });
     expect(result).toBeCloseTo(10, 6);

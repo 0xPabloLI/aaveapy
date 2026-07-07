@@ -172,7 +172,7 @@ export function forecastMeritAprPercent(
     );
     return sum + activeBreakdowns.reduce((bdSum, breakdown) => {
       const aprPercent = sanitizePercent(breakdown.campaignApr);
-      const positionCapUsd = breakdown.positionCap;
+      const positionCapUsd = breakdown.positionCapUsd;
 
       if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
         if (positionCapUsd != null && positionCapUsd > 0) {
