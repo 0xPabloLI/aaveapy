@@ -311,3 +311,10 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`DEFAULT_TOKEN_DECIMALS` 必须统一入口**：提取到 `src/lib/tokenDefaults.ts`，所有使用 `decimals ?? 18` 的地方统一 import。避免某天改默认值时遗漏一处导致 native→USD 换算错误。
 - **`resolvePositionCapUsd` 之前在 `decimals = undefined` 时不换算——这是 bug**：Merkl 的 `positionCapNative` 需要 decimals 换算，但 reserve 没有 decimals 时直接跳过换算、回退到 `positionCapUsd`（Merkl 不提供），导致 position cap 静默不生效。修复：`resolvePositionCapUsd` 在 `decimals` 缺失时使用 `DEFAULT_TOKEN_DECIMALS`（18）。
 - **涉及文件**：`tokenDefaults.ts`（常量定义）、`incentiveCaps.ts`、`scenarioSize.ts`、`deficit.ts`、`rateSimulationCalculator.ts`、`userPositionMapper.ts`。
+
+## Learned Lessons: Portfolio 模式 crossReservePositions 数据源错配 (AAV-1086)
+
+- **两条路径的数据源必须一致**：`ReservesTable.tsx` 构建 `crossReservePositions` 用的是 shared scenario inputs（Portfolio 模式下为空），而 `portfolioSimulator.ts` 用的是 portfolio entries 的 total position（wallet + delta）。两条路径对同一份数据用了不同数据源，导致一条路径永远为 undefined。**教训：当同一条数据在两个消费者之间共享时，必须确保两者使用相同的数据源和构建逻辑，而非各自从不同输入推导。**
+- **死代码暗示设计缺陷**：旧代码 `if (!isPortfolioMode) return undefined;` 后面的 for 循环在两种模式下都不可达（Portfolio 被 shared inputs 为空拦截，Shared 被 early return 拦截）。这段从未执行的代码是"先写通用逻辑再分支"的遗留，但分支条件使得通用逻辑永远不会执行。**教训：当 if/else 两个分支都让后续代码不可达时，应该怀疑分支逻辑是否正确——可能其中一个分支的条件写反了。**
+- **useMemo 顺序依赖必须显式**：`perReserveInputs` 在 `crossReservePositions` 之后定义但被其依赖。React hooks 按定义顺序执行，如果 `crossReservePositions` 引用了尚未定义的 `perReserveInputs`，会得到 `undefined`。虽然 `useMemo` 是惰性求值不会立即崩溃，但依赖项缺失会导致 stale closure。**教训：当 useMemo A 依赖 useMemo B 的结果时，B 必须定义在 A 之前。**
+- **纯函数提取方便测试**：`buildCrossReservePositionsFromPerReserveInputs` 作为纯函数从 `useMemo` 内联逻辑提取到 `netLendingCrossReserve.ts`，与已有的 `computeCrossReserveEligibilityRatio` 同层。7 个单元测试覆盖了正常路径、空输入、undefined fallback、单侧仓位。**教训：useMemo 中的非平凡逻辑应提取为纯函数，便于单元测试和复用。**
