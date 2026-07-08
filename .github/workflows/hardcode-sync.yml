@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target_branch: [dev, main]
+        target_branch: [dev, main, lovable]
     runs-on: ubuntu-latest
     env:
       # One job per branch: drift on `main` and integration on `dev` both get matching bot PRs.
@@ -34,7 +34,7 @@ jobs:
       # for that URL if you need masking in run-step env blocks too.
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.TARGET_BRANCH }}
 
@@ -56,6 +56,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Update address-book to latest
+        run: npm update @aave-dao/aave-address-book
 
       - name: Round 1 sync
         id: sync_round1
@@ -145,6 +148,95 @@ jobs:
             automerge
             hardcode
 
+      - name: Approve and enable auto-merge for bot PR
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = Number('${{ steps.cpr.outputs.pull-request-number }}');
+            if (!prNumber) {
+              core.info('No PR created; skip approve/auto-merge.');
+              return;
+            }
+
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if ('${{ env.TARGET_BRANCH }}' === 'dev') {
+              try {
+                await github.rest.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  event: 'APPROVE',
+                  body: 'Automated approval by hardcode-sync workflow (GITHUB_TOKEN).',
+                });
+                core.info(`Approved PR #${prNumber}`);
+              } catch (error) {
+                core.warning(`Auto-approve failed for PR #${prNumber}: ${error.message}`);
+              }
+            }
+
+            try {
+              await github.graphql(
+                `mutation EnableAutoMerge($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                    pullRequest { number }
+                  }
+                }`,
+                { pullRequestId: pr.data.node_id }
+              );
+              core.info(`Enabled auto-merge for PR #${prNumber}`);
+              return;
+            } catch (error) {
+              const message = String(error.message || error);
+              core.warning(`Enable auto-merge failed for PR #${prNumber}: ${message}`);
+
+              const isUnstable = message.toLowerCase().includes('unstable status');
+              if (isUnstable) {
+                const statusQuery = `query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $number) { mergeStateStatus }
+                  }
+                }`;
+                const statusData = await github.graphql(statusQuery, { owner, repo, number: prNumber });
+                const mergeStatus = statusData.repository.pullRequest.mergeStateStatus;
+
+                if (mergeStatus === 'CLEAN') {
+                  try {
+                    await github.rest.pulls.merge({
+                      owner, repo, pull_number: prNumber,
+                      merge_method: 'squash',
+                    });
+                    core.info(`PR #${prNumber} was CLEAN; merged directly as fallback.`);
+                    return;
+                  } catch (mergeError) {
+                    core.warning(`Direct merge also failed for PR #${prNumber}: ${mergeError.message}`);
+                  }
+                } else if (mergeStatus === 'UNKNOWN') {
+                  for (let attempt = 1; attempt <= 3; attempt++) {
+                    await new Promise((r) => setTimeout(r, 10000));
+                    try {
+                      await github.graphql(
+                        `mutation EnableAutoMerge($pullRequestId: ID!) {
+                          enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                            pullRequest { number }
+                          }
+                        }`,
+                        { pullRequestId: pr.data.node_id }
+                      );
+                      core.info(`Enabled auto-merge for PR #${prNumber} on retry ${attempt}/3`);
+                      return;
+                    } catch (retryError) {
+                      core.warning(`Retry ${attempt}/3 failed: ${retryError.message}`);
+                    }
+                  }
+                }
+                core.warning(`Could not enable auto-merge or merge PR #${prNumber} directly. mergeStateStatus=${mergeStatus}`);
+              }
+            }
+
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         run: |
@@ -168,31 +260,63 @@ jobs:
             });
             core.info(`Triggered fallback workflow_dispatch for ci.yml on ref ${workflowRef}, target_ref ${targetRef}`);
 
-      - name: Create issue when verify still fails
+      - name: Fail job when verify still fails
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
           steps.verify_round2.outputs.passed != 'true'
+        run: |
+          echo "Sync Round 1: ${{ steps.sync_round1.outputs.passed }}"
+          echo "Sync Round 2: ${{ steps.sync_round2.outputs.passed }}"
+          echo "Hardcode sync/verify failed after two rounds."
+          exit 1
+
+  report-failure:
+    needs: [hardcode-sync]
+    if: ${{ always() && needs.hardcode-sync.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Aggregate failures and create single issue
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
-            const syncR1 = '${{ steps.sync_round1.outputs.passed }}';
-            const syncR2 = '${{ steps.sync_round2.outputs.passed }}';
-            const payload = context.payload.client_payload || {};
+
+            // Query all jobs in this workflow run to find failed matrix instances.
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              filter: 'failed'
+            });
+            const failedSyncJobs = jobs.jobs.filter(j =>
+              j.name.startsWith('hardcode-sync') && j.conclusion === 'failure'
+            );
+
+            const branchSections = failedSyncJobs.map(j => {
+              // Matrix job names follow "hardcode-sync (<branch>)" pattern.
+              const branchMatch = j.name.match(/\(([^)]+)\)/);
+              const branch = branchMatch ? branchMatch[1] : 'unknown';
+              return [
+                `### \`${branch}\``,
+                `- [Job #${j.id}](${j.html_url})`,
+                `- Status: ${j.conclusion}`
+              ].join('\n');
+            });
+
             const body = [
-              'Hardcode sync verify failed after two rounds.',
+              'Hardcode sync verify failed after two rounds on one or more branches.',
               '',
-              `Sync Round 1: ${syncR1 === 'true' ? '✅' : '❌'}`,
-              `Sync Round 2: ${syncR2 === 'true' ? '✅' : syncR2 === '' ? '⏭️ skipped' : '❌'}`,
+              ...branchSections,
               '',
               `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              `Target branch: ${process.env.TARGET_BRANCH}`,
-              `Trigger event: ${context.eventName}`,
-              `Payload source: ${payload.sourceRepo || payload.source || '<none>'}`,
-              `Payload ref: ${payload.ref || '<none>'}`,
+              `Trigger: ${context.eventName}`,
               '',
               'Please inspect upstream drift and sync scripts.'
             ].join('\n');
+
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -200,7 +324,7 @@ jobs:
               labels: 'hardcode,drift',
               per_page: 100
             });
-            const existing = issues.find((issue) => issue.title === title);
+            const existing = issues.find(i => i.title === title);
             if (existing) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -219,13 +343,3 @@ jobs:
               });
               core.info('Created a new hardcode verify failure issue');
             }
-
-      - name: Fail job when verify still fails
-        if: >
-          steps.verify_round1.outputs.passed != 'true' &&
-          steps.verify_round2.outputs.passed != 'true'
-        run: |
-          echo "Sync Round 1: ${{ steps.sync_round1.outputs.passed }}"
-          echo "Sync Round 2: ${{ steps.sync_round2.outputs.passed }}"
-          echo "Hardcode sync/verify failed after two rounds."
-          exit 1
