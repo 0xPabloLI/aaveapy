@@ -30,6 +30,12 @@ export interface PerReserveInput {
   totalBorrowUsd?: number;
 }
 
+export interface PortfolioInputsResult {
+  perReserveInputs: Map<string, PerReserveInput>;
+  crossReservePositions: Map<string, ReservePositions> | undefined;
+  reserveSymbolById: Map<string, string> | undefined;
+}
+
 interface SimulateCommonArgs {
   reserves: ReserveWithSpread[];
   isApy: boolean;
@@ -177,6 +183,10 @@ function computeResultsFromGroups(
         borrowUsd: group.borrowUsd,
       });
     }
+    // Sets symbol for all reserves in groupMap (including those with 0 USD on both sides,
+    // which cannot happen in practice due to the skip guard in buildGroupMapFromSlots).
+    // buildPerReserveInputsFromEntries only sets symbol for reserves in crossReservePositions,
+    // which is equivalent because crossReservePositions filters on supplyUsd > 0 || borrowUsd > 0.
     if (reserve.tokenSymbol) {
       reserveSymbolById.set(reserve.reserveId, reserve.tokenSymbol);
     }
@@ -341,7 +351,7 @@ export function simulatePortfolioFromEntries(
 export function buildPerReserveInputsFromEntries(
   entries: PortfolioReserveEntry[],
   reserves: ReserveWithSpread[],
-): Map<string, PerReserveInput> {
+): PortfolioInputsResult {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
   const grouped = new Map<
     string,
@@ -389,15 +399,33 @@ export function buildPerReserveInputsFromEntries(
     }
   }
 
-  const result = new Map<string, PerReserveInput>();
+  const perReserveInputs = new Map<string, PerReserveInput>();
+  const crossReservePositions = new Map<string, ReservePositions>();
+  const reserveSymbolById = new Map<string, string>();
+
   for (const [reserveId, group] of grouped) {
-    result.set(reserveId, {
+    perReserveInputs.set(reserveId, {
       supplyInput: String(group.supplyDeltaUsd),
       borrowInput: String(group.borrowDeltaUsd),
       inputMode: 'usd',
       totalSupplyUsd: group.supplyUsd,
       totalBorrowUsd: group.borrowUsd,
     });
+    if (group.supplyUsd > 0 || group.borrowUsd > 0) {
+      crossReservePositions.set(reserveId, {
+        supplyUsd: group.supplyUsd,
+        borrowUsd: group.borrowUsd,
+      });
+      const reserve = reserveMap.get(getReserveKey({ reserveId }));
+      if (reserve?.tokenSymbol) {
+        reserveSymbolById.set(reserveId, reserve.tokenSymbol);
+      }
+    }
   }
-  return result;
+
+  return {
+    perReserveInputs,
+    crossReservePositions: crossReservePositions.size > 0 ? crossReservePositions : undefined,
+    reserveSymbolById: reserveSymbolById.size > 0 ? reserveSymbolById : undefined,
+  };
 }

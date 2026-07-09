@@ -54,7 +54,7 @@ const DeltaCell = memo(function DeltaCell({
       className={cn(
         DELTA_CELL,
         bandClass,
-        value ? (accentClass ?? 'text-foreground/70') : 'text-gray-300 dark:text-muted-foreground/40',
+        value ? (accentClass ?? 'text-foreground/70') : 'text-muted-foreground/40',
       )}
     >
       {value ?? '—'}
