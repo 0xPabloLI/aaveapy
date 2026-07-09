@@ -183,6 +183,10 @@ function computeResultsFromGroups(
         borrowUsd: group.borrowUsd,
       });
     }
+    // Sets symbol for all reserves in groupMap (including those with 0 USD on both sides,
+    // which cannot happen in practice due to the skip guard in buildGroupMapFromSlots).
+    // buildPerReserveInputsFromEntries only sets symbol for reserves in crossReservePositions,
+    // which is equivalent because crossReservePositions filters on supplyUsd > 0 || borrowUsd > 0.
     if (reserve.tokenSymbol) {
       reserveSymbolById.set(reserve.reserveId, reserve.tokenSymbol);
     }
@@ -412,12 +416,10 @@ export function buildPerReserveInputsFromEntries(
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
       });
-    }
-  }
-
-  for (const r of reserves) {
-    if (r.tokenSymbol && crossReservePositions.has(r.reserveId)) {
-      reserveSymbolById.set(r.reserveId, r.tokenSymbol);
+      const reserve = reserveMap.get(getReserveKey({ reserveId }));
+      if (reserve?.tokenSymbol) {
+        reserveSymbolById.set(reserveId, reserve.tokenSymbol);
+      }
     }
   }
 

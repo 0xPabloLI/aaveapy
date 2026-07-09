@@ -50,7 +50,6 @@ import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimula
 import { buildPerReserveInputsFromEntries, type PortfolioInputsResult } from '@/lib/portfolioSimulator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { PointRateMap } from '@/lib/tydro';
-import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';

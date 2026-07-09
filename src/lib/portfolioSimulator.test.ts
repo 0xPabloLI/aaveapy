@@ -256,19 +256,23 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('wallet position with empty amount: delta=0, totalSupplyUsd=walletValue', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('0');
     expect(input.totalSupplyUsd).toBe(1042);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1042, borrowUsd: 0 });
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
   it('wallet supply + borrow delta on same reserve: totalSupplyUsd and totalBorrowUsd both recorded', () => {
     const reserveId = 'r-weth';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 3000 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'WETH', tokenPrice: 3000 });
     const entries = [
       makeEntry({ reserveId, tokenSymbol: 'WETH', supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { amount: '1', inputMode: 'usd', walletValue: null } }),
     ];
@@ -278,79 +282,101 @@ describe('buildPerReserveInputsFromEntries', () => {
     expect(input.totalSupplyUsd).toBe(1042);
     expect(input.borrowInput).toBe('1');
     expect(input.totalBorrowUsd).toBe(1);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1042, borrowUsd: 1 });
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get(reserveId)).toBe('WETH');
   });
 
   it('wallet position unchanged: delta=0, principal=walletValue', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('0');
     expect(input.totalSupplyUsd).toBe(1000);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1000, borrowUsd: 0 });
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
   it('wallet position with top-up: delta=positive, principal=effectiveAmount', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('500');
     expect(input.totalSupplyUsd).toBe(1500);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1500, borrowUsd: 0 });
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
   it('wallet position with partial withdrawal: delta=negative, principal=effectiveAmount', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('-500');
     expect(input.totalSupplyUsd).toBe(500);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 500, borrowUsd: 0 });
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
   it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('2000');
     expect(input.totalSupplyUsd).toBe(2000);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 2000, borrowUsd: 0 });
   });
 
   it('mixed wallet + manual entries on same reserve: deltas aggregated', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '500', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('1000');
     expect(input.totalSupplyUsd).toBe(2000);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 2000, borrowUsd: 0 });
   });
 
   it('borrow with walletValue: delta and principal separated', () => {
     const reserveId = 'r-usdc';
-    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '800', inputMode: 'usd', walletValue: 500 } }),
+      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { ...emptySide }, borrow: { amount: '800', inputMode: 'usd', walletValue: 500 } }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.borrowInput).toBe('300');
     expect(input.totalBorrowUsd).toBe(800);
+    expect(result.crossReservePositions).toBeDefined();
+    expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 0, borrowUsd: 800 });
   });
 });
 
