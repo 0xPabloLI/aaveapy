@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import FilterBar from './FilterBar';
 import type { TokenCategory } from '@/types/aave';
@@ -13,6 +13,10 @@ vi.mock('@/hooks/use-mobile', () => ({
 vi.mock('@/components/dashboard/AprApyToggle', () => ({
   default: () => <div data-testid="apr-apy-toggle" />,
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 const ETH_MULTI_MARKETS = [
   { marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1 },
