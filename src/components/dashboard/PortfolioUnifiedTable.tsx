@@ -32,7 +32,9 @@
  * Sub-headers show "Supply"/"Borrow" full text on large screens, "S"/"B"
  * abbreviation on small screens (responsive span swap).
  *
- * Toggle via ?unified=1 in PortfolioPanel.
+ * Wallet display (Option E modified): wallet value shown as compact
+ * non-editable text outside the input, with → arrow when modified.
+ * The ± sign toggle button stays inside the input for interaction.
  */
 import { memo, useCallback, useRef } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
@@ -119,6 +121,10 @@ const HEADER_BASE = 'bg-muted/40';
 const SUPPLY_COLOR = 'ds-text-emerald-600';
 const BORROW_COLOR = 'ds-text-brand-cyan';
 
+// Group separator border — slightly stronger than row borders to create
+// visual hierarchy between module groups (Input / Native / Incentive / etc.)
+const GROUP_SEP = 'border-l border-border/40';
+
 /* ── Metric value with simulation tooltip ───────────────────────── */
 
 /**
@@ -150,7 +156,7 @@ function MetricValue({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="underline decoration-dotted underline-offset-2 cursor-help">
+        <span className="underline decoration-dotted underline-offset-2 cursor-pointer">
           {formatFn(afterValue)}
         </span>
       </TooltipTrigger>
@@ -169,11 +175,18 @@ function MetricValue({
 
 /* ── Formatting helpers ──────────────────────────────────────────── */
 
+/** Compact value formatter — used for wallet display outside the input. */
+function formatCompactValue(value: number, withDollar = false): string {
+  const prefix = withDollar ? '$' : '';
+  if (value === 0) return `${prefix}0`;
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${prefix}${(value / 1_000).toFixed(1)}K`;
+  return `${prefix}${value.toFixed(2)}`;
+}
+
 function formatUsdCompact(value: number): string {
-  if (value === 0) return '$0';
-  if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toFixed(2)}`;
+  return formatCompactValue(value, true);
 }
 
 function formatUsdDay(value: number): string {
@@ -209,7 +222,7 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex shrink-0 cursor-help align-middle',
+            'inline-flex shrink-0 cursor-pointer align-middle',
             hasAmber ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground',
           )}
         >
@@ -232,11 +245,8 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
                 limitedByLiquidity: w.limitedByLiquidity,
               });
               return (
-                <div key={i} className="flex items-start gap-1">
-                  <span className={cn('font-semibold shrink-0', w.side === 'supply' ? SUPPLY_COLOR : BORROW_COLOR)}>
-                    {w.side === 'supply' ? 'Supply' : 'Borrow'}
-                  </span>
-                  <span className="text-amber-600 dark:text-amber-400">{label}</span>
+                <div key={i} className="text-amber-600 dark:text-amber-400">
+                  {label}
                 </div>
               );
             }
@@ -244,8 +254,8 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
             const source = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).source : (w as IncentiveOffsetWarning).source;
             return (
               <div key={i} className="flex flex-col gap-0.5">
-                <span className={cn('font-semibold', w.side === 'supply' ? SUPPLY_COLOR : BORROW_COLOR)}>
-                  {w.side === 'supply' ? 'Supply' : 'Borrow'} · {source}
+                <span className="font-semibold capitalize text-muted-foreground">
+                  {source}
                 </span>
                 {notes?.map((note, ni) => (
                   <span key={ni} className={note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}>
@@ -413,23 +423,23 @@ function CompactInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
-  const walletDisplay = hasWallet
-    ? (sideData.inputMode === 'usd'
-        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
-        : (tokenPriceInUsd != null
-            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
-            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
-    : '';
-
   const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
     ? sideData.walletValue! + sideData.deltaRawUsd
     : (sideData.inputMode === 'usd'
         ? parseNumberInput(sideData.amount)
         : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0));
-  const effectiveDisplay = sideData.inputMode === 'usd'
-    ? formatNumberInput(formatConvertedAmount(effectiveUsdForSign))
-    : sideData.amount;
   const isModified = hasWallet && Math.abs(effectiveUsdForSign - sideData.walletValue!) >= 0.005;
+
+  // Compact wallet display — shown outside the input as non-editable context.
+  // Uses compact format (1.0K / $1.0K) to save horizontal space in the 88px column.
+  const walletCompact = hasWallet
+    ? formatCompactValue(
+        sideData.inputMode === 'usd'
+          ? sideData.walletValue!
+          : (tokenPriceInUsd != null ? sideData.walletValue! / tokenPriceInUsd : sideData.walletValue!),
+        sideData.inputMode === 'usd',
+      )
+    : '';
 
   if (disabled) {
     return (
@@ -453,7 +463,7 @@ function CompactInput({
   }
 
   const placeholder = hasWallet
-    ? walletDisplay
+    ? '0'
     : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
@@ -478,41 +488,30 @@ function CompactInput({
         )}
       </Tooltip>
 
+      {hasWallet && (
+        <span className="shrink-0 ds-text-9 text-muted-foreground tabular-nums leading-none whitespace-nowrap">
+          {walletCompact}
+          {isModified && (
+            <span className={cn('ml-0.5', isPositiveDelta ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400')}>→</span>
+          )}
+        </span>
+      )}
+
       <div className="relative flex-1 min-w-0">
         {hasWallet && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleDeltaSign}
-                className={cn(
-                  'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
-                  isPositiveDelta
-                    ? 'text-emerald-600 hover:bg-emerald-500/10'
-                    : 'text-red-500 hover:bg-red-500/10',
-                isModified && 'underline decoration-dotted underline-offset-2',
-              )}
-                aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
-              >
-                {isPositiveDelta ? '+' : '−'}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="ds-text-11">
-              {isModified ? (
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Wallet</span>
-                  <span className="tabular-nums">{walletDisplay}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="font-semibold tabular-nums">{effectiveDisplay}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Wallet</span>
-                  <span className="tabular-nums">{walletDisplay}</span>
-                </div>
-              )}
-            </TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={toggleDeltaSign}
+            className={cn(
+              'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
+              isPositiveDelta
+                ? 'text-emerald-600 hover:bg-emerald-500/10'
+                : 'text-red-500 hover:bg-red-500/10',
+            )}
+            aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
+          >
+            {isPositiveDelta ? '+' : '−'}
+          </button>
         )}
         <input
           ref={numberInput.inputRef}
@@ -586,24 +585,24 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
             <th rowSpan={2} className={cn('pl-2 pr-1 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Input</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Native</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Incentive</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Total</th>
-            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Earn $/day</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Input</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Native</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Incentive</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Total</th>
+            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Earn $/day</th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold border-l border-border/20', HEADER_BASE)}>Net</th>
+            <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
           </tr>
         </thead>
         <tbody>
@@ -696,7 +695,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Input */}
-                <td className={cn(INPUT_CELL, 'border-l border-border/20 align-top')}>
+                <td className={cn(INPUT_CELL, GROUP_SEP, 'align-top')}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -736,7 +735,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Native */}
-                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.nativePercent} metric={supplyResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Native */}
@@ -745,7 +744,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Incentive */}
-                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {supplyResult ? (
                       <>
@@ -774,7 +773,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Total */}
-                <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.totalPercent} metric={supplyResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Total */}
@@ -783,7 +782,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply $/day */}
-                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>
                   {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </td>
                 {/* Borrow $/day */}
@@ -791,7 +790,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </td>
                 {/* Net $/day */}
-                <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>
+                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
@@ -806,21 +805,21 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-1 py-1.5 font-bold ds-text-11">Total</td>
-              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
               <td className={cn(VAL_CELL, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
-              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND)} />
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, BORROW_BAND)} />
-              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND)} />
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, BORROW_BAND)} />
-              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
+              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
               </td>
               <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
               <td className={cn(VAL_CELL, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}
