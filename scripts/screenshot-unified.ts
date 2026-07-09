@@ -12,7 +12,7 @@ async function main() {
   });
 
   // Navigate to the app with unified mode
-  await page.goto('http://localhost:8082/?unified=1', { waitUntil: 'domcontentloaded' });
+  await page.goto('http://localhost:8084/', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(4000);
 
   // Remove any error overlays

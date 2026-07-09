@@ -1265,15 +1265,15 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: After/Delta (随 simulation input 变化, 无模拟 → null) ───
 
+  // Native rate is ALWAYS APY regardless of isApy toggle.
+  // AprApyToggle contract: "Only incentive annual % follows this switch; native stays APY."
+  // Using APR here would create a fake delta (APY current vs APR after) that doesn't
+  // reflect user input — it's just a unit conversion artifact.
   const supplyAfterNative = combinedNativeSimulation
-    ? isApy
-      ? combinedNativeSimulation.supplyApyPercent
-      : combinedNativeSimulation.supplyAprPercent
+    ? combinedNativeSimulation.supplyApyPercent
     : null;
   const borrowAfterNative = combinedNativeSimulation
-    ? isApy
-      ? combinedNativeSimulation.borrowApyPercent
-      : combinedNativeSimulation.borrowAprPercent
+    ? combinedNativeSimulation.borrowApyPercent
     : null;
 
   const brevisSharedDepositsByCampaignId = hasAnyInput

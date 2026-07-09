@@ -203,7 +203,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const prototypeVariant = (searchParams.get('variant') as 'A' | 'B' | 'C') ?? null;
-  const unifiedMode = searchParams.get('unified') === '1';
+  // Unified table is the production default. Use ?unified=0 to opt out (debug/legacy).
+  const unifiedMode = searchParams.get('unified') !== '0';
   const { isConnected: walletConnected } = useWallet();
   const { connectWatchAddress } = useWatchModeConnect();
   const [searchQuery, setSearchQuery] = useState('');
@@ -593,7 +594,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           );
         })()}
 
-        {/* Unified table mode (?unified=1) — input + results + summary in one table */}
+        {/* Unified table mode (default — use ?unified=0 to opt out) */}
         {unifiedMode && entries.length > 0 ? (
           <PortfolioUnifiedTable
             entries={sortedEntries}

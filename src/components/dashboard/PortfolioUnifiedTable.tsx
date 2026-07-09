@@ -1,8 +1,14 @@
 /**
- * PortfolioUnifiedTable v4 — one row per reserve, both sides inline.
+ * PortfolioUnifiedTable v7 — one row per reserve, both sides inline.
+ *
+ * Width strategy: table = width:100% + table-layout:fixed.
+ * ALL columns have explicit px widths on <col>. When the sum of column
+ * widths < container width, the browser distributes the extra space
+ * proportionally across all columns — no single column hogs the remainder.
+ * This ensures the table ALWAYS fills its container, regardless of width.
  *
  * Columns (12):
- *   0  Token           168px (fixed, not flex)
+ *   0  Token           120px
  *   1  Supply Input     88px
  *   2  Borrow Input     88px
  *   3  Supply Native    62px
@@ -15,9 +21,16 @@
  *  10  Borrow $/day     68px
  *  11  Net $/day        72px
  *
- * No delta — without current/after context, delta is confusing.
- * Cap warnings shown as inline ⚠ marker with tooltip (no separate note row).
- * Two-row grouped header: Token | Input(S/B) | Native(S/B) | Incentive(S/B) | Total(S/B) | Earn /day(S/B/Net)
+ * Typography: ds-text-12 (12px) for table body — the DESIGN.md "Data" tier
+ * is 13px, but 12 columns at 13px overflow the typical container. 12px is the
+ * design system's compact-data tier; headers use ds-text-11 (Label tier).
+ *
+ * Metric values with simulation changes get a dotted underline + tooltip
+ * (before→after+delta). No extra marker — the underline is the affordance.
+ *
+ * Cap warnings are inline colored dots with tooltips.
+ * Sub-headers show "Supply"/"Borrow" full text on large screens, "S"/"B"
+ * abbreviation on small screens (responsive span swap).
  *
  * Toggle via ?unified=1 in PortfolioPanel.
  */
@@ -56,9 +69,11 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// Token is fixed 168px — table uses w-auto so it doesn't stretch to fill container.
+// All columns have explicit px widths. With width:100% + table-layout:fixed,
+// the browser scales columns proportionally to fill the container — no single
+// column absorbs all remaining space, and the table always fills its container.
 const COL_WIDTHS = [
-  '168px',    // 0  Token (fixed)
+  '120px',    // 0  Token
   '88px',     // 1  Supply Input
   '88px',     // 2  Borrow Input
   '62px',     // 3  Supply Native
@@ -84,16 +99,19 @@ function UnifiedColgroup() {
 
 /* ── Shared cell padding tokens ──────────────────────────────────── */
 
-const VAL_CELL = 'px-1.5 py-1 text-right tabular-nums whitespace-nowrap';
+// DESIGN.md: Data tier = 13px, but 12-col compact table uses 12px (ds-text-12)
+// to fit without overflow. Headers use ds-text-11 (Label tier).
+const TABLE_TEXT = 'ds-text-12';
+const VAL_CELL = cn('px-1.5 py-1 text-right tabular-nums whitespace-nowrap', TABLE_TEXT);
 const INPUT_CELL = 'px-1 py-1';
 // Last column gets extra right padding for breathing space
-const LAST_CELL = 'pr-2 pl-1.5 py-1 text-right tabular-nums whitespace-nowrap';
+const LAST_CELL = cn('pr-2 pl-1.5 py-1 text-right tabular-nums whitespace-nowrap', TABLE_TEXT);
 
 /* ── Header bands (semantic tint) ────────────────────────────────── */
 
-const NATIVE_GROUP_TINT = 'bg-emerald-500/5 dark:bg-emerald-500/8';
-const INCENTIVE_GROUP_TINT = 'bg-cyan-500/5 dark:bg-cyan-500/8';
-const TOTAL_GROUP_TINT = 'bg-emerald-500/5 dark:bg-emerald-500/8';
+// Per DESIGN-SYSTEM-REFERENCE §3: semantic colors (emerald/cyan) are reserved
+// for their designated concept (Supply/Borrow). Group-level header tints use
+// neutral HEADER_BASE — only per-column body bands carry semantic color.
 const SUPPLY_BAND = 'bg-emerald-500/10 dark:bg-emerald-500/12 group-hover:bg-emerald-500/16';
 const BORROW_BAND = 'bg-cyan-500/10 dark:bg-cyan-500/12 group-hover:bg-cyan-500/16';
 const HEADER_BASE = 'bg-muted/40';
@@ -138,7 +156,7 @@ function MetricValue({
       </TooltipTrigger>
       <TooltipContent side="top" className="ds-text-11">
         <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">Before</span>
+          <span className="text-muted-foreground">Current</span>
           <span className="tabular-nums">{formatFn(metric!.current!)}</span>
           <span className="text-muted-foreground">→</span>
           <span className="font-semibold tabular-nums">{formatFn(metric!.after!)}</span>
@@ -162,6 +180,12 @@ function formatUsdDay(value: number): string {
   if (value < 0) return `-$${Math.abs(value).toFixed(2)}`;
   if (value > 0) return `+$${value.toFixed(2)}`;
   return '$0';
+}
+
+/** Display $/day as '—' when zero, formatted otherwise. */
+function formatUsdDayOrDash(value: number | undefined | null): string {
+  if (value == null || value === 0) return '—';
+  return formatUsdDay(value);
 }
 
 /* ── Inline warning marker (tooltip-only) ────────────────────────── */
@@ -433,88 +457,89 @@ function CompactInput({
     : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-0.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              disabled={tokenPriceInUsd === undefined}
-              onClick={handleToggleInputMode}
-              className={cn(
-                'shrink-0 rounded border border-border/40 bg-muted/60 px-0.5 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground leading-none',
-                tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
-              )}
-              aria-label={`Switch to ${sideData.inputMode === 'usd' ? 'token' : 'USD'} input`}
-            >
-              {sideData.inputMode === 'usd' ? '$' : 'T'}
-            </button>
-          </TooltipTrigger>
-          {tokenPriceInUsd === undefined && (
-            <TooltipContent side="top" className="ds-text-11">Price unavailable</TooltipContent>
-          )}
-        </Tooltip>
-
-        <div className="relative flex-1 min-w-0">
-          {hasWallet && (
-            <button
-              type="button"
-              onClick={toggleDeltaSign}
-              className={cn(
-                'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
-                isPositiveDelta
-                  ? 'text-emerald-600 hover:bg-emerald-500/10'
-                  : 'text-red-500 hover:bg-red-500/10',
-              )}
-              aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
-            >
-              {isPositiveDelta ? '+' : '−'}
-            </button>
-          )}
-          <input
-            ref={numberInput.inputRef}
-            value={numberInput.displayValue}
-            onChange={numberInput.handleChange}
-            onFocus={numberInput.handleFocus}
-            onBlur={numberInput.handleBlur}
-            inputMode="decimal"
-            placeholder={placeholder}
+    <div className="flex items-center gap-0.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            disabled={tokenPriceInUsd === undefined}
+            onClick={handleToggleInputMode}
             className={cn(
-              'h-5 w-full min-w-[2rem] rounded ds-text-10 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
-              hasWallet ? 'pl-3.5 pr-4' : hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
-              cnDsInputSurface(hasValue, inputVariant),
+              'shrink-0 rounded border border-border/40 bg-muted/60 px-0.5 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground leading-none',
+              tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
             )}
-            aria-label={`${side} ${hasWallet ? 'delta' : 'amount'} for ${tokenSymbol}`}
-          />
-          {hasValue && (
-            <button
-              type="button"
-              onClick={() => handleDeltaCommit('')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-              aria-label={`Clear ${tokenSymbol} ${side}`}
-            >
-              <Eraser className="size-2.5" aria-hidden />
-            </button>
-          )}
-        </div>
-      </div>
+            aria-label={`Switch to ${sideData.inputMode === 'usd' ? 'token' : 'USD'} input`}
+          >
+            {sideData.inputMode === 'usd' ? '$' : 'T'}
+          </button>
+        </TooltipTrigger>
+        {tokenPriceInUsd === undefined && (
+          <TooltipContent side="top" className="ds-text-11">Price unavailable</TooltipContent>
+        )}
+      </Tooltip>
 
-      {hasWallet && (
-        <div
-          className="ds-text-9 tabular-nums leading-tight truncate pl-0.5 mt-px"
-          title={isModified ? `Wallet: ${walletDisplay} → ${effectiveDisplay}` : `Wallet: ${walletDisplay}`}
-        >
-          {isModified ? (
-            <>
-              <span className="text-muted-foreground/50">{walletDisplay}</span>
-              <span className="text-muted-foreground/30 mx-px">→</span>
-              <span className={cn('font-medium', isBorrow ? BORROW_COLOR : SUPPLY_COLOR)}>{effectiveDisplay}</span>
-            </>
-          ) : (
-            <span className="text-muted-foreground/40">{walletDisplay}</span>
+      <div className="relative flex-1 min-w-0">
+        {hasWallet && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleDeltaSign}
+                className={cn(
+                  'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
+                  isPositiveDelta
+                    ? 'text-emerald-600 hover:bg-emerald-500/10'
+                    : 'text-red-500 hover:bg-red-500/10',
+                isModified && 'underline decoration-dotted underline-offset-2',
+              )}
+                aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
+              >
+                {isPositiveDelta ? '+' : '−'}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="ds-text-11">
+              {isModified ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Wallet</span>
+                  <span className="tabular-nums">{walletDisplay}</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="font-semibold tabular-nums">{effectiveDisplay}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Wallet</span>
+                  <span className="tabular-nums">{walletDisplay}</span>
+                </div>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <input
+          ref={numberInput.inputRef}
+          value={numberInput.displayValue}
+          onChange={numberInput.handleChange}
+          onFocus={numberInput.handleFocus}
+          onBlur={numberInput.handleBlur}
+          inputMode="decimal"
+          placeholder={placeholder}
+          className={cn(
+            'h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
+            hasWallet ? 'pl-3.5 pr-4' : hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
+            cnDsInputSurface(hasValue, inputVariant),
           )}
-        </div>
-      )}
+          aria-label={`${side} ${hasWallet ? 'delta' : 'amount'} for ${tokenSymbol}`}
+        />
+        {hasValue && (
+          <button
+            type="button"
+            onClick={() => handleDeltaCommit('')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+            aria-label={`Clear ${tokenSymbol} ${side}`}
+          >
+            <Eraser className="size-2.5" aria-hidden />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -556,28 +581,28 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className="w-auto ds-text-10 [&_tbody_td]:transition-colors" style={{ tableLayout: 'fixed' }}>
+      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'fixed' }}>
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
             <th rowSpan={2} className={cn('pl-2 pr-1 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Input</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', NATIVE_GROUP_TINT)}>Native</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', INCENTIVE_GROUP_TINT)}>Incentive</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', TOTAL_GROUP_TINT)}>Total</th>
-            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Earn /day</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Native</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Incentive</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Total</th>
+            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Earn $/day</th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20', HEADER_BASE, SUPPLY_COLOR)}>S</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', HEADER_BASE, BORROW_COLOR)}>B</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20', NATIVE_GROUP_TINT, SUPPLY_COLOR)}>S</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', NATIVE_GROUP_TINT, BORROW_COLOR)}>B</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20', INCENTIVE_GROUP_TINT, SUPPLY_COLOR)}>S</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', INCENTIVE_GROUP_TINT, BORROW_COLOR)}>B</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20', TOTAL_GROUP_TINT, SUPPLY_COLOR)}>S</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', TOTAL_GROUP_TINT, BORROW_COLOR)}>B</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20', HEADER_BASE, SUPPLY_COLOR)}>S</th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', HEADER_BASE, BORROW_COLOR)}>B</th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold border-l border-border/20', HEADER_BASE)}>Net</th>
           </tr>
         </thead>
@@ -672,38 +697,42 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
                 {/* Supply Input */}
                 <td className={cn(INPUT_CELL, 'border-l border-border/20 align-top')}>
-                  <CompactInput
-                    sideData={entry.supply}
-                    side="supply"
-                    tokenSymbol={entry.tokenSymbol}
-                    tokenPriceInUsd={tokenPriceInUsd}
-                    reserveId={entry.reserveId}
-                    actions={actions}
-                    disabled={!!disabledNotice.supply}
-                    disabledNotice={disabledNotice.supply}
-                    capLimitUsd={supplyCapLimitUsd}
-                  />
-                  {supplyInputWarns.length > 0 && (
-                    <div className="mt-0.5"><WarningMarker warnings={supplyInputWarns} /></div>
-                  )}
+                  <div className="flex items-center gap-0.5">
+                    <div className="flex-1 min-w-0">
+                      <CompactInput
+                        sideData={entry.supply}
+                        side="supply"
+                        tokenSymbol={entry.tokenSymbol}
+                        tokenPriceInUsd={tokenPriceInUsd}
+                        reserveId={entry.reserveId}
+                        actions={actions}
+                        disabled={!!disabledNotice.supply}
+                        disabledNotice={disabledNotice.supply}
+                        capLimitUsd={supplyCapLimitUsd}
+                      />
+                    </div>
+                    {supplyInputWarns.length > 0 && <WarningMarker warnings={supplyInputWarns} />}
+                  </div>
                 </td>
 
                 {/* Borrow Input */}
                 <td className={cn(INPUT_CELL, 'align-top')}>
-                  <CompactInput
-                    sideData={entry.borrow}
-                    side="borrow"
-                    tokenSymbol={entry.tokenSymbol}
-                    tokenPriceInUsd={tokenPriceInUsd}
-                    reserveId={entry.reserveId}
-                    actions={actions}
-                    disabled={!!disabledNotice.borrow}
-                    disabledNotice={disabledNotice.borrow}
-                    capLimitUsd={borrowCapLimitUsd}
-                  />
-                  {borrowInputWarns.length > 0 && (
-                    <div className="mt-0.5"><WarningMarker warnings={borrowInputWarns} /></div>
-                  )}
+                  <div className="flex items-center gap-0.5">
+                    <div className="flex-1 min-w-0">
+                      <CompactInput
+                        sideData={entry.borrow}
+                        side="borrow"
+                        tokenSymbol={entry.tokenSymbol}
+                        tokenPriceInUsd={tokenPriceInUsd}
+                        reserveId={entry.reserveId}
+                        actions={actions}
+                        disabled={!!disabledNotice.borrow}
+                        disabledNotice={disabledNotice.borrow}
+                        capLimitUsd={borrowCapLimitUsd}
+                      />
+                    </div>
+                    {borrowInputWarns.length > 0 && <WarningMarker warnings={borrowInputWarns} />}
+                  </div>
                 </td>
 
                 {/* Supply Native */}
@@ -754,19 +783,19 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply $/day */}
-                <td className={cn(VAL_CELL, 'border-l border-border/20', 'text-foreground/80')}>
-                  {supplyResult ? formatUsdDay(supplyResult.usdPerDay) : '$0'}
+                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>
+                  {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </td>
                 {/* Borrow $/day */}
-                <td className={cn(VAL_CELL, 'text-foreground/80')}>
-                  {borrowResult ? formatUsdDay(borrowResult.usdPerDay) : '$0'}
+                <td className={cn(VAL_CELL, BORROW_COLOR)}>
+                  {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </td>
                 {/* Net $/day */}
                 <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
-                    return formatUsdDay(s - b);
+                    return formatUsdDayOrDash(s - b);
                   })()}
                 </td>
               </tr>
@@ -783,17 +812,15 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
               <td className={cn(VAL_CELL, BORROW_BAND)} />
               <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, BORROW_BAND)} />
-              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
-                <span className="text-muted-foreground/50 font-normal ds-text-9 mr-0.5">Wt.</span>
+              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
-                <span className="text-muted-foreground/50 font-normal ds-text-9 mr-0.5">Wt.</span>
+              <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, 'border-l border-border/20', 'text-foreground/80')}>{formatUsdDay(summary.supplyUsdPerDay)}</td>
-              <td className={cn(VAL_CELL, 'text-foreground/80')}>{formatUsdDay(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>{formatUsdDay(summary.netUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}
