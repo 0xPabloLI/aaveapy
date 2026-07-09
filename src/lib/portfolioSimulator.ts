@@ -30,6 +30,12 @@ export interface PerReserveInput {
   totalBorrowUsd?: number;
 }
 
+export interface PortfolioInputsResult {
+  perReserveInputs: Map<string, PerReserveInput>;
+  crossReservePositions: Map<string, ReservePositions> | undefined;
+  reserveSymbolById: Map<string, string> | undefined;
+}
+
 interface SimulateCommonArgs {
   reserves: ReserveWithSpread[];
   isApy: boolean;
@@ -341,7 +347,7 @@ export function simulatePortfolioFromEntries(
 export function buildPerReserveInputsFromEntries(
   entries: PortfolioReserveEntry[],
   reserves: ReserveWithSpread[],
-): Map<string, PerReserveInput> {
+): PortfolioInputsResult {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
   const grouped = new Map<
     string,
@@ -389,15 +395,35 @@ export function buildPerReserveInputsFromEntries(
     }
   }
 
-  const result = new Map<string, PerReserveInput>();
+  const perReserveInputs = new Map<string, PerReserveInput>();
+  const crossReservePositions = new Map<string, ReservePositions>();
+  const reserveSymbolById = new Map<string, string>();
+
   for (const [reserveId, group] of grouped) {
-    result.set(reserveId, {
+    perReserveInputs.set(reserveId, {
       supplyInput: String(group.supplyDeltaUsd),
       borrowInput: String(group.borrowDeltaUsd),
       inputMode: 'usd',
       totalSupplyUsd: group.supplyUsd,
       totalBorrowUsd: group.borrowUsd,
     });
+    if (group.supplyUsd > 0 || group.borrowUsd > 0) {
+      crossReservePositions.set(reserveId, {
+        supplyUsd: group.supplyUsd,
+        borrowUsd: group.borrowUsd,
+      });
+    }
   }
-  return result;
+
+  for (const r of reserves) {
+    if (r.tokenSymbol && crossReservePositions.has(r.reserveId)) {
+      reserveSymbolById.set(r.reserveId, r.tokenSymbol);
+    }
+  }
+
+  return {
+    perReserveInputs,
+    crossReservePositions: crossReservePositions.size > 0 ? crossReservePositions : undefined,
+    reserveSymbolById: reserveSymbolById.size > 0 ? reserveSymbolById : undefined,
+  };
 }

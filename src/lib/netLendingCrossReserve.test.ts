@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   computeCrossReserveNetEligible,
   computeCrossReserveEligibilityRatio,
-  buildCrossReservePositionsFromPerReserveInputs,
 } from './netLendingCrossReserve';
 import type { NetPositionConstraint } from '@/types/aave';
-import type { PerReserveInput } from '@/lib/portfolioSimulator';
 
 describe('computeCrossReserveNetEligible', () => {
   const crossReservePositions = new Map<string, { supplyUsd: number; borrowUsd: number }>([
@@ -156,65 +154,5 @@ describe('computeCrossReserveEligibilityRatio', () => {
       crossReservePositions,
     });
     expect(ratio).toBe(1);
-  });
-});
-
-describe('buildCrossReservePositionsFromPerReserveInputs', () => {
-  it('builds map from perReserveInputs with totalSupplyUsd/totalBorrowUsd', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-usdc', { supplyInput: '500', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 1500, totalBorrowUsd: 200 }],
-      ['r-gho', { supplyInput: '0', borrowInput: '100', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 100 }],
-    ]);
-    const result = buildCrossReservePositionsFromPerReserveInputs(inputs);
-    expect(result).toBeDefined();
-    expect(result!.get('r-usdc')).toEqual({ supplyUsd: 1500, borrowUsd: 200 });
-    expect(result!.get('r-gho')).toEqual({ supplyUsd: 0, borrowUsd: 100 });
-  });
-
-  it('returns undefined when all positions are zero', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-usdc', { supplyInput: '0', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 0 }],
-    ]);
-    expect(buildCrossReservePositionsFromPerReserveInputs(inputs)).toBeUndefined();
-  });
-
-  it('returns undefined for empty map', () => {
-    expect(buildCrossReservePositionsFromPerReserveInputs(new Map())).toBeUndefined();
-  });
-
-  it('treats undefined totalSupplyUsd/totalBorrowUsd as 0', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-usdc', { supplyInput: '100', borrowInput: '0', inputMode: 'usd' }],
-    ]);
-    expect(buildCrossReservePositionsFromPerReserveInputs(inputs)).toBeUndefined();
-  });
-
-  it('includes reserve with only supply position', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-usdc', { supplyInput: '500', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 500, totalBorrowUsd: 0 }],
-    ]);
-    const result = buildCrossReservePositionsFromPerReserveInputs(inputs);
-    expect(result).toBeDefined();
-    expect(result!.get('r-usdc')).toEqual({ supplyUsd: 500, borrowUsd: 0 });
-  });
-
-  it('includes reserve with only borrow position', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-gho', { supplyInput: '0', borrowInput: '200', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 200 }],
-    ]);
-    const result = buildCrossReservePositionsFromPerReserveInputs(inputs);
-    expect(result).toBeDefined();
-    expect(result!.get('r-gho')).toEqual({ supplyUsd: 0, borrowUsd: 200 });
-  });
-
-  it('skips reserve with both zero but includes others with non-zero', () => {
-    const inputs = new Map<string, PerReserveInput>([
-      ['r-empty', { supplyInput: '0', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 0 }],
-      ['r-usdc', { supplyInput: '500', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 500, totalBorrowUsd: 0 }],
-    ]);
-    const result = buildCrossReservePositionsFromPerReserveInputs(inputs);
-    expect(result).toBeDefined();
-    expect(result!.has('r-empty')).toBe(false);
-    expect(result!.get('r-usdc')).toEqual({ supplyUsd: 500, borrowUsd: 0 });
   });
 });

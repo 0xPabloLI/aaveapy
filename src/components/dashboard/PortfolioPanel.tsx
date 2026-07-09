@@ -33,6 +33,7 @@ import { useSearchParams } from 'react-router-dom';
 import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
+import PortfolioUnifiedTable from './PortfolioUnifiedTable';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve } from '@/lib/reserveStatus';
@@ -202,6 +203,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const prototypeVariant = (searchParams.get('variant') as 'A' | 'B' | 'C') ?? null;
+  const unifiedMode = searchParams.get('unified') === '1';
   const { isConnected: walletConnected } = useWallet();
   const { connectWatchAddress } = useWatchModeConnect();
   const [searchQuery, setSearchQuery] = useState('');
@@ -591,8 +593,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
           );
         })()}
 
-        {/* Entry list */}
-        {entries.length === 0 ? (
+        {/* Unified table mode (?unified=1) — input + results + summary in one table */}
+        {unifiedMode && entries.length > 0 ? (
+          <PortfolioUnifiedTable
+            entries={sortedEntries}
+            actions={actions}
+            reserves={reserves}
+            positionResults={positionResults}
+            summary={summary}
+            capWarningsMap={capWarningsMap}
+          />
+        ) : entries.length === 0 ? (
           <div
             className={cn(
               'rounded-xl border border-dashed px-3 py-4 text-center',
@@ -668,15 +679,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         )}
 
-        {/* Summary card */}
-        {summary && entries.length > 0 && (
+        {/* Summary card (hidden in unified mode) */}
+        {!unifiedMode && summary && entries.length > 0 && (
           <div className="mt-3">
             <PortfolioSummaryCard summary={summary} />
           </div>
         )}
 
-        {/* Per-token results table */}
-        {positionResults && positionResults.length > 0 && (
+        {/* Per-token results table (hidden in unified mode) */}
+        {!unifiedMode && positionResults && positionResults.length > 0 && (
           <div className="mt-2.5">
             <PortfolioResultsTable entries={entries} results={positionResults} />
           </div>

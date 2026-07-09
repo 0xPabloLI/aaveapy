@@ -1,26 +1,8 @@
 import type { NetPositionConstraint } from '@/types/aave';
-import type { PerReserveInput } from '@/lib/portfolioSimulator';
 
 export interface ReservePositions {
   supplyUsd: number;
   borrowUsd: number;
-}
-
-/** Build cross-reserve position map from portfolio per-reserve inputs.
- *  Only call in Portfolio mode where PerReserveInput contains totalSupplyUsd/totalBorrowUsd (wallet+delta).
- *  In Single simulation mode these fields are undefined — the function would return undefined (all positions treated as 0). */
-export function buildCrossReservePositionsFromPerReserveInputs(
-  perReserveInputs: Map<string, PerReserveInput>,
-): Map<string, ReservePositions> | undefined {
-  const map = new Map<string, ReservePositions>();
-  for (const [reserveId, input] of perReserveInputs) {
-    const supplyUsd = input.totalSupplyUsd ?? 0;
-    const borrowUsd = input.totalBorrowUsd ?? 0;
-    if (supplyUsd > 0 || borrowUsd > 0) {
-      map.set(reserveId, { supplyUsd, borrowUsd });
-    }
-  }
-  return map.size > 0 ? map : undefined;
 }
 
 export interface CrossReserveNetInput {

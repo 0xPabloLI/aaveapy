@@ -47,10 +47,10 @@ import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
-import { buildPerReserveInputsFromEntries } from '@/lib/portfolioSimulator';
+import { buildPerReserveInputsFromEntries, type PortfolioInputsResult } from '@/lib/portfolioSimulator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { PointRateMap } from '@/lib/tydro';
-import { buildCrossReservePositionsFromPerReserveInputs, type ReservePositions } from '@/lib/netLendingCrossReserve';
+import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
@@ -242,33 +242,13 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
-  const perReserveInputs = useMemo(
+  const portfolioInputsResult = useMemo<PortfolioInputsResult | undefined>(
     () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
     [isPortfolioMode, portfolioEntries, reserves],
   );
-
-  const crossReservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
-    if (isPortfolioMode) {
-      // Portfolio mode: build from perReserveInputs (total position = wallet + delta).
-      // Shared scenario inputs are empty in portfolio mode, so the old path always
-      // produced undefined — causing Merkl cross-reserve offset notes to be missing.
-      if (!perReserveInputs || perReserveInputs.size === 0) return undefined;
-      return buildCrossReservePositionsFromPerReserveInputs(perReserveInputs);
-    }
-    // Do not build crossReservePositions in shared scenario mode.
-    // In shared scenario, the same input is copied to all reserves, which causes
-    // incorrect cross-reserve offset calculations (e.g., $1,000 borrow counted multiple times).
-    return undefined;
-  }, [isPortfolioMode, perReserveInputs]);
-
-  const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
-    if (!crossReservePositions) return undefined;
-    const map = new Map<string, string>();
-    for (const r of reserves) {
-      if (r.tokenSymbol) map.set(r.reserveId, r.tokenSymbol);
-    }
-    return map.size > 0 ? map : undefined;
-  }, [reserves, crossReservePositions]);
+  const perReserveInputs = portfolioInputsResult?.perReserveInputs;
+  const crossReservePositions = portfolioInputsResult?.crossReservePositions;
+  const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves,
