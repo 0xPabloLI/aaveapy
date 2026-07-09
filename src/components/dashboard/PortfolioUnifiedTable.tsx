@@ -75,7 +75,7 @@ const DELTA_EPSILON = 0.005;
 // the browser scales columns proportionally to fill the container — no single
 // column absorbs all remaining space, and the table always fills its container.
 const COL_WIDTHS = [
-  undefined,     // 0  Token — auto, absorbs remaining width
+  '100px',       // 0  Token
   '104px',       // 1  Supply Input (wider for wallet→effective display)
   '104px',       // 2  Borrow Input
   '62px',        // 3  Supply Native
@@ -431,9 +431,7 @@ function CompactInput({
     );
   }
 
-  const placeholder = hasWallet
-    ? walletCompact
-    : (sideData.inputMode === 'usd' ? '10K' : '100');
+  const placeholder = sideData.inputMode === 'usd' ? '10K' : '100';
 
   return (
     <div className="flex items-center gap-0.5">
