@@ -75,18 +75,18 @@ const DELTA_EPSILON = 0.005;
 // the browser scales columns proportionally to fill the container — no single
 // column absorbs all remaining space, and the table always fills its container.
 const COL_WIDTHS = [
-  '120px',    // 0  Token
-  '88px',     // 1  Supply Input
-  '88px',     // 2  Borrow Input
-  '62px',     // 3  Supply Native
-  '62px',     // 4  Borrow Native
-  '62px',     // 5  Supply Incent
-  '62px',     // 6  Borrow Incent
-  '62px',     // 7  Supply Total
-  '62px',     // 8  Borrow Total
-  '68px',     // 9  Supply $/day
-  '68px',     // 10 Borrow $/day
-  '72px',     // 11 Net $/day
+  undefined,     // 0  Token — auto, absorbs remaining width
+  '104px',       // 1  Supply Input (wider for wallet→effective display)
+  '104px',       // 2  Borrow Input
+  '62px',        // 3  Supply Native
+  '62px',        // 4  Borrow Native
+  '62px',        // 5  Supply Incent
+  '62px',        // 6  Borrow Incent
+  '62px',        // 7  Supply Total
+  '62px',        // 8  Borrow Total
+  '68px',        // 9  Supply $/day
+  '68px',        // 10 Borrow $/day
+  '72px',        // 11 Net $/day
 ] as const;
 
 function UnifiedColgroup() {
@@ -121,9 +121,11 @@ const HEADER_BASE = 'bg-muted/40';
 const SUPPLY_COLOR = 'ds-text-emerald-600';
 const BORROW_COLOR = 'ds-text-brand-cyan';
 
-// Group separator border — slightly stronger than row borders to create
-// visual hierarchy between module groups (Input / Native / Incentive / etc.)
-const GROUP_SEP = 'border-l border-border/40';
+// Group separator border — stronger than row borders to create clear visual
+// hierarchy between module groups (Input / Native / Incentive / Total / Earn).
+// At /60: dark mode effective L15.6 (Δ9.6 from bg L6), light mode L89.2 (Δ10.8
+// from bg L100). Row separator stays at /30 (Δ~5), creating a 2× hierarchy.
+const GROUP_SEP = 'border-l border-border/60';
 
 /* ── Metric value with simulation tooltip ───────────────────────── */
 
@@ -156,7 +158,7 @@ function MetricValue({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="underline decoration-dotted underline-offset-2 cursor-pointer">
+        <span className="underline decoration-dotted underline-offset-2 cursor-auto">
           {formatFn(afterValue)}
         </span>
       </TooltipTrigger>
@@ -222,7 +224,7 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex shrink-0 cursor-pointer align-middle',
+            'inline-flex shrink-0 cursor-auto align-middle',
             hasAmber ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground',
           )}
         >
@@ -300,27 +302,27 @@ function CompactInput({
   const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
   const hasWallet = sideData.walletValue !== null;
 
-  const deltaDisplay = hasWallet
-    ? (sideData.deltaRawUsd !== undefined
-      ? formatNumberInput(formatConvertedAmount(Math.abs(sideData.deltaRawUsd)))
-      : (() => {
-          const effectiveUsd = sideData.inputMode === 'usd'
-            ? parseNumberInput(sideData.amount)
-            : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
-          const deltaUsd = effectiveUsd - sideData.walletValue!;
-          if (Math.abs(deltaUsd) < DELTA_EPSILON) return '';
-          return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
-        })())
-    : sideData.amount;
+  // Option E: input always shows the full effective value (not delta).
+  // For wallet positions, the input value IS the effective position.
+  // For non-wallet entries, it's the raw amount.
+  const effectiveDisplay = sideData.amount;
+  const hasValue = Boolean(effectiveDisplay.trim());
 
-  const hasValue = Boolean(deltaDisplay.trim());
-  const isPositiveDelta = hasWallet ? (sideData.deltaSign ?? 1) === 1 : true;
+  // Derive effective USD to determine arrow color.
+  const effectiveUsd = sideData.inputMode === 'usd'
+    ? parseNumberInput(sideData.amount)
+    : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
+  const walletUsd = sideData.walletValue ?? 0;
+  const isEffectiveAbove = hasWallet && effectiveUsd > walletUsd + DELTA_EPSILON;
+  const isEffectiveBelow = hasWallet && effectiveUsd < walletUsd - DELTA_EPSILON;
 
   const deltaCommitRef = useRef({ initialHasValue: hasValue });
   if (deltaCommitRef.current.initialHasValue !== hasValue) {
     deltaCommitRef.current = { initialHasValue: hasValue };
   }
 
+  // Option E: handleDeltaCommit receives the full effective value (not delta).
+  // For wallet positions, delta is derived as effective - wallet.
   const handleDeltaCommit = useCallback((formattedValue: string) => {
     if (!formattedValue.trim()) {
       if (!deltaCommitRef.current.initialHasValue) return;
@@ -328,6 +330,7 @@ function CompactInput({
         actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
         return;
       }
+      // Clear = reset to wallet value (delta = 0).
       const resetAmount = formatConvertedAmount(sideData.walletValue!);
       const clearPatch = side === 'supply'
         ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
@@ -335,85 +338,58 @@ function CompactInput({
       actions.updateReserve(reserveId, clearPatch);
       return;
     }
-    const rawUsd = !hasWallet && sideData.inputMode === 'token'
+    // Parse the effective value the user typed.
+    const inputUsd = sideData.inputMode === 'token'
       ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
       : parseNumberInput(formattedValue);
-    const absDeltaUsd = rawUsd;
-    let effectiveUsd = hasWallet
-      ? Math.max(sideData.walletValue! + (isPositiveDelta ? 1 : -1) * absDeltaUsd, 0)
-      : rawUsd;
-    if (capLimitUsd != null && effectiveUsd > capLimitUsd) {
-      effectiveUsd = capLimitUsd;
-    }
-    const patch = side === 'supply'
-      ? { supplyAmount: formattedValue }
-      : { borrowAmount: formattedValue };
-    if (!hasWallet) {
-      if (capLimitUsd != null && rawUsd > capLimitUsd) {
-        const clampedAmount = sideData.inputMode === 'usd'
-          ? formatNumberInput(formatConvertedAmount(capLimitUsd))
-          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
-        const clampedPatch = side === 'supply'
-          ? { supplyAmount: clampedAmount }
-          : { borrowAmount: clampedAmount };
-        actions.updateReserve(reserveId, clampedPatch);
-      } else {
-        actions.updateReserve(reserveId, patch);
-      }
-      return;
-    }
-    const sign = isPositiveDelta ? 1 : -1;
-    const signPatch = side === 'supply'
-      ? { supplyDeltaSign: sign as DeltaSign }
-      : { borrowDeltaSign: sign as DeltaSign };
-    const amountValue = sideData.inputMode === 'usd'
-      ? formatNumberInput(formatConvertedAmount(effectiveUsd))
-      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(effectiveUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(effectiveUsd)));
+    // Clamp to cap if present.
+    const clampedUsd = capLimitUsd != null ? Math.min(inputUsd, capLimitUsd) : inputUsd;
+    const wasClamped = capLimitUsd != null && inputUsd > capLimitUsd;
+    // Format the (possibly clamped) amount for the store.
+    const amountValue = wasClamped
+      ? (sideData.inputMode === 'usd'
+          ? formatNumberInput(formatConvertedAmount(clampedUsd))
+          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(clampedUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(clampedUsd))))
+      : formattedValue;
     const amountPatch = side === 'supply'
       ? { supplyAmount: amountValue }
       : { borrowAmount: amountValue };
-    const clampedDeltaRawUsd = effectiveUsd - sideData.walletValue!;
+    if (!hasWallet) {
+      actions.updateReserve(reserveId, amountPatch);
+      return;
+    }
+    // Derive sign and delta from effective vs wallet.
+    const deltaUsd = clampedUsd - sideData.walletValue!;
+    const sign: DeltaSign = deltaUsd >= 0 ? 1 : -1;
+    const signPatch = side === 'supply'
+      ? { supplyDeltaSign: sign }
+      : { borrowDeltaSign: sign };
     const deltaRawUsdPatch = side === 'supply'
-      ? { supplyDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null }
-      : { borrowDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null };
+      ? { supplyDeltaRawUsd: deltaUsd as number | null }
+      : { borrowDeltaRawUsd: deltaUsd as number | null };
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
+  }, [hasWallet, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
+
+  // ClampFn: real-time cap clamping during input to prevent flicker.
+  // Converts input to USD, clamps to capLimitUsd, converts back to input mode.
+  const clampFn = useCallback((formattedValue: string): string => {
+    if (capLimitUsd == null) return formattedValue;
+    const numUsd = sideData.inputMode === 'token'
+      ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
+      : parseNumberInput(formattedValue);
+    if (numUsd <= capLimitUsd) return formattedValue;
+    const clampedAmount = sideData.inputMode === 'usd'
+      ? formatNumberInput(formatConvertedAmount(capLimitUsd))
+      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
+    return clampedAmount;
+  }, [capLimitUsd, sideData.inputMode, tokenPriceInUsd]);
 
   const numberInput = useDebouncedInput({
-    value: deltaDisplay,
+    value: effectiveDisplay,
     onCommit: handleDeltaCommit,
     debounceMs: 0,
+    clampFn,
   });
-
-  const toggleDeltaSign = useCallback(() => {
-    if (!hasWallet) return;
-    if (sideData.inputMode === 'token' && tokenPriceInUsd == null) return;
-    const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
-    const signPatch = side === 'supply'
-      ? { supplyDeltaSign: newSign }
-      : { borrowDeltaSign: newSign };
-    const currentEffectiveUsd = sideData.inputMode === 'usd'
-      ? parseNumberInput(sideData.amount)
-      : parseNumberInput(sideData.amount) * tokenPriceInUsd!;
-    const walletValue = sideData.walletValue ?? 0;
-    const absDeltaUsd = Math.abs(currentEffectiveUsd - walletValue);
-    if (absDeltaUsd < DELTA_EPSILON) {
-      actions.updateReserve(reserveId, signPatch);
-      return;
-    }
-    const newEffectiveUsd = Math.max(walletValue + newSign * absDeltaUsd, 0);
-    const amountValue = sideData.inputMode === 'usd'
-      ? formatConvertedAmount(newEffectiveUsd)
-      : formatConvertedAmount(newEffectiveUsd / tokenPriceInUsd!);
-    const amountPatch = side === 'supply'
-      ? { supplyAmount: amountValue }
-      : { borrowAmount: amountValue };
-    const newDeltaRawUsd = sideData.deltaRawUsd !== undefined ? -sideData.deltaRawUsd : newSign * absDeltaUsd;
-    const deltaRawUsdPatch = side === 'supply'
-      ? { supplyDeltaRawUsd: newDeltaRawUsd as number | null }
-      : { borrowDeltaRawUsd: newDeltaRawUsd as number | null };
-    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
-  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.amount, sideData.inputMode, tokenPriceInUsd, sideData.deltaRawUsd]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
@@ -423,15 +399,8 @@ function CompactInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
-  const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
-    ? sideData.walletValue! + sideData.deltaRawUsd
-    : (sideData.inputMode === 'usd'
-        ? parseNumberInput(sideData.amount)
-        : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0));
-  const isModified = hasWallet && Math.abs(effectiveUsdForSign - sideData.walletValue!) >= 0.005;
-
   // Compact wallet display — shown outside the input as non-editable context.
-  // Uses compact format (1.0K / $1.0K) to save horizontal space in the 88px column.
+  // Uses compact format (1.0K / $1.0K) to save horizontal space.
   const walletCompact = hasWallet
     ? formatCompactValue(
         sideData.inputMode === 'usd'
@@ -463,7 +432,7 @@ function CompactInput({
   }
 
   const placeholder = hasWallet
-    ? '0'
+    ? walletCompact
     : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
@@ -489,30 +458,18 @@ function CompactInput({
       </Tooltip>
 
       {hasWallet && (
-        <span className="shrink-0 ds-text-9 text-muted-foreground tabular-nums leading-none whitespace-nowrap">
-          {walletCompact}
-          {isModified && (
-            <span className={cn('ml-0.5', isPositiveDelta ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400')}>→</span>
-          )}
+        <span className="shrink-0 ds-text-9 tabular-nums leading-none whitespace-nowrap">
+          <span className="text-muted-foreground">{walletCompact}</span>
+          <span className={cn(
+            'ml-0.5',
+            isEffectiveAbove ? 'text-emerald-600 dark:text-emerald-400'
+              : isEffectiveBelow ? 'text-red-500 dark:text-red-400'
+              : 'text-muted-foreground',
+          )}>→</span>
         </span>
       )}
 
       <div className="relative flex-1 min-w-0">
-        {hasWallet && (
-          <button
-            type="button"
-            onClick={toggleDeltaSign}
-            className={cn(
-              'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
-              isPositiveDelta
-                ? 'text-emerald-600 hover:bg-emerald-500/10'
-                : 'text-red-500 hover:bg-red-500/10',
-            )}
-            aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
-          >
-            {isPositiveDelta ? '+' : '−'}
-          </button>
-        )}
         <input
           ref={numberInput.inputRef}
           value={numberInput.displayValue}
@@ -523,10 +480,10 @@ function CompactInput({
           placeholder={placeholder}
           className={cn(
             'h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
-            hasWallet ? 'pl-3.5 pr-4' : hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
+            hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
             cnDsInputSurface(hasValue, inputVariant),
           )}
-          aria-label={`${side} ${hasWallet ? 'delta' : 'amount'} for ${tokenSymbol}`}
+          aria-label={`${side} ${hasWallet ? 'effective' : 'amount'} for ${tokenSymbol}`}
         />
         {hasValue && (
           <button

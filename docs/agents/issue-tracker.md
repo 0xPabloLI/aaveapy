@@ -16,6 +16,17 @@ Issues are tracked in **Linear** using the Linear MCP tools.
 - **Search issues**: `mcp__linear_search_issues` with `query`
 - **Get issue**: `mcp__linear_get_issue` with `issueId`
 
+## Wayfinding operations
+
+Wayfinder maps use Linear issues with the following conventions:
+
+- **Map issue**: label `wayfinder:map`, body follows wayfinder map template (Destination, Notes, Decisions so far, Not yet specified, Out of scope)
+- **Child tickets**: sub-issues of the map issue, each carrying a `wayfinder:<type>` label (`research`, `prototype`, `grilling`, `task`)
+- **Blocking edges**: use Linear's native issue dependencies (blocks/blocked by)
+- **Frontier query**: open, unblocked (no blockers or all blockers closed), unassigned issues
+- **Claim**: assign the ticket to the dev driving the map before starting work
+- **Resolve**: post answer as a comment, close the issue, append context pointer to map's Decisions-so-far
+
 ## Conventions
 
 - Always set `teamId` when creating issues.
