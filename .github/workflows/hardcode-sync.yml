@@ -34,7 +34,7 @@ jobs:
       # for that URL if you need masking in run-step env blocks too.
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.TARGET_BRANCH }}
 
@@ -214,9 +214,27 @@ jobs:
                   } catch (mergeError) {
                     core.warning(`Direct merge also failed for PR #${prNumber}: ${mergeError.message}`);
                   }
-                } else if (mergeStatus === 'UNKNOWN') {
-                  for (let attempt = 1; attempt <= 3; attempt++) {
-                    await new Promise((r) => setTimeout(r, 10000));
+                } else if (mergeStatus === 'UNKNOWN' || mergeStatus === 'UNSTABLE') {
+                  const statusQuery = `query($owner: String!, $repo: String!, $number: Int!) {
+                    repository(owner: $owner, name: $repo) {
+                      pullRequest(number: $number) { mergeStateStatus }
+                    }
+                  }`;
+                  for (let attempt = 1; attempt <= 6; attempt++) {
+                    await new Promise((r) => setTimeout(r, 15000));
+                    const { repository: { pullRequest: current } } = await github.graphql(statusQuery, { owner, repo, number: prNumber });
+                    if (current.mergeStateStatus === 'CLEAN') {
+                      try {
+                        await github.rest.pulls.merge({ owner, repo, pull_number: prNumber, merge_method: 'squash' });
+                        core.info(`PR #${prNumber} became CLEAN on retry ${attempt}/6; merged directly.`);
+                        return;
+                      } catch (mergeErr) {
+                        core.warning(`Direct merge failed after CLEAN: ${mergeErr.message}`);
+                      }
+                    } else if (current.mergeStateStatus !== 'UNSTABLE' && current.mergeStateStatus !== 'UNKNOWN') {
+                      core.info(`mergeStateStatus changed to ${current.mergeStateStatus} during retry; stopping.`);
+                      break;
+                    }
                     try {
                       await github.graphql(
                         `mutation EnableAutoMerge($pullRequestId: ID!) {
@@ -226,10 +244,10 @@ jobs:
                         }`,
                         { pullRequestId: pr.data.node_id }
                       );
-                      core.info(`Enabled auto-merge for PR #${prNumber} on retry ${attempt}/3`);
+                      core.info(`Enabled auto-merge for PR #${prNumber} on retry ${attempt}/6`);
                       return;
                     } catch (retryError) {
-                      core.warning(`Retry ${attempt}/3 failed: ${retryError.message}`);
+                      core.warning(`Retry ${attempt}/6 failed: ${retryError.message}`);
                     }
                   }
                 }
