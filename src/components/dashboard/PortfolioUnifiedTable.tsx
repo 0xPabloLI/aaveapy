@@ -71,12 +71,12 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// All columns have explicit px widths. With width:100% + table-layout:fixed,
-// the browser scales columns proportionally to fill the container — no single
-// column absorbs all remaining space, and the table always fills its container.
+// With table-layout:auto, columns without explicit width size to their content.
+// Token (no width) adapts to token name length. Other columns have px widths
+// as minimum hints — the browser distributes any extra space proportionally.
 const COL_WIDTHS = [
-  '100px',       // 0  Token
-  '104px',       // 1  Supply Input (wider for wallet→effective display)
+  undefined,     // 0  Token — content-adaptive
+  '104px',       // 1  Supply Input
   '104px',       // 2  Borrow Input
   '62px',        // 3  Supply Native
   '62px',        // 4  Borrow Native
@@ -330,11 +330,10 @@ function CompactInput({
         actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
         return;
       }
-      // Clear = reset to wallet value (delta = 0).
-      const resetAmount = formatConvertedAmount(sideData.walletValue!);
+      // Clear = empty input, delta = 0 (simulator uses walletValue as total).
       const clearPatch = side === 'supply'
-        ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
-        : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
+        ? { supplyAmount: '' as const, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
+        : { borrowAmount: '' as const, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
       actions.updateReserve(reserveId, clearPatch);
       return;
     }
@@ -535,7 +534,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'fixed' }}>
+      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'auto' }}>
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
