@@ -1,18 +1,18 @@
 {
   "meta": {
-    "title": "Aave APY France — Comparez les rendements DeFi en temps réel",
-    "description": "Comparez les taux de dépôt et d'emprunt Aave V3 sur 17 chaînes. Suivez les incitations Merit, Merkl et Brevis en direct. Gratuit, sans wallet.",
+    "title": "AaveAPY France — Comparez les rendements DeFi en temps réel",
+    "description": "Comparez les taux de dépôt et d'emprunt Aave V3 sur toutes les chaînes prises en charge. Suivez les incitations Merit, Merkl et Brevis en direct. Gratuit, sans wallet.",
     "ogLocale": "fr_FR"
   },
   "hero": {
     "eyebrow": "Tableau de bord DeFi · France",
     "title": "Le cours et les meilleurs APY Aave en temps réel",
-    "subtitle": "Comparez les rendements de dépôt et coûts d'emprunt Aave V3 sur 17 chaînes, avec les incitations Merit, Merkl et Brevis déjà intégrées à l'APY effectif.",
+    "subtitle": "Comparez les rendements de dépôt et coûts d'emprunt Aave V3 sur toutes les chaînes prises en charge, avec les incitations Merit, Merkl et Brevis déjà intégrées à l'APY effectif.",
     "cta": "Ouvrir le tableau de bord",
     "secondaryCta": "Voir toutes les chaînes"
   },
   "trustBar": [
-    "17 chaînes",
+    "Toutes les chaînes",
     "Mise à jour chaque minute",
     "Sans wallet, sans inscription"
   ],

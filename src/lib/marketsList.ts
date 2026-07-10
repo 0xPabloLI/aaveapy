@@ -8,12 +8,12 @@ export const DEFAULT_CHAIN_COUNT = 21;
 
 export function getChainCount(marketsResponse?: MarketsResponse | null): number {
   const reserves = marketsResponse?.reserves;
-  if (!reserves?.length) return 0;
+  if (!reserves?.length) return DEFAULT_CHAIN_COUNT;
   const uniqueChains = new Set<string>();
   for (const reserve of reserves) {
     if (reserve.chainName?.trim()) uniqueChains.add(reserve.chainName.trim());
   }
-  return uniqueChains.size;
+  return uniqueChains.size || DEFAULT_CHAIN_COUNT;
 }
 
 export function buildMarketsList(marketsResponse?: MarketsResponse | null): MarketListItem[] {

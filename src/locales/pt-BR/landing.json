@@ -1,18 +1,18 @@
 {
   "meta": {
-    "title": "Aave APY Brasil — Compare rendimentos DeFi em tempo real",
-    "description": "Compare as taxas de depósito e empréstimo da Aave V3 em 17 redes. Acompanhe incentivos Merit, Merkl e Brevis em tempo real. Grátis e sem carteira.",
+    "title": "AaveAPY Brasil — Compare rendimentos DeFi em tempo real",
+    "description": "Compare as taxas de depósito e empréstimo da Aave V3 em todas as redes suportadas. Acompanhe incentivos Merit, Merkl e Brevis em tempo real. Grátis e sem carteira.",
     "ogLocale": "pt_BR"
   },
   "hero": {
     "eyebrow": "Painel DeFi · Brasil",
     "title": "Veja as melhores APYs da Aave em tempo real",
-    "subtitle": "Compare rendimentos de depósito e custos de empréstimo da Aave V3 em 17 blockchains, com incentivos Merit, Merkl e Brevis já incluídos no APY efetivo.",
+    "subtitle": "Compare rendimentos de depósito e custos de empréstimo da Aave V3 em todas as blockchains suportadas, com incentivos Merit, Merkl e Brevis já incluídos no APY efetivo.",
     "cta": "Abrir painel ao vivo",
     "secondaryCta": "Ver todas as redes"
   },
   "trustBar": [
-    "17 redes",
+    "Todas as redes",
     "Atualização a cada minuto",
     "Sem carteira, sem cadastro"
   ],
