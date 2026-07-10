@@ -1,16 +1,16 @@
 /**
  * PortfolioUnifiedTable v7 — one row per reserve, both sides inline.
  *
- * Width strategy: table = width:100% + table-layout:fixed.
- * ALL columns have explicit px widths on <col>. When the sum of column
- * widths < container width, the browser distributes the extra space
- * proportionally across all columns — no single column hogs the remainder.
- * This ensures the table ALWAYS fills its container, regardless of width.
+ * Width strategy: table-layout:auto.
+ * Token col gets width:1px — in auto layout, the browser still sizes it to
+ * content (auto always fits content), but its 1px "claim" means it absorbs
+ * almost zero extra space. All remaining space goes to Input columns (the
+ * only other columns without explicit px width).
  *
  * Columns (12):
- *   0  Token           120px
- *   1  Supply Input     88px
- *   2  Borrow Input     88px
+ *   0  Token            1px  (content-adaptive, no extra space)
+ *   1  Supply Input     auto (absorbs remaining space)
+ *   2  Borrow Input     auto (absorbs remaining space)
  *   3  Supply Native    62px
  *   4  Borrow Native    62px
  *   5  Supply Incent    62px
@@ -32,9 +32,15 @@
  * Sub-headers show "Supply"/"Borrow" full text on large screens, "S"/"B"
  * abbreviation on small screens (responsive span swap).
  *
- * Wallet display (Option E modified): wallet value shown as compact
+ * Wallet display (Option E modified): wallet value shown as full-precision
  * non-editable text outside the input, with → arrow when modified.
  * The ± sign toggle button stays inside the input for interaction.
+ *
+ * Banded cluster rule: ALL per-side columns (Input, Native, Incentive, Total,
+ * $/day) carry semantic band tints (emerald=Supply, cyan=Borrow). Only the
+ * Net $/day column (cross-side aggregate) uses neutral HEADER_BASE. This
+ * creates a consistent visual rhythm: every Supply cell is emerald-tinted,
+ * every Borrow cell is cyan-tinted, regardless of which module group it's in.
  */
 import { memo, useCallback, useRef } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
@@ -71,14 +77,14 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// table-layout:fixed + width:100%. Token gets a fixed px width.
-// Input columns get 'auto' — under fixed layout, auto columns absorb
-// all remaining space after fixed-width columns are allocated.
-// This ensures extra space goes to Input (where users type), not Token.
+// table-layout:auto. Token col uses width:1px trick — browser sizes it
+// to content (auto layout always fits content) but the 1px claim means it
+// absorbs almost zero extra space. Input cols have no width → they absorb
+// all remaining space. Other cols have fixed px widths.
 const COL_WIDTHS = [
-  '72px',        // 0  Token — fixed narrow
-  'auto',        // 1  Supply Input — absorbs remaining space
-  'auto',        // 2  Borrow Input — absorbs remaining space
+  '1px',         // 0  Token — content-adaptive, no extra space claim
+  undefined,     // 1  Supply Input — absorbs remaining space
+  undefined,     // 2  Borrow Input — absorbs remaining space
   '62px',        // 3  Supply Native
   '62px',        // 4  Borrow Native
   '62px',        // 5  Supply Incent
@@ -94,7 +100,7 @@ function UnifiedColgroup() {
   return (
     <colgroup>
       {COL_WIDTHS.map((w, i) => (
-        <col key={i} style={{ width: w }} />
+        <col key={i} style={w ? { width: w } : undefined} />
       ))}
     </colgroup>
   );
@@ -404,15 +410,15 @@ function CompactInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
-  // Compact wallet display — shown outside the input as non-editable context.
-  // Uses compact format (1.0K / $1.0K) to save horizontal space.
-  const walletCompact = hasWallet
-    ? formatCompactValue(
-        sideData.inputMode === 'usd'
-          ? sideData.walletValue!
-          : (tokenPriceInUsd != null ? sideData.walletValue! / tokenPriceInUsd : sideData.walletValue!),
-        sideData.inputMode === 'usd',
-      )
+  // Wallet display — shown outside the input as non-editable context.
+  // Uses the same full-precision format as the placeholder so wallet display
+  // and placeholder are visually consistent (no compact abbreviation).
+  const walletDisplay = hasWallet
+    ? (sideData.inputMode === 'usd'
+        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
+        : (tokenPriceInUsd != null
+            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
+            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
     : '';
 
   if (disabled) {
@@ -437,16 +443,10 @@ function CompactInput({
   }
 
   // Full wallet value for input placeholder (when input is empty).
-  // Shows the wallet position as a hint — user types to override.
-  const walletPlaceholder = hasWallet
-    ? (sideData.inputMode === 'usd'
-        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
-        : (tokenPriceInUsd != null
-            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
-            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
+  // Same format as walletDisplay — consistent precision.
+  const placeholder = hasWallet
+    ? walletDisplay
     : (sideData.inputMode === 'usd' ? '10K' : '100');
-
-  const placeholder = walletPlaceholder;
 
   return (
     <div className="flex items-center gap-0.5">
@@ -472,7 +472,7 @@ function CompactInput({
 
       {hasWallet && (
         <span className="shrink-0 ds-text-9 tabular-nums leading-none whitespace-nowrap">
-          <span className="text-muted-foreground">{walletCompact}</span>
+          <span className="text-muted-foreground">{walletDisplay}</span>
           <span className={cn(
             'ml-0.5',
             isEffectiveAbove ? 'text-emerald-600 dark:text-emerald-400'
@@ -550,7 +550,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'fixed' }}>
+      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'auto' }}>
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
@@ -666,7 +666,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Input */}
-                <td className={cn(INPUT_CELL, GROUP_SEP, 'align-top')}>
+                <td className={cn(INPUT_CELL, GROUP_SEP, SUPPLY_BAND, 'align-top')}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -686,7 +686,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Borrow Input */}
-                <td className={cn(INPUT_CELL, SIDE_SEP, 'align-top')}>
+                <td className={cn(INPUT_CELL, SIDE_SEP, BORROW_BAND, 'align-top')}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -753,15 +753,15 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply $/day */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </td>
                 {/* Borrow $/day */}
-                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>
+                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </td>
                 {/* Net $/day */}
-                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>
+                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
@@ -776,8 +776,8 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-1 py-1.5 font-bold ds-text-11">Total</td>
-              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND)} />
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
@@ -788,9 +788,9 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
               <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}
