@@ -734,7 +734,7 @@ For each group:
 1. **deep-copy**: `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`
 2. **Hub field resolution** (v4): if `reserve.hubId`, use `reserve.hubBorrowed` (SDK direct, Hub-level totalBorrowed) for `reserveRateInput.borrowed`/`.hubBorrowed`; use `hubAggregationMap` for `hubSupplied` only (aggregated Σ(spoke_supplied), error <0.001%)
 3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `meritMerklNetPosition` defaults to `true`
-4. **Extract per-position APR**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`
+4. **Extract per-position rate**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`. **Note**: `afterNative` is always APY regardless of `isApy` toggle — native rate never switches to APR (per AprApyToggle contract: "Only incentive annual % follows this switch; native stays APY"). Only `afterIncentive` follows the APR/APY toggle.
 5. **Build `PortfolioPositionResult`** via `buildPortfolioPositionResult`
 
 ### Fallback (simplified calculation)

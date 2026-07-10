@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PUBLIC_DIR = resolve(__dirname, '..', 'public');
-const OUTPUT_FILE = resolve(PUBLIC_DIR, 'openapi.json');
+export const OUTPUT_FILE = resolve(PUBLIC_DIR, 'openapi.json');
 
 function inlineLazyRefs(schema: Record<string, unknown>): void {
   const defs = schema.$defs as Record<string, unknown> | undefined;
@@ -220,10 +220,4 @@ export function generateOpenApiDocument(): Record<string, unknown> {
 export function writeOpenApiDocument(): void {
   const doc = generateOpenApiDocument();
   writeFileSync(OUTPUT_FILE, JSON.stringify(doc, null, 2) + '\n', 'utf-8');
-}
-
-const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^\.[\\/]/, ''));
-if (isMain) {
-  writeOpenApiDocument();
-  console.log(`Generated ${OUTPUT_FILE}`);
 }

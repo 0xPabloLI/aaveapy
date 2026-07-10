@@ -9,6 +9,9 @@ interface UseDebouncedInputParams {
   debounceMs?: number;
   /** Truncate decimal part to at most N digits during typing. */
   maxDecimalPlaces?: number;
+  /** Optional transform applied after formatting, before display + commit.
+   *  Used for real-time clamping (e.g. cap limit). */
+  clampFn?: (formattedValue: string) => string;
 }
 
 interface UseDebouncedInputReturn {
@@ -79,6 +82,7 @@ export function useDebouncedInput({
   onCommit,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   maxDecimalPlaces,
+  clampFn,
 }: UseDebouncedInputParams): UseDebouncedInputReturn {
   const [displayValue, setDisplayValue] = useState(value ?? '');
   const [isFocused, setIsFocused] = useState(false);
@@ -120,11 +124,12 @@ export function useDebouncedInput({
   const doCommit = useCallback(
     (rawValue: string) => {
       clearTimer();
-      const formatted = commitFormatted(rawValue, onCommit);
+      let formatted = commitFormatted(rawValue, onCommit);
+      if (clampFn) formatted = clampFn(formatted);
       lastCommittedRef.current = formatted;
       setDisplayValue(formatted);
     },
-    [onCommit, clearTimer],
+    [onCommit, clearTimer, clampFn],
   );
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,14 +142,15 @@ export function useDebouncedInput({
     pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
     setDisplayValue(formatted);
     clearTimer();
-    if (formatted !== lastCommittedRef.current) {
+    const clamped = clampFn ? clampFn(formatted) : formatted;
+    if (clamped !== lastCommittedRef.current) {
       timerRef.current = setTimeout(() => {
-        const committed = commitFormatted(sanitized, onCommit);
-        lastCommittedRef.current = committed;
+        const committed = commitFormatted(clamped.replace(/,/g, ''), onCommit);
+        lastCommittedRef.current = clampFn ? clampFn(committed) : committed;
         timerRef.current = null;
       }, debounceMs);
     }
-  }, [onCommit, debounceMs, clearTimer, maxDecimalPlaces]);
+  }, [onCommit, debounceMs, clearTimer, maxDecimalPlaces, clampFn]);
 
   // handleBlur commits the current displayValue (which is already truncated
   // by maxDecimalPlaces in handleChange). No need to re-apply maxDecimalPlaces here.

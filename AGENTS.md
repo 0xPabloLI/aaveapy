@@ -168,6 +168,21 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
 
+### Matt Pocock Skills v1.1 workflow
+
+Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` (per ticket).
+
+- `/grill-with-docs` — sharpen idea via interview + ADR/glossary (has codebase). No codebase? Use `/grill-me`.
+- `/grilling` — the underlying interview primitive; `grill-me` and `grill-with-docs` both delegate to it.
+- `/to-spec` — synthesize conversation into spec (was `/to-prd`).
+- `/to-tickets` — split spec into tracer-bullet tickets with blocking edges (replaces `/to-issues`).
+- `/implement` — build per ticket; internally drives `/tdd` + `/code-review`.
+- `/wayfinder` — on-ramp for huge/foggy efforts; charts investigation map, merges onto main flow at `/to-spec`.
+- `/research` — delegate reading to a background agent; keeps you working while it reads.
+- `/ask-matt` — router: describe your situation, get the right skill path.
+
+**Known issue**: `/implement` silently skips `/tdd` (upstream #479 — "pre-agreed seams" never established). For critical logic, explicitly run `/tdd` before `/implement`.
+
 ## Learned Lessons: Portfolio Delta Input
 
 - **Controlled ↔ Uncontrolled 迁移风险**: `useNumberInput`（uncontrolled, initialValue）→ `useDebouncedInput`（controlled, value prop）迁移会引入双向同步反馈循环。迁移前必须分析双向数据流。
@@ -311,3 +326,27 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`DEFAULT_TOKEN_DECIMALS` 必须统一入口**：提取到 `src/lib/tokenDefaults.ts`，所有使用 `decimals ?? 18` 的地方统一 import。避免某天改默认值时遗漏一处导致 native→USD 换算错误。
 - **`resolvePositionCapUsd` 之前在 `decimals = undefined` 时不换算——这是 bug**：Merkl 的 `positionCapNative` 需要 decimals 换算，但 reserve 没有 decimals 时直接跳过换算、回退到 `positionCapUsd`（Merkl 不提供），导致 position cap 静默不生效。修复：`resolvePositionCapUsd` 在 `decimals` 缺失时使用 `DEFAULT_TOKEN_DECIMALS`（18）。
 - **涉及文件**：`tokenDefaults.ts`（常量定义）、`incentiveCaps.ts`、`scenarioSize.ts`、`deficit.ts`、`rateSimulationCalculator.ts`、`userPositionMapper.ts`。
+
+## Learned Lessons: Portfolio 模式 crossReservePositions 数据源错配 (AAV-1086)
+
+- **两条路径的数据源必须一致**：`ReservesTable.tsx` 构建 `crossReservePositions` 用的是 shared scenario inputs（Portfolio 模式下为空），而 `portfolioSimulator.ts` 用的是 portfolio entries 的 total position（wallet + delta）。两条路径对同一份数据用了不同数据源，导致一条路径永远为 undefined。**教训：当同一条数据在两个消费者之间共享时，必须确保两者使用相同的数据源和构建逻辑，而非各自从不同输入推导。**
+- **死代码暗示设计缺陷**：旧代码 `if (!isPortfolioMode) return undefined;` 后面的 for 循环在两种模式下都不可达（Portfolio 被 shared inputs 为空拦截，Shared 被 early return 拦截）。这段从未执行的代码是"先写通用逻辑再分支"的遗留，但分支条件使得通用逻辑永远不会执行。**教训：当 if/else 两个分支都让后续代码不可达时，应该怀疑分支逻辑是否正确——可能其中一个分支的条件写反了。**
+- **useMemo 顺序依赖必须显式**：`perReserveInputs` 在 `crossReservePositions` 之后定义但被其依赖。React hooks 按定义顺序执行，如果 `crossReservePositions` 引用了尚未定义的 `perReserveInputs`，会得到 `undefined`。虽然 `useMemo` 是惰性求值不会立即崩溃，但依赖项缺失会导致 stale closure。**教训：当 useMemo A 依赖 useMemo B 的结果时，B 必须定义在 A 之前。**
+- **单一数据源优于各自计算**：初始修复提取了 `buildCrossReservePositionsFromPerReserveInputs` 纯函数从 `perReserveInputs` 推导，但 `portfolioSimulator:169` 有独立的构建逻辑。grill 后发现两条路径"巧合一致"而非"强制一致"——未来维护者可能只改一处忘改另一处。最终方案：让 `buildPerReserveInputsFromEntries` 同时返回 `crossReservePositions` + `reserveSymbolById`（`PortfolioInputsResult`），单一计算源保证一致性，删除了 3 个 useMemo + 1 个函数 + 7 个测试。**教训：当两个消费者需要同一条派生数据时，让数据生产者一次构建、多次消费，而非各自独立推导。**
+
+## Learned Lessons: afterNative 单位一致性 + Unified Mode 生产默认
+
+- **`afterNative` 必须始终使用 APY，不能随 `isApy` 切换到 APR**：`rateSimulationCalculator.ts` 中 `supplyAfterNative`/`borrowAfterNative` 原先在 `isApy=false` 时使用 `supplyAprPercent`/`borrowAprPercent`，而 `currentNative` 始终来自 `reserve.supplyApy`（APY）。两者做差产生虚假 delta（APY current vs APR after），这个 delta 不是用户输入造成的，而是单位转换差。AprApyToggle 的 tooltip 明确说 "Only incentive annual % follows this switch; native stays APY"，但代码没有遵守。**教训：当 toggle 声称某个字段不受切换影响时，必须验证该字段在所有代码路径中确实不受影响——calculator 层的 `isApy` 分支可能悄悄违反这个合约。**
+- **`scenarioUsdAccrual` 正确使用 APR 做日收益计算**：`buildSupplyUsdAccrualSide` 使用 `combinedNativeSimulation?.supplyAprPercent`（APR）做 per-second compounding 日收益，这是正确的——线性日收益需要 APR 而非 APY。修复 `afterNative` 不影响此路径，因为 USD accrual 直接从 `combinedNativeSimulation` 取 APR，不经过 `afterNative`。
+- **Unified Table 从 opt-in (`?unified=1`) 改为默认 (`?unified=0` opt-out)**：生产环境用户不再需要手动加 URL 参数。Legacy 布局（PortfolioTokenRow + PortfolioResultsTable + PortfolioSummaryCard）仍可通过 `?unified=0` 访问，用于调试和对比。**教训：feature flag 从 opt-in 转 opt-out 时，所有测试 legacy 布局的测试用例需要显式加 opt-out 参数，否则会在新默认路径下失败。**
+- **Native `title` 属性不可作为唯一信息载体**：浏览器原生 `title` tooltip 需要 hover 停留 1-2 秒，移动端完全不工作，且无视觉提示。必须用 Radix Tooltip 组件替代（dotted underline 作为视觉 affordance + hover/tap 触发）。**教训：任何对用户决策有影响的信息都不能仅依赖 native `title`——它对移动端用户完全不可见。**
+
+## Learned Lessons: Wallet 显示 Option E + UI 规范统一
+
+- **Option E: 输入框显示完整 effective value（非 delta）**：用户直接输入完整的目标仓位值（如 wallet=$1,000, 输入 $1,500 = +$500 delta）。移除了 ± sign toggle 按钮——sign 由 effective vs wallet 的大小关系自动推导（effective > wallet → +1, effective < wallet → -1）。**教训：sign 不应是独立的用户选择，而是 effective value 的自然推导结果——让用户思考"我要多少仓位"而非"我要加/减多少"。**
+- **Arrow `→` 常驻显示**：当 `hasWallet` 时，箭头 `→` 始终显示在 wallet compact 值后面，颜色跟随 effective vs wallet 关系（emerald=above / red=below / muted=equal）。不只在 `isModified` 时显示——即使没有 delta，箭头也传达"这里是你的仓位，右边是你输入的值"的语义。**教训：常驻元素比条件显示元素更减少认知负担——用户不需要记忆"什么时候有箭头"。**
+- **`cursor-auto` 是 tooltip-only 元素的正确 cursor**：DESIGN-SYSTEM-REFERENCE §6 明确规定——自动展示 tooltip 用 `cursor-auto`（+轻微悬停反馈），点击展示用 `cursor-pointer`。MetricValue 和 WarningMarker 的 `cursor-help`→`cursor-pointer`→`cursor-auto` 的三次修正过程说明：**查设计系统文档先于凭直觉改**。`cursor-help` 渲染为 `?` 光标不在设计体系内；`cursor-pointer` 暗示可点击但实际无 click action。
+- **WarningMarker 移除 Supply/Borrow 前缀**：`formatProtocolCapText` 返回的文本已包含 "Supply limited to..." / "Borrow limited to..."，WarningMarker 中额外的 "Supply"/"Borrow" label span 是重复信息。incentive_cap/incentive_offset 的 header 从 "Supply · {source}" 简化为 `{source}`（capitalize）。**教训：当文本已包含 side label 时，不要在 UI 层重复显示——冗余信息增加认知负担。**
+- **表格边框层次**：group separator 的 `border-l border-border/20` → `/40` → `/60`，使 Input→Native→Incentive→Total→Earn 各模块之间的视觉分隔在 light 和 dark mode 下都清晰可见。Dark mode `--border: hsl(220 10% 22%)` (L22) over bg L6: `/60` 给出 effective L15.6 (Δ9.6)；light mode `--border: hsl(23 5% 82%)` (L82) over bg L100: `/60` 给出 L89.2 (Δ10.8)。Row separator 保持 `/30` (Δ~5)，形成 2× hierarchy。**教训：边框透明度选择应基于 HSL lightness 计算的有效对比度，而非"看起来差不多"——dark mode 和 light mode 需要同一透明度同时满足两种背景。**
+- **`clampFn` 参数消除 cap input flicker**：`useDebouncedInput` 新增 `clampFn?: (formattedValue: string) => string` 参数，在 `handleChange` 和 `doCommit` 中格式化后、显示前实时 clamp。旧方案：`setDisplayValue(unclamped)` → store 更新为 clamped → `useEffect` 同步 `displayValue` 为 clamped，中间有 1 帧 flicker。新方案：`clampFn` 在 display 前执行，display 和 store 始终同步。**教训：当 commit 后的 store 值可能与 display 值不同（如 clamping）时，必须在 `setDisplayValue` 之前应用 transform——不能依赖 `useEffect` 事后同步。**
+- **`HelpCircle` vs `Info` 图标语义**：`HelpCircle`（带 `?`）用于 FAQ/帮助导航链接（Header、DefiYieldTracker），`Info`（带 `i`）用于信息提示 tooltip（AprApyToggle、InkAprCalculator、WatchAddressInput）。两者不可混用——WatchAddressInput 的信息提示原先用 `HelpCircle`，已统一为 `Info`。**教训：图标选择应匹配语义——`HelpCircle` = 导航到帮助页面，`Info` = 原地信息提示。**

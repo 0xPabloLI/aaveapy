@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react'
+import { Check, Info, Loader2, RotateCcw, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { cnDsInputSurface } from '@/lib/dsInputSurface'
 import {
@@ -170,7 +170,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
                 className="inline-flex items-center gap-[var(--ds-space-0-5)] text-muted-foreground/60"
                 title="Available only when the previous import failed"
               >
-                <HelpCircle className="w-3 h-3" aria-hidden />
+                <Info className="w-3 h-3" aria-hidden />
                 <span className="sr-only">Why is Re-import shown?</span>
               </span>
             </span>

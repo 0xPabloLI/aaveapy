@@ -96,9 +96,9 @@ const makeActions = (): PortfolioSimulationActions => ({
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
 
-function renderWithRouter(ui: React.ReactElement) {
+function renderWithRouter(ui: React.ReactElement, initialEntry = '/') {
   return render(
-    <MemoryRouter>{ui}</MemoryRouter>,
+    <MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>,
   );
 }
 
@@ -262,6 +262,7 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
+        '/?unified=0',
       );
       expect(screen.getByLabelText(/Supply \(disabled\) for USDC/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Borrow \(disabled\) for USDC/)).toBeInTheDocument();
@@ -283,6 +284,7 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
+        '/?unified=0',
       );
       const supplyDisabled = screen.getByLabelText(/Supply \(disabled\) for USDC/);
       expect(supplyDisabled.closest('[data-state]') || supplyDisabled.parentElement).toBeTruthy();
@@ -407,6 +409,7 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
+        '/?unified=0',
       );
     };
 

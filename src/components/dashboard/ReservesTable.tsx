@@ -47,10 +47,9 @@ import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
-import { buildPerReserveInputsFromEntries } from '@/lib/portfolioSimulator';
+import { buildPerReserveInputsFromEntries, type PortfolioInputsResult } from '@/lib/portfolioSimulator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { PointRateMap } from '@/lib/tydro';
-import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
@@ -242,40 +241,13 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
-  const crossReservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
-    // Do not build crossReservePositions in shared scenario mode.
-    // In shared scenario, the same input is copied to all reserves, which causes
-    // incorrect cross-reserve offset calculations (e.g., $1,000 borrow counted multiple times).
-    // Portfolio mode already passes undefined here (shared inputs are empty in portfolio mode).
-    if (!isPortfolioMode) return undefined;
-    const rawSupply = parseNumberInput(debouncedSharedSupplyInput);
-    const rawBorrow = parseNumberInput(debouncedSharedBorrowInput);
-    if (rawSupply === 0 && rawBorrow === 0) return undefined;
-    const map = new Map<string, ReservePositions>();
-    for (const r of reserves) {
-      const tp = r.tokenPrice ?? 0;
-      const supplyUsd = sharedInputMode === 'usd' ? rawSupply : rawSupply * tp;
-      const borrowUsd = sharedInputMode === 'usd' ? rawBorrow : rawBorrow * tp;
-      if (supplyUsd > 0 || borrowUsd > 0) {
-        map.set(r.reserveId, { supplyUsd, borrowUsd });
-      }
-    }
-    return map.size > 0 ? map : undefined;
-  }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, isPortfolioMode]);
-
-  const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
-    if (!crossReservePositions) return undefined;
-    const map = new Map<string, string>();
-    for (const r of reserves) {
-      if (r.tokenSymbol) map.set(r.reserveId, r.tokenSymbol);
-    }
-    return map.size > 0 ? map : undefined;
-  }, [reserves, crossReservePositions]);
-
-  const perReserveInputs = useMemo(
+  const portfolioInputsResult = useMemo<PortfolioInputsResult | undefined>(
     () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
     [isPortfolioMode, portfolioEntries, reserves],
   );
+  const perReserveInputs = portfolioInputsResult?.perReserveInputs;
+  const crossReservePositions = portfolioInputsResult?.crossReservePositions;
+  const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves,
