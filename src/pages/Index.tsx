@@ -37,7 +37,7 @@ import {
   shouldUseFullPreloadMode,
 } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
-import { buildMarketsList } from '@/lib/marketsList';
+import { buildMarketsList, getChainCount } from '@/lib/marketsList';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -115,6 +115,10 @@ const Index = () => {
   const effectiveReservesData = data ?? cachedMarkets;
   const effectiveMarketsList = useMemo(
     () => buildMarketsList(effectiveReservesData),
+    [effectiveReservesData]
+  );
+  const chainCount = useMemo(
+    () => getChainCount(effectiveReservesData),
     [effectiveReservesData]
   );
 
@@ -546,6 +550,7 @@ const Index = () => {
           <div className="mb-3 md:mb-5">
             <Header
               lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
+              chainCount={chainCount}
             />
           </div>
 

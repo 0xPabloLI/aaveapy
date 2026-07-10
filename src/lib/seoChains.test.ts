@@ -23,9 +23,9 @@ describe('SEO_CHAINS', () => {
     );
 
     it.each(SEO_CHAINS.map((c) => [c.slug, c.title]))(
-      '%s title contains "Aave APY"',
+      '%s title contains "AaveAPY"',
       (_slug, title) => {
-        expect(title).toContain('Aave APY');
+        expect(title).toContain('AaveAPY');
       },
     );
   });
