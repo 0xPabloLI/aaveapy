@@ -411,14 +411,16 @@ function CompactInput({
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
   // Wallet display — shown outside the input as non-editable context.
-  // Uses the same full-precision format as the placeholder so wallet display
-  // and placeholder are visually consistent (no compact abbreviation).
+  // Uses 2 decimal places (standard USD precision) consistent with formatUsd.
+  // This is separate from formatConvertedAmount (8 sig digits) which is used
+  // for the input value itself — the wallet label is display-only, not for
+  // editing, so standard financial precision (2 decimals) is correct.
   const walletDisplay = hasWallet
     ? (sideData.inputMode === 'usd'
-        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
+        ? formatNumberInput(sideData.walletValue!.toFixed(2))
         : (tokenPriceInUsd != null
-            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
-            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
+            ? formatNumberInput((sideData.walletValue! / tokenPriceInUsd).toFixed(4))
+            : formatNumberInput(sideData.walletValue!.toFixed(2))))
     : '';
 
   if (disabled) {
