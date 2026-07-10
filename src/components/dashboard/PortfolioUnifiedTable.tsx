@@ -32,9 +32,7 @@
  * Sub-headers show "Supply"/"Borrow" full text on large screens, "S"/"B"
  * abbreviation on small screens (responsive span swap).
  *
- * Wallet display (Option E modified): wallet value shown as compact
- * non-editable text outside the input, with → arrow when modified.
- * The ± sign toggle button stays inside the input for interaction.
+ * Toggle via ?unified=1 in PortfolioPanel.
  */
 import { memo, useCallback, useRef } from 'react';
 import { Eraser, Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
@@ -71,22 +69,22 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// With table-layout:auto, columns without explicit width size to their content.
-// Token (no width) adapts to token name length. Other columns have px widths
-// as minimum hints — the browser distributes any extra space proportionally.
+// All columns have explicit px widths. With width:100% + table-layout:fixed,
+// the browser scales columns proportionally to fill the container — no single
+// column absorbs all remaining space, and the table always fills its container.
 const COL_WIDTHS = [
-  undefined,     // 0  Token — content-adaptive
-  '104px',       // 1  Supply Input
-  '104px',       // 2  Borrow Input
-  '62px',        // 3  Supply Native
-  '62px',        // 4  Borrow Native
-  '62px',        // 5  Supply Incent
-  '62px',        // 6  Borrow Incent
-  '62px',        // 7  Supply Total
-  '62px',        // 8  Borrow Total
-  '68px',        // 9  Supply $/day
-  '68px',        // 10 Borrow $/day
-  '72px',        // 11 Net $/day
+  '120px',    // 0  Token
+  '88px',     // 1  Supply Input
+  '88px',     // 2  Borrow Input
+  '62px',     // 3  Supply Native
+  '62px',     // 4  Borrow Native
+  '62px',     // 5  Supply Incent
+  '62px',     // 6  Borrow Incent
+  '62px',     // 7  Supply Total
+  '62px',     // 8  Borrow Total
+  '68px',     // 9  Supply $/day
+  '68px',     // 10 Borrow $/day
+  '72px',     // 11 Net $/day
 ] as const;
 
 function UnifiedColgroup() {
@@ -121,12 +119,6 @@ const HEADER_BASE = 'bg-muted/40';
 const SUPPLY_COLOR = 'ds-text-emerald-600';
 const BORROW_COLOR = 'ds-text-brand-cyan';
 
-// Group separator border — stronger than row borders to create clear visual
-// hierarchy between module groups (Input / Native / Incentive / Total / Earn).
-// At /60: dark mode effective L15.6 (Δ9.6 from bg L6), light mode L89.2 (Δ10.8
-// from bg L100). Row separator stays at /30 (Δ~5), creating a 2× hierarchy.
-const GROUP_SEP = 'border-l border-border/60';
-
 /* ── Metric value with simulation tooltip ───────────────────────── */
 
 /**
@@ -158,7 +150,7 @@ function MetricValue({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="underline decoration-dotted underline-offset-2 cursor-auto">
+        <span className="underline decoration-dotted underline-offset-2 cursor-help">
           {formatFn(afterValue)}
         </span>
       </TooltipTrigger>
@@ -177,18 +169,11 @@ function MetricValue({
 
 /* ── Formatting helpers ──────────────────────────────────────────── */
 
-/** Compact value formatter — used for wallet display outside the input. */
-function formatCompactValue(value: number, withDollar = false): string {
-  const prefix = withDollar ? '$' : '';
-  if (value === 0) return `${prefix}0`;
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${prefix}${(value / 1_000).toFixed(1)}K`;
-  return `${prefix}${value.toFixed(2)}`;
-}
-
 function formatUsdCompact(value: number): string {
-  return formatCompactValue(value, true);
+  if (value === 0) return '$0';
+  if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return `$${value.toFixed(2)}`;
 }
 
 function formatUsdDay(value: number): string {
@@ -224,7 +209,7 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex shrink-0 cursor-auto align-middle',
+            'inline-flex shrink-0 cursor-help align-middle',
             hasAmber ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground',
           )}
         >
@@ -247,8 +232,11 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
                 limitedByLiquidity: w.limitedByLiquidity,
               });
               return (
-                <div key={i} className="text-amber-600 dark:text-amber-400">
-                  {label}
+                <div key={i} className="flex items-start gap-1">
+                  <span className={cn('font-semibold shrink-0', w.side === 'supply' ? SUPPLY_COLOR : BORROW_COLOR)}>
+                    {w.side === 'supply' ? 'Supply' : 'Borrow'}
+                  </span>
+                  <span className="text-amber-600 dark:text-amber-400">{label}</span>
                 </div>
               );
             }
@@ -256,8 +244,8 @@ function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
             const source = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).source : (w as IncentiveOffsetWarning).source;
             return (
               <div key={i} className="flex flex-col gap-0.5">
-                <span className="font-semibold capitalize text-muted-foreground">
-                  {source}
+                <span className={cn('font-semibold', w.side === 'supply' ? SUPPLY_COLOR : BORROW_COLOR)}>
+                  {w.side === 'supply' ? 'Supply' : 'Borrow'} · {source}
                 </span>
                 {notes?.map((note, ni) => (
                   <span key={ni} className={note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}>
@@ -302,27 +290,27 @@ function CompactInput({
   const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
   const hasWallet = sideData.walletValue !== null;
 
-  // Option E: input always shows the full effective value (not delta).
-  // For wallet positions, the input value IS the effective position.
-  // For non-wallet entries, it's the raw amount.
-  const effectiveDisplay = sideData.amount;
-  const hasValue = Boolean(effectiveDisplay.trim());
+  const deltaDisplay = hasWallet
+    ? (sideData.deltaRawUsd !== undefined
+      ? formatNumberInput(formatConvertedAmount(Math.abs(sideData.deltaRawUsd)))
+      : (() => {
+          const effectiveUsd = sideData.inputMode === 'usd'
+            ? parseNumberInput(sideData.amount)
+            : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
+          const deltaUsd = effectiveUsd - sideData.walletValue!;
+          if (Math.abs(deltaUsd) < DELTA_EPSILON) return '';
+          return formatNumberInput(formatConvertedAmount(Math.abs(deltaUsd)));
+        })())
+    : sideData.amount;
 
-  // Derive effective USD to determine arrow color.
-  const effectiveUsd = sideData.inputMode === 'usd'
-    ? parseNumberInput(sideData.amount)
-    : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
-  const walletUsd = sideData.walletValue ?? 0;
-  const isEffectiveAbove = hasWallet && effectiveUsd > walletUsd + DELTA_EPSILON;
-  const isEffectiveBelow = hasWallet && effectiveUsd < walletUsd - DELTA_EPSILON;
+  const hasValue = Boolean(deltaDisplay.trim());
+  const isPositiveDelta = hasWallet ? (sideData.deltaSign ?? 1) === 1 : true;
 
   const deltaCommitRef = useRef({ initialHasValue: hasValue });
   if (deltaCommitRef.current.initialHasValue !== hasValue) {
     deltaCommitRef.current = { initialHasValue: hasValue };
   }
 
-  // Option E: handleDeltaCommit receives the full effective value (not delta).
-  // For wallet positions, delta is derived as effective - wallet.
   const handleDeltaCommit = useCallback((formattedValue: string) => {
     if (!formattedValue.trim()) {
       if (!deltaCommitRef.current.initialHasValue) return;
@@ -330,65 +318,92 @@ function CompactInput({
         actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
         return;
       }
-      // Clear = empty input, delta = 0 (simulator uses walletValue as total).
+      const resetAmount = formatConvertedAmount(sideData.walletValue!);
       const clearPatch = side === 'supply'
-        ? { supplyAmount: '' as const, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
-        : { borrowAmount: '' as const, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
+        ? { supplyAmount: resetAmount, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
+        : { borrowAmount: resetAmount, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
       actions.updateReserve(reserveId, clearPatch);
       return;
     }
-    // Parse the effective value the user typed.
-    const inputUsd = sideData.inputMode === 'token'
+    const rawUsd = !hasWallet && sideData.inputMode === 'token'
       ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
       : parseNumberInput(formattedValue);
-    // Clamp to cap if present.
-    const clampedUsd = capLimitUsd != null ? Math.min(inputUsd, capLimitUsd) : inputUsd;
-    const wasClamped = capLimitUsd != null && inputUsd > capLimitUsd;
-    // Format the (possibly clamped) amount for the store.
-    const amountValue = wasClamped
-      ? (sideData.inputMode === 'usd'
-          ? formatNumberInput(formatConvertedAmount(clampedUsd))
-          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(clampedUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(clampedUsd))))
-      : formattedValue;
+    const absDeltaUsd = rawUsd;
+    let effectiveUsd = hasWallet
+      ? Math.max(sideData.walletValue! + (isPositiveDelta ? 1 : -1) * absDeltaUsd, 0)
+      : rawUsd;
+    if (capLimitUsd != null && effectiveUsd > capLimitUsd) {
+      effectiveUsd = capLimitUsd;
+    }
+    const patch = side === 'supply'
+      ? { supplyAmount: formattedValue }
+      : { borrowAmount: formattedValue };
+    if (!hasWallet) {
+      if (capLimitUsd != null && rawUsd > capLimitUsd) {
+        const clampedAmount = sideData.inputMode === 'usd'
+          ? formatNumberInput(formatConvertedAmount(capLimitUsd))
+          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
+        const clampedPatch = side === 'supply'
+          ? { supplyAmount: clampedAmount }
+          : { borrowAmount: clampedAmount };
+        actions.updateReserve(reserveId, clampedPatch);
+      } else {
+        actions.updateReserve(reserveId, patch);
+      }
+      return;
+    }
+    const sign = isPositiveDelta ? 1 : -1;
+    const signPatch = side === 'supply'
+      ? { supplyDeltaSign: sign as DeltaSign }
+      : { borrowDeltaSign: sign as DeltaSign };
+    const amountValue = sideData.inputMode === 'usd'
+      ? formatNumberInput(formatConvertedAmount(effectiveUsd))
+      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(effectiveUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(effectiveUsd)));
     const amountPatch = side === 'supply'
       ? { supplyAmount: amountValue }
       : { borrowAmount: amountValue };
-    if (!hasWallet) {
-      actions.updateReserve(reserveId, amountPatch);
-      return;
-    }
-    // Derive sign and delta from effective vs wallet.
-    const deltaUsd = clampedUsd - sideData.walletValue!;
-    const sign: DeltaSign = deltaUsd >= 0 ? 1 : -1;
-    const signPatch = side === 'supply'
-      ? { supplyDeltaSign: sign }
-      : { borrowDeltaSign: sign };
+    const clampedDeltaRawUsd = effectiveUsd - sideData.walletValue!;
     const deltaRawUsdPatch = side === 'supply'
-      ? { supplyDeltaRawUsd: deltaUsd as number | null }
-      : { borrowDeltaRawUsd: deltaUsd as number | null };
+      ? { supplyDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null }
+      : { borrowDeltaRawUsd: (sign >= 0 ? Math.abs(clampedDeltaRawUsd) : -Math.abs(clampedDeltaRawUsd)) as number | null };
     actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
-  }, [hasWallet, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
-
-  // ClampFn: real-time cap clamping during input to prevent flicker.
-  // Converts input to USD, clamps to capLimitUsd, converts back to input mode.
-  const clampFn = useCallback((formattedValue: string): string => {
-    if (capLimitUsd == null) return formattedValue;
-    const numUsd = sideData.inputMode === 'token'
-      ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
-      : parseNumberInput(formattedValue);
-    if (numUsd <= capLimitUsd) return formattedValue;
-    const clampedAmount = sideData.inputMode === 'usd'
-      ? formatNumberInput(formatConvertedAmount(capLimitUsd))
-      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
-    return clampedAmount;
-  }, [capLimitUsd, sideData.inputMode, tokenPriceInUsd]);
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
 
   const numberInput = useDebouncedInput({
-    value: effectiveDisplay,
+    value: deltaDisplay,
     onCommit: handleDeltaCommit,
     debounceMs: 0,
-    clampFn,
   });
+
+  const toggleDeltaSign = useCallback(() => {
+    if (!hasWallet) return;
+    if (sideData.inputMode === 'token' && tokenPriceInUsd == null) return;
+    const newSign: DeltaSign = isPositiveDelta ? -1 : 1;
+    const signPatch = side === 'supply'
+      ? { supplyDeltaSign: newSign }
+      : { borrowDeltaSign: newSign };
+    const currentEffectiveUsd = sideData.inputMode === 'usd'
+      ? parseNumberInput(sideData.amount)
+      : parseNumberInput(sideData.amount) * tokenPriceInUsd!;
+    const walletValue = sideData.walletValue ?? 0;
+    const absDeltaUsd = Math.abs(currentEffectiveUsd - walletValue);
+    if (absDeltaUsd < DELTA_EPSILON) {
+      actions.updateReserve(reserveId, signPatch);
+      return;
+    }
+    const newEffectiveUsd = Math.max(walletValue + newSign * absDeltaUsd, 0);
+    const amountValue = sideData.inputMode === 'usd'
+      ? formatConvertedAmount(newEffectiveUsd)
+      : formatConvertedAmount(newEffectiveUsd / tokenPriceInUsd!);
+    const amountPatch = side === 'supply'
+      ? { supplyAmount: amountValue }
+      : { borrowAmount: amountValue };
+    const newDeltaRawUsd = sideData.deltaRawUsd !== undefined ? -sideData.deltaRawUsd : newSign * absDeltaUsd;
+    const deltaRawUsdPatch = side === 'supply'
+      ? { supplyDeltaRawUsd: newDeltaRawUsd as number | null }
+      : { borrowDeltaRawUsd: newDeltaRawUsd as number | null };
+    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
+  }, [hasWallet, isPositiveDelta, actions, reserveId, side, sideData.walletValue, sideData.amount, sideData.inputMode, tokenPriceInUsd, sideData.deltaRawUsd]);
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
@@ -398,16 +413,23 @@ function CompactInput({
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
-  // Compact wallet display — shown outside the input as non-editable context.
-  // Uses compact format (1.0K / $1.0K) to save horizontal space.
-  const walletCompact = hasWallet
-    ? formatCompactValue(
-        sideData.inputMode === 'usd'
-          ? sideData.walletValue!
-          : (tokenPriceInUsd != null ? sideData.walletValue! / tokenPriceInUsd : sideData.walletValue!),
-        sideData.inputMode === 'usd',
-      )
+  const walletDisplay = hasWallet
+    ? (sideData.inputMode === 'usd'
+        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
+        : (tokenPriceInUsd != null
+            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
+            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
     : '';
+
+  const effectiveUsdForSign = sideData.deltaRawUsd !== undefined
+    ? sideData.walletValue! + sideData.deltaRawUsd
+    : (sideData.inputMode === 'usd'
+        ? parseNumberInput(sideData.amount)
+        : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0));
+  const effectiveDisplay = sideData.inputMode === 'usd'
+    ? formatNumberInput(formatConvertedAmount(effectiveUsdForSign))
+    : sideData.amount;
+  const isModified = hasWallet && Math.abs(effectiveUsdForSign - sideData.walletValue!) >= 0.005;
 
   if (disabled) {
     return (
@@ -430,7 +452,9 @@ function CompactInput({
     );
   }
 
-  const placeholder = sideData.inputMode === 'usd' ? '10K' : '100';
+  const placeholder = hasWallet
+    ? walletDisplay
+    : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
     <div className="flex items-center gap-0.5">
@@ -454,19 +478,42 @@ function CompactInput({
         )}
       </Tooltip>
 
-      {hasWallet && (
-        <span className="shrink-0 ds-text-9 tabular-nums leading-none whitespace-nowrap">
-          <span className="text-muted-foreground">{walletCompact}</span>
-          <span className={cn(
-            'ml-0.5',
-            isEffectiveAbove ? 'text-emerald-600 dark:text-emerald-400'
-              : isEffectiveBelow ? 'text-red-500 dark:text-red-400'
-              : 'text-muted-foreground',
-          )}>→</span>
-        </span>
-      )}
-
       <div className="relative flex-1 min-w-0">
+        {hasWallet && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleDeltaSign}
+                className={cn(
+                  'absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-10 font-bold leading-none transition-colors',
+                  isPositiveDelta
+                    ? 'text-emerald-600 hover:bg-emerald-500/10'
+                    : 'text-red-500 hover:bg-red-500/10',
+                isModified && 'underline decoration-dotted underline-offset-2',
+              )}
+                aria-label={isPositiveDelta ? 'Adding' : 'Reducing'}
+              >
+                {isPositiveDelta ? '+' : '−'}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="ds-text-11">
+              {isModified ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Wallet</span>
+                  <span className="tabular-nums">{walletDisplay}</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="font-semibold tabular-nums">{effectiveDisplay}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Wallet</span>
+                  <span className="tabular-nums">{walletDisplay}</span>
+                </div>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        )}
         <input
           ref={numberInput.inputRef}
           value={numberInput.displayValue}
@@ -477,10 +524,10 @@ function CompactInput({
           placeholder={placeholder}
           className={cn(
             'h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
-            hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
+            hasWallet ? 'pl-3.5 pr-4' : hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
             cnDsInputSurface(hasValue, inputVariant),
           )}
-          aria-label={`${side} ${hasWallet ? 'effective' : 'amount'} for ${tokenSymbol}`}
+          aria-label={`${side} ${hasWallet ? 'delta' : 'amount'} for ${tokenSymbol}`}
         />
         {hasValue && (
           <button
@@ -534,29 +581,29 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'auto' }}>
+      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'fixed' }}>
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
             <th rowSpan={2} className={cn('pl-2 pr-1 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Input</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Native</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Incentive</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Total</th>
-            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Earn $/day</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Input</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Native</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Incentive</th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Total</th>
+            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold border-l border-border/20', HEADER_BASE)}>Earn $/day</th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium border-l border-border/20 ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
+            <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold border-l border-border/20', HEADER_BASE)}>Net</th>
           </tr>
         </thead>
         <tbody>
@@ -649,7 +696,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Input */}
-                <td className={cn(INPUT_CELL, GROUP_SEP, 'align-top')}>
+                <td className={cn(INPUT_CELL, 'border-l border-border/20 align-top')}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -689,7 +736,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Native */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.nativePercent} metric={supplyResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Native */}
@@ -698,7 +745,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Incentive */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND, SUPPLY_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {supplyResult ? (
                       <>
@@ -727,7 +774,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Total */}
-                <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.totalPercent} metric={supplyResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Total */}
@@ -736,7 +783,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply $/day */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>
+                <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>
                   {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </td>
                 {/* Borrow $/day */}
@@ -744,7 +791,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </td>
                 {/* Net $/day */}
-                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>
+                <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
@@ -759,21 +806,21 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-1 py-1.5 font-bold ds-text-11">Total</td>
-              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
+              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
               <td className={cn(VAL_CELL, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
+              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, BORROW_BAND)} />
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
+              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_BAND)} />
               <td className={cn(VAL_CELL, BORROW_BAND)} />
-              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
+              <td className={cn(VAL_CELL, 'border-l border-border/20 font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
               </td>
               <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, 'border-l border-border/20', SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
               <td className={cn(VAL_CELL, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, 'border-l border-border/20 font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}
