@@ -1,5 +1,10 @@
 # Repository Guidelines (Slim)
 
+## Quick Reference
+
+- **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — holds Aave V3 positions on mainnet. Source: `e2e/test-wallets.ts`. Use in Playwright via the "Watch address" input.
+- **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
+
 ## Design Context
 
 ### Users
