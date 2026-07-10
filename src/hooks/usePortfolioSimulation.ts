@@ -313,7 +313,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
           s: PortfolioReserveEntry['supply'],
         ): PortfolioReserveEntry['supply'] => {
           if (s.walletValue === null) return s;
-          return { ...s, amount: formatConvertedAmount(s.walletValue), inputMode: 'usd', deltaRawUsd: undefined };
+          return { ...s, amount: '', inputMode: 'usd', deltaRawUsd: undefined };
         };
         return {
           ...e,

@@ -137,12 +137,20 @@ export function useDebouncedInput({
     const raw = e.target.value.replace(/^-/, '');
     const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw, maxDecimalPlaces);
     const formatted = formatNumberInput(sanitized);
+    // Apply clampFn BEFORE display so the user never sees an unclamped value.
+    // This prevents the "flicker" where display shows unclamped → commit clamps →
+    // useEffect syncs back to clamped → next keystroke shows unclamped again.
+    const clamped = clampFn ? clampFn(formatted) : formatted;
     const cursorPos = e.target.selectionStart ?? e.target.value.length;
     const cursorInSanitized = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
-    pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
-    setDisplayValue(formatted);
+    // If clamping changed the value, cursor goes to end (content changed unexpectedly).
+    if (clamped !== formatted) {
+      pendingCursorRef.current = clamped.length;
+    } else {
+      pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
+    }
+    setDisplayValue(clamped);
     clearTimer();
-    const clamped = clampFn ? clampFn(formatted) : formatted;
     if (clamped !== lastCommittedRef.current) {
       timerRef.current = setTimeout(() => {
         const committed = commitFormatted(clamped.replace(/,/g, ''), onCommit);

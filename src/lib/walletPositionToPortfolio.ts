@@ -41,7 +41,7 @@ export function convertWalletPositionsToEntries(
     entry = {
       ...entry,
       [wp.side]: {
-        amount: formatConvertedAmount(wp.amountUsd),
+        amount: '',
         inputMode: 'usd' as const,
         walletValue: wp.amountUsd,
         source,

@@ -46,7 +46,7 @@ describe('convertWalletPositionsToEntries', () => {
       chainName: 'Ethereum',
       chainId: 1,
       tokenSymbol: 'USDC',
-      supply: { amount: '5000', inputMode: 'usd', walletValue: 5000, source: 'onchain-v3' },
+      supply: { amount: '', inputMode: 'usd', walletValue: 5000, source: 'onchain-v3' },
       borrow: { amount: '', inputMode: 'usd', walletValue: null },
       hidden: false,
       isOrphan: false,
@@ -60,7 +60,7 @@ describe('convertWalletPositionsToEntries', () => {
     ]
     const result = convertWalletPositionsToEntries(wallet, reserves)
     expect(result).toHaveLength(1)
-    expect(result[0].borrow.amount).toBe('200')
+    expect(result[0].borrow.amount).toBe('')
     expect(result[0].borrow.walletValue).toBe(200)
     expect(result[0].supply.walletValue).toBeNull()
   })
@@ -105,7 +105,7 @@ describe('convertWalletPositionsToEntries', () => {
       makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', amountUsd: 0, amountWad: 0n }),
     ]
     const result = convertWalletPositionsToEntries(wallet, reserves)
-    expect(result[0].supply.amount).toBe('0')
+    expect(result[0].supply.amount).toBe('')
     expect(result[0].supply.walletValue).toBe(0)
   })
 
@@ -119,7 +119,7 @@ describe('convertWalletPositionsToEntries', () => {
       makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', amountUsd: 1234.5678 }),
     ]
     const result = convertWalletPositionsToEntries(wallet, reserves)
-    expect(result[0].supply.amount).toBe('1234.5678')
+    expect(result[0].supply.amount).toBe('')
     expect(result[0].supply.walletValue).toBeCloseTo(1234.5678, 4)
   })
 

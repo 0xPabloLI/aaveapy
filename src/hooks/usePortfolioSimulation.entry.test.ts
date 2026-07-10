@@ -415,8 +415,8 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       })
 
       const entry = result.current.entries.find(e => e.reserveId === 'r-weth')
-      expect(entry?.supply.amount).toBe('1737')
-      expect(entry?.borrow.amount).toBe('500')
+      expect(entry?.supply.amount).toBe('')
+      expect(entry?.borrow.amount).toBe('')
     })
 
     it('restores only one side when side is specified', () => {
@@ -444,7 +444,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       })
 
       const entry = result.current.entries.find(e => e.reserveId === 'r-weth')
-      expect(entry?.supply.amount).toBe('1737')
+      expect(entry?.supply.amount).toBe('')
       expect(entry?.borrow.amount).toBe('8888')
     })
   })
