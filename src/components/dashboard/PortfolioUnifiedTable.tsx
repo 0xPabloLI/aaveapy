@@ -71,13 +71,14 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// With table-layout:auto, columns without explicit width size to their content.
-// Token (no width) adapts to token name length. Other columns have px widths
-// as minimum hints — the browser distributes any extra space proportionally.
+// table-layout:fixed + width:100%. Token gets a fixed px width.
+// Input columns get 'auto' — under fixed layout, auto columns absorb
+// all remaining space after fixed-width columns are allocated.
+// This ensures extra space goes to Input (where users type), not Token.
 const COL_WIDTHS = [
-  undefined,     // 0  Token — content-adaptive
-  '104px',       // 1  Supply Input
-  '104px',       // 2  Borrow Input
+  '72px',        // 0  Token — fixed narrow
+  'auto',        // 1  Supply Input — absorbs remaining space
+  'auto',        // 2  Borrow Input — absorbs remaining space
   '62px',        // 3  Supply Native
   '62px',        // 4  Borrow Native
   '62px',        // 5  Supply Incent
@@ -126,6 +127,11 @@ const BORROW_COLOR = 'ds-text-brand-cyan';
 // At /60: dark mode effective L15.6 (Δ9.6 from bg L6), light mode L89.2 (Δ10.8
 // from bg L100). Row separator stays at /30 (Δ~5), creating a 2× hierarchy.
 const GROUP_SEP = 'border-l border-border/60';
+
+// Supply → Borrow separator within each module group.
+// Lighter than GROUP_SEP (module boundary) but visible enough to distinguish sides.
+// At /40: dark mode Δ7.2, light mode Δ7.6 — between GROUP_SEP (/60, Δ10) and row (/30, Δ5).
+const SIDE_SEP = 'border-l border-border/40';
 
 /* ── Metric value with simulation tooltip ───────────────────────── */
 
@@ -430,7 +436,17 @@ function CompactInput({
     );
   }
 
-  const placeholder = sideData.inputMode === 'usd' ? '10K' : '100';
+  // Full wallet value for input placeholder (when input is empty).
+  // Shows the wallet position as a hint — user types to override.
+  const walletPlaceholder = hasWallet
+    ? (sideData.inputMode === 'usd'
+        ? formatNumberInput(formatConvertedAmount(sideData.walletValue!))
+        : (tokenPriceInUsd != null
+            ? formatNumberInput(formatConvertedAmount(sideData.walletValue! / tokenPriceInUsd))
+            : formatNumberInput(formatConvertedAmount(sideData.walletValue!))))
+    : (sideData.inputMode === 'usd' ? '10K' : '100');
+
+  const placeholder = walletPlaceholder;
 
   return (
     <div className="flex items-center gap-0.5">
@@ -534,7 +550,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
-      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'auto' }}>
+      <table className={cn('w-full [&_tbody_td]:transition-colors', TABLE_TEXT)} style={{ tableLayout: 'fixed' }}>
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
@@ -547,15 +563,15 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
           </tr>
         </thead>
@@ -612,6 +628,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             return (
               <tr
                 key={entry.reserveId}
+                data-reserve-id={entry.reserveId}
                 className={cn('group border-t border-border/30 hover:bg-muted/5', rowOpacity)}
                 onClick={isHidden && !isRestricted ? () => actions.unhideReserve(entry.reserveId) : undefined}
               >
@@ -669,7 +686,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Borrow Input */}
-                <td className={cn(INPUT_CELL, 'align-top')}>
+                <td className={cn(INPUT_CELL, SIDE_SEP, 'align-top')}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -693,7 +710,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {supplyResult ? <MetricValue afterValue={supplyResult.nativePercent} metric={supplyResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Native */}
-                <td className={cn(VAL_CELL, BORROW_BAND, BORROW_COLOR)}>
+                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? <MetricValue afterValue={borrowResult.nativePercent} metric={borrowResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
 
@@ -712,7 +729,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   </span>
                 </td>
                 {/* Borrow Incentive */}
-                <td className={cn(VAL_CELL, BORROW_BAND, BORROW_COLOR)}>
+                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {borrowResult ? (
                       <>
@@ -731,7 +748,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {supplyResult ? <MetricValue afterValue={supplyResult.totalPercent} metric={supplyResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Total */}
-                <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
+                <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? <MetricValue afterValue={borrowResult.totalPercent} metric={borrowResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
 
@@ -740,7 +757,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </td>
                 {/* Borrow $/day */}
-                <td className={cn(VAL_CELL, BORROW_COLOR)}>
+                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>
                   {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </td>
                 {/* Net $/day */}
@@ -760,19 +777,19 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-1 py-1.5 font-bold ds-text-11">Total</td>
               <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
-              <td className={cn(VAL_CELL, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
-              <td className={cn(VAL_CELL, BORROW_BAND)} />
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND)} />
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
-              <td className={cn(VAL_CELL, BORROW_BAND)} />
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND)} />
               <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
+              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
-              <td className={cn(VAL_CELL, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
               <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
