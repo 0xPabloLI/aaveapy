@@ -92,27 +92,29 @@ AAV-1100 和 AAV-1101 暴露了两类系统性逻辑错误：**双重扣减**（
 | AAV-1060 | 原则 4 | `grossUsd` 用 delta-only 而非 total-based |
 | AAV-1086 | 原则 4 | `crossReservePositions` 在 two paths 中数据源不同 |
 
-### 新发现的潜在问题
+### 已修复的潜在问题 (AAV-1102)
 
-| # | 类型 | 严重度 | 描述 |
-|---|------|--------|------|
-| 1 | 原则 2 | 低 | Brevis `sumCurrent` 不应用 wallet position cap dilution。如果 wallet > positionCap，current 应被稀释但未稀释。Merit 的 `sumCurrent` 有 dilution，Brevis 没有。 |
-| 2 | 原则 2 | 低 | Merit `buildDetails` 中 per-campaign `current` 使用 `ctx.eligibilityRatio`（simulated），应使用 wallet ratio。仅影响 tooltip 中的 per-campaign 行，不影响 aggregate 值。 |
-| 3 | 原则 2 | 低 | Merkl `buildDetails` 中 per-campaign `current` 使用 `ctx.merklGroupMul`（simulated），应使用 wallet multiplier。仅影响 tooltip 中的 per-campaign 行，不影响 aggregate 值。 |
+| # | 类型 | 严重度 | 描述 | 修复 |
+|---|------|--------|------|------|
+| 1 | 原则 2+3 | 低 | Brevis `sumCurrent` 不应用 wallet position cap dilution。改用 `sumForecastBrevisIncentiveApr` + `walletPositionUsd`。 | ✅ `cf30b61c` |
+| 2 | 原则 2+3 | 低 | Merit `buildDetails` per-campaign `current` 未乘 `walletEligibilityRatio`。新增参数并应用。同时修复 `buildIncentiveCurrent` Merit 未乘 ratio 的遗留问题。 | ✅ `cf30b61c` |
+| 3 | 原则 2+3 | 低 | Merkl `buildDetails` per-campaign `current` 未乘 `walletEligibilityRatio` 和 `walletMerklGroupMultiplier`。新增两个参数并应用。 | ✅ `cf30b61c` |
 
-### 对潜在问题的评估
+### 修复详情
 
 **问题 1（Brevis current 无 dilution）**：
-- Brevis 只有 MetaMask Card campaign，positionCapUsd = $5000
-- 用户钱包仓位 > $5000 的场景较少
-- Brevis position cap 语义可能不同于 Merit（pool budget vs per-user cap）
-- 建议：暂不修复，记为已知技术债，待 Brevis campaign 增多时评估
+- `sumCurrent` 从 `sumBrevisIncentiveApr/Apy`（headline）改为 `sumForecastBrevisIncentiveApr` + `walletPositionUsd`
+- `buildBrevisCampaignDetails` 新增 `walletPositionUsd` 参数，current 应用 `applyPositionCap` dilution
 
-**问题 2+3（per-campaign detail current 使用 simulated ratio）**：
-- 仅影响 IncentiveTooltip 中展开的 per-campaign 行
-- aggregate `sources.merkl.current` / `sources.merit.current` 已正确使用 wallet ratio
-- 修复需要给 `buildMerklCampaignDetails` / `buildMeritCampaignDetails` 增加钱包版本参数，改动较大
-- 建议：暂不修复，记为已知技术债，优先级低
+**问题 2（Merit per-campaign current 无 eligibility ratio）**：
+- `buildMeritCampaignDetails` 新增 `walletEligibilityRatio` 参数，`baseCurrent` 乘以该 ratio
+- `buildIncentiveCurrent` 新增 `walletEligibilityRatio` 参数，Merit APR 乘以该 ratio（修复了 aggregate 层面的遗留不一致）
+
+**问题 3（Merkl per-campaign current 无 multiplier）**：
+- `buildMerklCampaignDetails` 新增 `walletEligibilityRatio` 和 `walletMerklGroupMultiplier` 参数
+- `current` 乘以 `walletEligibilityRatio * walletGroupMul`
+
+**测试**：8 个新测试覆盖 per-campaign vs aggregate 一致性，包括 Merit eligibility scaling、Merkl constraint scaling、Brevis position cap dilution、all-sources aggregate consistency。
 
 ## 审计清单
 
