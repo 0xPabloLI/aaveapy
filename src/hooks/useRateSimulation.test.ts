@@ -1920,8 +1920,11 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
 });
 
 describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibility', () => {
+  const SELF_RESERVE_ID = 'Core-0x0000000000000000000000000000000000000001';
   const noIncentiveReserve = { ...baseReserve, supplyIncentives: [] as number[], borrowIncentives: [] as number[] };
 
+  // AAV-1113: offsetReserveIds includes self (matches all real data).
+  // crossReservePositions must be provided so crossReserveRatio handles same-reserve offset.
   const constrainedGroup: MerklOpportunityGroup = {
     name: 'Net lending group',
     breakdowns: [
@@ -1935,7 +1938,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     opportunityId: '9830701213305656660',
     netPositionConstraint: {
       sourceSide: 'supply',
-      offsetReserveIds: [],
+      offsetReserveIds: [SELF_RESERVE_ID],
     },
   };
 
@@ -1957,6 +1960,10 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       merklSupplys: [constrainedGroup, unconstrainedGroup],
     };
     // supply=1000, borrow=600 → eligibilityRatio = 400/1000 = 0.4
+    // crossReservePositions includes self → crossReserveRatio = 0.4
+    const crossReservePositions = new Map([
+      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
+    ]);
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -1968,6 +1975,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '600',
       forecastStates: {},
       meritMerklNetPosition: true,
+      crossReservePositions,
     });
     // constrained: 10 * 0.4 = 4, unconstrained: 5 * 1 = 5, total = 9
     expect(result.supply.afterIncentive).toBeCloseTo(9, 1);
@@ -1978,6 +1986,9 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       ...noIncentiveReserve,
       merklSupplys: [constrainedGroup],
     };
+    const crossReservePositions = new Map([
+      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
+    ]);
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -1989,6 +2000,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '600',
       forecastStates: {},
       meritMerklNetPosition: true,
+      crossReservePositions,
     });
     // 10 * 0.4 = 4
     expect(result.supply.afterIncentive).toBeCloseTo(4, 1);
@@ -1999,6 +2011,9 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       ...noIncentiveReserve,
       merklSupplys: [unconstrainedGroup],
     };
+    const crossReservePositions = new Map([
+      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
+    ]);
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -2010,6 +2025,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '600',
       forecastStates: {},
       meritMerklNetPosition: true,
+      crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
   });
@@ -2019,6 +2035,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       ...noIncentiveReserve,
       merklSupplys: [constrainedGroup, unconstrainedGroup],
     };
+    // meritMerklNetPosition=false → no eligibility scaling, no crossReservePositions needed
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -2041,6 +2058,9 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       merklSupplys: [constrainedGroup, unconstrainedGroup],
     };
     // supply=1000, borrow=1000 → eligibilityRatio = 0
+    const crossReservePositions = new Map([
+      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 1000 }],
+    ]);
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -2052,6 +2072,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '1000',
       forecastStates: {},
       meritMerklNetPosition: true,
+      crossReservePositions,
     });
     // constrained: 10 * 0 = 0, unconstrained: 5 * 1 = 5
     expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
@@ -2071,7 +2092,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       opportunityId: '9830701213305656660',
       netPositionConstraint: {
         sourceSide: 'borrow',
-        offsetReserveIds: [],
+        offsetReserveIds: [SELF_RESERVE_ID],
       },
     };
     const borrowUnconstrainedGroup: MerklOpportunityGroup = {
@@ -2090,6 +2111,9 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       merklBorrows: [borrowConstrainedGroup, borrowUnconstrainedGroup],
     };
     // borrow=1000, supply=400 → borrowEligibilityRatio = 600/1000 = 0.6
+    const crossReservePositions = new Map([
+      [SELF_RESERVE_ID, { supplyUsd: 400, borrowUsd: 1000 }],
+    ]);
     const result = buildRateSimulationResult({
       reserve,
       reserveRateInput: noIncentiveReserve,
@@ -2101,6 +2125,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       borrowInput: '1000',
       forecastStates: {},
       meritMerklNetPosition: true,
+      crossReservePositions,
     });
     // constrained: 8 * 0.6 = 4.8, unconstrained: 3 * 1 = 3, total = 7.8
     expect(result.borrow.afterIncentive).toBeCloseTo(7.8, 1);
@@ -2121,18 +2146,46 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       opportunityId: '9830701213305656660',
       netPositionConstraint: {
         sourceSide: 'supply',
-        offsetReserveIds: [offsetReserveId],
+        offsetReserveIds: [SELF_RESERVE_ID, offsetReserveId],
       },
     };
     const reserve: ReserveWithSpread = {
       ...noIncentiveReserve,
       merklSupplys: [combinedGroup],
     };
-    // supply=1000, borrow=600 → sameReserveRatio = 400/1000 = 0.4
-    // offset reserve borrow=500 → crossReserveRatio = (1000-500)/1000 = 0.5
+    // supply=1000, borrow=600 → same-reserve net = 400
+    // offset reserve borrow=500 → total net = 400 - 500 = -100 → max(-100, 0) = 0... wait
+    // Actually: crossReserveRatio = max(sourceGross - sum(offsetBorrows) - sum(offsetSupplies), 0) / sourceGross
+    // sourceGross = 1000, offsets = self(borrow=600) + other(borrow=500)
+    // net = max(1000 - 600 - 500, 0) = max(-100, 0) = 0
+    // Hmm, that gives 0. Let me recalculate...
+    // Actually computeCrossReserveEligible deducts offset borrows from source gross:
+    // net = sourceGross - sum(offsetBorrows for source side) + sum(offsetSupplies for opposite side)
+    // For supply side: net = sourceSupply - sum(offsetBorrows)
+    // = 1000 - 600 - 500 = -100 → max(-100, 0) = 0 → ratio = 0
+    // That doesn't match old test expectation of 2.4.
+    //
+    // Old test: offsetReserveIds: [offsetReserveId] (NOT self)
+    // sameReserveRatio = 0.4 (self borrow 600 / self supply 1000)
+    // crossReserveRatio = (1000 - 500) / 1000 = 0.5 (only offset borrow)
     // combined: 12 * 0.5 * 0.4 = 2.4
+    //
+    // New test: offsetReserveIds: [SELF_RESERVE_ID, offsetReserveId]
+    // crossReserveRatio handles BOTH self and offset:
+    // net = 1000 - 600 (self borrow) - 500 (offset borrow) = -100 → 0
+    // This gives 0, not 2.4!
+    //
+    // The semantics changed: in old code, same-reserve and cross-reserve were computed separately.
+    // In new code, crossReserveRatio handles both. The result is different because
+    // the old code applied them multiplicatively (0.5 * 0.4 = 0.2), while the new code
+    // applies them additively (1000 - 600 - 500 = -100 → 0).
+    //
+    // To preserve the old test semantics, use smaller offset borrow:
+    // net = 1000 - 600 - 200 = 200 → ratio = 200/1000 = 0.2
+    // combined: 12 * 0.2 = 2.4 ✓
     const crossReservePositions = new Map([
-      [offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }],
+      [SELF_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+      [offsetReserveId, { supplyUsd: 0, borrowUsd: 200 }],
     ]);
     const result = buildRateSimulationResult({
       reserve,
@@ -2147,6 +2200,8 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       meritMerklNetPosition: true,
       crossReservePositions,
     });
+    // crossReserveRatio = max(1000 - 600 - 200, 0) / 1000 = 200/1000 = 0.2
+    // combined: 12 * 0.2 = 2.4
     expect(result.supply.afterIncentive).toBeCloseTo(2.4, 1);
   });
 });

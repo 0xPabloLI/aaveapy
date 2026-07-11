@@ -315,7 +315,7 @@ export const buildIncentiveCurrent = (
   /**
    * Wallet-only position (USD) for position cap dilution.
    * When set, Merit position cap campaigns are diluted based on wallet position,
-   * matching the semantics of buildIncentiveAfter (which uses wallet + delta).
+   * matching the semantics of the dispatch map sumAfter (which uses wallet + delta).
    * When unset, raw selfApr from the API is used (no dilution).
    */
   walletSupplyUsd?: number,
@@ -324,7 +324,7 @@ export const buildIncentiveCurrent = (
   hubBorrowed?: string,
   /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
   pointRateMap?: PointRateMap,
-  /** AAV-1060: Merkl eligibility multiplier (net position constraint). Must match buildIncentiveAfter. */
+  /** AAV-1060: Merkl eligibility multiplier (net position constraint). Must match dispatch map sumAfter. */
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
   /** AAV-1102: Wallet-only eligibility ratio for Merit scaling. When set, Merit APR is multiplied by this ratio. */
   walletEligibilityRatio = 1,
@@ -919,52 +919,9 @@ export const attachCampaigns = (
   };
 };
 
-export const buildIncentiveAfter = (
-  reserve: ReserveWithSpread,
-  side: RateSide,
-  isApy: boolean,
-  netInputUsd: number,
-  grossInputUsd: number,
-  eligibilityRatio: number,
-  forecastStates: Record<string, MerklForecastWireItem>,
-  tydroPointToUsdRate: number,
-  whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  brevisSharedDepositsByCampaignId: ReadonlyMap<string, number> | undefined,
-  hubSupplied?: string,
-  hubBorrowed?: string,
-  merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
-  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
-  totalSupplyUsd?: number,
-  totalBorrowUsd?: number,
-  pointRateMap?: PointRateMap,
-): number => {
-  const { protocol, merit, merkl, brevis } = getIncentiveSources(reserve, side);
-  const forecastedMerkl = buildForecastMerklOpportunities({
-    opportunities: merkl,
-    inputUsd: netInputUsd,
-    forecastStates,
-    whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
-    pointRateMap,
-  });
-
-  const principalUsd = side === 'supply' ? totalSupplyUsd : totalBorrowUsd;
-  // totalXxxUsd is already resolved by the caller. If the caller provides a
-  // value, it IS the full position (wallet + delta); if undefined, there is no
-  // total position to use for cap dilution.
-  const totalPositionUsd = principalUsd != null && principalUsd > 0
-    ? principalUsd
-    : undefined;
-
-  return (
-    sumNumberArray(protocol, isApy) +
-    sumForecastMeritIncentiveApr(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed), totalPositionUsd) * eligibilityRatio +
-    (isApy
-      ? sumMerklIncentiveApy(forecastedMerkl, tydroPointToUsdRate, { whitelistMerklCampaignIds, merklGroupMultiplier, campaignAccessStatuses, pointRateMap, positionUsd: totalPositionUsd, tokenPrice: reserve.tokenPrice, decimals: reserve.decimals })
-      : sumMerklIncentiveApr(forecastedMerkl, tydroPointToUsdRate, { whitelistMerklCampaignIds, merklGroupMultiplier, campaignAccessStatuses, pointRateMap, positionUsd: totalPositionUsd, tokenPrice: reserve.tokenPrice, decimals: reserve.decimals })) +
-    sumForecastBrevisIncentiveApr(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId, forecastStates, totalPositionUsd)
-  );
-};
+// AAV-1113: buildIncentiveAfter was removed — afterIncentive is now derived from
+// per-source dispatch map sum (sr[key].after), eliminating the independent path
+// that could diverge from per-source values.
 
 export const toDisplayNative = (rawApy: number | null | undefined): number | null => {
   if (rawApy === null || rawApy === undefined || !Number.isFinite(rawApy)) return null;
@@ -1249,10 +1206,12 @@ export function buildRateSimulationResult({
 
   const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
-    const sameReserveRatio = side === 'supply' ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio;
     return (group) => {
       const constraint = group.netPositionConstraint;
-      const crossReserveRatio = constraint && crossReservePositions && crossReservePositions.size > 0
+      // AAV-1100/AAV-1113: offsetReserveIds always includes self (confirmed in all real data).
+      // crossReserveRatio already deducts same-reserve borrow via computeCrossReserveNetEligible.
+      // The sameReserveFactor branch (!includesSelf) was dead code — removed.
+      return constraint && crossReservePositions && crossReservePositions.size > 0
         ? computeCrossReserveEligibilityRatio({
             sourceSide: constraint.sourceSide,
             sourceGrossUsd: grossUsd,
@@ -1260,21 +1219,16 @@ export function buildRateSimulationResult({
             crossReservePositions,
           })
         : 1;
-      // AAV-1100: When offsetReserveIds includes self, crossReserveRatio already
-      // deducts same-reserve borrow. Only apply sameReserveRatio when self is NOT in offsets.
-      const includesSelf = constraint?.offsetReserveIds.includes(reserve.reserveId) ?? false;
-      const sameReserveFactor = constraint && !includesSelf ? sameReserveRatio : 1;
-      return crossReserveRatio * sameReserveFactor;
     };
   };
 
   // AAV-1101: Wallet-only merklGroupMultiplier for buildIncentiveCurrent & headline.
   const walletMerklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? walletSupplyGrossForEligibility : walletBorrowGrossForEligibility;
-    const sameReserveRatio = side === 'supply' ? walletSupplyMeritMerklEligibilityRatio : walletBorrowMeritMerklEligibilityRatio;
     return (group) => {
       const constraint = group.netPositionConstraint;
-      const crossReserveRatio = constraint && walletCrossReservePositions && walletCrossReservePositions.size > 0
+      // AAV-1100/AAV-1113: Same as merklGroupMultiplier — sameReserveFactor dead code removed.
+      return constraint && walletCrossReservePositions && walletCrossReservePositions.size > 0
         ? computeCrossReserveEligibilityRatio({
             sourceSide: constraint.sourceSide,
             sourceGrossUsd: grossUsd,
@@ -1282,9 +1236,6 @@ export function buildRateSimulationResult({
             crossReservePositions: walletCrossReservePositions,
           })
         : 1;
-      const includesSelf = constraint?.offsetReserveIds.includes(reserve.reserveId) ?? false;
-      const sameReserveFactor = constraint && !includesSelf ? sameReserveRatio : 1;
-      return crossReserveRatio * sameReserveFactor;
     };
   };
 
@@ -1490,15 +1441,32 @@ export function buildRateSimulationResult({
         })()
       : currentIncentive; // already APR when isApy=false
 
-    // Aggregate afterIncentive (independent from dispatch map — different Math.min semantics)
-    const afterIncentiveRaw = hasAnyInput
-      ? buildIncentiveAfter(reserve, side, isApy, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
+    // AAV-1113: Derive afterIncentive from per-source sum (single code path).
+    // Per-source after already has Math.min(afterRaw, current) applied in the dispatch map loop.
+    // No aggregate Math.min needed — per-source cap is the correct semantics.
+    // This eliminates the buildIncentiveAfter independent path that could diverge from per-source sum.
+    const afterIncentive = !blocked && hasAnyInput
+      ? protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after
       : null;
-    const afterIncentiveAprRaw = hasAnyInput
-      ? buildIncentiveAfter(reserve, side, false, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
+    // APR variant: when isApy=true, run a lightweight APR pass for afterIncentiveApr.
+    const afterIncentiveApr = !blocked && hasAnyInput
+      ? (isApy
+        ? (() => {
+            const aprCtx = { ...ctx, isApy: false };
+            const aprProtocol = sumNumberArray(currentData.protocol, false);
+            const aprMeritAfter = hasAnyInput ? sourceDispatch.merit.sumAfter(currentData.merit, aprCtx) : null;
+            const aprMerklAfter = hasAnyInput ? sourceDispatch.merkl.sumAfter(currentData.merkl, aprCtx) : null;
+            const aprBrevisAfter = hasAnyInput ? sourceDispatch.brevis.sumAfter(currentData.brevis, aprCtx) : null;
+            const aprMeritCurrent = sourceDispatch.merit.sumCurrent(currentData.merit, aprCtx);
+            const aprMerklCurrent = sourceDispatch.merkl.sumCurrent(currentData.merkl, aprCtx);
+            const aprBrevisCurrent = sourceDispatch.brevis.sumCurrent(currentData.brevis, aprCtx);
+            return aprProtocol
+              + (aprMeritAfter !== null ? Math.min(aprMeritAfter, aprMeritCurrent) : 0)
+              + (aprMerklAfter !== null ? Math.min(aprMerklAfter, aprMerklCurrent) : 0)
+              + (aprBrevisAfter !== null ? Math.min(aprBrevisAfter, aprBrevisCurrent) : 0);
+          })()
+        : afterIncentive)
       : null;
-    const afterIncentive = !blocked && hasAnyInput && afterIncentiveRaw !== null ? Math.min(afterIncentiveRaw, currentIncentive) : null;
-    const afterIncentiveApr = !blocked && hasAnyInput && afterIncentiveAprRaw !== null ? Math.min(afterIncentiveAprRaw, currentIncentiveApr) : null;
     afterIncentiveAprBySide[side] = afterIncentiveApr;
 
     const afterNative = blocked ? null : (isSupply ? supplyAfterNative : borrowAfterNative);

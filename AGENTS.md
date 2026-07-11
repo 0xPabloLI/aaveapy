@@ -419,3 +419,4 @@ Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` 
 - **$/T toggle 按钮必须与 input 行高一致**：`h-5`(20px) + `flex items-center justify-center` + `leading-none` 确保文字在固定高度内居中。移动端 `h-11 w-11`(44px) 满足触控目标要求。`px-0.5 → px-1` 增加水平 padding 使按钮不至于太窄。**教训：小按钮的 padding 选择需要同时考虑文字宽度和视觉权重——`px-0.5`(2px) 在只有单字符时太窄，`px-1`(4px) 更平衡。**
 - **`postinstall` 不应在修改其他脚本时误删**：修改 `dev:staging` 时 `postinstall` 行被连带删除，review 发现后恢复。**教训：修改 package.json 时只改目标行，不动相邻行——diff 审查时逐行确认。**
 - **文件顶部注释必须与代码同步**：`COL_WIDTHS` 从 `undefined` 改为 `'50%'` 后，文件头部的 "Input cols have no width → they absorb all remaining space" 注释与代码矛盾。**教训：修改常量值时必须同步更新所有引用该常量语义的注释。**
+- **Input 列 `align-top` 导致内容不垂直居中**：Input `<td>` 上曾有 `align-top`（CSS `vertical-align: top`），使内容贴着单元格顶部，而其他列（Native/Incentive/Total/Earn）默认 `vertical-align: middle` 垂直居中。移除 `align-top` 后所有列对齐一致。**教训：表格单元格的 `vertical-align` 是设计系统级属性，不应按列单独设置——如果某列需要顶部对齐，应该所有列都统一顶部对齐，而非混用。**
