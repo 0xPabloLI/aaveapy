@@ -163,8 +163,6 @@ export interface SimulationLane {
   inputUsd: number;
   currentNative: number | null;
   currentIncentive: number;
-  /** Undiluted headline incentive rate (no wallet position). */
-  headlineIncentive: number;
   currentTotal: number | null;
   afterNative: number | null;
   afterIncentive: number | null;
@@ -1260,8 +1258,9 @@ export function buildRateSimulationResult({
     };
   };
 
-  // Headline (undiluted by position cap, but eligibility-scaled) incentives. — raw API values, no TVL forecast, no dilution.
-  // Used as reference for deltaIncentive when wallet position exists (dilution gap).
+  // Headline incentives: have TVL forecast + wallet-only eligibility scaling,
+  // but NO position cap dilution (no positionUsd passed).
+  // Used as baseline for deltaIncentive when wallet position exists (dilution gap).
   // AAV-1101: headline & current use wallet-only multiplier (no delta).
   const supplyHeadlineIncentive = isApy
     ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('supply'), pointRateMap })
@@ -1498,7 +1497,6 @@ export function buildRateSimulationResult({
       inputUsd: blocked ? 0 : (isSupply ? supplyInputUsd : borrowInputUsd),
       currentNative,
       currentIncentive,
-      headlineIncentive,
       currentTotal,
       afterNative,
       afterIncentive,

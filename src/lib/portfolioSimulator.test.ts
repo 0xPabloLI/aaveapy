@@ -931,7 +931,7 @@ const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
   inputUsd: 10000,
   currentNative: 2.8,
   currentIncentive: 0.9,
-  headlineIncentive: 0.9,
+  
   currentTotal: 3.7,
   afterNative: 3.0,
   afterIncentive: 1.0,

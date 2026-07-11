@@ -11,7 +11,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     inputUsd: 1000,
     currentNative: 3,
     currentIncentive: 5,
-    headlineIncentive: 5,
+    
     currentTotal: 8,
     afterNative: 2.5,
     afterIncentive: 4,
@@ -27,7 +27,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     inputUsd: 500,
     currentNative: 5,
     currentIncentive: 0,
-    headlineIncentive: 0,
+    
     currentTotal: 5,
     afterNative: 5,
     afterIncentive: 0,
