@@ -180,7 +180,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Earn $/day</th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
             <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
