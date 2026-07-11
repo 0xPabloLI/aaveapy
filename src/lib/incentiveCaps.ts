@@ -2,24 +2,38 @@ import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 
+/**
+ * Parse a raw bigint string (e.g. "1000000000") into a native token amount number.
+ * Single canonical BigInt parsing entry point for all positionCapNative consumers.
+ * Returns null if parsing fails or amount is non-positive.
+ */
+function parseNativeTokenAmount(
+  raw: string,
+  decimals: number = DEFAULT_TOKEN_DECIMALS,
+): number | null {
+  try {
+    const rawBigInt = BigInt(raw);
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const wholePart = rawBigInt / divisor;
+    const fracPart = rawBigInt % divisor;
+    const amount = Number(wholePart) + Number(fracPart) / Number(divisor);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    return amount;
+  } catch {
+    return null;
+  }
+}
+
 export function convertPositionCapNativeToUsd(
   positionCapNative: string,
   tokenPrice: number,
   decimals: number = DEFAULT_TOKEN_DECIMALS,
 ): number | null {
   if (tokenPrice <= 0 || decimals < 0) return null;
-  try {
-    const rawBigInt = BigInt(positionCapNative);
-    const divisor = BigInt(10) ** BigInt(decimals);
-    const wholePart = rawBigInt / divisor;
-    const fracPart = rawBigInt % divisor;
-    const nativeAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
-    if (!Number.isFinite(nativeAmount) || nativeAmount <= 0) return null;
-    const usd = nativeAmount * tokenPrice;
-    return Number.isFinite(usd) && usd > 0 ? usd : null;
-  } catch {
-    return null;
-  }
+  const nativeAmount = parseNativeTokenAmount(positionCapNative, decimals);
+  if (nativeAmount == null) return null;
+  const usd = nativeAmount * tokenPrice;
+  return Number.isFinite(usd) && usd > 0 ? usd : null;
 }
 
 export function resolvePositionCapUsd(
@@ -96,30 +110,21 @@ export function netEligibleToNote(text: string): IncentiveNote {
 }
 
 /**
- * Parse a raw bigint string (e.g. "1000000000") into a human-readable token amount + symbol.
+ * Format a raw bigint string as a human-readable token amount + symbol.
+ * Uses `parseNativeTokenAmount` for BigInt parsing, then formats with locale grouping.
  * Shared by `formatPositionCapAmount` (with USD fallback) and `formatPositionCapNativeDisplay` (without).
- * Returns null if parsing fails or amount is non-positive.
  */
 function formatNativeTokenAmount(
   positionCapNative: string,
   tokenSymbol: string,
   decimals?: number,
 ): string | null {
-  const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
-  try {
-    const rawBigInt = BigInt(positionCapNative);
-    const divisor = BigInt(10) ** BigInt(d);
-    const wholePart = rawBigInt / divisor;
-    const fracPart = rawBigInt % divisor;
-    const tokenAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
-    if (!Number.isFinite(tokenAmount) || tokenAmount <= 0) return null;
-    const amountStr = tokenAmount >= 1000
-      ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      : tokenAmount.toFixed(2);
-    return `${amountStr} ${tokenSymbol}`;
-  } catch {
-    return null;
-  }
+  const tokenAmount = parseNativeTokenAmount(positionCapNative, decimals ?? DEFAULT_TOKEN_DECIMALS);
+  if (tokenAmount == null) return null;
+  const amountStr = tokenAmount >= 1000
+    ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : tokenAmount.toFixed(2);
+  return `${amountStr} ${tokenSymbol}`;
 }
 
 /**

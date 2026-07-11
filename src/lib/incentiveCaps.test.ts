@@ -139,6 +139,36 @@ describe('buildPositionCapEffect', () => {
     });
     expect(capEffectToNote(eff).text).toBe('Incentive limited to first $1,000.00');
   });
+
+  it('falls back to USD when positionCapNative is an invalid string', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      positionCapNative: 'not-a-number',
+      tokenSymbol: 'USDT',
+      decimals: 6,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $1,000.00');
+  });
+
+  it('falls back to USD when positionCapNative is zero', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      positionCapNative: '0',
+      tokenSymbol: 'USDT',
+      decimals: 6,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $1,000.00');
+  });
 });
 
 describe('FIX_REWARD and MAX_REWARD cap helpers', () => {
