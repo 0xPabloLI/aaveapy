@@ -1175,29 +1175,27 @@ export function buildRateSimulationResult({
   const supplyMeritMerklEligibilityRatio = meritMerklNetPosition ? supplyEligibilityRatio : 1;
   const borrowMeritMerklEligibilityRatio = meritMerklNetPosition ? borrowEligibilityRatio : 1;
 
-  // AAV-1101: Wallet-only eligibility ratios for buildIncentiveCurrent.
-  // current should reflect wallet positions (no delta); after should reflect wallet+delta.
-  // When wallet is undefined (single simulation mode), fall back to simulated values
-  // so current and after use the same multiplier (no wallet to differentiate).
-  const walletSupplyGrossForEligibility = walletSupplyUsd != null ? walletSupplyUsd : supplyGrossForEligibility;
-  const walletSupplyBorrowForEligibility = walletBorrowUsd != null ? walletBorrowUsd : supplyBorrowForEligibility;
+  // GOLDEN RULE (AAV-1121): Wallet-only eligibility ratios for current*.
+  // current must NEVER change with simulation input — it represents the wallet's present state.
+  // When no wallet exists (Shared Scenario), wallet ratios must be identity (1.0),
+  // NOT fallback to simulation inputs. No wallet = no position = no scaling.
+  const hasWallet = walletSupplyUsd != null || walletBorrowUsd != null;
+  const walletSupplyGrossForEligibility = hasWallet ? (walletSupplyUsd ?? 0) : 0;
+  const walletSupplyBorrowForEligibility = hasWallet ? (walletBorrowUsd ?? 0) : 0;
   const walletSupplyNetForEligibility = Math.max(walletSupplyGrossForEligibility - walletSupplyBorrowForEligibility, 0);
   const walletSupplyEligibilityRatio = walletSupplyGrossForEligibility > 0 ? walletSupplyNetForEligibility / walletSupplyGrossForEligibility : 1;
-  const walletBorrowGrossForEligibility = walletBorrowUsd != null ? walletBorrowUsd : borrowGrossForEligibility;
-  const walletBorrowSupplyForEligibility = walletSupplyUsd != null ? walletSupplyUsd : borrowSupplyForEligibility;
+  const walletBorrowGrossForEligibility = hasWallet ? (walletBorrowUsd ?? 0) : 0;
+  const walletBorrowSupplyForEligibility = hasWallet ? (walletSupplyUsd ?? 0) : 0;
   const walletBorrowNetForEligibility = Math.max(walletBorrowGrossForEligibility - walletBorrowSupplyForEligibility, 0);
   const walletBorrowEligibilityRatio = walletBorrowGrossForEligibility > 0 ? walletBorrowNetForEligibility / walletBorrowGrossForEligibility : 1;
 
   const walletSupplyMeritMerklEligibilityRatio = meritMerklNetPosition ? walletSupplyEligibilityRatio : 1;
   const walletBorrowMeritMerklEligibilityRatio = meritMerklNetPosition ? walletBorrowEligibilityRatio : 1;
 
-  // AAV-1100: When constraint exists, offsetReserveIds includes self (confirmed in all real data).
-  // crossReserveRatio already deducts same-reserve borrow via computeCrossReserveNetEligible.
-  // sameReserveFactor must be 1 to avoid double-counting.
-  // AAV-1101: Wallet-only crossReservePositions for current incentive (self entry = wallet only).
-  // When wallet is undefined (single simulation), keep original positions (no differentiation).
-  const walletCrossReservePositions = crossReservePositions ? new Map(crossReservePositions) : undefined;
-  if (walletCrossReservePositions && walletCrossReservePositions.has(reserve.reserveId) && (walletSupplyUsd != null || walletBorrowUsd != null)) {
+  // GOLDEN RULE (AAV-1121): walletCrossReservePositions must be undefined when no wallet.
+  // This ensures walletMerklGroupMultiplier returns 1.0 (identity) for current*.
+  const walletCrossReservePositions = hasWallet && crossReservePositions ? new Map(crossReservePositions) : undefined;
+  if (walletCrossReservePositions && walletCrossReservePositions.has(reserve.reserveId)) {
     walletCrossReservePositions.set(reserve.reserveId, {
       supplyUsd: walletSupplyUsd ?? 0,
       borrowUsd: walletBorrowUsd ?? 0,

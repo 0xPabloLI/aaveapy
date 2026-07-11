@@ -1697,7 +1697,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     expect(perSourceMerklCurrent).toBeCloseTo(4.24, 1);
   });
 
-  it('Bug 1: without wallet position, cross-reserve returns 1 (no scaling)', () => {
+  it('Bug 1: without wallet position, current = headline (no scaling) — GOLDEN RULE', () => {
     const crossReservePositions = new Map([
       [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
@@ -1716,11 +1716,9 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       crossReservePositions,
     });
 
-    // supplyInput=1000, cross-reserve borrow=600
-    // net eligible = max(1000-600, 0) = 400
-    // eligibility ratio = 400/1000 = 0.4
-    // expected = 10 * 0.4 = 4.0
-    expect(result.supply.sources.merkl?.current ?? 0).toBeCloseTo(4.0, 1);
+    // GOLDEN RULE (AAV-1121): No wallet → current = headline (no eligibility scaling).
+    // current = 10 (undiluted, unscaled). after reflects simulation scaling.
+    expect(result.supply.sources.merkl?.current ?? 0).toBeCloseTo(10.0, 1);
   });
 
   it('Bug 2: aggregate currentIncentive matches per-source sum for Merkl with constraint', () => {
@@ -2390,5 +2388,105 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
     });
 
     expect(result.supply.afterIncentive).toBeNull();
+  });
+});
+
+describe('Golden Rule: currentIncentive must NOT change with simulation input (AAV-1121)', () => {
+  // GOLDEN RULE: current* fields represent the wallet's present state.
+  // They must NEVER change when simulation inputs change.
+  // If no wallet exists (Shared Scenario), current = headline (undiluted, no eligibility scaling).
+  const MERKL_CONSTRAINT_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    supplyIncentives: [] as number[],
+    merklSupplys: [{
+      name: 'Net lending group',
+      breakdowns: [{
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'golden-rule-1',
+      }],
+      opportunityId: '99',
+      netPositionConstraint: {
+        sourceSide: 'supply',
+        offsetReserveIds: [BASE_RESERVE.reserveId],
+      },
+    }],
+  };
+
+  it('Shared Scenario: current unchanged when borrow added (no wallet → no eligibility scaling)', () => {
+    const crp1 = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 10000, borrowUsd: 0 }]]);
+    const r1 = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '10000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      crossReservePositions: crp1,
+    });
+
+    const crp2 = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 10000, borrowUsd: 5000 }]]);
+    const r2 = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '10000',
+      borrowInput: '5000',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      crossReservePositions: crp2,
+    });
+
+    // current MUST be the same — it represents the wallet's present state (none in Shared mode)
+    expect(r1.supply.currentIncentive).toBeCloseTo(r2.supply.currentIncentive, 6);
+    // after SHOULD differ — it reflects the simulation
+    expect(r1.supply.afterIncentive).not.toBeCloseTo(r2.supply.afterIncentive!, 2);
+  });
+
+  it('Portfolio: current unchanged when borrow delta added (wallet-only values)', () => {
+    const crp1 = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 10000, borrowUsd: 0 }]]);
+    const r1 = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 10000,
+      totalBorrowUsd: 0,
+      crossReservePositions: crp1,
+    });
+
+    const crp2 = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 10000, borrowUsd: 5000 }]]);
+    const r2 = buildRateSimulationResult({
+      reserve: MERKL_CONSTRAINT_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '5000',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 10000,
+      totalBorrowUsd: 5000,
+      crossReservePositions: crp2,
+    });
+
+    // current MUST be the same — wallet positions haven't changed
+    expect(r1.supply.currentIncentive).toBeCloseTo(r2.supply.currentIncentive, 6);
   });
 });

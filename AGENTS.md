@@ -183,6 +183,34 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - `src/types/field-canary.test.ts` 穷举字段名，重命名时 tsc + test 双防线拦截。
 - Pre-push: stash > 3 警告清理。
 
+## Golden Rules: Rate Simulation Calculator
+
+以下规则是 `rateSimulationCalculator.ts` 的不变量（invariants），违反任何一条都是 bug。修改 calculator 前必须先读这些规则。
+
+### 1. Current 不变量：`current*` 字段永不随 simulation input 变化
+- `currentIncentive`、`currentTotal`、`currentNative` 代表**钱包当下状态**，不是模拟状态。
+- 改变 `supplyInput`/`borrowInput` **绝不能**改变 `current*` 值。
+- 无钱包（Shared Scenario）时，`current = headline`（未稀释 API 值，无 eligibility scaling）。
+- 有钱包（Portfolio）时，`current` 使用钱包-only 值（`walletSupplyUsd`/`walletBorrowUsd`）。
+- **实现**：`walletEligibilityRatio` 和 `walletMerklGroupMul` 在无钱包时必须返回 identity（1.0），**不得 fallback 到 simulation inputs**。
+
+### 2. Aggregate = Σ per-source：单一计算路径
+- `currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current`
+- `afterIncentive = protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after`
+- **禁止**独立的 aggregate 计算路径（如已删除的 `buildIncentiveCurrent`/`buildIncentiveAfter`）。
+- Per-source `Math.min(afterRaw, current)` 在 dispatch map 循环内应用，aggregate 层不再加 `Math.min`。
+- `Math.min(a+b, c+d) ≠ Math.min(a,c) + Math.min(b,d)` — 两层 cap 产生不同结果。
+
+### 3. Wallet fallback = identity，不是 simulation
+- `walletSupplyUsd`/`walletBorrowUsd` 为 undefined 时，wallet 变量必须 fallback 到 **identity**（ratio=1, multiplier=1），**不是** simulation inputs。
+- 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
+- **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
+
+### 4. `headlineIncentive` 是独立基线
+- `headlineIncentive` = API 返回的原始 APR，无仓位 cap 稀释、无 TVL forecast、无 eligibility scaling。
+- 用于 `deltaIncentive` 计算：`hasInput ? after - current : (wallet ? current - headline : null)`。
+- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`。
+
 ## Learned Lessons
 - Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
 - **CJK 全角小数点归一化 (AAV-739)**：中文/日文输入法在非数字上下文按 `.` 出 `。`(U+3002)/`．`(U+FF0E)/`｡`(U+FF61) 而非 ASCII `.`(U+002E)。`sanitizeNumberInput` 必须先归一化全角小数点，否则被 `[^\d.]` 正则当非法字符删掉。归一化放在 sanitizer 最前面，先于逗号去除和数字过滤。
