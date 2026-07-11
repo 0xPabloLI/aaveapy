@@ -4,8 +4,8 @@
  * Width strategy: table-layout:auto.
  * Token col uses width:1px — in auto layout, the browser still sizes it to
  * content (auto always fits content, never truncates), but the 1px "claim"
- * means it absorbs almost zero extra space. Input cols have no width → they
- * absorb all remaining space. Other cols have fixed px widths.
+ * means it absorbs almost zero extra space. Input cols share remaining space
+ * equally (50% each) via colgroup hint. Other cols have fixed px widths.
  *
  * Columns (12):
  *   0  Token            1px  (content-adaptive, no extra space)
@@ -75,8 +75,8 @@ import {
 // → they absorb all remaining space. Other cols have fixed px widths.
 const COL_WIDTHS = [
   '1px',         // 0  Token — content-adaptive, no extra space claim
-  '50%',         // 1  Supply Input — equal share with Borrow Input
-  '50%',         // 2  Borrow Input — equal share with Supply Input
+  '50%',         // 1  Supply Input — equal share with Borrow Input (auto layout hint)
+  '50%',         // 2  Borrow Input — equal share with Supply Input (auto layout hint)
   '62px',        // 3  Supply Native
   '62px',        // 4  Borrow Native
   '62px',        // 5  Supply Incent

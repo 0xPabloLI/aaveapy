@@ -347,8 +347,8 @@ export function CompactInput({
             disabled={tokenPriceInUsd === undefined}
             onClick={handleToggleInputMode}
             className={cn(
-              'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground flex items-center justify-center',
-              'h-11 w-11 px-1 md:h-5 md:w-auto md:px-0.5',
+              'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground flex items-center justify-center leading-none',
+              'h-11 w-11 px-1 md:h-5 md:w-auto md:px-1',
               tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
             )}
             aria-label={`Switch to ${sideData.inputMode === 'usd' ? 'token' : 'USD'} input`}

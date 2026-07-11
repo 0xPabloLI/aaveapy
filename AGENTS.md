@@ -411,3 +411,11 @@ Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` 
 
 - **Portfolio 模式下所有数据计算必须用 `allReserves` 而非 filtered `reserves`**：`ReservesTable.tsx` 接收两个 list——`reserves`（经 token/market 过滤后的列表）和 `allReserves`（全量列表）。Portfolio entries 可以引用任何 reserve，不受当前过滤条件限制。`usePortfolioToggle`（L845）和 `PortfolioPanel`（L910/954）已正确使用 `allReserves`，但 `buildPerReserveInputsFromEntries`、`useSharedRateSimulations`、`portfolioCapWarningsMap` 三处遗漏，仍用 filtered `reserves`，导致过滤后部分 portfolio entries 的 simulation 结果和 cap warnings 消失。**教训：Portfolio 模式下的所有计算路径（inputs 构建、rate simulation、cap warnings）都必须使用 `allReserves`，与已建立的 `usePortfolioToggle` 模式保持一致。**
 - **不需要中间变量来表达"portfolio 用 allReserves"**：初始修复引入了 `portfolioReservesSource = isPortfolioMode ? allReserves : reserves` 变量，但 `buildPerReserveInputsFromEntries` 已被 `isPortfolioMode` 守卫，可直接用 `allReserves`；只有 `useSharedRateSimulations`（single 和 portfolio 共用）需要内联三元 `isPortfolioMode ? allReserves : reserves`。**教训：当消费点已被模式守卫时，直接用目标值，不引入中间变量——与同文件中 `usePortfolioToggle` 直接传 `allReserves` 的模式一致。**
+
+## Learned Lessons: Portfolio Table 列等宽 + Total 行 band + Toggle 按钮尺寸
+
+- **`table-layout: auto` 下 `50%` colgroup 是建议而非强制**：auto 模式按内容 max-content 分配宽度，`<col width="50%">` 只是浏览器优先参考。当两侧内容差异大时（一侧有 wallet display + 长数字，另一侧为空），等宽可能不完全成立。如果需要严格等宽保证，应改用 `table-layout: fixed`。当前实测两侧等宽，在注释中标注了 "auto layout hint"。
+- **Total 行（tfoot）不需要 banded cluster 背景**：设计规范明确"Total 行只保留文字色（SUPPLY_COLOR/BORROW_COLOR），不加 SUPPLY_BAND/BORROW_BAND 背景"。Body 行保留 band 背景（与 header 呼应），Total 行用中性背景（`bg-muted/30`）+ 文字色区分。**教训：Summary/Total 行的视觉处理应与数据行不同——用文字色而非背景色传达语义，减少视觉噪声。**
+- **$/T toggle 按钮必须与 input 行高一致**：`h-5`(20px) + `flex items-center justify-center` + `leading-none` 确保文字在固定高度内居中。移动端 `h-11 w-11`(44px) 满足触控目标要求。`px-0.5 → px-1` 增加水平 padding 使按钮不至于太窄。**教训：小按钮的 padding 选择需要同时考虑文字宽度和视觉权重——`px-0.5`(2px) 在只有单字符时太窄，`px-1`(4px) 更平衡。**
+- **`postinstall` 不应在修改其他脚本时误删**：修改 `dev:staging` 时 `postinstall` 行被连带删除，review 发现后恢复。**教训：修改 package.json 时只改目标行，不动相邻行——diff 审查时逐行确认。**
+- **文件顶部注释必须与代码同步**：`COL_WIDTHS` 从 `undefined` 改为 `'50%'` 后，文件头部的 "Input cols have no width → they absorb all remaining space" 注释与代码矛盾。**教训：修改常量值时必须同步更新所有引用该常量语义的注释。**
