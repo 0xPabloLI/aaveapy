@@ -2190,3 +2190,94 @@ describe('AAV-1107: aggregate currentIncentive matches per-source sum with Merkl
     expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 4);
   });
 });
+
+describe('AAV-1112: currentIncentive derived from per-source sum (no independent path)', () => {
+  // Structural test: currentIncentive must equal the sum of per-source current values.
+  // This ensures there is only ONE code path for computing current incentive.
+  const ALL_SOURCES_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    supplyIncentives: [1.0],
+    meritSupplys: [{
+      name: 'Merit campaign',
+      breakdowns: [{
+        campaignApr: 5,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'merit-1112',
+      }],
+    }],
+    merklSupplys: [{
+      name: 'Merkl campaign',
+      breakdowns: [{
+        campaignApr: 8,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'merkl-1112',
+        positionCapNative: '1000000000000000000000', // $1000 cap
+      }],
+      opportunityId: '1112',
+    }],
+  };
+
+  it('supply currentIncentive = protocol + merit + merkl + brevis current', () => {
+    const result = buildRateSimulationResult({
+      reserve: ALL_SOURCES_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 5000, // exceeds Merkl cap → dilution
+      totalBorrowUsd: 0,
+    });
+
+    const p = result.supply.sources.protocol?.current ?? 0;
+    const m = result.supply.sources.merit?.current ?? 0;
+    const k = result.supply.sources.merkl?.current ?? 0;
+    const b = result.supply.sources.brevis?.current ?? 0;
+
+    expect(p + m + k + b).toBeCloseTo(result.supply.currentIncentive, 6);
+  });
+
+  it('borrow currentIncentive = protocol + merit + merkl + brevis current', () => {
+    const BORROW_RESERVE: ReserveWithSpread = {
+      ...ALL_SOURCES_RESERVE,
+      borrowIncentives: [0.5],
+      meritBorrows: [{
+        name: 'Merit borrow',
+        breakdowns: [{
+          campaignApr: 3,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'merit-b-1112',
+        }],
+      }],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve: BORROW_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalBorrowUsd: 5000,
+      totalSupplyUsd: 0,
+    });
+
+    const p = result.borrow.sources.protocol?.current ?? 0;
+    const m = result.borrow.sources.merit?.current ?? 0;
+    const k = result.borrow.sources.merkl?.current ?? 0;
+    const b = result.borrow.sources.brevis?.current ?? 0;
+
+    expect(p + m + k + b).toBeCloseTo(result.borrow.currentIncentive, 6);
+  });
+});

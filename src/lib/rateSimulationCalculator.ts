@@ -1320,29 +1320,12 @@ export function buildRateSimulationResult({
   const borrowHeadlineIncentive = isApy
     ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('borrow'), pointRateMap })
     : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('borrow'), pointRateMap });
-  const supplyCurrentIncentive = buildIncentiveCurrent(
-    reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, walletMerklGroupMultiplier('supply'), walletSupplyMeritMerklEligibilityRatio,
-  );
-  const borrowCurrentIncentive = buildIncentiveCurrent(
-    reserve, 'borrow', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, walletMerklGroupMultiplier('borrow'), walletBorrowMeritMerklEligibilityRatio,
-  );
-  const supplyCurrentIncentiveApr = buildIncentiveCurrent(
-    reserve, 'supply', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, walletMerklGroupMultiplier('supply'), walletSupplyMeritMerklEligibilityRatio,
-  );
-  const borrowCurrentIncentiveApr = buildIncentiveCurrent(
-    reserve, 'borrow', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
-    walletSupplyUsd, walletBorrowUsd, hubSupplied, hubBorrowed, pointRateMap, walletMerklGroupMultiplier('borrow'), walletBorrowMeritMerklEligibilityRatio,
-  );
-
-  const supplyCurrentTotal = isApy
-    ? calculateTotalSupplyApy(reserve.supplyApy, supplyCurrentIncentive)
-    : calculateTotalSupplyApr(supplyCurrentNative, supplyCurrentIncentive);
-  const borrowCurrentTotal = isApy
-    ? calculateTotalBorrowApy(reserve.borrowApy, borrowCurrentIncentive)
-    : calculateTotalBorrowApr(borrowCurrentNative, borrowCurrentIncentive);
+  // AAV-1112: currentIncentive is derived from per-source sumCurrent (dispatch map),
+  // not from a separate buildIncentiveCurrent call. This eliminates the dual-code-path
+  // bug where aggregate and per-source values could diverge.
+  // The dispatch map loop runs inside the per-side for loop below, so currentIncentive
+  // and currentTotal are computed there. Headline is still computed here because it
+  // uses calculateTotalIncentiveApy/Apr (no positionUsd — headline = undiluted).
 
   // ─── B 类字段: After/Delta (随 simulation input 变化, 无模拟 → null) ───
 
@@ -1440,6 +1423,8 @@ export function buildRateSimulationResult({
 
   const lanes: Partial<Record<RateSide, SimulationLane>> = {};
   const afterIncentiveAprBySide: Partial<Record<RateSide, number | null>> = {};
+  // AAV-1112: Store currentTotal per side for spread calculation after the loop.
+  const currentTotalBySide: Partial<Record<RateSide, number | null>> = {};
 
   for (const side of ['supply', 'borrow'] as const) {
     const isSupply = side === 'supply';
@@ -1475,36 +1460,11 @@ export function buildRateSimulationResult({
       tokenSymbol: reserve.tokenSymbol,
     };
 
-    // Aggregate afterIncentive (independent from dispatch map — different Math.min semantics)
-    const afterIncentiveRaw = hasAnyInput
-      ? buildIncentiveAfter(reserve, side, isApy, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
-      : null;
-    const afterIncentiveAprRaw = hasAnyInput
-      ? buildIncentiveAfter(reserve, side, false, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
-      : null;
-    const currentIncentive = isSupply ? supplyCurrentIncentive : borrowCurrentIncentive;
-    const currentIncentiveApr = isSupply ? supplyCurrentIncentiveApr : borrowCurrentIncentiveApr;
-    const afterIncentive = !blocked && hasAnyInput && afterIncentiveRaw !== null ? Math.min(afterIncentiveRaw, currentIncentive) : null;
-    const afterIncentiveApr = !blocked && hasAnyInput && afterIncentiveAprRaw !== null ? Math.min(afterIncentiveAprRaw, currentIncentiveApr) : null;
-    afterIncentiveAprBySide[side] = afterIncentiveApr;
-
-    const afterNative = blocked ? null : (isSupply ? supplyAfterNative : borrowAfterNative);
-    const currentNative = isSupply ? supplyCurrentNative : borrowCurrentNative;
-    const headlineIncentive = isSupply ? supplyHeadlineIncentive : borrowHeadlineIncentive;
-    const currentTotal = isSupply ? supplyCurrentTotal : borrowCurrentTotal;
-    const walletUsd = isSupply ? walletSupplyUsd : walletBorrowUsd;
-
-    const afterTotal = blocked ? null : (hasAnyInput && afterNative !== null && afterIncentive !== null
-      ? (isApy
-        ? (isSupply ? calculateTotalSupplyApy(afterNative, afterIncentive) : calculateTotalBorrowApy(afterNative, afterIncentive))
-        : (isSupply ? calculateTotalSupplyApr(afterNative, afterIncentive) : calculateTotalBorrowApr(afterNative, afterIncentive)))
-      : null);
-
     // Protocol (degenerate case — no after, no campaigns)
     const protocolCurrent = sumNumberArray(currentData.protocol, isApy);
     const protocolDetail = attachCampaigns(buildMetric(protocolCurrent, protocolCurrent), []);
 
-    // Merit/Merkl/Brevis (dispatch map)
+    // Merit/Merkl/Brevis (dispatch map) — single source of truth for per-source current
     const sr = {} as Record<SourceKey, { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }>;
     for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
       const current = sourceDispatch[key].sumCurrent(currentData[key], ctx);
@@ -1513,6 +1473,48 @@ export function buildRateSimulationResult({
       const campaigns = sourceDispatch[key].buildDetails(currentData[key], ctx);
       sr[key] = { current, after, campaigns };
     }
+
+    // AAV-1112: Derive currentIncentive from per-source sum (single code path).
+    const currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current;
+    // APR variant for afterIncentiveApr Math.min cap.
+    // When isApy=true, sr[key].current is in APY — we need APR for the Math.min cap.
+    // Run a lightweight APR pass through the same dispatch map.
+    const currentIncentiveApr = isApy
+      ? (() => {
+          const aprCtx = { ...ctx, isApy: false };
+          const aprProtocol = sumNumberArray(currentData.protocol, false);
+          const aprMerit = sourceDispatch.merit.sumCurrent(currentData.merit, aprCtx);
+          const aprMerkl = sourceDispatch.merkl.sumCurrent(currentData.merkl, aprCtx);
+          const aprBrevis = sourceDispatch.brevis.sumCurrent(currentData.brevis, aprCtx);
+          return aprProtocol + aprMerit + aprMerkl + aprBrevis;
+        })()
+      : currentIncentive; // already APR when isApy=false
+
+    // Aggregate afterIncentive (independent from dispatch map — different Math.min semantics)
+    const afterIncentiveRaw = hasAnyInput
+      ? buildIncentiveAfter(reserve, side, isApy, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
+      : null;
+    const afterIncentiveAprRaw = hasAnyInput
+      ? buildIncentiveAfter(reserve, side, false, ctx.meritMerklInputUsd, ctx.grossInputUsd, ctx.eligibilityRatio, forecastStates, tydroPointToUsdRate, whitelistMerklCampaignIds, brevisSharedDepositsByCampaignId, hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed, merklGroupMultiplier(side), campaignAccessStatuses, totalSupplyUsd, totalBorrowUsd, pointRateMap)
+      : null;
+    const afterIncentive = !blocked && hasAnyInput && afterIncentiveRaw !== null ? Math.min(afterIncentiveRaw, currentIncentive) : null;
+    const afterIncentiveApr = !blocked && hasAnyInput && afterIncentiveAprRaw !== null ? Math.min(afterIncentiveAprRaw, currentIncentiveApr) : null;
+    afterIncentiveAprBySide[side] = afterIncentiveApr;
+
+    const afterNative = blocked ? null : (isSupply ? supplyAfterNative : borrowAfterNative);
+    const currentNative = isSupply ? supplyCurrentNative : borrowCurrentNative;
+    const headlineIncentive = isSupply ? supplyHeadlineIncentive : borrowHeadlineIncentive;
+    const currentTotal = isApy
+      ? (isSupply ? calculateTotalSupplyApy(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApy(currentNative ?? 0, currentIncentive))
+      : (isSupply ? calculateTotalSupplyApr(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApr(currentNative ?? 0, currentIncentive));
+    currentTotalBySide[side] = currentTotal;
+    const walletUsd = isSupply ? walletSupplyUsd : walletBorrowUsd;
+
+    const afterTotal = blocked ? null : (hasAnyInput && afterNative !== null && afterIncentive !== null
+      ? (isApy
+        ? (isSupply ? calculateTotalSupplyApy(afterNative, afterIncentive) : calculateTotalBorrowApy(afterNative, afterIncentive))
+        : (isSupply ? calculateTotalSupplyApr(afterNative, afterIncentive) : calculateTotalBorrowApr(afterNative, afterIncentive)))
+      : null);
 
     const meritOffsetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
       ? [netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)]
@@ -1589,10 +1591,10 @@ export function buildRateSimulationResult({
 
   // ─── A 类字段: spread/utilization current (不随 simulation input 变化) ───
 
-  const spreadCurrent =
-    supplyCurrentTotal !== null && borrowCurrentTotal !== null
-      ? supplyCurrentTotal - borrowCurrentTotal
-      : null;
+const spreadCurrent =
+currentTotalBySide.supply != null && currentTotalBySide.borrow != null
+? currentTotalBySide.supply - currentTotalBySide.borrow
+: null;
   // ─── B 类字段: spread/utilization after/delta (随 simulation input 变化) ───
 
   const spreadAfter =
