@@ -241,16 +241,21 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
+  // In portfolio mode, use allReserves (not filtered reserves) so that portfolio
+  // entries whose reserves are filtered out of the main table still get simulated.
+  // Filtering token/market should not affect portfolio simulation results.
+  const portfolioReservesSource = isPortfolioMode ? allReserves : reserves;
+
   const portfolioInputsResult = useMemo<PortfolioInputsResult | undefined>(
-    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
-    [isPortfolioMode, portfolioEntries, reserves],
+    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, portfolioReservesSource) : undefined),
+    [isPortfolioMode, portfolioEntries, portfolioReservesSource],
   );
   const perReserveInputs = portfolioInputsResult?.perReserveInputs;
   const crossReservePositions = portfolioInputsResult?.crossReservePositions;
   const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
-    reserves,
+    reserves: portfolioReservesSource,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
@@ -846,7 +851,7 @@ const ReservesTable = ({
   const portfolioCapWarningsMap = useMemo(() => {
     if (!isPortfolioMode || !portfolioEntries) return undefined;
     const map = new Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>();
-    const priceById = new Map(reserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
+    const priceById = new Map(allReserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
     const otherSideEntries = portfolioEntries.map(e => ({
       reserveId: e.reserveId,
       borrowAmountUsd: parseNumberInput(e.borrow.amount) * (e.borrow.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
@@ -866,7 +871,7 @@ const ReservesTable = ({
       }
     }
     return map.size > 0 ? map : undefined;
-  }, [isPortfolioMode, portfolioEntries, simulationsById, reserves]);
+  }, [isPortfolioMode, portfolioEntries, simulationsById, allReserves]);
 
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
