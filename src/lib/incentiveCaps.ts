@@ -2,24 +2,38 @@ import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 
+/**
+ * Parse a raw bigint string (e.g. "1000000000") into a native token amount number.
+ * Single canonical BigInt parsing entry point for all positionCapNative consumers.
+ * Returns null if parsing fails or amount is non-positive.
+ */
+function parseNativeTokenAmount(
+  raw: string,
+  decimals: number = DEFAULT_TOKEN_DECIMALS,
+): number | null {
+  try {
+    const rawBigInt = BigInt(raw);
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const wholePart = rawBigInt / divisor;
+    const fracPart = rawBigInt % divisor;
+    const amount = Number(wholePart) + Number(fracPart) / Number(divisor);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    return amount;
+  } catch {
+    return null;
+  }
+}
+
 export function convertPositionCapNativeToUsd(
   positionCapNative: string,
   tokenPrice: number,
   decimals: number = DEFAULT_TOKEN_DECIMALS,
 ): number | null {
   if (tokenPrice <= 0 || decimals < 0) return null;
-  try {
-    const rawBigInt = BigInt(positionCapNative);
-    const divisor = BigInt(10) ** BigInt(decimals);
-    const wholePart = rawBigInt / divisor;
-    const fracPart = rawBigInt % divisor;
-    const nativeAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
-    if (!Number.isFinite(nativeAmount) || nativeAmount <= 0) return null;
-    const usd = nativeAmount * tokenPrice;
-    return Number.isFinite(usd) && usd > 0 ? usd : null;
-  } catch {
-    return null;
-  }
+  const nativeAmount = parseNativeTokenAmount(positionCapNative, decimals);
+  if (nativeAmount == null) return null;
+  const usd = nativeAmount * tokenPrice;
+  return Number.isFinite(usd) && usd > 0 ? usd : null;
 }
 
 export function resolvePositionCapUsd(
@@ -95,9 +109,60 @@ export function netEligibleToNote(text: string): IncentiveNote {
   return { type: 'net_eligible', text, color: 'muted' };
 }
 
+/**
+ * Format a raw bigint string as a human-readable token amount + symbol.
+ * Uses `parseNativeTokenAmount` for BigInt parsing, then formats with locale grouping.
+ * Shared by `formatPositionCapAmount` (with USD fallback) and `formatPositionCapNativeDisplay` (without).
+ */
+function formatNativeTokenAmount(
+  positionCapNative: string,
+  tokenSymbol: string,
+  decimals?: number,
+): string | null {
+  const tokenAmount = parseNativeTokenAmount(positionCapNative, decimals ?? DEFAULT_TOKEN_DECIMALS);
+  if (tokenAmount == null) return null;
+  const amountStr = tokenAmount >= 1000
+    ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : tokenAmount.toFixed(2);
+  return `${amountStr} ${tokenSymbol}`;
+}
+
+/**
+ * Format position cap amount for display.
+ * When `positionCapNative` + `tokenSymbol` are available (Merkl), shows native token amount + symbol.
+ * Otherwise falls back to USD (Merit/Brevis).
+ */
+function formatPositionCapAmount(input: {
+  positionCapUsd: number;
+  positionCapNative?: string;
+  tokenSymbol?: string;
+  decimals?: number;
+}): string {
+  if (input.positionCapNative != null && input.tokenSymbol != null) {
+    const native = formatNativeTokenAmount(input.positionCapNative, input.tokenSymbol, input.decimals);
+    if (native != null) return native;
+  }
+  return formatUsd(input.positionCapUsd);
+}
+
+/**
+ * Format a positionCapNative raw bigint string as a human-readable token amount + symbol.
+ * Returns null if parsing fails.
+ */
+export function formatPositionCapNativeDisplay(
+  positionCapNative: string,
+  tokenSymbol: string,
+  decimals?: number,
+): string | null {
+  return formatNativeTokenAmount(positionCapNative, tokenSymbol, decimals);
+}
+
 /** Per-user position cap. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
 export function buildPositionCapEffect(input: {
   positionCapUsd: number;
+  positionCapNative?: string;
+  tokenSymbol?: string;
+  decimals?: number;
   isCombineCap: boolean;
   isCapBinding: boolean;
   remainingBudget: number | null;
@@ -105,7 +170,8 @@ export function buildPositionCapEffect(input: {
   remainingDays: number | null;
 }): IncentiveCapEffect {
   const parts: string[] = [];
-  const capPrefix = `Incentive limited to first ${formatUsd(input.positionCapUsd)}`;
+  const capAmountText = formatPositionCapAmount(input);
+  const capPrefix = `Incentive limited to first ${capAmountText}`;
   parts.push(
     input.isCombineCap
       ? `${capPrefix} · combined supply + borrow`
@@ -186,6 +252,9 @@ export function applyPositionCapToForecastResult(
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
+    positionCapNative?: string;
+    tokenSymbol?: string;
+    decimals?: number;
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
@@ -194,6 +263,9 @@ export function applyPositionCapToForecastResult(
   const { aprPercent, isCapBinding } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
   const effect = buildPositionCapEffect({
     positionCapUsd: capUsd,
+    positionCapNative: options?.positionCapNative,
+    tokenSymbol: options?.tokenSymbol,
+    decimals: options?.decimals,
     isCombineCap: options?.isCombineCap ?? false,
     isCapBinding,
     remainingBudget: options?.remainingBudget ?? null,

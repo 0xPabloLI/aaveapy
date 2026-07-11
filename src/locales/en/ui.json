@@ -19,8 +19,8 @@
       "body": "Merit, Merkl, and Brevis rewards merged into a single effective APY so you see real yield, not headline rates."
     },
     "multichain": {
-      "title": "17 chains, one view",
-      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche and 12 more — compare them side by side."
+      "title": "{chainCount} chains, one view",
+      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche and more — compare them side by side."
     },
     "simulator": {
       "title": "Rate impact simulator",

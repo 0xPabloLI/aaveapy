@@ -14,7 +14,7 @@ const DESCRIPTION =
 const FAQS: { q: string; a: string }[] = [
   {
     q: 'How do I track DeFi yields across multiple blockchains?',
-    a: 'Aave APY aggregates live reserve data from every chain Aave supports — Ethereum, Arbitrum, Base, Optimism, Polygon, Avalanche, Gnosis, Scroll, Linea, zkSync, BNB Chain, Celo, Sonic, Soneium, Ink, Mantle, and Metis — into a single dashboard. Supply and borrow APYs include all active incentive programs, so you can compare effective yields across chains without manual math.',
+    a: 'AaveAPY aggregates live reserve data from every chain Aave supports — Ethereum, Arbitrum, Base, Optimism, Polygon, Avalanche, Gnosis, Scroll, Linea, zkSync, BNB Chain, Celo, Sonic, Soneium, Ink, Mantle, and Metis — into a single dashboard. Supply and borrow APYs include all active incentive programs, so you can compare effective yields across chains without manual math.',
   },
   {
     q: 'What is DeFi yield farming?',
@@ -22,7 +22,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What are the best stablecoin APY rates today?',
-    a: 'Stablecoin APYs change minute to minute based on pool utilization and active incentives. USDC and USDT on L2s like Base, Arbitrum, and Polygon often offer the most competitive effective APYs once Merit and Merkl rewards are included. Use the dashboard to compare live stablecoin APYs across all 17 chains side by side.',
+    a: 'Stablecoin APYs change minute to minute based on pool utilization and active incentives. USDC and USDT on L2s like Base, Arbitrum, and Polygon often offer the most competitive effective APYs once Merit and Merkl rewards are included. Use the dashboard to compare live stablecoin APYs across every supported chain side by side.',
   },
   {
     q: 'How does crypto staking work on DeFi platforms?',
@@ -30,7 +30,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What is the best DeFi staking platform?',
-    a: 'The best DeFi staking platform depends on your assets and risk tolerance. Aave is one of the largest and most audited lending protocols, with markets on 17 chains. Aave APY helps you compare Aave yields across chains so you can find the best rate for your stablecoins, ETH, or BTC without switching between dApps.',
+    a: 'The best DeFi staking platform depends on your assets and risk tolerance. Aave is one of the largest and most audited lending protocols, deployed across many chains. AaveAPY helps you compare Aave yields across chains so you can find the best rate for your stablecoins, ETH, or BTC without switching between dApps.',
   },
   {
     q: 'What are DeFi lending rates and how are they set?',
@@ -42,23 +42,23 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is this DeFi yield tracker free?',
-    a: 'Yes. Aave APY is a free, public dashboard. No wallet connection or signup required to view live rates, run simulations, or compare opportunities across chains.',
+    a: 'Yes. AaveAPY is a free, public dashboard. No wallet connection or signup required to view live rates, run simulations, or compare opportunities across chains.',
   },
   {
     q: 'How often is the APY data updated?',
     a: 'Reserve rates refresh every minute from the Aave protocol. Incentive forecasts (Merit, Merkl, Brevis) update on their respective campaign cadences and are baked into the effective APY shown on every row.',
   },
   {
-    q: 'Aave APY vs DeBank: which should I use?',
-    a: 'Use DeBank for a multi-protocol wallet overview across hundreds of dApps. Use Aave APY when you need live Aave supply and borrow rates across all 17 chains with Merit, Merkl, and Brevis incentives included, plus rate simulation before depositing. They complement each other: DeBank tracks what you hold, Aave APY helps decide where to deposit next.',
+    q: 'AaveAPY vs DeBank: which should I use?',
+    a: 'Use DeBank for a multi-protocol wallet overview across hundreds of dApps. Use AaveAPY when you need live Aave supply and borrow rates across every supported chain with Merit, Merkl, and Brevis incentives included, plus rate simulation before depositing. They complement each other: DeBank tracks what you hold, AaveAPY helps decide where to deposit next.',
   },
   {
-    q: 'Aave APY vs Zerion: what is the difference?',
-    a: 'Zerion is a polished mobile-first wallet tracker with NFT support and basic swaps. Aave APY is an Aave-only yield tracker — no wallet required — focused on effective APY comparison across chains, incentive breakdowns, and portfolio simulation. Pick Zerion to monitor a wallet, pick Aave APY to optimize Aave allocation.',
+    q: 'AaveAPY vs Zerion: what is the difference?',
+    a: 'Zerion is a polished mobile-first wallet tracker with NFT support and basic swaps. AaveAPY is an Aave-only yield tracker — no wallet required — focused on effective APY comparison across chains, incentive breakdowns, and portfolio simulation. Pick Zerion to monitor a wallet, pick AaveAPY to optimize Aave allocation.',
   },
   {
     q: 'Is there a DeFi portfolio tracker that does not need a wallet connection?',
-    a: 'Yes. Aave APY\'s portfolio simulator lets you model any combination of Aave deposits and borrows across chains without connecting a wallet. DeBank and Zerion both require a wallet address to display positions. The simulator computes net effective APY, daily earnings, and per-incentive contribution for any scenario you enter.',
+    a: 'Yes. AaveAPY\'s portfolio simulator lets you model any combination of Aave deposits and borrows across chains without connecting a wallet. DeBank and Zerion both require a wallet address to display positions. The simulator computes net effective APY, daily earnings, and per-incentive contribution for any scenario you enter.',
   },
 ];
 
@@ -81,7 +81,7 @@ const jsonLd = {
       name: TITLE,
       description: DESCRIPTION,
       url: CANONICAL,
-      isPartOf: { '@type': 'WebSite', '@id': `${SITE_ORIGIN}/`, name: 'AAVE APY', url: `${SITE_ORIGIN}/` },
+      isPartOf: { '@type': 'WebSite', '@id': `${SITE_ORIGIN}/`, name: 'AaveAPY', url: `${SITE_ORIGIN}/` },
       inLanguage: 'en',
     },
     {
@@ -231,10 +231,10 @@ const DefiYieldTracker = () => {
             </h2>
             <ul className="space-y-2">
               {[
-                'Live supply and borrow APYs for every Aave reserve across 17 chains',
+                'Live supply and borrow APYs for every Aave reserve across all supported chains',
                 'All active incentive programs (Merit, Merkl, Brevis) baked into the effective yield',
                 'A portfolio simulator that estimates net effective APY and daily earnings for any combination of positions',
-                'An Aave APY tracker with rate simulation — see how your deposit size changes the rate before you commit',
+                'An AaveAPY tracker with rate simulation — see how your deposit size changes the rate before you commit',
                 'An Aave analytics dashboard with utilization, caps, and incentive breakdowns per reserve',
               ].map((h) => (
                 <li key={h} className="flex gap-2">
@@ -250,7 +250,7 @@ const DefiYieldTracker = () => {
               Track DeFi yields across multiple blockchains
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Aave is deployed across 17 chains, each with different reserves, incentives, and utilization. A multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards. Browse a chain below or jump straight into the{' '}
+              Aave is deployed across multiple chains, each with different reserves, incentives, and utilization. A multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards. Browse a chain below or jump straight into the{' '}
               <Link to="/" className="text-primary underline-offset-4 hover:underline">main dashboard</Link>{' '}
               to compare them side by side.
             </p>
@@ -273,7 +273,7 @@ const DefiYieldTracker = () => {
               DeFi portfolio tracker
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Unlike generic DeFi portfolio trackers that read your wallet, Aave APY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
+              Unlike generic DeFi portfolio trackers that read your wallet, AaveAPY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
               <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">stablecoin comparison</Link>{' '}
               on the main dashboard to start tracking, or jump into per-chain breakdowns like{' '}
               <Link to="/?chain=ethereum&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Ethereum stables</Link>,{' '}
@@ -298,7 +298,7 @@ const DefiYieldTracker = () => {
 
           <section aria-labelledby="aave-apy-tracker" className="mt-10">
             <h2 id="aave-apy-tracker" className="text-xl font-semibold mb-3">
-              Aave APY tracker
+              AaveAPY tracker
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into the effective APY shown on every row. Try it on{' '}
@@ -314,7 +314,7 @@ const DefiYieldTracker = () => {
               Aave analytics
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, eligible deposit caps, and per-user reward caps. Use the{' '}
+              Beyond rates, AaveAPY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, eligible deposit caps, and per-user reward caps. Use the{' '}
               <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
               to filter and sort across every chain, or drill into deployments like{' '}
               <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
@@ -325,10 +325,10 @@ const DefiYieldTracker = () => {
 
           <section aria-labelledby="vs-debank-zerion" className="mt-10">
             <h2 id="vs-debank-zerion" className="text-xl font-semibold mb-3">
-              Aave APY vs DeBank vs Zerion
+              AaveAPY vs DeBank vs Zerion
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              DeBank and Zerion are excellent multi-protocol portfolio trackers — they read your wallet across hundreds of dApps. Aave APY is different: it's a focused Aave-only yield tracker built for capital allocation decisions. Use the comparison below to pick the right tool for the job.
+              DeBank and Zerion are excellent multi-protocol portfolio trackers — they read your wallet across hundreds of dApps. AaveAPY is different: it's a focused Aave-only yield tracker built for capital allocation decisions. Use the comparison below to pick the right tool for the job.
             </p>
 
             <div className="mt-5 overflow-x-auto rounded-xl border border-border/60 bg-card">
@@ -336,14 +336,14 @@ const DefiYieldTracker = () => {
                 <thead className="bg-muted/40 text-left text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-medium">Capability</th>
-                    <th className="px-4 py-3 font-medium">Aave APY</th>
+                    <th className="px-4 py-3 font-medium">AaveAPY</th>
                     <th className="px-4 py-3 font-medium">DeBank</th>
                     <th className="px-4 py-3 font-medium">Zerion</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {[
-                    ['Live Aave APY across all 17 chains', 'Yes — primary focus', 'Partial — current positions only', 'Partial — current positions only'],
+                    ['Live AaveAPY across every supported chain', 'Yes — primary focus', 'Partial — current positions only', 'Partial — current positions only'],
                     ['All incentives baked in (Merit, Merkl, Brevis)', 'Yes', 'No', 'No'],
                     ['Rate simulation before depositing', 'Yes — per reserve', 'No', 'No'],
                     ['Portfolio simulation without a wallet', 'Yes', 'No — wallet required', 'No — wallet required'],
@@ -364,10 +364,10 @@ const DefiYieldTracker = () => {
             <h3 className="mt-6 text-base font-semibold">When to use which</h3>
             <ul className="mt-3 space-y-2">
               {[
-                <><strong className="text-foreground">Aave APY</strong> — when you need to find the highest effective Aave yield across chains, simulate a deposit size before committing, or model a multi-position Aave portfolio without connecting a wallet.</>,
+                <><strong className="text-foreground">AaveAPY</strong> — when you need to find the highest effective Aave yield across chains, simulate a deposit size before committing, or model a multi-position Aave portfolio without connecting a wallet.</>,
                 <><strong className="text-foreground">DeBank</strong> — when you want a unified view of every token and DeFi position across your wallet, including protocols outside Aave.</>,
                 <><strong className="text-foreground">Zerion</strong> — when you want a polished mobile-first wallet tracker with NFT support and basic swap functionality.</>,
-                <>Use them together: track your overall portfolio in DeBank or Zerion, then come back to <Link to="/" className="text-primary underline-offset-4 hover:underline">Aave APY</Link> when you're deciding where to deposit next.</>,
+                <>Use them together: track your overall portfolio in DeBank or Zerion, then come back to <Link to="/" className="text-primary underline-offset-4 hover:underline">AaveAPY</Link> when you're deciding where to deposit next.</>,
               ].map((item, i) => (
                 <li key={i} className="flex gap-2">
                   <span aria-hidden className="text-primary">•</span>
@@ -378,9 +378,9 @@ const DefiYieldTracker = () => {
 
             <p className="mt-5 text-sm text-muted-foreground">
               Related FAQs:{' '}
-              <a href={`#${faqSlug('Aave APY vs DeBank: which should I use?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs DeBank</a>
+              <a href={`#${faqSlug('AaveAPY vs DeBank: which should I use?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">AaveAPY vs DeBank</a>
               {' · '}
-              <a href={`#${faqSlug('Aave APY vs Zerion: what is the difference?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs Zerion</a>
+              <a href={`#${faqSlug('AaveAPY vs Zerion: what is the difference?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">AaveAPY vs Zerion</a>
               {' · '}
               <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
             </p>

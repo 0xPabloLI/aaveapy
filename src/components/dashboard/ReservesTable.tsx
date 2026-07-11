@@ -242,15 +242,15 @@ const ReservesTable = ({
   const isPortfolioMode = simulationMode === 'portfolio';
 
   const portfolioInputsResult = useMemo<PortfolioInputsResult | undefined>(
-    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, reserves) : undefined),
-    [isPortfolioMode, portfolioEntries, reserves],
+    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, allReserves) : undefined),
+    [isPortfolioMode, portfolioEntries, allReserves],
   );
   const perReserveInputs = portfolioInputsResult?.perReserveInputs;
   const crossReservePositions = portfolioInputsResult?.crossReservePositions;
   const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
-    reserves,
+    reserves: isPortfolioMode ? allReserves : reserves,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
@@ -846,7 +846,7 @@ const ReservesTable = ({
   const portfolioCapWarningsMap = useMemo(() => {
     if (!isPortfolioMode || !portfolioEntries) return undefined;
     const map = new Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>();
-    const priceById = new Map(reserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
+    const priceById = new Map(allReserves.map(r => [getReserveSimulationId(r), r.tokenPrice]));
     const otherSideEntries = portfolioEntries.map(e => ({
       reserveId: e.reserveId,
       borrowAmountUsd: parseNumberInput(e.borrow.amount) * (e.borrow.inputMode === 'token' ? (priceById.get(e.reserveId) ?? 0) : 1),
@@ -866,101 +866,48 @@ const ReservesTable = ({
       }
     }
     return map.size > 0 ? map : undefined;
-  }, [isPortfolioMode, portfolioEntries, simulationsById, reserves]);
+  }, [isPortfolioMode, portfolioEntries, simulationsById, allReserves]);
 
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
-      {isMobile ? (
-        <>
-          {!isPortfolioMode ? (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <ScenarioControls
-                  ref={scenarioControlsRef}
-                  onDebouncedChange={handleScenarioChange}
-                  meritMerklNetPosition={meritMerklNetPosition}
-                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-                  mobileNetOpen={mobileNetOpen}
-                  onMobileNetToggle={handleMobileNetToggle}
-                />
-              </div>
-              {onSimulationModeChange && (
-                <div className="ml-auto shrink-0">
-                  <PortfolioModeToggle
-                    mode={simulationMode}
-                    onModeChange={onSimulationModeChange}
-                    positionCount={portfolioEntries?.length ?? 0}
-                  />
-                </div>
-              )}
+      {!isPortfolioMode ? (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <ScenarioControls
+              ref={scenarioControlsRef}
+              onDebouncedChange={handleScenarioChange}
+              meritMerklNetPosition={meritMerklNetPosition}
+              onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+              {...(isMobile && { mobileNetOpen, onMobileNetToggle: handleMobileNetToggle })}
+            />
+          </div>
+          {onSimulationModeChange && (
+            <div className="ml-auto shrink-0">
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={portfolioEntries?.length ?? 0}
+              />
             </div>
-          ) : (
-            <>
-              {isLoading && reserves.length === 0 ? (
-                <PortfolioPanelSkeleton />
-              ) : portfolioEntries && portfolioActions ? (
-                <PortfolioPanel
-                  entries={portfolioEntries}
-                  actions={portfolioActions}
-                  reserves={allReserves}
-                  positionResults={portfolioResults}
-                  summary={portfolioSummary}
-                  snapshots={portfolioSnapshots}
-                  onWalletSync={onWalletSync}
-                  walletLoadState={walletLoadState}
-                  simulationMode={simulationMode}
-                  onSimulationModeChange={onSimulationModeChange}
-                  capWarningsMap={portfolioCapWarningsMap}
-                />
-              ) : null}
-            </>
           )}
-        </>
-      ) : (
-        <>
-          {!isPortfolioMode ? (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <ScenarioControls
-                  ref={scenarioControlsRef}
-                  onDebouncedChange={handleScenarioChange}
-                  meritMerklNetPosition={meritMerklNetPosition}
-                  onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-                />
-              </div>
-              {onSimulationModeChange && (
-                <div className="ml-auto shrink-0">
-                  <PortfolioModeToggle
-                    mode={simulationMode}
-                    onModeChange={onSimulationModeChange}
-                    positionCount={portfolioEntries?.length ?? 0}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              {isLoading && reserves.length === 0 ? (
-                <PortfolioPanelSkeleton />
-              ) : portfolioEntries && portfolioActions ? (
-                <PortfolioPanel
-                  entries={portfolioEntries}
-                  actions={portfolioActions}
-                  reserves={allReserves}
-                  positionResults={portfolioResults}
-                  summary={portfolioSummary}
-                  snapshots={portfolioSnapshots}
-                  onWalletSync={onWalletSync}
-                  walletLoadState={walletLoadState}
-                  simulationMode={simulationMode}
-                  onSimulationModeChange={onSimulationModeChange}
-                  capWarningsMap={portfolioCapWarningsMap}
-                />
-              ) : null}
-            </>
-          )}
-        </>
-      )}
+        </div>
+      ) : isLoading && reserves.length === 0 ? (
+        <PortfolioPanelSkeleton />
+      ) : portfolioEntries && portfolioActions ? (
+        <PortfolioPanel
+          entries={portfolioEntries}
+          actions={portfolioActions}
+          reserves={allReserves}
+          positionResults={portfolioResults}
+          summary={portfolioSummary}
+          snapshots={portfolioSnapshots}
+          onWalletSync={onWalletSync}
+          walletLoadState={walletLoadState}
+          simulationMode={simulationMode}
+          onSimulationModeChange={onSimulationModeChange}
+          capWarningsMap={portfolioCapWarningsMap}
+        />
+      ) : null}
     </div>
   );
 

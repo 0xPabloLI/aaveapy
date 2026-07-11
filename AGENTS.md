@@ -1,5 +1,10 @@
 # Repository Guidelines (Slim)
 
+## Quick Reference
+
+- **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — holds Aave V3 positions on mainnet. Source: `e2e/test-wallets.ts`. Use in Playwright via the "Watch address" input.
+- **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
+
 ## Design Context
 
 ### Users
@@ -111,6 +116,27 @@ git diff main..lovable -- path/to/file
 ### 场景 4：需要将 lovable 的改动合入 main
 通过 PR：从 lovable 向 main 开 PR，不要本地 merge。
 
+### 场景 5：lovable → dev 同步（避免 DIRTY PR）
+
+lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required checks），应通过 PR 合并。
+
+**标准流程**：
+1. 从 lovable 向 dev 开 PR（merge commit 方式，不要 squash）
+2. 启用 auto-merge：`gh pr merge <PR_NUMBER> --merge --auto`
+3. CI 通过后自动合并
+
+**如果 PR 报 DIRTY（有合并冲突）**：
+1. 在 lovable 分支上合并 dev 解决冲突：`git merge origin/dev`
+2. 解决冲突后 commit + push lovable
+3. PR 自动变为 CLEAN，auto-merge 正常执行
+
+**禁止的操作**：
+- ❌ 不要用 worktree 直接 merge + push 绕过 PR（违反 dev 分支保护规则）
+- ❌ 不要用 squash merge 同步 lovable→dev（会丢失历史连通性，导致下次同步更容易 DIRTY）
+- ❌ 不要攒大量 commit 才同步（减少冲突概率）
+
+**为什么用 merge commit 而不是 squash**：dev 和 lovable 的 commit 历史不同源（dev 有早期 Lovable 平台自动 commit），squash 会进一步割裂历史，使后续 PR 更容易 DIRTY。merge commit 保持双向可追踪。
+
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
 - Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
@@ -167,6 +193,21 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
+
+### Matt Pocock Skills v1.1 workflow
+
+Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` (per ticket).
+
+- `/grill-with-docs` — sharpen idea via interview + ADR/glossary (has codebase). No codebase? Use `/grill-me`.
+- `/grilling` — the underlying interview primitive; `grill-me` and `grill-with-docs` both delegate to it.
+- `/to-spec` — synthesize conversation into spec (was `/to-prd`).
+- `/to-tickets` — split spec into tracer-bullet tickets with blocking edges (replaces `/to-issues`).
+- `/implement` — build per ticket; internally drives `/tdd` + `/code-review`.
+- `/wayfinder` — on-ramp for huge/foggy efforts; charts investigation map, merges onto main flow at `/to-spec`.
+- `/research` — delegate reading to a background agent; keeps you working while it reads.
+- `/ask-matt` — router: describe your situation, get the right skill path.
+
+**Known issue**: `/implement` silently skips `/tdd` (upstream #479 — "pre-agreed seams" never established). For critical logic, explicitly run `/tdd` before `/implement`.
 
 ## Learned Lessons: Portfolio Delta Input
 
@@ -325,3 +366,39 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 - **`scenarioUsdAccrual` 正确使用 APR 做日收益计算**：`buildSupplyUsdAccrualSide` 使用 `combinedNativeSimulation?.supplyAprPercent`（APR）做 per-second compounding 日收益，这是正确的——线性日收益需要 APR 而非 APY。修复 `afterNative` 不影响此路径，因为 USD accrual 直接从 `combinedNativeSimulation` 取 APR，不经过 `afterNative`。
 - **Unified Table 从 opt-in (`?unified=1`) 改为默认 (`?unified=0` opt-out)**：生产环境用户不再需要手动加 URL 参数。Legacy 布局（PortfolioTokenRow + PortfolioResultsTable + PortfolioSummaryCard）仍可通过 `?unified=0` 访问，用于调试和对比。**教训：feature flag 从 opt-in 转 opt-out 时，所有测试 legacy 布局的测试用例需要显式加 opt-out 参数，否则会在新默认路径下失败。**
 - **Native `title` 属性不可作为唯一信息载体**：浏览器原生 `title` tooltip 需要 hover 停留 1-2 秒，移动端完全不工作，且无视觉提示。必须用 Radix Tooltip 组件替代（dotted underline 作为视觉 affordance + hover/tap 触发）。**教训：任何对用户决策有影响的信息都不能仅依赖 native `title`——它对移动端用户完全不可见。**
+
+## Learned Lessons: Wallet 显示 Option E + UI 规范统一
+
+- **Option E: 输入框显示完整 effective value（非 delta）**：用户直接输入完整的目标仓位值（如 wallet=$1,000, 输入 $1,500 = +$500 delta）。移除了 ± sign toggle 按钮——sign 由 effective vs wallet 的大小关系自动推导（effective > wallet → +1, effective < wallet → -1）。**教训：sign 不应是独立的用户选择，而是 effective value 的自然推导结果——让用户思考"我要多少仓位"而非"我要加/减多少"。**
+- **Arrow `→` 常驻显示**：当 `hasWallet` 时，箭头 `→` 始终显示在 wallet compact 值后面，颜色跟随 effective vs wallet 关系（emerald=above / red=below / muted=equal）。不只在 `isModified` 时显示——即使没有 delta，箭头也传达"这里是你的仓位，右边是你输入的值"的语义。**教训：常驻元素比条件显示元素更减少认知负担——用户不需要记忆"什么时候有箭头"。**
+- **`cursor-auto` 是 tooltip-only 元素的正确 cursor**：DESIGN-SYSTEM-REFERENCE §6 明确规定——自动展示 tooltip 用 `cursor-auto`（+轻微悬停反馈），点击展示用 `cursor-pointer`。MetricValue 和 WarningMarker 的 `cursor-help`→`cursor-pointer`→`cursor-auto` 的三次修正过程说明：**查设计系统文档先于凭直觉改**。`cursor-help` 渲染为 `?` 光标不在设计体系内；`cursor-pointer` 暗示可点击但实际无 click action。
+- **WarningMarker 移除 Supply/Borrow 前缀**：`formatProtocolCapText` 返回的文本已包含 "Supply limited to..." / "Borrow limited to..."，WarningMarker 中额外的 "Supply"/"Borrow" label span 是重复信息。incentive_cap/incentive_offset 的 header 从 "Supply · {source}" 简化为 `{source}`（capitalize）。**教训：当文本已包含 side label 时，不要在 UI 层重复显示——冗余信息增加认知负担。**
+- **表格边框层次**：group separator 的 `border-l border-border/20` → `/40` → `/60`，使 Input→Native→Incentive→Total→Earn 各模块之间的视觉分隔在 light 和 dark mode 下都清晰可见。Dark mode `--border: hsl(220 10% 22%)` (L22) over bg L6: `/60` 给出 effective L15.6 (Δ9.6)；light mode `--border: hsl(23 5% 82%)` (L82) over bg L100: `/60` 给出 L89.2 (Δ10.8)。Row separator 保持 `/30` (Δ~5)，形成 2× hierarchy。**教训：边框透明度选择应基于 HSL lightness 计算的有效对比度，而非"看起来差不多"——dark mode 和 light mode 需要同一透明度同时满足两种背景。**
+- **`clampFn` 参数消除 cap input flicker**：`useDebouncedInput` 新增 `clampFn?: (formattedValue: string) => string` 参数，在 `handleChange` 和 `doCommit` 中格式化后、显示前实时 clamp。旧方案：`setDisplayValue(unclamped)` → store 更新为 clamped → `useEffect` 同步 `displayValue` 为 clamped，中间有 1 帧 flicker。新方案：`clampFn` 在 display 前执行，display 和 store 始终同步。**教训：当 commit 后的 store 值可能与 display 值不同（如 clamping）时，必须在 `setDisplayValue` 之前应用 transform——不能依赖 `useEffect` 事后同步。**
+- **`HelpCircle` vs `Info` 图标语义**：`HelpCircle`（带 `?`）用于 FAQ/帮助导航链接（Header、DefiYieldTracker），`Info`（带 `i`）用于信息提示 tooltip（AprApyToggle、InkAprCalculator、WatchAddressInput）。两者不可混用——WatchAddressInput 的信息提示原先用 `HelpCircle`，已统一为 `Info`。**教训：图标选择应匹配语义——`HelpCircle` = 导航到帮助页面，`Info` = 原地信息提示。**
+
+## Learned Lessons: Unified Table 列宽分配 + 侧分隔线 + Legacy 清除
+
+- **`table-layout: auto` 多列共享剩余空间**：Token、Supply Input、Borrow Input 三列都不设 width，由 auto 布局按内容 max-content 比例分配剩余空间。Token 内容窄拿到较小份额，Input 列拿到大头。之前用 `width: 1px` trick 限制 Token 列不抢空间，但实际效果是 Token 列被过度压缩。去掉 1px 后三列自然分配更合理。**教训：auto 布局已经足够智能，不需要用 1px trick 强制干预——让浏览器按内容比例分配是最自然的方案。**
+- **三级边框层次：GROUP_SEP (/60) > SIDE_SEP (/40) > row (/30)**：模块间分隔（Input→Native→Incentive→Total→Earn）用 `/60`，同一模块内 Supply→Borrow 分隔用 `/40`，行间分隔用 `/30`。旧版只有 GROUP_SEP 没有 SIDE_SEP，Supply 和 Borrow 之间完全靠背景色（emerald/cyan tint）区分，dark mode 下几乎不可见。**教训：语义色 tint 太淡不足以作为分隔手段——必须有显式边框；三级层次确保模块 > 侧 > 行的视觉优先级。**
+- **Banded cluster 全列统一**：所有 per-side 列（Input, Native, Incentive, Total, $/day）都携带语义 band tint（emerald=Supply, cyan=Borrow）。只有 Net $/day（跨侧聚合）用中性 `HEADER_BASE`。旧版只有 APR 段（Native/Incentive/Total）有 band，Input 和 $/day 没有——视觉断裂让用户困惑"为什么只有这一段有颜色"。**教训：语义色 tint 应在全行一致应用，不能只选某几列——否则用户会误解为"有颜色的列"和"没颜色的列"是不同类别的数据。**
+- **Wallet display 精度分场景**：wallet 显示标签（输入框外，只读）用 2 位小数（USD 模式）或 4 位小数（Token 模式），与 `formatUsd` 一致。输入框内的值仍用 `formatConvertedAmount`（8 位有效数字），因为用户在 USD↔Token 切换时不应丢失精度。**教训：只读展示用标准金融精度（2 位小数），可编辑值用高精度（8 位有效数字）——两者语义不同，不能用同一个 formatter。**
+- **`?unified=0` opt-out 移除——unified 是唯一布局**：legacy `PortfolioTokenRow` + `PortfolioTokenRowPrototype` + `PortfolioSummaryCard` + `PortfolioResultsTable` 全部文件及测试从代码库删除。`unifiedMode` flag 删除，`?unified=0` URL 参数被完全忽略（SPA 仍能打开但统一渲染 unified table）。**教训：feature flag 从 opt-out 转"唯一模式"时，必须删除所有 flag 引用 + 删除 dead code 文件 + 更新/删除测试 flag 的测试用例——不能留 flag 在代码里"以防万一"。**
+
+## Learned Lessons: Net $/day 符号 bug + Token 列间距
+
+- **`borrowResult.usdPerDay` 已带符号（负数=成本），Net = supply + borrow（不是 supply - borrow）**：`computePositionUsdPerDay('borrow', ...)` 返回 `-nativeDaily + incentiveDaily`，已经是带符号的值。Per-row Net $/day 计算 `s - b`（其中 `b` 为负数）等于 `s + |b|`，导致只有 Borrow 时 Net 永远为正。正确公式是 `s + b`（代数加法），与 `aggregatePortfolioSummary` 中 `netUsdPerDay = supplyUsdPerDay + borrowUsdPerDay` 一致。**教训：当两个操作数中有一个已带符号时，求和用 `+`（代数加法），不用 `-`（减法）——`a - (-b) = a + b` 是基本数学但容易在"Net = supply - borrow"的语义直觉下写错。**
+- **Token 列 `pr-0.5`（2px）比 `pr-1`（4px）更紧凑**：Token 列内容（icon + symbol）与 Input 列之间的 GROUP_SEP 边框线在 `pr-1` 时有 4px 空白，视觉上像边界线断裂。`pr-0.5`（2px）收窄间距，让边界线紧贴 Token 内容。**教训：表格中无底色列与有底色列之间的边界线，间距越小视觉越连续——空白间距会让人感觉边界线"断开"。**
+
+## Learned Lessons: Merkl position cap native token 显示 (AAV-1097/1098/1099)
+
+- **显示层改 native、计算层保持 USD 是正确分层**：`resolvePositionCapUsd` 仍将 `positionCapNative` 转为 USD 用于 dilution 公式（`aprPercent × min(positionUsd, capUsd) / positionUsd`），只有 note 文案和 tooltip 渲染改为 native token amount。计算需要统一货币单位，显示需要语义稳定的原始量——两层职责分离。
+- **dispatch 调用新增参数时必须同步所有调用点**：`SideSourceContext` 接口已定义 `tokenSymbol`，context 构建也赋了值 `tokenSymbol: reserve.tokenSymbol`，但 dispatch 调用 `buildMerklCampaignDetails(...)` 漏传了 `ctx.tokenSymbol`。这是 AAV-980 的重复——签名迁移时只改了接口和 context 构建，忘了改 dispatch 调用。**教训：新增 context 字段后，必须检查 `sourceDispatch` 中所有 `buildDetails`/`sumCurrent`/`sumAfter` 调用是否都传了新字段。**
+- **两条渲染路径数据源不同**：`IncentiveTooltip.tsx` 直接从 `breakdown.positionCapNative` + `reserve.tokenSymbol` 取值（不经过 calculator），而 `SimulationSubRow` 和 `PortfolioUnifiedTable` WarningMarker 通过 `SimulationCampaignDetail.notes` ← `buildMerklCampaignDetails` 取值。修改 calculator 层的 native 参数传递只影响后者，前者需单独修改。**教训：当同一数据在两条路径中消费时，修改一条路径的参数传递不会自动修复另一条——必须逐路径验证。**
+- **BigInt 解析逻辑在 `incentiveCaps.ts` 中重复 3 处**：`convertPositionCapNativeToUsd`、`formatNativeTokenAmount`（新增私有函数）、`formatPositionCapNativeDisplay`（新增公开导出）三处都有相同的 `BigInt(positionCapNative) → divisor → wholePart → fracPart → Number` 模式。`formatNativeTokenAmount` 已被后两者共享，但 `convertPositionCapNativeToUsd` 仍有独立实现（因其需乘 tokenPrice）。可进一步抽取 `parseNativeTokenAmount(raw: string, decimals: number): number | null` 作为单一解析入口。
+- **`buildMerklCampaignDetails` 参数膨胀至 21 个**：本 session 新增 `tokenSymbol`、`walletEligibilityRatio`、`walletMerklGroupMultiplier` 三个参数。位置参数模式在 21 个参数下极易出错（AAV-980 和 AAV-1075 的参数错位 bug 已证明）。应迁移到 options 对象模式，但属于独立重构任务。
+
+## Learned Lessons: Portfolio 模式必须统一使用 allReserves（过滤 bug）
+
+- **Portfolio 模式下所有数据计算必须用 `allReserves` 而非 filtered `reserves`**：`ReservesTable.tsx` 接收两个 list——`reserves`（经 token/market 过滤后的列表）和 `allReserves`（全量列表）。Portfolio entries 可以引用任何 reserve，不受当前过滤条件限制。`usePortfolioToggle`（L845）和 `PortfolioPanel`（L910/954）已正确使用 `allReserves`，但 `buildPerReserveInputsFromEntries`、`useSharedRateSimulations`、`portfolioCapWarningsMap` 三处遗漏，仍用 filtered `reserves`，导致过滤后部分 portfolio entries 的 simulation 结果和 cap warnings 消失。**教训：Portfolio 模式下的所有计算路径（inputs 构建、rate simulation、cap warnings）都必须使用 `allReserves`，与已建立的 `usePortfolioToggle` 模式保持一致。**
+- **不需要中间变量来表达"portfolio 用 allReserves"**：初始修复引入了 `portfolioReservesSource = isPortfolioMode ? allReserves : reserves` 变量，但 `buildPerReserveInputsFromEntries` 已被 `isPortfolioMode` 守卫，可直接用 `allReserves`；只有 `useSharedRateSimulations`（single 和 portfolio 共用）需要内联三元 `isPortfolioMode ? allReserves : reserves`。**教训：当消费点已被模式守卫时，直接用目标值，不引入中间变量——与同文件中 `usePortfolioToggle` 直接传 `allReserves` 的模式一致。**

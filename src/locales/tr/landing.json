@@ -1,18 +1,18 @@
 {
   "meta": {
-    "title": "Aave APY Türkiye — DeFi getirilerini canlı karşılaştır",
-    "description": "Aave V3 mevduat ve borçlanma faizlerini 17 zincirde karşılaştırın. Merit, Merkl ve Brevis teşviklerini canlı izleyin. Ücretsiz, cüzdan gerektirmez.",
+    "title": "AaveAPY Türkiye — DeFi getirilerini canlı karşılaştır",
+    "description": "Aave V3 mevduat ve borçlanma faizlerini tüm desteklenen zincirlerde karşılaştırın. Merit, Merkl ve Brevis teşviklerini canlı izleyin. Ücretsiz, cüzdan gerektirmez.",
     "ogLocale": "tr_TR"
   },
   "hero": {
     "eyebrow": "DeFi Paneli · Türkiye",
     "title": "Aave APY'lerini tüm zincirlerde canlı karşılaştır",
-    "subtitle": "17 blok zincirinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merit, Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
+    "subtitle": "Tüm desteklenen blok zincirlerinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merit, Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
     "cta": "Canlı paneli aç",
     "secondaryCta": "Tüm zincirleri gör"
   },
   "trustBar": [
-    "17 blok zinciri",
+    "Tüm zincirler",
     "Her dakika güncellenir",
     "Cüzdansız, kayıtsız"
   ],

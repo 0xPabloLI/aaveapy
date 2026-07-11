@@ -114,7 +114,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
   return (
     <>
       <Helmet>
-        <title>SEO Dashboard · Aave APY Admin</title>
+        <title>SEO Dashboard · AaveAPY Admin</title>
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
 

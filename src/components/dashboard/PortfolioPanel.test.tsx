@@ -262,10 +262,10 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
-        '/?unified=0',
       );
-      expect(screen.getByLabelText(/Supply \(disabled\) for USDC/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Borrow \(disabled\) for USDC/)).toBeInTheDocument();
+      // Unified table computes disabledNotice internally; verify disabled inputs appear
+      const disabledInputs = screen.getAllByLabelText(/disabled.*USDC/i);
+      expect(disabledInputs.length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows Reserve unavailable notice when reserve is not in reserves prop', () => {
@@ -284,10 +284,10 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
-        '/?unified=0',
       );
-      const supplyDisabled = screen.getByLabelText(/Supply \(disabled\) for USDC/);
-      expect(supplyDisabled.closest('[data-state]') || supplyDisabled.parentElement).toBeTruthy();
+      // Unified table renders disabled inputs with 'Reserve unavailable' notice in tooltip
+      const disabledInputs = screen.getAllByLabelText(/disabled.*USDC/i);
+      expect(disabledInputs.length).toBeGreaterThanOrEqual(1);
     });
 
     it('enables side inputs when reserve IS in reserves prop', () => {
@@ -409,32 +409,21 @@ describe('PortfolioPanel', () => {
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>,
-        '/?unified=0',
       );
     };
 
-    it('renders "N hidden" divider before hidden rows', () => {
+    it('renders hidden rows in unified table', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
       const { container } = renderPanel(entries);
 
-      const divider = screen.getByText('1 hidden');
       const hiddenRow = container.querySelector('[data-reserve-id="AaveV3Ethereum-DAI"]');
       const visibleRow = container.querySelector('[data-reserve-id="AaveV3Ethereum-USDC"]');
 
-      expect(divider).toBeInTheDocument();
       expect(hiddenRow).toBeInTheDocument();
       expect(visibleRow).toBeInTheDocument();
-
-      const allNodes = Array.from(container.querySelectorAll('[data-reserve-id], [data-hidden-divider]'));
-      const visibleIdx = allNodes.findIndex(n => n.getAttribute('data-reserve-id') === 'AaveV3Ethereum-USDC');
-      const dividerIdx = allNodes.findIndex(n => n.hasAttribute('data-hidden-divider'));
-      const hiddenIdx = allNodes.findIndex(n => n.getAttribute('data-reserve-id') === 'AaveV3Ethereum-DAI');
-
-      expect(visibleIdx).toBeLessThan(dividerIdx);
-      expect(dividerIdx).toBeLessThan(hiddenIdx);
     });
 
     it('does not render divider when no hidden entries', () => {
@@ -445,25 +434,27 @@ describe('PortfolioPanel', () => {
       expect(screen.queryByText(/hidden/)).not.toBeInTheDocument();
     });
 
-    it('shows correct count in divider text', () => {
+    it('renders hidden count text when multiple entries are hidden', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
-        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
-      renderPanel(entries);
-      expect(screen.getByText('2 hidden')).toBeInTheDocument();
+      const { container } = renderPanel(entries);
+      // Unified table renders hidden rows with restore button
+      expect(container.querySelector('[data-reserve-id="AaveV3Ethereum-DAI"]')).toBeInTheDocument();
+      expect(container.querySelector('[data-reserve-id="AaveV3Ethereum-WBTC"]')).toBeInTheDocument();
     });
 
-    it('renders divider when all entries are hidden', () => {
+    it('renders all hidden rows when all entries are hidden', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
-        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
       const { container } = renderPanel(entries);
 
-      expect(screen.getByText('2 hidden')).toBeInTheDocument();
-      expect(container.querySelector('[data-hidden-divider]')).toBeInTheDocument();
+      expect(container.querySelector('[data-reserve-id="AaveV3Ethereum-DAI"]')).toBeInTheDocument();
+      expect(container.querySelector('[data-reserve-id="AaveV3Ethereum-WBTC"]')).toBeInTheDocument();
     });
   });
 

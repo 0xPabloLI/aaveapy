@@ -236,14 +236,8 @@ describe('Architecture guard: PortfolioReserveEntry is primary data model', () =
     expect(src).not.toMatch(/positions:\s*PortfolioPosition\[\]/);
   });
 
-  it('PortfolioTokenRow uses entry prop (not supplyPosition/borrowPosition)', () => {
-    const src = readFile('components/dashboard/PortfolioTokenRow.tsx');
-    expect(src).toMatch(/entry:\s*PortfolioReserveEntry/);
-    expect(src).not.toMatch(/supplyPosition:\s*PortfolioPosition/);
-  });
-
-  it('PortfolioResultsTable uses entries prop (not positions)', () => {
-    const src = readFile('components/dashboard/PortfolioResultsTable.tsx');
+  it('PortfolioUnifiedTable uses entries prop (not positions)', () => {
+    const src = readFile('components/dashboard/PortfolioUnifiedTable.tsx');
     expect(src).toMatch(/entries:\s*PortfolioReserveEntry\[\]/);
     expect(src).not.toMatch(/positions:\s*PortfolioPosition\[\]/);
   });

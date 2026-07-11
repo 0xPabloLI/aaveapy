@@ -71,7 +71,6 @@ describe('Phase 2: no hardcoded h-11 in component source', () => {
 
 const CHIP_H7_FILES = [
   'components/dashboard/PortfolioPanel.tsx',
-  'components/dashboard/PortfolioTokenRow.tsx',
   'components/dashboard/FilterBar.tsx',
   'components/dashboard/PopularTokenChip.tsx',
 ];
