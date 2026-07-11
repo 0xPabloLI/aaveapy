@@ -115,16 +115,22 @@ function MobileCard({
 
   const rowOpacity = isHidden ? 'opacity-40' : entry.isOrphan ? 'opacity-60' : '';
 
+  const SUPPLY_COLOR = 'ds-text-emerald-600';
+  const BORROW_COLOR = 'ds-text-brand-cyan';
+
   const activeResult = activeTab === 'supply' ? supplyResult : borrowResult;
   const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWarns;
   const activeIncentWarns = activeTab === 'supply' ? supplyIncentWarns : borrowIncentWarns;
   const activeCapLimit = activeTab === 'supply' ? supplyCapLimitUsd : borrowCapLimitUsd;
   const activeDisabled = activeTab === 'supply' ? !!disabledNotice.supply : !!disabledNotice.borrow;
   const activeDisabledNotice = activeTab === 'supply' ? disabledNotice.supply : disabledNotice.borrow;
-
-  const SUPPLY_COLOR = 'ds-text-emerald-600';
-  const BORROW_COLOR = 'ds-text-brand-cyan';
   const activeColor = activeTab === 'supply' ? SUPPLY_COLOR : BORROW_COLOR;
+
+  // Opposite side for expand section
+  const oppositeTab = activeTab === 'supply' ? 'borrow' : 'supply';
+  const oppositeResult = activeTab === 'supply' ? borrowResult : supplyResult;
+  const oppositeColor = activeTab === 'supply' ? BORROW_COLOR : SUPPLY_COLOR;
+  const oppositeIncentWarns = activeTab === 'supply' ? borrowIncentWarns : supplyIncentWarns;
 
   return (
     <div
@@ -265,7 +271,7 @@ function MobileCard({
         </button>
       </div>
 
-      {/* Detail expand section */}
+      {/* Detail expand section — shows opposite side + position USD */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -275,38 +281,61 @@ function MobileCard({
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="overflow-hidden border-t border-border/40"
           >
-            <div className="px-3 py-2 pl-6 space-y-1">
-              {/* Native */}
-              <div className="flex items-center justify-between ds-text-12">
-                <span className="text-muted-foreground">Native</span>
-                <span className={cn('tabular-nums', activeColor)}>
-                  {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
-                </span>
-              </div>
-              {/* Incentive */}
-              <div className="flex items-center justify-between ds-text-12">
-                <span className="text-muted-foreground">Incentive</span>
-                <span className="inline-flex items-center gap-0.5">
-                  <span className={cn('tabular-nums', activeColor)}>
-                    {activeResult ? <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} /> : '—'}
+            <div className="px-3 py-2 space-y-2">
+              {/* Opposite side metrics */}
+              <div>
+                <div className={cn('ds-text-10 font-medium mb-1', oppositeColor)}>
+                  {oppositeTab === 'supply' ? 'Supply' : 'Borrow'}
+                </div>
+                <div className="flex items-baseline gap-3 ds-text-12 tabular-nums">
+                  <span className={cn('font-semibold', oppositeColor)}>
+                    {oppositeResult ? <MetricValue afterValue={oppositeResult.totalPercent} metric={oppositeResult.totalMetric} formatFn={formatPercent} /> : '—'}
                   </span>
-                  {activeIncentWarns.length > 0 && <WarningMarker warnings={activeIncentWarns} />}
+                  <span className="text-muted-foreground">
+                    {oppositeResult ? <MetricValue afterValue={oppositeResult.nativePercent} metric={oppositeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
+                  </span>
+                  <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+                    {oppositeResult ? (
+                      <>
+                        <MetricValue afterValue={oppositeResult.incentivePercent} metric={oppositeResult.incentiveMetric} formatFn={formatPercent} />
+                        {oppositeResult.forecastUnavailableCampaignCount != null && oppositeResult.forecastUnavailableCampaignCount > 0 && (
+                          <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
+                        )}
+                      </>
+                    ) : '—'}
+                    {oppositeIncentWarns.length > 0 && <WarningMarker warnings={oppositeIncentWarns} />}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-3 ds-text-10 text-muted-foreground/70">
+                  <span>Total</span>
+                  <span>Native</span>
+                  <span>Incentive</span>
+                </div>
+              </div>
+
+              {/* Both sides $/day + position USD */}
+              <div className="flex items-center justify-between border-t border-border/30 pt-1.5 ds-text-12">
+                <span className="text-muted-foreground">Supply $/day</span>
+                <span className={cn('tabular-nums', SUPPLY_COLOR)}>
+                  {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
                 </span>
               </div>
-              {/* Total */}
               <div className="flex items-center justify-between ds-text-12">
-                <span className="text-muted-foreground font-medium">Total</span>
-                <span className={cn('tabular-nums font-semibold', activeColor)}>
-                  {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} /> : '—'}
+                <span className="text-muted-foreground">Borrow $/day</span>
+                <span className={cn('tabular-nums', BORROW_COLOR)}>
+                  {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
                 </span>
               </div>
-              {/* $/day */}
-              <div className="flex items-center justify-between ds-text-12">
-                <span className="text-muted-foreground">$/day</span>
-                <span className={cn('tabular-nums', activeColor)}>
-                  {activeResult ? formatUsdDayOrDash(activeResult.usdPerDay) : '—'}
-                </span>
-              </div>
+              {(supplyResult?.amountUsd || borrowResult?.amountUsd) && (
+                <div className="flex items-center justify-between border-t border-border/30 pt-1.5 ds-text-12">
+                  <span className="text-muted-foreground">Position</span>
+                  <span className="tabular-nums text-foreground">
+                    {supplyResult?.amountUsd ? formatUsdCompact(supplyResult.amountUsd) : '—'}
+                    {supplyResult?.amountUsd && borrowResult?.amountUsd ? ' / ' : ''}
+                    {borrowResult?.amountUsd ? formatUsdCompact(borrowResult.amountUsd) : ''}
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
