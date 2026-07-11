@@ -556,7 +556,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th rowSpan={2} className={cn('pl-2 pr-0.5 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
+            <th rowSpan={2} className={cn('pl-2 pr-2 py-1 text-left font-semibold', HEADER_BASE)}>Token</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Input</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Native</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Incentive</th>
@@ -635,7 +635,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 onClick={isHidden && !isRestricted ? () => actions.unhideReserve(entry.reserveId) : undefined}
               >
                 {/* Token */}
-                <td className={cn('pl-2 pr-0.5 py-1', isHidden && 'cursor-pointer')}>
+                <td className={cn('pl-2 pr-2 py-1', isHidden && 'cursor-pointer')}>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -779,7 +779,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         {summary && (
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
-              <td className="pl-2 pr-0.5 py-1.5 font-bold ds-text-11">Total</td>
+              <td className="pl-2 pr-2 py-1.5 font-bold ds-text-11">Total</td>
               <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
               <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND)} />
