@@ -206,10 +206,12 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
 - **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
 
-### 4. `headlineIncentive` 是独立基线
-- `headlineIncentive` = API 返回的原始 APR，无仓位 cap 稀释、无 TVL forecast、无 eligibility scaling。
+### 4. `headlineIncentive` 是无 position cap 的基线
+- `headlineIncentive` = 有 TVL forecast、有 wallet-only eligibility scaling，但 **无 position cap 稀释** 的 incentive 值。
+- 与 `currentIncentive` 的唯一区别：headline 不传 `positionUsd`，所以不应用 Merit/Merkl/Brevis position cap dilution。
 - 用于 `deltaIncentive` 计算：`hasInput ? after - current : (wallet ? current - headline : null)`。
-- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`。
+- 无输入有钱包时，`deltaIncentive = current - headline` 纯粹反映 position cap dilution gap。
+- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `positionUsd` 参数）。
 
 ## Learned Lessons
 - Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
@@ -448,3 +450,6 @@ Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` 
 - **`postinstall` 不应在修改其他脚本时误删**：修改 `dev:staging` 时 `postinstall` 行被连带删除，review 发现后恢复。**教训：修改 package.json 时只改目标行，不动相邻行——diff 审查时逐行确认。**
 - **文件顶部注释必须与代码同步**：`COL_WIDTHS` 从 `undefined` 改为 `'50%'` 后，文件头部的 "Input cols have no width → they absorb all remaining space" 注释与代码矛盾。**教训：修改常量值时必须同步更新所有引用该常量语义的注释。**
 - **Input 列 `align-top` 导致内容不垂直居中**：Input `<td>` 上曾有 `align-top`（CSS `vertical-align: top`），使内容贴着单元格顶部，而其他列（Native/Incentive/Total/Earn）默认 `vertical-align: middle` 垂直居中。移除 `align-top` 后所有列对齐一致。**教训：表格单元格的 `vertical-align` 是设计系统级属性，不应按列单独设置——如果某列需要顶部对齐，应该所有列都统一顶部对齐，而非混用。**
+- **"Token" → "Reserve" 命名更准确**：表格每行 = 一个 Aave Reserve（某链某资产的借贷池），不是 Token（一个 Token 可跨多链有多个 Reserve）。"Reserve" 是 Aave 协议精确术语。同时 Header text-left→text-center 与其他列统一。**教训：UI 标签应使用领域精确术语，不要用泛化的近似词——"Token" 是 ERC-20 概念，"Reserve" 是 Aave 协议概念，两者不同。**
+- **Reserve 列 `pr-2` → `pr-3` 补偿减号按钮视觉不对称**：左侧有 minus 按钮（`gap-1`=4px），`pl-2`(8px)+gap(4px)=12px 左侧总空间，右侧 `pr-2`(8px) 显得局促。`pr-3`(12px) 使两侧视觉平衡。**教训：当列内有额外 UI 元素（按钮、icon）占用空间时，padding 需要考虑这些元素的实际视觉占用，不能只看 CSS padding 值。**
+- **Input Supply header `<th>` GROUP_SEP 遗漏**：§4.4 rule 1 要求 GROUP_SEP 必须出现在每个模块的首列，但 Input 模块的 Supply `<th>` 漏了 `border-l border-border/60`，而 Native/Incentive/Total/Earn 都有。**教训：修改边框规则后必须逐模块、逐行（header row 1/2、body、tfoot）对照清单验证，"看一眼觉得对"不够——需要 Playwright 逐 td 检查 computed style。**

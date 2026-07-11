@@ -2,13 +2,13 @@
  * PortfolioUnifiedTable v7 — one row per reserve, both sides inline.
  *
  * Width strategy: table-layout:auto.
- * Token col uses width:1px — in auto layout, the browser still sizes it to
+ * Reserve col uses width:1px — in auto layout, the browser still sizes it to
  * content (auto always fits content, never truncates), but the 1px "claim"
  * means it absorbs almost zero extra space. Input cols share remaining space
  * equally (50% each) via colgroup hint. Other cols have fixed px widths.
  *
  * Columns (12):
- *   0  Token            1px  (content-adaptive, no extra space)
+ *   0  Reserve           1px  (content-adaptive, no extra space)
  *   1  Supply Input     auto (absorbs remaining space)
  *   2  Borrow Input     auto (absorbs remaining space)
  *   3  Supply Native    62px
@@ -69,12 +69,12 @@ import {
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// table-layout:auto. Token col uses width:1px trick — browser sizes it
+// table-layout:auto. Reserve col uses width:1px trick — browser sizes it
 // to content (auto layout always fits content, never truncates) but the 1px
 // claim means it absorbs almost zero extra space. Input cols have no width
 // → they absorb all remaining space. Other cols have fixed px widths.
 const COL_WIDTHS = [
-  '1px',         // 0  Token — content-adaptive, no extra space claim
+  '1px',         // 0  Reserve — content-adaptive, no extra space claim
   '50%',         // 1  Supply Input — equal share with Borrow Input (auto layout hint)
   '50%',         // 2  Borrow Input — equal share with Supply Input (auto layout hint)
   '62px',        // 3  Supply Native
@@ -172,7 +172,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th rowSpan={2} className={cn('pl-2 pr-2 py-1 text-center font-semibold', HEADER_BASE)}>Reserve</th>
+            <th rowSpan={2} className={cn('pl-2 pr-3 py-1 text-center font-semibold', HEADER_BASE)}>Reserve</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Input</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Native</th>
             <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Incentive</th>
@@ -250,8 +250,8 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 className={cn('group border-t border-border/30 hover:bg-muted/5', rowOpacity)}
                 onClick={isHidden && !isRestricted ? () => actions.unhideReserve(entry.reserveId) : undefined}
               >
-                {/* Token */}
-                <td className={cn('pl-2 pr-2 py-1', isHidden && 'cursor-pointer')}>
+                {/* Reserve */}
+                <td className={cn('pl-2 pr-3 py-1', isHidden && 'cursor-pointer')}>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -395,7 +395,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         {summary && (
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
-              <td className="pl-2 pr-2 py-1.5 font-bold ds-text-11 text-center">Total</td>
+              <td className="pl-2 pr-3 py-1.5 font-bold ds-text-11 text-center">Total</td>
               <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
               <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
               <td className={cn(VAL_CELL, GROUP_SEP)} />
