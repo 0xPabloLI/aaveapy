@@ -53,6 +53,15 @@
 2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
 3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 4. **No code changes without explicit go-ahead**: 在用户确认开始或给出明确实施指令前，不修改任何代码文件。讨论、调研、Grill 阶段只做分析和方案设计。
+5. **Mandatory implementation workflow**: 每次改代码之前必须走完以下工作流，不得跳步：
+   1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案，确认设计决策有文档支撑
+   2. **To Spec** — 用 `to-spec` skill 将对话结论合成为 spec 文档
+   3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
+   4. **TDD Implement** — 逐 ticket 用 `tdd` skill 实施（red → green → refactor）；关键逻辑必须先写测试
+   5. **Requesting Code Review** — 实施完成后用 `requesting-code-review` skill 请求 code review
+   6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
+   7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
+   8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
 
 ## Commit Cadence (并行 agent 安全)
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
