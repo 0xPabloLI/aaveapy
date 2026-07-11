@@ -2,16 +2,15 @@
  * PortfolioUnifiedTable v7 — one row per reserve, both sides inline.
  *
  * Width strategy: table-layout:auto.
- * Token, Supply Input, and Borrow Input columns all have no explicit width.
- * In auto layout, the browser distributes remaining space proportionally
- * based on content max-width. Token content is narrow (symbol + icon), so it
- * gets less; Input columns are wider (input box + wallet label), so they get
- * more. All other columns have fixed px widths.
+ * Token col uses width:1px — in auto layout, the browser still sizes it to
+ * content (auto always fits content, never truncates), but the 1px "claim"
+ * means it absorbs almost zero extra space. Input cols have no width → they
+ * absorb all remaining space. Other cols have fixed px widths.
  *
  * Columns (12):
- *   0  Token            auto (content-adaptive, shares remaining space)
- *   1  Supply Input     auto (shares remaining space)
- *   2  Borrow Input     auto (shares remaining space)
+ *   0  Token            1px  (content-adaptive, no extra space)
+ *   1  Supply Input     auto (absorbs remaining space)
+ *   2  Borrow Input     auto (absorbs remaining space)
  *   3  Supply Native    62px
  *   4  Borrow Native    62px
  *   5  Supply Incent    62px
@@ -78,13 +77,14 @@ const DELTA_EPSILON = 0.005;
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
-// table-layout:auto. Token + Input cols have no explicit width — browser
-// distributes remaining space proportionally by content. Token is narrow so
-// it gets less; Input cols are wider so they get more. Other cols are fixed px.
+// table-layout:auto. Token col uses width:1px trick — browser sizes it
+// to content (auto layout always fits content, never truncates) but the 1px
+// claim means it absorbs almost zero extra space. Input cols have no width
+// → they absorb all remaining space. Other cols have fixed px widths.
 const COL_WIDTHS = [
-  undefined,     // 0  Token — content-adaptive, shares remaining space
-  undefined,     // 1  Supply Input — shares remaining space
-  undefined,     // 2  Borrow Input — shares remaining space
+  '1px',         // 0  Token — content-adaptive, no extra space claim
+  undefined,     // 1  Supply Input — absorbs remaining space
+  undefined,     // 2  Borrow Input — absorbs remaining space
   '62px',        // 3  Supply Native
   '62px',        // 4  Borrow Native
   '62px',        // 5  Supply Incent
@@ -418,7 +418,7 @@ function CompactInput({
   const walletDisplay = hasWallet
     ? (sideData.inputMode === 'usd'
         ? formatNumberInput(sideData.walletValue!.toFixed(2))
-        : (tokenPriceInUsd != null
+        : (tokenPriceInUsd != null && tokenPriceInUsd > 0
             ? formatNumberInput((sideData.walletValue! / tokenPriceInUsd).toFixed(4))
             : formatNumberInput(sideData.walletValue!.toFixed(2))))
     : '';

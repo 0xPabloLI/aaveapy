@@ -243,7 +243,8 @@ function computeResultsFromGroups(
       const borrowForecastUnavailable = countSideForecastUnavailable(simResult.borrow);
 
       for (const slot of group.supplySlots) {
-        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableSupplyRoomUsd;
         const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
@@ -258,7 +259,8 @@ function computeResultsFromGroups(
       }
 
       for (const slot of group.borrowSlots) {
-        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableBorrowRoomUsd;
         const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
@@ -273,7 +275,8 @@ function computeResultsFromGroups(
       }
     } else {
       for (const slot of group.supplySlots) {
-        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.supplyApy ?? 0;
         const incentiveArr = reserve.supplyIncentives ?? [];
@@ -284,7 +287,8 @@ function computeResultsFromGroups(
       }
 
       for (const slot of group.borrowSlots) {
-        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
