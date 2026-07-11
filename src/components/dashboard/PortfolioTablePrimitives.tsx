@@ -124,7 +124,7 @@ export function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] })
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex shrink-0 cursor-auto align-middle',
+            'inline-flex shrink-0 cursor-auto align-middle items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 -my-2 md:my-0',
             hasAmber ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground',
           )}
         >
@@ -339,7 +339,7 @@ export function CompactInput({
     : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1 md:gap-0.5">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -347,7 +347,8 @@ export function CompactInput({
             disabled={tokenPriceInUsd === undefined}
             onClick={handleToggleInputMode}
             className={cn(
-              'shrink-0 rounded border border-border/40 bg-muted/60 px-0.5 h-5 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground flex items-center justify-center',
+              'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground flex items-center justify-center',
+              'h-11 w-11 px-1 md:h-5 md:w-auto md:px-0.5',
               tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
             )}
             aria-label={`Switch to ${sideData.inputMode === 'usd' ? 'token' : 'USD'} input`}
@@ -382,7 +383,7 @@ export function CompactInput({
           inputMode="decimal"
           placeholder={placeholder}
           className={cn(
-            'h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
+            'h-11 md:h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
             hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
             cnDsInputSurface(hasValue, inputVariant),
           )}
@@ -392,10 +393,10 @@ export function CompactInput({
           <button
             type="button"
             onClick={() => handleDeltaCommit('')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-2 md:p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors flex items-center justify-center"
             aria-label={`Clear ${tokenSymbol} ${side}`}
           >
-            <Eraser className="size-2.5" aria-hidden />
+            <Eraser className="size-4 md:size-2.5" aria-hidden />
           </button>
         )}
       </div>
