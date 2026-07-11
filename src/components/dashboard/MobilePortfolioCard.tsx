@@ -18,7 +18,7 @@ import { memo, useState } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ListCollapse } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
@@ -30,15 +30,66 @@ import type {
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
   CompactInput,
   MetricValue,
   WarningMarker,
-  formatUsdCompact,
-  formatUsdDayOrDash,
+  type MetricShape,
 } from './PortfolioTablePrimitives';
+import {
+  formatProtocolCapText,
+  type PortfolioCapWarning,
+  type IncentiveCapWarning,
+  type IncentiveOffsetWarning,
+} from '@/lib/portfolioCapWarnings';
+
+/* ── Delta helpers ──────────────────────────────────────────────── */
+
+/** Check if a metric has a meaningful current→after change (≥0.005 pp). */
+function hasMetricDelta(metric?: MetricShape): boolean {
+  return metric?.current != null && metric.after != null
+    && Math.abs(metric.current - metric.after) >= 0.005;
+}
+
+/**
+ * DeltaRow — shows current → after + delta for a single metric.
+ * Only renders when there's a meaningful change (hasMetricDelta).
+ * This is the explicit version of what MetricValue hides in a tooltip.
+ */
+function DeltaRow({
+  label,
+  metric,
+  formatFn,
+  isCurrency = false,
+}: {
+  label: string;
+  metric?: MetricShape;
+  formatFn: (v: number) => string;
+  isCurrency?: boolean;
+}) {
+  if (!hasMetricDelta(metric)) return null;
+
+  const delta = metric!.delta ?? (metric!.after! - metric!.current!);
+  const deltaStr = isCurrency
+    ? formatSignedReserveSizeUsd(delta)
+    : formatSpread(delta);
+  const deltaColor = delta >= 0
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-red-500 dark:text-red-400';
+
+  return (
+    <div className="flex items-center justify-between ds-text-11 py-0.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-1 tabular-nums">
+        <span className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
+        <span className="text-muted-foreground/40">→</span>
+        <span className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
+        <span className={cn('font-medium', deltaColor)}>{deltaStr}</span>
+      </span>
+    </div>
+  );
+}
 
 interface MobilePortfolioCardProps {
   entries: PortfolioReserveEntry[];
@@ -126,11 +177,14 @@ function MobileCard({
   const activeDisabledNotice = activeTab === 'supply' ? disabledNotice.supply : disabledNotice.borrow;
   const activeColor = activeTab === 'supply' ? SUPPLY_COLOR : BORROW_COLOR;
 
-  // Opposite side for expand section
-  const oppositeTab = activeTab === 'supply' ? 'borrow' : 'supply';
-  const oppositeResult = activeTab === 'supply' ? borrowResult : supplyResult;
-  const oppositeColor = activeTab === 'supply' ? BORROW_COLOR : SUPPLY_COLOR;
-  const oppositeIncentWarns = activeTab === 'supply' ? borrowIncentWarns : supplyIncentWarns;
+  // Expand content flags — only show sections with meaningful data
+  const hasDelta = !!activeResult && [
+    activeResult.totalMetric, activeResult.nativeMetric,
+    activeResult.incentiveMetric, activeResult.usdPerDayMetric,
+  ].some(hasMetricDelta);
+  const hasCapDetails = activeInputWarns.length > 0 || activeIncentWarns.length > 0;
+  const hasWalletDiff = !!activeResult?.walletUsd && activeResult.amountUsd !== activeResult.walletUsd;
+  const hasExpandContent = hasDelta || hasCapDetails || hasWalletDiff;
 
   return (
     <div
@@ -264,14 +318,14 @@ function MobileCard({
           <span className="flex items-center gap-1">
             <span className="ds-text-10 text-muted-foreground/70">$/day</span>
             <span className={cn('ds-text-10 font-medium tabular-nums', activeColor)}>
-              {activeResult ? formatUsdDayOrDash(activeResult.usdPerDay) : '—'}
+              {activeResult ? (activeResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '—'}
             </span>
           </span>
           <ListCollapse className={cn('h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
         </button>
       </div>
 
-      {/* Detail expand section — shows opposite side + position USD */}
+      {/* Detail expand section — simulation delta, cap details, wallet vs effective */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -282,58 +336,79 @@ function MobileCard({
             className="overflow-hidden border-t border-border/40"
           >
             <div className="px-3 py-2 space-y-2">
-              {/* Opposite side metrics */}
-              <div>
-                <div className={cn('ds-text-10 font-medium mb-1', oppositeColor)}>
-                  {oppositeTab === 'supply' ? 'Supply' : 'Borrow'}
-                </div>
-                <div className="flex items-baseline gap-3 ds-text-12 tabular-nums">
-                  <span className={cn('font-semibold', oppositeColor)}>
-                    {oppositeResult ? <MetricValue afterValue={oppositeResult.totalPercent} metric={oppositeResult.totalMetric} formatFn={formatPercent} /> : '—'}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {oppositeResult ? <MetricValue afterValue={oppositeResult.nativePercent} metric={oppositeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
-                  </span>
-                  <span className="inline-flex items-center gap-0.5 text-muted-foreground">
-                    {oppositeResult ? (
-                      <>
-                        <MetricValue afterValue={oppositeResult.incentivePercent} metric={oppositeResult.incentiveMetric} formatFn={formatPercent} />
-                        {oppositeResult.forecastUnavailableCampaignCount != null && oppositeResult.forecastUnavailableCampaignCount > 0 && (
-                          <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
-                        )}
-                      </>
-                    ) : '—'}
-                    {oppositeIncentWarns.length > 0 && <WarningMarker warnings={oppositeIncentWarns} />}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-3 ds-text-10 text-muted-foreground/70">
-                  <span>Total</span>
-                  <span>Native</span>
-                  <span>Incentive</span>
-                </div>
-              </div>
+              {activeResult && hasExpandContent ? (<>
+                {/* Rate Impact — explicit current→after+delta (replaces hidden tooltip) */}
+                {hasDelta && (
+                  <div className="space-y-0.5">
+                    <div className={cn('ds-text-10 font-medium mb-0.5', activeColor)}>Rate Impact</div>
+                    <DeltaRow label="Total" metric={activeResult.totalMetric} formatFn={formatPercent} />
+                    <DeltaRow label="Native" metric={activeResult.nativeMetric} formatFn={formatPercent} />
+                    <DeltaRow label="Incentive" metric={activeResult.incentiveMetric} formatFn={formatPercent} />
+                    <DeltaRow label="$/day" metric={activeResult.usdPerDayMetric} formatFn={(v) => v === 0 ? '—' : formatSignedReserveSizeUsd(v)} isCurrency />
+                  </div>
+                )}
 
-              {/* Both sides $/day + position USD */}
-              <div className="flex items-center justify-between border-t border-border/30 pt-1.5 ds-text-12">
-                <span className="text-muted-foreground">Supply $/day</span>
-                <span className={cn('tabular-nums', SUPPLY_COLOR)}>
-                  {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between ds-text-12">
-                <span className="text-muted-foreground">Borrow $/day</span>
-                <span className={cn('tabular-nums', BORROW_COLOR)}>
-                  {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
-                </span>
-              </div>
-              {(supplyResult?.amountUsd || borrowResult?.amountUsd) && (
-                <div className="flex items-center justify-between border-t border-border/30 pt-1.5 ds-text-12">
-                  <span className="text-muted-foreground">Position</span>
-                  <span className="tabular-nums text-foreground">
-                    {supplyResult?.amountUsd ? formatUsdCompact(supplyResult.amountUsd) : '—'}
-                    {supplyResult?.amountUsd && borrowResult?.amountUsd ? ' / ' : ''}
-                    {borrowResult?.amountUsd ? formatUsdCompact(borrowResult.amountUsd) : ''}
-                  </span>
+                {/* Cap Details — full text (replaces dot-only indicator) */}
+                {hasCapDetails && (
+                  <div className="space-y-1 border-t border-border/30 pt-2">
+                    <div className="ds-text-10 font-medium text-amber-500">Cap Details</div>
+                    {activeInputWarns.map((w, i) => {
+                      if (w.kind === 'protocol_cap') {
+                        return (
+                          <div key={`pc-${i}`} className="ds-text-11 text-amber-600 dark:text-amber-400">
+                            {formatProtocolCapText({
+                              side: w.side,
+                              availableFormatted: formatUsd(w.adjustToUsd),
+                              limitedByLiquidity: w.limitedByLiquidity,
+                            })}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                    {activeIncentWarns.flatMap((w, i) => {
+                      const notes = w.kind === 'incentive_cap'
+                        ? (w as IncentiveCapWarning).notes
+                        : (w as IncentiveOffsetWarning).notes;
+                      const source = w.kind === 'incentive_cap'
+                        ? (w as IncentiveCapWarning).source
+                        : (w as IncentiveOffsetWarning).source;
+                      return [
+                        <div key={`ic-src-${i}`} className="ds-text-10 font-medium capitalize text-muted-foreground">
+                          {source}
+                        </div>,
+                        ...(notes?.map((note, ni) => (
+                          <div key={`ic-${i}-${ni}`} className={cn(
+                            'ds-text-11',
+                            note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
+                          )}>
+                            {note.text}
+                          </div>
+                        )) ?? []),
+                      ];
+                    })}
+                  </div>
+                )}
+
+                {/* Wallet vs Effective — when position differs from on-chain wallet */}
+                {hasWalletDiff && (
+                  <div className="space-y-1 border-t border-border/30 pt-2">
+                    <div className="flex justify-between ds-text-11">
+                      <span className="text-muted-foreground">Wallet</span>
+                      <span className="tabular-nums text-muted-foreground">{formatReserveSizeUsd(activeResult.walletUsd!)}</span>
+                    </div>
+                    <div className="flex justify-between ds-text-11">
+                      <span className="text-muted-foreground">Effective</span>
+                      <span className={cn('tabular-nums font-medium', activeColor)}>
+                        {formatReserveSizeUsd(activeResult.amountUsd)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>) : (
+                /* Fallback: no meaningful changes to show */
+                <div className="ds-text-11 text-muted-foreground/60 text-center py-1">
+                  {activeResult ? 'No simulation changes' : 'No simulation data'}
                 </div>
               )}
             </div>
@@ -407,7 +482,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
             <div>
               <div className={cn('ds-text-10 font-medium', SUPPLY_COLOR)}>Supply</div>
               <div className={cn('ds-text-13 font-bold tabular-nums', SUPPLY_COLOR)}>
-                {formatUsdCompact(summary.totalSupplyUsd)}
+                {formatReserveSizeUsd(summary.totalSupplyUsd)}
               </div>
               <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
@@ -416,7 +491,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
             <div>
               <div className={cn('ds-text-10 font-medium', BORROW_COLOR)}>Borrow</div>
               <div className={cn('ds-text-13 font-bold tabular-nums', BORROW_COLOR)}>
-                {formatUsdCompact(summary.totalBorrowUsd)}
+                {formatReserveSizeUsd(summary.totalBorrowUsd)}
               </div>
               <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
@@ -426,7 +501,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
           <div className="flex items-center justify-between border-t border-border/30 pt-2">
             <span className="ds-text-11 font-semibold text-foreground">Net $/day</span>
             <span className="ds-text-12 font-bold tabular-nums text-foreground">
-              {formatUsdDayOrDash(summary.netUsdPerDay)}
+              {summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}
             </span>
           </div>
         </div>

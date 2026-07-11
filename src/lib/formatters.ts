@@ -56,6 +56,13 @@ export function formatSignedUsd(value: number | null | undefined): string {
   return `${sign}${formatUsd(Math.abs(value))}`;
 }
 
+/** Signed reserve-size USD with +/− prefix and K/M/B abbreviation; null/NaN → em dash. */
+export function formatSignedReserveSizeUsd(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  return `${sign}${formatReserveSizeUsd(Math.abs(value))}`;
+}
+
 export const formatReserveSizeUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   const absValue = Math.abs(value);
@@ -95,7 +102,7 @@ export function formatSignedScenarioDailyCashflow(
   const { inputMode = 'usd', tokenPrice } = options;
   if (valueUsd === null || valueUsd === undefined || Number.isNaN(valueUsd)) return '—';
   if (inputMode === 'usd') {
-    return formatSignedUsd(valueUsd);
+    return formatSignedReserveSizeUsd(valueUsd);
   }
   if (
     tokenPrice === null ||

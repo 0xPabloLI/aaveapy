@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { formatConvertedAmount } from '@/lib/portfolioCalculator';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
-import { formatPercent, formatUsd } from '@/lib/formatters';
+import { formatPercent, formatUsd, formatSpread, formatReserveSizeUsd, formatSignedReserveSizeUsd } from '@/lib/formatters';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
@@ -37,8 +37,6 @@ import {
   type IncentiveOffsetWarning,
   type PortfolioCapWarning,
 } from '@/lib/portfolioCapWarnings';
-
-export { formatPercent, formatUsd };
 
 /* ── Constants ───────────────────────────────────────────────────── */
 
@@ -80,7 +78,7 @@ export function MetricValue({
   }
 
   const delta = metric!.delta ?? (metric!.after! - metric!.current!);
-  const deltaStr = delta >= 0 ? `+${delta.toFixed(2)}%` : `${delta.toFixed(2)}%`;
+  const deltaStr = formatSpread(delta);
   const deltaColor = delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400';
 
   return (
@@ -402,32 +400,4 @@ export function CompactInput({
       </div>
     </div>
   );
-}
-
-/* ── Formatting helpers (shared between table and card) ──────────── */
-
-/** Compact value formatter — used for wallet display outside the input. */
-export function formatCompactValue(value: number, withDollar = false): string {
-  const prefix = withDollar ? '$' : '';
-  if (value === 0) return `${prefix}0`;
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${prefix}${(value / 1_000).toFixed(1)}K`;
-  return `${prefix}${value.toFixed(2)}`;
-}
-
-export function formatUsdCompact(value: number): string {
-  return formatCompactValue(value, true);
-}
-
-export function formatUsdDay(value: number): string {
-  if (value < 0) return `-$${Math.abs(value).toFixed(2)}`;
-  if (value > 0) return `+$${value.toFixed(2)}`;
-  return '$0';
-}
-
-/** Display $/day as '—' when zero, formatted otherwise. */
-export function formatUsdDayOrDash(value: number | undefined | null): string {
-  if (value == null || value === 0) return '—';
-  return formatUsdDay(value);
 }

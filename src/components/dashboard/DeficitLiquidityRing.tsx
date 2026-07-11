@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { ArrowDown, ArrowUp, ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
-import { formatScenarioSize } from '@/lib/formatters';
+import { formatScenarioSize, formatPercent } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
 import { cn } from '@/lib/utils';
 
@@ -166,7 +166,7 @@ export function DeficitProgressContent({
       <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
         <span className="text-muted-foreground">% of total (incl. deficit)</span>
         <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
-          {ratio != null ? `${percentage?.toFixed(2)}%` : '—'}
+          {ratio != null ? formatPercent(percentage!) : '—'}
           {sortArrow}
         </span>
       </div>

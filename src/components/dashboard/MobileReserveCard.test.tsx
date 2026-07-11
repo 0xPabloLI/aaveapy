@@ -443,13 +443,13 @@ describe('MobileReserveCard', () => {
     expect(html).not.toContain('bg-gradient-to-r');
   });
 
-  it('formats utilization rate as integer percentage (no decimal places)', () => {
+  it('formats utilization rate with formatPercent (2 decimal places by default)', () => {
     const { getByLabelText } = renderCard(false);
 
     const utilButton = getByLabelText('Show utilization details');
     const utilText = utilButton.querySelector('.ds-text-11');
     expect(utilText).not.toBeNull();
-    expect(utilText!.textContent!.trim()).toBe('52%');
+    expect(utilText!.textContent!.trim()).toBe('52.00%');
   });
 
   it('renders DeficitLiquidityRing (SVG ring, not button with text) when supply deficit exists', () => {

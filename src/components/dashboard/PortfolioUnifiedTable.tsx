@@ -45,7 +45,7 @@
 import { memo } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, formatReserveSizeUsd, formatSignedReserveSizeUsd } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
@@ -63,8 +63,6 @@ import {
   CompactInput,
   MetricValue,
   WarningMarker,
-  formatUsdCompact,
-  formatUsdDayOrDash,
 } from './PortfolioTablePrimitives';
 
 /* ── Column geometry ─────────────────────────────────────────────── */
@@ -372,11 +370,11 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
                 {/* Supply $/day */}
                 <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
-                  {supplyResult ? formatUsdDayOrDash(supplyResult.usdPerDay) : '—'}
+                  {supplyResult ? (supplyResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(supplyResult.usdPerDay)) : '—'}
                 </td>
                 {/* Borrow $/day */}
                 <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
-                  {borrowResult ? formatUsdDayOrDash(borrowResult.usdPerDay) : '—'}
+                  {borrowResult ? (borrowResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(borrowResult.usdPerDay)) : '—'}
                 </td>
                 {/* Net $/day */}
                 <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>
@@ -385,7 +383,8 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                     const b = borrowResult?.usdPerDay ?? 0;
                     // borrow usdPerDay is already signed (negative = cost),
                     // so net = supply + borrow (not supply - borrow).
-                    return formatUsdDayOrDash(s + b);
+                    const net = s + b;
+                    return net === 0 ? '—' : formatSignedReserveSizeUsd(net);
                   })()}
                 </td>
               </tr>
@@ -396,8 +395,8 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-3 py-1.5 font-bold ds-text-11 text-center">Total</td>
-              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatUsdCompact(summary.totalSupplyUsd)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatUsdCompact(summary.totalBorrowUsd)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatReserveSizeUsd(summary.totalSupplyUsd)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatReserveSizeUsd(summary.totalBorrowUsd)}</td>
               <td className={cn(VAL_CELL, GROUP_SEP)} />
               <td className={cn(VAL_CELL, SIDE_SEP)} />
               <td className={cn(VAL_CELL, GROUP_SEP)} />
@@ -408,9 +407,9 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
               <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{formatUsdDayOrDash(summary.supplyUsdPerDay)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{formatUsdDayOrDash(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>{formatUsdDayOrDash(summary.netUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>{summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}

@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
+import { formatPercent, formatReserveSizeToken, formatUsd } from "@/lib/formatters";
 
 type RangePreset = "7d" | "28d" | "90d";
 
@@ -25,7 +26,7 @@ function presetRange(preset: RangePreset): { from: string; to: string } {
 }
 
 function fmtPct(n: number) {
-  return `${(n * 100).toFixed(2)}%`;
+  return formatPercent(n * 100);
 }
 
 function fmtPos(n: number | null) {
@@ -35,12 +36,12 @@ function fmtPos(n: number | null) {
 
 function fmtNum(n: number | null | undefined) {
   if (n == null) return "—";
-  return n.toLocaleString();
+  return formatReserveSizeToken(n);
 }
 
 function fmtUsd(n: number | null | undefined) {
   if (n == null) return "—";
-  return `$${n.toFixed(2)}`;
+  return formatUsd(n);
 }
 
 const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
