@@ -379,8 +379,13 @@ Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` 
 
 ## Learned Lessons: Unified Table 列宽分配 + 侧分隔线 + Legacy 清除
 
-- **`width:1px` trick 实现内容自适应但不吸收剩余空间**：`table-layout: fixed` 下固定宽度会截断内容；`table-layout: auto` 下无 width 的列会吸收剩余空间。正确方案：`table-layout: auto`，Token 列设 `width: 1px`——auto 布局总是适配内容（1px 只是最小声明），所以列实际宽度 = 内容宽度，但 1px 的"声明权重"使其几乎不分得额外空间。Input 列不设 width（undefined），吸收所有剩余空间。**约定：多余空间全留给 Input 列（用户输入区域），Token 列内容自适应但不吸收剩余。** **教训：`table-layout: auto` + `width: 1px` 是让列"内容自适应但不抢空间"的标准 CSS 技巧——`fixed` 会截断内容，`auto` 无 width 会抢空间，只有 `1px` trick 两全其美。**
+- **`table-layout: auto` 多列共享剩余空间**：Token、Supply Input、Borrow Input 三列都不设 width，由 auto 布局按内容 max-content 比例分配剩余空间。Token 内容窄拿到较小份额，Input 列拿到大头。之前用 `width: 1px` trick 限制 Token 列不抢空间，但实际效果是 Token 列被过度压缩。去掉 1px 后三列自然分配更合理。**教训：auto 布局已经足够智能，不需要用 1px trick 强制干预——让浏览器按内容比例分配是最自然的方案。**
 - **三级边框层次：GROUP_SEP (/60) > SIDE_SEP (/40) > row (/30)**：模块间分隔（Input→Native→Incentive→Total→Earn）用 `/60`，同一模块内 Supply→Borrow 分隔用 `/40`，行间分隔用 `/30`。旧版只有 GROUP_SEP 没有 SIDE_SEP，Supply 和 Borrow 之间完全靠背景色（emerald/cyan tint）区分，dark mode 下几乎不可见。**教训：语义色 tint 太淡不足以作为分隔手段——必须有显式边框；三级层次确保模块 > 侧 > 行的视觉优先级。**
 - **Banded cluster 全列统一**：所有 per-side 列（Input, Native, Incentive, Total, $/day）都携带语义 band tint（emerald=Supply, cyan=Borrow）。只有 Net $/day（跨侧聚合）用中性 `HEADER_BASE`。旧版只有 APR 段（Native/Incentive/Total）有 band，Input 和 $/day 没有——视觉断裂让用户困惑"为什么只有这一段有颜色"。**教训：语义色 tint 应在全行一致应用，不能只选某几列——否则用户会误解为"有颜色的列"和"没颜色的列"是不同类别的数据。**
-- **Wallet display 与 placeholder 精度一致**：wallet 仓位的显示值（输入框外）和 placeholder（输入框内）必须使用相同的格式化精度。旧版 wallet 用 compact（`1.0K`），placeholder 用 full（`$1,000`），两者不一致让用户 confusing。**教训：同一数据的两种展示形式（label vs placeholder）必须使用同一格式化函数——否则用户会误认为是两个不同的值。**
+- **Wallet display 精度分场景**：wallet 显示标签（输入框外，只读）用 2 位小数（USD 模式）或 4 位小数（Token 模式），与 `formatUsd` 一致。输入框内的值仍用 `formatConvertedAmount`（8 位有效数字），因为用户在 USD↔Token 切换时不应丢失精度。**教训：只读展示用标准金融精度（2 位小数），可编辑值用高精度（8 位有效数字）——两者语义不同，不能用同一个 formatter。**
 - **`?unified=0` opt-out 移除——unified 是唯一布局**：legacy `PortfolioTokenRow` + `PortfolioTokenRowPrototype` + `PortfolioSummaryCard` + `PortfolioResultsTable` 全部文件及测试从代码库删除。`unifiedMode` flag 删除，`?unified=0` URL 参数被完全忽略（SPA 仍能打开但统一渲染 unified table）。**教训：feature flag 从 opt-out 转"唯一模式"时，必须删除所有 flag 引用 + 删除 dead code 文件 + 更新/删除测试 flag 的测试用例——不能留 flag 在代码里"以防万一"。**
+
+## Learned Lessons: Net $/day 符号 bug + Token 列间距
+
+- **`borrowResult.usdPerDay` 已带符号（负数=成本），Net = supply + borrow（不是 supply - borrow）**：`computePositionUsdPerDay('borrow', ...)` 返回 `-nativeDaily + incentiveDaily`，已经是带符号的值。Per-row Net $/day 计算 `s - b`（其中 `b` 为负数）等于 `s + |b|`，导致只有 Borrow 时 Net 永远为正。正确公式是 `s + b`（代数加法），与 `aggregatePortfolioSummary` 中 `netUsdPerDay = supplyUsdPerDay + borrowUsdPerDay` 一致。**教训：当两个操作数中有一个已带符号时，求和用 `+`（代数加法），不用 `-`（减法）——`a - (-b) = a + b` 是基本数学但容易在"Net = supply - borrow"的语义直觉下写错。**
+- **Token 列 `pr-0.5`（2px）比 `pr-1`（4px）更紧凑**：Token 列内容（icon + symbol）与 Input 列之间的 GROUP_SEP 边框线在 `pr-1` 时有 4px 空白，视觉上像边界线断裂。`pr-0.5`（2px）收窄间距，让边界线紧贴 Token 内容。**教训：表格中无底色列与有底色列之间的边界线，间距越小视觉越连续——空白间距会让人感觉边界线"断开"。**
