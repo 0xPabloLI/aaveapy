@@ -241,21 +241,16 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
-  // In portfolio mode, use allReserves (not filtered reserves) so that portfolio
-  // entries whose reserves are filtered out of the main table still get simulated.
-  // Filtering token/market should not affect portfolio simulation results.
-  const portfolioReservesSource = isPortfolioMode ? allReserves : reserves;
-
   const portfolioInputsResult = useMemo<PortfolioInputsResult | undefined>(
-    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, portfolioReservesSource) : undefined),
-    [isPortfolioMode, portfolioEntries, portfolioReservesSource],
+    () => (isPortfolioMode && portfolioEntries ? buildPerReserveInputsFromEntries(portfolioEntries, allReserves) : undefined),
+    [isPortfolioMode, portfolioEntries, allReserves],
   );
   const perReserveInputs = portfolioInputsResult?.perReserveInputs;
   const crossReservePositions = portfolioInputsResult?.crossReservePositions;
   const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
-    reserves: portfolioReservesSource,
+    reserves: isPortfolioMode ? allReserves : reserves,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
