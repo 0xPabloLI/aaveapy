@@ -23,7 +23,7 @@ import {
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
-import { resolvePositionCapUsd } from '@/lib/incentiveCaps';
+import { resolvePositionCapUsd, formatPositionCapNativeDisplay } from '@/lib/incentiveCaps';
 import { extractActionLabelFromMeritMessage } from '@/lib/rateSimulationCalculator';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
@@ -77,6 +77,8 @@ interface IncentiveCampaign {
   rewardTokenIconUrl?: string;
   rewardTokenSymbol?: string;
   positionCapUsd?: number;
+  positionCapNative?: string;
+  tokenSymbol?: string;
   isCombineCap?: boolean;
   isNetPositionCap?: boolean;
   lastEndedCampaign?: {
@@ -669,7 +671,7 @@ const IncentiveTooltip = ({
                      sourceType: 'Merkl',
                  campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
                        aprCap: breakdown.aprCap,
-                          ...(() => { const capUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, reserve.tokenPrice, reserve.decimals); return capUsd != null && capUsd > 0 ? { positionCapUsd: capUsd, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}; })(),
+                          ...(() => { const capUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, reserve.tokenPrice, reserve.decimals); return capUsd != null && capUsd > 0 ? { positionCapUsd: capUsd, positionCapNative: breakdown.positionCapNative, tokenSymbol: reserve.tokenSymbol, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}; })(),
                        rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
                        rewardTokenSymbol: breakdown.rewardTokenSymbol,
                          lastEndedCampaign: breakdown.lastEndedCampaign,
@@ -823,7 +825,9 @@ const IncentiveTooltip = ({
         {renderCampaignTypeDescription(campaign)}
          {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
            <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
-              Incentive on first {formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only
+              Incentive on first {campaign.positionCapNative != null && campaign.tokenSymbol != null
+                ? (formatPositionCapNativeDisplay(campaign.positionCapNative, campaign.tokenSymbol, reserve.decimals) ?? formatUsd(campaign.positionCapUsd))
+                : formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only
            </p>
         )}
         {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}

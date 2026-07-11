@@ -128,6 +128,32 @@ function formatPositionCapAmount(input: {
   return formatUsd(input.positionCapUsd);
 }
 
+/**
+ * Format a positionCapNative raw bigint string as a human-readable token amount + symbol.
+ * Returns null if parsing fails.
+ */
+export function formatPositionCapNativeDisplay(
+  positionCapNative: string,
+  tokenSymbol: string,
+  decimals?: number,
+): string | null {
+  const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
+  try {
+    const rawBigInt = BigInt(positionCapNative);
+    const divisor = BigInt(10) ** BigInt(d);
+    const wholePart = rawBigInt / divisor;
+    const fracPart = rawBigInt % divisor;
+    const tokenAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
+    if (!Number.isFinite(tokenAmount) || tokenAmount <= 0) return null;
+    const amountStr = tokenAmount >= 1000
+      ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : tokenAmount.toFixed(2);
+    return `${amountStr} ${tokenSymbol}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Per-user position cap. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
 export function buildPositionCapEffect(input: {
   positionCapUsd: number;
