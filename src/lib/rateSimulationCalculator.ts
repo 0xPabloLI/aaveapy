@@ -330,7 +330,6 @@ export const buildIncentiveCurrent = (
   walletEligibilityRatio = 1,
 ): number => {
   const { protocol, merit, merkl, brevis } = getIncentiveSources(reserve, side);
-  const merklOptions = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier, pointRateMap };
 
   const walletPositionUsd = side === 'supply' ? walletSupplyUsd : walletBorrowUsd;
 
@@ -339,24 +338,34 @@ export const buildIncentiveCurrent = (
   // When unset, uses static headline rates (no forecast, no dilution).
   const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
 
+  // AAV-1107: Decompose aggregate current into per-source calls to match dispatch map sumCurrent.
+  // Previously used calculateTotalIncentiveApy/Apr which didn't pass positionUsd/tokenPrice/decimals
+  // for Merkl position cap dilution, causing aggregate current ≠ per-source sum.
+  const merklOptions = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier, pointRateMap, positionUsd: walletPositionUsd, tokenPrice: reserve.tokenPrice, decimals: reserve.decimals };
+
   if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
     // Wallet-based: apply position cap dilution using totalPositionUsd, but
     // inputUsd=0 because wallet is an existing position — not a new deposit
     // that would dilute TVL.
     // AAV-1102: Apply walletEligibilityRatio to Merit to match dispatch map sumCurrent.
     const meritPercent = sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd) * walletEligibilityRatio;
-    const otherPercent = isApy
-      ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions)
-      : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions);
-    return meritPercent + otherPercent;
+    const merklPercent = isApy
+      ? sumMerklIncentiveApy(merkl, tydroPointToUsdRate, merklOptions)
+      : sumMerklIncentiveApr(merkl, tydroPointToUsdRate, merklOptions);
+    const brevisPercent = sumForecastBrevisIncentiveApr(brevis, isApy, 0, undefined, forecastStates, walletPositionUsd);
+    const protocolPercent = sumNumberArray(protocol, isApy);
+    return meritPercent + merklPercent + brevisPercent + protocolPercent;
   }
 
   // Headline: static rates, no dilution
   // AAV-1102: Apply walletEligibilityRatio to Merit in headline path too.
   const meritApr = merit?.length ? sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, undefined) * walletEligibilityRatio : 0;
-  return meritApr + (isApy
-    ? calculateTotalIncentiveApy([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions)
-    : calculateTotalIncentiveApr([], merkl, brevis, protocol, tydroPointToUsdRate, merklOptions));
+  const merklApr = isApy
+    ? sumMerklIncentiveApy(merkl, tydroPointToUsdRate, merklOptions)
+    : sumMerklIncentiveApr(merkl, tydroPointToUsdRate, merklOptions);
+  const brevisApr = sumForecastBrevisIncentiveApr(brevis, isApy, 0, undefined, forecastStates, walletPositionUsd);
+  const protocolApr = sumNumberArray(protocol, isApy);
+  return meritApr + merklApr + brevisApr + protocolApr;
 };
 
 export const sumNumberArray = (values?: number[], isApy = false): number => {

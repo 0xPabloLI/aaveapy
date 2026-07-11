@@ -2114,3 +2114,79 @@ describe('AAV-1102: aggregate sumCurrent matches buildIncentiveCurrent for all s
     expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 4);
   });
 });
+
+describe('AAV-1107: aggregate currentIncentive matches per-source sum with Merkl position cap', () => {
+  const MERKL_POSCAP_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    merklSupplys: [{
+      name: 'Capped campaign',
+      breakdowns: [{
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'poscap-test',
+        positionCapNative: '1000000000000000000000', // 1000 tokens (18 decimals) = $1000
+      }],
+      opportunityId: '998',
+    }],
+  };
+
+  it('aggregate currentIncentive = per-source sum when wallet exceeds Merkl position cap', () => {
+    // wallet supply=$5000, position cap=$1000 → dilution applies
+    // Before fix: buildIncentiveCurrent didn't pass positionUsd to Merkl → no dilution → aggregate > per-source
+    // After fix: buildIncentiveCurrent passes positionUsd → dilution applied → aggregate = per-source
+    const result = buildRateSimulationResult({
+      reserve: MERKL_POSCAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 5000,
+      totalBorrowUsd: 0,
+    });
+
+    const merklCurrent = result.supply.sources.merkl?.current ?? 0;
+    const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
+    const meritCurrent = result.supply.sources.merit?.current ?? 0;
+    const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
+    const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
+
+    // Per-source should have cap dilution: 10% * (1000/5000) = 2%
+    expect(merklCurrent).toBeCloseTo(2, 1);
+    // Aggregate must match per-source sum
+    expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 4);
+  });
+
+  it('aggregate currentIncentive = per-source sum when wallet below Merkl position cap', () => {
+    // wallet supply=$500, position cap=$1000 → no dilution
+    const result = buildRateSimulationResult({
+      reserve: MERKL_POSCAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 500,
+      totalBorrowUsd: 0,
+    });
+
+    const merklCurrent = result.supply.sources.merkl?.current ?? 0;
+    const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
+    const meritCurrent = result.supply.sources.merit?.current ?? 0;
+    const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
+    const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
+
+    // No dilution: 10% * (500/500) = 10%... wait, position cap means max(500, 1000) = 500, so no dilution
+    expect(merklCurrent).toBeCloseTo(10, 1);
+    expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 4);
+  });
+});
