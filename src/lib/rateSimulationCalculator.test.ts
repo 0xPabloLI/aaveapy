@@ -1073,6 +1073,59 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
   });
 });
 
+describe('buildMerklCampaignDetails — position cap native amount display', () => {
+  const opportunitiesWithPositionCap = [
+    {
+      name: 'Test Merkl',
+      link: 'https://example.com',
+      breakdowns: [
+        {
+          campaignId: 'merkl-capped',
+          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignApr: 10,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+          positionCapNative: '1000000000',
+          isCombineCap: false,
+        },
+      ],
+    },
+  ];
+
+  it('displays native token amount in capNote when tokenSymbol is provided', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
+      'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
+    };
+    const rows = buildMerklCampaignDetails(
+      opportunitiesWithPositionCap, false, 5000, forecastStates,
+      undefined, 1, true, 1, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, 1, 6, 'USDT',
+    );
+    const cappedRow = rows.find((r) => r.id.includes('merkl-capped'));
+    expect(cappedRow).toBeDefined();
+    const capNote = cappedRow!.notes?.find((n) => n.type === 'position_cap');
+    expect(capNote).toBeDefined();
+    expect(capNote!.text).toContain('1,000.00 USDT');
+    expect(capNote!.text).not.toContain('$');
+  });
+
+  it('falls back to USD when tokenSymbol is not provided', () => {
+    const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
+      'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
+    };
+    const rows = buildMerklCampaignDetails(
+      opportunitiesWithPositionCap, false, 5000, forecastStates,
+      undefined, 1, true, 1, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, 1, 6,
+    );
+    const cappedRow = rows.find((r) => r.id.includes('merkl-capped'));
+    expect(cappedRow).toBeDefined();
+    const capNote = cappedRow!.notes?.find((n) => n.type === 'position_cap');
+    expect(capNote).toBeDefined();
+    expect(capNote!.text).toContain('$');
+  });
+});
+
 describe('buildMerklCampaignDetails — positionCap', () => {
   const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
 

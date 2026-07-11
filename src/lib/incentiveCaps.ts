@@ -95,9 +95,45 @@ export function netEligibleToNote(text: string): IncentiveNote {
   return { type: 'net_eligible', text, color: 'muted' };
 }
 
+/**
+ * Format position cap amount for display.
+ * When `positionCapNative` + `tokenSymbol` are available (Merkl), shows native token amount + symbol.
+ * Otherwise falls back to USD (Merit/Brevis).
+ */
+function formatPositionCapAmount(input: {
+  positionCapUsd: number;
+  positionCapNative?: string;
+  tokenSymbol?: string;
+  decimals?: number;
+}): string {
+  const { positionCapNative, tokenSymbol, decimals } = input;
+  if (positionCapNative != null && tokenSymbol != null) {
+    const d = decimals ?? DEFAULT_TOKEN_DECIMALS;
+    try {
+      const rawBigInt = BigInt(positionCapNative);
+      const divisor = BigInt(10) ** BigInt(d);
+      const wholePart = rawBigInt / divisor;
+      const fracPart = rawBigInt % divisor;
+      const tokenAmount = Number(wholePart) + Number(fracPart) / Number(divisor);
+      if (Number.isFinite(tokenAmount) && tokenAmount > 0) {
+        const amountStr = tokenAmount >= 1000
+          ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : tokenAmount.toFixed(2);
+        return `${amountStr} ${tokenSymbol}`;
+      }
+    } catch {
+      // fall through to USD
+    }
+  }
+  return formatUsd(input.positionCapUsd);
+}
+
 /** Per-user position cap. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
 export function buildPositionCapEffect(input: {
   positionCapUsd: number;
+  positionCapNative?: string;
+  tokenSymbol?: string;
+  decimals?: number;
   isCombineCap: boolean;
   isCapBinding: boolean;
   remainingBudget: number | null;
@@ -105,7 +141,8 @@ export function buildPositionCapEffect(input: {
   remainingDays: number | null;
 }): IncentiveCapEffect {
   const parts: string[] = [];
-  const capPrefix = `Incentive limited to first ${formatUsd(input.positionCapUsd)}`;
+  const capAmountText = formatPositionCapAmount(input);
+  const capPrefix = `Incentive limited to first ${capAmountText}`;
   parts.push(
     input.isCombineCap
       ? `${capPrefix} · combined supply + borrow`
@@ -186,6 +223,9 @@ export function applyPositionCapToForecastResult(
     remainingBudget?: number | null;
     dailyRewardUsd?: number | null;
     remainingDays?: number | null;
+    positionCapNative?: string;
+    tokenSymbol?: string;
+    decimals?: number;
   },
 ): PositionCapForecastResult {
   if (capUsd === undefined || capUsd <= 0 || positionUsd <= 0) {
@@ -194,6 +234,9 @@ export function applyPositionCapToForecastResult(
   const { aprPercent, isCapBinding } = applyPositionCap(nominalAprPercent, positionUsd, capUsd);
   const effect = buildPositionCapEffect({
     positionCapUsd: capUsd,
+    positionCapNative: options?.positionCapNative,
+    tokenSymbol: options?.tokenSymbol,
+    decimals: options?.decimals,
     isCombineCap: options?.isCombineCap ?? false,
     isCapBinding,
     remainingBudget: options?.remainingBudget ?? null,

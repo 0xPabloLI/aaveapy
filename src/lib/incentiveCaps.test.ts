@@ -66,6 +66,79 @@ describe('buildPositionCapEffect', () => {
     });
     expect(capEffectToNote(eff).text).toBe('Incentive limited to first $100.00');
   });
+
+  it('uses native token amount when positionCapNative + tokenSymbol + decimals are provided', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      positionCapNative: '1000000000',
+      tokenSymbol: 'USDT',
+      decimals: 6,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first 1,000.00 USDT');
+  });
+
+  it('uses native token amount with 18 decimals', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 50000,
+      positionCapNative: '20150000000000000000',
+      tokenSymbol: 'WETH',
+      decimals: 18,
+      isCombineCap: false,
+      isCapBinding: false,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first 20.15 WETH');
+  });
+
+  it('appends combine label after native amount', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 5000,
+      positionCapNative: '5000000000',
+      tokenSymbol: 'USDT',
+      decimals: 6,
+      isCombineCap: true,
+      isCapBinding: false,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe(
+      'Incentive limited to first 5,000.00 USDT · combined supply + borrow',
+    );
+  });
+
+  it('falls back to USD when positionCapNative is absent', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $1,000.00');
+  });
+
+  it('falls back to USD when tokenSymbol is absent but positionCapNative is present', () => {
+    const eff = buildPositionCapEffect({
+      positionCapUsd: 1000,
+      positionCapNative: '1000000000',
+      decimals: 6,
+      isCombineCap: false,
+      isCapBinding: true,
+      remainingBudget: null,
+      dailyRewardUsd: null,
+      remainingDays: null,
+    });
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first $1,000.00');
+  });
 });
 
 describe('FIX_REWARD and MAX_REWARD cap helpers', () => {
