@@ -30,6 +30,7 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useSearchParams } from 'react-router-dom';
 import PopularTokenChip from './PopularTokenChip';
 import PortfolioUnifiedTable from './PortfolioUnifiedTable';
+import MobilePortfolioCard from './MobilePortfolioCard';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isRestrictedReserve } from '@/lib/reserveStatus';
@@ -587,16 +588,27 @@ const PortfolioPanel = memo(function PortfolioPanel({
           );
         })()}
 
-        {/* Unified table */}
+        {/* Unified table (desktop) / Card list (mobile) */}
         {entries.length > 0 ? (
-          <PortfolioUnifiedTable
-            entries={sortedEntries}
-            actions={actions}
-            reserves={reserves}
-            positionResults={positionResults}
-            summary={summary}
-            capWarningsMap={capWarningsMap}
-          />
+          isMobile ? (
+            <MobilePortfolioCard
+              entries={sortedEntries}
+              actions={actions}
+              reserves={reserves}
+              positionResults={positionResults}
+              summary={summary}
+              capWarningsMap={capWarningsMap}
+            />
+          ) : (
+            <PortfolioUnifiedTable
+              entries={sortedEntries}
+              actions={actions}
+              reserves={reserves}
+              positionResults={positionResults}
+              summary={summary}
+              capWarningsMap={capWarningsMap}
+            />
+          )
         ) : (
           <div
             className={cn(
