@@ -4,7 +4,7 @@ import type { MarketListItem, MarketsResponse } from '@/types/aave';
  * Fallback chain count for static/SEO pages without live API data.
  * Update when the backend adds/removes chains. Dynamic pages use getChainCount() instead.
  */
-export const DEFAULT_CHAIN_COUNT = 21;
+export const DEFAULT_CHAIN_COUNT = 17;
 
 export function getChainCount(marketsResponse?: MarketsResponse | null): number {
   const reserves = marketsResponse?.reserves;
