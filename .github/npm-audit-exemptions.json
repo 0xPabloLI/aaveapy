@@ -1,0 +1,14 @@
+{
+  "_comment": "Known high/critical advisories in production deps that cannot be fixed downstream. Remove entries when upstream resolves them.",
+  "exemptions": {
+    "ws": {
+      "severity": "high",
+      "reason": "Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) — via viem, upstream fix pending",
+      "advisories": ["GHSA-96hv-2xvq-fx4p"]
+    },
+    "viem": {
+      "severity": "high",
+      "reason": "Depends on vulnerable ws — resolves when ws is patched upstream"
+    }
+  }
+}
