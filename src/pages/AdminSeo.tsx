@@ -44,6 +44,8 @@ function fmtUsd(n: number | null | undefined) {
   return formatUsd(n);
 }
 
+const EMPTY_ROWS: never[] = [];
+
 const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
   const [preset, setPreset] = useState<RangePreset>("28d");
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(
@@ -84,7 +86,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
     });
   };
 
-  const gscRows = gscQuery.data?.rows ?? [];
+  const gscRows = gscQuery.data?.rows ?? EMPTY_ROWS;
   const semrushRows = semrushQuery.data?.rows ?? [];
 
   // Country-level GSC aggregates
