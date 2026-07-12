@@ -178,17 +178,17 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Earn $/day</th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-0.5 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-0.5 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
+            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th className={cn('px-1 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
           </tr>
         </thead>
         <tbody>
@@ -377,12 +377,10 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   {borrowResult ? (borrowResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(borrowResult.usdPerDay)) : '—'}
                 </td>
                 {/* Net $/day */}
-                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>
+                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', 'bg-muted/15')}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
-                    // borrow usdPerDay is already signed (negative = cost),
-                    // so net = supply + borrow (not supply - borrow).
                     const net = s + b;
                     return net === 0 ? '—' : formatSignedReserveSizeUsd(net);
                   })()}
@@ -391,7 +389,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             );
           })}
         </tbody>
-        {summary && (
+        {summary && entries.length > 1 && (
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-3 py-1.5 font-bold ds-text-11 text-center">Total</td>
@@ -409,7 +407,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
               </td>
               <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}</td>
               <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', HEADER_BASE)}>{summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}</td>
+              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}</td>
             </tr>
           </tfoot>
         )}
