@@ -37,10 +37,10 @@ async function fetchJson(url) {
 }
 
 async function loadMarketChainIds() {
-  const payload = await fetchJson(`${getApiBase()}/markets`);
-  const reserves = Array.isArray(payload?.reserves) ? payload.reserves : [];
+  const { fetchAndValidateMarkets } = await import('./lib/market-fetch.ts');
+  const { rows } = await fetchAndValidateMarkets(`${getApiBase()}/markets`);
   const chainIds = new Set();
-  for (const item of reserves) {
+  for (const item of rows) {
     if (typeof item?.chainId === 'number' && Number.isFinite(item.chainId) && item.chainId > 0) {
       chainIds.add(item.chainId);
     }
@@ -95,12 +95,14 @@ function parseLocalHardcodedMap(content) {
   };
 }
 
-function isCiMarkets403(error) {
+const CI_RECOVERABLE_MARKETS_STATUS = new Set([403, 429, 502, 503]);
+
+function isCiMarketsRecoverableError(error) {
   return (
     process.env.CI === 'true' &&
     error &&
     typeof error === 'object' &&
-    Number(error.status) === 403 &&
+    CI_RECOVERABLE_MARKETS_STATUS.has(Number(error.status)) &&
     typeof error.url === 'string' &&
     error.url.endsWith('/markets')
   );
@@ -115,10 +117,10 @@ async function main() {
   try {
     marketChainIds = await loadMarketChainIds();
   } catch (error) {
-    if (!isCiMarkets403(error)) throw error;
+    if (!isCiMarketsRecoverableError(error)) throw error;
     marketChainIds = Array.from(parsed.local.keys()).sort((a, b) => a - b);
     console.warn(
-      'Warning: /markets returned 403 in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.'
+      `Warning: /markets returned ${error.status} in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.`
     );
   }
 

@@ -1,0 +1,215 @@
+name: CI Auto Remediation
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - main
+      - dev
+      - railway
+      - lovable
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to remediate (default: repository default branch)"
+        required: false
+        type: string
+
+concurrency:
+  group: ci-auto-remediation-${{ github.event.workflow_run.head_branch || github.event.inputs.branch || 'default' }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  remediate:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if CI failure is unfixable (ERESOLVE or peer-dep-check)
+        id: skip-check
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            core.setOutput('skip', 'false');
+            const runId = context.payload.workflow_run.id;
+            const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+            for (const job of jobs) {
+              if (job.conclusion !== 'failure') continue;
+              if (job.name === 'peer-dep-check') {
+                core.setOutput('skip', 'true');
+                core.notice('peer-dep-check failed — peer dep conflict cannot be fixed by audit. Skipping.');
+                return;
+              }
+              let log;
+              try {
+                const resp = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id,
+                });
+                log = resp.data;
+              } catch (e) {
+                core.warning(`Could not download logs for job ${job.name} (id=${job.id}): ${e.message}. Assuming no ERESOLVE.`);
+                continue;
+              }
+              if (/npm error code ERESOLVE/.test(log)) {
+                core.setOutput('skip', 'true');
+                core.notice('CI failure contains ERESOLVE — peer dep conflict cannot be fixed by audit. Skipping.');
+                return;
+              }
+            }
+
+      - name: Skip remediation for unfixable failures
+        if: steps.skip-check.outputs.skip == 'true'
+        run: exit 0
+
+      - name: Resolve target branch
+        if: steps.skip-check.outputs.skip != 'true'
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.branch }}" ]; then
+            echo "name=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "${{ github.event.workflow_run.head_branch }}" ]; then
+            echo "name=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.event.repository.default_branch }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout target branch
+        if: steps.skip-check.outputs.skip != 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.branch.outputs.name }}
+
+      - name: Setup Node
+        if: steps.skip-check.outputs.skip != 'true'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.skip-check.outputs.skip != 'true'
+        run: npm run ci:lockcheck
+
+      - name: Attempt dependency remediation
+        if: steps.skip-check.outputs.skip != 'true'
+        run: npm run ci:auto-fix
+
+      - name: Reinstall dependencies for verification
+        if: steps.skip-check.outputs.skip != 'true'
+        run: npm run ci:lockcheck
+
+      - name: Validate checks after remediation
+        if: steps.skip-check.outputs.skip != 'true'
+        id: verify
+        run: |
+          set +e
+          npm run lint
+          LINT=$?
+          npm test
+          TEST=$?
+          npm run build
+          BUILD=$?
+          npm audit --omit=dev --audit-level=high
+          AUDIT=$?
+          if [ "$LINT" -eq 0 ] && [ "$TEST" -eq 0 ] && [ "$BUILD" -eq 0 ] && [ "$AUDIT" -eq 0 ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Check for generated changes
+        if: steps.skip-check.outputs.skip != 'true'
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create remediation PR
+        id: cpr
+        if: steps.skip-check.outputs.skip != 'true' && steps.verify.outputs.ok == 'true' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "chore: auto-remediate dependency issues after CI failure"
+          branch: "bot/ci-auto-remediation-${{ github.run_id }}"
+          delete-branch: true
+          title: "chore: auto remediation for CI failure (${{ steps.branch.outputs.name }})"
+          body: |
+            Auto-generated remediation PR.
+
+            Trigger:
+            - Event: `${{ github.event_name }}`
+            - Source branch: `${{ steps.branch.outputs.name }}`
+
+            Actions performed:
+            - `npm run ci:auto-fix`
+            - `npm run lint`
+            - `npm test`
+            - `npm run build`
+            - `npm audit --omit=dev --audit-level=high`
+          labels: ci-auto-remediation,dependencies
+          base: ${{ steps.branch.outputs.name }}
+
+      - name: Review and enable auto-merge for remediation PR
+        if: steps.skip-check.outputs.skip != 'true' && steps.cpr.outputs.pull-request-number != '' && steps.branch.outputs.name != 'main'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.CODEX_BOT_TOKEN != '' && secrets.CODEX_BOT_TOKEN || github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = Number('${{ steps.cpr.outputs.pull-request-number }}');
+            if (!prNumber) {
+              core.info('No remediation PR created; skip review/auto-merge.');
+              return;
+            }
+
+            const pr = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+            try {
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: prNumber,
+                event: 'APPROVE',
+                body: 'Automated review approval by CODEX_BOT_TOKEN.',
+              });
+            } catch (error) {
+              core.warning(`Auto-approve failed for PR #${prNumber}: ${error.message}`);
+            }
+            try {
+              await github.graphql(
+                `
+                mutation EnableAutoMerge($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                    pullRequest {
+                      number
+                    }
+                  }
+                }
+                `,
+                { pullRequestId: pr.data.node_id }
+              );
+            } catch (error) {
+              core.warning(`Enable auto-merge failed for PR #${prNumber}: ${error.message}`);
+            }

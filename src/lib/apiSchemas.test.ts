@@ -6,11 +6,12 @@ const buildMarketsPayload = (message: unknown) => ({
     lastUpdated: '2026-03-09T00:00:00.000Z',
     version: '1.0.0',
   },
-  reserves: [
-    {
-      marketName: 'AaveV3Celo',
-      chainName: 'Celo',
-      chainId: 42220,
+    reserves: [
+      {
+        reserveId: '42220:0xpool:0x1234',
+        marketName: 'AaveV3Celo',
+        chainName: 'Celo',
+        chainId: 42220,
       tokenName: 'Tether USD',
       tokenSymbol: 'USDT',
       tokenAddress: '0x1234',
@@ -18,11 +19,17 @@ const buildMarketsPayload = (message: unknown) => ({
       vTokenAddress: '0xb1234',
       meritSupplys: [
         {
-          apr: 4.16,
           link: 'https://app.merit.systems/campaign',
           message,
-          startDate: '2026-02-26',
-          endDate: '2026-03-12',
+          breakdowns: [
+            {
+              campaignApr: 4.16,
+              campaignStartedAt: '2026-02-26',
+              campaignEndedAt: '2026-03-12',
+              campaignId: 'merit-base',
+              campaignType: 'DUTCH_AUCTION',
+            },
+          ],
         },
       ],
     },
@@ -59,9 +66,11 @@ describe('apiSchemas', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-25T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: '57073:0xpool:0x1',
           marketName: 'AaveV3Ink',
           chainName: 'Ink',
           chainId: 57073,
@@ -74,18 +83,18 @@ describe('apiSchemas', () => {
             {
               name: 'Lend USDG on Tydro',
               breakdowns: [
-                {
-                  campaignApr: 0,
-                  campaignStartedAt: '2026-03-24T14:00:00.000Z',
-                  campaignEndedAt: '2026-03-31T14:00:00.000Z',
-                  campaignId: '16403393592832236981',
-                  campaignType: 'DUTCH_AUCTION',
-                  plannedDaily: 11312,
-                  aprCap: null,
-                  totalBudget: 79184,
-                  latestTvl: 23586552.55647095,
-                  pointsPerThousandUsd: 0.4795953106295122,
-                },
+            {
+              campaignApr: 0,
+              campaignStartedAt: '2026-03-24T14:00:00.000Z',
+              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignId: '16403393592832236981',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 11312,
+              // DUTCH_AUCTION no longer includes aprCap in Merkl campaign fields.
+              totalBudget: 79184,
+              latestTvl: 23586552.55647095,
+              pointsPerThousandUsd: 0.4795953106295122,
+            },
               ],
             },
           ],
@@ -96,7 +105,7 @@ describe('apiSchemas', () => {
     const breakdown = parsed.reserves[0].merklSupplys?.[0].breakdowns[0];
     expect(breakdown?.campaignType).toBe('DUTCH_AUCTION');
     expect(breakdown?.plannedDaily).toBe(11312);
-    expect(breakdown?.aprCap).toBeNull();
+    expect(breakdown?.aprCap).toBeUndefined();
     expect(breakdown?.totalBudget).toBe(79184);
     expect(breakdown?.latestTvl).toBe(23586552.55647095);
   });
@@ -124,13 +133,74 @@ describe('apiSchemas', () => {
     expect(item?.endTimestamp).toBe(1774965600);
   });
 
-  it('accepts aligned Brevis fields while dropping deprecated legacy fields', () => {
+  describe('SideDataMetaResponseSchema.errors (replaces partial)', () => {
+    it('parses successfully when errors is absent', () => {
+      const result = SideDataMetaResponseSchema.safeParse({ generatedAt: '2026-01-01' });
+      expect(result.success).toBe(true);
+    });
+
+    it('parses successfully when errors is an empty object', () => {
+      const result = SideDataMetaResponseSchema.safeParse({ errors: {} });
+      expect(result.success).toBe(true);
+    });
+
+    it('parses successfully with valid error keys', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { fdv: 'rate limited', forecast: 'timeout' },
+      });
+      expect(parsed.errors?.fdv).toBe('rate limited');
+      expect(parsed.errors?.forecast).toBe('timeout');
+    });
+
+    it('strips unknown error keys (strict object mode)', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { unknown: 'mystery', fdv: 'ok' },
+      });
+      expect((parsed.errors as Record<string, string>)?.unknown).toBeUndefined();
+      expect(parsed.errors?.fdv).toBe('ok');
+    });
+
+    it('rejects non-string error values', () => {
+      const result = SideDataMetaResponseSchema.safeParse({
+        errors: { fdv: 123 },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('preserves partial field via passthrough for backend transition', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        partial: true,
+        errors: { fdv: 'rate limited' },
+      });
+      expect((parsed as Record<string, unknown>).partial).toBe(true);
+      expect(parsed.errors?.fdv).toBe('rate limited');
+    });
+
+    it('parses successfully with errors alongside sub-source data', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { categories: 'fetch failed' },
+        categories: {
+          uniqueSymbolsStablecoins: ['USDT'],
+          uniqueSymbolsEth: ['WETH'],
+          fetchedAt: '2026-01-01',
+          staleTimeMs: 60000,
+        },
+        fdv: { items: [], fetchedAt: '2026-01-01', staleTimeMs: 60000 },
+      });
+      expect(parsed.errors?.categories).toBe('fetch failed');
+      expect(parsed.categories?.uniqueSymbolsStablecoins).toEqual(['USDT']);
+    });
+  });
+
+  it('normalizes grouped Brevis payloads to flat incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-26T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: '59144:0xpool:0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,
@@ -151,7 +221,7 @@ describe('apiSchemas', () => {
                   campaignEndedAt: '2026-08-08T00:00:00.000Z',
                   latestTvl: 4_151_203.07,
                   totalBudget: 25_000,
-                  perUserRewardCapUsd: 5000,
+                  positionCapUsd: 5000,
                   campaignId: 'linea-usdc',
                   totalRewardAmount: 12345,
                   totalRewardTokenSymbol: 'USDC',
@@ -175,7 +245,7 @@ describe('apiSchemas', () => {
     expect(brevis?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
     expect(brevis?.latestTvl).toBe(4_151_203.07);
     expect(brevis?.totalBudget).toBe(25_000);
-    expect(brevis?.perUserRewardCapUsd).toBe(5000);
+    expect(brevis?.positionCapUsd).toBe(5000);
     expect(brevis?.campaignId).toBe('linea-usdc');
     expect('totalRewardAmount' in (brevis ?? {})).toBe(true);
     expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(true);
@@ -184,13 +254,116 @@ describe('apiSchemas', () => {
     expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
   });
 
+  it('accepts isFrozen, isPaused, and isActive fields on reserves', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-04-24T00:00:00.000Z',
+        version: '1.0.0',
+      },
+      reserves: [
+        {
+          reserveId: '1:0xpool:0xfrozen',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Frozen Token',
+          tokenSymbol: 'FRZ',
+          tokenAddress: '0xfrozen',
+          isFrozen: true,
+          supplyApy: 2.5,
+        },
+        {
+          reserveId: '1:0xpool:0xpaused',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Paused Token',
+          tokenSymbol: 'PAU',
+          tokenAddress: '0xpaused',
+          isFrozen: true,
+          isPaused: true,
+        },
+        {
+          reserveId: '1:0xpool:0xinactive',
+          marketName: 'AaveV4Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Inactive Token',
+          tokenSymbol: 'INA',
+          tokenAddress: '0xinactive',
+          isActive: false,
+        },
+        {
+          reserveId: '1:0xpool:0xnormal',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Normal Token',
+          tokenSymbol: 'NRM',
+          tokenAddress: '0xnormal',
+          supplyApy: 3.0,
+        },
+      ],
+    });
+
+    expect(parsed.reserves[0].isFrozen).toBe(true);
+    expect(parsed.reserves[0].isPaused).toBeUndefined();
+    expect(parsed.reserves[0].isActive).toBeUndefined();
+    expect(parsed.reserves[1].isFrozen).toBe(true);
+    expect(parsed.reserves[1].isPaused).toBe(true);
+    expect(parsed.reserves[2].isActive).toBe(false);
+    expect(parsed.reserves[2].isFrozen).toBeUndefined();
+    expect(parsed.reserves[2].isPaused).toBeUndefined();
+    expect(parsed.reserves[3].isFrozen).toBeUndefined();
+    expect(parsed.reserves[3].isPaused).toBeUndefined();
+    expect(parsed.reserves[3].isActive).toBeUndefined();
+  });
+
+  it('preserves V4 Hub & Spoke identifiers on reserves', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-05-15T00:00:00.000Z',
+        version: '1.0.0',
+      },
+      reserves: [
+        {
+          reserveId: '1:0xpool:0xv4hub',
+          marketName: 'AaveV4Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'USDC',
+          tokenSymbol: 'USDC',
+          tokenAddress: '0xv4hub',
+          aTokenAddress: '0xa1',
+          vTokenAddress: '0xb1',
+          aaveProReserveId: 'pro-reserve-123',
+          hubId: 'hub-core',
+          hubName: 'Core',
+          hubAddress: '0xhub123',
+          spokeId: 'spoke-eth',
+          spokeAddress: '0xspoke456',
+        },
+      ],
+    });
+
+    const r = parsed.reserves[0];
+    expect(r.aaveProReserveId).toBe('pro-reserve-123');
+    expect(r.hubId).toBe('hub-core');
+    expect(r.hubName).toBe('Core');
+    expect(r.hubAddress).toBe('0xhub123');
+    expect(r.spokeId).toBe('spoke-eth');
+    expect(r.spokeAddress).toBe('0xspoke456');
+  });
+
   it('normalizes grouped Brevis breakdowns from /markets into flat Brevis incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-31T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: '59144:0xpool:0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,
@@ -211,7 +384,7 @@ describe('apiSchemas', () => {
                   campaignEndedAt: '2026-08-08T00:00:00.000Z',
                   latestTvl: 3_784_092,
                   totalBudget: 9_996_400.6,
-                  perUserRewardCapUsd: 5000,
+                  positionCapUsd: 5000,
                   campaignId: '1754995104',
                   customBreakdownField: 'from-breakdown',
                 },

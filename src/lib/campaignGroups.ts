@@ -54,6 +54,7 @@ export interface SumActiveCampaignBreakdownValuesOptions<TGroup, TBreakdown> {
   getEndDate: (group: TGroup, breakdown: TBreakdown) => string | undefined;
   include?: (group: TGroup, breakdown: TBreakdown) => boolean;
   mapValue: (group: TGroup, breakdown: TBreakdown) => number;
+  groupMultiplier?: (group: TGroup) => number;
 }
 
 export const sumActiveCampaignBreakdownValues = <
@@ -69,6 +70,7 @@ export const sumActiveCampaignBreakdownValues = <
     getEndDate,
     include,
     mapValue,
+    groupMultiplier,
   }: SumActiveCampaignBreakdownValuesOptions<TGroup, TBreakdown>
 ): number => {
   if (!groups?.length) return 0;
@@ -76,9 +78,11 @@ export const sumActiveCampaignBreakdownValues = <
   return groups.reduce((sum, group) => {
     const breakdowns = getBreakdowns(group);
     if (!breakdowns?.length) return sum;
+    const multiplier = groupMultiplier ? groupMultiplier(group) : 1;
 
     return (
       sum +
+      multiplier *
       breakdowns.reduce((breakdownSum, breakdown) => {
         const startDate = getStartDate(group, breakdown);
         const endDate = getEndDate(group, breakdown);

@@ -1,17 +1,42 @@
-type SortOrder = 'asc' | 'desc';
+export type SortOrder = 'asc' | 'desc';
 
-const isValidNumber = (value: number): boolean => Number.isFinite(value);
+export const isValidNumber = (value: number): boolean => Number.isFinite(value);
 
-const compareNumbers = (a: number, b: number, order: SortOrder): number => {
+export const compareNumbers = (a: number, b: number, order: SortOrder): number => {
+  if (a === b) return 0;
   const diff = b - a;
   return order === 'desc' ? diff : -diff;
 };
 
-const compareNullableNumbers = (a: number | null, b: number | null, order: SortOrder): number => {
+export const compareNullableNumbers = (a: number | null, b: number | null, order: SortOrder): number => {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
   return compareNumbers(a, b, order);
+};
+
+export const compareSizeToCapPct = (
+  aSize: number | null,
+  bSize: number | null,
+  aCap: number | null,
+  bCap: number | null,
+  order: SortOrder,
+): number => {
+  const aPct = (aSize != null && aCap != null && aCap > 0) ? (aSize / aCap) * 100 : null;
+  const bPct = (bSize != null && bCap != null && bCap > 0) ? (bSize / bCap) * 100 : null;
+
+  if (aPct === null && bPct === null) return 0;
+  if (aPct === null) return 1;
+  if (bPct === null) return -1;
+
+  const diff = bPct - aPct;
+  if (diff === 0) {
+    const aAbs = aSize ?? 0;
+    const bAbs = bSize ?? 0;
+    const sizeDiff = bAbs - aAbs;
+    return order === 'desc' ? sizeDiff : -sizeDiff;
+  }
+  return order === 'desc' ? diff : -diff;
 };
 
 export const compareIncentiveWithNative = (

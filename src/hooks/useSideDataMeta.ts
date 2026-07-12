@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
+import { QUERY_GC_TIMES } from '@/config/queryStaleTimes';
 import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
 import {
   getCachedSideDataMetaEntry,
@@ -9,7 +10,7 @@ import {
   setCachedTokenCategories,
 } from '@/lib/cache';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import type { MerklForecastWireItem } from '@/types/aave';
+import type { CampaignAccessPayload, MerklForecastWireItem } from '@/types/aave';
 
 export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
 
@@ -21,9 +22,18 @@ export interface SideDataForecastError {
   message: string;
 }
 
+export interface SideDataSubSourceErrors {
+  categories?: string;
+  fdv?: string;
+  forecast?: string;
+  campaignAccess?: string;
+}
+
 export interface SideDataMetaResponse {
+  /** Debug timestamp for side-data generation time. */
   generatedAt?: string;
-  partial?: boolean;
+  /** Per-sub-source error messages; absent or empty ≡ no errors. */
+  errors?: SideDataSubSourceErrors;
   categories?: {
     uniqueSymbolsStablecoins: string[];
     uniqueSymbolsEth: string[];
@@ -32,11 +42,8 @@ export interface SideDataMetaResponse {
   };
   fdv?: {
     items: Array<{
-      id: string;
       symbol: string | null;
-      name: string | null;
       fdvUsd: number | null;
-      source?: string;
     }>;
     fetchedAt: string;
     staleTimeMs: number;
@@ -46,6 +53,8 @@ export interface SideDataMetaResponse {
     errors: SideDataForecastError[];
     staleTimeMs: number;
   };
+  /** Merkl campaign whitelist/blacklist per campaign (AAV-66). */
+  campaignAccess?: CampaignAccessPayload;
 }
 
 export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
@@ -115,6 +124,7 @@ export function useSideDataMeta(staleTime: number, retry: number = 1) {
     queryKey: SIDE_DATA_META_QUERY_KEY,
     queryFn: fetchSideDataMeta,
     staleTime: derivedStaleTime,
+    gcTime: QUERY_GC_TIMES.sideDataMeta,
     retry,
     initialData: cachedEntry?.data,
     initialDataUpdatedAt: cachedEntry?.updatedAt,

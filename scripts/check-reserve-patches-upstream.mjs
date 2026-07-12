@@ -9,6 +9,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
 const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
+const LOCAL_TOKEN_SYMBOL_MAP_PATH = path.join(ROOT, 'src/lib/tokenSymbolMap.ts');
 
 function extractAddressKeys(content) {
   const regex = /['"`](0x[a-fA-F0-9]{40})['"`]\s*:/g;
@@ -40,9 +41,10 @@ function toSortedArray(values) {
 }
 
 async function main() {
-  const [localContent, upstreamContent] = await Promise.all([
+  const [localContent, upstreamContent, localSymbolMapContent] = await Promise.all([
     readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
     fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
+    readFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, 'utf8'),
   ]);
   const localKeys = extractAddressKeys(localContent);
   const upstreamKeys = extractAddressKeys(upstreamContent);
@@ -80,10 +82,13 @@ async function main() {
   console.log(`local-only address keys: ${localOnly.length}`);
   console.log(`local-only expression keys: ${localOnlyExpr.length}`);
 
-  const symCheck = checkSymbolMapAgainstUpstream(localContent, upstreamContent);
+  const symCheck = checkSymbolMapAgainstUpstream(localSymbolMapContent, upstreamContent);
   console.log(`SYMBOL_MAP local-only keys (vs upstream): ${symCheck.localOnlyKeys.length}`);
 
   let hasDrift = false;
+
+  // Local-only keys are intentional extensions and only warn.
+  // The check fails on missing upstream keys or SYMBOL_MAP mismatches.
 
   if (missingFromLocal.length > 0) {
     hasDrift = true;
@@ -145,4 +150,3 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.stack || error.message : String(error));
   process.exit(1);
 });
-

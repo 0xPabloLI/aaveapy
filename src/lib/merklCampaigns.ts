@@ -1,5 +1,5 @@
-import type { ReserveWithSpread, MerklOpportunityGroup } from '@/types/aave';
-import { isMerklWhitelistBreakdownIncluded, MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from '@/lib/formatters';
+import type { ReserveWithSpread, MerklOpportunityGroup, CampaignAccessStatus } from '@/types/aave';
+import { isMerklWhitelistBreakdownIncluded, MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from '@/lib/merklWhitelist';
 
 export interface MerklCampaignOption {
   campaignId: string;
@@ -16,6 +16,7 @@ export interface MerklCampaignOption {
 interface CollectMerklCampaignOptionsConfig {
   whitelistMerklCampaignIds?: ReadonlySet<string>;
   activeOnly?: boolean;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 export interface WhitelistOnlyMerklCampaignEntry {
@@ -89,12 +90,13 @@ const addFromGroups = (
   actionType: MerklCampaignOption['actionType'],
   reserve: ReserveWithSpread,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  activeOnly: boolean
+  activeOnly: boolean,
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>
 ) => {
   if (!groups || groups.length === 0) return;
   groups.forEach((group) => {
     group.breakdowns?.forEach((breakdown) => {
-      if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds)) return;
+      if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId])) return;
       if (activeOnly && !isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
       const campaignId = String(breakdown.campaignId || '').trim();
       if (!campaignId) return;
@@ -134,9 +136,9 @@ export const collectMerklCampaignOptions = (
   const activeOnly = config.activeOnly === true;
 
   reserves.forEach((reserve) => {
-    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, config.whitelistMerklCampaignIds, activeOnly);
-    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, config.whitelistMerklCampaignIds, activeOnly);
-    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, config.whitelistMerklCampaignIds, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
+    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
+    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
   });
 
   return Array.from(byCampaignId.values()).sort((a, b) => a.campaignId.localeCompare(b.campaignId));

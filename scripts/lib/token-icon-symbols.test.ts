@@ -6,11 +6,14 @@ import { collectIconSymbolLogoHints, collectRequiredIconSymbols } from './token-
 
 const reservePatchesPath = path.resolve(process.cwd(), 'src/ui-config/reservePatches.ts');
 const reservePatchesContent = fs.readFileSync(reservePatchesPath, 'utf8');
+const tokenSymbolMapPath = path.resolve(process.cwd(), 'src/lib/tokenSymbolMap.ts');
+const tokenSymbolMapContent = fs.readFileSync(tokenSymbolMapPath, 'utf8');
 
 describe('collectRequiredIconSymbols', () => {
   it('includes runtime market symbols not present in static interface tokenlist (e.g. ACRED)', () => {
     const symbols = collectRequiredIconSymbols({
       reservePatchesContent,
+      tokenSymbolMapContent,
       marketsRows: [
         {
           tokenAddress: '0x17418038ecF73BA4026c4f428547BF099706F27B',
@@ -26,6 +29,7 @@ describe('collectRequiredIconSymbols', () => {
   it('prefers reservePatches iconSymbol by address over raw market symbol', () => {
     const symbols = collectRequiredIconSymbols({
       reservePatchesContent,
+      tokenSymbolMapContent,
       marketsRows: [
         {
           tokenAddress: '0xaebf0bb9f57e89260d57f31af34eb58657d96ce0',
@@ -42,6 +46,7 @@ describe('collectRequiredIconSymbols', () => {
   it('splits composite icon symbols into actual token icon lookup keys', () => {
     const symbols = collectRequiredIconSymbols({
       reservePatchesContent,
+      tokenSymbolMapContent,
       marketsRows: [
         {
           tokenAddress: '0x0000000000000000000000000000000000000001',
@@ -70,6 +75,7 @@ export function fetchIconSymbolAndName() {
 
     const hints = collectIconSymbolLogoHints({
       reservePatchesContent: fixture,
+      tokenSymbolMapContent: 'export const SYMBOL_MAP: { [key: string]: string } = {};',
       marketsRows: [],
       addressBookContext: {},
       tokenLogoByAddress: new Map([
@@ -83,6 +89,7 @@ export function fetchIconSymbolAndName() {
   it('accepts tokenlist-derived symbol fallback when runtime markets are unavailable', () => {
     const symbols = collectRequiredIconSymbols({
       reservePatchesContent,
+      tokenSymbolMapContent,
       marketsRows: [],
       tokenListSymbols: ['ACRED'],
       addressBookContext: addressBook,

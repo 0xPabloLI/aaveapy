@@ -70,3 +70,81 @@ export function buildAaveMarketUrl(marketName: string): string | null {
   if (!resolvedMarketName) return null;
   return `${AAVE_APP_BASE}/markets/?marketName=${encodeURIComponent(resolvedMarketName)}`;
 }
+
+const AAVE_V4_BASE = 'https://pro.aave.com';
+
+/** Chain name to chain ID mapping for pro.aave.com asset URLs. */
+const CHAIN_NAME_TO_ID: Record<string, string> = {
+  Ethereum: '1',
+  Arbitrum: '42161',
+  Optimism: '10',
+  Polygon: '137',
+  Base: '8453',
+  Gnosis: '100',
+  BNB: '56',
+  Avalanche: '43114',
+  Scroll: '534352',
+  ZkSync: '324',
+  Linea: '59144',
+  Metis: '1088',
+  Sonic: '146',
+  Celo: '42220',
+  Mantle: '5000',
+  Soneium: '1868',
+  Ink: '57073',
+  MegaEth: '999',
+  Plasma: '992',
+};
+
+/** Build a pro.aave.com deep-link for a V4 asset. Returns null for non-V4 reserves. */
+export function buildAaveV4AssetUrl(asset: {
+  tokenAddress: string;
+  chainName?: string;
+}): string | null {
+  if (!asset.tokenAddress || !asset.chainName) return null;
+  const chainId = CHAIN_NAME_TO_ID[asset.chainName];
+  if (!chainId) return null;
+  return `${AAVE_V4_BASE}/explore/asset/${chainId}/${asset.tokenAddress.toLowerCase()}`;
+}
+
+/** Build a pro.aave.com deep-link for a V4 reserve. Returns null for non-V4 reserves. */
+export function buildAaveV4Url(reserve: {
+  aaveProReserveId?: string;
+}): string | null {
+  if (reserve.aaveProReserveId) {
+    return `${AAVE_V4_BASE}/explore/reserve/${reserve.aaveProReserveId}`;
+  }
+  return null;
+}
+
+/** Build a pro.aave.com deep-link for a V4 hub. Returns null for non-V4 reserves. */
+export function buildAaveV4HubUrl(reserve: {
+  hubId?: string;
+}): string | null {
+  if (reserve.hubId) {
+    return `${AAVE_V4_BASE}/explore/hub/${reserve.hubId}`;
+  }
+  return null;
+}
+
+/** Build a pro.aave.com deep-link for a V4 spoke (market). Returns null if no spokeId. */
+export function buildAaveV4MarketUrl(reserve: {
+  spokeId?: string;
+}): string | null {
+  if (reserve.spokeId) {
+    return `${AAVE_V4_BASE}/explore/market/${reserve.spokeId}`;
+  }
+  return null;
+}
+
+/**
+ * Best-effort Aave link: returns app.aave.com for V3, pro.aave.com for V4, or null.
+ * Use this as the single entry-point for "Open on Aave" actions.
+ */
+export function buildAaveUrl(reserve: {
+  marketName: string;
+  tokenAddress: string;
+  aaveProReserveId?: string;
+}): string | null {
+  return buildAaveV4Url(reserve) ?? buildAaveReserveUrl(reserve);
+}

@@ -1,5 +1,21 @@
 import type { MarketListItem, MarketsResponse } from '@/types/aave';
 
+/**
+ * Fallback chain count for static/SEO pages without live API data.
+ * Update when the backend adds/removes chains. Dynamic pages use getChainCount() instead.
+ */
+export const DEFAULT_CHAIN_COUNT = 21;
+
+export function getChainCount(marketsResponse?: MarketsResponse | null): number {
+  const reserves = marketsResponse?.reserves;
+  if (!reserves?.length) return DEFAULT_CHAIN_COUNT;
+  const uniqueChains = new Set<string>();
+  for (const reserve of reserves) {
+    if (reserve.chainName?.trim()) uniqueChains.add(reserve.chainName.trim());
+  }
+  return uniqueChains.size || DEFAULT_CHAIN_COUNT;
+}
+
 export function buildMarketsList(marketsResponse?: MarketsResponse | null): MarketListItem[] {
   const reserves = marketsResponse?.reserves;
   if (!reserves?.length) return [];
@@ -14,6 +30,7 @@ export function buildMarketsList(marketsResponse?: MarketsResponse | null): Mark
       uniqueMarkets.set(key, {
         marketName: reserve.marketName,
         chainName: reserve.chainName,
+        chainId: reserve.chainId,
       });
     }
   }

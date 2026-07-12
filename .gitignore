@@ -16,6 +16,9 @@ dist-ssr
 *.local
 .npmrc.local
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env.local
@@ -41,16 +44,31 @@ dist-ssr
 playwright-report/
 test-results/
 .playwright-mcp/
+.playwright-cli/
 
 # Cursor local state
 .cursor/hooks/state/continual-learning.json
 
+# Personal agent skill symlinks and hooks (absolute paths into ~/.agents)
+.agents/
+.agent/
+.trae/skills/
+.claude/
+.codex/
+.cursor/skills/
+.cursor/hooks.json
+.github/skills/
+.github/hooks/
+.impeccable/
+.opencode/
+
+# Debug scripts and pages (development-only, not committed)
+scripts/debug-*
+scripts/verify-*
+scripts/verify_*
+src/pages/Debug*
+output/
+
 # Local-only notes and drafts (not committed)
 /local/
-
-# Tool/IDE local caches
-.agents/
-.arts/
-.trae/
-.playwright-cli/
-*.tsbuildinfo
+.vercel

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Info, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 interface AprApyToggleProps {
   isApy: boolean;
@@ -68,8 +69,9 @@ export function InfoIconButton({
   /**
    * `neutral`: muted chrome for dense toolbars (e.g. scenario controls) so supply/borrow semantic colors stay table-only.
    * `purple`: aligns with INK-branded surfaces (logo + purple tooltips) instead of supply-emerald default.
+   * `blue`: used for FDV / information badges alongside blue-themed surfaces.
    */
-  variant?: 'default' | 'neutral' | 'purple';
+  variant?: 'default' | 'neutral' | 'purple' | 'blue';
   children: (triggerRect: DOMRect | null) => React.ReactNode;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -147,7 +149,9 @@ export function InfoIconButton({
             ? 'border border-border bg-card text-foreground shadow-sm hover:bg-accent/80 hover:border-border'
             : variant === 'purple'
               ? 'ds-bg-purple-500-10 ds-text-purple-600 shadow-sm hover:bg-[rgb(var(--ds-purple-500-rgb)/0.2)] hover:ds-text-purple-700'
-              : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700',
+              : variant === 'blue'
+                ? 'ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md'
+                : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700',
         )}
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
@@ -169,23 +173,27 @@ export function MobileTooltip({
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  variant?: 'default' | 'neutral' | 'purple';
+  variant?: 'default' | 'neutral' | 'purple' | 'blue';
   hideTitle?: boolean;
 }) {
   if (!isOpen) return null;
 
   const headerClass =
     variant === 'neutral'
-      ? 'bg-card px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b border-border'
+      ? 'bg-card px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b border-border'
       : variant === 'purple'
-        ? 'ds-bg-purple-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-purple-200'
-        : 'ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
+        ? 'ds-bg-purple-500-10 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b ds-border-purple-200'
+        : variant === 'blue'
+          ? 'ds-bg-blue-500-10 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b ds-border-blue-200'
+          : 'ds-bg-emerald-500-10 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
   const titleClass =
     variant === 'neutral'
       ? 'ds-text-14 font-semibold text-foreground'
       : variant === 'purple'
         ? 'ds-text-purple-700 ds-text-14 font-semibold'
-        : 'ds-text-emerald-700 ds-text-14 font-semibold';
+        : variant === 'blue'
+          ? 'ds-text-blue-700 ds-text-14 font-semibold'
+          : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <>
@@ -201,11 +209,11 @@ export function MobileTooltip({
         aria-modal="true"
       >
         {hideTitle ? (
-          <div className="relative px-4 py-3.5 rounded-xl space-y-3 bg-card">
+          <div className="relative px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-xl space-y-1 bg-card">
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -225,7 +233,7 @@ export function MobileTooltip({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-card">{children}</div>
+            <div className="px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-b-xl space-y-1 bg-card">{children}</div>
           </>
         )}
       </div>
@@ -252,7 +260,7 @@ export function DesktopTooltip({
   onMouseLeave: () => void;
   title: string;
   children: React.ReactNode;
-  variant?: 'default' | 'neutral' | 'purple';
+  variant?: 'default' | 'neutral' | 'purple' | 'blue';
   hideTitle?: boolean;
 }) {
   if (!isOpen || !triggerRect) return null;
@@ -264,13 +272,17 @@ export function DesktopTooltip({
       ? 'bg-card px-4 py-2 rounded-t-xl border-b border-border'
       : variant === 'purple'
         ? 'ds-bg-purple-500-10 px-4 py-2 rounded-t-xl border-b ds-border-purple-200'
-        : 'ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200';
+        : variant === 'blue'
+          ? 'ds-bg-blue-500-10 px-4 py-2 rounded-t-xl border-b ds-border-blue-200'
+          : 'ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200';
   const titleClass =
     variant === 'neutral'
       ? 'ds-text-14 font-semibold text-foreground'
       : variant === 'purple'
         ? 'ds-text-purple-700 ds-text-14 font-semibold'
-        : 'ds-text-emerald-700 ds-text-14 font-semibold';
+        : variant === 'blue'
+          ? 'ds-text-blue-700 ds-text-14 font-semibold'
+          : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <div
@@ -322,10 +334,12 @@ function TooltipModeRow({ mode, hint }: { mode: string; hint: string }) {
   );
 }
 
+const FORMULA_BLOCK_CLASS = 'rounded-lg border border-border bg-muted/40 px-3 py-2';
+
 /** Shared formula chrome for help tooltips (AprApyToggle, InkAprCalculator, etc.). */
-export function FormulaBlock({ children }: { children: ReactNode }) {
+export function FormulaBlock({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+    <div className={className ?? FORMULA_BLOCK_CLASS}>
       <code className="ds-text-12 font-mono font-medium text-foreground block break-all leading-snug">{children}</code>
     </div>
   );
@@ -396,37 +410,16 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         }
       </InfoIconButton>
 
-      {/* Segmented Control with color indication */}
-      <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
-        <button
-          type="button"
-          onClick={() => setIsApy(false)}
-          className={`
-            px-3 py-1 rounded-md ds-text-12 font-semibold transition-all duration-200
-            ${!isApy 
-              ? 'bg-card ds-text-emerald-600 shadow-sm border border-border/60' 
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            }
-          `}
-          aria-pressed={!isApy}
-        >
-          APR
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsApy(true)}
-          className={`
-            px-3 py-1 rounded-md ds-text-12 font-semibold transition-all duration-200
-            ${isApy 
-              ? 'bg-card ds-text-emerald-600 shadow-sm border border-border/60' 
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            }
-          `}
-          aria-pressed={isApy}
-        >
-          APY
-        </button>
-      </div>
+      <SegmentedToggle
+        options={[
+          { value: 'apr', label: 'APR' },
+          { value: 'apy', label: 'APY' },
+        ]}
+        value={isApy ? 'apy' : 'apr'}
+        onChange={(val) => setIsApy(val === 'apy')}
+        activeTextClassName="text-foreground"
+        size="chip"
+      />
 
       <InfoIconButton
         aria-label="Information about APY"

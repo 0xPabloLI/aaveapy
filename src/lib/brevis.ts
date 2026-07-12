@@ -8,11 +8,13 @@ export type BrevisResolvedBreakdown = {
   message?: string;
   link: string;
   campaignApr: number;
-  campaignStartedAt?: string;
-  campaignEndedAt?: string;
+  campaignStartedAt: string;
+  campaignEndedAt: string;
+  campaignType?: string;
+  aprCap?: number | null;
   latestTvl?: number;
   totalBudget?: number;
-  perUserRewardCapUsd?: number;
+  positionCapUsd?: number;
   campaignId?: string;
 };
 
@@ -34,45 +36,31 @@ const firstNonEmptyString = (...values: Array<string | undefined>): string | und
   return undefined;
 };
 
-const resolveBrevisCampaignBreakdowns = (brevis: BrevisIncentive) => {
-  if (Array.isArray(brevis.breakdowns) && brevis.breakdowns.length > 0) {
-    return brevis.breakdowns;
-  }
-  if (
-    brevis.campaignApr === undefined &&
-    brevis.campaignStartedAt === undefined &&
-    brevis.campaignEndedAt === undefined &&
-    brevis.latestTvl === undefined &&
-    brevis.totalBudget === undefined &&
-    brevis.perUserRewardCapUsd === undefined &&
-    brevis.campaignId === undefined
-  ) {
-    return [];
-  }
-  return [{
-    campaignApr: brevis.campaignApr ?? 0,
-    campaignStartedAt: brevis.campaignStartedAt ?? '',
-    campaignEndedAt: brevis.campaignEndedAt ?? '',
-    latestTvl: brevis.latestTvl,
-    totalBudget: brevis.totalBudget,
-    perUserRewardCapUsd: brevis.perUserRewardCapUsd,
-    campaignId: brevis.campaignId,
-  }];
-};
+const makeSingleBreakdown = (brevis: BrevisIncentive): BrevisCampaignBreakdown => ({
+  campaignApr: brevis.campaignApr ?? 0,
+  campaignStartedAt: brevis.campaignStartedAt ?? '',
+  campaignEndedAt: brevis.campaignEndedAt ?? '',
+  campaignType: brevis.campaignType,
+  aprCap: brevis.aprCap,
+  latestTvl: brevis.latestTvl,
+  totalBudget: brevis.totalBudget,
+  positionCapUsd: brevis.positionCapUsd,
+  campaignId: brevis.campaignId ?? '',
+});
 
-const getBrevisPrimaryBreakdown = (brevis: BrevisIncentive) => resolveBrevisCampaignBreakdowns(brevis)[0];
+type BrevisCampaignBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
 
 export const getBrevisCampaignName = (brevis: BrevisIncentive): string | undefined =>
   firstNonEmptyString(brevis.name);
 
 export const getBrevisCampaignApr = (brevis: BrevisIncentive): number =>
-  firstFiniteNumber(brevis.campaignApr, getBrevisPrimaryBreakdown(brevis)?.campaignApr) ?? 0;
+  brevis.campaignApr ?? 0;
 
 export const getBrevisCampaignStartedAt = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.campaignStartedAt, getBrevisPrimaryBreakdown(brevis)?.campaignStartedAt);
+  brevis.campaignStartedAt;
 
 export const getBrevisCampaignEndedAt = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.campaignEndedAt, getBrevisPrimaryBreakdown(brevis)?.campaignEndedAt);
+  brevis.campaignEndedAt;
 
 export const getBrevisCampaignMessage = (brevis: BrevisIncentive): string | undefined =>
   firstNonEmptyString(brevis.message);
@@ -81,49 +69,56 @@ export const getBrevisDisplayLabel = (brevis: BrevisIncentive, fallback = 'Brevi
   firstNonEmptyString(getBrevisCampaignName(brevis), getBrevisCampaignMessage(brevis)) ?? fallback;
 
 export const getBrevisLatestTvl = (brevis: BrevisIncentive): number | undefined =>
-  firstFiniteNumber(brevis.latestTvl, getBrevisPrimaryBreakdown(brevis)?.latestTvl);
+  brevis.latestTvl;
 
 export const getBrevisTotalBudget = (brevis: BrevisIncentive): number | undefined =>
-  firstFiniteNumber(brevis.totalBudget, getBrevisPrimaryBreakdown(brevis)?.totalBudget);
+  brevis.totalBudget;
 
-export const getBrevisPerUserRewardCapUsd = (brevis: BrevisIncentive): number | undefined =>
-  firstFiniteNumber(brevis.perUserRewardCapUsd, getBrevisPrimaryBreakdown(brevis)?.perUserRewardCapUsd);
 
 export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.campaignId, getBrevisPrimaryBreakdown(brevis)?.campaignId);
+  brevis.campaignId;
 
-export const getBrevisCampaignBreakdowns = (brevis: BrevisIncentive) => resolveBrevisCampaignBreakdowns(brevis);
+export const getBrevisCampaignBreakdowns = (brevis: BrevisIncentive): BrevisCampaignBreakdown[] =>
+  [makeSingleBreakdown(brevis)];
+
+const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
 
 export const getBrevisResolvedBreakdown = (
   brevis: BrevisIncentive,
   breakdown?: BrevisBreakdown,
-): BrevisResolvedBreakdown => ({
-  name: getBrevisCampaignName(brevis),
-  message: getBrevisCampaignMessage(brevis),
-  link: brevis.link,
-  campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
-  campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, getBrevisCampaignStartedAt(brevis)),
-  campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, getBrevisCampaignEndedAt(brevis)),
-  latestTvl: firstFiniteNumber(breakdown?.latestTvl, getBrevisLatestTvl(brevis)),
-  totalBudget: firstFiniteNumber(breakdown?.totalBudget, getBrevisTotalBudget(brevis)),
-  perUserRewardCapUsd: firstFiniteNumber(breakdown?.perUserRewardCapUsd, getBrevisPerUserRewardCapUsd(brevis)),
-  campaignId: firstNonEmptyString(breakdown?.campaignId, getBrevisCampaignId(brevis)),
-});
+): BrevisResolvedBreakdown => {
+  const rawAprCap = breakdown?.aprCap ?? brevis.aprCap;
+  const campaignType = firstNonEmptyString(breakdown?.campaignType, brevis.campaignType);
+  const effectiveAprCap = campaignType === BREVIS_FIX_TYPE
+    ? (rawAprCap ?? firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr))
+    : rawAprCap;
+  return {
+    name: getBrevisCampaignName(brevis),
+    message: getBrevisCampaignMessage(brevis),
+    link: brevis.link,
+    campaignApr: firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr) ?? 0,
+    campaignStartedAt: firstNonEmptyString(breakdown?.campaignStartedAt, brevis.campaignStartedAt) ?? '',
+    campaignEndedAt: firstNonEmptyString(breakdown?.campaignEndedAt, brevis.campaignEndedAt) ?? '',
+    campaignType,
+    aprCap: effectiveAprCap,
+    latestTvl: firstFiniteNumber(breakdown?.latestTvl, brevis.latestTvl),
+    totalBudget: firstFiniteNumber(breakdown?.totalBudget, brevis.totalBudget),
+    positionCapUsd: firstFiniteNumber(breakdown?.positionCapUsd, brevis.positionCapUsd),
+    campaignId: firstNonEmptyString(breakdown?.campaignId, brevis.campaignId),
+  };
+};
 
 export const hasActiveBrevisBreakdown = (
   brevis: BrevisIncentive,
   nowMs = Date.now(),
   allowOpenEnd = true,
 ): boolean =>
-  getBrevisCampaignBreakdowns(brevis).some((breakdown) => {
-    const resolved = getBrevisResolvedBreakdown(brevis, breakdown);
-    return isCampaignActive(
-      resolved.campaignStartedAt,
-      resolved.campaignEndedAt,
-      nowMs,
-      allowOpenEnd,
-    );
-  });
+  isCampaignActive(
+    brevis.campaignStartedAt,
+    brevis.campaignEndedAt,
+    nowMs,
+    allowOpenEnd,
+  );
 
 export const getFirstActiveBrevisLink = (
   brevisItems?: BrevisIncentive[],

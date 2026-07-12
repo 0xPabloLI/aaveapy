@@ -1,0 +1,84 @@
+import { expect, test } from '@playwright/test';
+
+/**
+ * Wallet Sync precision regression.
+ *
+ * After clicking Wallet Sync, every amount input in the portfolio panel must
+ * preserve the 8-significant-digit format produced by `formatConvertedAmount`
+ * (see src/lib/portfolioCalculator.ts). Raw floats like
+ * "1737.4839284729384" are a regression — see fix in
+ * src/lib/walletPositionToPortfolio.ts that switched from `String(...)` to
+ * `formatConvertedAmount(...)`.
+ *
+ * This test requires a watch-mode-compatible address that actually holds
+ * Aave positions (WETH/GHO ideally). Provide it via env:
+ *   E2E_WATCH_ADDRESS=0x...    (skips otherwise)
+ */
+
+import { WATCH_ADDRESS } from './test-wallets';
+
+/** Max significant digits emitted by `formatConvertedAmount`. */
+const MAX_SIG_DIGITS = 8;
+
+function significantDigits(raw: string): number {
+  const cleaned = raw.replace(/,/g, '').replace(/^[-+]/, '');
+  if (!/^\d*(\.\d*)?$/.test(cleaned) || cleaned === '' || cleaned === '.') return 0;
+  const [intPart = '', fracPart = ''] = cleaned.split('.');
+  const digits = (intPart + fracPart).replace(/^0+/, '');
+  // Trailing zeros in the fractional part are significant for display, but
+  // `formatConvertedAmount` strips them — treat any trailing zero in the
+  // fractional part as non-significant so the assertion stays meaningful.
+  const trimmed = fracPart ? digits.replace(/0+$/, '') : digits;
+  return trimmed.length;
+}
+
+test.describe('Portfolio — Wallet Sync precision', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop-only check');
+  });
+
+  test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
+    await page.goto('/');
+
+    // Enable portfolio mode.
+    await page.getByText('Portfolio', { exact: true }).first().click();
+
+    // Open Watch Address input, submit the address.
+    await page.getByRole('button', { name: /View address/i }).first().click();
+    const addrInput = page.getByRole('textbox', { name: /address/i }).first();
+    await addrInput.fill(WATCH_ADDRESS!);
+    await addrInput.press('Enter');
+
+    // Wait for the wallet-synced rows to render at least one amount input.
+    const amountInputs = page.locator('input[inputmode="decimal"]');
+    await expect.poll(async () => amountInputs.count(), { timeout: 20_000 }).toBeGreaterThan(0);
+
+    const snapshot = async () =>
+      Promise.all((await amountInputs.all()).map(async (el) => (await el.inputValue()) ?? ''));
+
+    const initial = (await snapshot()).filter((v) => v.trim() !== '');
+    expect(initial.length, 'wallet sync produced at least one populated amount').toBeGreaterThan(0);
+    for (const v of initial) {
+      expect(significantDigits(v), `initial value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(MAX_SIG_DIGITS);
+    }
+
+    // Click Wallet Sync again (refresh) — find by accessible label.
+    await page.getByRole('button', { name: /Wallet sync|Sync wallet|Refresh wallet/i }).first().click();
+
+    // Give the resync a tick to land.
+    await page.waitForTimeout(1500);
+
+    const after = (await snapshot()).filter((v) => v.trim() !== '');
+    expect(after.length).toBeGreaterThan(0);
+    for (const v of after) {
+      expect(significantDigits(v), `post-sync value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(MAX_SIG_DIGITS);
+    }
+
+    // And the populated value set should not regress to longer strings than
+    // what we saw on the first render (the precision should be identical).
+    const maxBefore = Math.max(...initial.map(significantDigits));
+    const maxAfter = Math.max(...after.map(significantDigits));
+    expect(maxAfter).toBeLessThanOrEqual(maxBefore);
+  });
+});

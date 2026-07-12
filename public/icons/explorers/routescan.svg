@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32" fill="none">
+  <g clipPath="url(#routescan-clip)">
+    <path d="M23.9455 3L3.00265 14.9984L23.9455 27V3Z" fill="#00FF7F"/>
+    <path d="M44.8883 14.9984L23.9455 3V27L44.8883 14.9984Z" fill="#FBEC0D"/>
+    <path d="M3.00265 14.9984L3 15V39L3.00262 39.0016L23.9455 27L3.00265 14.9984Z" fill="#4A9DFF"/>
+    <path d="M23.9455 27L44.8883 39.0016L44.8909 39V15L44.8883 14.9984L23.9455 27Z" fill="#FFB100"/>
+    <path d="M23.9455 51L44.8883 39.0016L23.9455 27L23.9455 51Z" fill="#FF4500"/>
+    <path d="M3.00262 39.0016L23.9455 51L23.9455 27L3.00262 39.0016Z" fill="#A46BFF"/>
+  </g>
+  <defs>
+    <clipPath id="routescan-clip">
+      <rect width="42" height="48" fill="white" transform="translate(3,0)"/>
+    </clipPath>
+  </defs>
+</svg>

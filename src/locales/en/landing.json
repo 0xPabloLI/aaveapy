@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "title": "AaveAPY — Compare Aave Rates Across Chains",
+    "description": "Compare Aave V3 lending and borrowing APYs across chains. Track Merit, Merkl, and Brevis incentives in real time. Free, no wallet required.",
+    "ogLocale": "en_US"
+  },
+  "hero": {
+    "eyebrow": "DeFi dashboard",
+    "title": "Compare Aave APYs across every chain, live",
+    "subtitle": "Side-by-side Aave V3 supply and borrow rates across chains with Merit, Merkl and Brevis incentives already merged into the effective APY.",
+    "cta": "Open live dashboard",
+    "secondaryCta": "Browse all chains"
+  },
+  "trustBar": ["Multi-chain", "Updated every minute", "No wallet, no sign-up"],
+  "features": [
+    { "title": "All incentives, one APY", "body": "Merit, Merkl and Brevis rewards merged into the effective APY so headline rates can't fool you." },
+    { "title": "Multichain in one view", "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche and more — compared side by side." },
+    { "title": "Rate impact simulator", "body": "Plug in your deposit or borrow amount and see how it moves the curve before you sign." },
+    { "title": "Free and read-only", "body": "No wallet, no tracking, no fees. Pure on-chain data." }
+  ],
+  "faqs": [
+    { "q": "What is Aave and how does the APY work?", "a": "Aave is a DeFi protocol where you deposit crypto to earn interest (supply APY) or borrow against collateral (borrow APY). Rates are set by pool utilization on each chain." },
+    { "q": "Which chain has the best Aave APY today?", "a": "It changes minute to minute. Stablecoins (USDC, USDT) on L2s like Base, Arbitrum and Polygon usually offer the most competitive effective APYs once Merit/Merkl incentives are included." },
+    { "q": "Do I need to connect a wallet?", "a": "No. aaveapy.com is 100% read-only. You only connect a wallet on the official Aave app when you decide to act." },
+    { "q": "Is it free?", "a": "Yes. No subscription, no fees. It's a public analytics dashboard, independent from the Aave protocol." }
+  ]
+}

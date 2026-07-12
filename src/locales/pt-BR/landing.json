@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "AaveAPY Brasil — Compare rendimentos DeFi em tempo real",
+    "description": "Compare as taxas de depósito e empréstimo da Aave V3 em todas as redes suportadas. Acompanhe incentivos Merit, Merkl e Brevis em tempo real. Grátis e sem carteira.",
+    "ogLocale": "pt_BR"
+  },
+  "hero": {
+    "eyebrow": "Painel DeFi · Brasil",
+    "title": "Veja as melhores APYs da Aave em tempo real",
+    "subtitle": "Compare rendimentos de depósito e custos de empréstimo da Aave V3 em todas as blockchains suportadas, com incentivos Merit, Merkl e Brevis já incluídos no APY efetivo.",
+    "cta": "Abrir painel ao vivo",
+    "secondaryCta": "Ver todas as redes"
+  },
+  "trustBar": [
+    "Todas as redes",
+    "Atualização a cada minuto",
+    "Sem carteira, sem cadastro"
+  ],
+  "features": [
+    {
+      "title": "Todos os incentivos em um só lugar",
+      "body": "Recompensas Merit, Merkl e Brevis somadas ao APY base, para você ver o rendimento real e não a taxa de capa."
+    },
+    {
+      "title": "Multichain de verdade",
+      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche e mais 12 redes lado a lado."
+    },
+    {
+      "title": "Simulador de impacto",
+      "body": "Informe o valor que pretende depositar ou tomar emprestado e veja como sua posição muda a curva antes de assinar."
+    },
+    {
+      "title": "Gratuito e sem rastreamento",
+      "body": "Sem conexão de carteira, sem cookies de tracking, sem taxas. Apenas dados on-chain ao vivo."
+    }
+  ],
+  "faqs": [
+    {
+      "q": "O que é Aave e como funciona o rendimento?",
+      "a": "Aave é um protocolo DeFi onde você deposita criptomoedas para receber juros (APY de depósito) ou toma empréstimos pagando juros (APY de empréstimo). As taxas são determinadas pela utilização do pool em cada rede."
+    },
+    {
+      "q": "O que é APY na criptomoeda Aave?",
+      "a": "APY (Annual Percentage Yield) é o rendimento anualizado já considerando juros compostos. O aaveapy.com mostra o APY de oferta e tomada para cada ativo, com e sem incentivos."
+    },
+    {
+      "q": "Como Merit, Merkl e Brevis afetam meu rendimento real?",
+      "a": "Esses são programas de recompensa em token que somam APR adicional ao seu depósito ou reduzem o custo de empréstimo. Mostramos o APY efetivo (base + incentivos) para você comparar oportunidades de verdade."
+    },
+    {
+      "q": "Qual é a Aave com a melhor APY hoje no Brasil?",
+      "a": "Varia minuto a minuto. Em geral, stablecoins (USDC, USDT) em redes L2 como Base, Arbitrum e Polygon costumam oferecer os APYs mais competitivos para investidores brasileiros que querem evitar volatilidade."
+    },
+    {
+      "q": "Preciso conectar minha carteira para usar o aaveapy.com?",
+      "a": "Não. O painel é 100% somente leitura. Você só conecta carteira diretamente no app oficial da Aave quando decidir depositar ou tomar emprestado."
+    },
+    {
+      "q": "O aaveapy é seguro? Cobram alguma taxa?",
+      "a": "Não cobramos nada e não custodiamos fundos. Somos um painel público de análise on-chain. Toda transação acontece no app oficial da Aave, fora daqui."
+    },
+    {
+      "q": "Qual rede da Aave tem o menor custo de empréstimo?",
+      "a": "L2s (Arbitrum, Base, Optimism) normalmente oferecem o menor gas + custo efetivo, especialmente quando há incentivos Merit ativos para tomadores. Use o simulador para validar com o valor que você pretende tomar."
+    }
+  ]
+}

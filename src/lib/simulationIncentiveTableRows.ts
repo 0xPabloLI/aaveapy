@@ -1,4 +1,5 @@
-import type { SimulationCampaignDetail, SimulationSourceDetail } from '@/hooks/useRateSimulation';
+import type { SimulationCampaignDetail, SimulationSourceDetail } from '@/lib/rateSimulationCalculator';
+import type { IncentiveNote } from '@/lib/incentiveCaps';
 
 /** Same threshold as table cells: hide noise below ~0.005 percentage points. */
 export const MEANINGFUL_INCENTIVE_PCT = 0.005;
@@ -55,17 +56,15 @@ export interface SimulationTableRow {
   href?: string | null;
   isBreakdown?: boolean;
   isSubBreakdown?: boolean;
-  capNote?: string;
-  capWarning?: boolean;
   warning?: boolean;
-  /** First breakdown level under an aggregate Incentive row (indent). */
   nestedUnderIncentive?: boolean;
+  notes?: IncentiveNote[];
 }
 
 export interface IncentiveSourceRow extends SimulationSourceDetail {
   label: string;
   href: string | null;
-  /** When one campaign, merge into the source row so capNote shows under the main label (Brevis cap/duration). */
+  /** When one campaign, merge into the source row so notes show under the main label (Brevis cap/duration). */
   mergeSingleCampaignRow?: boolean;
   /** Hide source aggregate row when campaigns exist; only list campaign rows (fallback href on src). */
   hideAggregateWhenCampaigns?: boolean;
@@ -115,6 +114,8 @@ export function incentiveSourceToTableRows(
   nestedUnderIncentive = false,
 ): SimulationTableRow[] {
   const prefix = `${side}-${sourceIndex}`;
+  const campaigns = src.campaigns;
+  const sourceNotesForMainRow = !campaigns?.length ? src.notes : undefined;
   const main: SimulationTableRow = {
     rowKey: `${prefix}-agg`,
     label: src.label,
@@ -126,27 +127,26 @@ export function incentiveSourceToTableRows(
     isBreakdown: true,
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
+    notes: sourceNotesForMainRow,
   };
-  const campaigns = src.campaigns;
   if (!campaigns?.length) return [main];
   if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
     const c = campaigns[0];
-    return [
-      {
-        rowKey: `${prefix}-merged`,
-        label: src.label,
-        current: src.current,
-        after: src.after,
-        delta: src.delta,
-        type: 'rate',
-        href: c.href ?? src.href,
-        isBreakdown: true,
-        isSubBreakdown: nestedUnderIncentive,
-        nestedUnderIncentive,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-      },
-    ];
+      return [
+        {
+          rowKey: `${prefix}-merged`,
+          label: src.label,
+          current: src.current,
+          after: src.after,
+          delta: src.delta,
+          type: 'rate',
+          href: c.href ?? src.href,
+          isBreakdown: true,
+          isSubBreakdown: nestedUnderIncentive,
+          nestedUnderIncentive,
+          notes: c.notes,
+        },
+      ];
   }
   if (src.hideAggregateWhenCampaigns) {
     return campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
@@ -160,14 +160,13 @@ export function incentiveSourceToTableRows(
       isBreakdown: true,
       isSubBreakdown: true,
       nestedUnderIncentive,
-      capNote: c.capNote,
-      capWarning: c.capWarning,
+      notes: c.notes,
     }));
   }
   return [
     main,
-    ...campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
-      rowKey: `${prefix}-c-${ci}-${c.id}`,
+    ...campaigns.map((c: SimulationCampaignDetail) => ({
+      rowKey: `${prefix}-c-${campaigns.indexOf(c)}-${c.id}`,
       label: c.label,
       current: c.current,
       after: c.after,
@@ -177,8 +176,7 @@ export function incentiveSourceToTableRows(
       isBreakdown: true,
       isSubBreakdown: true,
       nestedUnderIncentive,
-      capNote: c.capNote,
-      capWarning: c.capWarning,
+      notes: c.notes,
     })),
   ];
 }

@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "chains": "Chains",
+    "openApp": "Open Dashboard"
+  },
+  "landing": {
+    "cta": "Open Live Dashboard",
+    "secondaryCta": "Browse all chains",
+    "liveSnapshot": "Live snapshot",
+    "liveSnapshotSubtitle": "Top supply and borrow opportunities right now across all Aave V3 markets.",
+    "whyTitle": "Why aaveapy",
+    "faqTitle": "Frequently asked questions",
+    "footerCta": "Start comparing rates →"
+  },
+  "features": {
+    "incentives": {
+      "title": "All incentives in one place",
+      "body": "Merit, Merkl, and Brevis rewards merged into a single effective APY so you see real yield, not headline rates."
+    },
+    "multichain": {
+      "title": "{chainCount} chains, one view",
+      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche and more — compare them side by side."
+    },
+    "simulator": {
+      "title": "Rate impact simulator",
+      "body": "Plug in your deposit or borrow amount and see how your position moves the curve before you click."
+    },
+    "free": {
+      "title": "Free and read-only",
+      "body": "No wallet connection, no tracking, no fees. Just live on-chain data."
+    }
+  }
+}

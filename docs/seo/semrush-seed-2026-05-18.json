@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "source": "Lovable built-in Semrush tools (keyword_compare)",
+    "snapshot_date": "2026-05-18",
+    "databases": ["br", "fr", "tr", "us", "de", "in"],
+    "refresh_cadence": "quarterly (or on request)",
+    "notes": "Volume/CPC/difficulty are Semrush estimates as of pull date. 'position' is intentionally null at seed time — backfill from GSC once cron has ≥7 days of data, or leave null and let the Dashboard show 'not yet ranking'. Keywords with 0 volume / no data are kept as placeholders so the table renders all target terms."
+  },
+  "rows": [
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "decentralized finance", "volume": 12100, "position": null, "cpc_usd": 0.87, "difficulty": 77, "notes": "awareness, broad" },
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "aave crypto",           "volume": 2400,  "position": null, "cpc_usd": 0,    "difficulty": 35, "notes": "brand" },
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "aave hoje",             "volume": 1600,  "position": null, "cpc_usd": 0,    "difficulty": 30, "notes": "price/analysis" },
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "aave criptomoeda",      "volume": 1300,  "position": null, "cpc_usd": 0,    "difficulty": 28, "notes": "brand" },
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "defi rendimento",       "volume": 0,     "position": null, "cpc_usd": 0,    "difficulty": 0,  "notes": "long-tail, low demand" },
+    { "snapshot_date": "2026-05-18", "country": "br", "keyword": "aave brasil",           "volume": 0,     "position": null, "cpc_usd": 0,    "difficulty": 0,  "notes": "brand+geo, low demand" },
+
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "aave",                   "volume": 12100, "position": null, "cpc_usd": 0, "difficulty": 36, "notes": "brand (broad)" },
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "aave crypto",            "volume": 2400,  "position": null, "cpc_usd": 0, "difficulty": 33, "notes": "brand" },
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "cours aave",             "volume": 1000,  "position": null, "cpc_usd": 0, "difficulty": 27, "notes": "price" },
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "defi rendement",         "volume": 720,   "position": null, "cpc_usd": 0, "difficulty": 22, "notes": "yield, easy" },
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "analyse technique aave", "volume": 170,   "position": null, "cpc_usd": 0, "difficulty": 19, "notes": "analysis, easy" },
+    { "snapshot_date": "2026-05-18", "country": "fr", "keyword": "meilleur rendement defi","volume": 20,    "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "long-tail" },
+
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "defi nedir",       "volume": 1600, "position": null, "cpc_usd": 0.45, "difficulty": 15, "notes": "info, easy" },
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "aave coin fiyat",  "volume": 1000, "position": null, "cpc_usd": 0,    "difficulty": 35, "notes": "price" },
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "aave coin nedir",  "volume": 1000, "position": null, "cpc_usd": 0,    "difficulty": 32, "notes": "info" },
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "aave coin yorum",  "volume": 1000, "position": null, "cpc_usd": 0,    "difficulty": 38, "notes": "analysis" },
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "aave usdt",        "volume": 590,  "position": null, "cpc_usd": 0,    "difficulty": 54, "notes": "trading, hard" },
+    { "snapshot_date": "2026-05-18", "country": "tr", "keyword": "aave coin",        "volume": 10,   "position": null, "cpc_usd": 0,    "difficulty": 0,  "notes": "brand, low demand in TR" },
+
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "aave crypto",         "volume": 4400, "position": null, "cpc_usd": 0, "difficulty": 87, "notes": "brand, very hard" },
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "aave price",          "volume": 2900, "position": null, "cpc_usd": 0, "difficulty": 72, "notes": "price, hard" },
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "aave coin",           "volume": 1600, "position": null, "cpc_usd": 0, "difficulty": 80, "notes": "brand, hard" },
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "what is aave crypto", "volume": 320,  "position": null, "cpc_usd": 0, "difficulty": 47, "notes": "FAQ target" },
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "aave lending",        "volume": 260,  "position": null, "cpc_usd": 0, "difficulty": 43, "notes": "intent" },
+    { "snapshot_date": "2026-05-18", "country": "us", "keyword": "best defi yields",   "volume": 0,    "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "long-tail, watch" },
+
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "aave coin",     "volume": 1600, "position": null, "cpc_usd": 0, "difficulty": 36, "notes": "brand" },
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "aave kurs",     "volume": 590,  "position": null, "cpc_usd": 0, "difficulty": 24, "notes": "price, easy" },
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "aave crypto",   "volume": 390,  "position": null, "cpc_usd": 0, "difficulty": 35, "notes": "brand" },
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "aave kaufen",   "volume": 210,  "position": null, "cpc_usd": 0, "difficulty": 15, "notes": "intent, easy" },
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "aave preis",    "volume": 30,   "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "long-tail" },
+    { "snapshot_date": "2026-05-18", "country": "de", "keyword": "defi rendite",  "volume": 20,   "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "long-tail" },
+
+    { "snapshot_date": "2026-05-18", "country": "in", "keyword": "aave coin price","volume": 1300, "position": null, "cpc_usd": 0, "difficulty": 31, "notes": "price (IN)" },
+    { "snapshot_date": "2026-05-18", "country": "in", "keyword": "aave crypto",    "volume": 10,   "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "brand, low IN demand" },
+    { "snapshot_date": "2026-05-18", "country": "in", "keyword": "aave coin",      "volume": 10,   "position": null, "cpc_usd": 0, "difficulty": 0,  "notes": "brand, low IN demand" }
+  ]
+}

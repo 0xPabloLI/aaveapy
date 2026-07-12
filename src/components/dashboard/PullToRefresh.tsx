@@ -90,7 +90,7 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
             style={{ paddingTop: Math.max(12, Math.min(pullDistance, PULL_THRESHOLD * 0.8)) }}
           >
             <motion.div
-              className={`flex items-center justify-center w-11 h-11 rounded-full shadow-lg border-2 transition-all duration-200 ${
+              className={`flex items-center justify-center w-[var(--ds-button-lg-h)] h-[var(--ds-button-lg-h)] rounded-full shadow-lg border-2 transition-all duration-200 ${
                 shouldTrigger || isRefreshing
                   ? 'ds-bg-emerald-500-20 ds-text-emerald-600 ds-border-emerald-200 shadow-[0_0_16px_rgb(var(--ds-emerald-500-rgb)/0.25)]'
                   : 'bg-card text-muted-foreground border-border shadow-md'

@@ -1,26 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { getChainIconSrc, getChainIconSources, getChainIconSourcesForBase } from './chainIcons';
+import { getChainIconSrc } from './chainIcons';
 
 describe('getChainIconSrc', () => {
   it('returns a public path when map and on-disk manifest both cover the chain', () => {
-    const src = getChainIconSrc('Ethereum');
+    const src = getChainIconSrc(1);
     expect(src).toBe('/icons/networks/ethereum.svg');
   });
 
-  it('returns undefined when chain is unknown to the map', () => {
-    expect(getChainIconSrc('TotallyUnknownChain999')).toBeUndefined();
-  });
-});
-
-describe('getChainIconSources', () => {
-  it('lists manifest extensions in preferred order for a mapped chain', () => {
-    const sources = getChainIconSources('Base');
-    expect(sources.length).toBeGreaterThanOrEqual(1);
-    expect(sources[0]).toMatch(/^\/icons\/networks\/base\.(svg|webp|png|jpe?g)$/);
+  it('returns undefined when chainId is unknown', () => {
+    expect(getChainIconSrc(999999)).toBeUndefined();
   });
 
-  it('returns empty list when base has no files in manifest', () => {
-    expect(getChainIconSourcesForBase('definitely-missing-chain-icon-xyz')).toEqual([]);
+  it('returns monad icon for chain ID 143', () => {
+    const src = getChainIconSrc(143);
+    expect(src).toBe('/icons/networks/monad.svg');
   });
 });

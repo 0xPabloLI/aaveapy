@@ -1,210 +1,249 @@
-# Repository Guidelines
+# Repository Guidelines (Slim)
 
-## Project Structure & Module Organization
-- `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
-- `public/` holds static assets (icons, robots.txt, favicon).
-- `dist/` is build output from Vite. Treat as generated.
-- `docs/` holds living implementation notes (e.g. `docs/design/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, desktop reserves **sticky stack + scrollport** (scenario + sticky `thead` + **expanded main-row `td` sticky** and card CSS vars `--reserves-sticky-scenario-height` / `--reserves-expanded-main-row-top`), and **Simulation pin scroll (normative)** — scenario-key + sort-order gated pinning; `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
+## Quick Reference
 
-## Build, Test, and Development Commands
-- `npm run dev`: start the Vite dev server with hot reload.
-- `npm run build`: production build into `dist/`.
-- `npm run build:dev`: build using the development mode config.
-- `npm run preview`: serve the production build locally.
-- `npm run lint`: run ESLint across the codebase.
+- **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — holds Aave V3 positions on mainnet. Source: `e2e/test-wallets.ts`. Use in Playwright via the "Watch address" input.
+- **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
 
-## Coding Style & Naming Conventions
-- Language: TypeScript + React (TSX). Prefer functional components and hooks.
-- Indentation: 2 spaces (match existing TS/TSX files).
-- Naming: `PascalCase` for components/types, `camelCase` for functions/variables, `kebab-case` for asset files.
-- Incentive constraints: keep API field names as returned by the backend (e.g. `perUserRewardCapUsd`). In new domain code, prefer *ceiling* naming (`depositCeilingUsd`, `rewardCeilingUsd`) and route simulation copy through `src/lib/incentiveCeilings.ts`; UI props remain `capNote` / `capWarning` (see `docs/rate-calculation-formulas.md` § Naming layers).
-- Styling: Tailwind CSS classes in components; base styles live in `src/index.css` and `src/App.css`.
-- Linting: ESLint config in `eslint.config.js`; keep `dist/` excluded.
+## Design Context
 
-## Testing Guidelines
-- No test runner is configured in `package.json`. If you add tests, document the framework and add a script (e.g., `npm test`).
-- Suggested conventions: co-locate tests under `src/` with `.test.ts(x)` names.
+### Users
+进阶 DeFi 用户——有一定链上经验，了解 APY/APR/Spread/Supply/Borrow 等基本概念，但需要工具辅助跨链比较和投资决策。使用场景：日常监控 Aave V3 多链市场、比较借贷利率、追踪 Merit/Merkl/Brevis 激励收益、模拟利率变化和仓位效果。
 
-## Commit & Pull Request Guidelines
-- Commit messages use short, imperative subjects with initial caps (e.g., `Fix leverage opportunity spread sign`, `Add logos to all markets`).
-- PRs should include a concise description, link related issues, and add screenshots for UI changes. Note any manual testing you performed.
+### Brand Personality
+温暖亲和、精准可靠、数据驱动。三个关键词：**Warm / Precise / Trustworthy**。界面应该像一位专业的金融顾问——用数据说话，但用温暖的方式呈现，让用户感到被照顾而非被淹没。品牌焦点色为品红→青色的渐变（`--ds-brand-magenta-rgb` → `--ds-brand-cyan-rgb`），传达"理性中有温度"的气质。
 
-### Merge commits (see `docs/conventions/merge-summary.md`)
-- Every merge (branch merge or conflict resolution) must have a **summary** in the commit body and/or PR description/comment. Summary = branches merged, conflicted files, resolution per file, optional follow-up. Full reusable convention: `docs/conventions/merge-summary.md` (copyable to other projects).
-### PR Merge Strategy (see `docs/PR_ANALYSIS.md`)
-- **Batch related changes**: Combine small optimizations, config/tool updates, and dependency bumps (minor/patch) into one PR when they belong together (e.g. "chore: token icon and config improvements").
-- **Minimum scope**: Prefer opening a PR when there is a meaningful batch (e.g. several related files or 3+ related changes) rather than one-off micro-PRs.
-- **Keep separate**: New features (independent review), bugfixes (fast merge), breaking changes (discuss first), and security updates (immediate) should be separate PRs.
-- **Automerge**: `.github/workflows/automerge.yml` enables GitHub auto-merge when a PR has the **`automerge`** label (and required checks/review rules pass). Bot sync PRs (`hardcode-sync`, `token-icon-sync`) apply that label plus a domain label (`hardcode`, `assets`). There is no platform-standard label name—`automerge` matches the GitHub feature and common tutorial examples.
-- **`dev` / `main` same tip after PR merge**: Prefer remote automation via `.github/workflows/sync-dev-with-main.yml` to align `dev` to `main` after merged PRs (`dev` → `main`). `/merge` must still verify `origin/main` and `origin/dev` share one SHA; if automation failed, run fallback `git reset --hard origin/main && git push --force-with-lease origin dev`. Merging `main` into `dev` alone is not enough (tree may match but GitHub still shows “ahead”).
-### PR review threads: no cosmetic resolve (mandatory)
-- **Forbidden:** Using GitHub GraphQL `resolveReviewThread`, the PR **Resolve conversation** UI, or any API to mark threads **resolved** solely to satisfy **“All comments must be resolved”** / merge gates **when the underlying feedback is not actually handled** (no code or docs change on the PR head, no superseding fix, no maintainer-agreed disposition).
-- **Required before resolve:** For each open thread, either (1) the **current PR head** implements the requested change (or an equivalent fix), (2) a **PR reply** documents why no change is needed **and** a **human maintainer** has agreed (agents do not self-dismiss substantive reviewer/bot findings), or (3) the thread is **objectively void** (spam, exact duplicate of an already-addressed comment, or stale tooling artifact)—still leave a **brief PR comment** when resolving.
-- **`/merge` command and agents:** Do not bulk-resolve threads via `gh api graphql` or similar as a merge unblocker. If merge is blocked by valid unresolved feedback, **stop**, implement fixes (or escalate to the user for human disposition), then merge.
-- **Align copies:** Keep **`.claude/commands/merge.md`** and **`~/.cursor/commands/merge.md`** consistent; treat the repo file as source of truth when they drift.
+### Aesthetic Direction
+- **视觉基调**：温暖雾白底 + 深炭黑暗色模式，琥珀金主色（Primary），品红→青渐变作为品牌签名
+- **色彩语义严格**：琥珀=警告、红=错误、翡翠绿=Supply/成功、青色=Borrow、紫色=Spread、蓝色=Portfolio
+- **信息密度优先**：4 层响应式压缩确保数据始终可读，硬切换行而非省略号
+- **暖色光晕**：Tooltip 表面带暖色径向光 + 网格线，体现"温度"而非冷冰冰的数据面板
+- **参考与反参考**：当前设计方向已对齐，无额外参考或反参考
 
-## API Contract & Dependency Safety
-- When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. API hostnames and env vars (`LIVE_TEST_API_BASE_CI`, etc.) are summarized in `docs/conventions/api-base-urls.md`. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
-- When upgrading React or other core libraries, follow `docs/conventions/peer-dependency-guard.md` to prevent version mismatch white-screen issues.
-- Primary app reads from the backend: `GET /markets` and `GET /meta/side-data` (via `VITE_API_BASE_URL` / `src/lib/apiBase.ts`); rate simulation is computed client-side—there is no dedicated simulation endpoint.
-- `forecast.errors[]` in side-data maps to `forecastErrors`; Merkl campaigns without forecast state fall back to current APR in simulation; `forecastUnavailableCampaignCount` signals partial forecast coverage.
-- Scheduled **Hardcode Drift Check** (`.github/workflows/hardcode-drift-check.yml`) runs `npm run check:coingecko-platform-map-upstream` against live `GET /markets` (via `LIVE_TEST_API_BASE_CI` when set): every `chainId` seen in reserves must have a matching entry in `HARDCODED_PLATFORM_BY_CHAIN_ID` in `src/lib/tokenPriceResolver.ts` consistent with CoinGecko `asset_platforms`, or CI fails.
-- **Vercel deployment smoke test** (`.github/workflows/deployment-smoke-test.yml`): post-deploy checks, deploy SHA meta in `index.html`, and production-only instant rollback. When changing rollback candidate selection, follow `docs/conventions/vercel-deployment-smoke-test.md` (GitHub `ref_name` vs Vercel `meta.githubCommitRef` must be normalized, not compared raw).
+### Design Principles
+1. **Warm Precision** — 数据精准呈现，但用温暖的方式。颜色、间距、排版都要传达"专业但不冷漠"
+2. **Semantic Color Discipline** — 语义色仅用于其对应含义，普通数据用中性色。禁止 `text-gray-`/`bg-gray-`/`border-gray-` 等非语义灰
+3. **Dense but Breathable** — 高信息密度的同时保证可读性。4 层响应式压缩（列宽→padding→内容→断点切换），最小文字-边框间距 8px
+4. **Progressive Disclosure** — 核心数据一眼可见，细节按需展开（Reserve row → Simulation sub-row → Incentive tooltip）
+5. **Mobile as First-Class Citizen** — 移动端禁止 `hover:`，改用 `active:`；浮层用 bottom sheet；触控目标 ≥44px
 
-## Configuration & Secrets
-- Use `.env` for local secrets and keep it out of version control.
+### Design Token Quick Reference
+- **字体**：Source Sans Pro (sans) / Source Serif Pro (serif) / Source Code Pro (mono)
+- **字号**：8px–36px（`--ds-text-8` ~ `--ds-text-36`），标题 `clamp(20px, 2vw+10px, 24px)`
+- **间距**：4px 基准（`--ds-space-1` = 4px），最大 64px
+- **圆角**：基于 `--radius` (1rem) 派生 lg/md/sm
+- **阴影**：7 级（2xs→2xl），暗色比亮色更深
+- **详细规范**：`docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）
 
-## Local Git Hook Policy (Mandatory)
-- This repo uses local `pre-commit` and `pre-push` hooks to run `npm run ci:remote`.
-- If `ci:remote` fails, hooks must automatically attempt `npm run ci:auto-fix`, then rerun `ci:remote`.
-- If checks still fail after auto-fix, stop the commit/push and fix the root cause before retrying.
-- Do not bypass hooks as a normal workflow.
-- Treat hook failures as release blockers for branch updates.
+## Project Snapshot
+- Frontend app: React + TypeScript + Vite for Aave market analysis UI.
+- Main data sources: backend `GET /markets` and `GET /meta/side-data`.
+- Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
+- **技术架构**: `docs/ARCHITECTURE.md`（目录结构、数据流、shared schema、simulation、错误处理模式）。
 
-## Git Safety Confirmation (Mandatory)
-- **Never** run `git stash`, `git stash push`, `git stash pop`, `git stash apply`, `git checkout`, `git checkout -b`, `git checkout -B`, or any equivalent checkout/stash command without explicit user confirmation in the current conversation.
-- Before any stash/checkout operation, ask for clear approval and wait for a direct confirmation (for example: "确认执行" / "yes, proceed").
-- If the user has not explicitly approved the stash/checkout action, do not execute it.
+## Core Commands
+- `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
+- `npm run lint` — ESLint
+- `npm test` — Vitest
+- `npm run build` — production build
+- `npm run ci:remote` — full local gate (used by hooks)
 
-## Session Bootstrap (Mandatory)
-- On every new session, invoke superpowers before any other work: `~/.codex/superpowers/.codex/superpowers-codex bootstrap`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill thread-tracker`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`.
+## Session Workflow
+1. **Bootstrap when needed**: For substantial implementation, debugging, or design sessions, load `using-superpowers` via skill tool. Load `brainstorming` only for feature design, behavior changes, or solution exploration — skip for lightweight inspection, explanation, and routine work.
+2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
+3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
+4. **No code changes without explicit go-ahead**: 在用户确认开始或给出明确实施指令前，不修改任何代码文件。讨论、调研、Grill 阶段只做分析和方案设计。
+5. **Mandatory implementation workflow**: 每次改代码之前必须走完以下工作流，不得跳步：
+   1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案，确认设计决策有文档支撑
+   2. **To Spec** — 用 `to-spec` skill 将对话结论合成为 spec 文档
+   3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
+   4. **TDD Implement** — 逐 ticket 用 `tdd` skill 实施（red → green → refactor）；关键逻辑必须先写测试
+   5. **Requesting Code Review** — 实施完成后用 `requesting-code-review` skill 请求 code review
+   6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
+   7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
+   8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
 
-## UI Regression Guardrails
-- When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/design/frontend-interaction-guardrails.md` in the same work session.
-- When changing desktop `ReservesTable` **overflow wrappers**, **sticky** scenario/`thead`/expanded-main-row stacking, **`ResizeObserver`** on scenario + `thead`, **debounced scenario** wiring, **`sortedData` sort**, or **simulation expand scroll**, follow and preserve **§ Desktop reserves table: sticky stack and scrollport (normative)** and **§ Simulation pin scroll (normative)** in `docs/design/frontend-interaction-guardrails.md` (single effect after `sortedData`; `scrollExpandedSimulationIntoView` + `data-reserves-*` DOM contract + **CSS variables table** for `--reserves-expanded-main-row-top`). **Do not** remove expanded-row sticky `td` in `DesktopReserveRow` or observe only the scenario strip without the sticky `thead`.
-- Reusable design habits and interaction patterns are consolidated in `docs/design/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
+## Commit Cadence (并行 agent 安全)
+**TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
 
----
+## 每次修改都用最佳实践
+详见 `docs/conventions/design-principles.md`；架构守卫测试 `src/test/architecture-guard.test.ts` 自动拦截。
 
-## Frontend Design & UX Skills
+## Coding Conventions
+- TypeScript + functional React components/hooks.
+- 2-space indentation; `PascalCase` for components/types, `camelCase` for vars/functions.
+- Keep backend API field names unchanged in transport layer (e.g. `positionCap`).
+- Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
+- For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
+- Reuse existing UI patterns/tokens before introducing new ones.
 
-### Mobile-First Responsive Design
-- **Breakpoints**: Use Tailwind's default breakpoints (sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px)
-- **Mobile Detection**: Use `useIsMobile()` hook from `@/hooks/use-mobile` (breakpoint: 768px)
-- **Responsive Patterns**:
-  - Mobile: Single column, full-width cards, touch-friendly targets (min 44x44px)
-  - Tablet: 2-column grids, optimized spacing
-  - Desktop: Multi-column layouts (3-4 columns), hover states, more whitespace
-- **Carousel/Swiper**: Use `embla-carousel-react` for mobile carousels. Always include:
-  - Pagination indicators (dots) that update with current slide
-  - Navigation arrows (left/right) positioned on card edges
-  - Peek effect: show ~15% of adjacent cards (`basis-[85%]`)
-  - Smooth scroll snap with `align: "center"` and `containScroll: "trimSnaps"`
+## Validation Gate (修改后必跑 — 强制)
+每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
 
-### UI/UX Best Practices
-- **Visual Hierarchy**:
-  - Use consistent spacing scale (gap-2, gap-3, gap-4)
-  - Maintain visual weight: primary actions > secondary > tertiary
-  - Color coding: success (green), warning (amber), error (red), info (blue)
-- **Accessibility**:
-  - All interactive elements must have `aria-label` or visible text
-  - Keyboard navigation support (Tab, Enter, Arrow keys)
-  - Focus states visible (`focus-visible:ring-2`)
-  - Color contrast meets WCAG AA (4.5:1 for text)
-- **Loading & Empty States**:
-  - Always show loading skeletons matching final layout
-  - Provide helpful empty state messages with actionable guidance
-  - Use `AnimatePresence` from framer-motion for smooth transitions
-- **Touch Interactions**:
-  - Swipe gestures for carousels and mobile navigation
-  - Pull-to-refresh for data updates (use `PullToRefresh` component)
-  - Avoid hover-only interactions on mobile (use tap/click)
+```bash
+npm run lint && npm test && npm run build && npx tsc --noEmit
+```
 
-### Component Design Patterns
-- **Card Components**:
-  - Use `glass-card` class for frosted glass effect
-  - Consistent padding: `p-3` (mobile), `p-5` (desktop)
-  - Rounded corners: `rounded-xl` for cards, `rounded-lg` for inner elements
-  - Subtle borders: `border border-border`
-- **Animations**:
-  - Use `framer-motion` for complex animations
-  - Keep animations subtle: duration 0.2-0.4s, ease `[0.25, 0.1, 0.25, 1]`
-  - Stagger animations for lists: `delay: 0.2 + i * 0.08`
-  - Hover effects: `hover:bg-accent`, `hover:scale-105` (subtle)
-- **Typography**:
-  - Headings: `font-bold`, sizes: `text-sm` (mobile) → `text-base` (desktop)
-  - Body: `text-muted-foreground` for secondary text
-  - Numbers: Always use `tabular-nums` for alignment
-  - Truncate long text: `truncate` with `min-w-0` on parent
+高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
-### Data Visualization
-- **APY/APR Display**:
-  - Color coding by value ranges (see `getApyColorClass` in TopOpportunities)
-  - Format: Use `formatPercent()` and `formatSpread()` from `@/lib/formatters`
-  - Show breakdown: Native + Incentive with `+` separator
-  - Incentive badges: amber background (`bg-amber-50 text-amber-600`)
-- **Tables & Lists**:
-  - Mobile: Card-based layout (see `MobilePoolCard`)
-  - Desktop: Table layout with sortable columns
-  - Always show sort indicators and active state
-- **Tooltips**:
-  - Use `IncentiveTooltip` for static incentive breakdowns (dates, messages, Merkl whitelist toggles); do not duplicate text already in campaign messages or put deposit/TVL forecasts here—those belong in the expanded shared simulation (`SimulationSubRow` / `useRateSimulation` per-campaign rows and `capNote`).
-  - Position dynamically based on trigger element
-  - Close on outside click or Escape key
+**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需手动探索交互时用 `playwright-interactive`；仅截图/快照用 `playwright`。
 
-### Performance Optimization
-- **Code Splitting**: Use React.lazy() for route-level splitting
-- **Image Optimization**: Use WebP format, lazy loading, proper sizing
-- **Bundle Size**: Keep components small, avoid heavy dependencies
-- **Re-renders**: Use `React.memo()` for expensive components, `useMemo()` for calculations
-- **Animations**: Prefer CSS transforms over layout properties (translate, scale, opacity)
+## PR / Merge Guardrails
+- Commits: 简洁的 conventional 格式;不在 message 里放 URL。
+- 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
 
-### Design System Reference
-- **Colors**: Defined in `tailwind.config.ts` - use semantic tokens (primary, secondary, success, warning)
-- **Components**: Use shadcn/ui components from `@/components/ui/`
-- **Icons**: Use `lucide-react` for consistent iconography
-- **Spacing**: Follow 4px base unit (0.5rem = 8px, 1rem = 16px)
-- **Shadows**: Use predefined shadow scale (sm, md, lg, xl)
+## Cross-Branch Workflow（禁止本地切分支）
+**核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。
 
-### Mobile-Specific Patterns
-- **Carousel Implementation**:
-  ```tsx
-  // Always include these features:
-  - Pagination dots at bottom
-  - Navigation arrows (conditional, only when scrollable)
-  - Peek effect (basis-[85%] for 15% peek)
-  - Smooth scroll snap
-  - Touch/swipe support
-  ```
-- **Grid to Carousel**: Convert grid layouts to carousels on mobile
-- **Touch Targets**: Minimum 44x44px for all interactive elements
-- **Swipe Gestures**: Support left/right swipe for navigation
-- **Pull to Refresh**: Use `PullToRefresh` wrapper component
+### 场景 1：需要向 main 提交改动（main 有分支保护，必须走 PR）
+```bash
+# 1. 创建 worktree（不会切换当前分支）
+git worktree add /tmp/aaveapy-main main
+# 2. 在 worktree 中操作
+cd /tmp/aaveapy-main
+git checkout -b fix/xxx
+# 编辑文件、commit
+git push -u origin fix/xxx
+gh pr create --title "fix: xxx" --body "..." --base main --head fix/xxx
+gh pr merge <PR_NUMBER> --squash --auto   # CI 通过后自动合并
+# 3. 清理 worktree
+cd <original-repo>
+git worktree remove /tmp/aaveapy-main
+```
 
-### Example: Mobile Carousel Pattern
-When implementing mobile carousels:
-1. Check `isMobile` hook
-2. Use `Carousel`, `CarouselContent`, `CarouselItem` from `@/components/ui/carousel`
-3. Track state: `current`, `canScrollPrev`, `canScrollNext`
-4. Add pagination dots with click handlers
-5. Show navigation arrows conditionally
-6. Set `basis-[85%]` for peek effect
-7. Use `align: "center"` for centered snap
+### 场景 2：需要从其他分支 cherry-pick 到当前分支
+```bash
+git cherry-pick <commit-sha>   # 不需要切分支，直接在当前分支操作
+```
 
-## Learned User Preferences
-- Prefer Chinese for collaboration and implementation discussions; prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself; prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause. When the user asks for cross-branch, cross-environment, or log diff comparisons, run the investigation locally (e.g. `git diff`, `gh` logs) and report conclusions—do not defer with “you can compare yourself.” When the user states scenario inputs were unchanged between observations, do not explain desktop reserves simulation clipping or scroll differences as scenario-driven content changes; prefer nested-scroll wheel targets, ResizeObserver/mainRowHeight timing, and sticky/CSS variable measurement ordering (see `docs/design/frontend-interaction-guardrails.md`).
-- Avoid default values for missing API or backend fields; keep schema and code minimal.
-- For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
-- When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
-- Follow explicit visual descriptions and scoped regions precisely (e.g. "竖线" → vertical, "圆环" → ring); keep complementary UI symmetric (e.g. Supply/Borrow placement); when the user caps work to named areas and forbids global tokens or unrelated components, stay within that scope.
-- Tooltip content should not repeat information already visible in the parent; selection and toggle state must be visually obvious (borders/contrast), not subtle opacity or background alone. For paired opt-in states (e.g. Merkl whitelist rows counting toward totals), prefer very short symmetric labels; when the visible label is minimal, give the control a full accessible name via `aria-label`. Neutral info icons and tooltip title bars should read as clearly interactive (e.g. bordered card-style), not large gray slabs that resemble disabled UI.
-- In simulation incentive breakdown rows, avoid showing opaque identifiers (e.g. `campaignId` suffixes) or campaign-type labels when they don’t help users; when multiple rows share the same display name, use a simple `#1/#2/...` disambiguator regardless of scenario input, and prefer placing outbound incentive links on the specific expanded row rather than the aggregate row. Prefer short, plain-language simulation labels; avoid abstract budget or eligible-ratio lines unless the meaning is obvious to users. For accrual or USD views, treat Supply as income and Borrow as interest cost with incentives as offsets—do not label borrow-side totals as “reward”; when both supply and borrow amounts are set, portfolio net is supply income minus borrow cost. A control may let users turn off Merit/Merkl cross-lane net (per-lane only); Brevis forecasting stays independent of that switch. In scenario controls, prefer user-facing “incentives” over Merit/Merkl brand names in visible copy; for net-position semantics, prefer industry terms **net lending** (supply side) and **net borrowing** (borrow side) over abstract “net” alone. Incentive detail belongs in the tooltip/sheet; keep the inline checkbox label short. Native checkboxes in product UI should reuse `DS_NATIVE_CHECKBOX_CLASS` per `docs/design/DESIGN-SYSTEM-REFERENCE.md`. In cap/eligibility strings, prefer **supply** over **deposit** (e.g. eligible supply capped). When neither supply nor borrow has incentives, do not default-show incentive breakdown rows; when only native yield applies (no incentives), show a single total without splitting native vs incentive. If campaign rows exist, keep campaign detail visibility consistent between input/no-input states instead of branching by scenario input; for no-input state on spread/liquidity views, hide delta badges and keep base values. Keep neutral foreground/muted tokens consistent across expanded simulation instructional copy, deltas, arrows, earn tables, and labels beside totals (`capNote` / `capWarning` stay on their own system); earn Native/Incentive left hierarchy strokes should match the row text color, not gray rails, and avoid duplicate outbound links on earn sub-rows when the aggregate row already links out.
-- Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal). For utilization vs optimal (kink), use borrow-aligned brand cyan for the below-optimal zone (not emerald); keep amber for above-optimal (past kink / tighter pool), not green. Prefer fewer opacity steps within the same hue for utilization (one zone tint + full semantic for marker and labels; see `docs/design/frontend-interaction-guardrails.md`). **Data markers** (e.g. utilization dot): prefer stronger fill or slightly larger radius—avoid outline/stroke halos as a default decorative habit. The sticky scenario/toolbar strip should stay visually neutral (labels, inputs, checkboxes, info triggers); keep Supply/Borrow emerald/cyan primaries for **table data**, not duplicated as competing meanings on the global scenario bar. Scenario quantity inputs: neutral border when empty (no accent fill); when the user has entered a value, add a subtle fill aligned with that control’s accent (supply emerald, borrow cyan; search token matches its purple border with a matching purple-tinted fill). Segmented mode toggles in that strip (e.g. Accrual/USD) should match **`AprApyToggle`** sizing and visual spec. Popovers explaining incentive net behavior must sit above sticky scenario/table stacking so they are not clipped. On active simulation surfaces, avoid gray-muted body text and symbols that read as **disabled**; header/surface tints are fine, but the user treats flat gray copy and icons as inactive.
-- Multi-column panels (e.g. simulation Supply/Spread/Borrow): default to equal column widths and uniform compression; when the user wants a narrower trailing column (e.g. Net / summary), allow **adaptive** width while keeping **card/table border chrome** consistent across siblings (including earn). Bordered UI (including tables) must keep clear breathing room between text and borders with **left/right symmetric inset** so columns do not look heavier on one side; when space is tight prefer wrapping over ellipsis. For TVL-gated incentive APR cap messaging when current pool TVL is not shown in the same surface, avoid displaying numeric TVL thresholds; use qualitative copy (e.g. APR capped for low TVL) instead of computed dollar cutoffs. When data is empty or loading, keep the same section/column structure as populated states so layout does not jump.
-- Mobile reserve collapsed row and expand affordance should read as opening the full reserve simulation/detail, not only spread; prefer familiar expand patterns over novel decorative divider treatments. For lazy-loaded token icons (especially on mobile), prefer subtle, low-contrast placeholders—avoid loud default glyphs that draw more attention than loaded assets.
-- **UI geometry & SVG**: Fix root cause with a single contour source—no patch-on-top-of-patch. For 1px strokes use half-pixel alignment; for inner module corners prefer one path (vertical + `A` arc + horizontal) with locally disconnected underlying borders over stacked masks and hand-tuned cubic Béziers when a quarter-circle fits.
-- Repo `/sync` means full **git** sync with remote: `fetch`, inbound update (`pull --ff-only`, or **stash → `pull --rebase` → stash pop** when diverged—**stop for confirmation** on conflicts), then **`git push` when the branch is ahead** of upstream; use **`push --force-with-lease`** only when the user explicitly updates remote after rewriting published history. **Artifact** sync stays separate (`artifacts-all` or individual `sync:*` npm targets). Keep **`.claude/commands/sync.md`** and **`~/.cursor/commands/sync.md`** aligned; treat the repo file as source of truth when they drift.
+### 场景 3：需要查看其他分支的文件
+```bash
+git show main:path/to/file     # 不切分支，直接读取
+git diff main..lovable -- path/to/file
+```
 
-## Learned Workspace Facts
-- Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md. Mobile Top Opportunities mini cards do not link out to external Aave URLs; elsewhere, shared helpers in `src/lib/externalNavigation.ts` open external URLs in the same tab on mobile and a new tab on desktop where that pattern is applied.
-- Aave reserve `optimalUsageRate` (and similar on-chain rate fields) is RAY; convert to a display percent with `Number(value) / 1e25` or reuse `simulation.utilization.optimal` from rate simulation—never treat the raw integer as a 0–1 fraction and multiply by 100.
-- Mobile reserve simulation: utilization and `UtilizationIndicator` should match desktop/`ReservesTable` scenario-based utilization when simulating; do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders; pinning scroll is only the scenario-key + sort-order path documented as **Simulation pin scroll** in `docs/design/frontend-interaction-guardrails.md`, not expand-only. On mobile paired cards, avoid swapping collapsed vs expanded UI behind different React `key`s (that remounts `MobileReserveCard`); first expand can skip `transition-transform` on the expand icon (e.g. `rotate-180`). Prefer a stable row-level container and toggle expanded/simulation within the same instance. Near-symmetric icons weaken perceived rotation vs a clear chevron. Desktop pinning is implemented via `scrollExpandedSimulationIntoView` (sticky scenario and thead per the normative desktop reserves table section there). **Desktop expanded state:** the **main reserve data row** must stay context-visible while scrolling long simulation content—use sticky **`td`** on that row with `top: var(--reserves-expanded-main-row-top)` (see guardrails **CSS variables** + `DesktopReserveRow`). The expanded simulation block should read as one piece with its parent card only—no visual overlap with neighboring cards. List changes that reorder `sortedData` (e.g. market filter / `reserves` membership) should use the same pending pin-scroll pattern as scenario-key updates so the expanded row can re-anchor after debounced simulation or filter apply; if the expanded row is no longer in `sortedData`, clear expand state instead of leaving it dangling. Desktop sticky `thead`: give each `th` an opaque `bg-card` (and a non-transparent header row); avoid `tr`/`th` transparency and semitransparent header hover so tbody content does not read through the header. Playwright coverage for expanded-row stick/re-anchor after market filter and debounced scenario input is in `e2e/reserves-table-stick.spec.ts` (track the same reserve by `reserveId`; row should stay visible near the top anchor). **Scenario sort + pin:** the user may require the **entire expanded simulation** to stay **fully visible** after resort and pin-scroll (no inappropriate inner scrollport clipping); E2E can target `data-reserves-simulation-scrollport` and should wait for `[data-reserves-sticky-scenario]` before `tbody tr[data-reserve-id]` because full-page `LoadingState` skeleton tables omit `data-reserve-id`.
-- `.github/dependabot.yml`: `open-pull-requests-limit: 0` for **npm** (no routine version PRs). **github-actions** uses limit `5` so third-party workflow actions pinned to commit SHAs still receive weekly Dependabot bump PRs; security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
-- Prefer deriving values client-side when possible rather than adding backend fields; borrow availability is `min(Pool Liquidity, Borrow Cap Remaining)` (e.g. totalBorrowedUsd from reserveSizeUsd × utilizationPct). The reserves **Size** supply figure follows `reserveSizeUsd` plus scenario input and caps and does **not** merge **deficit** into that column (deficit is separate; native supply-rate utilization uses `L + D + deficit` in the supply denominator). For a deficit **share of pool scale**, prefer `deficit / (deficit + L + D)` with `L + D` as total supplied excluding deficit—aligned with the supply usage denominator—not `deficit / liquidity` as a primary stable headline ratio.
-- Desktop reserves: **Spread** uses **`font-bold`** and purple semantic color (same weight tier as Supply/Borrow APY totals); **Size** Supply/Borrow amounts use the same tokens as those APY primaries (`ds-text-emerald-500` / `ds-text-brand-cyan`) with `font-medium tabular-nums` next to cap rings; **Native/Incentive** rows under APY use smaller `ds-text-11` + `*-70` (secondary tier—not the same spec as Size). **`ReservesTable` sorting** for `Supply`/`Borrow` → **Incentive**: reserves with any current incentive source rank ahead of reserves with none, even when scenario inputs push displayed incentive to **0**; then tie-break by incentive and native values (`src/lib/sorters.ts` with `ReservesTable` comparators).
-- Merkl `whitelistOnly` campaigns are excluded from incentive totals until the user opts in via `whitelistMerklCampaignIds` (per `campaignId`, or a fixed sentinel when `campaignId` is missing after trim); default is none selected; see `docs/design/frontend-interaction-guardrails.md` § Merkl whitelist-only campaigns. For APR from a breakdown, prefer `campaignApr > 0` over Tydro-points conversion when both exist. For points-style Merkl rows (`campaignApr` not positive and `pointsPerThousandUsd` set), treat API budget and flow fields used in forecast (`totalBudget`, `plannedDaily`, `requiredDaily`, `distributedSoFar`, `latestTvl`, etc.) as **points-denominated** until explicitly converted to USD—do not assume USD from the payload alone. In rate simulation, native Aave rates use capped supply and borrow token amounts together; Merit/Merkl incentive forecasts use per-lane USD (`supplyInputUsd` / `borrowInputUsd`) for hypothetical TVL, not a single shared TVL field with native. When the user has entered scenario input but net participable USD on a lane is zero, incentive sub-rows should show a numeric simulated `after` (e.g. 0%) consistent with the parent aggregate, not an em dash while the parent shows zero.
-- Desktop `ReservesTable` bridge **inner corners** between hero cards and the list: prefer a single SVG path per corner (local border disconnect + vertical / `A` arc / horizontal) over iterative mask tweaks; half-pixel alignment for 1px strokes.
-- Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`. **ESLint on PRs:** the `lint` job in `.github/workflows/ci.yml` runs **Reviewdog** (`eslint .`, `fail_level: error`) on `pull_request` for bases `main`, `dev`, and `railway` only—same rules as `npm run lint` / `ci:remote`, one `npm ci` per job (no separate Reviewdog workflow). On `push` and `workflow_dispatch`, that job runs plain `npm run lint`. When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote). New chains or assets can appear in market data before `public/token-icons/` (or a tracked interface-assets repo) has a matching icon; tolerate missing icons and rely on late asset delivery plus dev-server manifest regeneration when files land. Scheduled **Token Icon Sync** (`.github/workflows/token-icon-sync.yml`) runs daily against both `dev` and `main` via matrix; `workflow_dispatch` can target a single base branch.
-- Merit Self deposit ceiling (`selfCapUsd`) is parsed from `MeritIncentive.message` via `extractMeritSelfCapUsd` in `meritForecast.ts` (no separate API cap field). Merit Base forecast (`meritForecast.ts`, `useRateSimulation`): when `reserveSizeUsd` is available, anchor daily rewards with reserve TVL × headline Base APR (supply); borrow-side Merit uses `reserveSizeUsd × utilizationPct` as TVL proxy; otherwise fall back to `lastRoundRewardUsd`. See `docs/rate-calculation-formulas.md` § Merit Base reserve TVL anchor and `docs/merit-base-anchor-vs-last-round-staging.md` for anchor vs last-round staging comparison.
-- Brevis incentive forecasting lives in `src/lib/brevisForecast.ts` with per-user reward caps (`perUserRewardCapUsd`), canonical shared campaigns keyed by `campaignId`, and `isCampaignActive(allowOpenEnd: true)` for campaigns without `endDate`. Incentive reward cap taxonomy (pool budget / deposit ceiling / per-user reward ceiling) and rate formulas are documented in `docs/rate-calculation-formulas.md`. When both a per-user reward ceiling and a campaign end date limit the accrual window, use the minimum of the applicable horizons for effective reward-duration semantics. Brevis may list `totalBudget` while the client lacks a dependable `distributedSoFar`; treat when the budget is fully distributed as uncertain (early exhaustion is possible) in docs and messaging.
-- In simulation `scenarioUsdAccrual`, derive `nativeUsdPerDay` from the original native APR using Aave per-second compounding semantics (aligned with `rayToApyPercent`), not linear `APR/365`; derive incentive USD/day with fixed APR linear dailyization (`APR/365`). Total daily cashflow is native + incentive. The APR/APY display toggle must not change `USD/day` accrual; document the semantics in `docs/rate-calculation-formulas.md` and keep `AprApyToggle` tooltip copy short, spell out that daily USD is unaffected by the toggle, and avoid introducing vocabulary that does not appear elsewhere in the product UI (for example do not use “accrual” in tooltips if the surface does not use that term).
+### 场景 4：需要将 lovable 的改动合入 main
+通过 PR：从 lovable 向 main 开 PR，不要本地 merge。
+
+### 场景 5：lovable → dev 同步（避免 DIRTY PR）
+
+lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required checks），应通过 PR 合并。
+
+**标准流程**：
+1. 从 lovable 向 dev 开 PR（merge commit 方式，不要 squash）
+2. 启用 auto-merge：`gh pr merge <PR_NUMBER> --merge --auto`
+3. CI 通过后自动合并
+
+**如果 PR 报 DIRTY（有合并冲突）**：
+1. 在 lovable 分支上合并 dev 解决冲突：`git merge origin/dev`
+2. 解决冲突后 commit + push lovable
+3. PR 自动变为 CLEAN，auto-merge 正常执行
+
+**禁止的操作**：
+- ❌ 不要用 worktree 直接 merge + push 绕过 PR（违反 dev 分支保护规则）
+- ❌ 不要用 squash merge 同步 lovable→dev（会丢失历史连通性，导致下次同步更容易 DIRTY）
+- ❌ 不要攒大量 commit 才同步（减少冲突概率）
+
+**为什么用 merge commit 而不是 squash**：dev 和 lovable 的 commit 历史不同源（dev 有早期 Lovable 平台自动 commit），squash 会进一步割裂历史，使后续 PR 更容易 DIRTY。merge commit 保持双向可追踪。
+
+## High-Risk Areas (Coordinate Carefully)
+- Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
+- Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
+  - **Supply-Borrow 不可分**: 添加/移除 token 必须同时操作 supply+borrow 两个 side（见 `docs/conventions/design-principles.md` §7）。`PortfolioReserveEntry` 从类型层面保证不可分；`addReserve` 总是创建 supply+borrow 两侧。
+- Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
+- Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
+
+## Key References
+- `docs/design/frontend-interaction-guardrails.md`
+- `docs/design/DESIGN-SYSTEM-REFERENCE.md`
+- `docs/rate-calculation.md`
+- `docs/PR_ANALYSIS.md`
+- `docs/conventions/merge-summary.md`
+- `docs/conventions/frontend-regression-checklist.md`
+- `docs/conventions/api-contract-checklist.md`
+- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`
+
+## Learned Preferences (Condensed)
+- Prefer Chinese for collaboration text and direct execution once confirmed.
+- Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
+- If user requests "先给方案", provide plan first before coding.
+- Keep implementation scoped; avoid unrelated refactors.
+- Avoid filling missing backend fields with guessed defaults.
+
+## Git Stash Safety
+禁止未经确认执行 `stash pop/apply/drop/clear`；暂存用 `stash push -m "msg"`，恢复前先 `stash list` 供审查。
+
+## Session Boundary
+不修非本 session 引入的问题；`git diff` 确认来源，已有问题告知用户决定。
+
+## Mobile Layout
+紧凑原则：复用留白不加独占行；去冗余标签优先图标+Tooltip；一行多信息纵向省空间；次要信息用最小档字体/间距；absolute 定位元素不含可变长度文字。
+
+## Canary & Hooks
+- `src/types/field-canary.test.ts` 穷举字段名，重命名时 tsc + test 双防线拦截。
+- Pre-push: stash > 3 警告清理。
+
+## Golden Rules: Rate Simulation Calculator
+
+以下规则是 `rateSimulationCalculator.ts` 的不变量（invariants），违反任何一条都是 bug。修改 calculator 前必须先读这些规则。
+
+### 1. Current 不变量：`current*` 字段永不随 simulation input 变化
+- `currentIncentive`、`currentTotal`、`currentNative` 代表**钱包当下状态**，不是模拟状态。
+- 改变 `supplyInput`/`borrowInput` **绝不能**改变 `current*` 值。
+- 无钱包（Shared Scenario）时，`current = headline`（未稀释 API 值，无 eligibility scaling）。
+- 有钱包（Portfolio）时，`current` 使用钱包-only 值（`walletSupplyUsd`/`walletBorrowUsd`）。
+- **实现**：`walletEligibilityRatio` 和 `walletMerklGroupMul` 在无钱包时必须返回 identity（1.0），**不得 fallback 到 simulation inputs**。
+
+### 2. Aggregate = Σ per-source：单一计算路径
+- `currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current`
+- `afterIncentive = protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after`
+- **禁止**独立的 aggregate 计算路径（如已删除的 `buildIncentiveCurrent`/`buildIncentiveAfter`）。
+- Per-source `Math.min(afterRaw, current)` 在 dispatch map 循环内应用，aggregate 层不再加 `Math.min`。
+- `Math.min(a+b, c+d) ≠ Math.min(a,c) + Math.min(b,d)` — 两层 cap 产生不同结果。
+
+### 3. Wallet fallback = identity，不是 simulation
+- `walletSupplyUsd`/`walletBorrowUsd` 为 undefined 时，wallet 变量必须 fallback 到 **identity**（ratio=1, multiplier=1），**不是** simulation inputs。
+- 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
+- **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
+
+### 4. `headlineIncentive` 是无 position cap 的基线
+- `headlineIncentive` = 有 TVL forecast、有 wallet-only eligibility scaling，但 **无 position cap 稀释** 的 incentive 值。
+- 与 `currentIncentive` 的唯一区别：headline 不传 `positionUsd`，所以不应用 Merit/Merkl/Brevis position cap dilution。
+- 用于 `deltaIncentive` 计算：`hasInput ? after - current : (wallet ? current - headline : null)`。
+- 无输入有钱包时，`deltaIncentive = current - headline` 纯粹反映 position cap dilution gap。
+- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `positionUsd` 参数）。
+
+## Learned Lessons (Index)
+详细 lessons 已外迁到以下文件，按需查阅：
+- `docs/lessons/rate-simulation.md` — Rate Simulation Calculator/incentive 计算相关（AAV-739/745/761/771/978/980/1059/1060/1075/1086/1097 等）
+- `docs/lessons/portfolio-ui.md` — Portfolio 模式/表格布局/UI 组件相关（Delta Input/Option E/Unified Table/列宽/边框等）
+- `docs/lessons/infrastructure.md` — CI/CD/外部 API 集成相关（chainDiscovery 404/AAV-1034 等）
+- `docs/conventions/scripts-and-schema-lessons.md` — Scripts/token icons/共享 schema 相关
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked in Linear (team: Aaveapy). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
+
+### Matt Pocock Skills v1.1 workflow
+
+Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` (per ticket).
+
+- `/grill-with-docs` — sharpen idea via interview + ADR/glossary (has codebase). No codebase? Use `/grill-me`.
+- `/grilling` — the underlying interview primitive; `grill-me` and `grill-with-docs` both delegate to it.
+- `/to-spec` — synthesize conversation into spec (was `/to-prd`).
+- `/to-tickets` — split spec into tracer-bullet tickets with blocking edges (replaces `/to-issues`).
+- `/implement` — build per ticket; internally drives `/tdd` + `/code-review`.
+- `/wayfinder` — on-ramp for huge/foggy efforts; charts investigation map, merges onto main flow at `/to-spec`.
+- `/research` — delegate reading to a background agent; keeps you working while it reads.
+- `/ask-matt` — router: describe your situation, get the right skill path.
+

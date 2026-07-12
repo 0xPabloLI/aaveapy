@@ -3,12 +3,18 @@ import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { FormulaBlock, InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
+import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_TRANSITION_DURATION,
+} from '@/lib/headerControlStyles';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { cn } from '@/lib/utils';
 import { cnDsInputNeutralWell } from '@/lib/dsInputSurface';
+import { formatNumberInput } from '@/lib/numberFormat';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -20,7 +26,7 @@ interface InkAprCalculatorProps {
 const TOTAL_SUPPLY = 1_000_000_000;
 const DEFAULT_FDV = 1.0;
 const MIN_FDV = 0;
-const MAX_FDV = 115.8; // Binance as max
+const MAX_FDV_FALLBACK = 200; // fallback when no live FDV data from CoinGecko
 
 interface ReferencePoint {
   id: string;
@@ -39,7 +45,7 @@ const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'default', fdv: 1.0, position: 12, isDefault: true },
   { id: 'gate', fdv: 1.13, position: 26.7, exchange: 'Gate', chain: 'Gate Layer', token: 'GT', link: 'https://coinmarketcap.com/currencies/gatetoken/' },
   { id: 'okx', fdv: 2.1, position: 41.3, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://coinmarketcap.com/currencies/okb/' },
-  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://coinmarketcap.com/currencies/bitget-token/' },
+  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://coinmarketcap.com/currencies/bitget-token-new/' },
   { id: 'bybit', fdv: 5.0, position: 70.7, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://coinmarketcap.com/currencies/mantle/' },
   { id: 'cryptocom', fdv: 8.5, position: 85.3, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://coinmarketcap.com/currencies/cronos/' },
   { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://coinmarketcap.com/currencies/bnb/' },
@@ -186,17 +192,13 @@ const InkAprCalculator = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [isAprTooltipOpen, setIsAprTooltipOpen] = useState(false);
   const [isFdvTooltipOpen, setIsFdvTooltipOpen] = useState(false);
-  const [fdvTriggerRect, setFdvTriggerRect] = useState<DOMRect | null>(null);
-  const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const [isFdvInputFocused, setIsFdvInputFocused] = useState(false);
-  const fdvTriggerRef = useRef<HTMLButtonElement>(null);
-  const fdvInputRef = useRef<HTMLInputElement>(null);
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [fdvJustChanged, setFdvJustChanged] = useState(false);
   const prevFdvRef = useRef(DEFAULT_FDV);
-  const fdvFieldHasValue = fdvInputValue.trim() !== '';
+  const sliderActiveRef = useRef(false);
 
   const fdvBySymbol = useMemo(() => {
     return new Map(
@@ -225,6 +227,16 @@ const InkAprCalculator = ({
       position: positionById.get(point.id) ?? point.position,
     }));
   }, [fdvBySymbol]);
+
+  // MAX_FDV is the max live FDV across all reference points. Falls back to 200
+  // when no live data is available. Input clamp and slider endpoint both use this.
+  const MAX_FDV = useMemo(() => {
+    const maxLiveFdv = referencePointsWithLiveFdv.reduce(
+      (max, p) => Math.max(max, p.fdv),
+      0
+    );
+    return maxLiveFdv > 0 ? maxLiveFdv : MAX_FDV_FALLBACK;
+  }, [referencePointsWithLiveFdv]);
   
   // Filter out the zero point for display but keep for calculation, always ascending by FDV.
   const displayPoints = useMemo(() => {
@@ -243,14 +255,9 @@ const InkAprCalculator = ({
     : DEFAULT_FDV;
   const sliderPosition = fdvToPosition(currentFdvBillions, referencePointsWithLiveFdv);
 
-  // Sync slider/data → input only when input is not focused (so editing is not overwritten)
-  useEffect(() => {
-    if (isFdvInputFocused) return;
-    const formatted = currentFdvBillions.toFixed(2);
-    if (Math.abs(parseFloat(fdvInputValue) - currentFdvBillions) > 0.01) {
-      setFdvInputValue(formatted);
-    }
-  }, [currentFdvBillions, fdvInputValue, isFdvInputFocused]);
+  // Sync slider/data → input is handled by useDebouncedInput's value prop.
+  // The color hint and value sync are separate: color hint fires on slider change,
+  // value sync is handled by useDebouncedInput internally.
 
   // Brief color hint when FDV changes (slider/pill, not from typing)
   useEffect(() => {
@@ -275,46 +282,26 @@ const InkAprCalculator = ({
     const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
     setRateInput(price.toFixed(4));
     onRateChange?.(price);
-  }, [setRateInput, onRateChange]);
+  }, [setRateInput, onRateChange, MAX_FDV]);
 
-  const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    setFdvInputValue(raw);
-    const parsed = parseFloat(raw);
-    if (raw.trim() !== '' && !Number.isNaN(parsed) && parsed >= MIN_FDV) {
-      const clamped = Math.min(MAX_FDV, parsed);
-      updateFromFdv(clamped);
-    }
-  }, [updateFromFdv]);
-
-  const commitFdvInput = useCallback(() => {
-    const trimmed = fdvInputValue.trim();
-    const parsed = parseFloat(fdvInputValue);
-    if (trimmed === '' || Number.isNaN(parsed) || parsed < MIN_FDV) {
-      setFdvInputValue(currentFdvBillions.toFixed(2));
-      return;
-    }
-    const clamped = Math.min(MAX_FDV, parsed);
-    setFdvInputValue(clamped.toFixed(2));
-    updateFromFdv(clamped);
-  }, [fdvInputValue, currentFdvBillions, updateFromFdv]);
-
-  const handleFdvInputBlur = useCallback(() => {
-    setIsFdvInputFocused(false);
-    commitFdvInput();
-  }, [commitFdvInput]);
-
-  const handleFdvInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        e.currentTarget.blur();
-      }
+  const fdvInput = useDebouncedInput({
+    value: formatNumberInput(String(Number(currentFdvBillions.toFixed(2)))),
+    onCommit: (formatted) => {
+      if (sliderActiveRef.current) return;
+      const parsed = parseFloat(formatted.replace(/,/g, ''));
+      if (Number.isNaN(parsed) || parsed < MIN_FDV) return;
+      updateFromFdv(Math.min(MAX_FDV, parsed));
     },
-    []
-  );
+    debounceMs: 300,
+    maxDecimalPlaces: 2,
+  });
+
+  const fdvFieldHasValue = fdvInput.displayValue.trim() !== '';
 
   const handlePointClick = useCallback((fdv: number) => {
+    sliderActiveRef.current = true;
     updateFromFdv(fdv);
+    setTimeout(() => { sliderActiveRef.current = false; }, 0);
   }, [updateFromFdv]);
 
   const handleKeyDown = useCallback(
@@ -328,7 +315,7 @@ const InkAprCalculator = ({
         updateFromFdv(Math.min(MAX_FDV, currentFdvBillions + step * 0.5));
       }
     },
-    [updateFromFdv, currentFdvBillions]
+    [updateFromFdv, currentFdvBillions, MAX_FDV]
   );
 
   const handleTrackInteraction = useCallback((clientX: number) => {
@@ -336,7 +323,9 @@ const InkAprCalculator = ({
     const rect = trackRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
     const fdv = positionToFdv(position, referencePointsWithLiveFdv);
+    sliderActiveRef.current = true;
     updateFromFdv(fdv);
+    setTimeout(() => { sliderActiveRef.current = false; }, 0);
   }, [updateFromFdv, referencePointsWithLiveFdv]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -477,28 +466,28 @@ const InkAprCalculator = ({
                 cnDsInputNeutralWell(fdvFieldHasValue),
               )}
             >
-              <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">$</span>
+              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">$</span>
               <Input
-                ref={fdvInputRef}
-                type="number"
+                ref={fdvInput.inputRef}
+                type="text"
                 disableSurface
-                min="0"
-                max="120"
-                step="0.01"
                 inputMode="decimal"
-                value={fdvInputValue}
-                onChange={handleFdvInputChange}
-                onFocus={() => {
+                value={fdvInput.displayValue}
+                onChange={fdvInput.handleChange}
+                onFocus={(e) => {
                   setIsFdvInputFocused(true);
-                  requestAnimationFrame(() => fdvInputRef.current?.select());
+                  fdvInput.handleFocus(e);
                 }}
-                onBlur={handleFdvInputBlur}
-                onKeyDown={handleFdvInputKeyDown}
+                onBlur={(e) => {
+                  setIsFdvInputFocused(false);
+                  fdvInput.handleBlur(e);
+                }}
+                onKeyDown={fdvInput.handleKeyDown}
                 placeholder={isFdvInputFocused ? '' : '1.00'}
-                className={`w-8 min-w-0 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
+                className={`w-8 min-w-0 px-0.5 ![font-size:var(--ds-text-11)] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
               />
-              <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">B</span>
+              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">B</span>
             </span>
             <span>to update the incentive APR</span>
           </div>
@@ -509,50 +498,43 @@ const InkAprCalculator = ({
           <div className="flex items-center gap-1.5 -mt-1">
             <div className="relative flex items-center justify-center w-16 ml-1">
               <div className="ds-info-inline">
-                <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide whitespace-nowrap">
+                <span className="ds-text-11 text-muted-foreground/70 font-normal tracking-wide whitespace-nowrap">
                   FDV (B)
                 </span>
                 <div className="relative inline-flex">
-                  <button
-                    ref={fdvTriggerRef}
-                    type="button"
+                  <InfoIconButton
                     aria-label="FDV definition"
-                    className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                    onMouseEnter={() => {
-                      if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                      if (!isMobile) setIsFdvTooltipOpen(true);
-                    }}
-                    onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-                    onClick={() => {
-                      if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                      if (isMobile) setIsFdvTooltipOpen((o) => !o);
-                    }}
+                    isOpen={isFdvTooltipOpen}
+                    onToggle={() => setIsFdvTooltipOpen(!isFdvTooltipOpen)}
+                    onClose={() => setIsFdvTooltipOpen(false)}
+                    variant="blue"
                   >
-                    <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                  </button>
-                  {isMobile ? (
-                    <MobileTooltip
-                      isOpen={isFdvTooltipOpen}
-                      onClose={() => setIsFdvTooltipOpen(false)}
-                      title="FDV (B)"
-                      variant="purple"
-                    >
-                      {fdvTooltipContent}
-                    </MobileTooltip>
-                  ) : (
-                    <DesktopTooltip
-                      isOpen={isFdvTooltipOpen}
-                      alignLeft
-                      triggerRect={fdvTriggerRect}
-                      onMouseEnter={() => setIsFdvTooltipOpen(true)}
-                      onMouseLeave={() => setIsFdvTooltipOpen(false)}
-                      title="FDV (B)"
-                      variant="purple"
-                      hideTitle
-                    >
-                      {fdvTooltipContent}
-                    </DesktopTooltip>
-                  )}
+                    {(triggerRect) =>
+                      isMobile ? (
+                        <MobileTooltip
+                          isOpen={isFdvTooltipOpen}
+                          onClose={() => setIsFdvTooltipOpen(false)}
+                          title="FDV (B)"
+                          variant="purple"
+                        >
+                          {fdvTooltipContent}
+                        </MobileTooltip>
+                      ) : (
+                        <DesktopTooltip
+                          isOpen={isFdvTooltipOpen}
+                          alignLeft
+                          triggerRect={triggerRect}
+                          onMouseEnter={() => setIsFdvTooltipOpen(true)}
+                          onMouseLeave={() => setIsFdvTooltipOpen(false)}
+                          title="FDV (B)"
+                          variant="purple"
+                          hideTitle
+                        >
+                          {fdvTooltipContent}
+                        </DesktopTooltip>
+                      )
+                    }
+                  </InfoIconButton>
                 </div>
               </div>
             </div>
@@ -613,16 +595,16 @@ const InkAprCalculator = ({
         {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so a little space remains between thumb bottom and labels/shadow. */}
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.6875rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
-            <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
+            <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-[var(--ds-control-h)] pointer-events-auto">
               <div className="flex w-full flex-col items-center leading-none gap-[2px]">
-                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 md:ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
+                <span className="h-[0.875rem] flex items-center justify-center ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
                   = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
                 </span>
-                <span className="h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
+                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
                 <a
                   href="https://coinmarketcap.com/currencies/ink-token/"
                   {...externalLinkTabProps(isMobile)}
-                  className="h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
+                  className="h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
                 >
                   Ink/INK
                   <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
@@ -630,7 +612,7 @@ const InkAprCalculator = ({
               </div>
             </div>
             {/* Labels container same width as track (flex-1 after left anchor + gap-2) */}
-            <div className="relative flex-1 min-w-0 h-8 pointer-events-none">
+            <div className="relative flex-1 min-w-0 h-[var(--ds-control-h)] pointer-events-none">
            {/* FDV label at 0 */}
           <div
             className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
@@ -665,21 +647,21 @@ const InkAprCalculator = ({
                     style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
                   >
                     <span
-                      className={`h-[0.875rem] flex items-center justify-center ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
+                      className={`h-[0.875rem] flex items-center justify-center ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
                       style={pointRgb ? { color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})` } : undefined}
                     >
                       ${formatFdv(point.fdv)}
                     </span>
                     {point.isDefault ? (
                       <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
+                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
                         style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
                       >
                         Default
                       </span>
                     ) : (
                       <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
+                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
                         style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
                       >
                         {point.exchange}
@@ -697,7 +679,7 @@ const InkAprCalculator = ({
                       onMouseEnter={() => setLinkHoveredPointId(point.id)}
                       onMouseLeave={() => setLinkHoveredPointId(null)}
                       title="Open CoinGecko (new tab)"
-                      className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
+                      className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none transition-colors ${
                         linkHoveredPointId === point.id ? 'text-foreground' : !pointRgb ? 'text-muted-foreground/50 hover:text-foreground' : 'hover:text-foreground'
                       }`}
                       style={pointRgb && linkHoveredPointId !== point.id ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` } : undefined}
@@ -741,70 +723,63 @@ const InkAprCalculator = ({
           cnDsInputNeutralWell(fdvFieldHasValue),
         )}
       >
-        <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
+        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
-          ref={fdvInputRef}
-          type="number"
+          ref={fdvInput.inputRef}
+          type="text"
           disableSurface
-          min="0"
-          max="120"
-          step="0.01"
           inputMode="decimal"
-          value={fdvInputValue}
-          onChange={handleFdvInputChange}
-          onFocus={() => {
+          value={fdvInput.displayValue}
+          onChange={fdvInput.handleChange}
+          onFocus={(e) => {
             setIsFdvInputFocused(true);
-            requestAnimationFrame(() => fdvInputRef.current?.select());
+            fdvInput.handleFocus(e);
           }}
-          onBlur={handleFdvInputBlur}
-          onKeyDown={handleFdvInputKeyDown}
+          onBlur={(e) => {
+            setIsFdvInputFocused(false);
+            fdvInput.handleBlur(e);
+          }}
+          onKeyDown={fdvInput.handleKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
+          className={`w-9 min-w-0 px-1 ![font-size:var(--ds-text-11)] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
           aria-label="Estimated $INK FDV in billions"
         />
-        <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
+        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
       </span>
       <div className="relative inline-flex shrink-0">
-        <button
-          ref={fdvTriggerRef}
-          type="button"
+        <InfoIconButton
           aria-label="FDV definition"
-          className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          onMouseEnter={() => {
-            if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-            if (!isMobile) setIsFdvTooltipOpen(true);
-          }}
-          onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-          onClick={() => {
-            if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-            if (isMobile) setIsFdvTooltipOpen((o) => !o);
-          }}
+          isOpen={isFdvTooltipOpen}
+          onToggle={() => setIsFdvTooltipOpen(!isFdvTooltipOpen)}
+          onClose={() => setIsFdvTooltipOpen(false)}
+          variant="blue"
         >
-          <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-        </button>
-        {isMobile ? (
-          <MobileTooltip
-            isOpen={isFdvTooltipOpen}
-            onClose={() => setIsFdvTooltipOpen(false)}
-            title="FDV (B)"
-            variant="purple"
-          >
-            {fdvTooltipContent}
-          </MobileTooltip>
-        ) : (
-          <DesktopTooltip
-            isOpen={isFdvTooltipOpen}
-            alignLeft
-            triggerRect={fdvTriggerRect}
-            onMouseEnter={() => setIsFdvTooltipOpen(true)}
-            onMouseLeave={() => setIsFdvTooltipOpen(false)}
-            title="FDV (B)"
-            variant="purple"
-            hideTitle
-          >
-            {fdvTooltipContent}
-          </DesktopTooltip>
-        )}
+          {(triggerRect) =>
+            isMobile ? (
+              <MobileTooltip
+                isOpen={isFdvTooltipOpen}
+                onClose={() => setIsFdvTooltipOpen(false)}
+                title="FDV (B)"
+                variant="purple"
+              >
+                {fdvTooltipContent}
+              </MobileTooltip>
+            ) : (
+              <DesktopTooltip
+                isOpen={isFdvTooltipOpen}
+                alignLeft
+                triggerRect={triggerRect}
+                onMouseEnter={() => setIsFdvTooltipOpen(true)}
+                onMouseLeave={() => setIsFdvTooltipOpen(false)}
+                title="FDV (B)"
+                variant="purple"
+                hideTitle
+              >
+                {fdvTooltipContent}
+              </DesktopTooltip>
+            )
+          }
+        </InfoIconButton>
       </div>
       <span className="shrink-0 whitespace-nowrap min-[360px]:hidden">⟳</span>
       <span className="hidden shrink-0 whitespace-nowrap min-[360px]:inline min-[470px]:hidden">to update</span>
@@ -893,7 +868,7 @@ const InkAprCalculator = ({
 
           {/* Current value thumb - enlarged hit area for mobile touch */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 flex items-center justify-center cursor-pointer"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[var(--ds-button-lg-h)] h-[var(--ds-button-lg-h)] flex items-center justify-center cursor-pointer"
             style={{ left: `${sliderPosition}%` }}
           >
             <div
@@ -922,7 +897,7 @@ const InkAprCalculator = ({
       <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-0-5)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
+            className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform ${HEADER_CONTROL_TRANSITION_DURATION} ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
           <span>Reference FDVs</span>
           <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>
@@ -987,7 +962,10 @@ const InkAprCalculator = ({
   return (
     <Card className="group border-border/60 bg-card transition-[border-color,box-shadow] hover:border-border hover:shadow-md">
       <CardContent className="p-[var(--ds-space-3)] md:p-[var(--ds-space-4)]">
-        {isXl ? <FullLayout /> : compactLayoutJsx}
+        {/* FullLayout() called as function (not <FullLayout />) to prevent React
+            from unmounting/remounting the input DOM on every re-render.
+            Do NOT add hooks inside FullLayout — it is not a React component. */}
+        {isXl ? FullLayout() : compactLayoutJsx}
       </CardContent>
     </Card>
   );
