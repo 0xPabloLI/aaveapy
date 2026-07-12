@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components -- constants + colgroup are tightly coupled */
+
 /**
  * Shared column geometry for Portfolio summary + results tables.
  *
