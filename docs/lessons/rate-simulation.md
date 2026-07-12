@@ -134,3 +134,10 @@ Historical lessons from working on `rateSimulationCalculator.ts` and related inc
 - **修复：用 `rawBorrowInputUsd`/`rawSupplyInputUsd` 代替 capped 值**：`walletBorrowUsd = totalBorrowUsd - rawBorrowInputUsd`，因为 `totalBorrowUsd = wallet + rawDelta`，所以 `wallet = total - rawDelta`。capped 值仅用于利率模拟（你不能借超过 cap 的量），但 wallet 推导必须用未截断的原始输入。
 - **TDD 验证方式**：设置两个 Portfolio 场景（同一 wallet，一个 delta 在 cap 内、一个超出 cap），验证 `currentIncentive` 完全相同。Bug 存在时差异 = 10% × (0.444 - 0.375) ≈ 0.69%，远超浮点误差容限。
 - **真实数据验证**：新增 `rateSimulationCalculator.live.test.ts`，对 staging API 所有有 incentive 的 reserve 验证 Golden Rules（currentIncentive = per-source sum、current* 不变性、AAV-1120 cap 不变性）。通过 `npm run test:live:simulation:staging` 运行。
+
+## 移除 wallet 倒推 fallback，改为显式传参 (AAV-1140)
+- **倒推计算是结构性风险**：AAV-1120 修复了 capped input 导致的微误差，但倒推逻辑本身（`wallet = total - rawInput`）仍然脆弱——任何 `totalSupplyUsd` 或 `rawInputUsd` 的计算变更都可能引入新的偏差。根本问题是：caller (`buildPerReserveInputsFromEntries`) 已经有 `walletValue` 的显式值，但在构建 `PerReserveInput` 时丢弃了它，只传 `totalSupplyUsd`（wallet + delta），让 calculator 倒推。
+- **修复：显式传参消除倒推**：在 `PerReserveInput` 新增 `walletSupplyUsd?`/`walletBorrowUsd?` 字段，`buildPerReserveInputsFromEntries` 和 `buildGroupMapFromSlots` 在遍历 entries 时累加 `s.walletValue`（仅当 `walletValue !== null && walletValue > 0`），初始值 `undefined`（不是 `0`，以区分"无钱包"和"钱包为零"）。Calculator 直接使用 `explicitWalletSupplyUsd`/`explicitWalletBorrowUsd`，删除所有倒推代码。
+- **测试影响范围**：~25 个单元测试和 5 个 live API 测试原先依赖 fallback（传 `totalSupplyUsd` 不传 `walletSupplyUsd`），需要逐个添加显式 wallet 值。部分测试"碰巧通过"（wallet=undefined → 无 dilution → current=10，与期望值相同），但语义错误——测试注释说"wallet=$5000"但实际无 wallet。修复时一并更新这些测试。
+- **Spec 文档**：`docs/specs/wallet-position-explicit-passing.md`
+- **涉及文件**：`portfolioSimulator.ts`（PerReserveInput + EntryGroup + buildPerReserveInputsFromEntries + buildGroupMapFromSlots + computeResultsFromGroups）、`useRateSimulation.ts`、`rateSimulationCalculator.ts`、3 个测试文件。
