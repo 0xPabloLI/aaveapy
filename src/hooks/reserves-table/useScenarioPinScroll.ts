@@ -101,7 +101,7 @@ export function useScenarioPinScroll(
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     setScenarioPinDebugSink((trace) => {
-      // eslint-disable-next-line no-console
+       
       console.debug('[scenarioPin]', {
         phase: trace.phase,
         scenarioChanged: trace.scenarioChanged,
@@ -221,7 +221,7 @@ export function useScenarioPinScroll(
         `tr[data-reserve-id="${escape(controllerResult.pinReserveId)}"]`,
       );
       const topY = targetRow instanceof HTMLElement ? targetRow.getBoundingClientRect().top : null;
-      // eslint-disable-next-line no-console
+       
       console.debug('[scenarioPin] schedule', {
         reserveId: controllerResult.pinReserveId,
         topY,

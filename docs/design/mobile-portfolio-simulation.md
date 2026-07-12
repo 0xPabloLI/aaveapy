@@ -1,6 +1,6 @@
 # Mobile Portfolio Simulation 设计方案
 
-> 状态：Draft · 审视修订 v4
+> 状态：Implemented · AAV-1115/1116/1117/1118/1119
 > 范围：Portfolio Simulation 移动端布局
 
 ## 1. 现状问题
