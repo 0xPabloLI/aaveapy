@@ -302,6 +302,8 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
           inputMode: 'usd',
           totalSupplyUsd: walletSupply,
           totalBorrowUsd: walletBorrow,
+          walletSupplyUsd: walletSupply,
+          walletBorrowUsd: walletBorrow,
         });
 
         // With supply delta
@@ -314,6 +316,8 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
           inputMode: 'usd',
           totalSupplyUsd: walletSupply + 2000,
           totalBorrowUsd: walletBorrow,
+          walletSupplyUsd: walletSupply,
+          walletBorrowUsd: walletBorrow,
         });
 
         // With borrow delta
@@ -326,6 +330,8 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
           inputMode: 'usd',
           totalSupplyUsd: walletSupply,
           totalBorrowUsd: walletBorrow + 2000,
+          walletSupplyUsd: walletSupply,
+          walletBorrowUsd: walletBorrow,
         });
 
         // currentIncentive must be identical — wallet hasn't changed
@@ -380,6 +386,8 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
           inputMode: 'usd',
           totalSupplyUsd: walletSupply,
           totalBorrowUsd: walletBorrow + smallDelta,
+          walletSupplyUsd: walletSupply,
+          walletBorrowUsd: walletBorrow,
         });
 
         // Large delta (may exceed cap)
@@ -393,11 +401,12 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
           inputMode: 'usd',
           totalSupplyUsd: walletSupply,
           totalBorrowUsd: walletBorrow + largeDelta,
+          walletSupplyUsd: walletSupply,
+          walletBorrowUsd: walletBorrow,
         });
 
         // currentIncentive must be the same — wallet borrow is $30000 in both cases
-        // With AAV-1120 fix: walletBorrowUsd = totalBorrowUsd - rawBorrowInputUsd
-        // Both give walletBorrowUsd = $30000 regardless of capping
+        // walletBorrowUsd is passed explicitly, so no derivation/capping ambiguity
         expect(rLarge.borrow.currentIncentive).toBeCloseTo(
           rSmall.borrow.currentIncentive,
           6,

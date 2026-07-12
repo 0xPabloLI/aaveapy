@@ -62,6 +62,7 @@ interface UseRateSimulationParams {
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
+  walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
 }
 
@@ -77,6 +78,7 @@ interface UseSharedRateSimulationsParams {
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
+  walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
   perReserveInputs?: Map<string, PerReserveInput>;
 }
@@ -93,6 +95,7 @@ export const useSharedRateSimulations = ({
   inputMode = 'token',
   meritMerklNetPosition = true,
   crossReservePositions,
+  walletCrossReservePositions,
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
@@ -295,6 +298,8 @@ export const useSharedRateSimulations = ({
       // always receives an explicit total position (or undefined when no input).
       const effectiveTotalSupplyUsd = perReserve?.totalSupplyUsd;
       const effectiveTotalBorrowUsd = perReserve?.totalBorrowUsd;
+      const effectiveWalletSupplyUsd = perReserve?.walletSupplyUsd;
+      const effectiveWalletBorrowUsd = perReserve?.walletBorrowUsd;
 
       acc[reserveId] = {
         ...buildRateSimulationResult({
@@ -310,11 +315,14 @@ export const useSharedRateSimulations = ({
           forecastStates,
           meritMerklNetPosition,
           crossReservePositions,
+          walletCrossReservePositions,
           reserveSymbolById,
           hubSupplied,
           hubBorrowed,
           totalSupplyUsd: effectiveTotalSupplyUsd,
           totalBorrowUsd: effectiveTotalBorrowUsd,
+          walletSupplyUsd: effectiveWalletSupplyUsd,
+          walletBorrowUsd: effectiveWalletBorrowUsd,
           pointRateMap,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
@@ -340,6 +348,7 @@ export const useSharedRateSimulations = ({
     tydroPointToUsdRate,
     pointRateMap,
     crossReservePositions,
+    walletCrossReservePositions,
     reserveSymbolById,
   ]);
 
@@ -361,9 +370,10 @@ export const useRateSimulation = ({
   borrowInput,
   inputMode = 'token',
   meritMerklNetPosition = true,
-  crossReservePositions,
-  reserveSymbolById,
-}: UseRateSimulationParams): RateSimulationResult => {
+    crossReservePositions,
+    walletCrossReservePositions,
+    reserveSymbolById,
+  }: UseRateSimulationParams): RateSimulationResult => {
   const reserveId = getReserveSimulationId(reserve);
   const { simulationsById } = useSharedRateSimulations({
     reserves: [reserve],
@@ -377,6 +387,7 @@ export const useRateSimulation = ({
     inputMode,
     meritMerklNetPosition,
     crossReservePositions,
+    walletCrossReservePositions,
     reserveSymbolById,
   });
 

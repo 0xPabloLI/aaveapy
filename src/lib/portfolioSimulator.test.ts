@@ -93,6 +93,8 @@ describe('buildPerReserveInputsFromEntries', () => {
       inputMode: 'usd',
       totalSupplyUsd: 1000,
       totalBorrowUsd: 500,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
     });
     expect(result.perReserveInputs.get('r-weth')).toEqual({
       supplyInput: '2000',
@@ -100,6 +102,8 @@ describe('buildPerReserveInputsFromEntries', () => {
       inputMode: 'usd',
       totalSupplyUsd: 2000,
       totalBorrowUsd: 0,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
     });
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get('r-usdc')).toEqual({ supplyUsd: 1000, borrowUsd: 500 });
@@ -140,7 +144,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 3000, totalBorrowUsd: 0 });
+    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 3000, totalBorrowUsd: 0, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
   });
 
   it('defaults supplyInput to "0" when only borrow exists', () => {
@@ -149,7 +153,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 2000 });
+    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 2000, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
   });
 
   it('resolves token amount to USD using tokenPrice', () => {
@@ -158,7 +162,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 6000, totalBorrowUsd: 0 });
+    expect(result.perReserveInputs.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 6000, totalBorrowUsd: 0, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
   });
 
   it('ignores hidden entries', () => {
@@ -264,6 +268,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('0');
     expect(input.totalSupplyUsd).toBe(1042);
+    expect(input.walletSupplyUsd).toBe(1042);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1042, borrowUsd: 0 });
     expect(result.reserveSymbolById).toBeDefined();
@@ -280,8 +285,10 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('0');
     expect(input.totalSupplyUsd).toBe(1042);
+    expect(input.walletSupplyUsd).toBe(1042);
     expect(input.borrowInput).toBe('1');
     expect(input.totalBorrowUsd).toBe(1);
+    expect(input.walletBorrowUsd).toBeUndefined();
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1042, borrowUsd: 1 });
     expect(result.reserveSymbolById).toBeDefined();
@@ -298,6 +305,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('0');
     expect(input.totalSupplyUsd).toBe(1000);
+    expect(input.walletSupplyUsd).toBe(1000);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1000, borrowUsd: 0 });
     expect(result.reserveSymbolById).toBeDefined();
@@ -314,6 +322,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('500');
     expect(input.totalSupplyUsd).toBe(1500);
+    expect(input.walletSupplyUsd).toBe(1000);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 1500, borrowUsd: 0 });
     expect(result.reserveSymbolById).toBeDefined();
@@ -330,6 +339,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('-500');
     expect(input.totalSupplyUsd).toBe(500);
+    expect(input.walletSupplyUsd).toBe(1000);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 500, borrowUsd: 0 });
     expect(result.reserveSymbolById).toBeDefined();
@@ -346,6 +356,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('2000');
     expect(input.totalSupplyUsd).toBe(2000);
+    expect(input.walletSupplyUsd).toBeUndefined();
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 2000, borrowUsd: 0 });
   });
@@ -361,6 +372,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.supplyInput).toBe('1000');
     expect(input.totalSupplyUsd).toBe(2000);
+    expect(input.walletSupplyUsd).toBe(1000);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 2000, borrowUsd: 0 });
   });
@@ -375,6 +387,7 @@ describe('buildPerReserveInputsFromEntries', () => {
     const input = result.perReserveInputs.get(reserveId)!;
     expect(input.borrowInput).toBe('300');
     expect(input.totalBorrowUsd).toBe(800);
+    expect(input.walletBorrowUsd).toBe(500);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 0, borrowUsd: 800 });
   });

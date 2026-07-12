@@ -46,6 +46,8 @@ import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 import FaqSection from '@/components/dashboard/FaqSection';
+import { Helmet } from 'react-helmet-async';
+import { SITE_ORIGIN } from '@/i18n';
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
@@ -495,6 +497,9 @@ const Index = () => {
   // If we have cached data, use it; otherwise show empty state
   return (
     <PullToRefresh onRefresh={handleRefresh}>
+      <Helmet>
+        <link rel="canonical" href={`${SITE_ORIGIN}/`} />
+      </Helmet>
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
