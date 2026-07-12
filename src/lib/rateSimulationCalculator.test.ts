@@ -2487,3 +2487,165 @@ describe('Golden Rule: currentIncentive must NOT change with simulation input (A
     expect(r1.supply.currentIncentive).toBeCloseTo(r2.supply.currentIncentive, 6);
   });
 });
+
+describe('AAV-1120: walletBorrowUsd/walletSupplyUsd derivation must use raw (uncapped) input', () => {
+  // When borrow/supply delta exceeds available room, the input gets capped for rate
+  // simulation. But wallet position derivation must use the RAW (uncapped) input,
+  // because totalBorrowUsd = wallet + rawDelta, so wallet = total - rawDelta.
+  // Using capped delta gives wallet = total - cappedDelta → wallet too large.
+
+  const BORROW_CAP_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    borrowed: '0',
+    supplied: '0',
+    liquidity: '10000000000000000000000', // 10000
+    borrowCap: '1000000000000000000000', // 1000 — small cap to trigger capping
+    supplyCap: '10000000000000000000000', // 10000 — plenty
+    merklBorrows: [{
+      name: 'Net lending borrow group',
+      breakdowns: [{
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'aav1120-borrow-1',
+      }],
+      opportunityId: '1120',
+      netPositionConstraint: {
+        sourceSide: 'borrow',
+        offsetReserveIds: [BASE_RESERVE.reserveId],
+      },
+    }],
+  };
+
+  it('borrow currentIncentive is same whether delta is under or over borrow cap (same wallet)', () => {
+    // Wallet: supply=$5000, borrow=$8000
+    // The wallet position is identical in both scenarios.
+
+    // Scenario A: delta borrow = $500 (under cap of $1000)
+    // totalBorrowUsd = 8000 + 500 = 8500
+    // rawBorrowInputUsd = 500, borrowInputUsd = 500 (no capping)
+    // walletBorrowUsd = 8500 - 500 = 8000 ✓
+    const crpA = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 5000, borrowUsd: 8000 }]]);
+    const rA = buildRateSimulationResult({
+      reserve: BORROW_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '500',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 5000,
+      totalBorrowUsd: 8500,
+      crossReservePositions: crpA,
+    });
+
+    // Scenario B: delta borrow = $2000 (exceeds cap of $1000, gets capped to $1000)
+    // totalBorrowUsd = 8000 + 2000 = 10000
+    // rawBorrowInputUsd = 2000, borrowInputUsd = 1000 (CAPPED)
+    // BUG: walletBorrowUsd = 10000 - 1000 = 9000 ❌ (should be 8000)
+    // FIX: walletBorrowUsd = 10000 - 2000 = 8000 ✓
+    const crpB = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 5000, borrowUsd: 8000 }]]);
+    const rB = buildRateSimulationResult({
+      reserve: BORROW_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '2000',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 5000,
+      totalBorrowUsd: 10000,
+      crossReservePositions: crpB,
+    });
+
+    // Both scenarios have the same wallet (supply=5000, borrow=8000).
+    // currentIncentive must be the same — it represents the wallet's present state.
+    // With the bug, walletBorrowUsd differs (8000 vs 9000), changing eligibility ratio:
+    //   Correct: net=3000, ratio=3000/8000=0.375
+    //   Bug:     net=4000, ratio=4000/9000≈0.444
+    expect(rB.borrow.currentIncentive).toBeCloseTo(rA.borrow.currentIncentive, 6);
+  });
+
+  it('supply currentIncentive is same whether delta is under or over supply cap (same wallet)', () => {
+    // Wallet: supply=$8000, borrow=$5000
+    // Reserve has supply cap = 1000, so supply delta gets capped.
+
+    const SUPPLY_CAP_RESERVE: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      borrowed: '0',
+      supplied: '0',
+      liquidity: '10000000000000000000000', // 10000
+      supplyCap: '1000000000000000000000', // 1000 — small cap to trigger capping
+      borrowCap: '10000000000000000000000', // 10000 — plenty
+      merklSupplys: [{
+        name: 'Net lending supply group',
+        breakdowns: [{
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'aav1120-supply-1',
+        }],
+        opportunityId: '1120s',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: [BASE_RESERVE.reserveId],
+        },
+      }],
+    };
+
+    // Scenario A: delta supply = $500 (under cap of $1000)
+    // totalSupplyUsd = 8000 + 500 = 8500
+    const crpA = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 8000, borrowUsd: 5000 }]]);
+    const rA = buildRateSimulationResult({
+      reserve: SUPPLY_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 8500,
+      totalBorrowUsd: 5000,
+      crossReservePositions: crpA,
+    });
+
+    // Scenario B: delta supply = $2000 (exceeds cap of $1000, gets capped to $1000)
+    // totalSupplyUsd = 8000 + 2000 = 10000
+    // rawSupplyInputUsd = 2000, supplyInputUsd = 1000 (CAPPED)
+    // BUG: walletSupplyUsd = 10000 - 1000 = 9000 ❌ (should be 8000)
+    // FIX: walletSupplyUsd = 10000 - 2000 = 8000 ✓
+    const crpB = new Map([[BASE_RESERVE.reserveId, { supplyUsd: 8000, borrowUsd: 5000 }]]);
+    const rB = buildRateSimulationResult({
+      reserve: SUPPLY_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '2000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 10000,
+      totalBorrowUsd: 5000,
+      crossReservePositions: crpB,
+    });
+
+    // Both scenarios have the same wallet (supply=8000, borrow=5000).
+    // currentIncentive must be the same.
+    expect(rB.supply.currentIncentive).toBeCloseTo(rA.supply.currentIncentive, 6);
+  });
+});
