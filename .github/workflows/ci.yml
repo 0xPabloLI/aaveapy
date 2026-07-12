@@ -23,7 +23,7 @@ on:
     - cron: '0 6 * * *'  # daily UTC 6:00 — detect backend spec drift
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 jobs:
@@ -197,7 +197,9 @@ jobs:
         env:
           LIVE_TEST_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
-        run: npm run test:live:simulation:staging  openapi-check:
+        run: npm run test:live:simulation:staging
+
+  openapi-check:
     name: openapi-check
     runs-on: ubuntu-latest
     env:
@@ -237,8 +239,9 @@ jobs:
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Audit runtime dependencies (High/Critical)
-        run: npm audit --omit=dev --audit-level=high
+        # Known: ws Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) via viem — upstream fix pending.
         continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
 
   openapi-sync:
     name: openapi-sync
@@ -253,6 +256,7 @@ jobs:
       LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -280,14 +284,18 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit and push spec sync
+      - name: Create spec sync PR
         if: steps.diff.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/openapi.json
-          git commit -m "chore(openapi): sync spec from backend"
-          git stash --include-untracked  # stash any side-effects from npm scripts
-          git pull --rebase origin ${{ github.ref_name }}  # avoid push rejection when branch advanced since checkout
-          git stash pop || true  # restore stash (ok if empty)
-          git push
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "chore(openapi): sync spec from backend"
+          branch: "bot/openapi-sync-${{ github.run_id }}"
+          delete-branch: true
+          title: "chore(openapi): sync spec from backend (${{ github.ref_name }})"
+          body: |
+            Auto-generated OpenAPI spec sync.
+
+            Trigger: `${{ github.event_name }}` on `${{ github.ref_name }}`
+            The `openapi-check` job detected a spec drift; this PR syncs `public/openapi.json` from the live backend.
+          labels: openapi-sync
+          base: ${{ github.ref_name }}
