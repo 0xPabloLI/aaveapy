@@ -71,3 +71,4 @@ output/
 
 # Local-only notes and drafts (not committed)
 /local/
+.vercel
