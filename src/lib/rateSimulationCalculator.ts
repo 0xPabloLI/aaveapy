@@ -262,8 +262,10 @@ export interface BuildRateSimulationResultParams {
    * When false, each side uses its full scenario USD independently. Brevis is always gross per side.
    */
   meritMerklNetPosition?: boolean;
-  /** Cross-reserve positions for merkl per-group net eligibility ratio computation. */
+  /** Cross-reserve positions (total = wallet + delta) for merkl per-group net eligibility ratio computation (after*). */
   crossReservePositions?: Map<string, ReservePositions>;
+  /** Cross-reserve wallet-only positions for current* and headline (AAV-1137). Must be undefined when no wallet. */
+  walletCrossReservePositions?: Map<string, ReservePositions>;
   /** reserveId b symbol lookup for cross-reserve note (offset reserve symbols). */
   reserveSymbolById?: Map<string, string>;
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
@@ -290,12 +292,14 @@ export interface BuildRateSimulationResultParams {
   totalBorrowUsd?: number;
   /**
    * Wallet-only supply position (USD) for position cap dilution in current incentive.
-   * If not provided, derived from totalSupplyUsd - supplyInputUsd.
+   * Passed explicitly by the caller from PerReserveInput.
+   * undefined when no wallet position exists (triggers identity fallback — Golden Rule §3).
    */
   walletSupplyUsd?: number;
   /**
    * Wallet-only borrow position (USD) for position cap dilution in current incentive.
-   * If not provided, derived from totalBorrowUsd - borrowInputUsd.
+   * Passed explicitly by the caller from PerReserveInput.
+   * undefined when no wallet position exists (triggers identity fallback — Golden Rule §3).
    */
   walletBorrowUsd?: number;
   /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
@@ -1011,6 +1015,7 @@ export function buildRateSimulationResult({
   forecastStates,
   meritMerklNetPosition = true,
   crossReservePositions,
+  walletCrossReservePositions,
   reserveSymbolById,
   campaignAccessStatuses,
   hubSupplied,
@@ -1191,13 +1196,8 @@ export function buildRateSimulationResult({
 
   // GOLDEN RULE (AAV-1121): walletCrossReservePositions must be undefined when no wallet.
   // This ensures walletMerklGroupMultiplier returns 1.0 (identity) for current*.
-  const walletCrossReservePositions = hasWallet && crossReservePositions ? new Map(crossReservePositions) : undefined;
-  if (walletCrossReservePositions && walletCrossReservePositions.has(reserve.reserveId)) {
-    walletCrossReservePositions.set(reserve.reserveId, {
-      supplyUsd: walletSupplyUsd ?? 0,
-      borrowUsd: walletBorrowUsd ?? 0,
-    });
-  }
+  // AAV-1137: Built by the caller from wallet-only positions across ALL reserves,
+  // not just the self-entry, so current* never changes with simulation input on other reserves.
 
   const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;

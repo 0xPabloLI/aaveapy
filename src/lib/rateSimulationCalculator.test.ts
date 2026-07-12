@@ -1658,6 +1658,9 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     const crossReservePositions = new Map([
       [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
+    const walletCrossReservePositions = new Map([
+      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1674,6 +1677,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       totalBorrowUsd: 1,
       walletSupplyUsd: 1042,
       crossReservePositions,
+      walletCrossReservePositions,
     });
 
     const perSourceMerklCurrent = result.supply.sources.merkl?.current ?? 0;
@@ -1715,6 +1719,9 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     const crossReservePositions = new Map([
       [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
+    const walletCrossReservePositions = new Map([
+      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1731,6 +1738,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       totalBorrowUsd: 1,
       walletSupplyUsd: 1042,
       crossReservePositions,
+      walletCrossReservePositions,
     });
 
     const merklCurrent = result.supply.sources.merkl?.current ?? 0;
@@ -1742,6 +1750,9 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
 
   it('headline incentive also includes eligibility scaling (AAV-1060 review fix)', () => {
     const crossReservePositions = new Map([
+      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+    const walletCrossReservePositions = new Map([
       [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
 
@@ -1760,6 +1771,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       totalBorrowUsd: 1,
       walletSupplyUsd: 1042,
       crossReservePositions,
+      walletCrossReservePositions,
     });
 
     const noConstraint: ReserveWithSpread = {
@@ -2661,5 +2673,173 @@ describe('AAV-1120: walletBorrowUsd/walletSupplyUsd derivation must use raw (unc
     // Both scenarios have the same wallet (supply=8000, borrow=5000).
     // currentIncentive must be the same.
     expect(rB.supply.currentIncentive).toBeCloseTo(rA.supply.currentIncentive, 6);
+  });
+});
+
+describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserves, not just self', () => {
+  const OFFSET_RESERVE_ID = '1:0xusde:0xusde';
+
+  const RESERVE_WITH_CROSS_CONSTRAINT: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [
+      {
+        name: 'Cross-reserve net lending',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'aav-1137-test',
+          },
+        ],
+        opportunityId: '1137',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: [OFFSET_RESERVE_ID],
+        },
+      },
+    ],
+    merklBorrows: [],
+  };
+
+  it('current does NOT change when offset reserve delta changes (walletCrossReservePositions uses wallet-only)', () => {
+    const walletCrossReservePositions = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+
+    const crpSmallDelta = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const crpLargeDelta = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }],
+    ]);
+
+    const r1 = buildRateSimulationResult({
+      reserve: RESERVE_WITH_CROSS_CONSTRAINT,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1000,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 0,
+      crossReservePositions: crpSmallDelta,
+      walletCrossReservePositions,
+    });
+
+    const r2 = buildRateSimulationResult({
+      reserve: RESERVE_WITH_CROSS_CONSTRAINT,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1000,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 0,
+      crossReservePositions: crpLargeDelta,
+      walletCrossReservePositions,
+    });
+
+    expect(r1.supply.currentIncentive).toBeCloseTo(r2.supply.currentIncentive, 6);
+
+    const walletBorrow = 500;
+    const walletSupply = 1000;
+    const expectedNetEligible = Math.max(walletSupply - walletBorrow, 0);
+    const expectedRatio = expectedNetEligible / walletSupply;
+    const expectedCurrent = 10 * expectedRatio;
+    expect(r1.supply.currentIncentive).toBeCloseTo(expectedCurrent, 1);
+  });
+
+  it('after DOES change when offset reserve delta changes (uses crossReservePositions with total)', () => {
+    const walletCrossReservePositions = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+
+    const crpSmallDelta = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const crpLargeDelta = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }],
+    ]);
+
+    const r1 = buildRateSimulationResult({
+      reserve: RESERVE_WITH_CROSS_CONSTRAINT,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 0,
+      crossReservePositions: crpSmallDelta,
+      walletCrossReservePositions,
+    });
+
+    const r2 = buildRateSimulationResult({
+      reserve: RESERVE_WITH_CROSS_CONSTRAINT,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 0,
+      crossReservePositions: crpLargeDelta,
+      walletCrossReservePositions,
+    });
+
+    expect(r1.supply.afterIncentive).not.toBeCloseTo(r2.supply.afterIncentive, 1);
+  });
+
+  it('without walletCrossReservePositions, current=headline (no scaling) — GOLDEN RULE no-wallet case', () => {
+    const crossReservePositions = new Map([
+      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+
+    const result = buildRateSimulationResult({
+      reserve: RESERVE_WITH_CROSS_CONSTRAINT,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      crossReservePositions,
+    });
+
+    expect(result.supply.currentIncentive).toBeCloseTo(10.0, 1);
   });
 });

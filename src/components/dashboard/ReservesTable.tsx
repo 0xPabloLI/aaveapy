@@ -247,6 +247,7 @@ const ReservesTable = ({
   );
   const perReserveInputs = portfolioInputsResult?.perReserveInputs;
   const crossReservePositions = portfolioInputsResult?.crossReservePositions;
+  const walletCrossReservePositions = portfolioInputsResult?.walletCrossReservePositions;
   const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
@@ -260,6 +261,7 @@ const ReservesTable = ({
     inputMode: sharedInputMode,
     meritMerklNetPosition,
     crossReservePositions,
+    walletCrossReservePositions,
     reserveSymbolById,
     perReserveInputs,
   });

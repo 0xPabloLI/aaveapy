@@ -37,6 +37,7 @@ export interface PerReserveInput {
 export interface PortfolioInputsResult {
   perReserveInputs: Map<string, PerReserveInput>;
   crossReservePositions: Map<string, ReservePositions> | undefined;
+  walletCrossReservePositions: Map<string, ReservePositions> | undefined;
   reserveSymbolById: Map<string, string> | undefined;
 }
 
@@ -187,6 +188,7 @@ function computeResultsFromGroups(
   const results: PortfolioPositionResult[] = [];
 
   const crossReservePositions = new Map<string, ReservePositions>();
+  const walletCrossReservePositions = new Map<string, ReservePositions>();
   const reserveSymbolById = new Map<string, string>();
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
@@ -195,6 +197,12 @@ function computeResultsFromGroups(
       crossReservePositions.set(reserve.reserveId, {
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
+      });
+    }
+    if (group.walletSupplyUsd != null || group.walletBorrowUsd != null) {
+      walletCrossReservePositions.set(reserve.reserveId, {
+        supplyUsd: group.walletSupplyUsd ?? 0,
+        borrowUsd: group.walletBorrowUsd ?? 0,
       });
     }
     // Sets symbol for all reserves in groupMap (including those with 0 USD on both sides,
@@ -242,6 +250,7 @@ function computeResultsFromGroups(
         walletBorrowUsd: group.walletBorrowUsd,
         forecastStates,
         crossReservePositions,
+        walletCrossReservePositions: walletCrossReservePositions.size > 0 ? walletCrossReservePositions : undefined,
         reserveSymbolById,
         hubSupplied,
         hubBorrowed,
@@ -436,6 +445,7 @@ export function buildPerReserveInputsFromEntries(
 
   const perReserveInputs = new Map<string, PerReserveInput>();
   const crossReservePositions = new Map<string, ReservePositions>();
+  const walletCrossReservePositions = new Map<string, ReservePositions>();
   const reserveSymbolById = new Map<string, string>();
 
   for (const [reserveId, group] of grouped) {
@@ -453,6 +463,14 @@ export function buildPerReserveInputsFromEntries(
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
       });
+    }
+    if (group.walletSupplyUsd != null || group.walletBorrowUsd != null) {
+      walletCrossReservePositions.set(reserveId, {
+        supplyUsd: group.walletSupplyUsd ?? 0,
+        borrowUsd: group.walletBorrowUsd ?? 0,
+      });
+    }
+    if (group.supplyUsd > 0 || group.borrowUsd > 0) {
       const reserve = reserveMap.get(getReserveKey({ reserveId }));
       if (reserve?.tokenSymbol) {
         reserveSymbolById.set(reserveId, reserve.tokenSymbol);
@@ -463,6 +481,7 @@ export function buildPerReserveInputsFromEntries(
   return {
     perReserveInputs,
     crossReservePositions: crossReservePositions.size > 0 ? crossReservePositions : undefined,
+    walletCrossReservePositions: walletCrossReservePositions.size > 0 ? walletCrossReservePositions : undefined,
     reserveSymbolById: reserveSymbolById.size > 0 ? reserveSymbolById : undefined,
   };
 }

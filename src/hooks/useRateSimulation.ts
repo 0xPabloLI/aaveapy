@@ -62,6 +62,7 @@ interface UseRateSimulationParams {
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
+  walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
 }
 
@@ -77,6 +78,7 @@ interface UseSharedRateSimulationsParams {
   inputMode?: ScenarioInputMode;
   meritMerklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
+  walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
   perReserveInputs?: Map<string, PerReserveInput>;
 }
@@ -93,6 +95,7 @@ export const useSharedRateSimulations = ({
   inputMode = 'token',
   meritMerklNetPosition = true,
   crossReservePositions,
+  walletCrossReservePositions,
   reserveSymbolById,
   perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
@@ -312,6 +315,7 @@ export const useSharedRateSimulations = ({
           forecastStates,
           meritMerklNetPosition,
           crossReservePositions,
+          walletCrossReservePositions,
           reserveSymbolById,
           hubSupplied,
           hubBorrowed,
@@ -344,6 +348,7 @@ export const useSharedRateSimulations = ({
     tydroPointToUsdRate,
     pointRateMap,
     crossReservePositions,
+    walletCrossReservePositions,
     reserveSymbolById,
   ]);
 
@@ -365,9 +370,10 @@ export const useRateSimulation = ({
   borrowInput,
   inputMode = 'token',
   meritMerklNetPosition = true,
-  crossReservePositions,
-  reserveSymbolById,
-}: UseRateSimulationParams): RateSimulationResult => {
+    crossReservePositions,
+    walletCrossReservePositions,
+    reserveSymbolById,
+  }: UseRateSimulationParams): RateSimulationResult => {
   const reserveId = getReserveSimulationId(reserve);
   const { simulationsById } = useSharedRateSimulations({
     reserves: [reserve],
@@ -381,6 +387,7 @@ export const useRateSimulation = ({
     inputMode,
     meritMerklNetPosition,
     crossReservePositions,
+    walletCrossReservePositions,
     reserveSymbolById,
   });
 
