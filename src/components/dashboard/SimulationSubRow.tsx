@@ -50,12 +50,6 @@ interface SimulationSubRowProps {
   onCorrectBorrowInput?: (correctedValue: string) => void;
 }
 
-const formatDelta = (value: number | null) => {
-  if (value === null || Number.isNaN(value)) return '-';
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}${value.toFixed(2)}%`;
-};
-
 const normalizeToAfterPlaceholder = (value: string) => (value === '—' ? '-' : value);
 const SIM_NEUTRAL_PRIMARY = 'text-foreground';
 const SIM_NEUTRAL_SECONDARY = 'text-foreground/75';
@@ -441,7 +435,7 @@ const SimulationSubRow = ({
         tokenPrice: simulation.tokenPrice,
       }));
     }
-    return formatDelta(value);
+    return formatSpread(value);
   };
 
   const renderRow = (
@@ -827,7 +821,7 @@ const SimulationSubRow = ({
           <div role="cell" className={`py-1 pl-0.5 pr-2 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
             {hasScenarioInput && !isReserveLocked ? (
               <span className={`ds-text-11 tabular-nums whitespace-nowrap ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatDelta(simulation.spread.delta)}
+                {formatSpread(simulation.spread.delta)}
               </span>
             ) : null}
           </div>
@@ -1421,7 +1415,7 @@ const SimulationSubRow = ({
                 <span className="inline-flex items-center gap-1 pl-1">
                   <span className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>Δ</span>
                   <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? SIM_NEUTRAL_MUTED : 'ds-text-purple-600'}`}>
-                    {formatDelta(simulation.spread.delta)}
+                    {formatSpread(simulation.spread.delta)}
                   </span>
                 </span>
               ) : null}

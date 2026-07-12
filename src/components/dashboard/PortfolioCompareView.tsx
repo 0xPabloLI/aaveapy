@@ -4,7 +4,7 @@
 import { memo } from 'react';
 import { X, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, formatReserveSizeUsd, formatSignedReserveSizeUsd } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioSnapshot, PortfolioSummary } from '@/types/portfolio';
 
@@ -12,18 +12,6 @@ interface PortfolioCompareViewProps {
   snapshotA: PortfolioSnapshot;
   snapshotB: PortfolioSnapshot;
   onClose: () => void;
-}
-
-function formatUsd(value: number): string {
-  if (value === 0) return '$0';
-  if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
-  return `$${value.toFixed(2)}`;
-}
-
-function formatUsdPerDay(value: number): string {
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}$${Math.abs(value).toFixed(2)}/day`;
 }
 
 function formatDelta(a: number, b: number, formatter: (v: number) => string): string {
@@ -98,7 +86,7 @@ const TokenCompareRow = memo(function TokenCompareRow({
           : 'text-muted-foreground',
       )}>
         {usdDayA !== null && usdDayB !== null
-          ? formatDelta(usdDayA, usdDayB, (v) => `$${v.toFixed(2)}`)
+          ? formatDelta(usdDayA, usdDayB, formatReserveSizeUsd)
           : '—'}
       </span>
     </div>
@@ -169,23 +157,23 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
       {/* Summary metrics */}
       <CompareMetric
         label="Total Supply"
-        valueA={formatUsd(sA.totalSupplyUsd)}
-        valueB={formatUsd(sB.totalSupplyUsd)}
-        delta={formatDelta(sA.totalSupplyUsd, sB.totalSupplyUsd, formatUsd)}
+        valueA={formatReserveSizeUsd(sA.totalSupplyUsd)}
+        valueB={formatReserveSizeUsd(sB.totalSupplyUsd)}
+        delta={formatDelta(sA.totalSupplyUsd, sB.totalSupplyUsd, formatReserveSizeUsd)}
         deltaClass={deltaColor(sA.totalSupplyUsd, sB.totalSupplyUsd)}
       />
       <CompareMetric
         label="Total Borrow"
-        valueA={formatUsd(sA.totalBorrowUsd)}
-        valueB={formatUsd(sB.totalBorrowUsd)}
-        delta={formatDelta(sA.totalBorrowUsd, sB.totalBorrowUsd, formatUsd)}
+        valueA={formatReserveSizeUsd(sA.totalBorrowUsd)}
+        valueB={formatReserveSizeUsd(sB.totalBorrowUsd)}
+        delta={formatDelta(sA.totalBorrowUsd, sB.totalBorrowUsd, formatReserveSizeUsd)}
         deltaClass={deltaColor(sA.totalBorrowUsd, sB.totalBorrowUsd)}
       />
       <CompareMetric
         label="Net Daily"
-        valueA={formatUsdPerDay(sA.netUsdPerDay)}
-        valueB={formatUsdPerDay(sB.netUsdPerDay)}
-        delta={formatDelta(sA.netUsdPerDay, sB.netUsdPerDay, (v) => `$${v.toFixed(2)}`)}
+        valueA={formatSignedReserveSizeUsd(sA.netUsdPerDay)}
+        valueB={formatSignedReserveSizeUsd(sB.netUsdPerDay)}
+        delta={formatDelta(sA.netUsdPerDay, sB.netUsdPerDay, formatReserveSizeUsd)}
         deltaClass={netDeltaPositive ? 'ds-text-emerald-600' : 'text-destructive'}
       />
       <CompareMetric

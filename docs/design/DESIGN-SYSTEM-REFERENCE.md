@@ -350,6 +350,30 @@ reserves desktop table 的 8 列对齐分配：
 
 ---
 
+### 4.4 表格三级边框层次（强制，跨场景通用）
+
+多模块数据表（如 Portfolio Unified Table）中，边框必须严格遵循三级层次，通过透明度区分：
+
+| 层级 | 语义 | 实现 | 透明度 | 视觉 Δ（dark / light） |
+|------|------|------|--------|------------------------|
+| **GROUP_SEP** | 模块边界（Input → Native → Incentive → Total → Earn） | `border-l border-border/60` | /60 | Δ9.6 / Δ10.8 |
+| **SIDE_SEP** | 同模块内 Supply → Borrow 分隔 | `border-l border-border/40` | /40 | Δ7.2 / Δ7.6 |
+| **row** | 行间分隔 | `border-t border-border/30` | /30 | Δ~5 / Δ~5 |
+
+**核心规则：**
+
+1. **GROUP_SEP 必须在每个模块的左侧第一个单元格上出现**，无论该单元格在 header 的第一行还是第二行。任何模块边界线的缺失都是规范违反。
+2. **SIDE_SEP 必须在每个模块内 Borrow 侧的左侧出现**，无论 header 还是 body。
+3. **合并列/行时必须逐条检查边框完整性**：当两个 `<td>` 合并为一个（如 Input Supply + Borrow → 单个 `<td>` + 内部 grid），或两个 `<th>` 合并为 `rowSpan={2}` 时，原两列/两行之间的边框不会自动保留——必须在合并后的结构中手动重建等效边框：
+   - 列合并：在 grid 子元素间用 `border-l border-border/40`（SIDE_SEP）替代原来的 `<td>` 边框
+   - 行合并：在 `rowSpan` 的 `<th>` 内部用 `border-b border-border/50` 替代原来的 `<tr>` 行分隔
+4. **修改前后的边框清单必须逐条对照**，确保没有遗漏。常见丢失场景：
+   - `rowSpan` 合并后，第一行 header 与第二行之间的横线消失
+   - `<td>` 合并后，Supply 与 Borrow 之间的竖线消失
+   - 新增/删除列后，GROUP_SEP 的位置错位
+
+---
+
 ## 5. 开关与选择控件（Toggle / Segmented / Chips）
 
 ### 5.1 分段控制器（Segmented Control）

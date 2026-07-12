@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
-import { formatScenarioSize } from '@/lib/formatters';
+import { formatScenarioSize, formatPercent } from '@/lib/formatters';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
@@ -192,7 +192,7 @@ export function BorrowCapProgressContent({
       <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground">% of cap</span>
         <span className={`font-bold tabular-nums ${colorClass}`}>
-          {percentage.toFixed(1)}%
+          {formatPercent(percentage)}
           {sortArrow}
         </span>
       </div>

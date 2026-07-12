@@ -1,6 +1,7 @@
 import { ArrowUp, ArrowDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { freshnessColor } from '@/lib/freshnessColor';
+import { formatRelativeTime } from '@/lib/formatters';
 
 interface ReservesTableShowMoreProps {
   totalCount: number;
@@ -76,13 +77,6 @@ function useDataAge(dataUpdatedAt?: number) {
   return ageS;
 }
 
-function formatAge(seconds: number): string {
-  if (seconds < 60) return `${seconds}s ago`;
-  const m = Math.floor(seconds / 60);
-  if (m < 60) return `${m}m ago`;
-  return `${Math.floor(m / 60)}h ago`;
-}
-
 interface ReservesTableFloatingScrollProps {
   tableInView: boolean;
   variant: 'desktop' | 'mobile';
@@ -131,7 +125,7 @@ export function ReservesTableFloatingScroll({
       <div className="group relative">
         <button
           type="button"
-          aria-label={`Refresh data (updated ${formatAge(ageS)})`}
+          aria-label={`Refresh data (updated ${formatRelativeTime(new Date(Date.now() - ageS * 1000).toISOString())})`}
           onClick={handleRefresh}
           disabled={isRefreshing}
           className={`${btnClass} ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
@@ -147,7 +141,7 @@ export function ReservesTableFloatingScroll({
         {/* Hover tooltip showing age */}
         {dataUpdatedAt != null && (
           <div className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-card border border-border/60 px-2 py-1 text-xs text-muted-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {formatAge(ageS)}
+            {formatRelativeTime(new Date(Date.now() - ageS * 1000).toISOString())}
           </div>
         )}
       </div>
