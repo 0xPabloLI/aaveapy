@@ -58,7 +58,7 @@
    2. **To Spec** — 用 `to-spec` skill 将对话结论合成为 spec 文档
    3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
    4. **TDD Implement** — 逐 ticket 用 `tdd` skill 实施（red → green → refactor）；关键逻辑必须先写测试
-   5. **Requesting Code Review** — 实施完成后用 `requesting-code-review` skill 请求 code review
+   5. **Code Review** — 实施完成后用 `code-review` skill 做双轴审查（Standards + Spec）
    6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
    7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
    8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
@@ -76,6 +76,7 @@
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
+- **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
 
 ## Validation Gate (修改后必跑 — 强制)
 每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
