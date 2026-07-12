@@ -31,19 +31,27 @@ match the wrapper's effective right padding.
    through a `var(--ds-space-*)` token.
 2. Required tokens for the header row:
 
-   | Side  | Mobile                       | Desktop                      |
-   | ----- | ---------------------------- | ---------------------------- |
-   | `pl`  | `pl-[var(--ds-space-2-5)]`   | `pl-[var(--ds-space-4)]`     |
-   | `pr`  | `pr-[var(--ds-space-3)]`     | `pr-[var(--ds-space-3)]`     |
-   | `py`  | `py-[var(--ds-space-2-5)]`   | `py-[var(--ds-space-3)]`     |
-   | gap   | `gap-[var(--ds-space-1)]`    | `gap-[var(--ds-space-1)]`    |
+   | Side  | Mobile                         | Desktop                      |
+   | ----- | ------------------------------ | ---------------------------- |
+   | `pl`  | `pl-[var(--ds-space-1-5)]`     | _(none — outer container provides)_ |
+   | `pr`  | `pr-[var(--ds-space-3)]`       | _(none — outer container provides)_ |
+   | `py`  | `py-[var(--ds-space-2-5)]`     | `py-[var(--ds-space-3)]`     |
+   | gap   | `gap-[var(--ds-space-1)]`      | `gap-[var(--ds-space-1)]`    |
 
-   The right padding (`--ds-space-3` = `0.75rem` = 12px) is what makes the
-   toggle's right edge align with the Single-mode toggle, whose
-   `ml-auto` resolves against the same 12px wrapper edge.
+   **Desktop**: the outer `data-reserves-sticky-scenario` container already
+   provides `p-[var(--ds-space-3)]` (12px all sides), so the header div
+   must NOT add its own pl/pr — doing so would double-pad and shift the
+   toggle 12px left of the Single-mode toggle (AAV-1142 regression).
+
+   **Mobile**: the outer container provides `-mx-[var(--ds-space-3)] px-[var(--ds-space-3)]`
+   (full-width bleed), so the header div adds a small visual indent via
+   `pl-[var(--ds-space-1-5)]` but no pr (outer container handles it).
+
 3. The toggle is rendered as the **last child** of the cluster
    (`flex items-center gap-[var(--ds-space-1)]`). Do not wrap it in any
    extra margin/padding container.
+4. The toggle's root `<label>` has `data-testid="portfolio-mode-toggle"`
+   for stable E2E selector targeting.
 
 ## Enforcement
 

@@ -1,27 +1,25 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Mobile-only screenshot + spacing assertion for the portfolio input rows.
+ * Mobile-only spacing assertion for the portfolio card layout.
  *
- * Verifies the parent grid's horizontal gap correctly propagates through
- * `grid-cols-subgrid` so the token-info column and the supply input column
- * never touch. Regression guard for the recent gap-x-2 fix.
+ * Verifies the MobilePortfolioCard renders with proper spacing
+ * between the token header, pill tabs, and CompactInput.
+ * Original grid-cols-subgrid layout has been replaced by a
+ * vertical card layout — see MobilePortfolioCard.tsx.
  */
 test.describe('Portfolio input — mobile spacing', () => {
   test.beforeEach(async ({}, testInfo) => {
     test.skip(!testInfo.project.name.includes('mobile'), 'Mobile-only check');
   });
 
-  test('token info column keeps a visible gap from the supply input', async ({ page }, testInfo) => {
+  test('token card renders with compact input area', async ({ page }, testInfo) => {
     await page.goto('/');
 
-    // Wait for the reserves grid to mount so the panel has data to search.
     await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
 
-    // 1) Enable Portfolio mode by clicking the "Portfolio" label (wraps the Switch).
-    await page.getByText('Portfolio', { exact: true }).first().click();
+    await page.getByTestId('portfolio-mode-toggle').click();
 
-    // 2) Open the in-panel search and pick the first available reserve.
     await page.getByRole('button', { name: 'Search tokens' }).click();
     await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
 
@@ -31,47 +29,22 @@ test.describe('Portfolio input — mobile spacing', () => {
     await expect(addBtn).toBeVisible();
     await addBtn.click();
 
-    // 3) Locate the parent grid wrapping PortfolioTokenRow. It uses an inline
-    //    template with `minmax(0,max-content)_minmax(11rem,1fr)` on mobile.
-    const grid = page
-      .locator('div.grid')
-      .filter({
-        has: page.locator(':scope > div.grid-cols-subgrid'),
-      })
-      .first();
-    await expect(grid).toBeVisible();
+    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
+    await expect(supplyInput).toBeVisible();
 
-    const row = grid.locator(':scope > div.grid-cols-subgrid').first();
-    await expect(row).toBeVisible();
+    const inputBox = await supplyInput.boundingBox();
+    expect(inputBox, 'supply input must render').not.toBeNull();
+    if (!inputBox) return;
 
-    // The mobile row contains exactly two grid children: token info | inputs.
-    const tokenCol = row.locator(':scope > div').nth(0);
-    const inputCol = row.locator(':scope > div').nth(1);
+    expect(inputBox.width, 'supply input should be wide enough to use').toBeGreaterThan(80);
 
-    const [leftBox, rightBox] = await Promise.all([
-      tokenCol.boundingBox(),
-      inputCol.boundingBox(),
-    ]);
-    expect(leftBox, 'token-info column must render').not.toBeNull();
-    expect(rightBox, 'input column must render').not.toBeNull();
-    if (!leftBox || !rightBox) return;
+    const tokenLabel = page.getByText('USDC', { exact: true }).first();
+    await expect(tokenLabel).toBeVisible();
+    const tokenBox = await tokenLabel.boundingBox();
+    expect(tokenBox, 'token label must render').not.toBeNull();
 
-    // Parent grid declares `gap-x-2` (0.5rem ≈ 8px). Allow a ≥6px floor to
-    // tolerate sub-pixel rounding while still failing if gap-x is removed
-    // and the subgrid row collapses to 0px column gap.
-    const gap = rightBox.x - (leftBox.x + leftBox.width);
-    expect(
-      gap,
-      `Token info and input columns must not touch (measured gap=${gap}px)`,
-    ).toBeGreaterThanOrEqual(6);
-
-    // Sanity: the input column should be wide enough to host the supply input.
-    expect(rightBox.width).toBeGreaterThan(80);
-
-    // Capture a screenshot of the row for visual review (attached on failure
-    // automatically by Playwright; saved unconditionally for manual review).
-    await row.screenshot({
-      path: testInfo.outputPath('portfolio-row-mobile.png'),
+    await supplyInput.screenshot({
+      path: testInfo.outputPath('portfolio-card-mobile.png'),
     });
   });
 });

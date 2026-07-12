@@ -28,7 +28,7 @@ for (const bp of BREAKPOINTS) {
       page.getByRole('textbox', { name: 'Borrow amount' }),
     ).toBeVisible();
 
-    const singleToggle = page.getByText('Portfolio', { exact: true }).first();
+    const singleToggle = page.getByTestId('portfolio-mode-toggle');
     await expect(singleToggle).toBeVisible();
     const singleBox = await singleToggle.boundingBox();
     expect(singleBox, 'single-mode toggle must render').not.toBeNull();
@@ -37,9 +37,7 @@ for (const bp of BREAKPOINTS) {
 
     await singleToggle.click();
 
-    const portfolioToggle = page
-      .getByText('Portfolio', { exact: true })
-      .first();
+    const portfolioToggle = page.getByTestId('portfolio-mode-toggle');
     await expect(portfolioToggle).toBeVisible();
     const portfolioBox = await portfolioToggle.boundingBox();
     expect(portfolioBox, 'portfolio-mode toggle must render').not.toBeNull();

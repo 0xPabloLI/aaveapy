@@ -8,8 +8,8 @@ import { expect, test } from '@playwright/test';
  * value is not mangled. Regression guard for AAV-739.
  *
  * Key scenario: focus an input that already has a formatted value
- * like "1,000", then type "." — the input should show "1000." (not
- * "0." or "1000" with the dot swallowed).
+ * like "1,000", then type "." — the input should show "1,000." (not
+ * "0." or "1,000" with the dot swallowed).
  */
 test.describe('Portfolio input — decimal point entry', () => {
   test.beforeEach(({}, testInfo) => {
@@ -21,7 +21,7 @@ test.describe('Portfolio input — decimal point entry', () => {
 
     await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
 
-    await page.getByText('Portfolio', { exact: true }).first().click();
+    await page.getByTestId('portfolio-mode-toggle').click();
 
     await page.getByRole('button', { name: 'Search tokens' }).click();
     await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
@@ -48,15 +48,15 @@ test.describe('Portfolio input — decimal point entry', () => {
     const blurredValue = await supplyInput.inputValue();
     expect(blurredValue).toContain(',');
 
-    // Focus the input again — on focus, commas are stripped.
+    // Focus the input again — commas are preserved on focus.
     await supplyInput.focus();
 
     // Immediately type a decimal point.
     await page.keyboard.press('.');
 
-    // The input should show "1000." — not "0." and not "1000" (dot swallowed).
+    // The input should show "1,000." — not "0." and not "1,000" (dot swallowed).
     const value = await supplyInput.inputValue();
-    expect(value).toBe('1000.');
+    expect(value).toBe('1,000.');
   });
 
   test('typing decimal point on empty input produces "0."', async ({ page }) => {
@@ -96,12 +96,12 @@ test.describe('Portfolio input — decimal point entry', () => {
     await supplyInput.fill('5000');
     await supplyInput.blur();
 
-    // Focus again and type "50" — should produce "500050" (or "5,000.50" if decimal).
+    // Focus again and type ".5" — should produce "5,000.5" (commas preserved).
     await supplyInput.focus();
     await page.keyboard.press('.');
     await page.keyboard.press('5');
 
     const value = await supplyInput.inputValue();
-    expect(value).toBe('5000.5');
+    expect(value).toBe('5,000.5');
   });
 });
