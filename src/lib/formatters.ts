@@ -1,35 +1,16 @@
-/**
- * Smart-format a percentage value with controlled display length.
- * - < 100:      2 decimals (e.g. 5.67%)
- * - 100-999:    1 decimal  (e.g. 123.4%)
- * - 1K-9.99K:  0 decimals + K (e.g. 12K%)
- * - >= 10K:     capped display (e.g. >10K% / <-10K%)
- */
-const PERCENT_K_CAP = 10;
-
-function smartPercent(value: number): string {
-  if (!Number.isFinite(value)) return '-';
-  const absValue = Math.abs(value);
-  if (absValue >= 10_000) return `${value < 0 ? '<-' : '>'}${PERCENT_K_CAP}K%`;
-  if (absValue >= 1_000) {
-    return `${Math.round(value / 1_000)}K%`;
-  }
-  if (absValue >= 100) {
-    return `${value.toFixed(1)}%`;
-  }
-  return `${value.toFixed(2)}%`;
-}
-
+// Format percentage to string (value is already in percentage form, e.g., 5 for 5%)
 export const formatPercent = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return smartPercent(value);
+  return `${value.toFixed(2)}%`;
 };
 
+// Format spread with sign (value is already in percentage form)
 export const formatSpread = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value > 0 ? '+' : ''}${smartPercent(value)}`;
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 };
 
+// Format relative time
 export const formatRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
@@ -41,6 +22,171 @@ export const formatRelativeTime = (dateString: string): string => {
   return `${Math.floor(diffInSeconds / 86400)}d ago`;
 };
 
+/**
+ * Converts APR to APY using monthly compounding
+ * Assumes users claim rewards once per month and reinvest them
+ * Formula: APY = (1 + APR/12)^12 - 1
+ *
+ * This function is used to align incentive calculations with other protocol APYs
+ * throughout the app, providing more accurate representations of compound returns.
+ *
+ * @param apr - Annual Percentage Rate as a percentage (e.g., 5 for 5%)
+ * @returns APY as a percentage
+ */
+export const convertAprToApy = (apr: number): number => {
+  // Convert percentage to decimal for calculation
+  const aprDecimal = apr / 100;
+  const monthlyRate = aprDecimal / 12;
+  const apyDecimal = Math.pow(1 + monthlyRate, 12) - 1;
+  // Convert back to percentage
+  return apyDecimal * 100;
+};
+
+// Convert APY to APR (reverse of convertAprToApy)
+export const apyToApr = (apy: number): number => {
+  // Convert percentage to decimal
+  const apyDecimal = apy / 100;
+  // Reverse the monthly compounding formula
+  // APY = (1 + APR/12)^12 - 1
+  // APR = 12 * ((1 + APY)^(1/12) - 1)
+  const aprDecimal = 12 * (Math.pow(1 + apyDecimal, 1 / 12) - 1);
+  // Convert back to percentage
+  return aprDecimal * 100;
+};
+
+import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive, ReserveWithSpread } from '@/types/aave';
+import { isCampaignActive } from '@/lib/campaignGroups';
+import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
+import {
+  aggregateMeritIncentiveApr,
+  aggregateMerklOpportunityApr,
+  aggregateBrevisIncentiveApr,
+} from '@/lib/incentiveAggregation';
+
+/**
+ * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).
+ * Stored in `whitelistMerklCampaignIds` alongside real Merkl campaign ids.
+ */
+export const MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL = '__merklWhitelistNoCampaignId__' as const;
+
+/** Visible label next to Merkl whitelist-only opt-in (tooltip + forecast panel). */
+export const MERKL_WHITELIST_TOGGLE_LABEL = 'Include as WL user';
+
+/**
+ * Accessible name for the opt-in control: checked = include this campaign in totals as a WL participant.
+ */
+export const MERKL_WHITELIST_TOGGLE_ARIA =
+  'Include this Merkl campaign in incentive totals. Confirm you are a whitelist participant for this campaign.';
+
+/**
+ * Whether a Merkl breakdown should count toward incentive totals.
+ * Non-whitelist campaigns always count; whitelist-only counts only when the user enabled this campaignId,
+ * or the sentinel when there is no campaign id.
+ */
+export function isMerklWhitelistBreakdownIncluded(
+  breakdown: { whitelistOnly?: boolean; campaignId: string },
+  whitelistMerklCampaignIds: ReadonlySet<string> | undefined
+): boolean {
+  if (!breakdown.whitelistOnly) return true;
+  const id = String(breakdown.campaignId || '').trim();
+  if (!id) {
+    return Boolean(whitelistMerklCampaignIds?.has(MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL));
+  }
+  return Boolean(whitelistMerklCampaignIds?.has(id));
+}
+
+export interface IncentiveCalculationOptions {
+  /** Merkl campaign IDs the user opted into for whitelist-only APR */
+  whitelistMerklCampaignIds?: ReadonlySet<string>;
+}
+
+const sumNumberArray = (arr?: number[]): number => {
+  if (!arr || !Array.isArray(arr)) return 0;
+  return arr.reduce((sum, val) => {
+    return (!isNaN(val) && val >= 0) ? sum + val : sum;
+  }, 0);
+};
+
+const sumNumberArrayApy = (arr?: number[]): number => {
+  if (!arr || !Array.isArray(arr)) return 0;
+  return arr.reduce((sum, val) => {
+    return (!isNaN(val) && val >= 0) ? sum + convertAprToApy(val) : sum;
+  }, 0);
+};
+
+export const calculateTotalIncentiveApr = (
+  meritIncentives?: MeritIncentive[],
+  merklOpportunities?: MerklOpportunityGroup[],
+  brevisIncentives?: BrevisIncentive[],
+  protocolIncentives?: number[],
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
+): number => {
+  const meritApr = aggregateMeritIncentiveApr(meritIncentives);
+  const merklApr = aggregateMerklOpportunityApr(merklOpportunities, { tydroPointToUsdRate, whitelistMerklCampaignIds: options.whitelistMerklCampaignIds });
+  const protocolApr = sumNumberArray(protocolIncentives);
+  const brevisAprValue = aggregateBrevisIncentiveApr(brevisIncentives);
+  
+  return meritApr + merklApr + protocolApr + brevisAprValue;
+};
+
+export const calculateTotalIncentiveApy = (
+  meritIncentives?: MeritIncentive[],
+  merklOpportunities?: MerklOpportunityGroup[],
+  brevisIncentives?: BrevisIncentive[],
+  protocolIncentives?: number[],
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
+): number => {
+  const meritApy = aggregateMeritIncentiveApr(meritIncentives, { isApy: true });
+  const merklApy = aggregateMerklOpportunityApr(merklOpportunities, { isApy: true, tydroPointToUsdRate, whitelistMerklCampaignIds: options.whitelistMerklCampaignIds });
+  const protocolApy = sumNumberArrayApy(protocolIncentives);
+  const brevisApy = aggregateBrevisIncentiveApr(brevisIncentives, { isApy: true });
+  
+  return meritApy + merklApy + protocolApy + brevisApy;
+};
+
+// Calculate total Supply APR (native + incentive)
+export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefined, incentiveApr: number): number | null => {
+  if (nativeSupplyApr === null || nativeSupplyApr === undefined) return null;
+  if (isNaN(nativeSupplyApr) || isNaN(incentiveApr)) return null;
+  return nativeSupplyApr + incentiveApr;
+};
+
+// Calculate total Supply APY (native + incentive)
+export const calculateTotalSupplyApy = (nativeSupplyApy: number | null | undefined, incentiveApy: number): number | null => {
+  if (nativeSupplyApy === null || nativeSupplyApy === undefined) return null;
+  if (isNaN(nativeSupplyApy) || isNaN(incentiveApy)) return null;
+  return nativeSupplyApy + incentiveApy;
+};
+
+// Calculate total Borrow APR (native - incentive)
+export const calculateTotalBorrowApr = (nativeBorrowApr: number | null | undefined, incentiveApr: number): number | null => {
+  if (nativeBorrowApr === null || nativeBorrowApr === undefined) return null;
+  if (isNaN(nativeBorrowApr) || isNaN(incentiveApr)) return null;
+  return nativeBorrowApr - incentiveApr;
+};
+
+// Calculate total Borrow APY (native - incentive)
+export const calculateTotalBorrowApy = (nativeBorrowApy: number | null | undefined, incentiveApy: number): number | null => {
+  if (nativeBorrowApy === null || nativeBorrowApy === undefined) return null;
+  if (isNaN(nativeBorrowApy) || isNaN(incentiveApy)) return null;
+  return nativeBorrowApy - incentiveApy;
+};
+
+// Calculate spread (APY version)
+export const calculateSpreadApy = (totalSupplyApy: number | null, totalBorrowApy: number | null): number | null => {
+  if (totalSupplyApy === null || totalBorrowApy === null) return null;
+  return totalSupplyApy - totalBorrowApy;
+};
+
+// Calculate spread (APR version)
+export const calculateSpreadApr = (totalSupplyApr: number | null, totalBorrowApr: number | null): number | null => {
+  if (totalSupplyApr === null || totalBorrowApr === null) return null;
+  return totalSupplyApr - totalBorrowApr;
+};
+
+// Format USD price (e.g., 3942.52 → "$3,942.52", 0.9998 → "$1.00")
 export const formatUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   if (value >= 1000) {
@@ -49,6 +195,16 @@ export const formatUsd = (value: number | null | undefined): string => {
   return '$' + value.toFixed(2);
 };
 
+/** Daily fraction of principal from an annual rate expressed as percent (e.g. 5 for 5%). */
+export function annualPercentToDailyFraction(ratePercent: number, isApy: boolean): number {
+  if (!Number.isFinite(ratePercent)) return Number.NaN;
+  if (isApy) {
+    const r = ratePercent / 100;
+    return Math.pow(1 + r, 1 / 365) - 1;
+  }
+  return (ratePercent / 100) / 365;
+}
+
 /** USD with leading + / − (Unicode minus) for signed cashflows; null/NaN → em dash. */
 export function formatSignedUsd(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -56,13 +212,7 @@ export function formatSignedUsd(value: number | null | undefined): string {
   return `${sign}${formatUsd(Math.abs(value))}`;
 }
 
-/** Signed reserve-size USD with +/− prefix and K/M/B abbreviation; null/NaN → em dash. */
-export function formatSignedReserveSizeUsd(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
-  return `${sign}${formatReserveSizeUsd(Math.abs(value))}`;
-}
-
+// Format reserve size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M", -18807985.72 → "-$18.81M")
 export const formatReserveSizeUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   const absValue = Math.abs(value);
@@ -95,6 +245,10 @@ export const formatReserveSizeToken = (value: number | null | undefined): string
   return sign + absValue.toFixed(2);
 };
 
+/**
+ * Signed daily scenario cashflow: USD when `inputMode` is `usd`, token/day (USD ÷ price) when `token`.
+ * Matches `formatScenarioSize` semantics when token price is missing in token mode.
+ */
 export function formatSignedScenarioDailyCashflow(
   valueUsd: number | null | undefined,
   options: { inputMode?: 'usd' | 'token'; tokenPrice?: number | null } = {},
@@ -102,7 +256,7 @@ export function formatSignedScenarioDailyCashflow(
   const { inputMode = 'usd', tokenPrice } = options;
   if (valueUsd === null || valueUsd === undefined || Number.isNaN(valueUsd)) return '—';
   if (inputMode === 'usd') {
-    return formatSignedReserveSizeUsd(valueUsd);
+    return formatSignedUsd(valueUsd);
   }
   if (
     tokenPrice === null ||
@@ -157,5 +311,85 @@ export const formatScenarioSizeDelta = (
   return `${prefix}${formatScenarioSize(value, options)}`;
 };
 
+// Domain aliases that share the same USD-size formatting.
 export const formatTvl = formatReserveSizeUsd;
 export const formatSupplyUsd = formatReserveSizeUsd;
+
+/**
+ * Whether a reserve would show at least one protocol / Merit / Merkl / Brevis row in
+ * the incentive tooltip (same rules as `IncentiveTooltip` source aggregation).
+ */
+export function reserveHasIncentiveTooltipSources(
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  isApy: boolean,
+  tydroPointToUsdRate: number,
+): boolean {
+  const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+  if (protocolIncentives && protocolIncentives.length > 0) {
+    return true;
+  }
+
+  const meritIncentives = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  if (meritIncentives?.length) {
+    for (const merit of meritIncentives) {
+      if (!isCampaignActive(merit.startDate, merit.endDate)) continue;
+      const apr = merit.apr;
+      const selfApr = merit.selfApr || 0;
+      const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
+      const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
+      let totalValue = 0;
+      if (isApy) {
+        if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
+        if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
+      } else {
+        totalValue = baseAprPercent + selfAprPercent;
+      }
+      if (totalValue >= 0) return true;
+    }
+  }
+
+  const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
+  if (brevisIncentives?.length) {
+    for (const brevis of brevisIncentives) {
+      const resolved = getBrevisResolvedBreakdown(brevis);
+      if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, Date.now(), true)) continue;
+      const apr = resolved.campaignApr;
+      if (!isNaN(apr) && apr >= 0) return true;
+    }
+  }
+
+  const opportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+  if (opportunities?.length) {
+    for (const opportunity of opportunities) {
+      for (const breakdown of opportunity.breakdowns ?? []) {
+        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
+        const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+        if (!isNaN(apr) && apr >= 0) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * When to show the incentive badge + native/incentive sub-row in the reserves table / mobile cards.
+ * Uses the same headline total as the table (`rawIncentive`) but avoids hiding the row when the
+ * total is 0 while the tooltip still has sources (e.g. whitelist-only Merkl not yet opted in).
+ * Previously `rawIncentive < 0.01` hid the whole row and removed access to the tooltip.
+ */
+export function resolveVisibleIncentiveBadgeValue(
+  rawIncentive: number | null,
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  isApy: boolean,
+  tydroPointToUsdRate: number,
+): number | null {
+  if (rawIncentive === null || Number.isNaN(rawIncentive) || rawIncentive < 0) return null;
+  if (rawIncentive > 0) return rawIncentive;
+  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate)) {
+    return rawIncentive;
+  }
+  return null;
+}

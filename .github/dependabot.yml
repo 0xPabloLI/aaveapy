@@ -1,13 +1,19 @@
-# npm: 由 hardcode-sync CI 统一管理（每日 npm update address-book + sync），不需要 Dependabot 开 PR。
-# Security updates 仍可在 Repo → Settings → Code security 中单独启用。
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - automerge
+      - dependencies
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    groups:
-      codeql-action:
-        patterns:
-          - "github/codeql-action/*"
+    labels:
+      - automerge
+      - dependencies

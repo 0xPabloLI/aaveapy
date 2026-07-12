@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /**
- * Merges aave/interface reservePatches drift into local files:
- * - SYMBOL_MAP (in src/lib/tokenSymbolMap.ts): upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
- * - underlyingAssetMap (in src/ui-config/reservePatches.ts): append upstream entries missing locally (address / expression keys).
- * - address-book imports: auto-append missing AaveV3/V4 imports referenced by underlyingAssetMap entries.
+ * Merges aave/interface reservePatches drift into local `reservePatches.ts`:
+ * - SYMBOL_MAP: upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
+ * - underlyingAssetMap: append upstream entries missing locally (address / expression keys).
  */
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
@@ -15,13 +14,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
 const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
-const LOCAL_TOKEN_SYMBOL_MAP_PATH = path.join(ROOT, 'src/lib/tokenSymbolMap.ts');
 
 function normalizeExpressionKey(value) {
   return value.replace(/\s+/g, '');
 }
 
-export function findUnderlyingAssetMapBounds(content) {
+function findUnderlyingAssetMapBounds(content) {
   const marker = 'const underlyingAssetMap';
   const markerIndex = content.indexOf(marker);
   if (markerIndex < 0) {
@@ -190,51 +188,46 @@ function alignEntryIndent(entry) {
     .join('\n');
 }
 
-export function extractAddressBookReferences(content) {
-  const bounds = findUnderlyingAssetMapBounds(content);
-  const mapBody = content.slice(bounds.openIndex, bounds.closeIndex + 1);
-  const refs = new Set();
-  const refRegex = /\b(AaveV[34][A-Za-z0-9_]+)\b/g;
-  let match;
-  while ((match = refRegex.exec(mapBody)) !== null) {
-    refs.add(match[1]);
+/**
+ * Extract address-book namespace names (e.g. AaveV3EthereumHorizon) used as
+ * computed keys `[Namespace.ASSETS.XXX.UNDERLYING.toLowerCase()]` in the file,
+ * and inject missing names into the `@aave-dao/aave-address-book` import.
+ */
+function injectMissingAddressBookImports(content) {
+  // All namespace names referenced in computed keys
+  const usedNames = new Set();
+  const keyRe = /\[([A-Za-z0-9_]+)\.ASSETS\./g;
+  let m;
+  while ((m = keyRe.exec(content)) !== null) {
+    usedNames.add(m[1]);
   }
-  return refs;
-}
 
-export function parseCurrentAddressBookImports(content) {
-  const importMatch = content.match(
-    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/
-  );
-  if (!importMatch) return { names: new Set(), fullMatchStart: -1, fullMatchEnd: -1 };
-  const names = new Set(
-    importMatch[1]
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => item.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim())
-  );
-  return {
-    names,
-    fullMatchStart: importMatch.index,
-    fullMatchEnd: importMatch.index + importMatch[0].length,
-  };
-}
+  if (usedNames.size === 0) {
+    return { content, changed: false, addedNames: [] };
+  }
 
-export function syncAddressBookImports(content) {
-  const referenced = extractAddressBookReferences(content);
-  const { names: imported, fullMatchStart, fullMatchEnd } = parseCurrentAddressBookImports(content);
+  // Parse existing import (support both @aave-dao and @bgd-labs)
+  const importRe = /import\s*\{([\s\S]*?)\}\s*from\s*['"]@(aave-dao|bgd-labs)\/aave-address-book['"]/m;
+  const importMatch = content.match(importRe);
+  if (!importMatch) return { content, changed: false, addedNames: [] };
 
-  const missing = [...referenced].filter((r) => !imported.has(r)).sort();
+  const existingNames = importMatch[1]
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((n) => n.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim())
+    .filter(Boolean);
+
+  const missing = [...usedNames].filter((n) => !existingNames.includes(n));
   if (missing.length === 0) {
-    return { content, changed: false, addedImports: [] };
+    return { content, changed: false, addedNames: [] };
   }
 
-  const allNames = [...imported, ...missing].sort();
-  const newImportStatement = `import {\n${allNames.map((n) => `  ${n},`).join('\n')},\n} from '@aave-dao/aave-address-book';`;
-  const newContent =
-    content.slice(0, fullMatchStart) + newImportStatement + content.slice(fullMatchEnd);
-  return { content: newContent, changed: true, addedImports: missing };
+  // Rebuild import with new names inserted, always normalize to @aave-dao
+  const fullImport = [...existingNames, ...missing].sort().join(',\n  ');
+  const newImportStmt = `import {\n  ${fullImport},\n} from '@aave-dao/aave-address-book'`;
+  const next = content.slice(0, importMatch.index) + newImportStmt + content.slice(importMatch.index + importMatch[0].length);
+  return { content: next, changed: true, addedNames: missing };
 }
 
 function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
@@ -272,50 +265,43 @@ function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
 }
 
 async function main() {
-  const [localReserveContent, upstreamContent, localSymbolMapContent] = await Promise.all([
+  const [localContent, upstreamContent] = await Promise.all([
     readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
     fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
-    readFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, 'utf8'),
   ]);
 
-  let nextReserveContent = localReserveContent;
-  let nextSymbolMapContent = localSymbolMapContent;
+  let next = localContent;
   const notes = [];
 
-  const symbolMerge = mergeSymbolMapInContent(nextSymbolMapContent, upstreamContent);
+  const symbolMerge = mergeSymbolMapInContent(next, upstreamContent);
   if (symbolMerge.changed) {
-    nextSymbolMapContent = symbolMerge.content;
+    next = symbolMerge.content;
     notes.push('SYMBOL_MAP merged from upstream (local-only keys preserved)');
   }
 
-  const underlyingMerge = applyUnderlyingAssetMapMerge(nextReserveContent, upstreamContent);
+  const underlyingMerge = applyUnderlyingAssetMapMerge(next, upstreamContent);
   if (underlyingMerge.changed) {
-    nextReserveContent = underlyingMerge.content;
+    next = underlyingMerge.content;
     notes.push(`underlyingAssetMap: added ${underlyingMerge.addedCount} missing entr(y/ies)`);
   }
 
-  const importSync = syncAddressBookImports(nextReserveContent);
-  if (importSync.changed) {
-    nextReserveContent = importSync.content;
-    notes.push(`imports: added ${importSync.addedImports.join(', ')} to @aave-dao/aave-address-book import`);
+  // Auto-inject any new address-book namespace imports referenced in underlyingAssetMap
+  const importUpdate = injectMissingAddressBookImports(next);
+  if (importUpdate.changed) {
+    next = importUpdate.content;
+    notes.push(`address-book import: added ${importUpdate.addedNames.join(', ')}`);
   }
 
-  if (!symbolMerge.changed && !underlyingMerge.changed && !importSync.changed) {
+  if (!symbolMerge.changed && !underlyingMerge.changed && !importUpdate.changed) {
     console.log('reservePatches is already aligned (SYMBOL_MAP + underlyingAssetMap).');
     return;
   }
 
-  if (symbolMerge.changed) {
-    await writeFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, nextSymbolMapContent, 'utf8');
-    console.log('Updated src/lib/tokenSymbolMap.ts');
-  }
-  if (underlyingMerge.changed || importSync.changed) {
-    await writeFile(LOCAL_RESERVE_PATCHES_PATH, nextReserveContent, 'utf8');
-    console.log('Updated src/ui-config/reservePatches.ts');
-  }
+  await writeFile(LOCAL_RESERVE_PATCHES_PATH, next, 'utf8');
   for (const line of notes) {
     console.log(line);
   }
+  console.log('Updated src/ui-config/reservePatches.ts');
 }
 
 main().catch((error) => {
