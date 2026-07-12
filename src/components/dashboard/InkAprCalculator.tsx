@@ -45,7 +45,7 @@ const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'default', fdv: 1.0, position: 12, isDefault: true },
   { id: 'gate', fdv: 1.13, position: 26.7, exchange: 'Gate', chain: 'Gate Layer', token: 'GT', link: 'https://coinmarketcap.com/currencies/gatetoken/' },
   { id: 'okx', fdv: 2.1, position: 41.3, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://coinmarketcap.com/currencies/okb/' },
-  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://coinmarketcap.com/currencies/bitget-token-new/' },
+  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://coinmarketcap.com/currencies/bitget-token/' },
   { id: 'bybit', fdv: 5.0, position: 70.7, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://coinmarketcap.com/currencies/mantle/' },
   { id: 'cryptocom', fdv: 8.5, position: 85.3, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://coinmarketcap.com/currencies/cronos/' },
   { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://coinmarketcap.com/currencies/bnb/' },

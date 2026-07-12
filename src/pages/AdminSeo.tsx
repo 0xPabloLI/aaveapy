@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
-import { formatPercent, formatReserveSizeToken, formatUsd } from "@/lib/formatters";
 
 type RangePreset = "7d" | "28d" | "90d";
 
@@ -26,7 +25,7 @@ function presetRange(preset: RangePreset): { from: string; to: string } {
 }
 
 function fmtPct(n: number) {
-  return formatPercent(n * 100);
+  return `${(n * 100).toFixed(2)}%`;
 }
 
 function fmtPos(n: number | null) {
@@ -36,12 +35,12 @@ function fmtPos(n: number | null) {
 
 function fmtNum(n: number | null | undefined) {
   if (n == null) return "—";
-  return formatReserveSizeToken(n);
+  return n.toLocaleString();
 }
 
 function fmtUsd(n: number | null | undefined) {
   if (n == null) return "—";
-  return formatUsd(n);
+  return `$${n.toFixed(2)}`;
 }
 
 const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
@@ -115,7 +114,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
   return (
     <>
       <Helmet>
-        <title>SEO Dashboard · AaveAPY Admin</title>
+        <title>SEO Dashboard · Aave APY Admin</title>
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
 

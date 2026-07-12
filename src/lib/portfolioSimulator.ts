@@ -28,16 +28,11 @@ export interface PerReserveInput {
   inputMode: ScenarioInputMode;
   totalSupplyUsd?: number;
   totalBorrowUsd?: number;
-  /** Wallet-only supply position (excludes manual delta). undefined when no wallet position exists. */
-  walletSupplyUsd?: number;
-  /** Wallet-only borrow position (excludes manual delta). undefined when no wallet position exists. */
-  walletBorrowUsd?: number;
 }
 
 export interface PortfolioInputsResult {
   perReserveInputs: Map<string, PerReserveInput>;
   crossReservePositions: Map<string, ReservePositions> | undefined;
-  walletCrossReservePositions: Map<string, ReservePositions> | undefined;
   reserveSymbolById: Map<string, string> | undefined;
 }
 
@@ -70,8 +65,6 @@ interface EntryGroup {
   borrowUsd: number;
   supplyDeltaUsd: number;
   borrowDeltaUsd: number;
-  walletSupplyUsd: number | undefined;
-  walletBorrowUsd: number | undefined;
 }
 
 export function buildMetricsFromLane(
@@ -154,24 +147,16 @@ function buildGroupMapFromSlots(
       borrowUsd: 0,
       supplyDeltaUsd: 0,
       borrowDeltaUsd: 0,
-      walletSupplyUsd: undefined,
-      walletBorrowUsd: undefined,
     };
 
     if (side === 'supply') {
       existing.supplySlots.push(slot);
       existing.supplyUsd += effectiveAmountUsd;
       existing.supplyDeltaUsd += deltaUsd;
-      if (hasWalletPosition) {
-        existing.walletSupplyUsd = (existing.walletSupplyUsd ?? 0) + s.walletValue!;
-      }
     } else {
       existing.borrowSlots.push(slot);
       existing.borrowUsd += effectiveAmountUsd;
       existing.borrowDeltaUsd += deltaUsd;
-      if (hasWalletPosition) {
-        existing.walletBorrowUsd = (existing.walletBorrowUsd ?? 0) + s.walletValue!;
-      }
     }
     groupMap.set(key, existing);
   }
@@ -188,7 +173,6 @@ function computeResultsFromGroups(
   const results: PortfolioPositionResult[] = [];
 
   const crossReservePositions = new Map<string, ReservePositions>();
-  const walletCrossReservePositions = new Map<string, ReservePositions>();
   const reserveSymbolById = new Map<string, string>();
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
@@ -197,12 +181,6 @@ function computeResultsFromGroups(
       crossReservePositions.set(reserve.reserveId, {
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
-      });
-    }
-    if (group.walletSupplyUsd != null || group.walletBorrowUsd != null) {
-      walletCrossReservePositions.set(reserve.reserveId, {
-        supplyUsd: group.walletSupplyUsd ?? 0,
-        borrowUsd: group.walletBorrowUsd ?? 0,
       });
     }
     // Sets symbol for all reserves in groupMap (including those with 0 USD on both sides,
@@ -246,11 +224,8 @@ function computeResultsFromGroups(
         inputMode: 'usd',
         totalSupplyUsd: group.supplyUsd,
         totalBorrowUsd: group.borrowUsd,
-        walletSupplyUsd: group.walletSupplyUsd,
-        walletBorrowUsd: group.walletBorrowUsd,
         forecastStates,
         crossReservePositions,
-        walletCrossReservePositions: walletCrossReservePositions.size > 0 ? walletCrossReservePositions : undefined,
         reserveSymbolById,
         hubSupplied,
         hubBorrowed,
@@ -268,8 +243,7 @@ function computeResultsFromGroups(
       const borrowForecastUnavailable = countSideForecastUnavailable(simResult.borrow);
 
       for (const slot of group.supplySlots) {
-        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableSupplyRoomUsd;
         const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
@@ -284,8 +258,7 @@ function computeResultsFromGroups(
       }
 
       for (const slot of group.borrowSlots) {
-        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableBorrowRoomUsd;
         const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
@@ -300,8 +273,7 @@ function computeResultsFromGroups(
       }
     } else {
       for (const slot of group.supplySlots) {
-        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.supplyApy ?? 0;
         const incentiveArr = reserve.supplyIncentives ?? [];
@@ -312,8 +284,7 @@ function computeResultsFromGroups(
       }
 
       for (const slot of group.borrowSlots) {
-        const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
-        const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
@@ -384,14 +355,7 @@ export function buildPerReserveInputsFromEntries(
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
   const grouped = new Map<
     string,
-    {
-      supplyUsd: number;
-      borrowUsd: number;
-      supplyDeltaUsd: number;
-      borrowDeltaUsd: number;
-      walletSupplyUsd: number | undefined;
-      walletBorrowUsd: number | undefined;
-    }
+    { supplyUsd: number; borrowUsd: number; supplyDeltaUsd: number; borrowDeltaUsd: number }
   >();
 
   for (const entry of entries) {
@@ -423,21 +387,13 @@ export function buildPerReserveInputsFromEntries(
         borrowUsd: 0,
         supplyDeltaUsd: 0,
         borrowDeltaUsd: 0,
-        walletSupplyUsd: undefined,
-        walletBorrowUsd: undefined,
       };
       if (side === 'supply') {
         existing.supplyUsd += effectiveAmountUsd;
         existing.supplyDeltaUsd += deltaUsd;
-        if (hasWalletPosition) {
-          existing.walletSupplyUsd = (existing.walletSupplyUsd ?? 0) + s.walletValue!;
-        }
       } else {
         existing.borrowUsd += effectiveAmountUsd;
         existing.borrowDeltaUsd += deltaUsd;
-        if (hasWalletPosition) {
-          existing.walletBorrowUsd = (existing.walletBorrowUsd ?? 0) + s.walletValue!;
-        }
       }
       grouped.set(entry.reserveId, existing);
     }
@@ -445,7 +401,6 @@ export function buildPerReserveInputsFromEntries(
 
   const perReserveInputs = new Map<string, PerReserveInput>();
   const crossReservePositions = new Map<string, ReservePositions>();
-  const walletCrossReservePositions = new Map<string, ReservePositions>();
   const reserveSymbolById = new Map<string, string>();
 
   for (const [reserveId, group] of grouped) {
@@ -455,22 +410,12 @@ export function buildPerReserveInputsFromEntries(
       inputMode: 'usd',
       totalSupplyUsd: group.supplyUsd,
       totalBorrowUsd: group.borrowUsd,
-      walletSupplyUsd: group.walletSupplyUsd,
-      walletBorrowUsd: group.walletBorrowUsd,
     });
     if (group.supplyUsd > 0 || group.borrowUsd > 0) {
       crossReservePositions.set(reserveId, {
         supplyUsd: group.supplyUsd,
         borrowUsd: group.borrowUsd,
       });
-    }
-    if (group.walletSupplyUsd != null || group.walletBorrowUsd != null) {
-      walletCrossReservePositions.set(reserveId, {
-        supplyUsd: group.walletSupplyUsd ?? 0,
-        borrowUsd: group.walletBorrowUsd ?? 0,
-      });
-    }
-    if (group.supplyUsd > 0 || group.borrowUsd > 0) {
       const reserve = reserveMap.get(getReserveKey({ reserveId }));
       if (reserve?.tokenSymbol) {
         reserveSymbolById.set(reserveId, reserve.tokenSymbol);
@@ -481,7 +426,6 @@ export function buildPerReserveInputsFromEntries(
   return {
     perReserveInputs,
     crossReservePositions: crossReservePositions.size > 0 ? crossReservePositions : undefined,
-    walletCrossReservePositions: walletCrossReservePositions.size > 0 ? walletCrossReservePositions : undefined,
     reserveSymbolById: reserveSymbolById.size > 0 ? reserveSymbolById : undefined,
   };
 }

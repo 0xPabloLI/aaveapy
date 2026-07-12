@@ -9,49 +9,8 @@ import {
 } from '@aave-dao/aave-address-book';
 import tokenlist from '@aave-dao/aave-address-book/tokenlist';
 import { unPrefixSymbol } from '@/lib/tokenUtils';
-
-/**
- * Maps onchain symbols to different symbols.
- * This is useful when you want to explode symbols via _ to render multiple symbols
- * or when the symbol has a bridge prefix or suffix.
- */
-export const SYMBOL_MAP: { [key: string]: string } = {
-  BPTBALWETH: 'BPT_BAL_WETH',
-  BPTWBTCWETH: 'BPT_WBTC_WETH',
-  UNIAAVEWETH: 'UNI_AAVE_WETH',
-  UNIBATWETH: 'UNI_BAT_WETH',
-  UNICRVWETH: 'UNI_CRV_WETH',
-  UNIDAIUSDC: 'UNI_DAI_USDC',
-  UNIDAIWETH: 'UNI_DAI_WETH',
-  UNILINKWETH: 'UNI_LINK_WETH',
-  UNIMKRWETH: 'UNI_MKR_WETH',
-  UNIRENWETH: 'UNI_REN_WETH',
-  UNISNXWETH: 'UNI_SNX_WETH',
-  UNIUNIWETH: 'UNI_UNI_WETH',
-  UNIUSDCWETH: 'UNI_USDC_WETH',
-  UNIWBTCUSDC: 'UNI_WBTC_USDC',
-  UNIWBTCWETH: 'UNI_WBTC_WETH',
-  UNIYFIWETH: 'UNI_YFI_WETH',
-  fUSDT: 'USDT',
-  // avalanche
-  'DAI.e': 'DAI',
-  'LINK.e': 'LINK',
-  'WBTC.e': 'WBTC',
-  'WETH.e': 'WETH',
-  'AAVE.e': 'AAVE',
-  'USDT.e': 'USDT',
-  'USDC.e': 'USDC',
-  'BTC.b': 'BTC',
-  // polygon
-  miMATIC: 'MAI',
-  // metis
-  'm.USDC': 'USDC',
-  'm.USDT': 'USDT',
-  'm.DAI': 'DAI',
-  // celo
-  'USD₮': 'USDT',
-  'USD₮0': 'USDT0',
-};
+import { SYMBOL_MAP } from '@/lib/tokenSymbolMap';
+export { SYMBOL_MAP };
 
 /**
  * Maps (potentially altered via SYMBOL_MAP) symbols to a name.
@@ -302,11 +261,6 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'PT USDG May 2026',
       iconSymbol: 'ptusdg',
     },
-    '0xc96de26018a54d51c097160568752c4e3bd6c364': {
-      iconSymbol: 'FBTC',
-      name: 'Function Bitcoin',
-      symbol: 'FBTC',
-    },
     [AaveV3EthereumHorizon.ASSETS.USCC.UNDERLYING.toLowerCase()]: {
       symbol: 'USCC',
       name: 'Bitwise Crypto Carry Fund',
@@ -317,10 +271,20 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'Invesco Short Duration US Government Securities Fund',
       iconSymbol: 'ustb',
     },
+    '0xc96de26018a54d51c097160568752c4e3bd6c364': {
+      iconSymbol: 'FBTC',
+      name: 'Function Bitcoin',
+      symbol: 'FBTC',
+    },
     '0x59bc9fae5d62b19d4f8d07d758047acb9ee19d34': {
       symbol: 'PT Strata Senior USDe October 22nd 2026',
       name: 'PT Strata Senior USDe October 2026',
       iconSymbol: 'ptsrusde',
+    },
+    '0xf7fb83435f455bd970f2d9f943f4eece1941b3e9': {
+      symbol: 'PT sUSDe October 22nd 2026',
+      name: 'PT sUSDe October 2026',
+      iconSymbol: 'ptsusde',
     },
 };
 

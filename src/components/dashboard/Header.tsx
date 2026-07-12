@@ -19,10 +19,9 @@ import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   lastUpdated?: string;
-  chainCount?: number;
 }
 
-const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
+const Header = ({ lastUpdated }: HeaderProps) => {
   const [, setNowTick] = useState(() => Date.now());
   const { connectWatchAddress } = useWatchModeConnect();
 
@@ -40,11 +39,11 @@ const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
       {/* Left side: Logo + Title + Updated */}
       <div className="flex items-center gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
-        <img src="/aave_apy_logo.png" alt="AaveAPY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
+        <img src="/aave_apy_logo.png" alt="Aave APY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
             <h1 className="ds-title whitespace-nowrap">
-              <span className="gradient-text">AaveAPY</span>
+              <span className="gradient-text">Aave APY</span>
             </h1>
             {/* Desktop: Updated text with clock icon next to title */}
             {lastUpdated && (
@@ -58,7 +57,7 @@ const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
             Find the best lending & leverage opportunities
           </p>
           <p className="ds-text-11 md:ds-text-14 text-muted-foreground mt-[var(--ds-space-1)] hidden sm:block">
-            Find the best lending & leverage opportunities across {chainCount ?? 17} chains
+            Find the best lending & leverage opportunities across 17 chains
           </p>
         </div>
         

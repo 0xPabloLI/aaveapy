@@ -28,7 +28,7 @@ const ChainPage = () => {
     url: canonical,
     isPartOf: {
       '@type': 'WebSite',
-      name: 'AaveAPY',
+      name: 'AAVE APY',
       url: `${SITE_ORIGIN}/`,
     },
     breadcrumb: {
@@ -76,7 +76,7 @@ const ChainPage = () => {
               />
             ) : null}
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              AaveAPY on {chain.displayName}
+              Aave APY on {chain.displayName}
             </h1>
           </header>
 

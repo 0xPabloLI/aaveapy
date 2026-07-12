@@ -37,7 +37,7 @@ import {
   shouldUseFullPreloadMode,
 } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
-import { buildMarketsList, getChainCount } from '@/lib/marketsList';
+import { buildMarketsList } from '@/lib/marketsList';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -46,8 +46,6 @@ import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 import FaqSection from '@/components/dashboard/FaqSection';
-import { Helmet } from 'react-helmet-async';
-import { SITE_ORIGIN } from '@/i18n';
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
@@ -117,10 +115,6 @@ const Index = () => {
   const effectiveReservesData = data ?? cachedMarkets;
   const effectiveMarketsList = useMemo(
     () => buildMarketsList(effectiveReservesData),
-    [effectiveReservesData]
-  );
-  const chainCount = useMemo(
-    () => getChainCount(effectiveReservesData),
     [effectiveReservesData]
   );
 
@@ -497,9 +491,6 @@ const Index = () => {
   // If we have cached data, use it; otherwise show empty state
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <Helmet>
-        <link rel="canonical" href={`${SITE_ORIGIN}/`} />
-      </Helmet>
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
@@ -555,7 +546,6 @@ const Index = () => {
           <div className="mb-3 md:mb-5">
             <Header
               lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
-              chainCount={chainCount}
             />
           </div>
 

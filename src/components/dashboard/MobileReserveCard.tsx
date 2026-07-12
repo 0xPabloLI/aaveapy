@@ -722,7 +722,7 @@ const MobileReserveCard = memo(({
                         ? 'text-amber-600'
                         : 'text-foreground'
                     }`}>
-                      {formatPercent(displayUtilization)}
+                      {displayUtilization.toFixed(0)}%
                     </span>
                     <UtilizationIndicator
                       current={displayUtilization}

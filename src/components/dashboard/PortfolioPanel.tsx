@@ -27,14 +27,18 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 
 import { TokenIcon } from '@/components/primitives/TokenIcon';
+import PortfolioTokenRow from './PortfolioTokenRow';
+import PortfolioTokenRowPrototype from './PortfolioTokenRowPrototype';
 import { useSearchParams } from 'react-router-dom';
 import PopularTokenChip from './PopularTokenChip';
+import PortfolioSummaryCard from './PortfolioSummaryCard';
+import PortfolioResultsTable from './PortfolioResultsTable';
 import PortfolioUnifiedTable from './PortfolioUnifiedTable';
-import MobilePortfolioCard from './MobilePortfolioCard';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
-import { isRestrictedReserve } from '@/lib/reserveStatus';
+import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve } from '@/lib/reserveStatus';
 
+const RESERVE_UNAVAILABLE_NOTICE = { supply: 'Reserve unavailable' as const, borrow: 'Reserve unavailable' as const };
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 
@@ -199,6 +203,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const prototypeVariant = (searchParams.get('variant') as 'A' | 'B' | 'C') ?? null;
+  // Unified table is the production default. Use ?unified=0 to opt out (debug/legacy).
+  const unifiedMode = searchParams.get('unified') !== '0';
   const { isConnected: walletConnected } = useWallet();
   const { connectWatchAddress } = useWatchModeConnect();
   const [searchQuery, setSearchQuery] = useState('');
@@ -588,28 +594,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
           );
         })()}
 
-        {/* Unified table (desktop) / Card list (mobile) */}
-        {entries.length > 0 ? (
-          isMobile ? (
-            <MobilePortfolioCard
-              entries={sortedEntries}
-              actions={actions}
-              reserves={reserves}
-              positionResults={positionResults}
-              summary={summary}
-              capWarningsMap={capWarningsMap}
-            />
-          ) : (
-            <PortfolioUnifiedTable
-              entries={sortedEntries}
-              actions={actions}
-              reserves={reserves}
-              positionResults={positionResults}
-              summary={summary}
-              capWarningsMap={capWarningsMap}
-            />
-          )
-        ) : (
+        {/* Unified table mode (default — use ?unified=0 to opt out) */}
+        {unifiedMode && entries.length > 0 ? (
+          <PortfolioUnifiedTable
+            entries={sortedEntries}
+            actions={actions}
+            reserves={reserves}
+            positionResults={positionResults}
+            summary={summary}
+            capWarningsMap={capWarningsMap}
+          />
+        ) : entries.length === 0 ? (
           <div
             className={cn(
               'rounded-xl border border-dashed px-3 py-4 text-center',
@@ -636,6 +631,66 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 Search tokens
               </button>
             </div>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {(() => {
+              const visibleEntries = sortedEntries.filter(e => !e.hidden);
+              const hiddenEntries = sortedEntries.filter(e => e.hidden);
+              const getDisabledNotice = (entry: PortfolioReserveEntry) => {
+                const reserve = reserveIdToReserve.get(entry.reserveId);
+                return reserve ? {
+                  supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
+                  borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
+                } : RESERVE_UNAVAILABLE_NOTICE;
+              };
+              const RowComponent = prototypeVariant ? PortfolioTokenRowPrototype : PortfolioTokenRow;
+              const renderRows = (entries: PortfolioReserveEntry[]) => (
+                <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
+                  {entries.map((entry) => (
+                    <RowComponent
+                      key={entry.reserveId}
+                      entry={entry}
+                      actions={actions}
+                      reserveId={entry.reserveId}
+                      tokenPriceInUsd={reserveIdToReserve.get(entry.reserveId)?.tokenPrice}
+                      disabledNotice={getDisabledNotice(entry)}
+                      capWarnings={capWarningsMap?.get(entry.reserveId)}
+                      {...(prototypeVariant ? { variant: prototypeVariant } : {})}
+                    />
+                  ))}
+                </div>
+              );
+              return (
+                <>
+                  {visibleEntries.length > 0 && renderRows(visibleEntries)}
+                  {hiddenEntries.length > 0 && (
+                    <>
+                      <div data-hidden-divider className="flex items-center gap-2 ds-text-10 text-muted-foreground/60 pt-1">
+                        <div className="flex-1 h-px bg-border/20" />
+                        <span>{hiddenEntries.length} hidden</span>
+                        <div className="flex-1 h-px bg-border/20" />
+                      </div>
+                      {renderRows(hiddenEntries)}
+                    </>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Summary card (hidden in unified mode) */}
+        {!unifiedMode && summary && entries.length > 0 && (
+          <div className="mt-3">
+            <PortfolioSummaryCard summary={summary} />
+          </div>
+        )}
+
+        {/* Per-token results table (hidden in unified mode) */}
+        {!unifiedMode && positionResults && positionResults.length > 0 && (
+          <div className="mt-2.5">
+            <PortfolioResultsTable entries={entries} results={positionResults} />
           </div>
         )}
       </div>

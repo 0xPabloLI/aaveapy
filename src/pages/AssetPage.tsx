@@ -23,7 +23,7 @@ const AssetPage = () => {
     name: asset.title,
     description: asset.description,
     url: canonical,
-    isPartOf: { '@type': 'WebSite', name: 'AaveAPY', url: `${SITE_ORIGIN}/` },
+    isPartOf: { '@type': 'WebSite', name: 'AAVE APY', url: `${SITE_ORIGIN}/` },
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [

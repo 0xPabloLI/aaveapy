@@ -41,7 +41,7 @@ const jsonLd = {
   name: TITLE,
   description: DESCRIPTION,
   url: CANONICAL,
-  isPartOf: { '@type': 'WebSite', name: 'AaveAPY', url: `${SITE_ORIGIN}/` },
+  isPartOf: { '@type': 'WebSite', name: 'AAVE APY', url: `${SITE_ORIGIN}/` },
   breadcrumb: {
     '@type': 'BreadcrumbList',
     itemListElement: [

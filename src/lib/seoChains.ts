@@ -18,7 +18,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Ethereum',
     chainId: 1,
     chainNameMatchers: ['ethereum'],
-    title: 'Ethereum AaveAPY — Live Rates for ETH, USDC & WBTC',
+    title: 'Ethereum Aave APY — Live Rates for ETH, USDC & WBTC',
     description:
       'Real-time Aave lending and borrowing APYs for ETH, USDC, and all Ethereum V3 & V4 markets. All incentive programs included.',
     intro:
@@ -34,7 +34,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Arbitrum',
     chainId: 42161,
     chainNameMatchers: ['arbitrum'],
-    title: 'Arbitrum AaveAPY — Live Rates for ETH, USDC & ARB',
+    title: 'Arbitrum Aave APY — Live Rates for ETH, USDC & ARB',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, ARB, WBTC and all Arbitrum One reserves. All active incentives factored into effective yield.',
     intro:
@@ -50,7 +50,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Base',
     chainId: 8453,
     chainNameMatchers: ['base'],
-    title: 'Base AaveAPY — Live Rates for ETH, USDC & cbETH',
+    title: 'Base Aave APY — Live Rates for ETH, USDC & cbETH',
     description:
       'Track live Aave lending and borrowing APYs for ETH, USDC, cbETH and all Base reserves. All active incentives included in effective yield.',
     intro:
@@ -66,7 +66,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Optimism',
     chainId: 10,
     chainNameMatchers: ['optimism'],
-    title: 'Optimism AaveAPY — Live Rates for ETH, USDC & OP',
+    title: 'Optimism Aave APY — Live Rates for ETH, USDC & OP',
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, OP, WBTC and all Optimism reserves. All active incentives factored into effective yield.',
     intro:
@@ -82,7 +82,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Polygon',
     chainId: 137,
     chainNameMatchers: ['polygon'],
-    title: 'Polygon AaveAPY — Live Rates for POL, USDC & WBTC',
+    title: 'Polygon Aave APY — Live Rates for POL, USDC & WBTC',
     description:
       'Compare live Aave lending and borrowing APYs for POL, USDC, WBTC and all Polygon PoS reserves. All active incentives included.',
     intro:
@@ -98,7 +98,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Avalanche',
     chainId: 43114,
     chainNameMatchers: ['avalanche'],
-    title: 'Avalanche AaveAPY — Live Rates for AVAX, USDC & WBTC',
+    title: 'Avalanche Aave APY — Live Rates for AVAX, USDC & WBTC',
     description:
       'Live Aave lending and borrowing APYs for AVAX, USDC, WBTC and all C-Chain reserves. Incentive programs included.',
     intro:
@@ -114,7 +114,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Gnosis Chain',
     chainId: 100,
     chainNameMatchers: ['gnosis'],
-    title: 'Gnosis Chain AaveAPY — Live Rates for sDAI, GNO & USDC',
+    title: 'Gnosis Chain Aave APY — Live Rates for sDAI, GNO & USDC',
     description:
       'Compare live Aave lending and borrowing APYs on Gnosis Chain, covering sDAI, GNO, USDC and all reserves with incentives included.',
     intro:
@@ -130,7 +130,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Scroll',
     chainId: 534352,
     chainNameMatchers: ['scroll'],
-    title: 'Scroll AaveAPY — Live zkEVM Rates for ETH & USDC',
+    title: 'Scroll Aave APY — Live zkEVM Rates for ETH & USDC',
     description:
       'Live Aave lending and borrowing APYs on Scroll zkEVM. Covers ETH, USDC, WBTC and all reserves. All active incentives factored into effective yield.',
     intro:
@@ -146,7 +146,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Metis',
     chainId: 1088,
     chainNameMatchers: ['metis'],
-    title: 'Metis AaveAPY — Live Rates for ETH, USDC & METIS',
+    title: 'Metis Aave APY — Live Rates for ETH, USDC & METIS',
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, METIS and all Metis Andromeda reserves. Incentives factored into effective yield.',
     intro:
@@ -162,7 +162,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'BNB Chain',
     chainId: 56,
     chainNameMatchers: ['bnb', 'binance'],
-    title: 'BNB Chain AaveAPY — Live Rates for BNB, USDC & WBTC',
+    title: 'BNB Chain Aave APY — Live Rates for BNB, USDC & WBTC',
     description:
       'Live Aave lending and borrowing APYs for BNB, USDC, WBTC and all BNB Chain reserves. All active incentives factored into effective yield.',
     intro:
@@ -178,7 +178,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Linea',
     chainId: 59144,
     chainNameMatchers: ['linea'],
-    title: 'Linea AaveAPY — Consensys zkEVM Rates for ETH & USDC',
+    title: 'Linea Aave APY — Consensys zkEVM Rates for ETH & USDC',
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Linea zkEVM reserves. All active incentives factored into effective yield.',
     intro:
@@ -194,7 +194,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'zkSync Era',
     chainId: 324,
     chainNameMatchers: ['zksync'],
-    title: 'zkSync Era AaveAPY — ZK Rollup Rates for ETH & USDC',
+    title: 'zkSync Era Aave APY — ZK Rollup Rates for ETH & USDC',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all zkSync Era reserves. All active incentives factored into effective yield.',
     intro:
@@ -210,7 +210,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Celo',
     chainId: 42220,
     chainNameMatchers: ['celo'],
-    title: 'Celo AaveAPY — Live Rates for CELO, USDC & cUSD',
+    title: 'Celo Aave APY — Live Rates for CELO, USDC & cUSD',
     description:
       'Compare live Aave lending and borrowing APYs for CELO, USDC, cUSD and all Celo reserves. All active incentives factored into effective yield.',
     intro:
@@ -226,7 +226,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Sonic',
     chainId: 146,
     chainNameMatchers: ['sonic'],
-    title: 'Sonic AaveAPY — High-Speed Rates for ETH & USDC',
+    title: 'Sonic Aave APY — High-Speed Rates for ETH & USDC',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Sonic reserves. All active incentives factored into effective yield.',
     intro:
@@ -242,7 +242,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Soneium',
     chainId: 1868,
     chainNameMatchers: ['soneium'],
-    title: 'Soneium AaveAPY — Sony L2 Rates for ETH & USDC',
+    title: 'Soneium Aave APY — Sony L2 Rates for ETH & USDC',
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Soneium reserves. All active incentives factored into effective yield.',
     intro:
@@ -258,7 +258,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Ink',
     chainId: 57073,
     chainNameMatchers: ['ink'],
-    title: 'Ink AaveAPY — Live Rates with Ink Airdrop Rewards',
+    title: 'Ink Aave APY — Live Rates with Ink Airdrop Rewards',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Ink reserves. Ink airdrop rewards and active incentives factored into effective yield.',
     intro:
@@ -274,7 +274,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     displayName: 'Mantle',
     chainId: 5000,
     chainNameMatchers: ['mantle'],
-    title: 'Mantle AaveAPY — Live Rates for mETH, USDC & ETH',
+    title: 'Mantle Aave APY — Live Rates for mETH, USDC & ETH',
     description:
       'Compare live Aave lending and borrowing APYs for mETH, USDC, ETH and all Mantle reserves. mETH staking yields and incentives included in effective yield.',
     intro:

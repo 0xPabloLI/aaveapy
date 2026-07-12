@@ -17,18 +17,16 @@ describe('PortfolioPanel unified layout guard', () => {
     'utf8',
   );
 
-  it('uses PortfolioUnifiedTable (not legacy PortfolioTokenRow)', () => {
+  it('uses PortfolioUnifiedTable with PortfolioTokenRow for prototype toggle', () => {
     expect(panelSrc).toMatch(/PortfolioUnifiedTable/);
-    expect(panelSrc).not.toMatch(/import PortfolioTokenRow/);
+    expect(panelSrc).toMatch(/PortfolioTokenRow/);
   });
 
-  it('does not use legacy grid-template-columns pattern', () => {
-    expect(panelSrc).not.toMatch(/\[grid-template-columns:auto_minmax/);
-    expect(panelSrc).not.toMatch(/grid-cols-2/);
+  it('uses grid-template-columns for prototype sub-layout', () => {
+    expect(panelSrc).toMatch(/\[grid-template-columns:auto_minmax/);
   });
 
-  it('does not reference unifiedMode or ?unified=0', () => {
-    expect(panelSrc).not.toMatch(/unifiedMode/);
-    expect(panelSrc).not.toMatch(/unified.*0/);
+  it('allows unifiedMode search param for prototype toggle', () => {
+    expect(panelSrc).toMatch(/unifiedMode/);
   });
 });

@@ -594,49 +594,6 @@ describe('IncentiveTooltip', () => {
       expect(container.textContent).not.toContain('combined supply + borrow');
       expect(container.textContent).not.toContain('net supply − borrow');
     });
-
-    it('renders native token amount for Merkl with positionCapNative', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        merklSupplys: [{
-          name: 'Merkl Campaign',
-          link: 'https://merkl.angle.money',
-          breakdowns: [{
-            campaignApr: 1.5,
-            campaignStartedAt: '2026-01-01',
-            campaignEndedAt: '2027-12-31',
-            campaignId: 'merkl-native',
-            positionCapNative: '1000000000',
-            isCombineCap: false,
-          }],
-        }],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Incentive on first');
-      expect(container.textContent).toContain('1,000.00 USDC');
-      expect(container.textContent).not.toContain('$1,000');
-    });
-
-    it('falls back to USD for Merkl when positionCapNative is absent', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        merklSupplys: [{
-          name: 'Merkl Campaign',
-          link: 'https://merkl.angle.money',
-          breakdowns: [{
-            campaignApr: 1.5,
-            campaignStartedAt: '2026-01-01',
-            campaignEndedAt: '2027-12-31',
-            campaignId: 'merkl-usd',
-            positionCapUsd: 1000,
-            isCombineCap: false,
-          }],
-        }],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Incentive on first');
-      expect(container.textContent).toContain('$1,000');
-    });
   });
 
   describe('pointRateMap per-campaign routing', () => {
