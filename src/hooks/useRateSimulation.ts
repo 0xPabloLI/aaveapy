@@ -295,6 +295,8 @@ export const useSharedRateSimulations = ({
       // always receives an explicit total position (or undefined when no input).
       const effectiveTotalSupplyUsd = perReserve?.totalSupplyUsd;
       const effectiveTotalBorrowUsd = perReserve?.totalBorrowUsd;
+      const effectiveWalletSupplyUsd = perReserve?.walletSupplyUsd;
+      const effectiveWalletBorrowUsd = perReserve?.walletBorrowUsd;
 
       acc[reserveId] = {
         ...buildRateSimulationResult({
@@ -315,6 +317,8 @@ export const useSharedRateSimulations = ({
           hubBorrowed,
           totalSupplyUsd: effectiveTotalSupplyUsd,
           totalBorrowUsd: effectiveTotalBorrowUsd,
+          walletSupplyUsd: effectiveWalletSupplyUsd,
+          walletBorrowUsd: effectiveWalletBorrowUsd,
           pointRateMap,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,

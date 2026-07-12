@@ -28,6 +28,10 @@ export interface PerReserveInput {
   inputMode: ScenarioInputMode;
   totalSupplyUsd?: number;
   totalBorrowUsd?: number;
+  /** Wallet-only supply position (excludes manual delta). undefined when no wallet position exists. */
+  walletSupplyUsd?: number;
+  /** Wallet-only borrow position (excludes manual delta). undefined when no wallet position exists. */
+  walletBorrowUsd?: number;
 }
 
 export interface PortfolioInputsResult {
@@ -65,6 +69,8 @@ interface EntryGroup {
   borrowUsd: number;
   supplyDeltaUsd: number;
   borrowDeltaUsd: number;
+  walletSupplyUsd: number | undefined;
+  walletBorrowUsd: number | undefined;
 }
 
 export function buildMetricsFromLane(
@@ -147,16 +153,24 @@ function buildGroupMapFromSlots(
       borrowUsd: 0,
       supplyDeltaUsd: 0,
       borrowDeltaUsd: 0,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
     };
 
     if (side === 'supply') {
       existing.supplySlots.push(slot);
       existing.supplyUsd += effectiveAmountUsd;
       existing.supplyDeltaUsd += deltaUsd;
+      if (hasWalletPosition) {
+        existing.walletSupplyUsd = (existing.walletSupplyUsd ?? 0) + s.walletValue!;
+      }
     } else {
       existing.borrowSlots.push(slot);
       existing.borrowUsd += effectiveAmountUsd;
       existing.borrowDeltaUsd += deltaUsd;
+      if (hasWalletPosition) {
+        existing.walletBorrowUsd = (existing.walletBorrowUsd ?? 0) + s.walletValue!;
+      }
     }
     groupMap.set(key, existing);
   }
@@ -224,6 +238,8 @@ function computeResultsFromGroups(
         inputMode: 'usd',
         totalSupplyUsd: group.supplyUsd,
         totalBorrowUsd: group.borrowUsd,
+        walletSupplyUsd: group.walletSupplyUsd,
+        walletBorrowUsd: group.walletBorrowUsd,
         forecastStates,
         crossReservePositions,
         reserveSymbolById,
@@ -359,7 +375,14 @@ export function buildPerReserveInputsFromEntries(
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
   const grouped = new Map<
     string,
-    { supplyUsd: number; borrowUsd: number; supplyDeltaUsd: number; borrowDeltaUsd: number }
+    {
+      supplyUsd: number;
+      borrowUsd: number;
+      supplyDeltaUsd: number;
+      borrowDeltaUsd: number;
+      walletSupplyUsd: number | undefined;
+      walletBorrowUsd: number | undefined;
+    }
   >();
 
   for (const entry of entries) {
@@ -391,13 +414,21 @@ export function buildPerReserveInputsFromEntries(
         borrowUsd: 0,
         supplyDeltaUsd: 0,
         borrowDeltaUsd: 0,
+        walletSupplyUsd: undefined,
+        walletBorrowUsd: undefined,
       };
       if (side === 'supply') {
         existing.supplyUsd += effectiveAmountUsd;
         existing.supplyDeltaUsd += deltaUsd;
+        if (hasWalletPosition) {
+          existing.walletSupplyUsd = (existing.walletSupplyUsd ?? 0) + s.walletValue!;
+        }
       } else {
         existing.borrowUsd += effectiveAmountUsd;
         existing.borrowDeltaUsd += deltaUsd;
+        if (hasWalletPosition) {
+          existing.walletBorrowUsd = (existing.walletBorrowUsd ?? 0) + s.walletValue!;
+        }
       }
       grouped.set(entry.reserveId, existing);
     }
@@ -414,6 +445,8 @@ export function buildPerReserveInputsFromEntries(
       inputMode: 'usd',
       totalSupplyUsd: group.supplyUsd,
       totalBorrowUsd: group.borrowUsd,
+      walletSupplyUsd: group.walletSupplyUsd,
+      walletBorrowUsd: group.walletBorrowUsd,
     });
     if (group.supplyUsd > 0 || group.borrowUsd > 0) {
       crossReservePositions.set(reserveId, {

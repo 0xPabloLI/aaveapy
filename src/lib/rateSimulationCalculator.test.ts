@@ -931,21 +931,10 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     expect(result.supply.afterIncentive).not.toBeNull();
   });
 
-  it('derives wallet correctly when both totalSupplyUsd and supplyInputUsd are present', () => {
+  it('uses explicit walletSupplyUsd for position cap dilution', () => {
     // totalSupplyUsd = wallet(1500) + delta(500) = 2000
-    // walletSupplyUsd should be derived as 2000 - 500 = 1500
+    // walletSupplyUsd = 1500 > cap = 1000 → currentIncentive is diluted
     const result = buildRateSimulationResult({
-      reserve: MERIT_POSITION_CAP_RESERVE,
-      reserveRateInput: VALID_RATE_INPUT,
-      ...BASE_PARAMS,
-      supplyInput: '500',
-      totalSupplyUsd: 2000,
-      // No walletSupplyUsd passed explicitly
-    });
-
-    expect(result.supply.hasInput).toBe(true);
-    // Wallet derivation should match explicit walletSupplyUsd=1500 result
-    const withExplicitWallet = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
@@ -954,7 +943,10 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
       walletSupplyUsd: 1500,
     });
 
-    expect(result.supply.currentIncentive).toBeCloseTo(withExplicitWallet.supply.currentIncentive, 6);
+    expect(result.supply.hasInput).toBe(true);
+    // Wallet = 1500 > cap = 1000 → dilution = 1000/1500 ≈ 0.667
+    // self-cap current = 8 * 0.667 ≈ 5.33, total current = 10 + 5.33 = 15.33
+    expect(result.supply.currentIncentive).toBeCloseTo(15.333333, 1);
   });
 });
 
@@ -1680,6 +1672,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       meritMerklNetPosition: true,
       totalSupplyUsd: 1042,
       totalBorrowUsd: 1,
+      walletSupplyUsd: 1042,
       crossReservePositions,
     });
 
@@ -1736,6 +1729,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       meritMerklNetPosition: true,
       totalSupplyUsd: 1042,
       totalBorrowUsd: 1,
+      walletSupplyUsd: 1042,
       crossReservePositions,
     });
 
@@ -1764,6 +1758,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       meritMerklNetPosition: true,
       totalSupplyUsd: 1042,
       totalBorrowUsd: 1,
+      walletSupplyUsd: 1042,
       crossReservePositions,
     });
 
@@ -1794,6 +1789,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       meritMerklNetPosition: true,
       totalSupplyUsd: 1042,
       totalBorrowUsd: 1,
+      walletSupplyUsd: 1042,
     });
 
     expect(withConstraint.supply.currentIncentive).toBeLessThan(withoutConstraint.supply.currentIncentive);
@@ -1862,6 +1858,8 @@ describe('AAV-1102: Merit per-campaign current uses walletEligibilityRatio', () 
       meritMerklNetPosition: true,
       totalSupplyUsd: 1000,
       totalBorrowUsd: 400,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 400,
     });
 
     const meritCampaigns = result.supply.sources.merit?.campaigns ?? [];
@@ -1886,6 +1884,8 @@ describe('AAV-1102: Merit per-campaign current uses walletEligibilityRatio', () 
       meritMerklNetPosition: true,
       totalSupplyUsd: 1000,
       totalBorrowUsd: 400,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 400,
     });
 
     const meritCampaigns = result.supply.sources.merit?.campaigns ?? [];
@@ -2004,6 +2004,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       borrowInput: '0',
       forecastStates: {},
       totalSupplyUsd: 10000,
+      walletSupplyUsd: 10000,
     });
 
     const brevisCampaigns = result.supply.sources.brevis?.campaigns ?? [];
@@ -2028,6 +2029,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       borrowInput: '0',
       forecastStates: {},
       totalSupplyUsd: 3000,
+      walletSupplyUsd: 3000,
     });
 
     const brevisCampaigns = result.supply.sources.brevis?.campaigns ?? [];
@@ -2049,6 +2051,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       borrowInput: '0',
       forecastStates: {},
       totalSupplyUsd: 10000,
+      walletSupplyUsd: 10000,
     });
 
     const brevisCampaigns = result.supply.sources.brevis?.campaigns ?? [];
@@ -2098,6 +2101,8 @@ describe('AAV-1102: aggregate sumCurrent matches buildIncentiveCurrent for all s
       meritMerklNetPosition: true,
       totalSupplyUsd: 2000,
       totalBorrowUsd: 500,
+      walletSupplyUsd: 2000,
+      walletBorrowUsd: 500,
     });
 
     const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
@@ -2143,6 +2148,7 @@ describe('AAV-1107: aggregate currentIncentive matches per-source sum with Merkl
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000,
       totalBorrowUsd: 0,
+      walletSupplyUsd: 5000,
     });
 
     const merklCurrent = result.supply.sources.merkl?.current ?? 0;
@@ -2172,6 +2178,7 @@ describe('AAV-1107: aggregate currentIncentive matches per-source sum with Merkl
       meritMerklNetPosition: true,
       totalSupplyUsd: 500,
       totalBorrowUsd: 0,
+      walletSupplyUsd: 500,
     });
 
     const merklCurrent = result.supply.sources.merkl?.current ?? 0;
@@ -2228,6 +2235,7 @@ describe('AAV-1112: currentIncentive derived from per-source sum (no independent
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000, // exceeds Merkl cap → dilution
       totalBorrowUsd: 0,
+      walletSupplyUsd: 5000,
     });
 
     const p = result.supply.sources.protocol?.current ?? 0;
@@ -2266,6 +2274,7 @@ describe('AAV-1112: currentIncentive derived from per-source sum (no independent
       meritMerklNetPosition: true,
       totalBorrowUsd: 5000,
       totalSupplyUsd: 0,
+      walletBorrowUsd: 5000,
     });
 
     const p = result.borrow.sources.protocol?.current ?? 0;
@@ -2320,6 +2329,7 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000, // exceeds Merkl cap → dilution
       totalBorrowUsd: 0,
+      walletSupplyUsd: 4500, // wallet = 5000 - 500 delta
     });
 
     expect(result.supply.afterIncentive).not.toBeNull();
@@ -2346,6 +2356,7 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000,
       totalBorrowUsd: 0,
+      walletSupplyUsd: 4500,
     });
     const rWithBorrow = buildRateSimulationResult({
       reserve: ALL_SOURCES_RESERVE,
@@ -2360,6 +2371,8 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000,
       totalBorrowUsd: 2000,
+      walletSupplyUsd: 4500,
+      walletBorrowUsd: 2000,
     });
 
     expect(rNoBorrow.supply.afterIncentive).not.toBeNull();
@@ -2382,6 +2395,7 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
       meritMerklNetPosition: true,
       totalSupplyUsd: 5000,
       totalBorrowUsd: 0,
+      walletSupplyUsd: 5000,
     });
 
     expect(result.supply.afterIncentive).toBeNull();

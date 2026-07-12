@@ -1144,15 +1144,10 @@ export function buildRateSimulationResult({
   // user's simulation input. A wallet position above the cap should show diluted
   // incentive even when the user hasn't entered any delta.
   //
-  // AAV-1120: Must use RAW (uncapped) input for wallet derivation.
-  // totalBorrowUsd = wallet + rawDelta, so wallet = total - rawDelta.
-  // Using capped delta gives wallet = total - cappedDelta → wallet too large.
-  const walletSupplyUsd = explicitWalletSupplyUsd ?? (totalSupplyUsd != null
-    ? totalSupplyUsd - rawSupplyInputUsd
-    : undefined);
-  const walletBorrowUsd = explicitWalletBorrowUsd ?? (totalBorrowUsd != null
-    ? totalBorrowUsd - rawBorrowInputUsd
-    : undefined);
+  // Wallet positions are passed explicitly by the caller (from PerReserveInput).
+  // No reverse derivation — see AAV-1140 / docs/specs/wallet-position-explicit-passing.md.
+  const walletSupplyUsd = explicitWalletSupplyUsd;
+  const walletBorrowUsd = explicitWalletBorrowUsd;
 
   // AAV-1060: Eligibility ratio and merklGroupMultiplier must be computed before
   // buildIncentiveCurrent so that aggregate current matches per-source current.
