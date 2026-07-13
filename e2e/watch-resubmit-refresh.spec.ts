@@ -48,9 +48,6 @@ function extractOperationName(body: unknown): string | null {
 }
 
 test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', () => {
-  test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Desktop-only for now');
-  });
 
   test('re-submitting the same watch address bumps UserSupplies/Borrows requests', async ({
     page,

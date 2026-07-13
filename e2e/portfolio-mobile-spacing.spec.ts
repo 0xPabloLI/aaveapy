@@ -9,11 +9,12 @@ import { expect, test } from '@playwright/test';
  * vertical card layout — see MobilePortfolioCard.tsx.
  */
 test.describe('Portfolio input — mobile spacing', () => {
-  test.beforeEach(async ({}, testInfo) => {
-    test.skip(!testInfo.project.name.includes('mobile'), 'Mobile-only check');
-  });
+  test.describe('mobile', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+    });
 
-  test('token card renders with compact input area', async ({ page }, testInfo) => {
+    test('token card renders with compact input area', async ({ page }, testInfo) => {
     await page.goto('/');
 
     await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
@@ -45,6 +46,7 @@ test.describe('Portfolio input — mobile spacing', () => {
 
     await supplyInput.screenshot({
       path: testInfo.outputPath('portfolio-card-mobile.png'),
+    });
     });
   });
 });

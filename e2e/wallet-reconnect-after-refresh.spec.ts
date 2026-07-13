@@ -23,10 +23,6 @@ const WAGMI_STORE_KEY = 'wagmi.store';
 const WAGMI_WATCH_KEY = 'wagmi.watchAddress';
 
 test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
-  test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Desktop-only for now');
-  });
-
   test('watch-mode reconnects correctly after page refresh', async ({ page }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
 

@@ -12,10 +12,6 @@ import { expect, test } from '@playwright/test';
  * "0." or "1,000" with the dot swallowed).
  */
 test.describe('Portfolio input — decimal point entry', () => {
-  test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Desktop-only check');
-  });
-
   async function addReserveAndFocusSupplyInput(page: import('@playwright/test').Page) {
     await page.goto('/');
 
