@@ -117,7 +117,8 @@ describe('buildPerReserveInputsFromEntries', () => {
     const result = buildPerReserveInputsFromEntries([], [makeRateCalcReserve()]);
     expect(result.perReserveInputs.size).toBe(0);
     expect(result.crossReservePositions).toBeUndefined();
-    expect(result.reserveSymbolById).toBeUndefined();
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get('r-usdc-v3')).toBe('USDC');
   });
 
   it('skips entries with zero or invalid amount', () => {
@@ -390,6 +391,22 @@ describe('buildPerReserveInputsFromEntries', () => {
     expect(input.walletBorrowUsd).toBe(500);
     expect(result.crossReservePositions).toBeDefined();
     expect(result.crossReservePositions!.get(reserveId)).toEqual({ supplyUsd: 0, borrowUsd: 800 });
+  });
+
+  it('reserveSymbolById includes symbols for all reserves, not just those with positions', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const reserves = [
+      makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
+      makeRateCalcReserve({ reserveId: 'r-gho', tokenSymbol: 'GHO', tokenPrice: 1 }),
+      makeRateCalcReserve({ reserveId: 'r-usde', tokenSymbol: 'USDe', tokenPrice: 1 }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
+    expect(result.reserveSymbolById).toBeDefined();
+    expect(result.reserveSymbolById!.get('r-usdc')).toBe('USDC');
+    expect(result.reserveSymbolById!.get('r-gho')).toBe('GHO');
+    expect(result.reserveSymbolById!.get('r-usde')).toBe('USDe');
   });
 });
 

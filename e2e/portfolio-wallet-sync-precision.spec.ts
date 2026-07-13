@@ -35,7 +35,6 @@ function significantDigits(raw: string): number {
 test.describe('Portfolio — Wallet Sync precision', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
-    test.skip(testInfo.project.name.includes('mobile'), 'Desktop-only check');
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {

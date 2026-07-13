@@ -24,7 +24,7 @@ for (const bp of BREAKPOINTS) {
     ).toBeVisible();
 
     // Single mode header (scenario controls cluster with toggle).
-    const singleToggle = page.getByText('Portfolio', { exact: true }).first();
+    const singleToggle = page.getByTestId('portfolio-mode-toggle');
     await expect(singleToggle).toBeVisible();
     const singleHeader = singleToggle.locator('xpath=ancestor::*[2]');
     await expect(singleHeader).toHaveScreenshot(
@@ -32,11 +32,8 @@ for (const bp of BREAKPOINTS) {
       { maxDiffPixelRatio: 0.01 },
     );
 
-    // Switch to portfolio mode, capture portfolio-panel header.
     await singleToggle.click();
-    const portfolioToggle = page
-      .getByText('Portfolio', { exact: true })
-      .first();
+    const portfolioToggle = page.getByTestId('portfolio-mode-toggle');
     await expect(portfolioToggle).toBeVisible();
     const portfolioHeader = portfolioToggle.locator('xpath=ancestor::*[3]');
     await expect(portfolioHeader).toHaveScreenshot(
