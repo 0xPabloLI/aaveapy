@@ -12,3 +12,14 @@ updates:
       codeql-action:
         patterns:
           - "github/codeql-action/*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 5
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"

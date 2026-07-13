@@ -14,3 +14,9 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **openapi-check 和 openapi-sync 并行导致死循环**：check 先 fail，sync 后 push 但被 reject（因为新 commit 已推入），下次 CI 仍用旧 spec → check 又 fail。修复 rebase 后 push 成功，循环打破。
 - **GitHub Actions `run: |` 块默认 `set -e`**：`git pull --rebase` 失败会停止执行，不会走到 `git push`，所以 rebase 冲突时不会 force push，安全性有保证。
 - **`git pull --rebase` 前必须 stash unstaged changes**：npm scripts（如 `openapi:fetch` 触发的 `generate-icon-manifests + vitest`）会在工作目录产生未追踪文件，导致 rebase 失败。修复：`git stash --include-untracked` → `git pull --rebase` → `git stash pop || true`。
+
+## Branch sync 状态是时间快照，不是绝对事实
+- **报告 `ahead/behind` 前必须 `git fetch origin`**：`origin/*` 引用只是上次 fetch 时的快照，不代表远端当前状态。多人并行 + Dependabot + 自动化 sync（hardcode-sync、openapi-sync）的项目中，远端可能在几分钟内就有大量新 commit。
+- **本地分支也可能被其他进程修改**：IDE auto-fetch、git hook、其他 session 的 push/pull 都可能移动本地分支指针。`git branch -vv` 显示的 ahead/behind 只反映上次 fetch 时的对比结果，不是实时状态。
+- **结论应带限定语**：不要说"本地 ahead 4, behind 70"，而应说"截至本次 fetch，本地 ahead 4, behind 70"。状态随时可能变，绝对判断容易误导。
+- **诊断 sync 问题时用 `git merge-base` 交叉验证**：`git log --oneline local..origin` 和 `git log --oneline origin..local` 配合 `git merge-base local origin` 才能看清真实分歧点，单看 ahead/behind 数字不够。
