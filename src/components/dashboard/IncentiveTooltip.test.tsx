@@ -1045,7 +1045,7 @@ describe('IncentiveTooltip', () => {
       const merklHeaderApr = Array.from(headerAprs).find(el => el.textContent?.includes('15'));
       expect(merklHeaderApr?.querySelector('img')).not.toBeNull();
       const headerRows = baseElement.querySelectorAll('[data-testid="source-header-apr"]');
-      const merklHeader = Array.from(headerRows).find(el => el.innerHTML.includes('example.com'));
+      const merklHeader = Array.from(headerRows).find(el => el.querySelector('img[src*="example.com"]'));
       expect(merklHeader).toBeDefined();
     });
 
