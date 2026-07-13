@@ -142,10 +142,13 @@
     "zod": "^4.3.6"
   },
   "overrides": {
+    "@types/react": "$@types/react",
+    "@types/react-dom": "$@types/react-dom",
+    "js-yaml": "4.3.0",
     "react": "$react",
     "react-dom": "$react-dom",
-    "@types/react": "$@types/react",
-    "@types/react-dom": "$@types/react-dom"
+    "shell-quote": "1.9.0",
+    "ws": "8.21.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
