@@ -74,7 +74,7 @@ export function MetricValue({
     && Math.abs(metric.current - metric.after) >= 0.005;
 
   if (!hasChange) {
-    return <>{formatFn(afterValue)}</>;
+    return <span data-current={metric?.current?.toFixed(4)} data-after={afterValue.toFixed(4)}>{formatFn(afterValue)}</span>;
   }
 
   const delta = metric!.delta ?? (metric!.after! - metric!.current!);
@@ -84,7 +84,7 @@ export function MetricValue({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="underline decoration-dotted underline-offset-2 cursor-auto">
+        <span className="underline decoration-dotted underline-offset-2 cursor-auto" data-current={metric!.current!.toFixed(4)} data-after={metric!.after!.toFixed(4)}>
           {formatFn(afterValue)}
         </span>
       </TooltipTrigger>

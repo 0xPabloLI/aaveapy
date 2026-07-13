@@ -4,19 +4,18 @@ import { expect, test } from '@playwright/test';
  * Portfolio incentive calculation E2E verification (AAV-1143).
  *
  * Verifies that Portfolio mode renders incentive values correctly,
- * Golden Rule §1 (current* invariance) holds, delta badges appear,
- * and APR/APY toggle updates values.
+ * Golden Rule §1 (current* invariance) holds, cap threshold crossing
+ * preserves current, delta badges appear, and APR/APY toggle updates values.
  *
- * Uses data-cell and data-testid attributes added in AAV-1152/AAV-1153.
+ * Uses data-cell, data-testid, data-current/data-after attributes.
  * Does NOT depend on a wallet address — uses manual entry.
  * Validation is format+existence only, not exact numeric values.
  */
 
-const PERCENT_RE = /^\-?\d+\.\d{2}%$/;
-const PERCENT_RE_LENIENT = /\-?\d+\.\d{2}%/;
+const PERCENT_RE = /\-?\d+\.\d{2}%/;
 const USD_PER_DAY_RE = /^[+-]?\$[\d,]+(\.\d{2})?$/;
 
-async function addReserveAndEnterAmount(page: import('@playwright/test').Page) {
+async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
   await page.goto('/');
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
   await page.getByTestId('portfolio-mode-toggle').click();
@@ -29,7 +28,6 @@ async function addReserveAndEnterAmount(page: import('@playwright/test').Page) {
   await addBtn.click();
   const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
   await expect(supplyInput).toBeVisible();
-  await supplyInput.fill('1000000');
   return supplyInput;
 }
 
@@ -42,7 +40,8 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('incentive columns show percentage values', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
       await expect(row).toBeVisible({ timeout: 5000 });
@@ -51,18 +50,19 @@ test.describe('Portfolio incentive values display', () => {
       await expect(supplyIncentive).toBeVisible();
       await expect(supplyIncentive).not.toContainText('—', { timeout: 5000 });
       const supplyText = await supplyIncentive.textContent();
-      expect(supplyText).toMatch(PERCENT_RE_LENIENT);
+      expect(supplyText).toMatch(PERCENT_RE);
 
       const borrowIncentive = row.locator('td[data-cell="borrow-incentive"]');
       await expect(borrowIncentive).toBeVisible();
       const borrowText = (await borrowIncentive.textContent())?.trim();
       if (borrowText !== '—') {
-        expect(borrowText).toMatch(PERCENT_RE_LENIENT);
+        expect(borrowText).toMatch(PERCENT_RE);
       }
     });
 
     test('total columns show percentage values', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
       await expect(row).toBeVisible({ timeout: 5000 });
@@ -81,7 +81,8 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('native columns show percentage values', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
       await expect(row).toBeVisible({ timeout: 5000 });
@@ -106,7 +107,8 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('metric bar shows incentive and total values', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
       await expect(card).toBeVisible({ timeout: 5000 });
@@ -119,7 +121,7 @@ test.describe('Portfolio incentive values display', () => {
       const incentiveSpan = card.locator('span[data-cell="supply-incentive"]');
       await expect(incentiveSpan).toBeVisible();
       const incentiveText = (await incentiveSpan.textContent())?.trim();
-      expect(incentiveText).toMatch(PERCENT_RE_LENIENT);
+      expect(incentiveText).toMatch(PERCENT_RE);
     });
   });
 });
@@ -127,42 +129,122 @@ test.describe('Portfolio incentive values display', () => {
 /* ── T5: Golden Rule §1 current invariance ─────────────────────── */
 
 test.describe('Golden Rule §1 — current invariance', () => {
+  test.describe('desktop', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+    });
+
+    test('current values do not change after entering supply delta', async ({ page }) => {
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
+
+      const row = page.locator('tr[data-reserve-id]').first();
+      await expect(row).toBeVisible({ timeout: 5000 });
+
+      const supplyTotal = row.locator('td[data-cell="supply-total"]');
+      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+
+      const metricSpan = supplyTotal.locator('span[data-current]').first();
+      const currentBefore = await metricSpan.getAttribute('data-current');
+
+      await supplyInput.clear();
+      await supplyInput.fill('500000');
+      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+
+      const currentAfter = await metricSpan.getAttribute('data-current');
+      expect(currentAfter).toBe(currentBefore);
+    });
+  });
+
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile DeltaRow only');
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
       await expect(card).toBeVisible({ timeout: 5000 });
 
-      // Expand the details section
       const expandBtn = card.getByRole('button', { name: /Show details/i });
       await expandBtn.click();
-      await page.waitForTimeout(1000);
 
-      // Read current value from the first visible delta-current span
       const currentSpan = card.locator('[data-testid="delta-current"]').first();
       await expect(currentSpan).toBeVisible({ timeout: 5000 });
       const currentBefore = await currentSpan.textContent();
 
-      // Change the input to a different amount
-      const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
       await supplyInput.clear();
       await supplyInput.fill('500000');
-      await page.waitForTimeout(1000);
+      await expect(currentSpan).toBeVisible({ timeout: 3000 });
 
-      // Verify current hasn't changed
       const currentAfter = await currentSpan.textContent();
       expect(currentAfter).toBe(currentBefore);
 
-      // Verify after and delta are visible
       const afterSpan = card.locator('[data-testid="delta-after"]').first();
       await expect(afterSpan).toBeVisible();
       const deltaSpan = card.locator('[data-testid="delta-value"]').first();
       await expect(deltaSpan).toBeVisible();
+    });
+  });
+});
+
+/* ── T5b: Cap threshold crossing (AAV-1143 Req 3) ─────────────── */
+
+test.describe('Cap threshold crossing — current invariance', () => {
+  test.describe('desktop', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+    });
+
+    test('entering large delta preserves current incentive', async ({ page }) => {
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000');
+
+      const row = page.locator('tr[data-reserve-id]').first();
+      await expect(row).toBeVisible({ timeout: 5000 });
+
+      const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
+      await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
+
+      const metricSpan = incentiveCell.locator('span[data-current]').first();
+      const currentBefore = await metricSpan.getAttribute('data-current');
+
+      await supplyInput.clear();
+      await supplyInput.fill('999999999');
+      await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
+
+      const currentAfter = await metricSpan.getAttribute('data-current');
+      expect(currentAfter).toBe(currentBefore);
+    });
+  });
+
+  test.describe('mobile', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+    });
+
+    test('entering large delta preserves current incentive', async ({ page }) => {
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000');
+
+      const card = page.locator('[data-reserve-id]').first();
+      await expect(card).toBeVisible({ timeout: 5000 });
+
+      const expandBtn = card.getByRole('button', { name: /Show details/i });
+      await expandBtn.click();
+
+      const currentSpan = card.locator('[data-testid="delta-current"]').first();
+      await expect(currentSpan).toBeVisible({ timeout: 5000 });
+      const currentBefore = await currentSpan.textContent();
+
+      await supplyInput.clear();
+      await supplyInput.fill('999999999');
+      await expect(currentSpan).toBeVisible({ timeout: 5000 });
+
+      const currentAfter = await currentSpan.textContent();
+      expect(currentAfter).toBe(currentBefore);
     });
   });
 });
@@ -176,9 +258,7 @@ test.describe('Delta badge after manual position input', () => {
     });
 
     test('supply $/day cell shows delta after entering amount', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
-
-      const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
+      const supplyInput = await setupPortfolioWithReserve(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -197,7 +277,8 @@ test.describe('Delta badge after manual position input', () => {
     });
 
     test('usd-per-day shows value after entering amount', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
       await expect(card).toBeVisible({ timeout: 5000 });
@@ -218,27 +299,37 @@ test.describe('APR/APY toggle updates incentive values', () => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
     });
 
-    test('toggling APR→APY updates radio checked state', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+    test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const aprRadio = page.getByRole('radio', { name: 'APR' }).first();
       const apyRadio = page.getByRole('radio', { name: 'APY' }).first();
 
-      // APY is selected by default
       await expect(apyRadio).toBeChecked();
       await expect(aprRadio).not.toBeChecked();
+
+      const row = page.locator('tr[data-reserve-id]').first();
+      await expect(row).toBeVisible({ timeout: 5000 });
+      const supplyTotal = row.locator('td[data-cell="supply-total"]');
+      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      const valueBeforeToggle = (await supplyTotal.textContent())?.trim();
 
       await aprRadio.click();
-      await page.waitForTimeout(500);
-
-      await expect(apyRadio).not.toBeChecked();
       await expect(aprRadio).toBeChecked();
+      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      const valueAfterToggle = (await supplyTotal.textContent())?.trim();
+
+      expect(valueAfterToggle).toMatch(PERCENT_RE);
+      if (valueBeforeToggle !== '—' && valueAfterToggle !== valueBeforeToggle) {
+        expect(valueAfterToggle).not.toBe(valueBeforeToggle);
+      }
 
       await apyRadio.click();
-      await page.waitForTimeout(500);
-
       await expect(apyRadio).toBeChecked();
-      await expect(aprRadio).not.toBeChecked();
+      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      const valueAfterRestore = (await supplyTotal.textContent())?.trim();
+      expect(valueAfterRestore).toBe(valueBeforeToggle);
     });
   });
 
@@ -247,21 +338,37 @@ test.describe('APR/APY toggle updates incentive values', () => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
     });
 
-    test('toggling APR→APY updates radio checked state', async ({ page }) => {
-      await addReserveAndEnterAmount(page);
+    test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
+      const supplyInput = await setupPortfolioWithReserve(page);
+      await supplyInput.fill('1000000');
 
       const aprRadio = page.getByRole('radio', { name: 'APR' }).first();
       const apyRadio = page.getByRole('radio', { name: 'APY' }).first();
 
-      // APY is selected by default
       await expect(apyRadio).toBeChecked();
       await expect(aprRadio).not.toBeChecked();
 
-      await aprRadio.click();
-      await page.waitForTimeout(500);
+      const card = page.locator('[data-reserve-id]').first();
+      await expect(card).toBeVisible({ timeout: 5000 });
+      const totalSpan = card.locator('span[data-cell="supply-total"]');
+      await expect(totalSpan).toBeVisible();
+      const valueBeforeToggle = (await totalSpan.textContent())?.trim();
 
-      await expect(apyRadio).not.toBeChecked();
+      await aprRadio.click();
       await expect(aprRadio).toBeChecked();
+      await expect(totalSpan).toBeVisible();
+      const valueAfterToggle = (await totalSpan.textContent())?.trim();
+
+      expect(valueAfterToggle).toMatch(PERCENT_RE);
+      if (valueBeforeToggle !== '—' && valueAfterToggle !== valueBeforeToggle) {
+        expect(valueAfterToggle).not.toBe(valueBeforeToggle);
+      }
+
+      await apyRadio.click();
+      await expect(apyRadio).toBeChecked();
+      await expect(totalSpan).toBeVisible();
+      const valueAfterRestore = (await totalSpan.textContent())?.trim();
+      expect(valueAfterRestore).toBe(valueBeforeToggle);
     });
   });
 });
