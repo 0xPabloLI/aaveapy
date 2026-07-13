@@ -34,7 +34,7 @@ match the wrapper's effective right padding.
    | Side  | Mobile                         | Desktop                      |
    | ----- | ------------------------------ | ---------------------------- |
    | `pl`  | `pl-[var(--ds-space-1-5)]`     | _(none — outer container provides)_ |
-   | `pr`  | `pr-[var(--ds-space-3)]`       | _(none — outer container provides)_ |
+    | `pr`  | _(none — outer container provides)_ | _(none — outer container provides)_ |
    | `py`  | `py-[var(--ds-space-2-5)]`     | `py-[var(--ds-space-3)]`     |
    | gap   | `gap-[var(--ds-space-1)]`      | `gap-[var(--ds-space-1)]`    |
 

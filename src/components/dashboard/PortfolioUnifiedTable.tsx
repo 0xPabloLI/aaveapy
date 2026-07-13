@@ -249,7 +249,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 onClick={isHidden && !isRestricted ? () => actions.unhideReserve(entry.reserveId) : undefined}
               >
                 {/* Reserve */}
-                <td className={cn('pl-2 pr-3 py-1', isHidden && 'cursor-pointer')}>
+                <td data-cell="reserve" className={cn('pl-2 pr-3 py-1', isHidden && 'cursor-pointer')}>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -282,7 +282,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Input */}
-                <td className={cn(INPUT_CELL, GROUP_SEP, SUPPLY_BAND)}>
+                <td data-cell="supply-input" className={cn(INPUT_CELL, GROUP_SEP, SUPPLY_BAND)}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -302,7 +302,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Borrow Input */}
-                <td className={cn(INPUT_CELL, SIDE_SEP, BORROW_BAND)}>
+                <td data-cell="borrow-input" className={cn(INPUT_CELL, SIDE_SEP, BORROW_BAND)}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-0">
                       <CompactInput
@@ -322,16 +322,16 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Native */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td data-cell="supply-native" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.nativePercent} metric={supplyResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Native */}
-                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
+                <td data-cell="borrow-native" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? <MetricValue afterValue={borrowResult.nativePercent} metric={borrowResult.nativeMetric} formatFn={formatPercent} /> : '—'}
                 </td>
 
                 {/* Supply Incentive */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td data-cell="supply-incentive" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {supplyResult ? (
                       <>
@@ -345,7 +345,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   </span>
                 </td>
                 {/* Borrow Incentive */}
-                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
+                <td data-cell="borrow-incentive" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {borrowResult ? (
                       <>
@@ -360,24 +360,24 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 </td>
 
                 {/* Supply Total */}
-                <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td data-cell="supply-total" className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? <MetricValue afterValue={supplyResult.totalPercent} metric={supplyResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
                 {/* Borrow Total */}
-                <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
+                <td data-cell="borrow-total" className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? <MetricValue afterValue={borrowResult.totalPercent} metric={borrowResult.totalMetric} formatFn={formatPercent} /> : '—'}
                 </td>
 
                 {/* Supply $/day */}
-                <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
+                <td data-cell="supply-usd-per-day" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   {supplyResult ? (supplyResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(supplyResult.usdPerDay)) : '—'}
                 </td>
                 {/* Borrow $/day */}
-                <td className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
+                <td data-cell="borrow-usd-per-day" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   {borrowResult ? (borrowResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(borrowResult.usdPerDay)) : '—'}
                 </td>
                 {/* Net $/day */}
-                <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', 'bg-muted/15')}>
+                <td data-cell="net-usd-per-day" className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', 'bg-muted/15')}>
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
