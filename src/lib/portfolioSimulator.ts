@@ -214,6 +214,12 @@ function computeResultsFromGroups(
     }
   }
 
+  for (const [, r] of reserveMap) {
+    if (r.tokenSymbol && !reserveSymbolById.has(r.reserveId)) {
+      reserveSymbolById.set(r.reserveId, r.tokenSymbol);
+    }
+  }
+
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
     if (!reserve) continue;
@@ -475,6 +481,12 @@ export function buildPerReserveInputsFromEntries(
       if (reserve?.tokenSymbol) {
         reserveSymbolById.set(reserveId, reserve.tokenSymbol);
       }
+    }
+  }
+
+  for (const [, r] of reserveMap) {
+    if (r.tokenSymbol && !reserveSymbolById.has(r.reserveId)) {
+      reserveSymbolById.set(r.reserveId, r.tokenSymbol);
     }
   }
 
