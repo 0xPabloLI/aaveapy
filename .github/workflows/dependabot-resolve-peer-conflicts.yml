@@ -43,3 +43,74 @@ jobs:
           git add package-lock.json
           git commit -m "chore(deps): resolve peer dependency conflicts (legacy-peer-deps)"
           git push
+
+      - name: Check peer dependencies (npm ci succeeded)
+        id: peer-check
+        if: steps.install.outcome == 'success'
+        run: |
+          npm ls --all 2>&1 | grep -i "invalid" | grep -v "wagmi@3" > invalid-deps.txt || true
+          if [ -s invalid-deps.txt ]; then
+            echo "has_invalid=true" >> "$GITHUB_OUTPUT"
+            echo "Found peer dependency issues:"
+            cat invalid-deps.txt
+          else
+            echo "has_invalid=false" >> "$GITHUB_OUTPUT"
+            echo "No peer dependency issues detected"
+          fi
+
+      - name: Fix peer dependency mismatches
+        if: steps.install.outcome == 'success' && steps.peer-check.outputs.has_invalid == 'true'
+        run: |
+          # Extract unique invalid package names from npm ls output.
+          # Lines look like: "│ ├─┬ esbuild@0.25.12 invalid: ..." or
+          # "npm error invalid: esbuild@0.25.12 /path/to/pkg".
+          # Greedy match up to last " <name>@" captures scoped names too.
+          PKGS=$(sed -E 's/.* ([a-z@][a-z0-9._@/-]+)@[0-9].*/\1/' invalid-deps.txt \
+                 | grep -E '^@?[a-z]' \
+                 | sort -u || true)
+
+          if [ -z "$PKGS" ]; then
+            echo "No parseable invalid packages found"
+            exit 0
+          fi
+
+          echo "Will fix the following peer dependencies:"
+          echo "$PKGS"
+
+          fixed=0
+          for pkg in $PKGS; do
+            echo "Fixing: $pkg"
+            # Promote the transitive dep to a direct dependency at a version
+            # that satisfies the peer constraint. Updates package.json + lockfile.
+            if npm install "${pkg}@latest"; then
+              fixed=$((fixed + 1))
+            else
+              echo "::warning::Failed to fix $pkg"
+            fi
+          done
+
+          if [ "$fixed" -eq 0 ]; then
+            echo "No packages were fixed"
+            exit 0
+          fi
+
+          # Verify the fix
+          npm ls --all 2>&1 | grep -i "invalid" | grep -v "wagmi@3" > /tmp/verify-deps.txt || true
+          if [ -s /tmp/verify-deps.txt ]; then
+            echo "::warning::Some peer dep issues remain after fix:"
+            cat /tmp/verify-deps.txt
+          else
+            echo "All peer dependency issues resolved"
+          fi
+
+          if git diff --quiet package.json package-lock.json; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(deps): fix peer dependency mismatches (promote to direct deps)"
+          git push
+          echo "Fixed $fixed peer dependency mismatch(es)"
