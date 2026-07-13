@@ -82,10 +82,10 @@ function DeltaRow({
     <div className="flex items-center justify-between ds-text-11 py-0.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1 tabular-nums">
-        <span className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
+        <span data-testid="delta-current" className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
         <span className="text-muted-foreground/40">→</span>
-        <span className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
-        <span className={cn('font-medium', deltaColor)}>{deltaStr}</span>
+        <span data-testid="delta-after" className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
+        <span data-testid="delta-value" className={cn('font-medium', deltaColor)}>{deltaStr}</span>
       </span>
     </div>
   );
@@ -276,13 +276,13 @@ function MobileCard({
       {/* Equal-weight metric bar */}
       <div className="px-3 pb-1.5">
         <div className="flex items-baseline gap-3 ds-text-13 tabular-nums">
-          <span className={cn('font-semibold', activeColor)}>
+          <span data-cell={`${activeTab}-total`} className={cn('font-semibold', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} /> : '—'}
           </span>
-          <span className="text-muted-foreground">
+          <span data-cell={`${activeTab}-native`} className="text-muted-foreground">
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+          <span data-cell={`${activeTab}-incentive`} className="inline-flex items-center gap-0.5 text-muted-foreground">
             {activeResult ? (
               <>
                 <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} />
@@ -317,7 +317,7 @@ function MobileCard({
         >
           <span className="flex items-center gap-1">
             <span className="ds-text-10 text-muted-foreground/70">$/day</span>
-            <span className={cn('ds-text-10 font-medium tabular-nums', activeColor)}>
+            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-10 font-medium tabular-nums', activeColor)}>
               {activeResult ? (activeResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '—'}
             </span>
           </span>
