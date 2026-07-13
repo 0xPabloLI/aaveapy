@@ -37,6 +37,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
 
   return (
     <label
+      data-testid="portfolio-mode-toggle"
       className={cn(
         'flex cursor-pointer select-none items-center gap-1.5',
         isMobile && !isPortfolio && 'flex-col gap-0.5',
