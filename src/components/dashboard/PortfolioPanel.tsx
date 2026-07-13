@@ -371,10 +371,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
       */}
       <div
         className={cn(
-          'pr-[var(--ds-space-3)]',
           isMobile
-            ? 'pl-[var(--ds-space-2-5)] py-[var(--ds-space-2-5)]'
-            : 'pl-[var(--ds-space-4)] py-[var(--ds-space-3)]',
+            ? 'pl-[var(--ds-space-1-5)] py-[var(--ds-space-2-5)]'
+            : 'py-[var(--ds-space-3)]',
         )}
       >
         {/* Header */}

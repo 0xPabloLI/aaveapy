@@ -932,10 +932,10 @@ const ReservesTable = ({
           className={cn(
             'pt-1 pb-0',
             // Single mode: bleed to full width + sticky at top.
-            // Portfolio mode: no bleed (panel has its own rounded border/padding)
-            // and no sticky (panel can exceed viewport height — content would be
-            // unscrollable inside a sticky box).
-            !isPortfolioMode && '-mx-[var(--ds-space-3)] px-[var(--ds-space-3)] sticky top-[env(safe-area-inset-top,0px)] z-20',
+            // Portfolio mode: same bleed so toggle right-edge aligns with
+            // Single mode, but no sticky (panel can exceed viewport height).
+            !isPortfolioMode && 'sticky top-[env(safe-area-inset-top,0px)] z-20',
+            '-mx-[var(--ds-space-3)] px-[var(--ds-space-3)]',
           )}
         >
           {scenarioControls}
