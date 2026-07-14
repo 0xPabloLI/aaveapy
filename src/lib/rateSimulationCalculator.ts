@@ -164,6 +164,8 @@ export interface SimulationLane {
   currentNative: number | null;
   currentIncentive: number;
   currentTotal: number | null;
+  // AAV-1165: Pure market advertised rate (no forecast/wallet/cap/offset). Reference value.
+  headlineIncentive: number;
   afterNative: number | null;
   afterIncentive: number | null;
   afterTotal: number | null;
@@ -1288,16 +1290,15 @@ export function buildRateSimulationResult({
     };
   };
 
-  // Headline incentives: have TVL forecast + wallet-only eligibility scaling,
-  // but NO position cap dilution (no positionUsd passed).
-  // Used as baseline for deltaIncentive when wallet position exists (dilution gap).
-  // AAV-1101: headline & current use wallet-only multiplier (no delta).
+  // AAV-1165: Headline = pure market advertised rate.
+  // No forecast, no wallet position, no position cap, no cross-reserve offset.
+  // Used as reference value (T4 will surface in expanded details).
   const supplyHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('supply'), pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('supply'), pointRateMap });
+    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap })
+    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap });
   const borrowHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('borrow'), pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier: walletMerklGroupMultiplier('borrow'), pointRateMap });
+    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap })
+    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap });
   // AAV-1112: currentIncentive is derived from per-source sumCurrent (dispatch map),
   // not from a separate buildIncentiveCurrent call. This eliminates the dual-code-path
   // bug where aggregate and per-source values could diverge.
@@ -1510,7 +1511,6 @@ export function buildRateSimulationResult({
       ? (isSupply ? calculateTotalSupplyApy(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApy(currentNative ?? 0, currentIncentive))
       : (isSupply ? calculateTotalSupplyApr(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApr(currentNative ?? 0, currentIncentive));
     currentTotalBySide[side] = currentTotal;
-    const walletUsd = isSupply ? walletSupplyUsd : walletBorrowUsd;
 
     const afterTotal = blocked ? null : (hasAnyInput && afterNative !== null && afterIncentive !== null
       ? (isApy
@@ -1535,11 +1535,12 @@ export function buildRateSimulationResult({
       currentNative,
       currentIncentive,
       currentTotal,
+      headlineIncentive,
       afterNative,
       afterIncentive,
       afterTotal,
       deltaNative: blocked ? null : (afterNative !== null && currentNative !== null ? afterNative - currentNative : null),
-      deltaIncentive: blocked ? null : (afterIncentive !== null && currentIncentive !== null ? afterIncentive - currentIncentive : (walletUsd != null ? currentIncentive - headlineIncentive : null)),
+      deltaIncentive: blocked ? null : (afterIncentive !== null && currentIncentive !== null ? afterIncentive - currentIncentive : null),
       deltaTotal: blocked ? null : (afterTotal !== null && currentTotal !== null ? afterTotal - currentTotal : null),
       sources: {
         protocol: protocolDetail,

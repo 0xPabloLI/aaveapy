@@ -854,9 +854,10 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     expect(result.supply.deltaIncentive).toBeNull();
   });
 
-  it('deltaIncentive = currentIncentive - headlineIncentive when wallet exceeds cap', () => {
+  it('deltaIncentive is null when wallet exceeds cap but no input (AAV-1165: delta = after - current only)', () => {
     // Wallet=$1500 > self-cap=$1000 → current is diluted
-    // deltaIncentive should show the dilution gap (negative value)
+    // AAV-1165: deltaIncentive is only after - current. No after → null.
+    // Eligibility gap info (current vs headline) is separate structured data, not delta.
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -866,16 +867,13 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     });
 
     expect(result.supply.hasInput).toBe(false);
-    // deltaIncentive should NOT be null — it should show the dilution gap
-    expect(result.supply.deltaIncentive).not.toBeNull();
-    // deltaIncentive should be negative (current < headline due to dilution)
-    expect(result.supply.deltaIncentive!).toBeLessThan(0);
-    // deltaIncentive reflects the dilution gap (current - headline, where
-    // headline is the undiluted baseline). We assert the observable behavior
-    // (negative delta = current is diluted) rather than the internal formula.
+    // deltaIncentive is null — no after to compare against
+    expect(result.supply.deltaIncentive).toBeNull();
+    // currentIncentive is still diluted (wallet > cap)
+    expect(result.supply.currentIncentive).toBeLessThan(result.supply.headlineIncentive);
   });
 
-  it('deltaIncentive for borrow side also shows dilution gap', () => {
+  it('deltaIncentive is null for borrow side when no input (AAV-1165)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -885,8 +883,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     });
 
     expect(result.borrow.hasInput).toBe(false);
-    expect(result.borrow.deltaIncentive).not.toBeNull();
-    expect(result.borrow.deltaIncentive!).toBeLessThan(0);
+    expect(result.borrow.deltaIncentive).toBeNull();
   });
 
   it('derives wallet from totalSupplyUsd - supplyInputUsd when hasInput=true', () => {
@@ -947,6 +944,56 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     // Wallet = 1500 > cap = 1000 → dilution = 1000/1500 ≈ 0.667
     // self-cap current = 8 * 0.667 ≈ 5.33, total current = 10 + 5.33 = 15.33
     expect(result.supply.currentIncentive).toBeCloseTo(15.333333, 1);
+  });
+});
+
+describe('AAV-1165: Pure headline + unified delta', () => {
+  it('headlineIncentive does not change when wallet position changes (purity)', () => {
+    const noWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+    });
+
+    const withWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      walletSupplyUsd: 1500,
+    });
+
+    // Headline must be identical regardless of wallet
+    expect(withWallet.supply.headlineIncentive).toBeCloseTo(noWallet.supply.headlineIncentive, 6);
+  });
+
+  it('headlineIncentive equals advertised API rate (no forecast, no cap dilution)', () => {
+    // MERIT_POSITION_CAP_RESERVE: base APR=10 + self APR=8 = 18 (advertised)
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500, // wallet > cap, but headline must NOT be diluted
+    });
+
+    // Headline = pure advertised rate = 10 + 8 = 18 (no cap, no wallet scaling)
+    expect(result.supply.headlineIncentive).toBeCloseTo(18, 1);
+  });
+
+  it('deltaIncentive is null when afterIncentive is null (no current-headline path)', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+      // No supplyInput → hasInput=false → afterIncentive=null
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.afterIncentive).toBeNull();
+    // AAV-1165: delta = after - current only. No after → null (not current - headline)
+    expect(result.supply.deltaIncentive).toBeNull();
   });
 });
 

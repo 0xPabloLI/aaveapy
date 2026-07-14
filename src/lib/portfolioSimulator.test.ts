@@ -947,10 +947,10 @@ describe('simulatePortfolioFromEntries', () => {
       const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
       expect(supplyResult).toBeDefined();
 
-      // Wallet dilution: deltaIncentive = currentIncentive - headlineIncentive < 0
+      // AAV-1165: deltaIncentive = after - current only. No input → after=null → delta=null.
+      // Eligibility gap (current < headline) is separate structured data, not delta.
       expect(supplyResult.incentiveMetric).toBeDefined();
-      expect(supplyResult.incentiveMetric!.delta).not.toBeNull();
-      expect(supplyResult.incentiveMetric!.delta!).toBeLessThan(0);
+      expect(supplyResult.incentiveMetric!.delta).toBeNull();
     });
   });
 });
@@ -961,8 +961,8 @@ const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
   inputUsd: 10000,
   currentNative: 2.8,
   currentIncentive: 0.9,
-  
   currentTotal: 3.7,
+  headlineIncentive: 0.9,
   afterNative: 3.0,
   afterIncentive: 1.0,
   afterTotal: 4.0,

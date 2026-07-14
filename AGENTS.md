@@ -207,12 +207,14 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
 - **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
 
-### 4. `headlineIncentive` 是无 position cap 的基线
-- `headlineIncentive` = 有 TVL forecast、有 wallet-only eligibility scaling，但 **无 position cap 稀释** 的 incentive 值。
-- 与 `currentIncentive` 的唯一区别：headline 不传 `positionUsd`，所以不应用 Merit/Merkl/Brevis position cap dilution。
-- 用于 `deltaIncentive` 计算：`hasInput ? after - current : (wallet ? current - headline : null)`。
-- 无输入有钱包时，`deltaIncentive = current - headline` 纯粹反映 position cap dilution gap。
-- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `positionUsd` 参数）。
+### 4. `headlineIncentive` 是纯市场 advertised rate（AAV-1165 修订）
+- `headlineIncentive` = 纯 API advertised campaign/protocol rate。**不含** forecast、wallet position、position cap、cross-reserve offset。
+- 作为市场参考值，不是用户实际可得 rate，也不是场景基线。
+- `currentIncentive` = forecast + wallet cap/offset（钱包当前 effective rate）。
+- `afterIncentive` = forecast + 目标 Portfolio cap/offset（场景后 effective rate）。
+- `deltaIncentive` = `after - current` **only**。无 after 时为 `null`，不再计算 `current - headline`。
+- Eligibility gap info（cap、offset、eligible amount）是独立结构化数据，不重载到 delta。
+- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `forecastStates`、无 `merklGroupMultiplier`、无 `positionUsd` 参数）。
 
 ## Learned Lessons (Index)
 详细 lessons 已外迁到以下文件，按需查阅：
