@@ -26,6 +26,7 @@ _Last inventory pass: 2026-07-06._
 - Canonical: `docs/conventions/api-base-urls.md`
 - Canonical: `docs/conventions/vercel-deployment-smoke-test.md` (post-deploy smoke + rollback; ref normalization vs Vercel metadata)
 - Canonical: `docs/conventions/ci-live-schema-cloudflare.md`
+- Canonical: `docs/conventions/post-deploy-checklist.md` (Production deployment verification: API endpoint, data, SEO, security, rollback)
 - Canonical: `docs/conventions/peer-dependency-guard.md`
 - Canonical: `docs/conventions/merge-summary.md`
 
