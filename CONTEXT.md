@@ -224,6 +224,14 @@ _Avoid_: Batch Mode、Batch toggle、"Build your batch portfolio"、在 Portfoli
 两种模式互斥而非叠加：Portfolio 开启时 Shared Scenario 输入被清空、`perReserveInputs` 生效；Single 时 `perReserveInputs` = undefined、Shared Scenario 输入生效。无 fallback 优先级，也无第三种"混合"模式。见 ADR-0005。
 _Avoid_: 让 per-reserve input 作为 Shared Scenario 的 override / fallback（会产生 partial-shared 边界态）
 
+**Portfolio Scenario**:
+Portfolio Mode 下"至少一个 portfolio entry 有非零 delta"的状态。场景激活后，所有 portfolio 成员 reserve 的 `after*` 值反映完整目标组合（含其他 reserve delta 带来的 cross-reserve offset），而非仅本地输入效果。`current*` 始终保持 wallet-only 快照，不随场景变化。无 delta = 无场景 = 所有行显示 current。非 portfolio 成员 reserve 不受场景影响，继续显示市场 headline。详见 ADR-0025。
+_Avoid_: 把"该 reserve 自身有 delta"等同于"该 reserve 受场景影响"——cross-reserve offset 可在无本地 delta 时改变 after incentive
+
+**Local Input vs Portfolio Scenario**:
+`hasLocalInput`（per-reserve 自身 delta > 0）控制利率曲线模拟、forecast input、cap 约束、Brevis shared deposits。`hasPortfolioScenario`（任意 portfolio entry 有 delta）控制 after incentive/total 计算开关。两者独立：B 可无本地输入但受 cross-reserve offset 影响而产生 after incentive，此时 `afterNative = currentNative`（利率曲线不变）但 `afterIncentive` 按 cross-reserve eligibility 重算。
+_Avoid_: 用单一 `hasAnyInput` 同时控制两类逻辑（会让无本地输入的 reserve 要么跳过 after 计算，要么错误触发利率曲线模拟）
+
 **Sticky Scenario Bar**:
 仅 Single Mode 下 ReservesTable 的 scenario bar（含 Shared Scenario 输入条 + column header）在滚动时 pin 到视口顶部（`data-reserves-sticky-scenario` / `data-reserves-sticky-thead`）。Portfolio Mode 下 scenario bar **不 sticky**——桌面和移动端都随页面自然滚动，避免 PortfolioPanel 超出视口时挤占内容区。见 ADR-0013。
 _Avoid_: 在 Portfolio 模式下让 PortfolioPanel sticky（会 trap 内容）；把 sticky 状态跟 `hasScenarioInput` 耦合（sticky 是模式属性，非输入属性）

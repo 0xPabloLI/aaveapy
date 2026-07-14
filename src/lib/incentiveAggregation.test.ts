@@ -500,3 +500,103 @@ describe('sumMerklIncentiveApr — positionCapNative path', () => {
     expect(result).toBeCloseTo(10, 6);
   });
 });
+
+describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition)', () => {
+  const makeCappedOpp = (capUsd?: number) => makeMerklOpportunity({
+    breakdowns: [{
+      campaignId: 'unified-elig-merkl',
+      campaignApr: 10,
+      campaignStartedAt: '2025-01-01',
+      campaignEndedAt: '2030-12-31',
+      ...(capUsd != null ? { positionCapUsd: capUsd } : {}),
+    }],
+  });
+
+  it('composes position cap and cross-reserve offset as single eligible principal (no double-scaling)', () => {
+    // grossPosition = 1500, cap = 1000, netEligible = 1000 (offset = 500)
+    // correct: 10 * min(1000, 1000) / 1500 = 6.667
+    // bug: (10 * 1000/1500) * (1000/1500) = 4.444
+    const opportunities = [makeCappedOpp(1000)];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1500,
+      crossReserveNetEligibleUsd: () => 1000,
+    });
+    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+  });
+
+  it('cap only (no offset) — identical to current behavior when crossReserveNetEligibleUsd not provided', () => {
+    const opportunities = [makeCappedOpp(500)];
+    const withoutUnified = sumMerklIncentiveApr(opportunities, 1, { positionUsd: 1000 });
+    const withUnifiedMatching = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      crossReserveNetEligibleUsd: () => 1000, // net = gross, no offset
+    });
+    expect(withUnifiedMatching).toBeCloseTo(withoutUnified, 6);
+    expect(withUnifiedMatching).toBeCloseTo(10 * 500 / 1000, 6);
+  });
+
+  it('offset only (no cap) — applies offset as single ratio', () => {
+    // grossPosition = 1500, no cap, netEligible = 1000
+    // correct: 10 * 1000 / 1500 = 6.667
+    const opportunities = [makeCappedOpp()];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1500,
+      crossReserveNetEligibleUsd: () => 1000,
+    });
+    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+  });
+
+  it('neither cap nor offset — no scaling', () => {
+    const opportunities = [makeCappedOpp()];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1500,
+      crossReserveNetEligibleUsd: () => 1500, // net = gross, no offset
+    });
+    expect(result).toBeCloseTo(10, 6);
+  });
+
+  it('offset makes net eligible exceed cap — cap is binding', () => {
+    // grossPosition = 2000, cap = 1500, netEligible = 1800 (offset = 200)
+    // eligible = min(1800, 1500) = 1500
+    // correct: 10 * 1500 / 2000 = 7.5
+    const opportunities = [makeCappedOpp(1500)];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 2000,
+      crossReserveNetEligibleUsd: () => 1800,
+    });
+    expect(result).toBeCloseTo(10 * 1500 / 2000, 6);
+  });
+
+  it('offset makes net eligible below cap — offset is binding', () => {
+    // grossPosition = 2000, cap = 1500, netEligible = 1000 (offset = 1000)
+    // eligible = min(1000, 1500) = 1000
+    // correct: 10 * 1000 / 2000 = 5.0
+    const opportunities = [makeCappedOpp(1500)];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 2000,
+      crossReserveNetEligibleUsd: () => 1000,
+    });
+    expect(result).toBeCloseTo(10 * 1000 / 2000, 6);
+  });
+
+  it('does not apply merklGroupMultiplier when crossReserveNetEligibleUsd is provided', () => {
+    // If groupMultiplier were also applied, result would be double-scaled
+    const opportunities = [makeCappedOpp(1000)];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1500,
+      crossReserveNetEligibleUsd: () => 1000,
+      merklGroupMultiplier: () => 1000 / 1500, // should be ignored
+    });
+    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+  });
+
+  it('falls back to merklGroupMultiplier when positionUsd is null (Shared Scenario)', () => {
+    // No positionUsd → can't apply unified eligibility → fall back to groupMultiplier for offset
+    const opportunities = [makeMerklOpportunity()]; // 3% APR, no cap
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      crossReserveNetEligibleUsd: () => 1000,
+      merklGroupMultiplier: () => 0.5,
+    });
+    expect(result).toBeCloseTo(3 * 0.5, 6);
+  });
+});
