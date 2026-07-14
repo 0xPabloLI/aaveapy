@@ -421,8 +421,8 @@ const Index = () => {
     const reserves = effectiveReservesData?.reserves ?? [];
     const map = new Map<string, string>();
     for (const r of reserves) {
-      if (r.hubId?.trim() && r.hubName?.trim()) {
-        map.set(r.hubId.trim(), r.hubName.trim());
+      if (r.hubId?.trim()) {
+        map.set(r.hubId.trim(), r.hubName?.trim() || r.hubId.trim());
       }
     }
     return Array.from(map.entries())
