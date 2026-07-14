@@ -197,7 +197,7 @@ jobs:
         env:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
-        run: npx vitest run src/lib/rateSimulationCalculator.live.test.ts
+        run: npm run test:live:simulation:staging
 
   openapi-check:
     name: openapi-check
