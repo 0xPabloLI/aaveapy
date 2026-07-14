@@ -2890,3 +2890,139 @@ describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserve
     expect(result.supply.currentIncentive).toBeCloseTo(10.0, 1);
   });
 });
+
+describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () => {
+  const makeReserveWithCrossConstraint = (): ReserveWithSpread => ({
+    ...BASE_RESERVE,
+    reserveId: 'cross-target',
+    tokenSymbol: 'USDT',
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [{
+      name: 'Cross Constraint Test',
+      link: 'https://example.com',
+      breakdowns: [{
+        campaignId: 'cross-test',
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+      }],
+      opportunityId: 'cross-opp',
+      netPositionConstraint: {
+        sourceSide: 'supply',
+        offsetReserveIds: ['offset-source'],
+      },
+    }],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+  });
+
+  it('portfolioScenarioActive computes afterIncentive for no-local-input member affected by cross-offset', () => {
+    // Target reserve has wallet supply but no local input.
+    // Offset source has a borrow delta that reduces target's eligible supply.
+    const reserve = makeReserveWithCrossConstraint();
+    const crossReservePositions = new Map([
+      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const walletCrossReservePositions = new Map([
+      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0', // no local input on target reserve
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1500, // wallet supply = $1500
+      walletSupplyUsd: 1500,
+      crossReservePositions,
+      walletCrossReservePositions,
+      portfolioScenarioActive: true,
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    // currentIncentive uses wallet-only offset: eligible = 1500 - 500 = 1000 → rate = 10 * 1000/1500
+    expect(result.supply.currentIncentive).toBeCloseTo(10 * 1000 / 1500, 6);
+    // afterIncentive is non-null because portfolioScenarioActive is true
+    expect(result.supply.afterIncentive).not.toBeNull();
+    // afterIncentive uses the same crossReservePositions (offset still $500) → same as current
+    expect(result.supply.afterIncentive!).toBeCloseTo(result.supply.currentIncentive, 6);
+    // delta should be 0 (no change from current in this scenario)
+    expect(result.supply.deltaIncentive).toBeCloseTo(0, 6);
+  });
+
+  it('portfolioScenarioActive makes afterNative = currentNative when no local input', () => {
+    const reserve = makeReserveWithCrossConstraint();
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      walletSupplyUsd: 1500,
+      portfolioScenarioActive: true,
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.afterNative).toBe(result.supply.currentNative);
+    expect(result.supply.deltaNative).toBe(0);
+  });
+
+  it('currentIncentive unchanged when toggling portfolioScenarioActive (Golden Rule #1)', () => {
+    const reserve = makeReserveWithCrossConstraint();
+    const baseParams = {
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      walletSupplyUsd: 1500,
+      crossReservePositions: new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]),
+      walletCrossReservePositions: new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]),
+    };
+
+    const withoutScenario = buildRateSimulationResult({ ...baseParams, portfolioScenarioActive: false });
+    const withScenario = buildRateSimulationResult({ ...baseParams, portfolioScenarioActive: true });
+
+    expect(withScenario.supply.currentIncentive).toBeCloseTo(withoutScenario.supply.currentIncentive, 6);
+  });
+
+  it('non-portfolio reserve unaffected: afterIncentive = null even when portfolioScenarioActive is true', () => {
+    // portfolioScenarioActive only applies to portfolio members; a single-mode reserve
+    // with no local input should still have afterIncentive = null.
+    const result = buildRateSimulationResult({
+      reserve: makeReserveWithCrossConstraint(),
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      portfolioScenarioActive: false,
+    });
+
+    expect(result.supply.afterIncentive).toBeNull();
+  });
+});

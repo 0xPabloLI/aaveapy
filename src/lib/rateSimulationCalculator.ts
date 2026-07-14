@@ -306,6 +306,8 @@ export interface BuildRateSimulationResultParams {
   walletBorrowUsd?: number;
   /** Per-symbol point rate map for per-campaign rate routing (AAV-898). */
   pointRateMap?: PointRateMap;
+  /** AAV-1166: When true, after* values are computed for portfolio members even without local input. */
+  portfolioScenarioActive?: boolean;
 }
 
 export const buildIncentiveCurrent = (
@@ -1027,6 +1029,7 @@ export function buildRateSimulationResult({
   walletSupplyUsd: explicitWalletSupplyUsd,
   walletBorrowUsd: explicitWalletBorrowUsd,
   pointRateMap,
+  portfolioScenarioActive = false,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1039,6 +1042,10 @@ export function buildRateSimulationResult({
   const hasSupplyInput = supplyBlocked ? false : rawSupply > 0;
   const hasBorrowInput = borrowBlocked ? false : rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
+  // AAV-1166: Split hasAnyInput into hasLocalInput (unchanged behavior) and shouldComputeAfter.
+  // portfolioScenarioActive opens after computation for portfolio members without local input.
+  const hasLocalInput = hasAnyInput;
+  const shouldComputeAfter = hasLocalInput || portfolioScenarioActive;
 
   // For incentive forecasts, we need USD values
   const rawSupplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
@@ -1314,10 +1321,10 @@ export function buildRateSimulationResult({
   // reflect user input — it's just a unit conversion artifact.
   const supplyAfterNative = combinedNativeSimulation
     ? combinedNativeSimulation.supplyApyPercent
-    : null;
+    : (portfolioScenarioActive ? supplyCurrentNative : null);
   const borrowAfterNative = combinedNativeSimulation
     ? combinedNativeSimulation.borrowApyPercent
-    : null;
+    : (portfolioScenarioActive ? borrowCurrentNative : null);
 
   const brevisSharedDepositsByCampaignId = hasAnyInput
     ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
@@ -1454,7 +1461,7 @@ export function buildRateSimulationResult({
     const sr = {} as Record<SourceKey, { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }>;
     for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
       const current = sourceDispatch[key].sumCurrent(currentData[key], ctx);
-      const afterRaw = hasAnyInput ? sourceDispatch[key].sumAfter(currentData[key], ctx) : null;
+      const afterRaw = shouldComputeAfter ? sourceDispatch[key].sumAfter(currentData[key], ctx) : null;
       const after = afterRaw !== null ? Math.min(afterRaw, current) : null;
       const campaigns = sourceDispatch[key].buildDetails(currentData[key], ctx);
       sr[key] = { current, after, campaigns };
@@ -1480,18 +1487,18 @@ export function buildRateSimulationResult({
     // Per-source after already has Math.min(afterRaw, current) applied in the dispatch map loop.
     // No aggregate Math.min needed — per-source cap is the correct semantics.
     // This eliminates the buildIncentiveAfter independent path that could diverge from per-source sum.
-    const afterIncentive = !blocked && hasAnyInput
+    const afterIncentive = !blocked && shouldComputeAfter
       ? protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after
       : null;
     // APR variant: when isApy=true, run a lightweight APR pass for afterIncentiveApr.
-    const afterIncentiveApr = !blocked && hasAnyInput
+    const afterIncentiveApr = !blocked && shouldComputeAfter
       ? (isApy
         ? (() => {
             const aprCtx = { ...ctx, isApy: false };
             const aprProtocol = sumNumberArray(currentData.protocol, false);
-            const aprMeritAfter = hasAnyInput ? sourceDispatch.merit.sumAfter(currentData.merit, aprCtx) : null;
-            const aprMerklAfter = hasAnyInput ? sourceDispatch.merkl.sumAfter(currentData.merkl, aprCtx) : null;
-            const aprBrevisAfter = hasAnyInput ? sourceDispatch.brevis.sumAfter(currentData.brevis, aprCtx) : null;
+            const aprMeritAfter = shouldComputeAfter ? sourceDispatch.merit.sumAfter(currentData.merit, aprCtx) : null;
+            const aprMerklAfter = shouldComputeAfter ? sourceDispatch.merkl.sumAfter(currentData.merkl, aprCtx) : null;
+            const aprBrevisAfter = shouldComputeAfter ? sourceDispatch.brevis.sumAfter(currentData.brevis, aprCtx) : null;
             const aprMeritCurrent = sourceDispatch.merit.sumCurrent(currentData.merit, aprCtx);
             const aprMerklCurrent = sourceDispatch.merkl.sumCurrent(currentData.merkl, aprCtx);
             const aprBrevisCurrent = sourceDispatch.brevis.sumCurrent(currentData.brevis, aprCtx);
@@ -1512,7 +1519,7 @@ export function buildRateSimulationResult({
       : (isSupply ? calculateTotalSupplyApr(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApr(currentNative ?? 0, currentIncentive));
     currentTotalBySide[side] = currentTotal;
 
-    const afterTotal = blocked ? null : (hasAnyInput && afterNative !== null && afterIncentive !== null
+    const afterTotal = blocked ? null : (shouldComputeAfter && afterNative !== null && afterIncentive !== null
       ? (isApy
         ? (isSupply ? calculateTotalSupplyApy(afterNative, afterIncentive) : calculateTotalBorrowApy(afterNative, afterIncentive))
         : (isSupply ? calculateTotalSupplyApr(afterNative, afterIncentive) : calculateTotalBorrowApr(afterNative, afterIncentive)))
