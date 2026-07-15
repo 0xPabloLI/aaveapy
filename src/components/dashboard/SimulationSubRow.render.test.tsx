@@ -55,6 +55,7 @@ const baseSimulation: RateSimulationResult = {
     currentNative: 2.1,
     currentIncentive: 0.3,
     currentTotal: 2.4,
+    headlineIncentive: 0.5,
     afterNative: 2.5,
     afterIncentive: 0.4,
     afterTotal: 2.9,
@@ -75,6 +76,7 @@ const baseSimulation: RateSimulationResult = {
     currentNative: 3.1,
     currentIncentive: 0.2,
     currentTotal: 2.9,
+    headlineIncentive: 0.3,
     afterNative: 3.4,
     afterIncentive: 0.1,
     afterTotal: 3.3,
@@ -358,5 +360,61 @@ describe('SimulationSubRow — forecast unavailable footnote', () => {
       </QueryClientProvider>,
     );
     expect(html).not.toContain('No forecast data');
+  });
+});
+
+describe('SimulationSubRow — headline reference (AAV-1167)', () => {
+  const simWithIncentives: RateSimulationResult = {
+    ...baseSimulation,
+    supply: {
+      ...baseSimulation.supply,
+      sources: {
+        ...baseSimulation.supply.sources,
+        protocol: { current: 0.3, after: 0.4, delta: 0.1 },
+      },
+    },
+    borrow: {
+      ...baseSimulation.borrow,
+      sources: {
+        ...baseSimulation.borrow.sources,
+        protocol: { current: 0.2, after: 0.1, delta: -0.1 },
+      },
+    },
+  };
+
+  function renderWithIncentives(reserve: ReserveWithSpread, compact: boolean) {
+    const queryClient = new QueryClient();
+    return renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <SimulationSubRow
+            reserve={reserve}
+            simulation={simWithIncentives}
+            isApy
+            supplyInput="1000"
+            borrowInput="500"
+            inputMode="usd"
+            compact={compact}
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+  }
+
+  it('TC-HL-01: desktop renders headline incentive row under Incentive breakdown', () => {
+    const html = renderWithIncentives({ ...baseReserve }, false);
+    expect(html).toContain('Headline');
+    expect(html).toContain('0.50%');
+    expect(html).toContain('0.30%');
+    // Headline should sit after the Incentive breakdown label in the DOM order.
+    expect(html.indexOf('Headline')).toBeGreaterThan(html.indexOf('Incentive'));
+  });
+
+  it('TC-HL-02: compact renders headline incentive row under Incentive breakdown', () => {
+    const html = renderWithIncentives({ ...baseReserve }, true);
+    expect(html).toContain('Headline');
+    expect(html).toContain('0.50%');
+    expect(html).toContain('0.30%');
+    expect(html.indexOf('Headline')).toBeGreaterThan(html.indexOf('Incentive'));
   });
 });

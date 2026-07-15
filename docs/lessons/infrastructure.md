@@ -20,3 +20,10 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **本地分支也可能被其他进程修改**：IDE auto-fetch、git hook、其他 session 的 push/pull 都可能移动本地分支指针。`git branch -vv` 显示的 ahead/behind 只反映上次 fetch 时的对比结果，不是实时状态。
 - **结论应带限定语**：不要说"本地 ahead 4, behind 70"，而应说"截至本次 fetch，本地 ahead 4, behind 70"。状态随时可能变，绝对判断容易误导。
 - **诊断 sync 问题时用 `git merge-base` 交叉验证**：`git log --oneline local..origin` 和 `git log --oneline origin..local` 配合 `git merge-base local origin` 才能看清真实分歧点，单看 ahead/behind 数字不够。
+
+## ahead/behind 数字虚高：merge commit 导致 commit 数 ≠ 合并代价
+- **`git branch -vv` 的 ahead/behind 是拓扑计数**：每个 merge commit 也算一个，所以频繁双向 sync（lovable↔dev）的项目中，behind 70 可能全是 merge commit，实际代码差距为零。
+- **判断真实合并代价用 `git diff --stat`**：如果 `git diff A..B --stat` 无输出，说明文件内容完全一致，pull 只会产生一个空 merge commit，无冲突无代码变化。
+- **`--no-merges` 过滤噪音**：`git log A..B --no-merges --oneline` 只显示实质 commit，去掉 merge commit 的虚高计数。
+- **`git cherry` 检测等价 patch**：`git cherry A B` 标记哪些 commit 的改动已在对面存在（`+` = 新增，`-` = 等价已存在），适合判断哪些 commit 真正需要合并。
+- **结论**：看到 ahead/behind 数字大时，先 `git diff --stat` 确认实际代码差异，再决定 pull/merge 策略，避免被 merge commit 历史误导。

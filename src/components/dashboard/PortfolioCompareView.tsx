@@ -109,22 +109,23 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
   const allTokenKeys = new Set<string>();
   const tokenMap = new Map<string, { symbol: string; side: 'supply' | 'borrow'; aprA: number | null; aprB: number | null; usdDayA: number | null; usdDayB: number | null }>();
 
+  const symbolByReserveIdA = new Map(snapshotA.entries.map(e => [e.reserveId, e.tokenSymbol]));
+  const symbolByReserveIdB = new Map(snapshotB.entries.map(e => [e.reserveId, e.tokenSymbol]));
+
   for (const r of snapshotA.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
     allTokenKeys.add(key);
-    const pos = snapshotA.entries.find(p => p.reserveId === r.reserveId);
-    tokenMap.set(key, { symbol: pos?.tokenSymbol ?? '?', side: r.side, aprA: r.totalPercent, aprB: null, usdDayA: r.usdPerDay, usdDayB: null });
+    tokenMap.set(key, { symbol: symbolByReserveIdA.get(r.reserveId) ?? '?', side: r.side, aprA: r.totalPercent, aprB: null, usdDayA: r.usdPerDay, usdDayB: null });
   }
   for (const r of snapshotB.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
     allTokenKeys.add(key);
-    const pos = snapshotB.entries.find(p => p.reserveId === r.reserveId);
     const existing = tokenMap.get(key);
     if (existing) {
       existing.aprB = r.totalPercent;
       existing.usdDayB = r.usdPerDay;
     } else {
-      tokenMap.set(key, { symbol: pos?.tokenSymbol ?? '?', side: r.side, aprA: null, aprB: r.totalPercent, usdDayA: null, usdDayB: r.usdPerDay });
+      tokenMap.set(key, { symbol: symbolByReserveIdB.get(r.reserveId) ?? '?', side: r.side, aprA: null, aprB: r.totalPercent, usdDayA: null, usdDayB: r.usdPerDay });
     }
   }
 

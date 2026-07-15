@@ -29,12 +29,38 @@
 - [ ] **Portfolio 模式** — 连接钱包或 Watch address `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314`，仓位数据正确显示
 - [ ] **Incentive 展开** — Merit/Merkl/Brevis 激励 breakdown 正常展开，APR 与 total 一致
 - [ ] **移动端** — 390×844 viewport 下布局正常，无溢出/截断/触控目标 < 44px
+- [ ] **子页面路由** — 用 `src/App.tsx` 中定义的实际路由测试，**不要猜 URL**：
+  - 首页: `/`
+  - 链页: `/chain/{slug}` (slug 见 `src/lib/seoChains.ts`)
+  - 资产页: `/asset/{slug}` (slug 见 `src/lib/seoAssets.ts`)
+  - 404 页: 随意路径应显示 NotFound
 
 ### 2. API 合约验证
 
 - [ ] **Live schema test** — `npx vitest run src/lib/apiSchemas.live.test.ts` 通过
 - [ ] **关键字段存在** — `reserveId`、supply/borrow APY、incentive 数组均存在
 - [ ] **百分数不变量** — API 返回的收益率字段仍为百分数（`2.07` = 2.07%，不是 `0.0207`）
+- [ ] **Production = Staging** — reserve 数量、schemaFingerprint、字段集一致；仅时间戳和实时数值（如 fdvUsd）允许差异
+
+### 2.1 Production vs Staging API 对比脚本
+
+```bash
+diff <(curl -s https://api.aaveapy.com/api/markets | python3 -c "
+import sys, json; d=json.load(sys.stdin)
+print('reserveCount:', len(d['reserves']))
+print('schemaFingerprint:', d['snapshot']['schemaFingerprint'])
+ids = sorted(r['reserveId'] for r in d['reserves'])
+print('\n'.join(ids))
+") <(curl -s https://staging-api.aaveapy.com/api/markets | python3 -c "
+import sys, json; d=json.load(sys.stdin)
+print('reserveCount:', len(d['reserves']))
+print('schemaFingerprint:', d['snapshot']['schemaFingerprint'])
+ids = sorted(r['reserveId'] for r in d['reserves'])
+print('\n'.join(ids))
+")
+```
+
+无输出 = 完全一致。
 
 ### 3. SEO / Meta
 

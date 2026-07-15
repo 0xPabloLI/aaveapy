@@ -363,6 +363,16 @@ const SimulationSubRow = ({
             isBreakdown: true,
             href: hasSupplyBreakdownLevelHref ? null : supplyIncentiveJumpHref,
           },
+          // AAV-1167: Headline reference value (pure market advertised rate).
+          {
+            rowKey: 'supply-incentive-headline',
+            label: 'Headline',
+            current: simulation.supply.headlineIncentive,
+            after: null,
+            delta: null,
+            type: 'rate' as RowType,
+            isSubBreakdown: true,
+          },
         ]
       : []),
     ...supplyIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'supply', true)),
@@ -411,6 +421,16 @@ const SimulationSubRow = ({
             type: 'rate' as RowType,
             isBreakdown: true,
             href: hasBorrowBreakdownLevelHref ? null : borrowIncentiveJumpHref,
+          },
+          // AAV-1167: Headline reference value (pure market advertised rate).
+          {
+            rowKey: 'borrow-incentive-headline',
+            label: 'Headline',
+            current: simulation.borrow.headlineIncentive,
+            after: null,
+            delta: null,
+            type: 'rate' as RowType,
+            isSubBreakdown: true,
           },
         ]
       : []),

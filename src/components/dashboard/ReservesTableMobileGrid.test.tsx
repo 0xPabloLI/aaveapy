@@ -54,14 +54,14 @@ const makeSimulation = (): RateSimulationResult => ({
   forecastUnavailableCampaignCount: 0,
   scenarioUsdAccrual: null,
   supply: {
-    currentNative: 2.1, currentIncentive: 0.3, currentTotal: 2.4,
+    currentNative: 2.1, currentIncentive: 0.3, currentTotal: 2.4, headlineIncentive: 0.5,
     afterNative: 2.5, afterIncentive: 0.4, afterTotal: 2.9,
     deltaNative: 0.4, deltaIncentive: 0.1, deltaTotal: 0.5,
     inputUsd: 1000, inputAmount: 1000, hasInput: true,
     sources: { protocol: emptySource, merit: emptySource, merkl: emptySource, brevis: emptySource },
   },
   borrow: {
-    currentNative: 3.1, currentIncentive: 0.2, currentTotal: 2.9,
+    currentNative: 3.1, currentIncentive: 0.2, currentTotal: 2.9, headlineIncentive: 0.3,
     afterNative: 3.4, afterIncentive: 0.1, afterTotal: 3.3,
     deltaNative: 0.3, deltaIncentive: -0.1, deltaTotal: 0.4,
     inputUsd: 500, inputAmount: 500, hasInput: true,

@@ -289,6 +289,14 @@ export const useSharedRateSimulations = ({
       }
       const hasEffectiveInput =
         parseNumberInput(effectiveSupplyInput) > 0 || parseNumberInput(effectiveBorrowInput) > 0;
+      // AAV-1166: Portfolio Scenario active when any perReserve entry has a delta
+      // and the current reserve is a portfolio member.
+      const portfolioScenarioActive =
+        perReserveInputs != null &&
+        Array.from(perReserveInputs.values()).some(
+          (v) => parseNumberInput(v.supplyInput) > 0 || parseNumberInput(v.borrowInput) > 0,
+        ) &&
+        perReserveInputs.has(reserveId);
 
       // totalSupplyUsd/totalBorrowUsd: total position (wallet + delta) for cap dilution & accrual.
       // In portfolio mode, perReserve carries the full position.
@@ -324,6 +332,7 @@ export const useSharedRateSimulations = ({
           walletSupplyUsd: effectiveWalletSupplyUsd,
           walletBorrowUsd: effectiveWalletBorrowUsd,
           pointRateMap,
+          portfolioScenarioActive,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasEffectiveInput && forecastLoading,
