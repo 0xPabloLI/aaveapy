@@ -3007,9 +3007,11 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
     expect(withScenario.supply.currentIncentive).toBeCloseTo(withoutScenario.supply.currentIncentive, 6);
   });
 
-  it('non-portfolio reserve unaffected: afterIncentive = null even when portfolioScenarioActive is true', () => {
+  it('single-mode reserve with no local input has afterIncentive = null', () => {
     // portfolioScenarioActive only applies to portfolio members; a single-mode reserve
     // with no local input should still have afterIncentive = null.
+    // NOTE: the actual non-portfolio vs portfolio-member decision is made by the
+    // callers (useSharedRateSimulations / portfolioSimulator) and should be tested there.
     const result = buildRateSimulationResult({
       reserve: makeReserveWithCrossConstraint(),
       reserveRateInput: VALID_RATE_INPUT,

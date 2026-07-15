@@ -159,8 +159,8 @@ export const sumMerklIncentiveApy = (
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
     // AAV-1164: Don't apply groupMultiplier when unified eligibility handles offset in mapValue.
+    // When positionUsd is null, fall back to groupMultiplier for offset-only application.
     groupMultiplier: applyUnifiedInMapValue ? undefined : options.merklGroupMultiplier,
-    groupMultiplier: useUnifiedEligibility ? undefined : options.merklGroupMultiplier,
   });
 };
 
