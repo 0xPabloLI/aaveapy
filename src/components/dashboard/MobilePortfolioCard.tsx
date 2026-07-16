@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
+import { getMarketChipLabel } from '@/lib/marketLabels';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type {
   PortfolioReserveEntry,
