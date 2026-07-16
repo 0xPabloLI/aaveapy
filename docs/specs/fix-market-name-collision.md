@@ -1,5 +1,7 @@
 # Spec: 修复 V4 marketName 跨链重名导致市场过滤串链
 
+> **Linear**: [AAV-1187](https://linear.app/aaveapy/issue/AAV-1187/v4-multi-chain-layout-chain-registration-auto-discovery-wagmi)
+
 ## Problem
 
 `selectedMarkets: string[]` 使用 `marketName` 作为唯一标识。V4 市场扩展到多链后，`marketName` 不再唯一：

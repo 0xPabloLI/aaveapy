@@ -1,5 +1,7 @@
 # Spec: V4 扩展到非 Ethereum 链的 Market Field 布局泛化
 
+> **Linear**: [AAV-1187](https://linear.app/aaveapy/issue/AAV-1187/v4-multi-chain-layout-chain-registration-auto-discovery-wagmi)
+
 ## Problem Statement
 
 当前前端对 V4 市场的支持仅限于 Ethereum。FilterBar、chainRegistry、marketLabels 等多处硬编码 Ethereum 相关逻辑，导致当 V4 扩展到其他链（如 Avalanche）时，无法正确显示多市场布局（sub-market 展开选择）和 sub-market 标签。
