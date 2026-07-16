@@ -113,14 +113,18 @@ curl -sS "https://staging-api.aaveapy.com/api/markets" | head -c 120
 
 如果 staging 站点必须继续走 Cloudflare 且保留 **Bot Fight Mode**，不要尝试把 GitHub Actions 的几千个出口网段全部塞进 IP Access Rules。更稳的做法是让 **CI 单独走 Railway 原始域名**，避开 Cloudflare。
 
-本仓库的 CI 已支持通过 GitHub Actions 仓库变量覆盖 live schema 的 base URL：
+本仓库的 CI 已支持通过 GitHub Actions 仓库 Secret 覆盖 live schema 的 base URL：
 
-1. GitHub → `Settings` → `Secrets and variables` → `Actions` → `Variables`
-2. 新建变量：`LIVE_TEST_API_BASE_CI`
+1. GitHub → `Settings` → `Secrets and variables` → `Actions` → `Secrets`
+2. 新建 Secret：`LIVE_TEST_API_BASE_CI`
 3. 值填你的 Railway staging API 地址，例如：
 
    ```txt
    https://your-service.up.railway.app/api
    ```
 
-4. 之后 `main` 分支上的 `live-schema-validation` job 会优先使用这个变量；未配置时仍回退到 `https://staging-api.aaveapy.com/api`
+4. 之后 `main` 分支上的 `live-schema-validation` / `live-simulation-validation` job 会优先使用这个 Secret（`secrets.LIVE_TEST_API_BASE_CI`）；未配置时仍回退到 `https://staging-api.aaveapy.com/api`
+
+> **Note**: 此值原为明文 GitHub Variable，已迁移为加密 Secret 以避免 Railway 内部域名暴露在 repo settings 明文中。所有 workflow 引用已从 `vars.LIVE_TEST_API_BASE_CI` 改为 `secrets.LIVE_TEST_API_BASE_CI`。
+>
+> **Lesson (AAV-429)**: 迁移时必须同时更新所有引用该变量的 workflow 文件。本次漏改 `hardcode-sync.yml`（只改了 `ci.yml`），导致 `vars.` 返回空值、fallback 到 staging-api 被 Cloudflare 403 拦截，hardcode sync 连续失败。涉及 `LIVE_TEST_API_BASE_CI` 的 workflow：`ci.yml`、`hardcode-sync.yml`。

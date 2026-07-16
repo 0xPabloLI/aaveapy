@@ -32,6 +32,8 @@ export interface IncentiveCalculationOptions {
   tokenPrice?: number;
   /** Reserve token decimals for converting positionCapNative to USD (Merkl). */
   decimals?: number;
+  /** Per-group net eligible USD after cross-reserve offset. When provided, cap and offset compose as single eligible principal: eligible = min(netEligible, cap), rate = apr * eligible / grossPosition. AAV-1164 */
+  crossReserveNetEligibleUsd?: (group: MerklOpportunityGroup) => number;
 }
 
 export interface IncentiveSources {
@@ -89,12 +91,14 @@ export const sumMerklIncentiveApr = (
   options: IncentiveCalculationOptions = {}
 ): number => {
   const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
+  const useUnifiedEligibility = options.crossReserveNetEligibleUsd != null;
+  const applyUnifiedInMapValue = useUnifiedEligibility && positionUsd != null && positionUsd > 0;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
-    mapValue: (_group, breakdown) => {
+    mapValue: (group, breakdown) => {
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
         : pointToUsdRate;
@@ -102,12 +106,22 @@ export const sumMerklIncentiveApr = (
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
       const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
-      if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
+      if (applyUnifiedInMapValue) {
+        // AAV-1164: Unified eligibility — cap and offset compose as single eligible principal.
+        // eligible = min(netEligible, cap), rate = apr * eligible / grossPosition
+        const netEligible = Math.max(options.crossReserveNetEligibleUsd!(group), 0);
+        const eligible = effectiveCapUsd != null && effectiveCapUsd > 0
+          ? Math.min(netEligible, effectiveCapUsd)
+          : netEligible;
+        apr = apr * eligible / positionUsd!;
+      } else if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
         apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
-    groupMultiplier: options.merklGroupMultiplier,
+    // AAV-1164: Don't apply groupMultiplier when unified eligibility handles offset in mapValue.
+    // When positionUsd is null, fall back to groupMultiplier for offset-only application.
+    groupMultiplier: applyUnifiedInMapValue ? undefined : options.merklGroupMultiplier,
   });
 };
 
@@ -117,12 +131,14 @@ export const sumMerklIncentiveApy = (
   options: IncentiveCalculationOptions = {}
 ): number => {
   const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
+  const useUnifiedEligibility = options.crossReserveNetEligibleUsd != null;
+  const applyUnifiedInMapValue = useUnifiedEligibility && positionUsd != null && positionUsd > 0;
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
-    mapValue: (_group, breakdown) => {
+    mapValue: (group, breakdown) => {
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
         : pointToUsdRate;
@@ -130,12 +146,21 @@ export const sumMerklIncentiveApy = (
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
       const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
-      if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
+      if (applyUnifiedInMapValue) {
+        // AAV-1164: Unified eligibility — cap and offset compose as single eligible principal.
+        const netEligible = Math.max(options.crossReserveNetEligibleUsd!(group), 0);
+        const eligible = effectiveCapUsd != null && effectiveCapUsd > 0
+          ? Math.min(netEligible, effectiveCapUsd)
+          : netEligible;
+        apr = apr * eligible / positionUsd!;
+      } else if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
         apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
-    groupMultiplier: options.merklGroupMultiplier,
+    // AAV-1164: Don't apply groupMultiplier when unified eligibility handles offset in mapValue.
+    // When positionUsd is null, fall back to groupMultiplier for offset-only application.
+    groupMultiplier: applyUnifiedInMapValue ? undefined : options.merklGroupMultiplier,
   });
 };
 

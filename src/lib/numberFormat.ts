@@ -48,3 +48,8 @@ export const parseNumberInput = (value: string): number => {
   const parsed = Number(sanitized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+export const parseSignedNumberInput = (value: string): number => {
+  const parsed = parseNumberInput(value);
+  return value.trim().startsWith('-') ? -parsed : parsed;
+};

@@ -171,7 +171,7 @@ jobs:
         run: npm run ci:lockcheck
       - name: Validate API schemas against live endpoints
         env:
-          LIVE_TEST_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
         run: bash scripts/ci-live-schema-validate.sh
   live-simulation-validation:
@@ -193,9 +193,9 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
-      - name: Run simulation Golden Rule tests against staging API
+      - name: Run simulation Golden Rule tests against live API
         env:
-          LIVE_TEST_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
         run: npm run test:live:simulation:staging
 
@@ -218,7 +218,7 @@ jobs:
         run: npm run ci:lockcheck
       - name: Check OpenAPI spec is up to date
         env:
-          LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: npm run openapi:check
 
   security-audit:
@@ -253,7 +253,7 @@ jobs:
       needs.openapi-check.result == 'failure'
     runs-on: ubuntu-latest
     env:
-      LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+      LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     permissions:
       contents: write
       pull-requests: write

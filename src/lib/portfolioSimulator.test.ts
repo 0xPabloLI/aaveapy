@@ -347,6 +347,40 @@ describe('buildPerReserveInputsFromEntries', () => {
     expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
+  it('keeps after metrics active for unchanged members after another member withdraws', () => {
+    const withdrawingReserveId = 'r-withdrawing';
+    const unchangedReserveId = 'r-unchanged';
+    const reserves = [
+      makeRateCalcReserve({ reserveId: withdrawingReserveId, tokenSymbol: 'USDC' }),
+      makeRateCalcReserve({ reserveId: unchangedReserveId, tokenSymbol: 'USDT' }),
+    ];
+    const entries = [
+      makeEntry({
+        reserveId: withdrawingReserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '500', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: unchangedReserveId,
+        tokenSymbol: 'USDT',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
+    ];
+
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves }),
+    );
+
+    const unchangedSupply = results.find(
+      (result) => result.reserveId === unchangedReserveId && result.side === 'supply',
+    );
+    expect(unchangedSupply?.nativeMetric?.after).not.toBeNull();
+    expect(unchangedSupply?.incentiveMetric?.after).not.toBeNull();
+    expect(unchangedSupply?.totalMetric?.after).not.toBeNull();
+  });
+
   it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
@@ -947,10 +981,10 @@ describe('simulatePortfolioFromEntries', () => {
       const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
       expect(supplyResult).toBeDefined();
 
-      // Wallet dilution: deltaIncentive = currentIncentive - headlineIncentive < 0
+      // AAV-1165: deltaIncentive = after - current only. No input → after=null → delta=null.
+      // Eligibility gap (current < headline) is separate structured data, not delta.
       expect(supplyResult.incentiveMetric).toBeDefined();
-      expect(supplyResult.incentiveMetric!.delta).not.toBeNull();
-      expect(supplyResult.incentiveMetric!.delta!).toBeLessThan(0);
+      expect(supplyResult.incentiveMetric!.delta).toBeNull();
     });
   });
 });
@@ -961,8 +995,8 @@ const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
   inputUsd: 10000,
   currentNative: 2.8,
   currentIncentive: 0.9,
-  
   currentTotal: 3.7,
+  headlineIncentive: 0.9,
   afterNative: 3.0,
   afterIncentive: 1.0,
   afterTotal: 4.0,

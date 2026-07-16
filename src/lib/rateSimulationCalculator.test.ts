@@ -168,6 +168,34 @@ describe('A/B category: B-class fields (after/delta)', () => {
     expect(result.marketMetrics.totalBorrowedUsdAfter).not.toBeNull();
   });
 
+  it('applies a negative portfolio supply delta as a withdrawal', () => {
+    const deposit = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withdrawal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '-1000',
+    });
+
+    expect(withdrawal.utilization.after).toBeGreaterThan(deposit.utilization.after!);
+  });
+
+  it('caps a withdrawal at executable reserve liquidity for native rate simulation', () => {
+    const result = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '-100000',
+    });
+
+    expect(result.utilization.after).toBeCloseTo(100, 6);
+  });
+
   it('B-class fields are null in fallback path (reserveRateInput null, no input)', () => {
     const result = buildRateSimulationResult({
       reserve: BASE_RESERVE,
@@ -854,9 +882,10 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     expect(result.supply.deltaIncentive).toBeNull();
   });
 
-  it('deltaIncentive = currentIncentive - headlineIncentive when wallet exceeds cap', () => {
+  it('deltaIncentive is null when wallet exceeds cap but no input (AAV-1165: delta = after - current only)', () => {
     // Wallet=$1500 > self-cap=$1000 → current is diluted
-    // deltaIncentive should show the dilution gap (negative value)
+    // AAV-1165: deltaIncentive is only after - current. No after → null.
+    // Eligibility gap info (current vs headline) is separate structured data, not delta.
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -866,16 +895,13 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     });
 
     expect(result.supply.hasInput).toBe(false);
-    // deltaIncentive should NOT be null — it should show the dilution gap
-    expect(result.supply.deltaIncentive).not.toBeNull();
-    // deltaIncentive should be negative (current < headline due to dilution)
-    expect(result.supply.deltaIncentive!).toBeLessThan(0);
-    // deltaIncentive reflects the dilution gap (current - headline, where
-    // headline is the undiluted baseline). We assert the observable behavior
-    // (negative delta = current is diluted) rather than the internal formula.
+    // deltaIncentive is null — no after to compare against
+    expect(result.supply.deltaIncentive).toBeNull();
+    // currentIncentive is still diluted (wallet > cap)
+    expect(result.supply.currentIncentive).toBeLessThan(result.supply.headlineIncentive);
   });
 
-  it('deltaIncentive for borrow side also shows dilution gap', () => {
+  it('deltaIncentive is null for borrow side when no input (AAV-1165)', () => {
     const result = buildRateSimulationResult({
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
@@ -885,8 +911,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
     });
 
     expect(result.borrow.hasInput).toBe(false);
-    expect(result.borrow.deltaIncentive).not.toBeNull();
-    expect(result.borrow.deltaIncentive!).toBeLessThan(0);
+    expect(result.borrow.deltaIncentive).toBeNull();
   });
 
   it('derives wallet from totalSupplyUsd - supplyInputUsd when hasInput=true', () => {
@@ -950,6 +975,56 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
   });
 });
 
+describe('AAV-1165: Pure headline + unified delta', () => {
+  it('headlineIncentive does not change when wallet position changes (purity)', () => {
+    const noWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+    });
+
+    const withWallet = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '500',
+      walletSupplyUsd: 1500,
+    });
+
+    // Headline must be identical regardless of wallet
+    expect(withWallet.supply.headlineIncentive).toBeCloseTo(noWallet.supply.headlineIncentive, 6);
+  });
+
+  it('headlineIncentive equals advertised API rate (no forecast, no cap dilution)', () => {
+    // MERIT_POSITION_CAP_RESERVE: base APR=10 + self APR=8 = 18 (advertised)
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500, // wallet > cap, but headline must NOT be diluted
+    });
+
+    // Headline = pure advertised rate = 10 + 8 = 18 (no cap, no wallet scaling)
+    expect(result.supply.headlineIncentive).toBeCloseTo(18, 1);
+  });
+
+  it('deltaIncentive is null when afterIncentive is null (no current-headline path)', () => {
+    const result = buildRateSimulationResult({
+      reserve: MERIT_POSITION_CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      walletSupplyUsd: 1500,
+      // No supplyInput → hasInput=false → afterIncentive=null
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.afterIncentive).toBeNull();
+    // AAV-1165: delta = after - current only. No after → null (not current - headline)
+    expect(result.supply.deltaIncentive).toBeNull();
+  });
+});
+
 describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
   const merits = [
     {
@@ -975,7 +1050,9 @@ describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
   ];
 
   it('generates capNote when deposit exceeds self-position cap', () => {
-    const rows = buildMeritCampaignDetails(merits, false, 5000, true);
+    const rows = buildMeritCampaignDetails({
+      merits, isApy: false, inputUsd: 5000, shouldComputeAfter: true,
+    });
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
     expect(selfRow!.notes?.[0]?.text).toBeDefined();
@@ -983,7 +1060,9 @@ describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
   });
 
   it('generates capNote but no capWarning when deposit is below cap', () => {
-    const rows = buildMeritCampaignDetails(merits, false, 500, true);
+    const rows = buildMeritCampaignDetails({
+      merits, isApy: false, inputUsd: 500, shouldComputeAfter: true,
+    });
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
     expect(selfRow!.notes?.[0]?.text).toBeDefined();
@@ -1025,7 +1104,9 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
       'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
     };
-    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+    });
     const withoutForecast = rows.find((r) => r.id.includes('camp-without-forecast'));
     expect(withoutForecast).toBeDefined();
     expect(withoutForecast!.forecastUnavailable).toBe(true);
@@ -1036,7 +1117,9 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
       'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
     };
-    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+    });
     const withForecast = rows.find((r) => r.id.includes('camp-with-forecast'));
     expect(withForecast).toBeDefined();
     expect(withForecast!.forecastUnavailable).toBeFalsy();
@@ -1044,7 +1127,9 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('marks campaign as forecastUnavailable when mergeForecastState returns null (no campaignId)', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
-    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, true);
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+    });
     const noIdRow = rows.find((r) => r.id.includes('-x'));
     expect(noIdRow).toBeDefined();
     expect(noIdRow!.forecastUnavailable).toBe(true);
@@ -1053,7 +1138,9 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('sets forecastUnavailable flag even when hasAnyInput is false (capNote not affected)', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
-    const rows = buildMerklCampaignDetails(opportunities, false, 1000, forecastStates, undefined, 1, false);
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: false,
+    });
     const unavailableRows = rows.filter((r) => r.forecastUnavailable);
     expect(unavailableRows.length).toBeGreaterThan(0);
     for (const row of rows) {
@@ -1085,11 +1172,18 @@ describe('buildMerklCampaignDetails — position cap native amount display', () 
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
       'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
     };
-    const rows = buildMerklCampaignDetails(
-      opportunitiesWithPositionCap, false, 5000, forecastStates,
-      undefined, 1, true, 1, undefined, undefined, undefined, undefined, undefined, undefined,
-      undefined, undefined, 1, 6, 'USDT',
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities: opportunitiesWithPositionCap,
+      isApy: false,
+      inputUsd: 5000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      tokenPrice: 1,
+      decimals: 6,
+      tokenSymbol: 'USDT',
+    });
     const cappedRow = rows.find((r) => r.id.includes('merkl-capped'));
     expect(cappedRow).toBeDefined();
     const capNote = cappedRow!.notes?.find((n) => n.type === 'position_cap');
@@ -1102,11 +1196,17 @@ describe('buildMerklCampaignDetails — position cap native amount display', () 
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
       'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
     };
-    const rows = buildMerklCampaignDetails(
-      opportunitiesWithPositionCap, false, 5000, forecastStates,
-      undefined, 1, true, 1, undefined, undefined, undefined, undefined, undefined, undefined,
-      undefined, undefined, 1, 6,
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities: opportunitiesWithPositionCap,
+      isApy: false,
+      inputUsd: 5000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      tokenPrice: 1,
+      decimals: 6,
+    });
     const cappedRow = rows.find((r) => r.id.includes('merkl-capped'));
     expect(cappedRow).toBeDefined();
     const capNote = cappedRow!.notes?.find((n) => n.type === 'position_cap');
@@ -1135,14 +1235,11 @@ describe('buildMerklCampaignDetails — positionCap', () => {
         ],
       },
     ];
-    const rows = buildMerklCampaignDetails(
-      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
-      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
-      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
-      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
-      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
-      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
+      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
+      grossForEligibility: 1000, netForEligibility: 1000,
+    });
     const row = rows[0];
     expect(row).toBeDefined();
     expect(row!.after).toBeLessThan(10);
@@ -1166,14 +1263,11 @@ describe('buildMerklCampaignDetails — positionCap', () => {
         ],
       },
     ];
-    const rows = buildMerklCampaignDetails(
-      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
-      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
-      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
-      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
-      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
-      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
+      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
+      grossForEligibility: 1000, netForEligibility: 1000,
+    });
     const row = rows[0];
     expect(row).toBeDefined();
     expect(row!.after).toBeCloseTo(10, 1);
@@ -1197,14 +1291,11 @@ describe('buildMerklCampaignDetails — positionCap', () => {
         ],
       },
     ];
-    const rows = buildMerklCampaignDetails(
-      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
-      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
-      /* eligibilityRatio */ 1, /* grossInputUsd */ 2000,
-      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
-      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
-      /* pointRateMap */ undefined, /* grossForEligibility */ 2000, /* netForEligibility */ 1000,
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
+      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 2000,
+      grossForEligibility: 2000, netForEligibility: 1000,
+    });
     const row = rows[0];
     expect(row).toBeDefined();
     expect(row!.after).toBeLessThan(10);
@@ -1225,14 +1316,11 @@ describe('buildMerklCampaignDetails — positionCap', () => {
         ],
       },
     ];
-    const rows = buildMerklCampaignDetails(
-      opportunities, /* isApy */ false, /* inputUsd */ 1000, forecastStates,
-      /* whitelistIds */ undefined, /* tydroRate */ 1, /* hasAnyInput */ true,
-      /* eligibilityRatio */ 1, /* grossInputUsd */ 1000,
-      /* merklGroupMultiplier */ undefined, /* merklCrossReserveNote */ undefined,
-      /* campaignAccessStatuses */ undefined, /* nativeApyPercent */ undefined,
-      /* pointRateMap */ undefined, /* grossForEligibility */ 1000, /* netForEligibility */ 1000,
-    );
+    const rows = buildMerklCampaignDetails({
+      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
+      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
+      grossForEligibility: 1000, netForEligibility: 1000,
+    });
     const row = rows[0];
     expect(row).toBeDefined();
     expect(row!.after).toBeCloseTo(10, 1);
@@ -1255,7 +1343,9 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
       },
     ];
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
-    const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
+    const rows = buildBrevisCampaignDetails({
+      items: brevis, isApy: false, inputUsd: 1000, shouldComputeAfter: true, forecastStates,
+    });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBe(true);
     expect(rows[0].notes?.[0]?.text ?? '').not.toContain('No forecast data');
@@ -1277,7 +1367,9 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
       'brevis-1': { requiredDaily: 50, distributedSoFar: 20, endTimestamp: 2000000000 },
     };
-    const rows = buildBrevisCampaignDetails(brevis, false, 1000, undefined, true, forecastStates);
+    const rows = buildBrevisCampaignDetails({
+      items: brevis, isApy: false, inputUsd: 1000, shouldComputeAfter: true, forecastStates,
+    });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBeFalsy();
   });
@@ -1320,12 +1412,12 @@ describe('Brevis position cap — totalPositionUsd fallback (AAV-1060 #10)', () 
   });
 
   it('buildBrevisCampaignDetails uses totalPositionUsd for position cap', () => {
-    const rowsWithTotal = buildBrevisCampaignDetails(
-      brevisWithCap, false, 0, undefined, true, undefined, 20000,
-    );
-    const rowsWithInputOnly = buildBrevisCampaignDetails(
-      brevisWithCap, false, 0, undefined, true, undefined, undefined,
-    );
+    const rowsWithTotal = buildBrevisCampaignDetails({
+      items: brevisWithCap, isApy: false, inputUsd: 0, shouldComputeAfter: true, totalPositionUsd: 20000,
+    });
+    const rowsWithInputOnly = buildBrevisCampaignDetails({
+      items: brevisWithCap, isApy: false, inputUsd: 0, shouldComputeAfter: true,
+    });
     expect(rowsWithTotal.length).toBe(1);
     expect(rowsWithInputOnly.length).toBe(1);
     expect(rowsWithTotal[0].current).toBe(10);
@@ -1834,6 +1926,54 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
     const noteText = merklNotes![0].text;
     expect(noteText).toContain('$1,042');
     expect(noteText).toContain('net eligible');
+  });
+});
+
+describe('AAV-1164: Merkl campaign details use unified eligibility', () => {
+  it('keeps the capped campaign row aligned with the Merkl source aggregate', () => {
+    const offsetReserveId = '1:0xoffset:0xoffset';
+    const reserve: ReserveWithSpread = {
+      ...BASE_RESERVE,
+      merklSupplys: [
+        {
+          name: 'Capped net lending',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'capped-net-lending',
+              positionCapUsd: 1000,
+            },
+          ],
+          netPositionConstraint: {
+            sourceSide: 'supply',
+            offsetReserveIds: [offsetReserveId],
+          },
+        },
+      ],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1500',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      totalSupplyUsd: 1500,
+      crossReservePositions: new Map([
+        [offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }],
+      ]),
+    });
+
+    const campaign = result.supply.sources.merkl?.campaigns?.[0];
+    expect(campaign?.after).toBeCloseTo(6.667, 3);
+    expect(result.supply.sources.merkl?.after).toBeCloseTo(6.667, 3);
+    expect(result.supply.afterIncentive).toBeCloseTo(6.667, 3);
   });
 });
 
@@ -2841,5 +2981,165 @@ describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserve
     });
 
     expect(result.supply.currentIncentive).toBeCloseTo(10.0, 1);
+  });
+});
+
+describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () => {
+  const makeReserveWithCrossConstraint = (): ReserveWithSpread => ({
+    ...BASE_RESERVE,
+    reserveId: 'cross-target',
+    tokenSymbol: 'USDT',
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [{
+      name: 'Cross Constraint Test',
+      link: 'https://example.com',
+      breakdowns: [{
+        campaignId: 'cross-test',
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+      }],
+      opportunityId: 'cross-opp',
+      netPositionConstraint: {
+        sourceSide: 'supply',
+        offsetReserveIds: ['offset-source'],
+      },
+    }],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+  });
+
+  it('portfolioScenarioActive computes afterIncentive for no-local-input member affected by cross-offset', () => {
+    // Target reserve has wallet supply but no local input.
+    // Offset source has a borrow delta that reduces target's eligible supply.
+    const reserve = makeReserveWithCrossConstraint();
+    const crossReservePositions = new Map([
+      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const walletCrossReservePositions = new Map([
+      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0', // no local input on target reserve
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      totalSupplyUsd: 1500, // wallet supply = $1500
+      walletSupplyUsd: 1500,
+      crossReservePositions,
+      walletCrossReservePositions,
+      portfolioScenarioActive: true,
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    // currentIncentive uses wallet-only offset: eligible = 1500 - 500 = 1000 → rate = 10 * 1000/1500
+    expect(result.supply.currentIncentive).toBeCloseTo(10 * 1000 / 1500, 6);
+    // afterIncentive is non-null because portfolioScenarioActive is true
+    expect(result.supply.afterIncentive).not.toBeNull();
+    // afterIncentive uses the same crossReservePositions (offset still $500) → same as current
+    expect(result.supply.afterIncentive!).toBeCloseTo(result.supply.currentIncentive, 6);
+    // delta should be 0 (no change from current in this scenario)
+    expect(result.supply.deltaIncentive).toBeCloseTo(0, 6);
+    expect(result.supply.sources.merkl?.campaigns?.[0]?.after)
+      .toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
+  });
+
+  it('portfolioScenarioActive makes afterNative = currentNative when no local input', () => {
+    const reserve = makeReserveWithCrossConstraint();
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      walletSupplyUsd: 1500,
+      portfolioScenarioActive: true,
+    });
+
+    expect(result.supply.hasInput).toBe(false);
+    expect(result.supply.afterNative).toBe(result.supply.currentNative);
+    expect(result.supply.deltaNative).toBe(0);
+  });
+
+  it('withdrawal campaign details reconcile with their Merkl source after value', () => {
+    const result = buildRateSimulationResult({
+      reserve: makeReserveWithCrossConstraint(),
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '-500',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1000,
+      walletSupplyUsd: 1500,
+      portfolioScenarioActive: true,
+    });
+
+    expect(result.supply.sources.merkl?.campaigns?.[0]?.after)
+      .toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
+  });
+
+  it('currentIncentive unchanged when toggling portfolioScenarioActive (Golden Rule #1)', () => {
+    const reserve = makeReserveWithCrossConstraint();
+    const baseParams = {
+      reserve,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      walletSupplyUsd: 1500,
+      crossReservePositions: new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]),
+      walletCrossReservePositions: new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]),
+    };
+
+    const withoutScenario = buildRateSimulationResult({ ...baseParams, portfolioScenarioActive: false });
+    const withScenario = buildRateSimulationResult({ ...baseParams, portfolioScenarioActive: true });
+
+    expect(withScenario.supply.currentIncentive).toBeCloseTo(withoutScenario.supply.currentIncentive, 6);
+  });
+
+  it('single-mode reserve with no local input has afterIncentive = null', () => {
+    // portfolioScenarioActive only applies to portfolio members; a single-mode reserve
+    // with no local input should still have afterIncentive = null.
+    // NOTE: the actual non-portfolio vs portfolio-member decision is made by the
+    // callers (useSharedRateSimulations / portfolioSimulator) and should be tested there.
+    const result = buildRateSimulationResult({
+      reserve: makeReserveWithCrossConstraint(),
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      portfolioScenarioActive: false,
+    });
+
+    expect(result.supply.afterIncentive).toBeNull();
   });
 });
