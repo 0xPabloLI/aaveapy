@@ -57,7 +57,7 @@
    1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案，确认设计决策有文档支撑
    2. **To Spec** — 用 `to-spec` skill 将对话结论合成为 spec 文档
    3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
-   4. **TDD Implement** — 逐 ticket 用 `tdd` skill 实施（red → green → refactor）；关键逻辑必须先写测试；严格遵循最佳实践
+   4. **TDD Implement** — 逐 ticket 先思考最佳实践的改法是什么，再用 `tdd` skill 实施（red → green → refactor）；关键逻辑必须先写测试
    5. **Code Review** — 实施完成后用 `code-review` skill 做双轴审查（Standards + Spec）
    6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
    7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
