@@ -9,9 +9,10 @@
  *   node scripts/check-chain-registry-upstream.mjs           # check-only (exit 1 if gaps)
  *   node scripts/check-chain-registry-upstream.mjs --write    # auto-generate entries + write files
  *
- * RPC URLs are sourced from aave/interface networksConfig.ts (same upstream used
- * by sync-chain-icon-map-upstream.mjs). Fallback: copy from existing entry
- * with same chainId. If neither available, entry gets publicRpcUrls: [] and
+ * V3 RPC URLs are sourced from aave/interface networksConfig.ts (V3-only upstream).
+ * V4 entries always get publicRpcUrls: [] — they share chainId with V3 and
+ * inherit RPC URLs at runtime via PUBLIC_RPC_URLS[chainId].
+ * If networksConfig is unavailable for a new V3 chain, entry gets [] and
  * runtime chainDiscovery (wagmi/chains, chainid.network, chainlist.org) handles it.
  */
 
@@ -318,26 +319,32 @@ async function main() {
 
     console.log(`    wagmiChain: ${wagmiChainName}`);
 
-    // 2. Resolve RPC URLs: upstream → existing entry → empty
+    // 2. Resolve RPC URLs
+    //    V4: always [] — shares chainId & RPC with V3, no separate URLs needed.
+    //    V3: try upstream networksConfig.ts → existing entry with same chainId → []
     let rpcUrls = [];
 
-    if (upstreamNetworks) {
-      const netConfig = upstreamNetworks.get(wagmiChainName);
-      if (netConfig && netConfig.rpcUrls.length > 0) {
-        rpcUrls = netConfig.rpcUrls;
-        console.log(`    RPC URLs from networksConfig: ${rpcUrls.length} URLs`);
+    if (!isV4) {
+      if (upstreamNetworks) {
+        const netConfig = upstreamNetworks.get(wagmiChainName);
+        if (netConfig && netConfig.rpcUrls.length > 0) {
+          rpcUrls = netConfig.rpcUrls;
+          console.log(`    RPC URLs from networksConfig: ${rpcUrls.length} URLs`);
+        }
       }
-    }
 
-    if (rpcUrls.length === 0) {
-      rpcUrls = findRpcUrlsFromRegistry(registryContent, ab, chainId);
-      if (rpcUrls.length > 0) {
-        console.log(`    RPC URLs from existing entry (same chainId): ${rpcUrls.length} URLs`);
+      if (rpcUrls.length === 0) {
+        rpcUrls = findRpcUrlsFromRegistry(registryContent, ab, chainId);
+        if (rpcUrls.length > 0) {
+          console.log(`    RPC URLs from existing entry (same chainId): ${rpcUrls.length} URLs`);
+        }
       }
-    }
 
-    if (rpcUrls.length === 0) {
-      console.log(`    RPC URLs: none found (using [] — runtime chainDiscovery handles)`);
+      if (rpcUrls.length === 0) {
+        console.log(`    RPC URLs: none found (using [] — runtime chainDiscovery handles)`);
+      }
+    } else {
+      console.log(`    RPC URLs: [] (V4 shares chainId with V3)`);
     }
 
     // 3. Collect imports

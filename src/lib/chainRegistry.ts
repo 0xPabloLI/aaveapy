@@ -104,7 +104,7 @@ const ENTRIES: readonly ChainEntry[] = [
   { abModule: AaveV3Plasma, wagmiChain: plasma, publicRpcUrls: ['https://rpc.plasma.to', 'https://plasma.drpc.org', 'https://plasma.api.onfinality.io/public'], version: 'v3' },
   { abModule: AaveV3Monad, wagmiChain: monad, publicRpcUrls: ['https://rpc.monad.xyz', 'https://monad.drpc.org'], version: 'v3' },
   { abModule: AaveV4Ethereum, wagmiChain: mainnet, publicRpcUrls: [], version: 'v4' },
-  { abModule: AaveV4Avalanche, wagmiChain: avalanche, publicRpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche.drpc.org', 'https://1rpc.io/avax/c', 'https://avalanche-c-chain-rpc.publicnode.com'], version: 'v4' },
+  { abModule: AaveV4Avalanche, wagmiChain: avalanche, publicRpcUrls: [], version: 'v4' },
 ] as const
 
 // ---- Derived exports ----
@@ -144,8 +144,7 @@ export const V3_POOL_ADDRESSES: Record<string, string> = Object.fromEntries(
   ENTRIES.filter((e) => !isV4(e)).map((e) => [String(e.abModule.CHAIN_ID), e.abModule.POOL]),
 )
 
-/** Public RPC URLs map — includes V3 and V4 entries with non-empty RPC URLs.
- *  V3 and V4 share chainId, so entries are deduplicated by chainId (first non-empty wins). */
+/** Public RPC URLs map — V4 entries have [] (share chainId & RPC with V3, no separate URLs). */
 export const PUBLIC_RPC_URLS: Record<number, string[]> = Object.fromEntries(
   ENTRIES.filter((e) => e.publicRpcUrls.length > 0).map((e) => [e.abModule.CHAIN_ID, e.publicRpcUrls]),
 )
