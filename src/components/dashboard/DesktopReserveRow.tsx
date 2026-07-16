@@ -8,6 +8,7 @@ import { FrozenStatusBadge } from './ReserveStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
 import { getReserveMarketDisplayName } from '@/lib/marketLabels';
+import { marketKey } from '@/lib/marketKey';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveV4HubUrl, buildAaveV4MarketUrl } from '@/lib/aaveLinks';
 import { buildTydroMarketUrl } from '@/lib/tydroLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -405,7 +406,7 @@ const DesktopReserveRow = memo(({
                   onClick={(event) => {
                     event.stopPropagation();
                     onMarketChipClick?.(reserveId);
-                    onSelectMarket?.(reserve.marketName);
+                    onSelectMarket?.(marketKey(reserve.chainId, reserve.marketName));
                   }}
                   className={cn(marketCellClassNames.chipBase, marketCellClassNames.marketButton)}
                   aria-label={`Filter by ${marketDisplayName} market`}

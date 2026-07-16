@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ReservesTable from './ReservesTable';
 import type { ReserveWithSpread } from '@/types/aave';
+import { marketKey } from '@/lib/marketKey';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -94,7 +95,7 @@ vi.mock('./DesktopReserveRow', () => ({
             onClick={(event) => {
               event.stopPropagation();
               onMarketChipClick?.(reserveId);
-              onSelectMarket?.(reserve.marketName);
+              onSelectMarket?.(marketKey(reserve.chainId, reserve.marketName));
             }}
           >
             filter-{reserve.marketName}
@@ -163,7 +164,7 @@ function renderWithQueryClient(ui: ReactNode) {
 function MarketFilteredTable() {
   const [selectedMarket, setSelectedMarket] = useState<string | null>(null);
   const filteredReserves = selectedMarket
-    ? reserves.filter((reserve) => reserve.marketName === selectedMarket)
+    ? reserves.filter((reserve) => marketKey(reserve.chainId, reserve.marketName) === selectedMarket)
     : reserves;
 
   return (
