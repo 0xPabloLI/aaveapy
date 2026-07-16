@@ -24,8 +24,8 @@ interface FilterBarProps {
   marketsList?: MarketListItem[];
   showFrozenOrPaused?: boolean;
   setShowFrozenOrPaused?: (value: boolean) => void;
-  /** Available hub entries derived from current reserves (id for filtering, name for display). */
-  hubEntries?: { id: string; name: string }[];
+  /** Available hub entries derived from current reserves (id for filtering, name + chain for display). */
+  hubEntries?: { id: string; name: string; chainId: number; chainName: string }[];
   /** Currently selected hub IDs (empty = "All"). */
   selectedHubs: string[];
   /** Set selected hub IDs. */
@@ -418,13 +418,15 @@ const FilterBar = ({
 
         {marketViewMode === 'hub' && hasHubs
           ? (
-            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
+            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name + chain icon) */
             hubEntries!.map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
                   key={hub.id}
                   selected={isSelected}
+                  className="gap-1"
+                  aria-label={hub.name}
                   onClick={() => {
                     if (isSelected) {
                       setSelectedHubs(selectedHubs.filter((h) => h !== hub.id));
@@ -432,9 +434,10 @@ const FilterBar = ({
                       setSelectedHubs([...selectedHubs, hub.id]);
                     }
                   }}
-                  title={hub.name}
+                  title={`${hub.name} · ${hub.chainName}`}
                 >
-                  {hub.name}
+                  <ChainIcon chainId={hub.chainId} chainName={hub.chainName} className="opacity-70" />
+                  <span>{hub.name}</span>
                 </FilterChip>
               );
             })

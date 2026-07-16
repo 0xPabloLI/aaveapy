@@ -417,17 +417,24 @@ const Index = () => {
   };
 
 
-  // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
+  // Derive unique hub entries (id + display name + chain) from current reserves (stable, alphabetical by name)
   const hubEntries = useMemo(() => {
     const reserves = effectiveReservesData?.reserves ?? [];
-    const map = new Map<string, string>();
+    const map = new Map<string, { name: string; chainId: number; chainName: string }>();
     for (const r of reserves) {
       if (r.hubId?.trim()) {
-        map.set(r.hubId.trim(), r.hubName?.trim() || r.hubId.trim());
+        const id = r.hubId.trim();
+        if (!map.has(id)) {
+          map.set(id, {
+            name: r.hubName?.trim() || id,
+            chainId: r.chainId,
+            chainName: r.chainName,
+          });
+        }
       }
     }
     return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
+      .map(([id, entry]) => ({ id, ...entry }))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [effectiveReservesData?.reserves]);
 
