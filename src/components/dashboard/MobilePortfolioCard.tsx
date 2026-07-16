@@ -134,8 +134,6 @@ function MobileCard({
   const isRestricted = entry.restrictedStatus != null;
   const chainSrc = getChainIconSrc(entry.chainId);
   const marketLabel = getMarketChipLabel(entry.marketName, entry.chainName);
-  const showV4 = isV4Market(entry.marketName);
-  const hubChipClass = getHubChipClass(showV4);
 
   const disabledNotice = reserve ? {
     supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
