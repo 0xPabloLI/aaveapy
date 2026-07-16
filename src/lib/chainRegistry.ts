@@ -4,37 +4,15 @@
  * Zero-latency: when the address book adds a new chain, it's immediately
  * available here — no CI step, no manual registration.
  *
- * The only manual data is:
- * 1. CHAIN_RPC_URLS — curated RPC URLs per chainId (optional; chainDiscovery
- *    handles chains not listed here via wagmi/chains → chainid.network → chainlist.org)
- * 2. WAGMI_CHAINS — explicit wagmi chain imports for wallet connection
- *    (chains not imported here are still tracked but can't connect wallets)
+ * The only manual data is CHAIN_RPC_URLS — curated RPC URLs per chainId.
+ * Chains not listed there fall back to runtime chainDiscovery
+ * (chainid.network → chainlist.org).
+ *
+ * Wagmi config uses only mainnet for wallet connection (app is read-only;
+ * data reads use independent RPC clients via chainDiscovery, not wagmi).
  */
 
 import * as ab from '@aave-dao/aave-address-book'
-import {
-  mainnet,
-  optimism,
-  bsc,
-  gnosis,
-  polygon,
-  sonic,
-  xLayer,
-  zkSync,
-  soneium,
-  celo,
-  mantle,
-  base,
-  metis,
-  linea,
-  arbitrum,
-  avalanche,
-  scroll,
-  ink,
-  megaeth,
-  plasma,
-  monad,
-} from 'wagmi/chains'
 import { setRegistryChecker, setStaticRpcUrlGetter, setWagmiChainRpcUrlGetter } from './userData/chainDiscovery'
 
 // ---------------------------------------------------------------------------
@@ -103,7 +81,7 @@ const ENTRIES: readonly DiscoveredEntry[] = (() => {
 
 /**
  * Curated public RPC URLs per chain. Optional — chains not listed here
- * fall back to runtime chainDiscovery (wagmi/chains → chainid.network → chainlist.org).
+ * fall back to runtime chainDiscovery (chainid.network → chainlist.org).
  *
  * To add RPC URLs for a new chain: add an entry here. That's it.
  */
@@ -136,34 +114,6 @@ export const PUBLIC_RPC_URLS: Record<number, string[]> = CHAIN_RPC_URLS
 export function getPublicRpcUrls(chainId: number): string[] {
   return CHAIN_RPC_URLS[chainId] ?? []
 }
-
-// ---------------------------------------------------------------------------
-// Wagmi chain lookup — for wallet connection
-// ---------------------------------------------------------------------------
-
-const WAGMI_CHAINS_BY_ID = new Map<number, { id: number; name: string; nativeCurrency: { name: string; symbol: string; decimals: number }; rpcUrls: { default: { http: readonly string[] } } }>([
-  [mainnet.id, mainnet],
-  [optimism.id, optimism],
-  [bsc.id, bsc],
-  [gnosis.id, gnosis],
-  [polygon.id, polygon],
-  [sonic.id, sonic],
-  [xLayer.id, xLayer],
-  [zkSync.id, zkSync],
-  [soneium.id, soneium],
-  [celo.id, celo],
-  [mantle.id, mantle],
-  [base.id, base],
-  [metis.id, metis],
-  [linea.id, linea],
-  [arbitrum.id, arbitrum],
-  [avalanche.id, avalanche],
-  [scroll.id, scroll],
-  [ink.id, ink],
-  [megaeth.id, megaeth],
-  [plasma.id, plasma],
-  [monad.id, monad],
-])
 
 // ---------------------------------------------------------------------------
 // Derived exports
@@ -202,16 +152,6 @@ export const V3_POOL_ADDRESSES: Record<string, string> = Object.fromEntries(
     .map((e) => [String(e.chainId), e.pool!]),
 )
 
-/** Wagmi supported chains — chains with wagmi imports (for wallet connection) */
-const seenWagmi = new Set<number>()
-export const WALLET_SUPPORTED_CHAINS = ENTRIES
-  .filter((e) => {
-    if (seenWagmi.has(e.chainId)) return false
-    seenWagmi.add(e.chainId)
-    return WAGMI_CHAINS_BY_ID.has(e.chainId)
-  })
-  .map((e) => WAGMI_CHAINS_BY_ID.get(e.chainId)!)
-
 // ---------------------------------------------------------------------------
 // Runtime discovery integration
 // ---------------------------------------------------------------------------
@@ -219,8 +159,6 @@ export const WALLET_SUPPORTED_CHAINS = ENTRIES
 const registryChainSetForDiscovery = new Set<number>(AAVE_CHAIN_IDS)
 setRegistryChecker((chainId: number) => registryChainSetForDiscovery.has(chainId))
 setStaticRpcUrlGetter((chainId: number) => CHAIN_RPC_URLS[chainId] ?? [])
-setWagmiChainRpcUrlGetter((chainId: number) => {
-  const chain = WAGMI_CHAINS_BY_ID.get(chainId)
-  if (!chain) return []
-  return [...chain.rpcUrls.default.http]
-})
+// wagmi chain RPC URLs not used — app uses mainnet-only wagmi config for wallet
+// connection, and data reads go through chainDiscovery (chainid.network → chainlist.org)
+setWagmiChainRpcUrlGetter(() => [])

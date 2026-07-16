@@ -30,7 +30,7 @@ vi.mock('wagmi/connectors', () => ({
 
 vi.mock('@/lib/wagmi/config', () => ({
   wagmiConfig: {},
-  WALLET_SUPPORTED_CHAINS: [],
+  WALLET_SUPPORTED_CHAINS: { id: 1, name: 'Ethereum' },
 }))
 
 vi.mock('@/components/ThemeToggle', () => ({

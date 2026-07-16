@@ -5,11 +5,10 @@
  *
  * RPC URL resolution priority (highest → lowest):
  *   1. chainRegistry.ts — curated RPC URLs (multiple, load-balanced)
- *   2. wagmi/chains — bundled default RPC URL (1 per chain, always available)
- *   3. chainid.network/chains.json — bulk EVM chain registry (runtime fetch)
- *   4. chainlist.org/rpcs.json — bulk RPC list with rich metadata (runtime fetch)
+ *   2. chainid.network/chains.json — bulk EVM chain registry (runtime fetch)
+ *   3. chainlist.org/rpcs.json — bulk RPC list with rich metadata (runtime fetch)
  *
- * Sources 3-4 only provide bulk endpoints (no per-chain JSON API).
+ * Sources 2-3 only provide bulk endpoints (no per-chain JSON API).
  * The bulk data is fetched once, cached with a long TTL, and searched locally.
  */
 

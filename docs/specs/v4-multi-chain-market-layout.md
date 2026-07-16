@@ -207,3 +207,20 @@
 
 - Field canary 更新：canary 测字段名不测 marketName，非必要
 - `getEthSubMarketLabel` deprecated wrapper 保留（向后兼容），标注 `@deprecated`
+
+### ✅ Chain Registration 自动化（spec 外补充）
+
+在实现过程中，chain registration 从手动添加 entry 演进为零延迟自动发现：
+
+1. **`chainRegistry.ts`** — 使用 `import * as ab` 自动发现所有 Aave 链（V3/V4），不再手动维护 ENTRIES
+2. **`aaveV4UserClient.ts`** — `V4_SPOKE_ADDRESSES` / `V4_HUB_ADDRESSES` 同样从 `import * as ab` 自动发现
+3. **RPC URL** — 统一为 `CHAIN_RPC_URLS` map，按 chainId 共享（V3/V4 同链共享同一 RPC）
+4. **CI 检查** — `check-chain-registry-upstream.mjs` 简化为仅告警 RPC 缺失，不做注册
+5. **Wagmi config** — 简化为仅使用 `mainnet`（app 是 read-only，数据读取通过 `chainDiscovery` 独立 RPC 客户端，不依赖 wagmi chain）
+
+**结果**：新增 Aave 链时，只需升级 `@aave-dao/aave-address-book` 依赖版本，前端自动识别——无需任何手动注册。
+
+**Wagmi 简化理由**：
+- 钱包连接仅用于 "Watch address" 模式，用户不切链
+- 数据读取走独立的 RPC 客户端（`chainDiscovery` → chainid.network → chainlist.org），不经过 wagmi
+- 多链 wagmi config 引入了大量 chain imports，维护负担高但实际未使用
