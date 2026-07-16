@@ -92,14 +92,17 @@ function aprPercentToApyPercent(aprPercent: number): number {
 function parseUnits(amount: string, decimals: number): bigint {
   const cleaned = amount.replace(/,/g, '').trim();
   if (!cleaned) return 0n;
-  if (!/^\d*\.?\d*$/.test(cleaned)) return 0n;
-  const [intRaw, fracRaw = ''] = cleaned.split('.');
+  const negative = cleaned.startsWith('-');
+  const unsigned = negative ? cleaned.slice(1) : cleaned;
+  if (!/^\d*\.?\d*$/.test(unsigned)) return 0n;
+  const [intRaw, fracRaw = ''] = unsigned.split('.');
   const intPart = intRaw || '0';
   const safeDecimals = Math.max(0, Math.floor(decimals));
   const scale = 10n ** BigInt(safeDecimals);
   const fracPadded = (fracRaw + '0'.repeat(safeDecimals)).slice(0, safeDecimals);
   const fracPart = fracPadded ? BigInt(fracPadded) : 0n;
-  return BigInt(intPart) * scale + fracPart;
+  const parsed = BigInt(intPart) * scale + fracPart;
+  return negative ? -parsed : parsed;
 }
 
 export interface NativeRateSimulation {

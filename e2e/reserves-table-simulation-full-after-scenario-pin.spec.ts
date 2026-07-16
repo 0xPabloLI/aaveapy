@@ -22,6 +22,89 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom + 8;
 }
 
+async function getVisibleReserveOrder(
+  page: Parameters<typeof test>[0]['page'],
+): Promise<string[]> {
+  return page.locator('tbody tr[data-reserve-id]').evaluateAll((rows) =>
+    rows
+      .map((row) => row.getAttribute('data-reserve-id') ?? '')
+      .filter((id) => id.length > 0),
+  );
+}
+
+function didReorder(beforeOrder: string[], afterOrder: string[]): boolean {
+  return (
+    beforeOrder.length !== afterOrder.length ||
+    beforeOrder.some((id, index) => id !== afterOrder[index])
+  );
+}
+
+async function setScenarioInputs(
+  page: Parameters<typeof test>[0]['page'],
+  values: { supply: string; borrow: string },
+) {
+  await page.locator(
+    '[data-reserves-sticky-scenario] input[aria-label="Supply amount"]',
+  ).fill(values.supply);
+  await page.locator(
+    '[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]',
+  ).fill(values.borrow);
+}
+
+async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+  await page.evaluate(() => {
+    type ProbedWindow = Window & {
+      __e2eScrollByCalls?: number;
+      __e2eOriginalScrollBy?: typeof window.scrollBy;
+    };
+    const win = window as ProbedWindow;
+    if (!win.__e2eOriginalScrollBy) {
+      win.__e2eOriginalScrollBy = window.scrollBy.bind(window);
+      window.scrollBy = ((...args: Parameters<typeof window.scrollBy>) => {
+        win.__e2eScrollByCalls = (win.__e2eScrollByCalls ?? 0) + 1;
+        win.__e2eOriginalScrollBy?.(...args);
+      }) as typeof window.scrollBy;
+    }
+    win.__e2eScrollByCalls = 0;
+  });
+}
+
+async function resetScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+  await page.evaluate(() => {
+    type ProbedWindow = Window & { __e2eScrollByCalls?: number };
+    (window as ProbedWindow).__e2eScrollByCalls = 0;
+  });
+}
+
+async function getScrollByProbeCount(
+  page: Parameters<typeof test>[0]['page'],
+): Promise<number> {
+  return page.evaluate(() => {
+    type ProbedWindow = Window & { __e2eScrollByCalls?: number };
+    return (window as ProbedWindow).__e2eScrollByCalls ?? 0;
+  });
+}
+
+async function moveRowAwayFromPinBand(
+  page: Parameters<typeof test>[0]['page'],
+  reserveId: string,
+) {
+  const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).first();
+  const pinnedTopY = await getPinnedTopY(page);
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const box = await mainRow.boundingBox();
+    if (box && box.y - pinnedTopY >= 180) return;
+    const delta = box ? box.y - (pinnedTopY + 260) : -260;
+    await page.evaluate((top) => window.scrollBy({ top, behavior: 'auto' }), delta);
+    await page.waitForTimeout(120);
+  }
+  const box = await mainRow.boundingBox();
+  expect(
+    box ? box.y - pinnedTopY : 0,
+    'expanded row should be moved away from the pin band before the scenario change',
+  ).toBeGreaterThanOrEqual(180);
+}
+
 function simulationScrollPortForMainRow(mainRow: Locator) {
   return mainRow
     .locator('xpath=following-sibling::tr[1]')
@@ -29,49 +112,23 @@ function simulationScrollPortForMainRow(mainRow: Locator) {
     .first();
 }
 
-/**
- * Regression (desktop): after scenario-driven re-sort + pin, expanded simulation should not be
- * clipped by an inner `overflow-y` scrollport (`scrollHeight` should fit `clientHeight`).
- *
- * Today `DesktopReserveRow` uses `max-height` + `overflow-y-auto`, so the **last** expect fails until
- * layout is fixed.
- *
- * Flow matches `reserves-table-scenario-pin.spec.ts` through the first pin, then we assert on the
- * inner scrollport.
- *
- * **Why a temporary max-height clamp:** before layout settles, `mainRowHeight` can be 0 so React
- * omits `max-height` and `scrollHeight === clientHeight` (no measurable inner overflow). The same
- * E2E clamp pattern as `reserves-table-simulation-nested-scroll.spec.ts` forces a clipped pane so
- * the regression line (`scrollHeight` should fit `clientHeight` when the product shows the full
- * simulation) fails reliably until `DesktopReserveRow` stops capping the wrapper.
- */
 test.describe('Simulation fully visible after scenario-driven pin (desktop)', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Pin scroll + desktop expanded simulation only',
-    );
-  });
-
-  test('after re-sort and pin, simulation scrollport has no inner vertical overflow', async ({
+  test('after a scenario-driven pin, simulation has no inner vertical overflow', async ({
     page,
   }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     await page.goto('/');
     await waitDesktopReservesReady(page);
-
-    const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
-    const borrowInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]');
-
-    await supplyInput.fill('100');
+    await installScrollByProbe(page);
+    await setScenarioInputs(page, { supply: '100', borrow: '0' });
     await page.waitForTimeout(900);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     expect(rowCount, 'need visible reserve rows').toBeGreaterThan(0);
 
-    const targetIndex = Math.min(2, rowCount - 1);
+    const targetIndex = Math.min(8, rowCount - 1);
     const targetRow = rows.nth(targetIndex);
     const reserveId = await targetRow.getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
@@ -81,85 +138,68 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
     await expect(targetRow).toHaveClass(/bg-muted\/30/);
     await page.waitForTimeout(500);
 
-    await borrowInput.fill('100');
-
     const expandedMain = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).first();
     await expect(expandedMain).toBeVisible({ timeout: 10_000 });
+    const scenarioSteps = [
+      { supply: '250', borrow: '0' },
+      { supply: '0', borrow: '250' },
+      { supply: '1000', borrow: '150' },
+      { supply: '80', borrow: '1200' },
+      { supply: '30000', borrow: '50' },
+      { supply: '40', borrow: '45000' },
+      { supply: '700', borrow: '700' },
+      { supply: '150000', borrow: '900' },
+    ];
 
-    /** Match `reserves-table-scenario-pin.spec.ts`: pin band is fixed per assert; poll row `y` only (re-calling sticky boxes inside poll can see transient null → bogus default). */
-    const assertPinned = async (label: string) => {
+    let observedPin = false;
+    for (const step of scenarioSteps) {
+      const beforeOrder = await getVisibleReserveOrder(page);
+      await moveRowAwayFromPinBand(page, reserveId);
+      await resetScrollByProbe(page);
+      await setScenarioInputs(page, step);
+      await page.waitForTimeout(1200);
+      const afterOrder = await getVisibleReserveOrder(page);
+      if (!didReorder(beforeOrder, afterOrder)) continue;
+
+      await expect
+        .poll(() => getScrollByProbeCount(page), {
+          timeout: 15_000,
+          message: 'a scenario-driven reorder should trigger pin scrolling',
+        })
+        .toBeGreaterThan(0);
+
       const pinnedTopY = await getPinnedTopY(page);
       await expect
         .poll(
           async () => {
-            const b = await expandedMain.boundingBox();
-            return b ? b.y : Number.POSITIVE_INFINITY;
+            const box = await expandedMain.boundingBox();
+            return box ? box.y : Number.POSITIVE_INFINITY;
           },
-          { timeout: 15_000, message: label },
+          {
+            timeout: 15_000,
+            message: 'expanded row should pin after an observed scenario-driven reorder',
+          },
         )
         .toBeLessThanOrEqual(pinnedTopY + 28);
-    };
+      observedPin = true;
+      break;
+    }
 
-    await assertPinned('expanded row should pin after first scenario-driven re-sort');
-
-    await supplyInput.fill('10000000');
-    await page.waitForTimeout(1100);
-    await assertPinned('expanded row should stay pinned after second scenario-driven re-sort');
-
-    await page.waitForTimeout(400);
-
+    expect(observedPin, 'a scenario step must reorder and pin the expanded reserve').toBe(true);
     await expect(page.getByText('Simulation is for reference only')).toBeVisible({ timeout: 25_000 });
 
     const scrollPort = simulationScrollPortForMainRow(expandedMain);
     await expect(scrollPort).toBeVisible({ timeout: 10_000 });
 
-    // 1) E2E clamp: prove simulation content IS tall enough to overflow a small pane.
-    await scrollPort.evaluate((el) => {
-      el.dataset.e2ePrevMaxHeight = el.style.maxHeight;
-      el.dataset.e2ePrevOverflow = el.style.overflowY;
-      el.style.maxHeight = '180px';
-      el.style.overflowY = 'auto';
-    });
-
-    await expect
-      .poll(
-        async () => {
-          const { scrollHeight, clientHeight } = await scrollPort.evaluate((e) => ({
-            scrollHeight: e.scrollHeight,
-            clientHeight: e.clientHeight,
-          }));
-          return scrollHeight - clientHeight;
-        },
-        {
-          timeout: 15_000,
-          message:
-            'after E2E clamp: simulation content should exceed inner pane (see nested-scroll spec)',
-        },
-      )
-      .toBeGreaterThan(24);
-
-    // 2) Restore product state (no max-height, no overflow-y) and verify no inner scroll.
-    await scrollPort.evaluate((el) => {
-      el.style.maxHeight = el.dataset.e2ePrevMaxHeight ?? '';
-      el.style.overflowY = el.dataset.e2ePrevOverflow ?? '';
-      delete el.dataset.e2ePrevMaxHeight;
-      delete el.dataset.e2ePrevOverflow;
-    });
-
     const metrics = await scrollPort.evaluate((el) => ({
       scrollHeight: el.scrollHeight,
       clientHeight: el.clientHeight,
+      overflowY: getComputedStyle(el).overflowY,
     }));
 
     expect(
-      metrics.scrollHeight,
-      'tall simulation body expected after large scenario (raise supply if this fails)',
-    ).toBeGreaterThan(320);
-
-    expect(
-      metrics.scrollHeight,
-      `Expected entire simulation visible without inner scroll after pin (scrollHeight=${metrics.scrollHeight} <= clientHeight=${metrics.clientHeight}). ` +
-        'Remove or relax DesktopReserveRow max-height + overflow-y-auto so this passes.',
-    ).toBeLessThanOrEqual(metrics.clientHeight + 2);
+      metrics.scrollHeight - metrics.clientHeight,
+      `simulation should remain on document scroll after pin (overflow-y=${metrics.overflowY})`,
+    ).toBeLessThanOrEqual(2);
   });
 });

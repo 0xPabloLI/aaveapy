@@ -33,6 +33,10 @@ export default defineConfig({
     },
     {
       name: 'mobile-chromium',
+      testIgnore: [
+        /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
+        /reserves-table-simulation-nested-scroll\.spec\.ts/,
+      ],
       use: {
         ...devices['Pixel 7'],
       },
