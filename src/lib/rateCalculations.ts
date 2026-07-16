@@ -10,6 +10,23 @@ export const convertAprToApy = (apr: number): number => {
 };
 
 /**
+ * Scale an APR by a ratio, then optionally convert to APY.
+ *
+ * Because `convertAprToApy` is nonlinear (monthly compounding), the order matters:
+ * `convertAprToApy(apr * ratio) ≠ convertAprToApy(apr) * ratio` when `ratio ≠ 1`.
+ * This function enforces the canonical order — scale first, convert second — so that
+ * campaign detail rows reconcile with the aggregate path in `incentiveAggregation.ts`,
+ * which also scales APR before converting to APY.
+ */
+export const scaleAprThenConvert = (
+  aprPercent: number,
+  options: { ratio: number; isApy: boolean },
+): number => {
+  const scaled = aprPercent * options.ratio;
+  return options.isApy ? convertAprToApy(scaled) : scaled;
+};
+
+/**
  * Convert Annual Percentage Yield (compounded monthly) back to Annual Percentage Rate (simple).
  * Inverse of {@link convertAprToApy}.
  */

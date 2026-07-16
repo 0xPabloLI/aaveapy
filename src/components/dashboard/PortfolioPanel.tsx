@@ -385,7 +385,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </span>
             <span className="ds-text-10 text-muted-foreground/50 italic">
               {isMobile
-                ? 'Simulation only; final result is on-chain.'
+                ? 'Simulation only.'
                 : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>

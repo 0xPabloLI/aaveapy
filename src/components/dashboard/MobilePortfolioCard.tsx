@@ -16,13 +16,12 @@
  */
 import { memo, useState } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ListCollapse } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
-import { PORTFOLIO_THEME } from './portfolioTheme';
+import { getMarketChipLabel } from '@/lib/marketLabels';
 import type {
   PortfolioReserveEntry,
   PortfolioPositionResult,
@@ -134,8 +133,6 @@ function MobileCard({
   const isRestricted = entry.restrictedStatus != null;
   const chainSrc = getChainIconSrc(entry.chainId);
   const marketLabel = getMarketChipLabel(entry.marketName, entry.chainName);
-  const showV4 = isV4Market(entry.marketName);
-  const hubChipClass = getHubChipClass(showV4);
 
   const disabledNotice = reserve ? {
     supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
@@ -169,6 +166,11 @@ function MobileCard({
   const SUPPLY_COLOR = 'ds-text-emerald-600';
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
+  // Mobile-safe hover tokens: active: for touch, md:hover: for desktop guard.
+  // PORTFOLIO_THEME.trashHover* uses bare hover: which is unreachable on mobile.
+  const trashHoverBgMobile = 'active:ds-bg-blue-500-10 md:hover:ds-bg-blue-500-10';
+  const trashHoverTextMobile = 'active:ds-text-blue-500 md:hover:ds-text-blue-500';
+
   const activeResult = activeTab === 'supply' ? supplyResult : borrowResult;
   const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWarns;
   const activeIncentWarns = activeTab === 'supply' ? supplyIncentWarns : borrowIncentWarns;
@@ -196,44 +198,39 @@ function MobileCard({
         rowOpacity,
       )}
     >
-      {/* Token header */}
-      <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1.5">
+      {/* Token header — compact single row */}
+      <div className="flex items-center gap-2 px-3 pt-2 pb-1.5">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 rounded p-2 -my-1 text-muted-foreground/60 transition-colors flex items-center justify-center',
-            !isRestricted && PORTFOLIO_THEME.trashHoverBg,
-            !isRestricted && PORTFOLIO_THEME.trashHoverText,
+            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2 md:my-0',
+            !isRestricted && trashHoverBgMobile,
+            !isRestricted && trashHoverTextMobile,
           )}
           aria-label={isRestricted ? `${entry.tokenSymbol} is restricted` : isHidden ? `Restore ${entry.tokenSymbol}` : `Remove ${entry.tokenSymbol}`}
         >
           {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
         </button>
-        <TokenIcon symbol={entry.tokenSymbol} size={16} />
-        <div className="flex flex-col min-w-0 leading-tight">
-          <span className={cn('ds-text-13 font-semibold truncate', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
-            {entry.tokenSymbol}
-          </span>
-          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
-            {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-2.5 shrink-0 opacity-70" />}
-            <span className="truncate">{marketLabel}</span>
-            {entry.hubName && (
-              <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${entry.hubName}`}>
-                <span className="truncate">{entry.hubName}</span>
-              </span>
-            )}
-          </span>
-        </div>
+        <TokenIcon symbol={entry.tokenSymbol} size={20} />
+        <span className={cn('ds-text-14 font-semibold break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
+          {entry.tokenSymbol}
+        </span>
+        <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 ml-auto">
+          {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-3 shrink-0 opacity-80" />}
+          <span className="truncate">{marketLabel}</span>
+        </span>
       </div>
 
-      {/* Pill tabs */}
-      <div className="mx-3 mb-2 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
+      {/* Pill tabs — tighter */}
+      <div role="tablist" aria-label="Supply or Borrow" className="mx-3 mb-2 flex gap-0.5 rounded-lg bg-muted/50 p-0.5">
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1.5 rounded-md transition-all duration-200',
+            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
             activeTab === 'supply'
               ? 'ds-bg-emerald-500-10 ds-text-emerald-500 ring-1 ds-ring-emerald-500-15'
               : 'text-muted-foreground active:text-foreground/70',
@@ -243,9 +240,11 @@ function MobileCard({
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1.5 rounded-md transition-all duration-200',
+            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
             activeTab === 'borrow'
               ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15'
               : 'text-muted-foreground active:text-foreground/70',
@@ -255,6 +254,8 @@ function MobileCard({
         </button>
       </div>
 
+      {/* Content area — role=tabpanel for tablist semantics */}
+      <div role="tabpanel" aria-label="Portfolio simulation" className="contents">
       {/* CompactInput */}
       <div className="px-3 pb-2">
         <div className="flex items-center gap-1">
@@ -275,68 +276,69 @@ function MobileCard({
         </div>
       </div>
 
-      {/* Metrics strip — divided 3-col grid, label above value */}
-      <div className="mx-3 mb-2 grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-border/40 ring-1 ring-border/60">
-        <div className="bg-card px-2 py-1.5 flex flex-col">
-          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Total</span>
-          <span data-cell={`${activeTab}-total`} className={cn('ds-text-13 font-semibold tabular-nums leading-tight mt-0.5', activeColor)}>
-            {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} /> : '—'}
+      {/* Metrics strip — 3-col grid; Total emphasized */}
+      <div className="mx-3 mb-2 grid grid-cols-3 rounded-lg overflow-hidden border border-border/30 divide-x divide-border/40">
+        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
+          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Total</span>
+          <span data-cell={`${activeTab}-total`} className={cn('ds-text-14 font-bold tabular-nums leading-none mt-1', activeColor)}>
+            {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="bg-card px-2 py-1.5 flex flex-col">
-          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-tight mt-0.5 text-foreground/80">
-            {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
+        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
+          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Native</span>
+          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1 text-foreground/70">
+            {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="bg-card px-2 py-1.5 flex flex-col">
-          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Incentive</span>
+        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
+          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Incentive</span>
           <span
             data-cell={`${activeTab}-incentive`}
             className={cn(
-              'ds-text-13 font-semibold tabular-nums leading-tight mt-0.5 inline-flex items-center gap-0.5',
+              'ds-text-13 font-semibold tabular-nums leading-none mt-1 inline-flex items-center gap-0.5',
               incentiveHasValue
-                ? 'bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))] to-[rgb(var(--ds-brand-cyan-rgb))]'
-                : 'text-foreground/60',
+                ? activeColor
+                : 'text-foreground/50',
             )}
           >
             {activeResult ? (
               <>
-                <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} />
+                <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} skipTooltip />
                 {activeResult.forecastUnavailableCampaignCount != null && activeResult.forecastUnavailableCampaignCount > 0 && (
                   <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
                 )}
               </>
-            ) : '—'}
+            ) : <span className="text-muted-foreground/40">–</span>}
             {activeIncentWarns.length > 0 && <WarningMarker warnings={activeIncentWarns} />}
           </span>
         </div>
       </div>
 
       {/* Daily earnings row — doubles as expand toggle */}
-      <div className="px-3 pb-2">
+      <div className="px-3 pb-2.5">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2 py-1.5 transition-colors',
-            isExpanded ? 'bg-muted/50' : 'active:bg-muted/40',
+            'flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 transition-colors min-h-[44px]',
+            isExpanded ? 'bg-muted/60' : 'bg-muted/25 active:bg-muted/50',
           )}
         >
-          <span className="ds-text-11 text-muted-foreground">Daily earnings</span>
+          <span className="ds-text-11 text-muted-foreground font-medium">Daily earnings</span>
           <span className="inline-flex items-baseline gap-1">
-            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-12 font-semibold tabular-nums', activeColor)}>
-              {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '—'}
+            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-13 font-semibold tabular-nums', activeColor)}>
+              {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '–'}
             </span>
-            <span className="ds-text-10 text-muted-foreground/60">/ day</span>
-            <ListCollapse className={cn('h-3 w-3 ml-0.5 shrink-0 text-muted-foreground/70 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
+            <span className="ds-text-10 text-muted-foreground/60">/day</span>
+            <ListCollapse className={cn('h-3.5 w-3.5 ml-1 shrink-0 self-center text-muted-foreground/60 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
           </span>
         </button>
       </div>
 
       {/* Detail expand section — simulation delta, cap details, wallet vs effective */}
+      <MotionConfig reducedMotion="user">
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -426,6 +428,8 @@ function MobileCard({
           </motion.div>
         )}
       </AnimatePresence>
+      </MotionConfig>
+      </div>
     </div>
   );
 }
@@ -458,7 +462,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {entries.map((entry) => {
         const reserve = reserveIdToReserve.get(entry.reserveId);
         const tokenPriceInUsd = reserve?.tokenPrice;
@@ -498,6 +502,9 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
               <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Weighted average">
                 {formatPercent(summary.supplyWeightedApy)}
               </div>
+              <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Earn per day">
+                {summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/day
+              </div>
             </div>
             <div>
               <div className={cn('ds-text-10 font-medium', BORROW_COLOR)}>Borrow</div>
@@ -506,6 +513,9 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
               </div>
               <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
+              </div>
+              <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Cost per day">
+                {summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/day
               </div>
             </div>
           </div>

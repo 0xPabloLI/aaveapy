@@ -32,3 +32,9 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **迁移 GitHub Variable 到 Secret 时，必须 grep 所有 workflow 文件中的引用**：本次只改了 `ci.yml` 的 `vars.LIVE_TEST_API_BASE_CI` → `secrets.LIVE_TEST_API_BASE_CI`，漏改 `hardcode-sync.yml`，导致后者 fallback 到 staging-api 被 Cloudflare Bot Fight Mode 403 拦截，hardcode sync 连续失败。
 - **`vars.` 引用已删除的 Variable 返回空字符串**：GitHub 不会报错，而是静默返回空，触发 fallback 逻辑。如果 fallback 指向被 Cloudflare 保护的域名，CI 就会 403 但不给出明确原因。
 - **涉及 `LIVE_TEST_API_BASE_CI` 的 workflow**：`ci.yml`、`hardcode-sync.yml`。迁移时用 `grep -r 'vars\.LIVE_TEST_API_BASE_CI' .github/workflows/` 确认无遗漏。
+
+## Vercel deployment READY ≠ custom domain 已指向（#435）
+- **Vercel 部署 READY 后 custom domain 切换有延迟**：`aaveapy.com` 指向新部署需要 Vercel 内部 alias 更新流程，通常几秒到几十秒。CI 在 deployment READY 后立即 curl custom domain，可能仍拿到旧部署的 SHA。
+- **Production 分支也需要 domain alias polling**：之前只有 staging/preview 分支在 SHA 不匹配时 polling 最多 300s，main 分支直接 fail。这导致 main 分支部署后如果 domain 切换慢于 CI 检查就会误报 smoke test failure。修复：所有分支统一 polling。
+- **Vercel rollback API 响应格式因版本而异**：`POST /v1/projects/{id}/rollback/{uid}` 返回 2xx 但响应体不一定含 `jobId`/`status` 字段。严格匹配这两个字段会导致有效 rollback 被误判失败。修复：2xx + 无 `.error` 字段 = 成功。
+- **Rollback 成功后 Vercel 可能禁用 domain auto-assign**：Vercel 文档提示 rollback 后 custom domain 不会自动指向新部署，需手动 `vercel promote` 或在项目设置中重新启用 auto-assign。

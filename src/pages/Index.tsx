@@ -38,6 +38,7 @@ import {
 } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList, getChainCount } from '@/lib/marketsList';
+import { marketKey } from '@/lib/marketKey';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -171,11 +172,11 @@ const Index = () => {
     if (chainParam) {
       const chainFilter = chainParam.trim().toLowerCase();
       if (chainFilter) {
-        const matchedMarketNames = effectiveMarketsList
+        const matchedKeys = effectiveMarketsList
           .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
-          .map((m) => m.marketName);
-        if (matchedMarketNames.length > 0) {
-          setSelectedMarkets(matchedMarketNames);
+          .map((m) => marketKey(m.chainId, m.marketName));
+        if (matchedKeys.length > 0) {
+          setSelectedMarkets(matchedKeys);
           setMarketViewMode('chain');
         } else {
           hasInvalidParam = true;
@@ -223,8 +224,8 @@ const Index = () => {
   const derivedChainSlug = useMemo(() => {
     if (selectedMarkets.length === 0 || effectiveMarketsList.length === 0) return null;
     const chains = new Set<string>();
-    for (const name of selectedMarkets) {
-      const m = effectiveMarketsList.find((x) => x.marketName === name);
+    for (const key of selectedMarkets) {
+      const m = effectiveMarketsList.find((x) => marketKey(x.chainId, x.marketName) === key);
       if (m?.chainName) chains.add(m.chainName);
     }
     if (chains.size !== 1) return null;
@@ -416,17 +417,24 @@ const Index = () => {
   };
 
 
-  // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
+  // Derive unique hub entries (id + display name + chain) from current reserves (stable, alphabetical by name)
   const hubEntries = useMemo(() => {
     const reserves = effectiveReservesData?.reserves ?? [];
-    const map = new Map<string, string>();
+    const map = new Map<string, { name: string; chainId: number; chainName: string }>();
     for (const r of reserves) {
       if (r.hubId?.trim()) {
-        map.set(r.hubId.trim(), r.hubName?.trim() || r.hubId.trim());
+        const id = r.hubId.trim();
+        if (!map.has(id)) {
+          map.set(id, {
+            name: r.hubName?.trim() || id,
+            chainId: r.chainId,
+            chainName: r.chainName,
+          });
+        }
       }
     }
     return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
+      .map(([id, entry]) => ({ id, ...entry }))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [effectiveReservesData?.reserves]);
 
@@ -449,7 +457,7 @@ const Index = () => {
 
       // Market filter
       if (selectedMarkets.length > 0) {
-        if (!selectedMarkets.includes(reserve.marketName)) {
+        if (!selectedMarkets.includes(marketKey(reserve.chainId, reserve.marketName))) {
           return false;
         }
       }
@@ -632,13 +640,13 @@ const Index = () => {
               onSort={handleSort}
               isApy={isApy}
               isLoading={isLoading}
-              onSelectMarket={(marketName) => {
+              onSelectMarket={(key) => {
                 setSelectedMarkets((prev) =>
-                  prev.length === 1 && prev[0] === marketName ? [] : [marketName]
+                  prev.length === 1 && prev[0] === key ? [] : [key]
                 );
                 setSelectedHubs([]);
                 setMarketViewMode('chain');
-                const chain = effectiveMarketsList.find((m) => m.marketName === marketName)?.chainName ?? null;
+                const chain = effectiveMarketsList.find((m) => marketKey(m.chainId, m.marketName) === key)?.chainName ?? null;
                 setExpandedChain(chain);
                 const el = topOppsRef.current;
                 if (el) {

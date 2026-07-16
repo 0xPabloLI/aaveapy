@@ -9,6 +9,7 @@ import {
   calculateTotalBorrowApy,
   calculateSpreadApr,
   calculateSpreadApy,
+  scaleAprThenConvert,
 } from './rateCalculations';
 
 describe('convertAprToApy', () => {
@@ -176,5 +177,50 @@ describe('calculateSpreadApy', () => {
 
   it('returns negative spread when borrow exceeds supply', () => {
     expect(calculateSpreadApy(3, 10)).toBe(-7);
+  });
+});
+
+describe('scaleAprThenConvert', () => {
+  it('scales APR by ratio then converts to APY when isApy=true', () => {
+    const apr = 100;
+    const ratio = 0.5;
+    const result = scaleAprThenConvert(apr, { ratio, isApy: true });
+    const expected = convertAprToApy(apr * ratio);
+    expect(result).toBeCloseTo(expected, 10);
+    expect(result).not.toBeCloseTo(convertAprToApy(apr) * ratio, 1);
+  });
+
+  it('scales APR by ratio and returns APR when isApy=false', () => {
+    expect(scaleAprThenConvert(20, { ratio: 0.5, isApy: false })).toBeCloseTo(10, 10);
+  });
+
+  it('returns 0 when ratio=0', () => {
+    expect(scaleAprThenConvert(100, { ratio: 0, isApy: true })).toBeCloseTo(0, 10);
+    expect(scaleAprThenConvert(100, { ratio: 0, isApy: false })).toBeCloseTo(0, 10);
+  });
+
+  it('returns convertAprToApy(apr) when ratio=1', () => {
+    expect(scaleAprThenConvert(12, { ratio: 1, isApy: true })).toBeCloseTo(convertAprToApy(12), 10);
+  });
+
+  it('handles negative APR', () => {
+    const result = scaleAprThenConvert(-10, { ratio: 0.5, isApy: true });
+    expect(result).toBeCloseTo(convertAprToApy(-5), 10);
+  });
+
+  it('preserves APR order: scale-then-convert differs from convert-then-scale at high APR', () => {
+    const apr = 100;
+    const ratio = 0.5;
+    const scaleThenConvert = scaleAprThenConvert(apr, { ratio, isApy: true });
+    const convertThenScale = convertAprToApy(apr) * ratio;
+    expect(scaleThenConvert).toBeLessThan(convertThenScale);
+  });
+
+  it('returns NaN for NaN input', () => {
+    expect(scaleAprThenConvert(NaN, { ratio: 0.5, isApy: true })).toBeNaN();
+  });
+
+  it('returns Infinity for Infinity input with positive ratio', () => {
+    expect(scaleAprThenConvert(Infinity, { ratio: 1, isApy: false })).toBe(Infinity);
   });
 });

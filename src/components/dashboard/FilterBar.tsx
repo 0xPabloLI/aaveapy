@@ -9,7 +9,8 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
 import { getProtocolVersion } from '@/lib/protocolVersion';
-import { getEthSubMarketLabel } from '@/lib/marketLabels';
+import { getSubMarketLabel } from '@/lib/marketLabels';
+import { marketKey } from '@/lib/marketKey';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -23,8 +24,8 @@ interface FilterBarProps {
   marketsList?: MarketListItem[];
   showFrozenOrPaused?: boolean;
   setShowFrozenOrPaused?: (value: boolean) => void;
-  /** Available hub entries derived from current reserves (id for filtering, name for display). */
-  hubEntries?: { id: string; name: string }[];
+  /** Available hub entries derived from current reserves (id for filtering, name + chain for display). */
+  hubEntries?: { id: string; name: string; chainId: number; chainName: string }[];
   /** Currently selected hub IDs (empty = "All"). */
   selectedHubs: string[];
   /** Set selected hub IDs. */
@@ -84,16 +85,12 @@ function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGr
   }
 
   const groups: ChainGroup[] = [];
-  // Ethereum first
-  const ethEntry = chainMap.get('Ethereum');
-  if (ethEntry) {
-    groups.push({ chainId: ethEntry.chainId, chainName: 'Ethereum', markets: ethEntry.markets, expandable: ethEntry.markets.length > 1 });
-    chainMap.delete('Ethereum');
-  }
-  // Remaining chains alphabetically
-  const remaining = Array.from(chainMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-  for (const [chainName, { chainId, markets }] of remaining) {
-    groups.push({ chainId, chainName, markets, expandable: false });
+  // Sort chains: Ethereum first, then remaining alphabetically
+  const sortedChainNames = Array.from(chainMap.entries())
+    .sort(([a], [b]) => (a === 'Ethereum' ? -1 : b === 'Ethereum' ? 1 : a.localeCompare(b)));
+
+  for (const [chainName, { chainId, markets }] of sortedChainNames) {
+    groups.push({ chainId, chainName, markets, expandable: markets.length > 1 });
   }
 
   return groups;
@@ -148,7 +145,7 @@ const FilterBar = ({
   // Derive which chains are fully selected (all their markets are in selectedMarkets)
   const isChainSelected = useCallback(
     (group: ChainGroup) => {
-      return group.markets.every((m) => selectedMarkets.includes(m.marketName));
+      return group.markets.every((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName)));
     },
     [selectedMarkets],
   );
@@ -156,32 +153,32 @@ const FilterBar = ({
   // Check if any sub-market of a chain is selected (but not the whole chain)
   const hasSubMarketSelected = useCallback(
     (group: ChainGroup) => {
-      return group.markets.some((m) => selectedMarkets.includes(m.marketName)) && !isChainSelected(group);
+      return group.markets.some((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName))) && !isChainSelected(group);
     },
     [selectedMarkets, isChainSelected],
   );
 
   const toggleChain = useCallback(
     (group: ChainGroup) => {
-      const allNames = group.markets.map((m) => m.marketName);
+      const allKeys = group.markets.map((m) => marketKey(m.chainId, m.marketName));
       if (isChainSelected(group)) {
         // Deselect all markets of this chain
-        setSelectedMarkets(selectedMarkets.filter((m) => !allNames.includes(m)));
+        setSelectedMarkets(selectedMarkets.filter((m) => !allKeys.includes(m)));
       } else {
         // Select all markets of this chain
-        const withoutChain = selectedMarkets.filter((m) => !allNames.includes(m));
-        setSelectedMarkets([...withoutChain, ...allNames]);
+        const withoutChain = selectedMarkets.filter((m) => !allKeys.includes(m));
+        setSelectedMarkets([...withoutChain, ...allKeys]);
       }
     },
     [selectedMarkets, setSelectedMarkets, isChainSelected],
   );
 
   const toggleSubMarket = useCallback(
-    (marketName: string) => {
-      if (selectedMarkets.includes(marketName)) {
-        setSelectedMarkets(selectedMarkets.filter((m) => m !== marketName));
+    (key: string) => {
+      if (selectedMarkets.includes(key)) {
+        setSelectedMarkets(selectedMarkets.filter((m) => m !== key));
       } else {
-        setSelectedMarkets([...selectedMarkets, marketName]);
+        setSelectedMarkets([...selectedMarkets, key]);
       }
     },
     [selectedMarkets, setSelectedMarkets],
@@ -421,13 +418,15 @@ const FilterBar = ({
 
         {marketViewMode === 'hub' && hasHubs
           ? (
-            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
+            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name + chain icon) */
             hubEntries!.map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
                   key={hub.id}
                   selected={isSelected}
+                  className="gap-1"
+                  aria-label={hub.name}
                   onClick={() => {
                     if (isSelected) {
                       setSelectedHubs(selectedHubs.filter((h) => h !== hub.id));
@@ -435,9 +434,10 @@ const FilterBar = ({
                       setSelectedHubs([...selectedHubs, hub.id]);
                     }
                   }}
-                  title={hub.name}
+                  title={`${hub.name} · ${hub.chainName}`}
                 >
-                  {hub.name}
+                  <ChainIcon chainId={hub.chainId} chainName={hub.chainName} className="opacity-70" />
+                  <span>{hub.name}</span>
                 </FilterChip>
               );
             })
@@ -473,7 +473,7 @@ const FilterBar = ({
                       <button
                         onClick={() => handleExpandToggle(group.chainName)}
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
-                        title={expanded ? 'Collapse Ethereum markets' : 'Expand Ethereum markets'}
+                        title={expanded ? `Collapse ${group.chainName} markets` : `Expand ${group.chainName} markets`}
                       >
                         <AnimatePresence mode="wait" initial={false}>
                           {expanded
@@ -495,12 +495,12 @@ const FilterBar = ({
                           return 0;
                         })
                         .map((market, index) => {
-                          const isSubSelected = selectedMarkets.includes(market.marketName);
+                          const isSubSelected = selectedMarkets.includes(marketKey(market.chainId, market.marketName));
                           const version = getProtocolVersion(market.marketName);
                           const isV4 = version === 'v4';
                           return (
                             <motion.button
-                              key={market.marketName}
+                              key={marketKey(market.chainId, market.marketName)}
                               layout
                               variants={{
                                 hidden: { width: 0, opacity: 0, scale: 0.98 },
@@ -530,7 +530,7 @@ const FilterBar = ({
                               exit="exit"
                               custom={index}
                               transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
-                              onClick={() => toggleSubMarket(market.marketName)}
+                              onClick={() => toggleSubMarket(marketKey(market.chainId, market.marketName))}
                               className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
                                 isSubSelected
                                   ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
@@ -543,7 +543,7 @@ const FilterBar = ({
                                   V4
                                 </span>
                               )}
-                              <span>{getEthSubMarketLabel(market.marketName)}</span>
+                              <span>{getSubMarketLabel(market.marketName)}</span>
                             </motion.button>
                           );
                         })}

@@ -137,29 +137,27 @@ jobs:
             exit 0
           fi
 
-          # Staging custom domains often lag behind Vercel READY — poll before failing
-          if [ "$REF_NAME" != "main" ]; then
-            ALIAS_MAX_WAIT=300
-            ALIAS_INTERVAL=15
-            ALIAS_ELAPSED=0
-            echo "⏳ Custom domain SHA mismatch — polling ${SITE_URL} up to ${ALIAS_MAX_WAIT}s for alias catch-up..."
-            while [ $ALIAS_ELAPSED -lt $ALIAS_MAX_WAIT ]; do
-              sleep $ALIAS_INTERVAL
-              ALIAS_ELAPSED=$((ALIAS_ELAPSED + ALIAS_INTERVAL))
-              HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
-                --max-time 30 --retry 2 --retry-delay 5 --retry-all-errors \
-                -L "${{ env.SITE_URL }}")
-              if [ "$HTTP_CODE" -ne 200 ]; then
-                echo "   ${ALIAS_ELAPSED}s — HTTP $HTTP_CODE"
-                continue
-              fi
-              if page_has_expected_sha; then
-                echo "✅ ${{ env.SITE_URL }} deploy SHA matched after ${ALIAS_ELAPSED}s alias catch-up"
-                exit 0
-              fi
-              echo "   ${ALIAS_ELAPSED}s — still serving older deploy-sha"
-            done
-          fi
+          # Custom domains lag behind Vercel READY — poll before failing (all branches)
+          ALIAS_MAX_WAIT=300
+          ALIAS_INTERVAL=15
+          ALIAS_ELAPSED=0
+          echo "⏳ Custom domain SHA mismatch — polling ${SITE_URL} up to ${ALIAS_MAX_WAIT}s for alias catch-up..."
+          while [ $ALIAS_ELAPSED -lt $ALIAS_MAX_WAIT ]; do
+            sleep $ALIAS_INTERVAL
+            ALIAS_ELAPSED=$((ALIAS_ELAPSED + ALIAS_INTERVAL))
+            HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
+              --max-time 30 --retry 2 --retry-delay 5 --retry-all-errors \
+              -L "${{ env.SITE_URL }}")
+            if [ "$HTTP_CODE" -ne 200 ]; then
+              echo "   ${ALIAS_ELAPSED}s — HTTP $HTTP_CODE"
+              continue
+            fi
+            if page_has_expected_sha; then
+              echo "✅ ${{ env.SITE_URL }} deploy SHA matched after ${ALIAS_ELAPSED}s alias catch-up"
+              exit 0
+            fi
+            echo "   ${ALIAS_ELAPSED}s — still serving older deploy-sha"
+          done
 
           echo "❌ SITE_URL does not expose expected commit ${EXPECTED_SHA:0:7} — domain may still point at an older deployment"
           exit 1
@@ -331,22 +329,16 @@ jobs:
             exit 1
           fi
 
+          # v1/rollback returns 2xx on success; response shape varies by API version
+          # (may contain jobId, status, deployment, or just an alias assignment)
           if echo "$ROLLBACK_RESULT" | jq -e '.error' > /dev/null 2>&1; then
             echo "❌ Rollback API returned an error object"
             echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
             exit 1
           fi
 
-          # v1/rollback returns 2xx with job info on success
-          if echo "$ROLLBACK_RESULT" | jq -e '.jobId' > /dev/null 2>&1; then
-            echo "✅ Vercel ${{ env.ENV_LABEL }} rollback initiated (jobId: $(echo "$ROLLBACK_RESULT" | jq -r '.jobId'))"
-          elif echo "$ROLLBACK_RESULT" | jq -e '.status' > /dev/null 2>&1; then
-            echo "✅ Vercel ${{ env.ENV_LABEL }} rollback request accepted"
-          else
-            echo "❌ Unrecognized rollback response (no jobId/status) — treating as failure"
-            echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
-            exit 1
-          fi
+          echo "✅ Vercel ${{ env.ENV_LABEL }} rollback accepted (2xx, no error field)"
+          echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
 
       - name: Create rollback notification issue
         if: always()
