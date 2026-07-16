@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { getSubMarketLabel } from '@/lib/marketLabels';
+import { marketKey } from '@/lib/marketKey';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -144,7 +145,7 @@ const FilterBar = ({
   // Derive which chains are fully selected (all their markets are in selectedMarkets)
   const isChainSelected = useCallback(
     (group: ChainGroup) => {
-      return group.markets.every((m) => selectedMarkets.includes(m.marketName));
+      return group.markets.every((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName)));
     },
     [selectedMarkets],
   );
@@ -152,32 +153,32 @@ const FilterBar = ({
   // Check if any sub-market of a chain is selected (but not the whole chain)
   const hasSubMarketSelected = useCallback(
     (group: ChainGroup) => {
-      return group.markets.some((m) => selectedMarkets.includes(m.marketName)) && !isChainSelected(group);
+      return group.markets.some((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName))) && !isChainSelected(group);
     },
     [selectedMarkets, isChainSelected],
   );
 
   const toggleChain = useCallback(
     (group: ChainGroup) => {
-      const allNames = group.markets.map((m) => m.marketName);
+      const allKeys = group.markets.map((m) => marketKey(m.chainId, m.marketName));
       if (isChainSelected(group)) {
         // Deselect all markets of this chain
-        setSelectedMarkets(selectedMarkets.filter((m) => !allNames.includes(m)));
+        setSelectedMarkets(selectedMarkets.filter((m) => !allKeys.includes(m)));
       } else {
         // Select all markets of this chain
-        const withoutChain = selectedMarkets.filter((m) => !allNames.includes(m));
-        setSelectedMarkets([...withoutChain, ...allNames]);
+        const withoutChain = selectedMarkets.filter((m) => !allKeys.includes(m));
+        setSelectedMarkets([...withoutChain, ...allKeys]);
       }
     },
     [selectedMarkets, setSelectedMarkets, isChainSelected],
   );
 
   const toggleSubMarket = useCallback(
-    (marketName: string) => {
-      if (selectedMarkets.includes(marketName)) {
-        setSelectedMarkets(selectedMarkets.filter((m) => m !== marketName));
+    (key: string) => {
+      if (selectedMarkets.includes(key)) {
+        setSelectedMarkets(selectedMarkets.filter((m) => m !== key));
       } else {
-        setSelectedMarkets([...selectedMarkets, marketName]);
+        setSelectedMarkets([...selectedMarkets, key]);
       }
     },
     [selectedMarkets, setSelectedMarkets],
@@ -491,12 +492,12 @@ const FilterBar = ({
                           return 0;
                         })
                         .map((market, index) => {
-                          const isSubSelected = selectedMarkets.includes(market.marketName);
+                          const isSubSelected = selectedMarkets.includes(marketKey(market.chainId, market.marketName));
                           const version = getProtocolVersion(market.marketName);
                           const isV4 = version === 'v4';
                           return (
                             <motion.button
-                              key={market.marketName}
+                              key={marketKey(market.chainId, market.marketName)}
                               layout
                               variants={{
                                 hidden: { width: 0, opacity: 0, scale: 0.98 },
@@ -526,7 +527,7 @@ const FilterBar = ({
                               exit="exit"
                               custom={index}
                               transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
-                              onClick={() => toggleSubMarket(market.marketName)}
+                              onClick={() => toggleSubMarket(marketKey(market.chainId, market.marketName))}
                               className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
                                 isSubSelected
                                   ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
