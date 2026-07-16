@@ -54,6 +54,7 @@ import {
   AaveV3Plasma,
   AaveV3Monad,
   AaveV4Ethereum,
+  AaveV4Avalanche,
 } from '@aave-dao/aave-address-book'
 import { setRegistryChecker, setStaticRpcUrlGetter, setWagmiChainRpcUrlGetter } from './userData/chainDiscovery'
 
@@ -63,6 +64,7 @@ interface AbModule {
 }
 
 interface ChainEntry {
+  version: 'v3' | 'v4'
   abModule: AbModule
   wagmiChain: { id: number; name: string }
   publicRpcUrls: string[]
@@ -80,34 +82,35 @@ interface ChainEntry {
  * are all derived automatically.
  */
 const ENTRIES: readonly ChainEntry[] = [
-  { abModule: AaveV3Ethereum, wagmiChain: mainnet, publicRpcUrls: ['https://ethereum-rpc.publicnode.com', 'https://eth-mainnet.public.blastapi.io', 'https://eth.drpc.org', 'https://1rpc.io/eth'] },
-  { abModule: AaveV3Optimism, wagmiChain: optimism, publicRpcUrls: ['https://public-op-mainnet.fastnode.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://1rpc.io/op'] },
-  { abModule: AaveV3BNB, wagmiChain: bsc, publicRpcUrls: ['https://bsc.publicnode.com', 'https://bsc-mainnet.public.blastapi.io', 'https://1rpc.io/bnb', 'https://bsc.drpc.org'] },
-  { abModule: AaveV3Gnosis, wagmiChain: gnosis, publicRpcUrls: ['https://gnosis-rpc.publicnode.com', 'https://rpc.gnosischain.com', 'https://1rpc.io/gnosis', 'https://gnosis.drpc.org', 'https://gnosis.api.onfinality.io/public'] },
-  { abModule: AaveV3Polygon, wagmiChain: polygon, publicRpcUrls: ['https://gateway.tenderly.co/public/polygon', 'https://polygon-pokt.nodies.app', 'https://polygon-bor-rpc.publicnode.com', 'https://rpc-mainnet.matic.quiknode.pro', 'https://polygon.drpc.org', 'https://1rpc.io/matic'] },
-  { abModule: AaveV3Sonic, wagmiChain: sonic, publicRpcUrls: ['https://rpc.soniclabs.com', 'https://sonic.drpc.org', 'https://sonic-rpc.publicnode.com'] },
-  { abModule: AaveV3XLayer, wagmiChain: xLayer, publicRpcUrls: ['https://rpc.xlayer.tech', 'https://xlayerrpc.okx.com', 'https://xlayer.drpc.org', 'https://1rpc.io/xlayer'] },
-  { abModule: AaveV3ZkSync, wagmiChain: zkSync, publicRpcUrls: ['https://mainnet.era.zksync.io', 'https://zksync.drpc.org', 'https://1rpc.io/zksync2-era', 'https://zksync-era.public-rpc.com'] },
-  { abModule: AaveV3Soneium, wagmiChain: soneium, publicRpcUrls: ['https://soneium.drpc.org', 'https://rpc.soneium.org', 'https://soneium-rpc.publicnode.com', 'https://soneium.gateway.tenderly.co'] },
-  { abModule: AaveV3Celo, wagmiChain: celo, publicRpcUrls: ['https://celo.drpc.org', 'https://forno.celo.org', 'https://celo-mainnet.gateway.tatum.io'] },
-  { abModule: AaveV3Mantle, wagmiChain: mantle, publicRpcUrls: ['https://rpc.mantle.xyz', 'https://mantle.publicnode.com', 'https://mantle.drpc.org', 'https://mantle.gateway.tenderly.co'] },
-  { abModule: AaveV3Base, wagmiChain: base, publicRpcUrls: ['https://1rpc.io/base', 'https://base.llamarpc.com', 'https://base.publicnode.com', 'https://base-mainnet.public.blastapi.io', 'https://base.drpc.org'] },
-  { abModule: AaveV3Metis, wagmiChain: metis, publicRpcUrls: ['https://andromeda.metis.io/?owner=1088', 'https://metis-rpc.publicnode.com', 'https://metis.drpc.org', 'https://metis-andromeda.gateway.tenderly.co'] },
-  { abModule: AaveV3InkWhitelabel, wagmiChain: ink, publicRpcUrls: ['https://rpc-gel.inkonchain.com', 'https://rpc-qnd.inkonchain.com', 'https://ink.drpc.org'] },
-  { abModule: AaveV3Linea, wagmiChain: linea, publicRpcUrls: ['https://1rpc.io/linea', 'https://linea.drpc.org', 'https://linea-rpc.publicnode.com', 'https://rpc.linea.build'] },
-  { abModule: AaveV3Arbitrum, wagmiChain: arbitrum, publicRpcUrls: ['https://arb1.arbitrum.io/rpc', 'https://1rpc.io/arb', 'https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com'] },
-  { abModule: AaveV3Avalanche, wagmiChain: avalanche, publicRpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche.drpc.org', 'https://1rpc.io/avax/c', 'https://avalanche-c-chain-rpc.publicnode.com'] },
-  { abModule: AaveV3Scroll, wagmiChain: scroll, publicRpcUrls: ['https://rpc.scroll.io', 'https://scroll-rpc.publicnode.com', 'https://scroll.drpc.org', 'https://1rpc.io/scroll'] },
-  { abModule: AaveV3MegaEth, wagmiChain: megaeth, publicRpcUrls: ['https://mainnet.megaeth.com/rpc', 'https://megaeth.drpc.org'] },
-  { abModule: AaveV3Plasma, wagmiChain: plasma, publicRpcUrls: ['https://rpc.plasma.to', 'https://plasma.drpc.org', 'https://plasma.api.onfinality.io/public'] },
-  { abModule: AaveV3Monad, wagmiChain: monad, publicRpcUrls: ['https://rpc.monad.xyz', 'https://monad.drpc.org'] },
-  { abModule: AaveV4Ethereum, wagmiChain: mainnet, publicRpcUrls: [] },
+  { abModule: AaveV3Ethereum, wagmiChain: mainnet, publicRpcUrls: ['https://ethereum-rpc.publicnode.com', 'https://eth-mainnet.public.blastapi.io', 'https://eth.drpc.org', 'https://1rpc.io/eth'], version: 'v3' },
+  { abModule: AaveV3Optimism, wagmiChain: optimism, publicRpcUrls: ['https://public-op-mainnet.fastnode.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://1rpc.io/op'], version: 'v3' },
+  { abModule: AaveV3BNB, wagmiChain: bsc, publicRpcUrls: ['https://bsc.publicnode.com', 'https://bsc-mainnet.public.blastapi.io', 'https://1rpc.io/bnb', 'https://bsc.drpc.org'], version: 'v3' },
+  { abModule: AaveV3Gnosis, wagmiChain: gnosis, publicRpcUrls: ['https://gnosis-rpc.publicnode.com', 'https://rpc.gnosischain.com', 'https://1rpc.io/gnosis', 'https://gnosis.drpc.org', 'https://gnosis.api.onfinality.io/public'], version: 'v3' },
+  { abModule: AaveV3Polygon, wagmiChain: polygon, publicRpcUrls: ['https://gateway.tenderly.co/public/polygon', 'https://polygon-pokt.nodies.app', 'https://polygon-bor-rpc.publicnode.com', 'https://rpc-mainnet.matic.quiknode.pro', 'https://polygon.drpc.org', 'https://1rpc.io/matic'], version: 'v3' },
+  { abModule: AaveV3Sonic, wagmiChain: sonic, publicRpcUrls: ['https://rpc.soniclabs.com', 'https://sonic.drpc.org', 'https://sonic-rpc.publicnode.com'], version: 'v3' },
+  { abModule: AaveV3XLayer, wagmiChain: xLayer, publicRpcUrls: ['https://rpc.xlayer.tech', 'https://xlayerrpc.okx.com', 'https://xlayer.drpc.org', 'https://1rpc.io/xlayer'], version: 'v3' },
+  { abModule: AaveV3ZkSync, wagmiChain: zkSync, publicRpcUrls: ['https://mainnet.era.zksync.io', 'https://zksync.drpc.org', 'https://1rpc.io/zksync2-era', 'https://zksync-era.public-rpc.com'], version: 'v3' },
+  { abModule: AaveV3Soneium, wagmiChain: soneium, publicRpcUrls: ['https://soneium.drpc.org', 'https://rpc.soneium.org', 'https://soneium-rpc.publicnode.com', 'https://soneium.gateway.tenderly.co'], version: 'v3' },
+  { abModule: AaveV3Celo, wagmiChain: celo, publicRpcUrls: ['https://celo.drpc.org', 'https://forno.celo.org', 'https://celo-mainnet.gateway.tatum.io'], version: 'v3' },
+  { abModule: AaveV3Mantle, wagmiChain: mantle, publicRpcUrls: ['https://rpc.mantle.xyz', 'https://mantle.publicnode.com', 'https://mantle.drpc.org', 'https://mantle.gateway.tenderly.co'], version: 'v3' },
+  { abModule: AaveV3Base, wagmiChain: base, publicRpcUrls: ['https://1rpc.io/base', 'https://base.llamarpc.com', 'https://base.publicnode.com', 'https://base-mainnet.public.blastapi.io', 'https://base.drpc.org'], version: 'v3' },
+  { abModule: AaveV3Metis, wagmiChain: metis, publicRpcUrls: ['https://andromeda.metis.io/?owner=1088', 'https://metis-rpc.publicnode.com', 'https://metis.drpc.org', 'https://metis-andromeda.gateway.tenderly.co'], version: 'v3' },
+  { abModule: AaveV3InkWhitelabel, wagmiChain: ink, publicRpcUrls: ['https://rpc-gel.inkonchain.com', 'https://rpc-qnd.inkonchain.com', 'https://ink.drpc.org'], version: 'v3' },
+  { abModule: AaveV3Linea, wagmiChain: linea, publicRpcUrls: ['https://1rpc.io/linea', 'https://linea.drpc.org', 'https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], version: 'v3' },
+  { abModule: AaveV3Arbitrum, wagmiChain: arbitrum, publicRpcUrls: ['https://arb1.arbitrum.io/rpc', 'https://1rpc.io/arb', 'https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com'], version: 'v3' },
+  { abModule: AaveV3Avalanche, wagmiChain: avalanche, publicRpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche.drpc.org', 'https://1rpc.io/avax/c', 'https://avalanche-c-chain-rpc.publicnode.com'], version: 'v3' },
+  { abModule: AaveV3Scroll, wagmiChain: scroll, publicRpcUrls: ['https://rpc.scroll.io', 'https://scroll-rpc.publicnode.com', 'https://scroll.drpc.org', 'https://1rpc.io/scroll'], version: 'v3' },
+  { abModule: AaveV3MegaEth, wagmiChain: megaeth, publicRpcUrls: ['https://mainnet.megaeth.com/rpc', 'https://megaeth.drpc.org'], version: 'v3' },
+  { abModule: AaveV3Plasma, wagmiChain: plasma, publicRpcUrls: ['https://rpc.plasma.to', 'https://plasma.drpc.org', 'https://plasma.api.onfinality.io/public'], version: 'v3' },
+  { abModule: AaveV3Monad, wagmiChain: monad, publicRpcUrls: ['https://rpc.monad.xyz', 'https://monad.drpc.org'], version: 'v3' },
+  { abModule: AaveV4Ethereum, wagmiChain: mainnet, publicRpcUrls: [], version: 'v4' },
+  { abModule: AaveV4Avalanche, wagmiChain: avalanche, publicRpcUrls: [], version: 'v4' },
 ] as const
 
 // ---- Derived exports ----
 
 function isV4(entry: ChainEntry): boolean {
-  return entry.abModule === (AaveV4Ethereum as unknown as AbModule)
+  return entry.version === 'v4'
 }
 
 /** All chain IDs we support (deduplicated, since Ethereum has both V3 and V4) */

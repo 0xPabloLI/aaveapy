@@ -22,9 +22,10 @@ vi.mock('./chainDiscovery', () => ({
 }))
 
 describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
-  it('V4_SPOKE_ADDRESSES has only chain ID 1 (Ethereum mainnet)', () => {
+  it('V4_SPOKE_ADDRESSES includes Ethereum (1) and Avalanche (43114)', () => {
     const chainIds = Object.keys(V4_SPOKE_ADDRESSES).map(Number)
-    expect(chainIds).toEqual([1])
+    expect(chainIds).toEqual(expect.arrayContaining([1, 43114]))
+    expect(chainIds.length).toBeGreaterThanOrEqual(2)
   })
 
   it('V4_SPOKE_ADDRESSES[1] contains non-oracle spokes', () => {
@@ -66,7 +67,13 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     }
   })
 
-  it('V4_HUB_ADDRESSES has chain ID 1 with at least 3 hubs', () => {
+  it('V4_HUB_ADDRESSES includes Ethereum (1) and Avalanche (43114)', () => {
+    const chainIds = Object.keys(V4_HUB_ADDRESSES).map(Number)
+    expect(chainIds).toEqual(expect.arrayContaining([1, 43114]))
+    expect(chainIds.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('V4_HUB_ADDRESSES[1] (Ethereum) has at least 3 hubs', () => {
     const hubs = V4_HUB_ADDRESSES[1]
     expect(hubs).toBeDefined()
     expect(hubs.length).toBeGreaterThanOrEqual(3)
@@ -74,6 +81,14 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     expect(names).toContain('CORE_HUB')
     expect(names).toContain('PLUS_HUB')
     expect(names).toContain('PRIME_HUB')
+  })
+
+  it('V4_HUB_ADDRESSES[43114] (Avalanche) has at least 1 hub', () => {
+    const hubs = V4_HUB_ADDRESSES[43114]
+    expect(hubs).toBeDefined()
+    expect(hubs.length).toBeGreaterThanOrEqual(1)
+    const names = hubs.map((h) => h.name)
+    expect(names).toContain('CORE_HUB')
   })
 
   it('getV4SpokeAddresses returns spokes for known chain, undefined for unknown', () => {

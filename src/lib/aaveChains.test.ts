@@ -27,8 +27,9 @@ describe('aaveChains', () => {
   })
 
   describe('AAVE_V4_CHAIN_IDS', () => {
-    it('contains only Ethereum mainnet', () => {
-      expect(AAVE_V4_CHAIN_IDS).toEqual([1])
+    it('includes Ethereum mainnet and Avalanche', () => {
+      expect(AAVE_V4_CHAIN_IDS).toEqual(expect.arrayContaining([1, 43114]))
+      expect(AAVE_V4_CHAIN_IDS.length).toBeGreaterThanOrEqual(2)
     })
   })
 

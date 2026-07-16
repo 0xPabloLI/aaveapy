@@ -9,7 +9,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
 import { getProtocolVersion } from '@/lib/protocolVersion';
-import { getEthSubMarketLabel } from '@/lib/marketLabels';
+import { getSubMarketLabel } from '@/lib/marketLabels';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -84,16 +84,12 @@ function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGr
   }
 
   const groups: ChainGroup[] = [];
-  // Ethereum first
-  const ethEntry = chainMap.get('Ethereum');
-  if (ethEntry) {
-    groups.push({ chainId: ethEntry.chainId, chainName: 'Ethereum', markets: ethEntry.markets, expandable: ethEntry.markets.length > 1 });
-    chainMap.delete('Ethereum');
-  }
-  // Remaining chains alphabetically
-  const remaining = Array.from(chainMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-  for (const [chainName, { chainId, markets }] of remaining) {
-    groups.push({ chainId, chainName, markets, expandable: false });
+  // Sort chains: Ethereum first, then remaining alphabetically
+  const sortedChainNames = Array.from(chainMap.entries())
+    .sort(([a], [b]) => (a === 'Ethereum' ? -1 : b === 'Ethereum' ? 1 : a.localeCompare(b)));
+
+  for (const [chainName, { chainId, markets }] of sortedChainNames) {
+    groups.push({ chainId, chainName, markets, expandable: markets.length > 1 });
   }
 
   return groups;
@@ -473,7 +469,7 @@ const FilterBar = ({
                       <button
                         onClick={() => handleExpandToggle(group.chainName)}
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
-                        title={expanded ? 'Collapse Ethereum markets' : 'Expand Ethereum markets'}
+                        title={expanded ? `Collapse ${group.chainName} markets` : `Expand ${group.chainName} markets`}
                       >
                         <AnimatePresence mode="wait" initial={false}>
                           {expanded
@@ -543,7 +539,7 @@ const FilterBar = ({
                                   V4
                                 </span>
                               )}
-                              <span>{getEthSubMarketLabel(market.marketName)}</span>
+                              <span>{getSubMarketLabel(market.marketName)}</span>
                             </motion.button>
                           );
                         })}

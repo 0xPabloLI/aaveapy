@@ -1,4 +1,4 @@
-import { AaveV4Ethereum } from '@aave-dao/aave-address-book'
+import { AaveV4Ethereum, AaveV4Avalanche } from '@aave-dao/aave-address-book'
 
 export interface V4SpokeEntry {
   name: string
@@ -14,10 +14,15 @@ export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = {
   [AaveV4Ethereum.CHAIN_ID]: Object.entries(AaveV4Ethereum.SPOKES)
     .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
     .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+  [AaveV4Avalanche.CHAIN_ID]: Object.entries(AaveV4Avalanche.SPOKES)
+    .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
+    .map(([name, address]) => ({ name, address: address as `0x${string}` })),
 }
 
 export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = {
   [AaveV4Ethereum.CHAIN_ID]: Object.entries(AaveV4Ethereum.HUBS)
+    .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+  [AaveV4Avalanche.CHAIN_ID]: Object.entries(AaveV4Avalanche.HUBS)
     .map(([name, address]) => ({ name, address: address as `0x${string}` })),
 }
 
