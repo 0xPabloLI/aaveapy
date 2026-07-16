@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns, sumForecastBrevisIncentiveApr } from './rateSimulationCalculator';
+import { convertAprToApy } from '@/lib/rateCalculations';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -3141,5 +3142,101 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
     });
 
     expect(result.supply.afterIncentive).toBeNull();
+  });
+});
+
+describe('AAV-1177: APR→APY conversion order reconciliation', () => {
+  it('Merit campaign detail current matches scale-then-convert (not convert-then-scale)', () => {
+    const merits = [
+      {
+        link: 'https://example.com',
+        name: 'Merit Reconcile',
+        breakdowns: [
+          {
+            campaignApr: 20,
+            campaignStartedAt: '2024-01-01',
+            campaignEndedAt: '2030-12-31',
+            campaignId: 'merit-reconcile-1',
+          },
+        ],
+      },
+    ];
+    const rows = buildMeritCampaignDetails({
+      merits,
+      isApy: true,
+      inputUsd: 1000,
+      shouldComputeAfter: false,
+      walletEligibilityRatio: 0.5,
+    });
+    const apr = 20;
+    const ratio = 0.5;
+    const scaleThenConvert = convertAprToApy(apr * ratio);
+    const convertThenScale = convertAprToApy(apr) * ratio;
+    expect(rows[0].current).toBeCloseTo(scaleThenConvert, 10);
+    expect(rows[0].current).not.toBeCloseTo(convertThenScale, 2);
+  });
+
+  it('Merit campaign detail after matches scale-then-convert', () => {
+    const merits = [
+      {
+        link: 'https://example.com',
+        name: 'Merit After Reconcile',
+        breakdowns: [
+          {
+            campaignApr: 15,
+            campaignStartedAt: '2024-01-01',
+            campaignEndedAt: '2030-12-31',
+            campaignId: 'merit-after-reconcile-1',
+          },
+        ],
+      },
+    ];
+    const rows = buildMeritCampaignDetails({
+      merits,
+      isApy: true,
+      inputUsd: 0,
+      shouldComputeAfter: true,
+      eligibilityRatio: 0.6,
+      walletEligibilityRatio: 0.6,
+    });
+    const apr = 15;
+    const ratio = 0.6;
+    const scaleThenConvert = convertAprToApy(apr * ratio);
+    expect(rows[0].after).toBeCloseTo(scaleThenConvert, 10);
+  });
+
+  it('Merkl campaign detail current matches scale-then-convert', () => {
+    const opportunities = [
+      {
+        name: 'Merkl Reconcile',
+        link: 'https://example.com',
+        breakdowns: [
+          {
+            campaignId: 'merkl-reconcile-1',
+            campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            campaignApr: 25,
+            rewardTokenSymbol: 'USDC',
+            campaignStartedAt: '2024-01-01',
+            campaignEndedAt: '2030-12-31',
+          },
+        ],
+      },
+    ];
+    const rows = buildMerklCampaignDetails({
+      opportunities,
+      isApy: true,
+      inputUsd: 0,
+      forecastStates: {},
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: false,
+      walletEligibilityRatio: 0.4,
+      walletMerklGroupMultiplier: () => 1,
+    });
+    const apr = 25;
+    const ratio = 0.4;
+    const scaleThenConvert = convertAprToApy(apr * ratio);
+    const convertThenScale = convertAprToApy(apr) * ratio;
+    expect(rows[0].current).toBeCloseTo(scaleThenConvert, 10);
+    expect(rows[0].current).not.toBeCloseTo(convertThenScale, 2);
   });
 });
