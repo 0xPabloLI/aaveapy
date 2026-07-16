@@ -71,7 +71,7 @@
     "check:campaign-apr-reconcile": "node scripts/reconcile-campaign-apr.mjs",
     "ci:lockcheck": "npm ci",
     "check:react-singleton": "node scripts/check-react-singleton.mjs",
-    "prepare": "husky"
+    "prepare": "npx husky"
   },
   "dependencies": {
     "@aave-dao/aave-address-book": "^4.57.2",
