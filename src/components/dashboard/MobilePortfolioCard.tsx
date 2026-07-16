@@ -217,11 +217,6 @@ function MobileCard({
         <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 ml-auto">
           {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-3 shrink-0 opacity-80" />}
           <span className="truncate">{marketLabel}</span>
-          {entry.hubName && (
-            <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${entry.hubName}`}>
-              <span className="truncate">{entry.hubName}</span>
-            </span>
-          )}
         </span>
       </div>
 
