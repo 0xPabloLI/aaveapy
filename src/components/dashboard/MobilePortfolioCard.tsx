@@ -186,11 +186,13 @@ function MobileCard({
   const hasWalletDiff = !!activeResult?.walletUsd && activeResult.amountUsd !== activeResult.walletUsd;
   const hasExpandContent = hasDelta || hasCapDetails || hasWalletDiff;
 
+  const incentiveHasValue = activeResult != null && activeResult.incentivePercent != null && activeResult.incentivePercent !== 0;
+
   return (
     <div
       data-reserve-id={entry.reserveId}
       className={cn(
-        'rounded-lg border border-border/50 bg-card/50 overflow-hidden',
+        'rounded-xl border border-border/60 bg-card overflow-hidden',
         rowOpacity,
       )}
     >
@@ -226,14 +228,14 @@ function MobileCard({
       </div>
 
       {/* Pill tabs */}
-      <div className="mx-3 mb-1.5 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
+      <div className="mx-3 mb-2 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
         <button
           type="button"
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-medium py-2 rounded-md transition-all duration-200',
+            'flex-1 ds-text-12 font-semibold py-1.5 rounded-md transition-all duration-200',
             activeTab === 'supply'
-              ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm ring-1 ds-ring-emerald-500-15'
+              ? 'ds-bg-emerald-500-10 ds-text-emerald-500 ring-1 ds-ring-emerald-500-15'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
@@ -243,9 +245,9 @@ function MobileCard({
           type="button"
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-medium py-2 rounded-md transition-all duration-200',
+            'flex-1 ds-text-12 font-semibold py-1.5 rounded-md transition-all duration-200',
             activeTab === 'borrow'
-              ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm ring-1 ds-ring-brand-cyan-15'
+              ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
@@ -254,7 +256,7 @@ function MobileCard({
       </div>
 
       {/* CompactInput */}
-      <div className="px-3 pb-1.5">
+      <div className="px-3 pb-2">
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <CompactInput
@@ -273,16 +275,31 @@ function MobileCard({
         </div>
       </div>
 
-      {/* Equal-weight metric bar */}
-      <div className="px-3 pb-1.5">
-        <div className="flex items-baseline gap-3 ds-text-13 tabular-nums">
-          <span data-cell={`${activeTab}-total`} className={cn('font-semibold', activeColor)}>
+      {/* Metrics strip — divided 3-col grid, label above value */}
+      <div className="mx-3 mb-2 grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-border/40 ring-1 ring-border/60">
+        <div className="bg-card px-2 py-1.5 flex flex-col">
+          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Total</span>
+          <span data-cell={`${activeTab}-total`} className={cn('ds-text-13 font-semibold tabular-nums leading-tight mt-0.5', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} /> : '—'}
           </span>
-          <span data-cell={`${activeTab}-native`} className="text-muted-foreground">
+        </div>
+        <div className="bg-card px-2 py-1.5 flex flex-col">
+          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Native</span>
+          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-tight mt-0.5 text-foreground/80">
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} /> : '—'}
           </span>
-          <span data-cell={`${activeTab}-incentive`} className="inline-flex items-center gap-0.5 text-muted-foreground">
+        </div>
+        <div className="bg-card px-2 py-1.5 flex flex-col">
+          <span className="ds-text-9 uppercase tracking-wider text-muted-foreground/70 font-semibold">Incentive</span>
+          <span
+            data-cell={`${activeTab}-incentive`}
+            className={cn(
+              'ds-text-13 font-semibold tabular-nums leading-tight mt-0.5 inline-flex items-center gap-0.5',
+              incentiveHasValue
+                ? 'bg-clip-text text-transparent bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))] to-[rgb(var(--ds-brand-cyan-rgb))]'
+                : 'text-foreground/60',
+            )}
+          >
             {activeResult ? (
               <>
                 <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} />
@@ -294,14 +311,9 @@ function MobileCard({
             {activeIncentWarns.length > 0 && <WarningMarker warnings={activeIncentWarns} />}
           </span>
         </div>
-        <div className="flex items-baseline gap-3 ds-text-10 text-muted-foreground/70">
-          <span>Total</span>
-          <span>Native</span>
-          <span>Incentive</span>
-        </div>
       </div>
 
-      {/* Details expand button */}
+      {/* Daily earnings row — doubles as expand toggle */}
       <div className="px-3 pb-2">
         <button
           type="button"
@@ -309,19 +321,18 @@ function MobileCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2 py-2 ds-text-12 text-muted-foreground transition-all duration-200 active:scale-[0.995]',
-            isExpanded
-              ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
-              : 'border border-border/60 bg-background active:bg-muted/40 active:border-border/80 dark:bg-card/50 dark:active:bg-muted/30',
+            'flex w-full items-center justify-between rounded-lg px-2 py-1.5 transition-colors',
+            isExpanded ? 'bg-muted/50' : 'active:bg-muted/40',
           )}
         >
-          <span className="flex items-center gap-1">
-            <span className="ds-text-10 text-muted-foreground/70">$/day</span>
-            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-10 font-medium tabular-nums', activeColor)}>
-              {activeResult ? (activeResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '—'}
+          <span className="ds-text-11 text-muted-foreground">Daily earnings</span>
+          <span className="inline-flex items-baseline gap-1">
+            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-12 font-semibold tabular-nums', activeColor)}>
+              {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '—'}
             </span>
+            <span className="ds-text-10 text-muted-foreground/60">/ day</span>
+            <ListCollapse className={cn('h-3 w-3 ml-0.5 shrink-0 text-muted-foreground/70 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
           </span>
-          <ListCollapse className={cn('h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
         </button>
       </div>
 
