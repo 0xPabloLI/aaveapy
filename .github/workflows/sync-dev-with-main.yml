@@ -14,44 +14,61 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
     steps:
-      - name: Align dev ref to main tip
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync dev via merge commit (branch-protection safe)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main dev
+          DEV_SHA=$(git rev-parse origin/dev)
+          MAIN_SHA=$(git rev-parse origin/main)
+
+          if [ "$DEV_SHA" = "$MAIN_SHA" ]; then
+            echo "dev already aligned with main"
+            exit 0
+          fi
+
+          MERGE_BASE=$(git merge-base origin/main origin/dev)
+          if [ "$MERGE_BASE" = "$MAIN_SHA" ]; then
+            echo "dev is ahead of main — no sync needed"
+            exit 0
+          fi
+
+          git checkout -B dev origin/dev
+          git merge origin/main --no-edit
+          git push origin dev
+          echo "Synced dev with main via merge commit"
+
+      - name: Create sync PR as fallback
+        if: failure()
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const baseRef = context.payload.pull_request.base.ref;
-            const headRef = context.payload.pull_request.head.ref;
-
-            const base = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: `heads/${baseRef}`,
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'dev',
+              head: 'main',
             });
-
-            const targetSha = base.data.object.sha;
-            core.info(`Target ${baseRef} SHA: ${targetSha}`);
-
-            const head = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: `heads/${headRef}`,
-            });
-
-            if (head.data.object.sha === targetSha) {
-              core.info(`${headRef} already aligned with ${baseRef}`);
+            if (prs.length > 0) {
+              core.info(`Sync PR already exists: #${prs[0].number}`);
               return;
             }
-
-            await github.rest.git.updateRef({
-              owner,
-              repo,
-              ref: `heads/${headRef}`,
-              sha: targetSha,
-              force: true,
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Sync main → dev',
+              head: 'main',
+              base: 'dev',
+              body: 'Auto-created: sync main into dev after dev→main merge.',
             });
-
-            core.info(`Aligned ${headRef} -> ${baseRef} at ${targetSha}`);
+            core.info(`Created sync PR #${pr.number}`);
