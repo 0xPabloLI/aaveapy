@@ -5,7 +5,7 @@ import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import { parseNumberInput } from '@/lib/numberFormat';
+import { parseSignedNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import type {
   MerklForecastWireItem,
@@ -104,14 +104,16 @@ export const useSharedRateSimulations = ({
     () =>
       perReserveInputs != null &&
       Array.from(perReserveInputs.values()).some(
-        (v) => parseNumberInput(v.supplyInput) > 0 || parseNumberInput(v.borrowInput) > 0,
+        (v) =>
+          parseSignedNumberInput(v.supplyInput) !== 0 ||
+          parseSignedNumberInput(v.borrowInput) !== 0,
       ),
     [perReserveInputs],
   );
   const hasAnyInput = useMemo(
     () =>
-      parseNumberInput(supplyInput) > 0 ||
-      parseNumberInput(borrowInput) > 0 ||
+      parseSignedNumberInput(supplyInput) !== 0 ||
+      parseSignedNumberInput(borrowInput) !== 0 ||
       hasPerReserveInput,
     [borrowInput, supplyInput, hasPerReserveInput],
   );
@@ -137,10 +139,11 @@ export const useSharedRateSimulations = ({
       const reserveId = getReserveSimulationId(reserve);
       const perReserve = perReserveInputs?.get(reserveId);
       const reserveNeedsPrice =
-        parseNumberInput(supplyInput) > 0 ||
-        parseNumberInput(borrowInput) > 0 ||
+        parseSignedNumberInput(supplyInput) !== 0 ||
+        parseSignedNumberInput(borrowInput) !== 0 ||
         (perReserve != null &&
-          (parseNumberInput(perReserve.supplyInput) > 0 || parseNumberInput(perReserve.borrowInput) > 0));
+          (parseSignedNumberInput(perReserve.supplyInput) !== 0 ||
+            parseSignedNumberInput(perReserve.borrowInput) !== 0));
       const localPriceMissing = localPrice === undefined;
       const queryKey = [
         ...FORECAST_TOKEN_PRICE_QUERY_KEY,
@@ -288,13 +291,16 @@ export const useSharedRateSimulations = ({
         }
       }
       const hasEffectiveInput =
-        parseNumberInput(effectiveSupplyInput) > 0 || parseNumberInput(effectiveBorrowInput) > 0;
+        parseSignedNumberInput(effectiveSupplyInput) !== 0 ||
+        parseSignedNumberInput(effectiveBorrowInput) !== 0;
       // AAV-1166: Portfolio Scenario active when any perReserve entry has a delta
       // and the current reserve is a portfolio member.
       const portfolioScenarioActive =
         perReserveInputs != null &&
         Array.from(perReserveInputs.values()).some(
-          (v) => parseNumberInput(v.supplyInput) > 0 || parseNumberInput(v.borrowInput) > 0,
+          (v) =>
+            parseSignedNumberInput(v.supplyInput) !== 0 ||
+            parseSignedNumberInput(v.borrowInput) !== 0,
         ) &&
         perReserveInputs.has(reserveId);
 
@@ -363,6 +369,7 @@ export const useSharedRateSimulations = ({
 
   return {
     simulationsById,
+    hasAnyInput,
     forecastLoading: hasAnyInput && forecastLoading,
     forecastErrors,
   };

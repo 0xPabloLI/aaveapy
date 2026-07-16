@@ -223,7 +223,7 @@ function computeResultsFromGroups(
   // AAV-1166: Portfolio Scenario is active when any portfolio entry has a non-zero delta.
   // All portfolio members (every group in groupMap) compute after* values.
   const portfolioScenarioActive = Array.from(groupMap.values()).some(
-    (g) => g.supplyDeltaUsd > 0 || g.borrowDeltaUsd > 0,
+    (g) => g.supplyDeltaUsd !== 0 || g.borrowDeltaUsd !== 0,
   );
 
   for (const [key, group] of groupMap) {

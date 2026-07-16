@@ -347,6 +347,40 @@ describe('buildPerReserveInputsFromEntries', () => {
     expect(result.reserveSymbolById!.get(reserveId)).toBe('USDC');
   });
 
+  it('keeps after metrics active for unchanged members after another member withdraws', () => {
+    const withdrawingReserveId = 'r-withdrawing';
+    const unchangedReserveId = 'r-unchanged';
+    const reserves = [
+      makeRateCalcReserve({ reserveId: withdrawingReserveId, tokenSymbol: 'USDC' }),
+      makeRateCalcReserve({ reserveId: unchangedReserveId, tokenSymbol: 'USDT' }),
+    ];
+    const entries = [
+      makeEntry({
+        reserveId: withdrawingReserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '500', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: unchangedReserveId,
+        tokenSymbol: 'USDT',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
+    ];
+
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves }),
+    );
+
+    const unchangedSupply = results.find(
+      (result) => result.reserveId === unchangedReserveId && result.side === 'supply',
+    );
+    expect(unchangedSupply?.nativeMetric?.after).not.toBeNull();
+    expect(unchangedSupply?.incentiveMetric?.after).not.toBeNull();
+    expect(unchangedSupply?.totalMetric?.after).not.toBeNull();
+  });
+
   it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });

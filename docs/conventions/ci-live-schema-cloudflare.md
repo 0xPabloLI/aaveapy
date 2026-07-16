@@ -125,4 +125,6 @@ curl -sS "https://staging-api.aaveapy.com/api/markets" | head -c 120
 
 4. 之后 `main` 分支上的 `live-schema-validation` / `live-simulation-validation` job 会优先使用这个 Secret（`secrets.LIVE_TEST_API_BASE_CI`）；未配置时仍回退到 `https://staging-api.aaveapy.com/api`
 
-> **Note**: 此值原为明文 GitHub Variable，已迁移为加密 Secret 以避免 Railway 内部域名暴露在 repo settings 明文中。CI workflow 引用已从 `vars.LIVE_TEST_API_BASE_CI` 改为 `secrets.LIVE_TEST_API_BASE_CI`。
+> **Note**: 此值原为明文 GitHub Variable，已迁移为加密 Secret 以避免 Railway 内部域名暴露在 repo settings 明文中。所有 workflow 引用已从 `vars.LIVE_TEST_API_BASE_CI` 改为 `secrets.LIVE_TEST_API_BASE_CI`。
+>
+> **Lesson (AAV-429)**: 迁移时必须同时更新所有引用该变量的 workflow 文件。本次漏改 `hardcode-sync.yml`（只改了 `ci.yml`），导致 `vars.` 返回空值、fallback 到 staging-api 被 Cloudflare 403 拦截，hardcode sync 连续失败。涉及 `LIVE_TEST_API_BASE_CI` 的 workflow：`ci.yml`、`hardcode-sync.yml`。

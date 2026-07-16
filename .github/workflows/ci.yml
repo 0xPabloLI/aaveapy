@@ -253,7 +253,7 @@ jobs:
       needs.openapi-check.result == 'failure'
     runs-on: ubuntu-latest
     env:
-      LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+      LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     permissions:
       contents: write
       pull-requests: write

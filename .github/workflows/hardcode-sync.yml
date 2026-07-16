@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "event_name=${{ github.event_name }}"
           echo "target_branch=${{ env.TARGET_BRANCH }}"
-          echo "live_test_api_base_ci_source=${{ vars.LIVE_TEST_API_BASE_CI != '' && 'repository_variable' || 'workflow_default_staging' }}"
+          echo "live_test_api_base_ci_source=${{ secrets.LIVE_TEST_API_BASE_CI != '' && 'repository_secret' || 'workflow_default_staging' }}"
           echo "repository_dispatch=${{ github.event_name == 'repository_dispatch' && 'true' || 'false' }}"
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             echo "client_payload=${{ toJSON(github.event.client_payload) }}"
@@ -63,7 +63,7 @@ jobs:
       - name: Round 1 sync
         id: sync_round1
         env:
-          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
           npm run hardcode:sync
@@ -79,7 +79,7 @@ jobs:
       - name: Round 1 verify
         id: verify_round1
         env:
-          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
           npm run hardcode:verify
@@ -95,7 +95,7 @@ jobs:
         if: steps.verify_round1.outputs.passed != 'true'
         id: sync_round2
         env:
-          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
           npm run hardcode:sync
@@ -112,7 +112,7 @@ jobs:
         id: verify_round2
         if: steps.verify_round1.outputs.passed != 'true'
         env:
-          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
           npm run hardcode:verify
