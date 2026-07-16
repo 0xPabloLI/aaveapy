@@ -141,3 +141,10 @@ Historical lessons from working on `rateSimulationCalculator.ts` and related inc
 - **测试影响范围**：~25 个单元测试和 5 个 live API 测试原先依赖 fallback（传 `totalSupplyUsd` 不传 `walletSupplyUsd`），需要逐个添加显式 wallet 值。部分测试"碰巧通过"（wallet=undefined → 无 dilution → current=10，与期望值相同），但语义错误——测试注释说"wallet=$5000"但实际无 wallet。修复时一并更新这些测试。
 - **Spec 文档**：`docs/specs/wallet-position-explicit-passing.md`
 - **涉及文件**：`portfolioSimulator.ts`（PerReserveInput + EntryGroup + buildPerReserveInputsFromEntries + buildGroupMapFromSlots + computeResultsFromGroups）、`useRateSimulation.ts`、`rateSimulationCalculator.ts`、3 个测试文件。
+
+## APR→APY 转换顺序不可交换 (AAV-1177)
+- **`convertAprToApy` 是非线性函数**：月复利公式 `(1 + r/12)^12 - 1` 导致 `convertAprToApy(apr * ratio) ≠ convertAprToApy(apr) * ratio`（ratio ≠ 1 时）。Campaign detail 行原先先转 APY 再缩放，聚合路径先缩放再转 APY，两者不一致。典型影响：100% APR × 50% eligibility → 先缩后转 ≈ 64.9%，先转后缩 ≈ 85.9%。
+- **统一入口 `scaleAprThenConvert(apr, { ratio, isApy })`**：在 `rateCalculations.ts` 新增，强制"先缩放 APR，再按需转 APY"顺序。所有 campaign detail 行（Merit current/after、Merkl current/after）统一调用此函数，与聚合路径对齐。
+- **`applyPositionCapToForecastResult` 必须接收 APR 输入**：参数名 `nominalAprPercent` 已暗示期望 APR，但 Merit/ Merkl campaign detail 原先传入 APY 值。修复：全程在 APR 空间操作（缩放 + cap），最后一步才转 APY。
+- **实际影响**：Aave 常见 5-20% APR 区间误差 <1pp，但数学不一致必须修复。新增 3 个 reconciliation 回归测试确保 campaign detail 与聚合路径一致。
+- **Codex Review 来源**：https://github.com/0xPabloLI/aaveapy/pull/431#pullrequestreview-4710563403

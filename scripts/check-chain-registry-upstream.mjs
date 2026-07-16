@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * CI check: Detect new mainnet pools in @aave-dao/aave-address-book that are
- * NOT registered in chainRegistry.ts.
+ * CI check: warn when Aave chains discovered from @aave-dao/aave-address-book
+ * lack curated RPC URLs in chainRegistry.ts CHAIN_RPC_URLS.
  *
- * When Aave deploys to a new chain, this check fails so developers know to add
- * the chain to the registry (one place: chainRegistry.ts ENTRIES array).
+ * Chain registration is now automatic (import * as ab in chainRegistry.ts).
+ * This script only checks for missing curated RPC URLs — a quality signal,
+ * not a gate. Chains without curated URLs still work via runtime chainDiscovery.
  *
  * Usage: node scripts/check-chain-registry-upstream.mjs
  */
@@ -18,20 +19,13 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const registrySrcPath = path.join(repoRoot, 'src/lib/chainRegistry.ts');
 
-// Regex to extract module names from ENTRIES array
-const ENTRIES_REGEX = /abModule:\s+(AaveV\d[A-Za-z]+)/g;
+// ---------------------------------------------------------------------------
+// Module filtering
+// ---------------------------------------------------------------------------
 
-// Known testnet/whitelabel modules to exclude
 const TESTNET_KEYWORDS = ['Sepolia', 'Fuji', 'Testnet'];
-
-// Base/abstract modules that are not pool deployments
 const BASE_MODULES = ['AaveV3', 'AaveV4'];
-
-// Chains we intentionally skip (deprecated, no mainnet activity)
 const SKIPPED_CHAINS = ['AaveV3Fantom', 'AaveV3Harmony'];
-
-// Ethereum sub-pools (EtherFi, Horizon, Lido) share chainId=1 and are
-// not separate chain entries — they are covered by AaveV3Ethereum.
 const ETHEREUM_SUB_POOLS = ['AaveV3EthereumEtherFi', 'AaveV3EthereumHorizon', 'AaveV3EthereumLido'];
 
 function shouldIncludeModule(name) {
@@ -42,44 +36,56 @@ function shouldIncludeModule(name) {
   return true;
 }
 
-// Extract module names currently registered
+// ---------------------------------------------------------------------------
+// Parse CHAIN_RPC_URLS keys from chainRegistry.ts
+// ---------------------------------------------------------------------------
+
 const registryContent = readFileSync(registrySrcPath, 'utf8');
-const registeredModules = new Set();
-for (const match of registryContent.matchAll(ENTRIES_REGEX)) {
-  registeredModules.add(match[1]);
+
+// Extract chainId keys from the CHAIN_RPC_URLS map
+const rpcKeyRegex = /^\s*(\d+):\s*\[/gm;
+const curatedChainIds = new Set();
+let match;
+while ((match = rpcKeyRegex.exec(registryContent)) !== null) {
+  curatedChainIds.add(Number(match[1]));
 }
 
-// Discover all V3/V4 mainnet modules in the address book
+// ---------------------------------------------------------------------------
+// Discover all mainnet chains from address book
+// ---------------------------------------------------------------------------
+
 const ab = await import('@aave-dao/aave-address-book');
+
 const allModules = Object.keys(ab).filter(
-  (key) =>
-    (key.startsWith('AaveV3') || key.startsWith('AaveV4')) &&
-    shouldIncludeModule(key)
+  (key) => (key.startsWith('AaveV3') || key.startsWith('AaveV4')) && shouldIncludeModule(key),
 );
 
-// Filter to only those with valid CHAIN_ID and POOL (actual pool deployments)
-const mainnetPools = [];
+const mainnetChains = [];
 for (const key of allModules) {
   const mod = ab[key];
-  if (mod && typeof mod.CHAIN_ID === 'number' && typeof mod.POOL === 'string' && mod.POOL.startsWith('0x')) {
-    mainnetPools.push(key);
-  }
+  if (!mod || typeof mod.CHAIN_ID !== 'number') continue;
+  if (typeof mod.POOL === 'string' && mod.POOL.startsWith('0x')) { mainnetChains.push(key); continue; }
+  if (mod.SPOKES && typeof mod.SPOKES === 'object') { mainnetChains.push(key); continue; }
 }
 
-// Check for unregistered mainnet modules
-const unregistered = mainnetPools.filter((m) => !registeredModules.has(m));
+// Unique chainIds
+const allChainIds = [...new Set(mainnetChains.map((m) => ab[m].CHAIN_ID))];
 
-if (unregistered.length > 0) {
-  console.error('⚠️  New mainnet Aave chain(s) detected in @aave-dao/aave-address-book:');
-  console.error('');
-  console.error('The following chains have pool deployments but are NOT in chainRegistry.ts:');
-  for (const mod of unregistered) {
-    const chainId = ab[mod]?.CHAIN_ID ?? 'unknown';
-    console.error(`  - ${mod} (chainId: ${chainId})`);
+// Check for chains without curated RPC URLs
+const missingRpc = allChainIds.filter((id) => !curatedChainIds.has(id));
+
+if (missingRpc.length > 0) {
+  console.warn('⚠️  Chains without curated RPC URLs in CHAIN_RPC_URLS:');
+  for (const chainId of missingRpc) {
+    const modules = mainnetChains.filter((m) => ab[m].CHAIN_ID === chainId);
+    console.warn(`  - chainId ${chainId} (${modules.join(', ')}) — runtime chainDiscovery will handle`);
   }
-  console.error('');
-  console.error('To fix: Add entries to the ENTRIES array in src/lib/chainRegistry.ts');
-  process.exit(1);
+  console.warn('');
+  console.warn('These chains still work — runtime chainDiscovery provides RPC URLs.');
+  console.warn('To add curated URLs: add an entry to CHAIN_RPC_URLS in src/lib/chainRegistry.ts');
+  // Don't fail — this is informational only
+} else {
+  console.log(`✅ All ${allChainIds.length} mainnet chains have curated RPC URLs`);
 }
 
-console.log(`✅ All ${mainnetPools.length} mainnet chains are registered in chainRegistry.ts`);
+console.log(`✅ ${mainnetChains.length} Aave modules discovered (${allChainIds.length} unique chains) — auto-registered`);

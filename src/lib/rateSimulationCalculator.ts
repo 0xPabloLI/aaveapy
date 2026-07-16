@@ -5,6 +5,7 @@ import {
   calculateTotalSupplyApy,
   calculateTotalSupplyApr,
   convertAprToApy,
+  scaleAprThenConvert,
 } from '@/lib/rateCalculations';
 import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources, resolveBrevisCurrentApr, sumMerklIncentiveApr, sumMerklIncentiveApy } from '@/lib/incentiveAggregation';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
@@ -662,7 +663,7 @@ export const buildMeritCampaignDetails = ({
         effectiveBaseApr = cappedApr;
       }
       // AAV-1102: per-campaign current must use wallet eligibility ratio to match aggregate sumCurrent
-      const baseCurrent = meritAprToDisplay(effectiveBaseApr, isApy) * walletEligibilityRatio;
+      const baseCurrent = scaleAprThenConvert(effectiveBaseApr, { ratio: walletEligibilityRatio, isApy });
       const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
       const bdLabel = bdActionLabel ?? extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? (positionCapUsd != null && positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
       let baseAfter: number | null = null;
@@ -677,21 +678,21 @@ export const buildMeritCampaignDetails = ({
           endDate: breakdown.campaignEndedAt,
           anchorTvlUsd: meritAnchorTvlUsd,
         }) : null;
-        const fullAfter = fp
-          ? meritForecastAprToDisplay(fp.apr, isApy)
-          : meritAprToDisplay(baseAprPercent, isApy);
+        const fullAfterApr = fp
+          ? fp.apr * 100
+          : baseAprPercent;
         if (positionCapUsd != null && positionCapUsd > 0) {
           const capResult = applyPositionCapToForecastResult(
-            fullAfter,
+            fullAfterApr,
             totalPositionUsd ?? inputUsd,
             positionCapUsd,
             { },
           );
-          baseAfter = capResult.aprPercent * eligibilityRatio;
+          baseAfter = scaleAprThenConvert(capResult.aprPercent, { ratio: eligibilityRatio, isApy });
           capMetrics = capResult.capMetrics;
           notes = capResult.notes;
         } else {
-          baseAfter = fullAfter * eligibilityRatio;
+          baseAfter = scaleAprThenConvert(fullAfterApr, { ratio: eligibilityRatio, isApy });
         }
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
@@ -781,7 +782,7 @@ export const buildMerklCampaignDetails = ({
       // AAV-1102: per-campaign current must use wallet multiplier + eligibility to match aggregate sumCurrent
       const walletGroupMul = walletMerklGroupMultiplier ? walletMerklGroupMultiplier(opportunity) : 1;
       const currentApr = sanitizePercent(forecastMerklApr(bd, 0, forecastStates, effectiveRate, nativeApyPercent));
-      const current = (isApy ? convertAprToApy(currentApr) : currentApr) * walletEligibilityRatio * walletGroupMul;
+      const current = scaleAprThenConvert(currentApr, { ratio: walletEligibilityRatio * walletGroupMul, isApy });
       let after: number | null = null;
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
       let notes: import('./incentiveCaps').IncentiveNote[] | undefined;
@@ -794,7 +795,6 @@ export const buildMerklCampaignDetails = ({
         const forecastApr = forecastMerklApr(bd, inputUsd, forecastStates, effectiveRate, nativeApyPercent);
         const forecastAprSan = sanitizePercent(forecastApr);
         const groupMul = merklGroupMultiplier ? merklGroupMultiplier(opportunity) : 1;
-        const forecastRate = isApy ? convertAprToApy(forecastAprSan) : forecastAprSan;
         const useUnifiedEligibility =
           crossReserveNetEligibleUsd != null &&
           grossForEligibility != null &&
@@ -811,9 +811,9 @@ export const buildMerklCampaignDetails = ({
         const eligibleUsd = netEligibleUsd !== null && effectiveCapUsd != null && effectiveCapUsd > 0
           ? Math.min(netEligibleUsd, effectiveCapUsd)
           : netEligibleUsd;
-        let afterValue = useUnifiedEligibility
-          ? forecastRate * eligibleUsd! / grossForEligibility
-          : forecastRate * eligibilityRatio * groupMul;
+        let afterApr = useUnifiedEligibility
+          ? forecastAprSan * eligibleUsd! / grossForEligibility
+          : forecastAprSan * eligibilityRatio * groupMul;
 
         const merklType = merged?.campaignType;
         const isTargetTotalApr = merklType === 'TARGET_TOTAL_APR';
@@ -828,7 +828,7 @@ export const buildMerklCampaignDetails = ({
           if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             const fixEffect = buildFixRewardCapEffect(forecast.fixRewardableDays);
             notes = [capEffectToNote(fixEffect)];
-          } else if (isMaxLike && forecast.regime === 'APR_CAPPED' && afterValue < current) {
+          } else if (isMaxLike && forecast.regime === 'APR_CAPPED' && afterApr < currentApr) {
             const maxEffect = buildMaxRewardCapEffect();
             notes = [capEffectToNote(maxEffect)];
           }
@@ -847,13 +847,13 @@ export const buildMerklCampaignDetails = ({
                   : (grossInputUsd ?? inputUsd);
               })();
           const capResult = applyPositionCapToForecastResult(
-            useUnifiedEligibility ? forecastRate : afterValue,
+            useUnifiedEligibility ? forecastAprSan : afterApr,
             positionUsd,
             effectiveCapUsd,
             { isCombineCap: bd.isCombineCap ?? false, positionCapNative: bd.positionCapNative, tokenSymbol, decimals },
           );
           if (!useUnifiedEligibility) {
-            afterValue = capResult.aprPercent;
+            afterApr = capResult.aprPercent;
           }
           if (capResult.notes) {
             capMetrics = capResult.capMetrics;
@@ -861,7 +861,7 @@ export const buildMerklCampaignDetails = ({
           }
         }
 
-        after = afterValue;
+        after = scaleAprThenConvert(afterApr, { ratio: 1, isApy });
       }
 
       const delta = after !== null ? after - current : null;

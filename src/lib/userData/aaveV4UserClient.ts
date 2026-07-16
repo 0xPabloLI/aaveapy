@@ -1,4 +1,4 @@
-import { AaveV4Ethereum } from '@aave-dao/aave-address-book'
+import * as ab from '@aave-dao/aave-address-book'
 
 export interface V4SpokeEntry {
   name: string
@@ -10,16 +10,51 @@ export interface V4HubEntry {
   address: `0x${string}`
 }
 
-export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = {
-  [AaveV4Ethereum.CHAIN_ID]: Object.entries(AaveV4Ethereum.SPOKES)
-    .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
-    .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+// ---------------------------------------------------------------------------
+// Auto-discover V4 spoke/hub addresses from address book.
+// When a new V4 chain is added to the address book, it's immediately available.
+// ---------------------------------------------------------------------------
+
+interface V4AbModule {
+  CHAIN_ID: number
+  SPOKES: Record<string, string>
+  HUBS: Record<string, string>
 }
 
-export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = {
-  [AaveV4Ethereum.CHAIN_ID]: Object.entries(AaveV4Ethereum.HUBS)
-    .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+function isV4Module(name: string, mod: unknown): mod is V4AbModule {
+  if (!name.startsWith('AaveV4')) return false
+  if (name === 'AaveV4') return false // base module
+  if (name.includes('Sepolia') || name.includes('Fuji') || name.includes('Testnet')) return false
+  const m = mod as V4AbModule
+  return typeof m?.CHAIN_ID === 'number' && !!m?.SPOKES && typeof m?.SPOKES === 'object'
 }
+
+export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = Object.fromEntries(
+  Object.entries(ab)
+    .filter(([name, mod]) => isV4Module(name, mod))
+    .map(([, mod]) => {
+      const m = mod as V4AbModule
+      return [
+        m.CHAIN_ID,
+        Object.entries(m.SPOKES)
+          .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
+          .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+      ]
+    }),
+)
+
+export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = Object.fromEntries(
+  Object.entries(ab)
+    .filter(([name, mod]) => isV4Module(name, mod))
+    .map(([, mod]) => {
+      const m = mod as V4AbModule
+      return [
+        m.CHAIN_ID,
+        Object.entries(m.HUBS)
+          .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+      ]
+    }),
+)
 
 export function getV4SpokeAddresses(chainId: number): V4SpokeEntry[] | undefined {
   return V4_SPOKE_ADDRESSES[chainId]

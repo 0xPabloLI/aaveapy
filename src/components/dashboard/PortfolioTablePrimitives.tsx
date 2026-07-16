@@ -65,15 +65,18 @@ export function MetricValue({
   afterValue,
   metric,
   formatFn,
+  skipTooltip = false,
 }: {
   afterValue: number;
   metric?: MetricShape;
   formatFn: (v: number) => string;
+  /** Skip tooltip wrapper (mobile). When true, renders plain span without dotted underline. */
+  skipTooltip?: boolean;
 }) {
   const hasChange = metric?.current != null && metric.after != null
     && Math.abs(metric.current - metric.after) >= 0.005;
 
-  if (!hasChange) {
+  if (!hasChange || skipTooltip) {
     return <span data-current={metric?.current?.toFixed(4)} data-after={afterValue.toFixed(4)}>{formatFn(afterValue)}</span>;
   }
 
@@ -345,7 +348,7 @@ export function CompactInput({
             disabled={tokenPriceInUsd === undefined}
             onClick={handleToggleInputMode}
             className={cn(
-              'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground flex items-center justify-center leading-none',
+              'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors active:bg-muted active:text-foreground md:hover:bg-muted md:hover:text-foreground flex items-center justify-center leading-none',
               'h-11 w-11 px-1 md:h-5 md:w-auto md:px-1',
               tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
             )}
@@ -391,7 +394,7 @@ export function CompactInput({
           <button
             type="button"
             onClick={() => handleDeltaCommit('')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-2 md:p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors flex items-center justify-center"
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-2 md:p-0.5 text-muted-foreground active:bg-muted/60 active:text-foreground md:hover:bg-muted/60 md:hover:text-foreground transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2 md:my-0"
             aria-label={`Clear ${tokenSymbol} ${side}`}
           >
             <Eraser className="size-4 md:size-2.5" aria-hidden />

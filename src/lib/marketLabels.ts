@@ -7,27 +7,47 @@ import { ETHEREUM_MARKET_NAMES, type ReserveWithSpread } from '@/types/aave';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 
 /**
- * Sub-market label for an Ethereum market.
- * - V4: strip "AaveV4" prefix and split camelCase (AaveV4EthereumLido → "Ethereum Lido")
- * - V3: prefer canonical mapping in ETHEREUM_MARKET_NAMES, fall back to raw marketName
+ * Sub-market label for a market.
+ * - V4: strip "AaveV4" prefix and split camelCase (e.g., "AaveV4EthereumLido" → "Ethereum Lido")
+ * - V3 Ethereum: use canonical mapping in ETHEREUM_MARKET_NAMES
+ * - V3 non-Ethereum: strip "AaveV3" prefix and split camelCase (e.g., "AaveV3Base" → "Base")
  */
-export function getEthSubMarketLabel(marketName: string): string {
+export function getSubMarketLabel(marketName: string): string {
   const version = getProtocolVersion(marketName);
   if (version === 'v4') {
     const withoutPrefix = marketName.replace(/^AaveV4/i, '');
     return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
   }
-  return ETHEREUM_MARKET_NAMES[marketName] ?? marketName;
+
+  // V3
+  if (ETHEREUM_MARKET_NAMES[marketName]) {
+    return ETHEREUM_MARKET_NAMES[marketName];
+  }
+
+  if (marketName?.startsWith('AaveV3')) {
+    const withoutPrefix = marketName.replace(/^AaveV3/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  return marketName;
+}
+
+/** @deprecated Use getSubMarketLabel instead */
+export function getEthSubMarketLabel(marketName: string): string {
+  return getSubMarketLabel(marketName);
 }
 
 /**
- * Market chip label used wherever a single chip needs to identify a market:
- * - Ethereum → sub-market label (e.g. "Core", "Prime", "Ethereum Lido")
- * - Other chains → the chain name itself (e.g. "Base", "Arbitrum")
+ * Market chip label used wherever a single chip needs to identify a market.
+ * Returns the sub-market label for any market — for single-market V3 chains
+ * this is equivalent to the chain name (e.g., "AaveV3Base" → "Base").
+ *
+ * The `chainName` parameter is kept for API stability but no longer affects
+ * the result; the label is derived purely from `marketName`.
  */
 export function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
-  return getEthSubMarketLabel(marketName);
+  void chainName; // kept for API stability; label derived from marketName only
+  return getSubMarketLabel(marketName);
 }
 
 /** Whether a market should render the small "V4" badge alongside its label. */

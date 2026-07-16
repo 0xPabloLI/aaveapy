@@ -8,7 +8,6 @@ import {
   V3_POOL_ADDRESSES,
   PUBLIC_RPC_URLS,
   getPublicRpcUrls,
-  WALLET_SUPPORTED_CHAINS,
 } from './chainRegistry'
 
 describe('chainRegistry', () => {
@@ -65,24 +64,6 @@ describe('chainRegistry', () => {
       expect(getPublicRpcUrls(1)).toBeInstanceOf(Array)
       expect(getPublicRpcUrls(999999)).toBeInstanceOf(Array)
       expect(getPublicRpcUrls(999999)).toEqual([])
-    })
-  })
-
-  describe('WALLET_SUPPORTED_CHAINS', () => {
-    it('contains wagmi chain objects for all chains', () => {
-      expect(WALLET_SUPPORTED_CHAINS.length).toBeGreaterThanOrEqual(18)
-      for (const chain of WALLET_SUPPORTED_CHAINS) {
-        expect(chain.id).toBeGreaterThan(0)
-        expect(typeof chain.name).toBe('string')
-      }
-    })
-
-    it('no duplicate chain IDs in wagmi chains', () => {
-      const seen = new Set<number>()
-      for (const chain of WALLET_SUPPORTED_CHAINS) {
-        expect(seen.has(chain.id), `duplicate wagmi chain ${chain.id}`).toBe(false)
-        seen.add(chain.id)
-      }
     })
   })
 

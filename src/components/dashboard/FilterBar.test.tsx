@@ -24,6 +24,12 @@ const ETH_MULTI_MARKETS = [
   { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum', chainId: 42161 },
 ];
 
+const AVALANCHE_MULTI_MARKETS = [
+  { marketName: 'AaveV3Avalanche', chainName: 'Avalanche', chainId: 43114 },
+  { marketName: 'AaveV4AvalancheMain', chainName: 'Avalanche', chainId: 43114 },
+  { marketName: 'AaveV4AvalancheForex', chainName: 'Avalanche', chainId: 43114 },
+];
+
 function TestWrapper({
   initialCategory = 'all' as TokenCategory,
   initialMarkets = [] as string[],
@@ -60,7 +66,7 @@ function TestWrapper({
       isApy={isApy}
       setIsApy={setIsApy}
       marketsList={marketsList}
-      hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+      hubEntries={[{ id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' }, { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' }]}
       selectedHubs={hubs}
       setSelectedHubs={setHubs}
       expandedChain={expandedChain}
@@ -117,7 +123,7 @@ describe('FilterBar', () => {
         isApy
         setIsApy={() => {}}
         marketsList={ETH_MULTI_MARKETS}
-        hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+        hubEntries={[{ id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' }, { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' }]}
         selectedHubs={[]}
         setSelectedHubs={setHubsFn}
         marketViewMode="hub"
@@ -166,12 +172,12 @@ describe('FilterBar', () => {
   });
 });
 
-function getExpandButton() {
-  return screen.getAllByTitle('Expand Ethereum markets')[0];
+function getExpandButton(chainName: string = 'Ethereum') {
+  return screen.getAllByTitle(`Expand ${chainName} markets`)[0];
 }
 
-function getCollapseButton() {
-  return screen.getAllByTitle('Collapse Ethereum markets')[0];
+function getCollapseButton(chainName: string = 'Ethereum') {
+  return screen.getAllByTitle(`Collapse ${chainName} markets`)[0];
 }
 
 describe('FilterBar setExpandedChain', () => {
