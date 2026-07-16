@@ -60,6 +60,10 @@ jobs:
       - name: Update address-book to latest
         run: npm update @aave-dao/aave-address-book
 
+      - name: Auto-register new chains
+        run: node scripts/check-chain-registry-upstream.mjs --write
+        continue-on-error: true
+
       - name: Round 1 sync
         id: sync_round1
         env:

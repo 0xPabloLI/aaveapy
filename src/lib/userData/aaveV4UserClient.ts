@@ -1,4 +1,7 @@
-import { AaveV4Ethereum, AaveV4Avalanche } from '@aave-dao/aave-address-book'
+import {
+  AaveV4Ethereum,
+  AaveV4Avalanche,
+} from '@aave-dao/aave-address-book'
 
 export interface V4SpokeEntry {
   name: string
