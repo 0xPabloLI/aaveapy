@@ -43,8 +43,8 @@ jobs:
 
       - name: Check CoinGecko platform map drift for market chainIds
         env:
-          # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables); scoped here so checkout logs stay clean.
-          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          # Repository secret LIVE_TEST_API_BASE_CI; scoped here so checkout logs stay clean.
+          LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: npm run check:coingecko-platform-map-upstream
 
       - name: Check pool address drift against aave-address-book
