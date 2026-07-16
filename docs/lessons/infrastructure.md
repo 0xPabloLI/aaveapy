@@ -27,3 +27,8 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **`--no-merges` 过滤噪音**：`git log A..B --no-merges --oneline` 只显示实质 commit，去掉 merge commit 的虚高计数。
 - **`git cherry` 检测等价 patch**：`git cherry A B` 标记哪些 commit 的改动已在对面存在（`+` = 新增，`-` = 等价已存在），适合判断哪些 commit 真正需要合并。
 - **结论**：看到 ahead/behind 数字大时，先 `git diff --stat` 确认实际代码差异，再决定 pull/merge 策略，避免被 merge commit 历史误导。
+
+## GitHub Variable → Secret 迁移必须更新所有引用 workflow（AAV-429）
+- **迁移 GitHub Variable 到 Secret 时，必须 grep 所有 workflow 文件中的引用**：本次只改了 `ci.yml` 的 `vars.LIVE_TEST_API_BASE_CI` → `secrets.LIVE_TEST_API_BASE_CI`，漏改 `hardcode-sync.yml`，导致后者 fallback 到 staging-api 被 Cloudflare Bot Fight Mode 403 拦截，hardcode sync 连续失败。
+- **`vars.` 引用已删除的 Variable 返回空字符串**：GitHub 不会报错，而是静默返回空，触发 fallback 逻辑。如果 fallback 指向被 Cloudflare 保护的域名，CI 就会 403 但不给出明确原因。
+- **涉及 `LIVE_TEST_API_BASE_CI` 的 workflow**：`ci.yml`、`hardcode-sync.yml`。迁移时用 `grep -r 'vars\.LIVE_TEST_API_BASE_CI' .github/workflows/` 确认无遗漏。
