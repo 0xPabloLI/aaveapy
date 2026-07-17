@@ -248,7 +248,7 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[36px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
