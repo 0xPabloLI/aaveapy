@@ -1,3 +1,5 @@
+export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
+
 export type IncentiveMessageScalar = string | number | boolean | null;
 export type IncentiveMessage = string | IncentiveMessage[] | {
   [key: string]: IncentiveMessageScalar | IncentiveMessage;

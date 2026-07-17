@@ -125,7 +125,7 @@ export function ReservesTableFloatingScroll({
       <div className="group relative">
         <button
           type="button"
-          aria-label={`Refresh data (updated ${formatRelativeTime(new Date(Date.now() - ageS * 1000).toISOString())})`}
+          aria-label={`Refresh data (updated ${dataUpdatedAt != null ? formatRelativeTime(new Date(dataUpdatedAt).toISOString()) : 'never'})`}
           onClick={handleRefresh}
           disabled={isRefreshing}
           className={`${btnClass} ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
@@ -141,7 +141,7 @@ export function ReservesTableFloatingScroll({
         {/* Hover tooltip showing age */}
         {dataUpdatedAt != null && (
           <div className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-card border border-border/60 px-2 py-1 text-xs text-muted-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {formatRelativeTime(new Date(Date.now() - ageS * 1000).toISOString())}
+            {formatRelativeTime(new Date(dataUpdatedAt).toISOString())}
           </div>
         )}
       </div>

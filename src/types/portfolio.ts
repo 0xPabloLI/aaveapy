@@ -64,6 +64,9 @@ export interface PortfolioReserveEntry {
   isOrphan: boolean;
   /** Restricted reserve status — frozen/paused/inactive reserves are forced hidden and cannot be unhidden. */
   restrictedStatus: 'frozen' | 'paused' | 'inactive' | null;
+  /** Optional hub name/id for V4 reserves (mirrors ReserveWithSpread). */
+  hubName?: string;
+  hubId?: string;
 }
 
 /** Computed result for a single side after simulation. */
