@@ -2548,7 +2548,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
-      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: baseReserveForAprCap,
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },
@@ -2599,7 +2599,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
-      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: baseReserveForAprCap,
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },
