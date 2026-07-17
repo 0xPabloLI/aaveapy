@@ -34,6 +34,7 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   unhideReserve: vi.fn(),
   removeReserve: vi.fn(),
   importReserves: mockImportReserves,
+  forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
   removeWalletEntries: mockRemoveWalletEntries,
   clearAll: vi.fn(),
