@@ -206,12 +206,12 @@ function MobileCard({
       )}
     >
       {/* Token header — compact single row */}
-      <div className="flex items-center gap-2 px-2.5 pt-2 pb-1.5">
+      <div className="flex items-center gap-2 px-2.5 pt-1.5 pb-1">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2 md:my-0',
+            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2.5 md:my-0',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
