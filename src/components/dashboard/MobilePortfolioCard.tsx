@@ -506,32 +506,34 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
       {/* Summary card — mirrors desktop tfoot with brand polish */}
       {summary && (
         <div className="mt-1 rounded-2xl border border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 ring-1 ring-border/20 px-2.5 py-2 space-y-1.5">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg ds-bg-emerald-500-10 px-2 py-1.5 ring-1 ds-ring-emerald-500-15">
+          {/* Supply/Borrow blocks are capped so they don't feel over-wide on small screens.
+              Numeric values are right-aligned so the two columns stay visually aligned. */}
+          <div className="flex justify-center gap-2">
+            <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-emerald-500-10 px-2 py-1.5 ring-1 ds-ring-emerald-500-15">
               <div className="flex items-baseline justify-between gap-1">
                 <span className={cn('ds-text-9 font-semibold uppercase tracking-[0.06em]', SUPPLY_COLOR)}>Supply</span>
-                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90', SUPPLY_COLOR)} title="Weighted average">
+                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', SUPPLY_COLOR)} title="Weighted average">
                   {formatPercent(summary.supplyWeightedApy)}
                 </span>
               </div>
-              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5', SUPPLY_COLOR)}>
+              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', SUPPLY_COLOR)}>
                 {formatReserveSizeUsd(summary.totalSupplyUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight', SUPPLY_COLOR)} title="Earn per day">
+              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', SUPPLY_COLOR)} title="Earn per day">
                 {summary.supplyUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/d`}
               </div>
             </div>
-            <div className="rounded-lg ds-bg-brand-cyan-10 px-2 py-1.5 ring-1 ds-ring-brand-cyan-15">
+            <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-brand-cyan-10 px-2 py-1.5 ring-1 ds-ring-brand-cyan-15">
               <div className="flex items-baseline justify-between gap-1">
                 <span className={cn('ds-text-9 font-semibold uppercase tracking-[0.06em]', BORROW_COLOR)}>Borrow</span>
-                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90', BORROW_COLOR)} title="Weighted average">
+                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', BORROW_COLOR)} title="Weighted average">
                   {formatPercent(summary.borrowWeightedApy)}
                 </span>
               </div>
-              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5', BORROW_COLOR)}>
+              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', BORROW_COLOR)}>
                 {formatReserveSizeUsd(summary.totalBorrowUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight', BORROW_COLOR)} title="Cost per day">
+              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', BORROW_COLOR)} title="Cost per day">
                 {summary.borrowUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/d`}
               </div>
             </div>
