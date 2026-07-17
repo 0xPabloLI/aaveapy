@@ -15,7 +15,7 @@
  * - CSS responsive touch targets via PortfolioTablePrimitives
  */
 import { memo, useState } from 'react';
-import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ListCollapse } from 'lucide-react';
+import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
