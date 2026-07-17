@@ -272,8 +272,8 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       {expanded && (
         <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
           {groupedBySource.map((group, sourceIndex) => {
-            const iconSrc = group.sourceType !== 'merit'
-              ? getSourceIcon(group.sourceType === 'merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
+            const iconSrc = group.sourceType !== 'ACI'
+              ? getSourceIcon(group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
               : null;
 
             return (
