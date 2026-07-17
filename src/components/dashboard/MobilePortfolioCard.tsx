@@ -293,7 +293,7 @@ function MobileCard({
         </div>
         <div className="px-2.5 py-2 flex flex-col items-start border-r border-border/30">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1.5 text-foreground/75">
+          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1.5 text-muted-foreground">
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
