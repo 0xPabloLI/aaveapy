@@ -35,6 +35,12 @@ jobs:
             exit 0
           fi
 
+          # SHA differs — check if content is actually different
+          if git diff origin/main origin/dev --quiet; then
+            echo "Content identical (SHA differs only due to merge commit) — no sync needed"
+            exit 0
+          fi
+
           MERGE_BASE=$(git merge-base origin/main origin/dev)
           if [ "$MERGE_BASE" = "$MAIN_SHA" ]; then
             echo "dev is ahead of main — no sync needed"
