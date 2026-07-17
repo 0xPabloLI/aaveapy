@@ -126,8 +126,8 @@ function MobileCard({
   supplyCapLimitUsd,
   borrowCapLimitUsd,
 }: MobileCardProps) {
-  const supplyHasContent = !!(entry.supply.walletValue || entry.supply.amount);
-  const borrowHasContent = !!(entry.borrow.walletValue || entry.borrow.amount);
+  const supplyHasContent = entry.supply.walletValue !== null || entry.supply.amount !== '';
+  const borrowHasContent = entry.borrow.walletValue !== null || entry.borrow.amount !== '';
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(
     !supplyHasContent && borrowHasContent ? 'borrow' : 'supply',
   );
