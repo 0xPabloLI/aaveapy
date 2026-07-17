@@ -234,7 +234,7 @@ function MobileCard({
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[36px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
             activeTab === 'supply'
               ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
@@ -248,7 +248,7 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[36px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
@@ -281,7 +281,7 @@ function MobileCard({
       </div>
 
       {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/40 bg-muted/20">
+      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden border border-border/40 bg-muted/20">
         <div className={cn(
           'px-2.5 py-2 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
@@ -293,7 +293,7 @@ function MobileCard({
         </div>
         <div className="px-2.5 py-2 flex flex-col items-start border-r border-border/30">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1.5 text-foreground/75">
+          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1.5 text-muted-foreground">
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
@@ -329,7 +329,7 @@ function MobileCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all min-h-[40px] border',
+            'flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all min-h-[44px] border',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',
