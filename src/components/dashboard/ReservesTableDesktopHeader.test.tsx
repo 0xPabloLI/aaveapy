@@ -38,10 +38,7 @@ describe('ReservesTableDesktopHeader', () => {
             onSortMarket={() => {}}
             onSortPrice={() => {}}
             onSortSizeDefault={() => {}}
-            onToggleUtilMenu={() => {}}
-            onCloseUtilMenu={() => {}}
-            onSelectUtilSortUtil={() => {}}
-            onSelectUtilSortLiquidity={() => {}}
+            onSortUtil={() => {}}
             onToggleSpreadSort={() => {}}
             onToggleSupplyMenu={() => {}}
             onCloseSupplyMenu={() => {}}
