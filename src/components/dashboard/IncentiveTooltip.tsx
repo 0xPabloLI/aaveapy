@@ -478,7 +478,7 @@ const IncentiveTooltip = ({
       .filter(Boolean);
     if (values.length === 0) return [];
     return filterLines([{ text: values.join(': '), emphasizePrefix: values.length > 1 }]);
-  };
+  }
 
   const accentClass =
     accentBorderClass ??
