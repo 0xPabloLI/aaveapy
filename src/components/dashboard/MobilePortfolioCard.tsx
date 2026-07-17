@@ -329,7 +329,7 @@ function MobileCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all min-h-[40px] border',
+            'flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all min-h-[44px] border',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',
