@@ -385,6 +385,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const common = {
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
