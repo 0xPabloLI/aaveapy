@@ -126,7 +126,11 @@ function MobileCard({
   supplyCapLimitUsd,
   borrowCapLimitUsd,
 }: MobileCardProps) {
-  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>('supply');
+  const supplyHasContent = !!(entry.supply.walletValue || entry.supply.amount);
+  const borrowHasContent = !!(entry.borrow.walletValue || entry.borrow.amount);
+  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(
+    !supplyHasContent && borrowHasContent ? 'borrow' : 'supply',
+  );
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isHidden = entry.hidden;
