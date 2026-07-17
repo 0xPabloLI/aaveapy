@@ -182,6 +182,9 @@ function MobileCard({
   const activeDisabled = activeTab === 'supply' ? !!disabledNotice.supply : !!disabledNotice.borrow;
   const activeDisabledNotice = activeTab === 'supply' ? disabledNotice.supply : disabledNotice.borrow;
   const activeColor = activeTab === 'supply' ? SUPPLY_COLOR : BORROW_COLOR;
+  // Secondary tier: semantic color at 70% opacity for Native/Incentive (DESIGN-SYSTEM-REFERENCE §3).
+  // Creates hierarchy: Total (full) > Native/Incentive (70%) without neutral gray.
+  const activeColorSecondary = activeTab === 'supply' ? 'ds-text-emerald-600-70' : 'ds-text-brand-cyan-70';
 
   // Expand content flags — only show sections with meaningful data
   const hasDelta = !!activeResult && [
@@ -281,7 +284,7 @@ function MobileCard({
       </div>
 
       {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden border border-border/40 bg-muted/20">
+      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
         <div className={cn(
           'px-2.5 py-2 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
@@ -293,7 +296,7 @@ function MobileCard({
         </div>
         <div className="px-2.5 py-2 flex flex-col items-start border-r border-border/30">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1.5 text-muted-foreground">
+          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-1.5', activeColorSecondary)}>
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
@@ -304,7 +307,7 @@ function MobileCard({
             className={cn(
               'ds-text-13 font-semibold tabular-nums leading-none mt-1.5 inline-flex items-center gap-0.5',
               incentiveHasValue
-                ? activeColor
+                ? activeColorSecondary
                 : 'text-foreground/50',
             )}
           >
@@ -341,7 +344,7 @@ function MobileCard({
               {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '–'}
             </span>
             <span className="ds-text-10 text-muted-foreground/60">/day</span>
-            <ChevronDown className={cn('h-3.5 w-3.5 ml-1.5 shrink-0 self-center text-muted-foreground/70 transition-transform duration-300 ease-out', isExpanded && 'rotate-180')} />
+            <ChevronDown className={cn('h-3 w-3 ml-1.5 shrink-0 self-center text-muted-foreground/70 transition-transform duration-300 ease-out', isExpanded && 'rotate-180')} />
           </span>
         </button>
       </div>
@@ -472,7 +475,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {entries.map((entry) => {
         const reserve = reserveIdToReserve.get(entry.reserveId);
         const tokenPriceInUsd = reserve?.tokenPrice;

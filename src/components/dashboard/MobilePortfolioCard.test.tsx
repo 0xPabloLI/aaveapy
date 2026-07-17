@@ -245,11 +245,32 @@ describe('MobilePortfolioCard — P1 gradient→solid + Summary $/day (AAV-1185)
     }
   });
 
-  it('card container uses space-y-3 (not space-y-2)', () => {
+  it('card container uses space-y-2 (compact density)', () => {
     const { container } = renderCard([makeEntry('USDC'), makeEntry('WETH')]);
     const wrapper = container.firstElementChild;
-    expect(wrapper?.className).toContain('space-y-3');
-    expect(wrapper?.className).not.toContain('space-y-2');
+    expect(wrapper?.className).toContain('space-y-2');
+  });
+
+  it('incentive value uses semantic color at 70% opacity when data present (not full, not gradient)', () => {
+    const { container } = renderCard([makeEntry('USDC')]);
+    const incentiveSpans = container.querySelectorAll('[data-cell*="incentive"]');
+    for (const span of incentiveSpans) {
+      expect(span.className).not.toContain('bg-clip-text');
+      expect(span.className).not.toContain('bg-gradient-to-r');
+      // When data present: semantic 70%. When no data: text-foreground/50 fallback is OK.
+      if (!span.className.includes('text-foreground/50')) {
+        expect(span.className).toMatch(/ds-text-emerald-600-70|ds-text-brand-cyan-70/);
+      }
+    }
+  });
+
+  it('native value uses semantic color at 70% opacity (not neutral gray)', () => {
+    const { container } = renderCard([makeEntry('USDC')]);
+    const nativeSpans = container.querySelectorAll('[data-cell*="native"]');
+    for (const span of nativeSpans) {
+      expect(span.className).not.toContain('text-foreground/');
+      expect(span.className).toMatch(/ds-text-emerald-600-70|ds-text-brand-cyan-70/);
+    }
   });
 });
 
@@ -258,29 +279,34 @@ describe('MobilePortfolioCard — P1 gradient→solid + Summary $/day (AAV-1185)
 describe('MobilePortfolioCard — P2+P3 polish (AAV-1186)', () => {
   afterEach(() => cleanup());
 
-  it('metrics strip does not have ring-1 (replaced with border)', () => {
+  it('metrics strip uses ring-1 ring-border/50 (framed data panel)', () => {
     const { container } = renderCard([makeEntry('USDC')]);
     const strips = container.querySelectorAll('[class*="grid-cols-3"]');
     for (const strip of strips) {
-      expect(strip.className).not.toContain('ring-1');
-      expect(strip.className).not.toContain('ring-border');
+      expect(strip.className).toContain('ring-1');
+      expect(strip.className).toContain('ring-border');
     }
   });
 
-  it('ListCollapse icon uses h-3.5 w-3.5 (not h-3 w-3)', () => {
+  it('ListCollapse icon uses h-3 w-3 (compact, with other affordances)', () => {
     const { container } = renderCard([makeEntry('USDC')]);
-    const icons = container.querySelectorAll('svg');
-    const listCollapse = Array.from(icons).find(i => i.className.includes('ListCollapse') || (i.getAttribute('class')?.includes('rotate-180') ?? false) || i.closest('button[aria-expanded]') !== null);
-    // The expand toggle's icon should be h-3.5 w-3.5
     const expandBtn = container.querySelector('button[aria-expanded] svg');
-    expect(expandBtn?.getAttribute('class')).toContain('h-3.5');
+    expect(expandBtn?.getAttribute('class')).toContain('h-3 ');
+    expect(expandBtn?.getAttribute('class')).toContain('w-3 ');
   });
 
-  it('Native value does not use non-standard /75 opacity', () => {
+  it('Native and Incentive both use semantic 70% when data present (hierarchy: Total full > secondary 70%)', () => {
     const { container } = renderCard([makeEntry('USDC')]);
-    const nativeSpans = container.querySelectorAll('[data-cell*="native"]');
-    for (const span of nativeSpans) {
-      expect(span.className).not.toContain('text-foreground/75');
+    const totalSpan = container.querySelector('[data-cell*="total"]');
+    const nativeSpan = container.querySelector('[data-cell*="native"]');
+    const incentiveSpan = container.querySelector('[data-cell*="incentive"]');
+    // Total should use full opacity semantic color
+    expect(totalSpan?.className).toMatch(/ds-text-emerald-600(?!-70)/);
+    // Native should use 70% opacity (always rendered with semantic color)
+    expect(nativeSpan?.className).toMatch(/ds-text-emerald-600-70|ds-text-brand-cyan-70/);
+    // Incentive: 70% when data present, text-foreground/50 fallback when no data
+    if (incentiveSpan && !incentiveSpan.className.includes('text-foreground/50')) {
+      expect(incentiveSpan.className).toMatch(/ds-text-emerald-600-70|ds-text-brand-cyan-70/);
     }
   });
 });
