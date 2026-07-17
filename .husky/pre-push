@@ -8,7 +8,9 @@ if [ "$STASH_COUNT" -gt 3 ]; then
   echo "   Stale stashes can pollute rebase/merge operations."
   echo "   Consider cleaning up:"
   echo "     git stash list          # review stashes"
-  echo "     git stash clear         # delete all (dangerous — review first!)"
+  echo "     git stash clear         # delete all (dangerous — review first)"
   echo "     git stash drop stash@{N} # delete a specific one"
   echo ""
 fi
+
+npm run ci:remote

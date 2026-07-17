@@ -21,39 +21,36 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Sync dev via merge commit (branch-protection safe)
+      - name: Check if sync is needed
+        id: check
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git fetch origin main dev
           DEV_SHA=$(git rev-parse origin/dev)
           MAIN_SHA=$(git rev-parse origin/main)
 
           if [ "$DEV_SHA" = "$MAIN_SHA" ]; then
-            echo "dev already aligned with main"
+            echo "reason=dev already aligned with main" >> "$GITHUB_OUTPUT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # SHA differs — check if content is actually different
           if git diff origin/main origin/dev --quiet; then
-            echo "Content identical (SHA differs only due to merge commit) — no sync needed"
+            echo "reason=Content identical (SHA differs only due to merge commit)" >> "$GITHUB_OUTPUT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           MERGE_BASE=$(git merge-base origin/main origin/dev)
           if [ "$MERGE_BASE" = "$MAIN_SHA" ]; then
-            echo "dev is ahead of main — no sync needed"
+            echo "reason=dev is ahead of main" >> "$GITHUB_OUTPUT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git checkout -B dev origin/dev
-          git merge origin/main --no-edit
-          git push origin dev
-          echo "Synced dev with main via merge commit"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
 
-      - name: Create sync PR as fallback
-        if: failure()
+      - name: Create sync PR
+        if: steps.check.outputs.skip != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

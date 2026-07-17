@@ -284,7 +284,8 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Supply Input */}
                 <td data-cell="supply-input" className={cn(INPUT_CELL, GROUP_SEP, SUPPLY_BAND)}>
                   <div className="flex items-center gap-0.5">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[7rem]">
+
                       <CompactInput
                         sideData={entry.supply}
                         side="supply"
@@ -304,7 +305,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Borrow Input */}
                 <td data-cell="borrow-input" className={cn(INPUT_CELL, SIDE_SEP, BORROW_BAND)}>
                   <div className="flex items-center gap-0.5">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[7rem]">
                       <CompactInput
                         sideData={entry.borrow}
                         side="borrow"

@@ -48,6 +48,8 @@ function mockDisconnectedWallet() {
     isWatchMode: false,
     connect: vi.fn(),
     disconnect: vi.fn(),
+    disconnectAsync: vi.fn(),
+    disconnectAllAsync: vi.fn(),
   } as ReturnType<typeof useWallet>)
 }
 

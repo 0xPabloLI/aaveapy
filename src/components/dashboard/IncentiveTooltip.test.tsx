@@ -45,9 +45,9 @@ const mockReserve: ReserveWithSpread = {
   brevisBorrows: [],
 };
 
-const defaultProps = {
+const defaultProps: Parameters<typeof IncentiveTooltip>[0] = {
   reserve: mockReserve,
-  type: 'supply' as const,
+  type: 'supply',
   position: { x: 100, y: 200 },
   triggerCenterX: 150,
   triggerHeight: 32,
@@ -61,7 +61,7 @@ const defaultProps = {
   forecastStates: undefined,
 };
 
-function renderTooltip(props = defaultProps) {
+function renderTooltip(props: Parameters<typeof IncentiveTooltip>[0] = defaultProps) {
   return render(<IncentiveTooltip {...props} />);
 }
 

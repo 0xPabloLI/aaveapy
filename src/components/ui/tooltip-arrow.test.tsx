@@ -94,7 +94,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       arrows.forEach((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         expect(className).toContain('pointer-events-none');
       });
     });
@@ -103,7 +103,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       arrows.forEach((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         expect(className).toContain('z-20');
       });
     });
@@ -124,7 +124,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const topArrow = Array.from(arrows).find((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=top]/tt');
       });
       expect(topArrow).not.toBeNull();
@@ -134,7 +134,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const bottomArrow = Array.from(arrows).find((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=bottom]/tt');
       });
       expect(bottomArrow).not.toBeNull();
@@ -144,7 +144,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const leftArrow = Array.from(arrows).find((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=left]/tt');
       });
       expect(leftArrow).not.toBeNull();
@@ -154,7 +154,7 @@ describe('Arrow Components', () => {
       const { baseElement } = renderCalloutArrow();
       const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const rightArrow = Array.from(arrows).find((arrow) => {
-        const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
+        const className = arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=right]/tt');
       });
       expect(rightArrow).not.toBeNull();

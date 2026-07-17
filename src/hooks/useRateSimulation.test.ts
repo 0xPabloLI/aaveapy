@@ -77,6 +77,7 @@ describe('buildForecastMerklOpportunities', () => {
     };
 
     const result = buildForecastMerklOpportunities({
+      tydroPointToUsdRate: 0,
       opportunities,
       inputUsd: 1000,
       forecastStates: states,
@@ -118,6 +119,7 @@ describe('buildForecastMerklOpportunities', () => {
     };
 
     const result = buildForecastMerklOpportunities({
+      tydroPointToUsdRate: 0,
       opportunities,
       inputUsd: 5000,
       forecastStates: states,
@@ -161,6 +163,7 @@ describe('buildForecastMerklOpportunities', () => {
     };
 
     const result = buildForecastMerklOpportunities({
+      tydroPointToUsdRate: 0,
       opportunities,
       inputUsd: 1_000,
       forecastStates: states,
@@ -203,6 +206,7 @@ describe('buildForecastMerklOpportunities', () => {
     };
 
     const result = buildForecastMerklOpportunities({
+      tydroPointToUsdRate: 0,
       opportunities,
       inputUsd: 1_000,
       forecastStates: states,
@@ -217,6 +221,7 @@ describe('buildForecastMerklOpportunities', () => {
 describe('buildRateSimulationResult', () => {
   it('recomputes supply, spread, borrow, and utilization from one shared scenario', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -239,6 +244,7 @@ describe('buildRateSimulationResult', () => {
 
   it('uses native APY for scenarioUsdAccrual daily cashflow regardless of display mode', () => {
     const aprModeResult = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -250,6 +256,7 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
     const apyModeResult = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -285,6 +292,7 @@ describe('buildRateSimulationResult', () => {
 
   it('keeps incentive scenarioUsdAccrual on fixed APR-linear daily USD in APY mode', () => {
     const apyModeResult = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -296,6 +304,7 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
     const aprModeResult = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -326,6 +335,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -375,6 +385,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const common = {
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -428,6 +439,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -482,6 +494,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -537,6 +550,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -596,6 +610,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -616,6 +631,7 @@ describe('buildRateSimulationResult', () => {
 
   it('keeps after values empty when the shared scenario is blank', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -670,6 +686,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -719,6 +736,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -760,6 +778,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -793,6 +812,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -828,6 +848,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -863,6 +884,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -916,6 +938,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -977,6 +1000,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1036,6 +1060,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1091,6 +1116,7 @@ describe('buildRateSimulationResult', () => {
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1126,6 +1152,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1188,6 +1215,7 @@ describe('buildRateSimulationResult', () => {
     const reserve: ReserveWithSpread = { ...baseReserve, merklSupplys: merkl };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1227,6 +1255,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1249,6 +1278,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1285,6 +1315,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1320,6 +1351,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1353,6 +1385,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1389,6 +1422,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1424,6 +1458,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1447,6 +1482,7 @@ describe('buildRateSimulationResult', () => {
       };
 
       const result = buildRateSimulationResult({
+        tydroPointToUsdRate: 0,
         reserve,
         reserveRateInput: baseReserve,
         isApy: false,
@@ -1512,6 +1548,7 @@ describe('buildRateSimulationResult', () => {
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -1656,6 +1693,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       merklSupplys: [merklGroupWithConstraint],
     };
     const withoutPositions = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1668,6 +1706,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       meritMerklNetPosition: false,
     });
     const withEmptyPositions = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1693,6 +1732,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1717,6 +1757,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       [usdeReserveId, { supplyUsd: 500, borrowUsd: 0 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1741,6 +1782,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 1200 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1776,6 +1818,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 500 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1825,6 +1868,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       [usdeReserveId, 'USDe'],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1854,6 +1898,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1897,6 +1942,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       [usdeReserveId, 'USDe'],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1965,6 +2011,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -1990,6 +2037,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2015,6 +2063,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2037,6 +2086,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     };
     // meritMerklNetPosition=false → no eligibility scaling, no crossReservePositions needed
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2062,6 +2112,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 1000 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2115,6 +2166,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [SELF_RESERVE_ID, { supplyUsd: 400, borrowUsd: 1000 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2188,6 +2240,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       [offsetReserveId, { supplyUsd: 0, borrowUsd: 200 }],
     ]);
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve,
       reserveRateInput: noIncentiveReserve,
       isApy: false,
@@ -2239,6 +2292,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
 
   it('uses reserve.utilizationPct when reserveRateInput is null', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: null,
       isApy: false,
@@ -2254,6 +2308,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
 
   it('uses reserve.optimalUtilization when reserveRateInput is null', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: null,
       isApy: false,
@@ -2269,6 +2324,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
 
   it('uses reserve.protocolFee when reserveRateInput is null', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: null,
       isApy: false,
@@ -2295,6 +2351,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
       optimalUtilization: 80,
     };
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: rateInputNoFee,
       isApy: false,
@@ -2321,6 +2378,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
       optimalUtilization: 80,
     };
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: rateInputZeroFee,
       isApy: false,
@@ -2347,6 +2405,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
       optimalUtilization: NaN,
     };
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: rateInputNoOptimal,
       isApy: false,
@@ -2382,6 +2441,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
       hubBorrowed: '3000000000000000000000',
     };
     const resultWithOverride = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithHub,
       reserveRateInput: rateInput,
       isApy: false,
@@ -2394,6 +2454,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
       hubSupplied: '9000000000000000000000',
     });
     const resultWithoutOverride = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithHub,
       reserveRateInput: rateInput,
       isApy: false,
@@ -2411,6 +2472,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
 
   it('provides availableLiquidityForBorrowUsd from reserve.liquidity when reserveRateInput is null', () => {
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: reserveWithoutRateCalc,
       reserveRateInput: null,
       isApy: false,
@@ -2447,11 +2509,15 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     brevisSupplys: [],
     brevisBorrows: [],
     liquidity: '5000000000000000000000',
+    borrowed: '4500000000000000000000',
+    deficit: '500000000000000000000',
     utilizationPct: 45,
     optimalUtilization: 80,
+    slopeBelowOptimal: 4,
+    slopeAboveOptimal: 60,
+    baseBorrowRate: 0,
     decimals: 18,
     supplied: '10000000000000000000000',
-    borrowed: '4500000000000000000000',
     tokenPrice: 1,
     protocolFee: 15,
   };
@@ -2484,8 +2550,9 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
-      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: baseReserveForAprCap,
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },
@@ -2534,8 +2601,9 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     };
 
     const result = buildRateSimulationResult({
+      tydroPointToUsdRate: 0,
       reserve: { ...baseReserveForAprCap, merklSupplys: [group] },
-      reserveRateInput: { ...baseReserveForAprCap, merklSupplys: [group] },
+      reserveRateInput: baseReserveForAprCap,
       isApy: false,
       whitelistMerklCampaignIds: new Set(),
       pointRateMap: { tydroinkpoints: 1 },

@@ -15,7 +15,7 @@
  * - CSS responsive touch targets via PortfolioTablePrimitives
  */
 import { memo, useState } from 'react';
-import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ListCollapse } from 'lucide-react';
+import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
@@ -126,7 +126,11 @@ function MobileCard({
   supplyCapLimitUsd,
   borrowCapLimitUsd,
 }: MobileCardProps) {
-  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>('supply');
+  const supplyHasContent = entry.supply.walletValue !== null || entry.supply.amount !== '';
+  const borrowHasContent = entry.borrow.walletValue !== null || entry.borrow.amount !== '';
+  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(
+    !supplyHasContent && borrowHasContent ? 'borrow' : 'supply',
+  );
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isHidden = entry.hidden;
@@ -178,6 +182,9 @@ function MobileCard({
   const activeDisabled = activeTab === 'supply' ? !!disabledNotice.supply : !!disabledNotice.borrow;
   const activeDisabledNotice = activeTab === 'supply' ? disabledNotice.supply : disabledNotice.borrow;
   const activeColor = activeTab === 'supply' ? SUPPLY_COLOR : BORROW_COLOR;
+  // Secondary tier: semantic color at 70% opacity for Native/Incentive (DESIGN-SYSTEM-REFERENCE §3).
+  // Creates hierarchy: Total (full) > Native/Incentive (70%) without neutral gray.
+  const activeColorSecondary = activeTab === 'supply' ? 'ds-text-emerald-600-70' : 'ds-text-brand-cyan-70';
 
   // Expand content flags — only show sections with meaningful data
   const hasDelta = !!activeResult && [
@@ -194,17 +201,17 @@ function MobileCard({
     <div
       data-reserve-id={entry.reserveId}
       className={cn(
-        'rounded-xl border border-border/60 bg-card overflow-hidden',
+        'group/card relative rounded-2xl border border-border/60 bg-gradient-to-b from-card to-card/60 overflow-hidden ring-1 ring-border/20 transition-colors',
         rowOpacity,
       )}
     >
       {/* Token header — compact single row */}
-      <div className="flex items-center gap-2 px-3 pt-2 pb-1.5">
+      <div className="flex items-center gap-2 px-2.5 pt-1.5 pb-1">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2 md:my-0',
+            'shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
@@ -212,27 +219,27 @@ function MobileCard({
         >
           {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
         </button>
-        <TokenIcon symbol={entry.tokenSymbol} size={20} />
-        <span className={cn('ds-text-14 font-semibold break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
+        <TokenIcon symbol={entry.tokenSymbol} size={22} />
+        <span className={cn('ds-text-16 font-semibold tracking-tight break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
           {entry.tokenSymbol}
         </span>
-        <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 ml-auto">
-          {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-3 shrink-0 opacity-80" />}
-          <span className="truncate">{marketLabel}</span>
+        <span className="ds-text-10 text-muted-foreground/80 inline-flex items-center gap-1 min-w-0 ml-auto rounded-full border border-border/50 bg-muted/40 px-2 py-0.5">
+          {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-3 shrink-0 opacity-90" />}
+          <span className="truncate font-medium">{marketLabel}</span>
         </span>
       </div>
 
-      {/* Pill tabs — tighter */}
-      <div role="tablist" aria-label="Supply or Borrow" className="mx-3 mb-2 flex gap-0.5 rounded-lg bg-muted/50 p-0.5">
+      {/* Pill tabs — segmented control */}
+      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-1.5 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
             activeTab === 'supply'
-              ? 'ds-bg-emerald-500-10 ds-text-emerald-500 ring-1 ds-ring-emerald-500-15'
+              ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
@@ -244,9 +251,9 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
             activeTab === 'borrow'
-              ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15'
+              ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
@@ -257,7 +264,7 @@ function MobileCard({
       {/* Content area — role=tabpanel for tablist semantics */}
       <div role="tabpanel" aria-label="Portfolio simulation" className="contents">
       {/* CompactInput */}
-      <div className="px-3 pb-2">
+      <div className="px-2.5 pb-1.5">
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <CompactInput
@@ -276,28 +283,31 @@ function MobileCard({
         </div>
       </div>
 
-      {/* Metrics strip — 3-col grid; Total emphasized */}
-      <div className="mx-3 mb-2 grid grid-cols-3 rounded-lg overflow-hidden border border-border/30 divide-x divide-border/40">
-        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
-          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Total</span>
-          <span data-cell={`${activeTab}-total`} className={cn('ds-text-14 font-bold tabular-nums leading-none mt-1', activeColor)}>
+      {/* Metrics strip — 3-col grid; Total gets accent surface */}
+      <div className="mx-2.5 mb-1 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
+        <div className={cn(
+          'px-2 py-1 flex flex-col items-start border-r border-border/30',
+          activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
+        )}>
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
+          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
-          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className="ds-text-13 font-medium tabular-nums leading-none mt-1 text-foreground/70">
+        <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
+          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}>
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="bg-card px-2 py-1.5 flex flex-col items-start">
-          <span className="ds-text-9 uppercase tracking-[0.06em] text-muted-foreground/70 font-semibold">Incentive</span>
+        <div className="px-2 py-1 flex flex-col items-start">
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
           <span
             data-cell={`${activeTab}-incentive`}
             className={cn(
-              'ds-text-13 font-semibold tabular-nums leading-none mt-1 inline-flex items-center gap-0.5',
+              'ds-text-13 font-semibold tabular-nums leading-none mt-0.5 inline-flex items-center gap-0.5',
               incentiveHasValue
-                ? activeColor
+                ? activeColorSecondary
                 : 'text-foreground/50',
             )}
           >
@@ -315,27 +325,30 @@ function MobileCard({
       </div>
 
       {/* Daily earnings row — doubles as expand toggle */}
-      <div className="px-3 pb-2.5">
+      <div className="px-2.5 pb-1.5">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 transition-colors min-h-[44px]',
-            isExpanded ? 'bg-muted/60' : 'bg-muted/25 active:bg-muted/50',
+            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border min-h-[44px]',
+            isExpanded
+              ? 'bg-muted/60 border-border/50'
+              : 'bg-muted/25 border-border/30 active:bg-muted/50',
           )}
         >
-          <span className="ds-text-11 text-muted-foreground font-medium">Daily earnings</span>
+          <span className="ds-text-11 text-muted-foreground font-medium uppercase tracking-wider">Daily earnings</span>
           <span className="inline-flex items-baseline gap-1">
-            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-13 font-semibold tabular-nums', activeColor)}>
+            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-14 font-bold tabular-nums', activeColor)}>
               {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '–'}
             </span>
             <span className="ds-text-10 text-muted-foreground/60">/day</span>
-            <ListCollapse className={cn('h-3.5 w-3.5 ml-1 shrink-0 self-center text-muted-foreground/60 transition-transform duration-300 ease-in-out', isExpanded && 'rotate-180')} />
+            <ChevronDown className={cn('h-3 w-3 ml-1.5 shrink-0 self-center text-muted-foreground/70 transition-transform duration-300 ease-out', isExpanded && 'rotate-180')} />
           </span>
         </button>
       </div>
+
 
       {/* Detail expand section — simulation delta, cap details, wallet vs effective */}
       <MotionConfig reducedMotion="user">
@@ -462,7 +475,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {entries.map((entry) => {
         const reserve = reserveIdToReserve.get(entry.reserveId);
         const tokenPriceInUsd = reserve?.tokenPrice;
@@ -490,38 +503,49 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
         );
       })}
 
-      {/* Summary div — mirrors desktop tfoot */}
+      {/* Summary card — mirrors desktop tfoot with brand polish */}
       {summary && (
-        <div className="border-t-2 border-border/60 bg-muted/30 rounded-b-lg px-3 py-2.5 space-y-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className={cn('ds-text-10 font-medium', SUPPLY_COLOR)}>Supply</div>
-              <div className={cn('ds-text-13 font-bold tabular-nums', SUPPLY_COLOR)}>
+        <div className="mt-1 rounded-2xl border border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 ring-1 ring-border/20 px-2.5 py-2 space-y-1.5">
+          {/* Supply/Borrow blocks are capped so they don't feel over-wide on small screens.
+              Numeric values are right-aligned so the two columns stay visually aligned. */}
+          <div className="flex justify-center gap-2">
+            <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-emerald-500-10 px-2 py-1.5 ring-1 ds-ring-emerald-500-15">
+              <div className="flex items-baseline justify-between gap-1">
+                <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', SUPPLY_COLOR)}>Supply</span>
+                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', SUPPLY_COLOR)} title="Weighted average">
+                  {formatPercent(summary.supplyWeightedApy)}
+                </span>
+              </div>
+              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', SUPPLY_COLOR)}>
                 {formatReserveSizeUsd(summary.totalSupplyUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Weighted average">
-                {formatPercent(summary.supplyWeightedApy)}
-              </div>
-              <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Earn per day">
-                {summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/day
+              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', SUPPLY_COLOR)} title="Earn per day">
+                {summary.supplyUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/d`}
               </div>
             </div>
-            <div>
-              <div className={cn('ds-text-10 font-medium', BORROW_COLOR)}>Borrow</div>
-              <div className={cn('ds-text-13 font-bold tabular-nums', BORROW_COLOR)}>
+            <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-brand-cyan-10 px-2 py-1.5 ring-1 ds-ring-brand-cyan-15">
+              <div className="flex items-baseline justify-between gap-1">
+                <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', BORROW_COLOR)}>Borrow</span>
+                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', BORROW_COLOR)} title="Weighted average">
+                  {formatPercent(summary.borrowWeightedApy)}
+                </span>
+              </div>
+              <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', BORROW_COLOR)}>
                 {formatReserveSizeUsd(summary.totalBorrowUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Weighted average">
-                {formatPercent(summary.borrowWeightedApy)}
-              </div>
-              <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Cost per day">
-                {summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/day
+              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', BORROW_COLOR)} title="Cost per day">
+                {summary.borrowUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/d`}
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-border/30 pt-2">
-            <span className="ds-text-11 font-semibold text-foreground">Net $/day</span>
-            <span className="ds-text-12 font-bold tabular-nums text-foreground">
+          <div className="flex items-center justify-between rounded-lg bg-card/70 border border-border/50 px-2.5 py-1.5">
+            <span className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">Net / day</span>
+            <span className={cn(
+              'ds-text-13 font-bold tabular-nums',
+              summary.netUsdPerDay > 0 ? 'text-emerald-600 dark:text-emerald-400'
+                : summary.netUsdPerDay < 0 ? 'text-red-500 dark:text-red-400'
+                : 'text-foreground',
+            )}>
               {summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}
             </span>
           </div>

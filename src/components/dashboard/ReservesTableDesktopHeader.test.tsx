@@ -21,9 +21,6 @@ describe('ReservesTableDesktopHeader', () => {
             sizeSortActiveHeadingClass="ds-text-emerald-600 font-bold scale-105"
             utilSortMode="util"
             utilSortOrder="desc"
-            showUtilSortMenu={false}
-            utilMenuPos={null}
-            utilSortButtonRef={createRef<HTMLButtonElement>()}
             supplySortLabel="Incentive"
             supplySortMode="incentive"
             supplySortOrder="desc"
@@ -41,10 +38,7 @@ describe('ReservesTableDesktopHeader', () => {
             onSortMarket={() => {}}
             onSortPrice={() => {}}
             onSortSizeDefault={() => {}}
-            onToggleUtilMenu={() => {}}
-            onCloseUtilMenu={() => {}}
-            onSelectUtilSortUtil={() => {}}
-            onSelectUtilSortLiquidity={() => {}}
+            onSortUtil={() => {}}
             onToggleSpreadSort={() => {}}
             onToggleSupplyMenu={() => {}}
             onCloseSupplyMenu={() => {}}
