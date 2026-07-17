@@ -18,7 +18,7 @@ import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { useWallet } from '@/hooks/useWallet';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() } }));

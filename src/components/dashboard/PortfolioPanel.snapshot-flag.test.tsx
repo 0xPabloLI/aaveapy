@@ -11,7 +11,8 @@ import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { features } from '@/config/features';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioSimulationActions, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -104,6 +105,8 @@ const makeSnapshot = (label: string): PortfolioSnapshot => ({
     borrowUsdPerDay: 0.084,
     netUsdPerDay: 0.031,
     netEffectiveApy: 1.13,
+    supplyWeightedApy: 0.042,
+    borrowWeightedApy: 0.061,
   },
   positionResults: [],
 });

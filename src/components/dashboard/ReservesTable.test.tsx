@@ -317,6 +317,7 @@ describe('ReservesTable mobile bottom spacing', () => {
       <QueryClientProvider client={new QueryClient()}>
         <MobileReservesTable
           reserves={reserves}
+          allReserves={reserves}
           sortField={null}
           sortOrder="desc"
           onSort={() => {}}

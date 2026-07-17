@@ -24,6 +24,7 @@ const stubSortActions: SortActions = {
   borrowCapValue: stubSortAction,
   availableLiquidity: stubSortAction,
   util: stubSortAction,
+  liquidity: stubSortAction,
   optimal: stubSortAction,
 };
 

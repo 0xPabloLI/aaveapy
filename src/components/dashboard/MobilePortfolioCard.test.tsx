@@ -4,7 +4,8 @@ import { cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobilePortfolioCard from './MobilePortfolioCard';
-import type { PortfolioReserveEntry, PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 
 vi.mock('@/hooks/use-mobile', () => ({
