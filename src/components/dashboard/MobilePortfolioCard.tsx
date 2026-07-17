@@ -230,7 +230,7 @@ function MobileCard({
       </div>
 
       {/* Pill tabs — segmented control */}
-      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-2 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
+      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-1.5 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
         <button
           type="button"
           role="tab"
