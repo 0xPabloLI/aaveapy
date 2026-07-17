@@ -237,13 +237,13 @@ function MobileCard({
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-7 min-h-[44px] md:min-h-0 -my-[10px] md:my-0',
             activeTab === 'supply'
               ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
-          Supply
+          <span className="inline-flex h-7 items-center justify-center w-full">Supply</span>
         </button>
         <button
           type="button"
@@ -251,13 +251,13 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold py-1 rounded-md transition-all duration-200 min-h-[44px] flex items-center justify-center',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-7 min-h-[44px] md:min-h-0 -my-[10px] md:my-0',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
-          Borrow
+          <span className="inline-flex h-7 items-center justify-center w-full">Borrow</span>
         </button>
       </div>
 
