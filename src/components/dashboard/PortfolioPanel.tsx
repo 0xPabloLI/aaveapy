@@ -271,6 +271,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
         chainName: reserve.chainName ?? reserve.marketName,
         chainId: reserve.chainId,
         tokenSymbol: reserve.tokenSymbol,
+        hubName: reserve.hubName,
+        hubId: reserve.hubId,
       });
 
       // Keep focus on the search input only if search is already open;
