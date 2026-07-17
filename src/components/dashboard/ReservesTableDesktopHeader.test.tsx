@@ -21,7 +21,6 @@ describe('ReservesTableDesktopHeader', () => {
             sizeSortActiveHeadingClass="ds-text-emerald-600 font-bold scale-105"
             utilSortMode="util"
             utilSortOrder="desc"
-            utilSortButtonRef={createRef<HTMLButtonElement>()}
             supplySortLabel="Incentive"
             supplySortMode="incentive"
             supplySortOrder="desc"
