@@ -475,7 +475,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {entries.map((entry) => {
         const reserve = reserveIdToReserve.get(entry.reserveId);
         const tokenPriceInUsd = reserve?.tokenPrice;
