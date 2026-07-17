@@ -81,7 +81,7 @@ describe('useWalletAutoImport', () => {
   it('auto-imports entries on wallet connect', () => {
     const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
     const { rerender } = renderHook(
-      (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: string }) =>
+      (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: WalletLoadState }) =>
         useWalletAutoImport({
           address,
           isConnected: props.isConnected,
