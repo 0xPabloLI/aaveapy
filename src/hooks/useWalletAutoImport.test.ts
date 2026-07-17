@@ -79,7 +79,7 @@ describe('useWalletAutoImport', () => {
   })
 
   it('auto-imports entries on wallet connect', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+    const walletPositions: WalletPosition[] = [{ reserveId: 'r1', side: 'supply', chainId: 1, asset: '0x1234567890123456789012345678901234567890' as `0x${string}`, tokenSymbol: 'USDC', amountWad: 0n, amountUsd: 100, isCollateral: false, source: 'sdk', isOrphan: false }]
     const { rerender } = renderHook(
       (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: WalletLoadState }) =>
         useWalletAutoImport({
