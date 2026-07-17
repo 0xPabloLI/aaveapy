@@ -325,14 +325,14 @@ function MobileCard({
       </div>
 
       {/* Daily earnings row — doubles as expand toggle */}
-      <div className="px-2.5 pb-2.5">
+      <div className="px-2.5 pb-1.5">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 transition-all min-h-[44px] border',
+            'flex w-full items-center justify-between rounded-lg px-2.5 py-1 transition-all min-h-[44px] border',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',
