@@ -21,6 +21,7 @@ import { useWalletAutoImport } from '@/hooks/useWalletAutoImport'
 import type { DegradedResult } from '@/hooks/useUserPositionsSdk'
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import type { PortfolioReserveEntry } from '@/types/portfolio'
+import type { WalletLoadState } from '@/hooks/useUserPositionsSdk'
 import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 
@@ -34,6 +35,7 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   unhideReserve: vi.fn(),
   removeReserve: vi.fn(),
   importReserves: mockImportReserves,
+  forceSyncReserves: vi.fn(),
   restoreToWallet: vi.fn(),
   removeWalletEntries: mockRemoveWalletEntries,
   clearAll: vi.fn(),
@@ -67,7 +69,7 @@ function makeErrorResult(): DegradedResult {
 const address = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`
 const emptyReserves: ReserveWithSpread[] = []
 const convertedEntries: PortfolioReserveEntry[] = [
-  { reserveId: 'r1', marketName: '', chainName: '', chainId: -1, tokenSymbol: 'USDC', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '', inputMode: 'usd', walletValue: null }, hidden: false, isOrphan: false },
+  { reserveId: 'r1', marketName: '', chainName: '', chainId: -1, tokenSymbol: 'USDC', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '', inputMode: 'usd', walletValue: null }, hidden: false, isOrphan: false, restrictedStatus: null },
 ]
 
 describe('useWalletAutoImport', () => {
@@ -77,9 +79,9 @@ describe('useWalletAutoImport', () => {
   })
 
   it('auto-imports entries on wallet connect', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+    const walletPositions: WalletPosition[] = [{ reserveId: 'r1', side: 'supply', chainId: 1, asset: '0x1234567890123456789012345678901234567890' as `0x${string}`, tokenSymbol: 'USDC', amountWad: 0n, amountUsd: 100, isCollateral: false, source: 'sdk', isOrphan: false }]
     const { rerender } = renderHook(
-      (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: string }) =>
+      (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: WalletLoadState }) =>
         useWalletAutoImport({
           address,
           isConnected: props.isConnected,

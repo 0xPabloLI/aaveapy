@@ -206,12 +206,12 @@ function MobileCard({
       )}
     >
       {/* Token header — compact single row */}
-      <div className="flex items-center gap-2 px-2.5 pt-2 pb-1.5">
+      <div className="flex items-center gap-2 px-2.5 pt-1.5 pb-1">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2 md:my-0',
+            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2.5 md:my-0',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
@@ -230,7 +230,7 @@ function MobileCard({
       </div>
 
       {/* Pill tabs — segmented control */}
-      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-2 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
+      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-1.5 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
         <button
           type="button"
           role="tab"
@@ -264,7 +264,7 @@ function MobileCard({
       {/* Content area — role=tabpanel for tablist semantics */}
       <div role="tabpanel" aria-label="Portfolio simulation" className="contents">
       {/* CompactInput */}
-      <div className="px-2.5 pb-2">
+      <div className="px-2.5 pb-1.5">
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <CompactInput
@@ -284,28 +284,28 @@ function MobileCard({
       </div>
 
       {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-2.5 mb-1.5 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
+      <div className="mx-2.5 mb-1 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
         <div className={cn(
-          'px-2 py-1.5 flex flex-col items-start border-r border-border/30',
+          'px-2 py-1 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
         )}>
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
-          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-1', activeColor)}>
+          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="px-2 py-1.5 flex flex-col items-start border-r border-border/30">
+        <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-1', activeColorSecondary)}>
+          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}>
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="px-2 py-1.5 flex flex-col items-start">
+        <div className="px-2 py-1 flex flex-col items-start">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
           <span
             data-cell={`${activeTab}-incentive`}
             className={cn(
-              'ds-text-13 font-semibold tabular-nums leading-none mt-1 inline-flex items-center gap-0.5',
+              'ds-text-13 font-semibold tabular-nums leading-none mt-0.5 inline-flex items-center gap-0.5',
               incentiveHasValue
                 ? activeColorSecondary
                 : 'text-foreground/50',
@@ -325,14 +325,14 @@ function MobileCard({
       </div>
 
       {/* Daily earnings row — doubles as expand toggle */}
-      <div className="px-2.5 pb-2.5">
+      <div className="px-2.5 pb-1.5">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 transition-all min-h-[44px] border',
+            'flex w-full items-center justify-between rounded-lg px-2.5 py-1 transition-all min-h-[44px] border',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',
@@ -475,7 +475,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
   const BORROW_COLOR = 'ds-text-brand-cyan';
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {entries.map((entry) => {
         const reserve = reserveIdToReserve.get(entry.reserveId);
         const tokenPriceInUsd = reserve?.tokenPrice;

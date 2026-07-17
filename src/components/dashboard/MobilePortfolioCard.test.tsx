@@ -4,7 +4,8 @@ import { cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobilePortfolioCard from './MobilePortfolioCard';
-import type { PortfolioReserveEntry, PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -245,10 +246,10 @@ describe('MobilePortfolioCard — P1 gradient→solid + Summary $/day (AAV-1185)
     }
   });
 
-  it('card container uses space-y-2 (compact density)', () => {
+  it('card container uses space-y-1.5 (compact density)', () => {
     const { container } = renderCard([makeEntry('USDC'), makeEntry('WETH')]);
     const wrapper = container.firstElementChild;
-    expect(wrapper?.className).toContain('space-y-2');
+    expect(wrapper?.className).toContain('space-y-1.5');
   });
 
   it('incentive value uses semantic color at 70% opacity when data present (not full, not gradient)', () => {

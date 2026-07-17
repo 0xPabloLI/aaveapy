@@ -28,14 +28,14 @@ const sim: RateSimulationResult = {
   tokenPrice: 1, tokenPriceLoading: false, forecastLoading: false,
   forecastErrors: {}, forecastUnavailableCampaignCount: 0, scenarioUsdAccrual: null,
   supply: {
-    currentNative: 4.2, currentIncentive: 0, currentTotal: 4.2,
+    currentNative: 4.2, currentIncentive: 0, currentTotal: 4.2, headlineIncentive: 0,
     afterNative: null, afterIncentive: null, afterTotal: null,
     deltaNative: null, deltaIncentive: null, deltaTotal: null,
     inputUsd: 1000, inputAmount: 1000, hasInput: true,
     sources: { protocol: emptySource, merit: emptySource, merkl: emptySource, brevis: emptySource },
   },
   borrow: {
-    currentNative: 6.1, currentIncentive: 0, currentTotal: 6.1,
+    currentNative: 6.1, currentIncentive: 0, currentTotal: 6.1, headlineIncentive: 0,
     afterNative: null, afterIncentive: null, afterTotal: null,
     deltaNative: null, deltaIncentive: null, deltaTotal: null,
     inputUsd: 500, inputAmount: 500, hasInput: true,

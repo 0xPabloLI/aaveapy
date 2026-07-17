@@ -24,7 +24,7 @@ export function getReserveFlags(reserve: ReserveWithSpread): {
   };
 }
 
-export function getPrimaryReserveStatus(reserve: ReserveWithSpread): string | null {
+export function getPrimaryReserveStatus(reserve: ReserveWithSpread): 'frozen' | 'inactive' | 'paused' | null {
   if (reserve.isPaused) return 'paused';
   if (reserve.isActive === false) return 'inactive';
   if (reserve.isFrozen) return 'frozen';
