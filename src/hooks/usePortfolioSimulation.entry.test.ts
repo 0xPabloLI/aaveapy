@@ -311,7 +311,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           makeEntry({
             reserveId: 'r-weth',
             tokenSymbol: 'WETH',
-            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk', deltaSign: 'positive' },
+            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk', deltaSign: 1 },
             borrow: { amount: '', inputMode: 'usd', walletValue: null },
           }),
         ])
@@ -322,7 +322,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       expect(after.supply.amount).toBe('2')
       expect(after.supply.inputMode).toBe('token')
       expect(after.supply.source).toBe('sdk')
-      expect(after.supply.deltaSign).toBe('positive')
+      expect(after.supply.deltaSign).toBe(1)
     })
 
     it('preserves manual entries (walletValue === null) untouched', () => {
