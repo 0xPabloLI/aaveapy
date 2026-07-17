@@ -55,7 +55,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
   const handleSwitchWallet = async () => {
     setPendingSwitch(true)
     await disconnectAllAsync()
-    await wagmiConfig._internal.storage?.removeItem('recentConnectorId')
+    await wagmiConfig._internal.store?.removeItem('recentConnectorId')
   }
 
   useEffect(() => {
