@@ -211,7 +211,7 @@ function MobileCard({
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 -ml-1 rounded-md p-1.5 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 -my-2.5 md:my-0',
+            'shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors flex items-center justify-center',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
