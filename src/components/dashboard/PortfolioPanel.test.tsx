@@ -10,7 +10,8 @@ import { MemoryRouter } from 'react-router-dom';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioReserveEntry, PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
