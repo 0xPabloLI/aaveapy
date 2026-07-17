@@ -237,13 +237,13 @@ function MobileCard({
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-7 min-h-[44px] md:min-h-0 -my-[10px] md:my-0',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-8',
             activeTab === 'supply'
               ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
-          <span className="inline-flex h-7 items-center justify-center w-full">Supply</span>
+          Supply
         </button>
         <button
           type="button"
@@ -251,13 +251,13 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-7 min-h-[44px] md:min-h-0 -my-[10px] md:my-0',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-8',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
           )}
         >
-          <span className="inline-flex h-7 items-center justify-center w-full">Borrow</span>
+          Borrow
         </button>
       </div>
 
@@ -332,7 +332,7 @@ function MobileCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border h-8 min-h-[44px] md:min-h-0 -my-[6px] md:my-0',
+            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border h-9',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',
