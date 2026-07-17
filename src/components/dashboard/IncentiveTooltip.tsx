@@ -20,6 +20,7 @@ import {
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
   getBrevisCampaignEndedAt,
+  getBrevisCampaignApr,
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
