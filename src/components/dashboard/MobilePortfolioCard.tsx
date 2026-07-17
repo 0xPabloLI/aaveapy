@@ -500,38 +500,47 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
         );
       })}
 
-      {/* Summary div — mirrors desktop tfoot */}
+      {/* Summary card — mirrors desktop tfoot with brand polish */}
       {summary && (
-        <div className="border-t-2 border-border/60 bg-muted/30 rounded-b-lg px-3 py-2.5 space-y-2">
+        <div className="mt-1 rounded-2xl border border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 ring-1 ring-border/20 px-3.5 py-3 space-y-2.5">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className={cn('ds-text-10 font-medium', SUPPLY_COLOR)}>Supply</div>
-              <div className={cn('ds-text-13 font-bold tabular-nums', SUPPLY_COLOR)}>
+            <div className="rounded-xl ds-bg-emerald-500-10 px-2.5 py-2 ring-1 ds-ring-emerald-500-15">
+              <div className={cn('ds-text-9 font-semibold uppercase tracking-[0.08em]', SUPPLY_COLOR)}>Supply</div>
+              <div className={cn('ds-text-15 font-bold tabular-nums leading-tight mt-1', SUPPLY_COLOR)}>
                 {formatReserveSizeUsd(summary.totalSupplyUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Weighted average">
-                {formatPercent(summary.supplyWeightedApy)}
-              </div>
-              <div className={cn('ds-text-10 tabular-nums', SUPPLY_COLOR)} title="Earn per day">
-                {summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/day
+              <div className="mt-0.5 flex items-baseline justify-between gap-2">
+                <span className={cn('ds-text-11 tabular-nums font-medium', SUPPLY_COLOR)} title="Weighted average">
+                  {formatPercent(summary.supplyWeightedApy)}
+                </span>
+                <span className={cn('ds-text-10 tabular-nums opacity-80', SUPPLY_COLOR)} title="Earn per day">
+                  {summary.supplyUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/d`}
+                </span>
               </div>
             </div>
-            <div>
-              <div className={cn('ds-text-10 font-medium', BORROW_COLOR)}>Borrow</div>
-              <div className={cn('ds-text-13 font-bold tabular-nums', BORROW_COLOR)}>
+            <div className="rounded-xl ds-bg-brand-cyan-10 px-2.5 py-2 ring-1 ds-ring-brand-cyan-15">
+              <div className={cn('ds-text-9 font-semibold uppercase tracking-[0.08em]', BORROW_COLOR)}>Borrow</div>
+              <div className={cn('ds-text-15 font-bold tabular-nums leading-tight mt-1', BORROW_COLOR)}>
                 {formatReserveSizeUsd(summary.totalBorrowUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Weighted average">
-                {formatPercent(summary.borrowWeightedApy)}
-              </div>
-              <div className={cn('ds-text-10 tabular-nums', BORROW_COLOR)} title="Cost per day">
-                {summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/day
+              <div className="mt-0.5 flex items-baseline justify-between gap-2">
+                <span className={cn('ds-text-11 tabular-nums font-medium', BORROW_COLOR)} title="Weighted average">
+                  {formatPercent(summary.borrowWeightedApy)}
+                </span>
+                <span className={cn('ds-text-10 tabular-nums opacity-80', BORROW_COLOR)} title="Cost per day">
+                  {summary.borrowUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/d`}
+                </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-border/30 pt-2">
-            <span className="ds-text-11 font-semibold text-foreground">Net $/day</span>
-            <span className="ds-text-12 font-bold tabular-nums text-foreground">
+          <div className="flex items-center justify-between rounded-xl bg-card/70 border border-border/50 px-3 py-2">
+            <span className="ds-text-11 font-semibold uppercase tracking-wider text-muted-foreground">Net / day</span>
+            <span className={cn(
+              'ds-text-14 font-bold tabular-nums',
+              summary.netUsdPerDay > 0 ? 'text-emerald-600 dark:text-emerald-400'
+                : summary.netUsdPerDay < 0 ? 'text-red-500 dark:text-red-400'
+                : 'text-foreground',
+            )}>
               {summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}
             </span>
           </div>
