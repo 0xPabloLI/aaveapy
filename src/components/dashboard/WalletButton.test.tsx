@@ -30,7 +30,7 @@ vi.mock('wagmi', () => ({
 vi.mock('@/lib/wagmi/config', () => ({
   wagmiConfig: {
     _internal: {
-      storage: {
+      store: {
         removeItem: vi.fn(async () => undefined),
       },
     },
