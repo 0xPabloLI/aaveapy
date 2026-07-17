@@ -178,7 +178,7 @@ describe('WalletButton — wallet connected (non-watch)', () => {
 
     expect(mockOpenConnectModal).toHaveBeenCalled()
     const { wagmiConfig: cfg } = await import('@/lib/wagmi/config')
-    expect((cfg._internal as unknown as { store?: { removeItem: vi.Mock } }).store!.removeItem).toHaveBeenCalledWith('recentConnectorId')
+    expect((cfg._internal as unknown as { store?: { removeItem: (...args: string[]) => void } }).store!.removeItem).toHaveBeenCalledWith('recentConnectorId')
   })
 
   it('shows Copy address, Switch wallet and Disconnect even without onWatchSubmit', () => {
