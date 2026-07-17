@@ -281,7 +281,7 @@ function MobileCard({
       </div>
 
       {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/40 bg-muted/20">
+      <div className="mx-3 mb-2 grid grid-cols-3 rounded-xl overflow-hidden border border-border/40 bg-muted/20">
         <div className={cn(
           'px-2.5 py-2 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
