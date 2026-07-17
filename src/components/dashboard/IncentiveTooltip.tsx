@@ -438,7 +438,7 @@ const IncentiveTooltip = ({
     return '';
   };
 
-  const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): MessageLine[] => {
+  function getMessageLines(message?: string | Record<string, unknown> | unknown[]): MessageLine[] {
     if (!message) return [];
     const filterLines = (lines: MessageLine[]) =>
       lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
