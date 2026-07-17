@@ -314,11 +314,10 @@ describe('SimulationSubRow — href link rendering (regression from cac7eef)', (
 });
 
 describe('SimulationSubRow — forecast unavailable footnote', () => {
-  it('TC-F01: displays footnote when forecast unavailable and hasAnyInput', () => {
+  it('TC-F01: displays footnote when forecast unavailable and has input', () => {
     const sim: RateSimulationResult = {
       ...baseSimulation,
       forecastUnavailableCampaignCount: 2,
-      hasAnyInput: true,
     };
     const html = renderToString(
       <QueryClientProvider client={new QueryClient()}>
@@ -327,7 +326,6 @@ describe('SimulationSubRow — forecast unavailable footnote', () => {
             reserve={baseReserve}
             simulation={sim}
             isApy={false}
-            tydroPointToUsdRate={0}
             whitelistMerklCampaignIds={new Set()}
             forecastStates={{}}
           />
