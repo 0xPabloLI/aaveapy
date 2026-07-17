@@ -439,7 +439,6 @@ const IncentiveTooltip = ({
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
   const highlightMatch = /^([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])$/;
-  type MessageLine = { text: string; emphasizePrefix?: boolean };
   const renderHighlightedText = (text: string) => (
     <>
       {text.split(/([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])/g).map((part, index) =>
