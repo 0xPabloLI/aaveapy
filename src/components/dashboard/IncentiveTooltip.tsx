@@ -484,56 +484,6 @@ const IncentiveTooltip = ({
     return `${startText} - ${endText}`;
   };
 
-  const formatValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    return '';
-  };
-
-  function getMessageLines(message?: string | Record<string, unknown> | unknown[]): MessageLine[] {
-    if (!message) return [];
-    const filterLines = (lines: MessageLine[]) =>
-      lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
-    if (typeof message === 'string') {
-      try {
-        const parsed = JSON.parse(message);
-        if (Array.isArray(parsed)) {
-          return getMessageLines(parsed);
-        }
-        if (parsed && typeof parsed === 'object') {
-          return getMessageLines(parsed as Record<string, unknown>);
-        }
-      } catch { /* not JSON, treat as plain string */ }
-      return filterLines([{ text: message }]);
-    }
-    if (Array.isArray(message)) {
-      return filterLines(
-        message
-          .map((item) => {
-            if (typeof item === 'string') return item;
-            if (typeof item === 'object' && item) {
-              const values = Object.values(item as Record<string, unknown>)
-                .map((entry) => formatValue(entry))
-                .filter(Boolean);
-              return values.length > 0
-                ? { text: values.join(': '), emphasizePrefix: values.length > 1 }
-                : '';
-            }
-            return '';
-          })
-          .filter(Boolean)
-          .map((item) => (typeof item === 'string' ? { text: item } : item))
-      );
-    }
-    const values = Object.values(message)
-      .map((entry) => formatValue(entry))
-      .filter(Boolean);
-    if (values.length === 0) return [];
-    return filterLines([{ text: values.join(': '), emphasizePrefix: values.length > 1 }]);
-  }
-
   const accentClass =
     accentBorderClass ??
     (type === 'supply'
