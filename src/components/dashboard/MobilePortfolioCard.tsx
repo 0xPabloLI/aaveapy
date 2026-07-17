@@ -220,7 +220,7 @@ function MobileCard({
           {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
         </button>
         <TokenIcon symbol={entry.tokenSymbol} size={22} />
-        <span className={cn('ds-text-15 font-semibold tracking-tight break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
+        <span className={cn('ds-text-16 font-semibold tracking-tight break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
           {entry.tokenSymbol}
         </span>
         <span className="ds-text-10 text-muted-foreground/80 inline-flex items-center gap-1 min-w-0 ml-auto rounded-full border border-border/50 bg-muted/40 px-2 py-0.5">
@@ -289,19 +289,19 @@ function MobileCard({
           'px-2 py-1 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
         )}>
-          <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
           <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
         <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
-          <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
           <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}>
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
         <div className="px-2 py-1 flex flex-col items-start">
-          <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
+          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
           <span
             data-cell={`${activeTab}-incentive`}
             className={cn(
@@ -511,7 +511,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
           <div className="flex justify-center gap-2">
             <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-emerald-500-10 px-2 py-1.5 ring-1 ds-ring-emerald-500-15">
               <div className="flex items-baseline justify-between gap-1">
-                <span className={cn('ds-text-9 font-semibold uppercase tracking-[0.06em]', SUPPLY_COLOR)}>Supply</span>
+                <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', SUPPLY_COLOR)}>Supply</span>
                 <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', SUPPLY_COLOR)} title="Weighted average">
                   {formatPercent(summary.supplyWeightedApy)}
                 </span>
@@ -525,7 +525,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
             </div>
             <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-brand-cyan-10 px-2 py-1.5 ring-1 ds-ring-brand-cyan-15">
               <div className="flex items-baseline justify-between gap-1">
-                <span className={cn('ds-text-9 font-semibold uppercase tracking-[0.06em]', BORROW_COLOR)}>Borrow</span>
+                <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', BORROW_COLOR)}>Borrow</span>
                 <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', BORROW_COLOR)} title="Weighted average">
                   {formatPercent(summary.borrowWeightedApy)}
                 </span>
