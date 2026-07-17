@@ -326,8 +326,10 @@ describe('SimulationSubRow — forecast unavailable footnote', () => {
             reserve={baseReserve}
             simulation={sim}
             isApy={false}
-            whitelistMerklCampaignIds={new Set()}
-            forecastStates={{}}
+            supplyInput="1000"
+            borrowInput="500"
+            inputMode="usd"
+            compact={false}
           />
         </TooltipProvider>
       </QueryClientProvider>,
@@ -336,7 +338,7 @@ describe('SimulationSubRow — forecast unavailable footnote', () => {
     expect(html).toContain('using current APR');
   });
 
-  it('TC-F02: does not display footnote when hasAnyInput is false', () => {
+  it('TC-F02: does not display footnote when input is empty', () => {
     const sim: RateSimulationResult = {
       ...baseSimulation,
       forecastUnavailableCampaignCount: 2,
@@ -350,9 +352,10 @@ describe('SimulationSubRow — forecast unavailable footnote', () => {
             reserve={baseReserve}
             simulation={sim}
             isApy={false}
-            tydroPointToUsdRate={0}
-            whitelistMerklCampaignIds={new Set()}
-            forecastStates={{}}
+            supplyInput=""
+            borrowInput=""
+            inputMode="usd"
+            compact={false}
           />
         </TooltipProvider>
       </QueryClientProvider>,
