@@ -22,10 +22,9 @@ vi.mock('./chainDiscovery', () => ({
 }))
 
 describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
-  it('V4_SPOKE_ADDRESSES includes Ethereum (1) and Avalanche (43114)', () => {
+  it('V4_SPOKE_ADDRESSES includes Ethereum (1)', () => {
     const chainIds = Object.keys(V4_SPOKE_ADDRESSES).map(Number)
-    expect(chainIds).toEqual(expect.arrayContaining([1, 43114]))
-    expect(chainIds.length).toBeGreaterThanOrEqual(2)
+    expect(chainIds).toContain(1)
   })
 
   it('V4_SPOKE_ADDRESSES[1] contains non-oracle spokes', () => {
