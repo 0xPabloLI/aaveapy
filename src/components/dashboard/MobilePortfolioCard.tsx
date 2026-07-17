@@ -211,7 +211,7 @@ function MobileCard({
           type="button"
           onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
           className={cn(
-            'shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors flex items-center justify-center',
+            'shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
@@ -237,7 +237,7 @@ function MobileCard({
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-8',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
             activeTab === 'supply'
               ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
@@ -251,7 +251,7 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center h-8',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
@@ -332,7 +332,7 @@ function MobileCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Hide details' : 'Show details'}
           className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border h-9',
+            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border min-h-[44px]',
             isExpanded
               ? 'bg-muted/60 border-border/50'
               : 'bg-muted/25 border-border/30 active:bg-muted/50',

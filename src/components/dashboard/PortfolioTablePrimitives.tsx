@@ -394,7 +394,7 @@ export function CompactInput({
           <button
             type="button"
             onClick={() => handleDeltaCommit('')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-2 md:p-0.5 text-muted-foreground active:bg-muted/60 active:text-foreground md:hover:bg-muted/60 md:hover:text-foreground transition-colors flex items-center justify-center"
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-2 md:p-0.5 text-muted-foreground active:bg-muted/60 active:text-foreground md:hover:bg-muted/60 md:hover:text-foreground transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0"
             aria-label={`Clear ${tokenSymbol} ${side}`}
           >
             <Eraser className="size-4 md:size-2.5" aria-hidden />

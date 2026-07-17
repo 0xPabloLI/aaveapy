@@ -18,10 +18,9 @@ vi.mock('@/lib/walletPositionToPortfolio', () => ({
 
 import { toast } from 'sonner'
 import { useWalletAutoImport } from '@/hooks/useWalletAutoImport'
-import type { DegradedResult } from '@/hooks/useUserPositionsSdk'
+import type { DegradedResult, WalletLoadState } from '@/hooks/useUserPositionsSdk'
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import type { PortfolioReserveEntry } from '@/types/portfolio'
-import type { WalletLoadState } from '@/hooks/useUserPositionsSdk'
 import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 
