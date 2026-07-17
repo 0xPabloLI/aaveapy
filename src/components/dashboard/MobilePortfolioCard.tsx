@@ -284,28 +284,28 @@ function MobileCard({
       </div>
 
       {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-2.5 mb-1.5 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
+      <div className="mx-2.5 mb-1 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
         <div className={cn(
-          'px-2 py-1.5 flex flex-col items-start border-r border-border/30',
+          'px-2 py-1 flex flex-col items-start border-r border-border/30',
           activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
         )}>
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
-          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-1', activeColor)}>
+          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}>
             {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="px-2 py-1.5 flex flex-col items-start border-r border-border/30">
+        <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-1', activeColorSecondary)}>
+          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}>
             {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
           </span>
         </div>
-        <div className="px-2 py-1.5 flex flex-col items-start">
+        <div className="px-2 py-1 flex flex-col items-start">
           <span className="ds-text-9 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
           <span
             data-cell={`${activeTab}-incentive`}
             className={cn(
-              'ds-text-13 font-semibold tabular-nums leading-none mt-1 inline-flex items-center gap-0.5',
+              'ds-text-13 font-semibold tabular-nums leading-none mt-0.5 inline-flex items-center gap-0.5',
               incentiveHasValue
                 ? activeColorSecondary
                 : 'text-foreground/50',
