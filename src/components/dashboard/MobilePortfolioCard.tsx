@@ -264,7 +264,7 @@ function MobileCard({
       {/* Content area — role=tabpanel for tablist semantics */}
       <div role="tabpanel" aria-label="Portfolio simulation" className="contents">
       {/* CompactInput */}
-      <div className="px-2.5 pb-2">
+      <div className="px-2.5 pb-1.5">
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <CompactInput
