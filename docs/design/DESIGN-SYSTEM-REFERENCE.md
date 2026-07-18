@@ -720,6 +720,7 @@ const after = disabled ? null : simulation.after;
   - **模式 A**：按钮 `min-h/w-[44px]` + 透明 padding，图标居中（图标按钮）
   - **模式 B**：外层容器 `py-1` 等补足到 44px（输入框、tab 行）
   - **模式 C**：`::before` 伪元素 `inset: -Npx` 向外扩展（chip、switch——不能用 `min-h` 否则改变视觉高度）
+- **固定高度容器约束**：header bar、toolbar 等高度由 CSS 变量控制（`--ds-control-h` 等）的容器，其子元素**禁止用 `min-h/w-[44px]`**——会撑破容器高度或宽度。必须用模式 C（`touch-target-expand`）扩展触控热区，不改变视觉尺寸。
 - **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/40` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。动画使用 Framer Motion `AnimatePresence`：背景 opacity 0→1，面板 y: 100%→0、duration 0.28s。MobileReserveCard 的 cap/deficit/utilization/frozen 抽屉内联在组件内（`MobileCapSheet`），其他场景可用共享组件 `src/components/dashboard/BottomSheet.tsx`。不在移动端用小浮层 popover 锚定在触发点上。
 - **轮播**：移动端轮播需包含：分页点、左右箭头（在可滚动时显示）、peek（如 `basis-[85%]`）、`align: "center"` + `containScroll: "trimSnaps"`。
 - **避免**：仅在 hover 上做交互，移动端需提供 tap/click 等价操作。

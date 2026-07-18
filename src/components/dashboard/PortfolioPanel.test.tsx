@@ -459,4 +459,56 @@ describe('PortfolioPanel', () => {
     });
   });
 
+  // Touch target optimization: header icon buttons must use touch-target-expand (::before)
+  // instead of min-h/w-[44px] to avoid overflowing the fixed-height header bar on narrow screens.
+  // See docs/design/mobile-touch-target-optimization.md — Pattern C for fixed-height containers.
+  describe('header icon button touch targets', () => {
+    const makeEntry = (symbol: string): PortfolioReserveEntry => ({
+      reserveId: `AaveV3Ethereum-${symbol}`,
+      tokenSymbol: symbol,
+      marketName: 'AaveV3Ethereum',
+      chainName: 'Ethereum',
+      chainId: 1,
+      supply: { ...EMPTY_SIDE, amount: '5000' },
+      borrow: { ...EMPTY_SIDE },
+      hidden: false,
+      isOrphan: false,
+      restrictedStatus: null,
+    });
+
+    it('header buttons use touch-target-expand, not min-h/w-[44px] (overflow prevention)', () => {
+      const entries: PortfolioReserveEntry[] = [
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
+      ];
+      const { container } = renderWithRouter(
+        <WagmiProvider config={testWagmiConfig}>
+          <QueryClientProvider client={new QueryClient()}>
+            <RainbowKitProvider>
+              <TooltipProvider>
+              <PortfolioPanel
+                entries={entries}
+                actions={makeActions()}
+                reserves={[makeReserve('USDC')]}
+              />
+              </TooltipProvider>
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>,
+      );
+
+      // Find all header icon buttons (they use HEADER_CONTROL_ICON_BUTTON_CLASS which has rounded-full)
+      const headerButtons = container.querySelectorAll('button.rounded-full');
+      expect(headerButtons.length).toBeGreaterThan(0);
+
+      for (const btn of headerButtons) {
+        const cls = btn.className;
+        // Must NOT use min-h-[44px] or min-w-[44px] — those overflow fixed-height header
+        expect(cls).not.toContain('min-h-[44px]');
+        expect(cls).not.toContain('min-w-[44px]');
+        // Must use touch-target-expand for 44px touch target via ::before
+        expect(cls).toContain('touch-target-expand');
+      }
+    });
+  });
+
 });

@@ -378,7 +378,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 type="button"
                 onClick={handleWalletSyncClick}
                 disabled={walletLoadState === 'loading'}
-                className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS, 'min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0')}
+                className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS, 'relative touch-target-expand')}
                 aria-label={walletLoadState === 'loading' ? 'Syncing wallet positions' : 'Force sync wallet positions'}
                 title={walletLoadState === 'loading' ? 'Syncing…' : 'Force sync'}
                 data-testid="wallet-sync-button"
@@ -398,7 +398,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 onClick={() => setShowSaveInput((p) => !p)}
                 className={cn(
                   HEADER_CONTROL_ICON_BUTTON_CLASS,
-                'min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0',
+                'relative touch-target-expand',
                   showSaveInput && 'bg-muted text-foreground',
                 )}
                 aria-label={showSaveInput ? 'Cancel save' : 'Save snapshot'}
@@ -416,7 +416,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               onClick={() => setSearchOpen((p) => !p)}
               className={cn(
                 HEADER_CONTROL_ICON_BUTTON_CLASS,
-                'min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0',
+                'relative touch-target-expand',
                 searchOpen && 'bg-muted text-foreground',
               )}
               aria-label={searchOpen ? 'Close search' : 'Search tokens'}
@@ -435,7 +435,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     title="Clear all"
                     className={cn(
                       HEADER_CONTROL_ICON_BUTTON_CLASS,
-                'min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0',
+                'relative touch-target-expand',
                       PORTFOLIO_THEME.trashHoverBg,
                       PORTFOLIO_THEME.trashHoverText,
                     )}
