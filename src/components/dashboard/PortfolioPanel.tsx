@@ -23,10 +23,8 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
-import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 
-import { TokenIcon } from '@/components/primitives/TokenIcon';
+import ReserveIdentity from '@/components/primitives/ReserveIdentity';
 import { useSearchParams } from 'react-router-dom';
 import PopularTokenChip from './PopularTokenChip';
 import PortfolioUnifiedTable from './PortfolioUnifiedTable';
@@ -82,9 +80,6 @@ function SearchResultRow({
   const reserveId = getReserveKey(reserve);
   const alreadyAdded = existingEntries.some((e) => e.reserveId === reserveId);
 
-  const chainSrc = getChainIconSrc(reserve.chainId);
-  const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
-
   return (
     <button
       type="button"
@@ -98,29 +93,14 @@ function SearchResultRow({
         ? `${reserve.tokenSymbol} already added`
         : `Add ${reserve.tokenSymbol} (supply and borrow)`}
     >
-      {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
-      <span className="inline-flex items-center gap-1 shrink-0">
-        <TokenIcon symbol={reserve.tokenSymbol} size={14} />
-        <span className="ds-text-12 font-semibold text-foreground leading-none">{reserve.tokenSymbol}</span>
-      </span>
-      <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
-      <span className="inline-flex min-w-0 items-center gap-1 ds-text-10 leading-none text-muted-foreground">
-        {chainSrc && (
-          <img src={chainSrc} alt={reserve.chainName} className="size-2.5 shrink-0 opacity-70" />
-        )}
-        <span className="truncate">{marketLabel}</span>
-      </span>
-      {reserve.hubName && reserve.hubId && (
-        <>
-          <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
-          <span
-            className={cn('min-w-0 max-w-[40%] shrink', getHubChipClass(isV4Market(reserve.marketName)))}
-            title={`Hub: ${reserve.hubName}`}
-          >
-            <span className="truncate">{reserve.hubName}</span>
-          </span>
-        </>
-      )}
+      <ReserveIdentity
+        tokenSymbol={reserve.tokenSymbol}
+        chainId={reserve.chainId}
+        chainName={reserve.chainName}
+        marketName={reserve.marketName}
+        hubName={reserve.hubName}
+        variant="compact"
+      />
       <span className="ml-auto flex items-center gap-1 shrink-0">
         {alreadyAdded && (
           <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', PORTFOLIO_THEME.text)}>
@@ -271,6 +251,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
         chainName: reserve.chainName ?? reserve.marketName,
         chainId: reserve.chainId,
         tokenSymbol: reserve.tokenSymbol,
+        hubName: reserve.hubName,
+        hubId: reserve.hubId,
       });
 
       // Keep focus on the search input only if search is already open;
@@ -566,6 +548,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     chainId={r.chainId}
                     chainName={r.chainName}
                     marketName={r.marketName}
+                    hubName={r.hubName}
                     onAdd={handleAddToken}
                   />
                 );

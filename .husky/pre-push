@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname "$0")/_/h"
 
 STASH_COUNT=$(git stash list | wc -l | tr -d ' ')
 if [ "$STASH_COUNT" -gt 3 ]; then

@@ -87,6 +87,8 @@ export const usePortfolioToggle = ({
             chainId: reserve.chainId,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
+            hubName: reserve.hubName,
+            hubId: reserve.hubId,
           });
         }
       } else {
@@ -114,6 +116,8 @@ export const usePortfolioToggle = ({
             chainId: reserve.chainId,
             tokenSymbol: reserve.tokenSymbol,
             restrictedStatus: getPrimaryReserveStatus(reserve),
+            hubName: reserve.hubName,
+            hubId: reserve.hubId,
           });
         }
       }
