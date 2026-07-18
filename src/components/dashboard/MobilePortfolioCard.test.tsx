@@ -134,15 +134,15 @@ describe('MobilePortfolioCard — P0 audit fixes (AAV-1183)', () => {
       expect(removeBtn!.className).toContain('min-w-[44px]');
     });
 
-    it('pill tab buttons have min-h-[44px]', () => {
+    it('pill tab buttons have min-h-[36px] + touch-target-expand (visual 36px, touch 44px via ::before)', () => {
       const entries = [makeEntry('USDC')];
       const { container } = renderCard(entries);
-      const supplyTab = container.querySelector('button[aria-label]')?.parentElement;
       const tabs = Array.from(container.querySelectorAll('button'))
         .filter(b => b.textContent === 'Supply' || b.textContent === 'Borrow');
       expect(tabs.length).toBe(2);
       for (const tab of tabs) {
-        expect(tab.className).toContain('min-h-[44px]');
+        expect(tab.className).toContain('min-h-[36px]');
+        expect(tab.className).toContain('touch-target-expand');
       }
     });
 

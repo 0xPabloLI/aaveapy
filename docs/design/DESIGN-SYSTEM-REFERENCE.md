@@ -169,7 +169,7 @@
 
 ## 4. 布局原则
 
-- **移动优先**，触控目标 ≥ 44×44px。
+- **移动优先**，触控目标 ≥ 44×44px。**视觉尺寸可以小于 44px**——通过 `min-h/w-[44px]` 透明 padding（模式 A）、外层容器补足（模式 B）、或 `::before` 伪元素扩展（模式 C）使触控热区达到 44px。详见 `docs/design/mobile-touch-target-optimization.md`。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
 - **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位。**所有表格内容统一遵循\"优先保持单行，仅在确实放不下时换行\"**——既不\"优先换行\"也不\"省略\"，token symbol、市场名、价格、APY 等都按这条规则处理。换行通过 `break-words` + `min-w-0` 实现，**禁止**使用 `truncate` / 尾部省略号或 `break-all`。
 - **相邻列最小可见 gap（强制，跨场景通用）**：任何\"多列\"布局——不仅是 `<table>`，也包括 grid、多列卡片、并排面板——**相邻列之间必须保留固定的最小可见间距**，让相邻列的文字、数字、尾部图标不会在窄视口下读起来像粘成一团或互相覆盖。最小值建议 **≥ `--ds-space-2` (8 px)**；当某一列以尾部图标（外链 `↗`、菜单触发器、chevron 等）结束、邻列以紧凑数字/价格开头时，**总间距 ≥ 10 px**（典型实现：`pr-[var(--ds-space-2)]` + `pl-[var(--ds-space-1-5)]`，或者用一个统一的列间 `column-gap`/`gap` 变量）。该最小值在 header / body / skeleton 必须**保持一致**；只增不减——不允许在某一行类型把它降到下限以下。落到具体表格的执行细则见 §4.1。
@@ -716,7 +716,10 @@ const after = disabled ? null : simulation.after;
 
 ## 9. 移动端与触控
 
-- **触控目标**：最小 44×44px（包括可点击的“Simulation ⌄”等）。
+- **触控目标**：最小 44×44px（包括可点击的“Simulation ⌄”等）。**视觉 ≠ 触控**：视觉元素可小于 44px（28-36px），触控热区通过 padding、外层容器、或 `::before` 伪元素补足。三种模式：
+  - **模式 A**：按钮 `min-h/w-[44px]` + 透明 padding，图标居中（图标按钮）
+  - **模式 B**：外层容器 `py-1` 等补足到 44px（输入框、tab 行）
+  - **模式 C**：`::before` 伪元素 `inset: -Npx` 向外扩展（chip、switch——不能用 `min-h` 否则改变视觉高度）
 - **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/40` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。动画使用 Framer Motion `AnimatePresence`：背景 opacity 0→1，面板 y: 100%→0、duration 0.28s。MobileReserveCard 的 cap/deficit/utilization/frozen 抽屉内联在组件内（`MobileCapSheet`），其他场景可用共享组件 `src/components/dashboard/BottomSheet.tsx`。不在移动端用小浮层 popover 锚定在触发点上。
 - **轮播**：移动端轮播需包含：分页点、左右箭头（在可滚动时显示）、peek（如 `basis-[85%]`）、`align: "center"` + `containScroll: "trimSnaps"`。
 - **避免**：仅在 hover 上做交互，移动端需提供 tap/click 等价操作。

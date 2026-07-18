@@ -245,7 +245,7 @@ function MobileCard({
           aria-selected={activeTab === 'supply'}
           onClick={() => setActiveTab('supply')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[36px] relative touch-target-expand',
             activeTab === 'supply'
               ? 'bg-card ds-text-emerald-600 ring-1 ds-ring-emerald-500-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',
@@ -259,7 +259,7 @@ function MobileCard({
           aria-selected={activeTab === 'borrow'}
           onClick={() => setActiveTab('borrow')}
           className={cn(
-            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[44px]',
+            'flex-1 ds-text-12 font-semibold rounded-md transition-all duration-200 flex items-center justify-center min-h-[36px] relative touch-target-expand',
             activeTab === 'borrow'
               ? 'bg-card ds-text-brand-cyan ring-1 ds-ring-brand-cyan-15 shadow-sm'
               : 'text-muted-foreground active:text-foreground/70',

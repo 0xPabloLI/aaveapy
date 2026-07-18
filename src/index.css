@@ -1012,3 +1012,16 @@
     box-shadow: none;
   }
 }
+
+/* Touch target expansion — Pattern C: ::before pseudo-element.
+ * Expands clickable area without changing visual element height.
+ * Usage: add `relative touch-target-expand` to elements that need
+ * larger touch target than their visual size (chips, tabs, switches).
+ * See docs/design/mobile-touch-target-optimization.md §2.2 Pattern C.
+ */
+.touch-target-expand::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  pointer-events: auto;
+}
