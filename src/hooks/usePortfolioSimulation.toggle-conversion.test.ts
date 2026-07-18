@@ -214,6 +214,7 @@ describe('importReserves — auto-complete missing sides', () => {
           borrow: { amount: '', inputMode: 'usd', walletValue: null },
           hidden: false,
           isOrphan: false,
+          restrictedStatus: null,
         },
       ]);
     });
@@ -241,6 +242,7 @@ describe('importReserves — auto-complete missing sides', () => {
           borrow: { amount: '9674', inputMode: 'usd', walletValue: 9674, source: 'sdk' },
           hidden: false,
           isOrphan: false,
+          restrictedStatus: null,
         },
       ]);
     });
@@ -267,6 +269,7 @@ describe('importReserves — auto-complete missing sides', () => {
           borrow: { amount: '5000', inputMode: 'usd', walletValue: 5000, source: 'sdk' },
           hidden: false,
           isOrphan: false,
+          restrictedStatus: null,
         },
       ]);
     });
@@ -293,6 +296,7 @@ describe('importReserves — auto-complete missing sides', () => {
           borrow: { amount: '', inputMode: 'usd', walletValue: null },
           hidden: false,
           isOrphan: false,
+          restrictedStatus: null,
         },
         {
           reserveId: 'r-gho',
@@ -304,6 +308,7 @@ describe('importReserves — auto-complete missing sides', () => {
           borrow: { amount: '2000', inputMode: 'usd', walletValue: 2000, source: 'sdk' },
           hidden: false,
           isOrphan: false,
+          restrictedStatus: null,
         },
       ]);
     });

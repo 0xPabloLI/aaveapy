@@ -109,6 +109,46 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       expect(result.current.entries[0].restrictedStatus).toBeNull()
     })
 
+    it('stores hubName and hubId for V4 reserves', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-usdc-v4',
+          marketName: 'AaveV4Main',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenSymbol: 'USDC',
+          hubName: 'Core',
+          hubId: 'hub-core',
+        })
+      })
+
+      const entry = result.current.entries[0]
+      expect(entry.hubName).toBe('Core')
+      expect(entry.hubId).toBe('hub-core')
+    })
+
+    it('leaves hubName and hubId undefined for V3 reserves', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({
+          reserveId: 'r-usdc-v3',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenSymbol: 'USDC',
+        })
+      })
+
+      const entry = result.current.entries[0]
+      expect(entry.hubName).toBeUndefined()
+      expect(entry.hubId).toBeUndefined()
+    })
+
     it('sets hidden=true for restricted entries', () => {
       const { result } = renderHook(() => usePortfolioSimulation())
       act(() => { result.current.actions.setActive(true) })
@@ -311,7 +351,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
           makeEntry({
             reserveId: 'r-weth',
             tokenSymbol: 'WETH',
-            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk', deltaSign: 'positive' },
+            supply: { amount: '4000', inputMode: 'usd', walletValue: 4000, source: 'sdk', deltaSign: 1 },
             borrow: { amount: '', inputMode: 'usd', walletValue: null },
           }),
         ])
@@ -322,7 +362,7 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
       expect(after.supply.amount).toBe('2')
       expect(after.supply.inputMode).toBe('token')
       expect(after.supply.source).toBe('sdk')
-      expect(after.supply.deltaSign).toBe('positive')
+      expect(after.supply.deltaSign).toBe(1)
     })
 
     it('preserves manual entries (walletValue === null) untouched', () => {

@@ -46,7 +46,7 @@
 - `npm run lint` — ESLint
 - `npm test` — Vitest
 - `npm run build` — production build
-- `npm run ci:remote` — full local gate (used by hooks)
+- `npm run ci:remote` — full local gate (used by pre-push hook)
 
 ## Session Workflow
 1. **Bootstrap when needed**: For substantial implementation, debugging, or design sessions, load `using-superpowers` via skill tool. Load `brainstorming` only for feature design, behavior changes, or solution exploration — skip for lightweight inspection, explanation, and routine work.

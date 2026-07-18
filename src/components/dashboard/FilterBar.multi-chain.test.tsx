@@ -47,7 +47,10 @@ function TestWrapper({
       isApy={isApy}
       setIsApy={setIsApy}
       marketsList={marketsList}
-      hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+      hubEntries={[
+        { id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' },
+        { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' },
+      ]}
       selectedHubs={hubs}
       setSelectedHubs={setHubs}
       expandedChain={internalExpandedChain}

@@ -145,6 +145,8 @@ export interface PortfolioSimulationActions {
     chainId: number;
     tokenSymbol: string;
     restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
+    hubName?: string;
+    hubId?: string;
   }) => void;
   updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
   /** Soft-delete: sets `hidden: true`. Use for entries with wallet positions. */
@@ -187,6 +189,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       chainId: number;
       tokenSymbol: string;
       restrictedStatus?: 'frozen' | 'paused' | 'inactive' | null;
+      hubName?: string;
+      hubId?: string;
     }) => {
       const status = params.restrictedStatus ?? null;
       setEntries((prev) => {
@@ -212,6 +216,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
             hidden: status !== null,
             isOrphan: false,
             restrictedStatus: status,
+            ...(params.hubName != null && { hubName: params.hubName }),
+            ...(params.hubId != null && { hubId: params.hubId }),
           },
         ];
       });

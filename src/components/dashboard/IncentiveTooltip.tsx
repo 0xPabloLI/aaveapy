@@ -20,6 +20,7 @@ import {
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
   getBrevisCampaignEndedAt,
+  getBrevisCampaignApr,
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
@@ -32,6 +33,61 @@ import BottomSheet from './BottomSheet';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 import { TOKEN_ICON_MANIFEST } from '@/lib/tokenIconManifest.generated';
+
+interface MessageLine {
+  text: string;
+  emphasizePrefix?: boolean;
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return '';
+}
+
+function getMessageLines(message?: string | Record<string, unknown> | unknown[]): MessageLine[] {
+  if (!message) return [];
+  const filterLines = (lines: MessageLine[]) =>
+    lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
+  if (typeof message === 'string') {
+    try {
+      const parsed = JSON.parse(message);
+      if (Array.isArray(parsed)) {
+        return getMessageLines(parsed);
+      }
+      if (parsed && typeof parsed === 'object') {
+        return getMessageLines(parsed as Record<string, unknown>);
+      }
+    } catch { /* not JSON, treat as plain string */ }
+    return filterLines([{ text: message }]);
+  }
+  if (Array.isArray(message)) {
+    return filterLines(
+      message
+        .map((item) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && item) {
+            const values = Object.values(item as Record<string, unknown>)
+              .map((entry) => formatValue(entry))
+              .filter(Boolean);
+            return values.length > 0
+              ? { text: values.join(': '), emphasizePrefix: values.length > 1 }
+              : '';
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .map((item) => (typeof item === 'string' ? { text: item } : item))
+    );
+  }
+  const values = Object.values(message)
+    .map((entry) => formatValue(entry))
+    .filter(Boolean);
+  if (values.length === 0) return [];
+  return filterLines([{ text: values.join(': '), emphasizePrefix: values.length > 1 }]);
+}
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -271,8 +327,8 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       {expanded && (
         <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
           {groupedBySource.map((group, sourceIndex) => {
-            const iconSrc = group.sourceType !== 'merit'
-              ? getSourceIcon(group.sourceType === 'merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
+            const iconSrc = group.sourceType !== 'ACI'
+              ? getSourceIcon(group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
               : null;
 
             return (
@@ -383,7 +439,6 @@ const IncentiveTooltip = ({
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
   const highlightMatch = /^([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])$/;
-  type MessageLine = { text: string; emphasizePrefix?: boolean };
   const renderHighlightedText = (text: string) => (
     <>
       {text.split(/([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])/g).map((part, index) =>
@@ -427,56 +482,6 @@ const IncentiveTooltip = ({
     const endText = formatDate(end);
     if (!startText || !endText) return null;
     return `${startText} - ${endText}`;
-  };
-
-  const formatValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    return '';
-  };
-
-  const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): MessageLine[] => {
-    if (!message) return [];
-    const filterLines = (lines: MessageLine[]) =>
-      lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
-    if (typeof message === 'string') {
-      try {
-        const parsed = JSON.parse(message);
-        if (Array.isArray(parsed)) {
-          return getMessageLines(parsed);
-        }
-        if (parsed && typeof parsed === 'object') {
-          return getMessageLines(parsed as Record<string, unknown>);
-        }
-      } catch { /* not JSON, treat as plain string */ }
-      return filterLines([{ text: message }]);
-    }
-    if (Array.isArray(message)) {
-      return filterLines(
-        message
-          .map((item) => {
-            if (typeof item === 'string') return item;
-            if (typeof item === 'object' && item) {
-              const values = Object.values(item as Record<string, unknown>)
-                .map((entry) => formatValue(entry))
-                .filter(Boolean);
-              return values.length > 0
-                ? { text: values.join(': '), emphasizePrefix: values.length > 1 }
-                : '';
-            }
-            return '';
-          })
-          .filter(Boolean)
-          .map((item) => (typeof item === 'string' ? { text: item } : item))
-      );
-    }
-    const values = Object.values(message)
-      .map((entry) => formatValue(entry))
-      .filter(Boolean);
-    if (values.length === 0) return [];
-    return filterLines([{ text: values.join(': '), emphasizePrefix: values.length > 1 }]);
   };
 
   const accentClass =

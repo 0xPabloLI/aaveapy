@@ -10,7 +10,8 @@ import { MemoryRouter } from 'react-router-dom';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioReserveEntry, PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -159,7 +160,7 @@ describe('PortfolioPanel', () => {
   it('shows entry rows for existing entries', () => {
     const reserves = [makeReserve('USDC')];
     const entries: PortfolioReserveEntry[] = [
-      { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE, amount: '2000' }, hidden: false, isOrphan: false },
+      { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE, amount: '2000' }, hidden: false, isOrphan: false, restrictedStatus: null },
     ];
     renderWithRouter(
       <WagmiProvider config={testWagmiConfig}>
@@ -239,11 +240,11 @@ describe('PortfolioPanel', () => {
       reserveId: `${market}-${symbol}`,
       tokenSymbol: symbol,
       marketName: market,
-      chainName: 'Ethereum',
+      chainName: 'Ethereum', chainId: 1,
       supply: { ...EMPTY_SIDE, amount: '5000' },
       borrow: { ...EMPTY_SIDE, amount: '2000' },
       hidden: false,
-      isOrphan: false,
+      isOrphan: false, restrictedStatus: null,
     });
 
     it('disables side inputs when reserve is missing from reserves prop', () => {
@@ -414,8 +415,8 @@ describe('PortfolioPanel', () => {
 
     it('renders hidden rows in unified table', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
       const { container } = renderPanel(entries);
 
@@ -428,7 +429,7 @@ describe('PortfolioPanel', () => {
 
     it('does not render divider when no hidden entries', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false },
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
       ];
       renderPanel(entries);
       expect(screen.queryByText(/hidden/)).not.toBeInTheDocument();
@@ -436,9 +437,9 @@ describe('PortfolioPanel', () => {
 
     it('renders hidden count text when multiple entries are hidden', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
-        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE }, hidden: false, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
       const { container } = renderPanel(entries);
       // Unified table renders hidden rows with restore button
@@ -448,8 +449,8 @@ describe('PortfolioPanel', () => {
 
     it('renders all hidden rows when all entries are hidden', () => {
       const entries: PortfolioReserveEntry[] = [
-        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
-        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-DAI', tokenSymbol: 'DAI', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '3000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
+        { reserveId: 'AaveV3Ethereum-WBTC', tokenSymbol: 'WBTC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...EMPTY_SIDE, amount: '1000' }, borrow: { ...EMPTY_SIDE }, hidden: true, isOrphan: false, restrictedStatus: null },
       ];
       const { container } = renderPanel(entries);
 

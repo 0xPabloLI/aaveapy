@@ -1,0 +1,123 @@
+name: CI Failure Alert
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - lovable
+
+permissions:
+  issues: write
+  actions: read
+
+jobs:
+  alert:
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gather failure details
+        id: gather
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const runId = context.payload.workflow_run.id;
+            const sha = context.payload.workflow_run.head_sha;
+            const branch = context.payload.workflow_run.head_branch;
+            const runUrl = context.payload.workflow_run.html_url;
+            const actor = context.payload.workflow_run.actor.login;
+
+            const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+
+            const failedJobs = jobs.filter(j => j.conclusion === 'failure');
+            const failedNames = failedJobs.map(j => j.name).join(', ');
+
+            core.setOutput('sha', sha.substring(0, 7));
+            core.setOutput('branch', branch);
+            core.setOutput('run_url', runUrl);
+            core.setOutput('actor', actor);
+            core.setOutput('failed_jobs', failedNames);
+            core.setOutput('run_id', String(runId));
+
+      - name: Check if duplicate issue exists (open)
+        id: dedup
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure-lovable',
+              per_page: 5,
+            });
+            core.setOutput('has_open', String(issues.length > 0));
+            if (issues.length > 0) {
+              core.setOutput('issue_number', String(issues[0].number));
+            }
+
+      - name: Create or update failure issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const sha = '${{ steps.gather.outputs.sha }}';
+            const branch = '${{ steps.gather.outputs.branch }}';
+            const runUrl = '${{ steps.gather.outputs.run_url }}';
+            const actor = '${{ steps.gather.outputs.actor }}';
+            const failedJobs = '${{ steps.gather.outputs.failed_jobs }}';
+            const runId = '${{ steps.gather.outputs.run_id }}';
+
+            const title = `🔥 Lovable CI failure: ${failedJobs}`;
+            const body = [
+              `## CI Failure on \`${branch}\``,
+              '',
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| Commit | \`${sha}\` |`,
+              `| Pushed by | @${actor} |`,
+              `| Failed jobs | ${failedJobs} |`,
+              `| CI run | [View logs](${runUrl}) |`,
+              '',
+              '### Root cause',
+              '',
+              'This failure was likely introduced by a Lovable (gpt-engineer-app) bot push that bypassed local pre-push hooks.',
+              '',
+              '### Action required',
+              '',
+              '1. Check the CI logs above',
+              '2. Fix the failure locally and push',
+              '3. Close this issue',
+            ].join('\n');
+
+            const labels = ['ci-failure-lovable'];
+
+            if ('${{ steps.dedup.outputs.has_open }}' === 'true') {
+              const num = Number('${{ steps.dedup.outputs.issue_number }}');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: num,
+                body: [
+                  `## New failure on \`${sha}\``,
+                  '',
+                  `Failed jobs: ${failedJobs}`,
+                  `[CI run](${runUrl})`,
+                ].join('\n'),
+              });
+              core.info(`Commented on existing issue #${num}`);
+            } else {
+              const { data: issue } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels,
+              });
+              core.info(`Created issue #${issue.number}`);
+            }

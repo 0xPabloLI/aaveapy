@@ -35,6 +35,8 @@ export function convertWalletPositionsToEntries(
         hidden: false,
         isOrphan: wp.isOrphan,
         restrictedStatus: null,
+        ...(reserve?.hubName != null && { hubName: reserve.hubName }),
+        ...(reserve?.hubId != null && { hubId: reserve.hubId }),
       }
     }
     const source = walletSourceToPositionSource(wp.source)
