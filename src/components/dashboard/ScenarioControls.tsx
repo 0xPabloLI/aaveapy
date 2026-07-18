@@ -259,6 +259,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     return (
       <div className="relative rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
+          <div className="py-2 md:py-0">
           <SegmentedToggle
             options={[
               { value: 'usd', label: 'USD' },
@@ -270,7 +271,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             activeTextClassName={segmentedActiveTextClass}
             className="shrink-0 self-stretch"
           />
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
+          </div>
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 py-1">
             <ScenarioInputField
               side="supply"
               displayValue={supplyInput.displayValue}
@@ -301,7 +303,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               type="button"
               onClick={() => setInternalMobileNetOpen((prev) => !prev)}
               className={cn(
-                'shrink-0 inline-flex h-[var(--ds-control-h)] w-[var(--ds-control-h)] items-center justify-center text-muted-foreground/65 transition-colors',
+                'shrink-0 inline-flex h-[var(--ds-control-h)] w-[var(--ds-control-h)] min-h-[44px] min-w-[44px] items-center justify-center text-muted-foreground/65 transition-colors',
                 mobileNetOpen
                   ? 'text-foreground'
                   : 'hover:text-foreground/85',

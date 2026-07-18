@@ -39,7 +39,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
     <label
       data-testid="portfolio-mode-toggle"
       className={cn(
-        'flex cursor-pointer select-none items-center gap-1.5',
+        'flex cursor-pointer select-none items-center gap-1.5 min-h-[44px]',
         isMobile && !isPortfolio && 'flex-col gap-0.5',
       )}
       onMouseEnter={handlePrefetch}
