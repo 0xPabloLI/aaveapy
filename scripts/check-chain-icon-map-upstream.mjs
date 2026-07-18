@@ -4,6 +4,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchWithTimeout, countChar } from './lib/fetch-utils.mjs';
+import { discoverMainnetChainIds } from './lib/chain-utils.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_NETWORKS_CONFIG_URL =
@@ -135,20 +136,7 @@ async function loadPendingIconBases() {
   return new Set(data.map((x) => String(x).toLowerCase()));
 }
 
-const REGISTRY_PATH = path.join(ROOT, 'src/lib/chainRegistry.ts');
 
-async function loadRegistryChainIds() {
-  const content = await readFile(REGISTRY_PATH, 'utf8');
-  const moduleNames = [...content.matchAll(/abModule:\s+(AaveV\d[A-Za-z]+)/g)].map(m => m[1]);
-  const uniqueNames = [...new Set(moduleNames)];
-  const ab = await import('@aave-dao/aave-address-book');
-  const ids = new Set();
-  for (const name of uniqueNames) {
-    const chainId = ab[name]?.CHAIN_ID;
-    if (typeof chainId === 'number') ids.add(chainId);
-  }
-  return ids;
-}
 
 async function main() {
   const [upstreamContent, localContent, pendingBases] = await Promise.all([
@@ -214,7 +202,7 @@ async function main() {
   console.log('On-disk network icons (or pending allowlist) cover all mapped bases.');
 
   // Cross-check: chainRegistry chainIds ↔ chainIconMap chainIds
-  const registryIds = await loadRegistryChainIds();
+  const registryIds = await discoverMainnetChainIds();
   const iconMapIds = new Set(localMap.keys());
   const inRegistryNotIcon = [...registryIds].filter(id => !iconMapIds.has(id));
   const inIconNotRegistry = [...iconMapIds].filter(id => !registryIds.has(id));
