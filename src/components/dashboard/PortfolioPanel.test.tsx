@@ -505,8 +505,8 @@ describe('PortfolioPanel', () => {
         // Must NOT use min-h-[44px] or min-w-[44px] — those overflow fixed-height header
         expect(cls).not.toContain('min-h-[44px]');
         expect(cls).not.toContain('min-w-[44px]');
-        // Must use touch-target-expand for 44px touch target via ::before
-        expect(cls).toContain('touch-target-expand');
+        // Must use touch-target-expand-y for vertical-only touch expansion (no horizontal overlap)
+        expect(cls).toContain('touch-target-expand-y');
       }
     });
   });

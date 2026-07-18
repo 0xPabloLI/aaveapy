@@ -1015,13 +1015,25 @@
 
 /* Touch target expansion — Pattern C: ::before pseudo-element.
  * Expands clickable area without changing visual element height.
- * Usage: add `relative touch-target-expand` to elements that need
- * larger touch target than their visual size (chips, tabs, switches).
+ *
+ * .touch-target-expand:四面扩展 8px。用于独立元素(chip、switch、tab)，
+ *   相邻元素间距足够大，不会重叠。
+ *
+ * .touch-target-expand-y:只垂直扩展，水平不扩展。用于行内紧密排列的
+ *   按钮(header bar 图标行)，避免相邻 ::before 重叠导致误触。
+ *
  * See docs/design/mobile-touch-target-optimization.md §2.2 Pattern C.
  */
 .touch-target-expand::before {
   content: '';
   position: absolute;
   inset: -8px;
+  pointer-events: auto;
+}
+
+.touch-target-expand-y::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
   pointer-events: auto;
 }
