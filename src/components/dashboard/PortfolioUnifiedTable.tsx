@@ -46,9 +46,7 @@ import { memo } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatReserveSizeUsd, formatSignedReserveSizeUsd } from '@/lib/formatters';
-import { TokenIcon } from '@/components/primitives/TokenIcon';
-import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
+import ReserveIdentity from '@/components/primitives/ReserveIdentity';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type {
   PortfolioReserveEntry,
@@ -201,10 +199,6 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
             const isHidden = entry.hidden;
             const isRestricted = entry.restrictedStatus != null;
-            const chainSrc = getChainIconSrc(entry.chainId);
-            const marketLabel = getMarketChipLabel(entry.marketName, entry.chainName);
-            const showV4 = isV4Market(entry.marketName);
-            const hubChipClass = getHubChipClass(showV4);
 
             const disabledNotice = reserve ? {
               supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
@@ -263,21 +257,15 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                     >
                       {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-2.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-2.5" strokeWidth={2.5} aria-hidden />}
                     </button>
-                    <TokenIcon symbol={entry.tokenSymbol} size={14} />
-                    <div className="flex flex-col min-w-0 leading-tight">
-                      <span className={cn('ds-text-11 font-semibold truncate', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
-                        {entry.tokenSymbol}
-                      </span>
-                      <span className="ds-text-9 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
-                        {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-2 shrink-0 opacity-70" />}
-                        <span className="truncate">{marketLabel}</span>
-                        {entry.hubName && (
-                          <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${entry.hubName}`}>
-                            <span className="truncate">{entry.hubName}</span>
-                          </span>
-                        )}
-                      </span>
-                    </div>
+                    <ReserveIdentity
+                      tokenSymbol={entry.tokenSymbol}
+                      chainId={entry.chainId}
+                      chainName={entry.chainName}
+                      marketName={entry.marketName}
+                      hubName={entry.hubName}
+                      variant="stacked"
+                      disabled={isHidden}
+                    />
                   </div>
                 </td>
 

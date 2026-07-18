@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel } from '@/lib/marketLabels';
+import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import type {
   PortfolioReserveEntry,
   PortfolioPositionResult,
@@ -226,6 +226,14 @@ function MobileCard({
         <span className="ds-text-10 text-muted-foreground/80 inline-flex items-center gap-1 min-w-0 ml-auto rounded-full border border-border/50 bg-muted/40 px-2 py-0.5">
           {chainSrc && <img src={chainSrc} alt={entry.chainName} className="size-3 shrink-0 opacity-90" />}
           <span className="truncate font-medium">{marketLabel}</span>
+          {entry.hubName != null && (
+            <>
+              <span aria-hidden className="h-2.5 w-px bg-border/60 shrink-0" />
+              <span className={cn('shrink-0 truncate', getHubChipClass(isV4Market(entry.marketName)))} title={`Hub: ${entry.hubName}`}>
+                {entry.hubName}
+              </span>
+            </>
+          )}
         </span>
       </div>
 
