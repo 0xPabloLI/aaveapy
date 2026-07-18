@@ -46,9 +46,12 @@ const ReserveIdentity = memo(function ReserveIdentity({
             {chainSrc && <img src={chainSrc} alt={chainName} className="size-2 shrink-0 opacity-70" />}
             <span className="truncate">{marketLabel}</span>
             {hubName != null && (
-              <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${hubName}`}>
-                <span className="truncate">{hubName}</span>
-              </span>
+              <>
+                <span aria-hidden className="h-2 w-px bg-border/60 shrink-0" />
+                <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${hubName}`}>
+                  <span className="truncate">{hubName}</span>
+                </span>
+              </>
             )}
           </span>
         </div>
