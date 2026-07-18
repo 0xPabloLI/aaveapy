@@ -340,7 +340,7 @@ export function CompactInput({
     : (sideData.inputMode === 'usd' ? '10K' : '100');
 
   return (
-    <div className="flex items-center gap-1 md:gap-0.5">
+    <div className="flex items-center gap-1 md:gap-0.5 py-1 md:py-0">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -349,7 +349,7 @@ export function CompactInput({
             onClick={handleToggleInputMode}
             className={cn(
               'shrink-0 rounded border border-border/40 bg-muted/60 ds-text-9 font-semibold text-muted-foreground transition-colors active:bg-muted active:text-foreground md:hover:bg-muted md:hover:text-foreground flex items-center justify-center leading-none',
-              'h-11 w-11 px-1 md:h-5 md:w-auto md:px-1',
+              'h-9 w-9 px-1 min-h-[44px] min-w-[44px] md:h-5 md:w-auto md:px-1 md:min-h-0 md:min-w-0',
               tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed',
             )}
             aria-label={`Switch to ${sideData.inputMode === 'usd' ? 'token' : 'USD'} input`}
@@ -384,7 +384,7 @@ export function CompactInput({
           inputMode="decimal"
           placeholder={placeholder}
           className={cn(
-            'h-11 md:h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
+            'h-9 md:h-5 w-full min-w-[2rem] rounded ds-text-11 tabular-nums placeholder:text-muted-foreground/40 placeholder:italic',
             hasValue ? 'pl-1.5 pr-4' : 'pl-1.5 pr-1.5',
             cnDsInputSurface(hasValue, inputVariant),
           )}
