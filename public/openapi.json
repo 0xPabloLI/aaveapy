@@ -178,7 +178,7 @@
       },
       "MarketsResponse": {
         "$schema": "http://json-schema.org/draft-07/schema#",
-        "$ref": "#/components/schemas/MarketsResponse",
+        "$ref": "#/definitions/MarketsResponse",
         "definitions": {
           "MarketsResponse": {
             "type": "object",
@@ -232,7 +232,7 @@
               "reserves": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/MarketWithSpread"
+                  "$ref": "#/definitions/MarketWithSpread"
                 }
               }
             },
@@ -261,43 +261,43 @@
               "meritSupplys": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+                  "$ref": "#/definitions/ApiMeritCampaignGroup"
                 }
               },
               "meritBorrows": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+                  "$ref": "#/definitions/ApiMeritCampaignGroup"
                 }
               },
               "merklSupplys": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                  "$ref": "#/definitions/ApiMerklOpportunityGroup"
                 }
               },
               "merklBorrows": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                  "$ref": "#/definitions/ApiMerklOpportunityGroup"
                 }
               },
               "merklHolds": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                  "$ref": "#/definitions/ApiMerklOpportunityGroup"
                 }
               },
               "brevisSupplys": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+                  "$ref": "#/definitions/ApiBrevisCampaignItem"
                 }
               },
               "brevisBorrows": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+                  "$ref": "#/definitions/ApiBrevisCampaignItem"
                 }
               },
               "reserveId": {
@@ -434,7 +434,7 @@
             "description": "GET /api/markets 响应形状；收益率类数字为百分数（序列化层由比例 ×100）。 从 RuntimeReserveData 派生：覆写 nullable 漂移字段 + 激励子类型截断。"
           },
           "ApiMeritCampaignGroup": {
-            "$ref": "#/components/schemas/CampaignGroup<ApiMeritCampaignBreakdown>"
+            "$ref": "#/definitions/CampaignGroup%3CApiMeritCampaignBreakdown%3E"
           },
           "CampaignGroup<ApiMeritCampaignBreakdown>": {
             "type": "object",
@@ -451,7 +451,7 @@
               "breakdowns": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMeritCampaignBreakdown"
+                  "$ref": "#/definitions/ApiMeritCampaignBreakdown"
                 }
               },
               "netPositionConstraint": {
@@ -510,7 +510,7 @@
                 "type": "string"
               },
               "campaignType": {
-                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+                "$ref": "#/definitions/ForecastCampaignTypeLite"
               },
               "positionCapNative": {
                 "type": "string",
@@ -579,7 +579,7 @@
               "breakdowns": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiMerklBreakdown"
+                  "$ref": "#/definitions/ApiMerklBreakdown"
                 }
               },
               "netPositionConstraint": {
@@ -622,7 +622,7 @@
             ]
           },
           "ApiMerklBreakdown": {
-            "$ref": "#/components/schemas/MerklCampaignBreakdown"
+            "$ref": "#/definitions/MerklCampaignBreakdown"
           },
           "MerklCampaignBreakdown": {
             "type": "object",
@@ -672,7 +672,7 @@
                 "type": "string"
               },
               "campaignType": {
-                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+                "$ref": "#/definitions/ForecastCampaignTypeLite"
               },
               "totalBudget": {
                 "type": "number"
@@ -727,7 +727,7 @@
             "additionalProperties": false
           },
           "ApiBrevisCampaignItem": {
-            "$ref": "#/components/schemas/CampaignGroup<ApiBrevisBreakdown>"
+            "$ref": "#/definitions/CampaignGroup%3CApiBrevisBreakdown%3E"
           },
           "CampaignGroup<ApiBrevisBreakdown>": {
             "type": "object",
@@ -744,7 +744,7 @@
               "breakdowns": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ApiBrevisBreakdown"
+                  "$ref": "#/definitions/ApiBrevisBreakdown"
                 }
               },
               "netPositionConstraint": {
@@ -803,7 +803,7 @@
                 "type": "string"
               },
               "campaignType": {
-                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+                "$ref": "#/definitions/ForecastCampaignTypeLite"
               },
               "aprCap": {
                 "type": "number"
@@ -859,43 +859,43 @@
           "meritSupplys": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+              "$ref": "#/definitions/ApiMeritCampaignGroup"
             }
           },
           "meritBorrows": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+              "$ref": "#/definitions/ApiMeritCampaignGroup"
             }
           },
           "merklSupplys": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+              "$ref": "#/definitions/ApiMerklOpportunityGroup"
             }
           },
           "merklBorrows": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+              "$ref": "#/definitions/ApiMerklOpportunityGroup"
             }
           },
           "merklHolds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+              "$ref": "#/definitions/ApiMerklOpportunityGroup"
             }
           },
           "brevisSupplys": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+              "$ref": "#/definitions/ApiBrevisCampaignItem"
             }
           },
           "brevisBorrows": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+              "$ref": "#/definitions/ApiBrevisCampaignItem"
             }
           },
           "reserveId": {
@@ -1032,6 +1032,9 @@
         "description": "GET /api/markets 响应形状；收益率类数字为百分数（序列化层由比例 ×100）。 从 RuntimeReserveData 派生：覆写 nullable 漂移字段 + 激励子类型截断。"
       },
       "ApiMeritCampaignGroup": {
+        "$ref": "#/definitions/CampaignGroup%3CApiMeritCampaignBreakdown%3E"
+      },
+      "CampaignGroup<ApiMeritCampaignBreakdown>": {
         "type": "object",
         "properties": {
           "link": {
@@ -1046,7 +1049,7 @@
           "breakdowns": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMeritCampaignBreakdown"
+              "$ref": "#/definitions/ApiMeritCampaignBreakdown"
             }
           },
           "netPositionConstraint": {
@@ -1105,7 +1108,7 @@
             "type": "string"
           },
           "campaignType": {
-            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+            "$ref": "#/definitions/ForecastCampaignTypeLite"
           },
           "positionCapNative": {
             "type": "string",
@@ -1174,7 +1177,7 @@
           "breakdowns": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiMerklBreakdown"
+              "$ref": "#/definitions/ApiMerklBreakdown"
             }
           },
           "netPositionConstraint": {
@@ -1217,7 +1220,7 @@
         ]
       },
       "ApiMerklBreakdown": {
-        "$ref": "#/components/schemas/MerklCampaignBreakdown"
+        "$ref": "#/definitions/MerklCampaignBreakdown"
       },
       "MerklCampaignBreakdown": {
         "type": "object",
@@ -1267,7 +1270,7 @@
             "type": "string"
           },
           "campaignType": {
-            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+            "$ref": "#/definitions/ForecastCampaignTypeLite"
           },
           "totalBudget": {
             "type": "number"
@@ -1322,6 +1325,9 @@
         "additionalProperties": false
       },
       "ApiBrevisCampaignItem": {
+        "$ref": "#/definitions/CampaignGroup%3CApiBrevisBreakdown%3E"
+      },
+      "CampaignGroup<ApiBrevisBreakdown>": {
         "type": "object",
         "properties": {
           "link": {
@@ -1336,7 +1342,7 @@
           "breakdowns": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiBrevisBreakdown"
+              "$ref": "#/definitions/ApiBrevisBreakdown"
             }
           },
           "netPositionConstraint": {
@@ -1395,7 +1401,7 @@
             "type": "string"
           },
           "campaignType": {
-            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+            "$ref": "#/definitions/ForecastCampaignTypeLite"
           },
           "aprCap": {
             "type": "number"
@@ -1593,7 +1599,7 @@
                     "borrowHookProtocols": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/MerklBorrowHookProtocol"
+                        "$ref": "#/definitions/MerklBorrowHookProtocol"
                       }
                     }
                   },
@@ -1616,7 +1622,7 @@
             "additionalProperties": false
           },
           "errors": {
-            "$ref": "#/components/schemas/SideDataSubSourceErrors"
+            "$ref": "#/definitions/SideDataSubSourceErrors"
           }
         },
         "required": [
