@@ -26,225 +26,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "snapshot": {
-                      "type": "object",
-                      "properties": {
-                        "lastUpdated": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "staleTimeMs": {
-                          "type": "number"
-                        },
-                        "schemaFingerprint": {
-                          "type": "string"
-                        },
-                        "deficitFallbackReserveIds": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "v4FallbackReserveIds": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "stale": {
-                          "type": "boolean"
-                        },
-                        "staleAgeMs": {
-                          "type": "number",
-                          "nullable": true
-                        }
-                      },
-                      "required": [
-                        "lastUpdated"
-                      ]
-                    },
-                    "reserves": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "reserveId": {
-                            "type": "string"
-                          },
-                          "marketName": {
-                            "type": "string"
-                          },
-                          "chainName": {
-                            "type": "string"
-                          },
-                          "chainId": {
-                            "type": "number"
-                          },
-                          "tokenName": {
-                            "type": "string"
-                          },
-                          "tokenSymbol": {
-                            "type": "string"
-                          },
-                          "tokenAddress": {
-                            "type": "string"
-                          },
-                          "tokenPrice": {
-                            "type": "number"
-                          },
-                          "utilizationPct": {
-                            "type": "number"
-                          },
-                          "aTokenAddress": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "vTokenAddress": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "supplied": {
-                            "type": "string"
-                          },
-                          "borrowed": {
-                            "type": "string"
-                          },
-                          "liquidity": {
-                            "type": "string"
-                          },
-                          "supplyCap": {
-                            "type": "string"
-                          },
-                          "borrowCap": {
-                            "type": "string"
-                          },
-                          "deficit": {
-                            "type": "string"
-                          },
-                          "hubId": {
-                            "type": "string"
-                          },
-                          "hubName": {
-                            "type": "string"
-                          },
-                          "spokeId": {
-                            "type": "string"
-                          },
-                          "spokeName": {
-                            "type": "string"
-                          },
-                          "supplyDisabled": {
-                            "type": "boolean"
-                          },
-                          "borrowDisabled": {
-                            "type": "boolean"
-                          },
-                          "isFrozen": {
-                            "type": "boolean"
-                          },
-                          "isPaused": {
-                            "type": "boolean"
-                          },
-                          "isActive": {
-                            "type": "boolean",
-                            "description": "Always false when present"
-                          },
-                          "aaveProReserveId": {
-                            "type": "string"
-                          },
-                          "decimals": {
-                            "type": "number",
-                            "description": "Present when !== 18"
-                          },
-                          "supplyApy": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "borrowApy": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "protocolFee": {
-                            "type": "number"
-                          },
-                          "slopeBelowOptimal": {
-                            "type": "number"
-                          },
-                          "slopeAboveOptimal": {
-                            "type": "number"
-                          },
-                          "optimalUtilization": {
-                            "type": "number"
-                          },
-                          "baseBorrowRate": {
-                            "type": "number"
-                          },
-                          "collateralRisk": {
-                            "type": "number"
-                          },
-                          "meritSupplys": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/MeritCampaignGroup"
-                            }
-                          },
-                          "meritBorrows": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/MeritCampaignGroup"
-                            }
-                          },
-                          "merklSupplys": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/MerklOpportunityGroup"
-                            }
-                          },
-                          "merklBorrows": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/MerklOpportunityGroup"
-                            }
-                          },
-                          "merklHolds": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/MerklOpportunityGroup"
-                            }
-                          },
-                          "brevisSupplys": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/BrevisCampaignItem"
-                            }
-                          },
-                          "brevisBorrows": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/components/schemas/BrevisCampaignItem"
-                            }
-                          }
-                        },
-                        "required": [
-                          "reserveId",
-                          "marketName",
-                          "chainName",
-                          "chainId",
-                          "tokenName",
-                          "tokenSymbol",
-                          "tokenAddress"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "snapshot",
-                    "reserves"
-                  ]
+                  "$ref": "#/components/schemas/MarketsResponse"
                 }
               }
             }
@@ -311,200 +93,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "generatedAt": {
-                      "type": "string"
-                    },
-                    "partial": {
-                      "type": "boolean"
-                    },
-                    "categories": {
-                      "type": "object",
-                      "properties": {
-                        "uniqueSymbolsStablecoins": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "uniqueSymbolsEth": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "fetchedAt": {
-                          "type": "string"
-                        },
-                        "staleTimeMs": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "uniqueSymbolsStablecoins",
-                        "uniqueSymbolsEth",
-                        "fetchedAt",
-                        "staleTimeMs"
-                      ]
-                    },
-                    "fdv": {
-                      "type": "object",
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "symbol": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "fdvUsd": {
-                                "type": "number",
-                                "nullable": true
-                              }
-                            },
-                            "required": [
-                              "symbol",
-                              "fdvUsd"
-                            ]
-                          }
-                        },
-                        "fetchedAt": {
-                          "type": "string"
-                        },
-                        "staleTimeMs": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "items",
-                        "fetchedAt",
-                        "staleTimeMs"
-                      ]
-                    },
-                    "forecast": {
-                      "type": "object",
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "campaignId": {
-                                "type": "string"
-                              },
-                              "requiredDaily": {
-                                "type": "number"
-                              },
-                              "distributedSoFar": {
-                                "type": "number"
-                              },
-                              "endTimestamp": {
-                                "type": "number"
-                              }
-                            },
-                            "required": [
-                              "campaignId",
-                              "distributedSoFar",
-                              "endTimestamp"
-                            ]
-                          }
-                        },
-                        "errors": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "campaignId": {
-                                "type": "string"
-                              },
-                              "status": {
-                                "type": "number"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "campaignId",
-                              "message"
-                            ]
-                          }
-                        },
-                        "staleTimeMs": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "items",
-                        "errors",
-                        "staleTimeMs"
-                      ]
-                    },
-                    "campaignAccess": {
-                      "type": "object",
-                      "properties": {
-                        "campaigns": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "object",
-                            "properties": {
-                              "chainId": {
-                                "type": "number"
-                              },
-                              "whitelist": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "blacklist": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "borrowHookProtocols": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "protocol": {
-                                      "type": "number"
-                                    },
-                                    "borrowBytesLike": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    }
-                                  },
-                                  "required": [
-                                    "protocol",
-                                    "borrowBytesLike"
-                                  ]
-                                }
-                              }
-                            },
-                            "required": [
-                              "chainId",
-                              "whitelist",
-                              "blacklist"
-                            ]
-                          }
-                        },
-                        "updatedAt": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "campaigns",
-                        "updatedAt"
-                      ]
-                    }
-                  }
+                  "$ref": "#/components/schemas/SideDataPayload"
                 }
               }
             }
@@ -564,227 +153,6 @@
   },
   "components": {
     "schemas": {
-      "MarketsResponse": {
-        "type": "object",
-        "properties": {
-          "snapshot": {
-            "type": "object",
-            "properties": {
-              "lastUpdated": {
-                "type": "string"
-              },
-              "version": {
-                "type": "string"
-              },
-              "staleTimeMs": {
-                "type": "number"
-              },
-              "schemaFingerprint": {
-                "type": "string"
-              },
-              "deficitFallbackReserveIds": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "v4FallbackReserveIds": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "stale": {
-                "type": "boolean"
-              },
-              "staleAgeMs": {
-                "type": "number",
-                "nullable": true
-              }
-            },
-            "required": [
-              "lastUpdated"
-            ]
-          },
-          "reserves": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "reserveId": {
-                  "type": "string"
-                },
-                "marketName": {
-                  "type": "string"
-                },
-                "chainName": {
-                  "type": "string"
-                },
-                "chainId": {
-                  "type": "number"
-                },
-                "tokenName": {
-                  "type": "string"
-                },
-                "tokenSymbol": {
-                  "type": "string"
-                },
-                "tokenAddress": {
-                  "type": "string"
-                },
-                "tokenPrice": {
-                  "type": "number"
-                },
-                "utilizationPct": {
-                  "type": "number"
-                },
-                "aTokenAddress": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "vTokenAddress": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "supplied": {
-                  "type": "string"
-                },
-                "borrowed": {
-                  "type": "string"
-                },
-                "liquidity": {
-                  "type": "string"
-                },
-                "supplyCap": {
-                  "type": "string"
-                },
-                "borrowCap": {
-                  "type": "string"
-                },
-                "deficit": {
-                  "type": "string"
-                },
-                "hubId": {
-                  "type": "string"
-                },
-                "hubName": {
-                  "type": "string"
-                },
-                "spokeId": {
-                  "type": "string"
-                },
-                "spokeName": {
-                  "type": "string"
-                },
-                "supplyDisabled": {
-                  "type": "boolean"
-                },
-                "borrowDisabled": {
-                  "type": "boolean"
-                },
-                "isFrozen": {
-                  "type": "boolean"
-                },
-                "isPaused": {
-                  "type": "boolean"
-                },
-                "isActive": {
-                  "type": "boolean",
-                  "description": "Always false when present"
-                },
-                "aaveProReserveId": {
-                  "type": "string"
-                },
-                "decimals": {
-                  "type": "number",
-                  "description": "Present when !== 18"
-                },
-                "supplyApy": {
-                  "type": "number",
-                  "nullable": true
-                },
-                "borrowApy": {
-                  "type": "number",
-                  "nullable": true
-                },
-                "protocolFee": {
-                  "type": "number"
-                },
-                "slopeBelowOptimal": {
-                  "type": "number"
-                },
-                "slopeAboveOptimal": {
-                  "type": "number"
-                },
-                "optimalUtilization": {
-                  "type": "number"
-                },
-                "baseBorrowRate": {
-                  "type": "number"
-                },
-                "collateralRisk": {
-                  "type": "number"
-                },
-                "meritSupplys": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MeritCampaignGroup"
-                  }
-                },
-                "meritBorrows": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MeritCampaignGroup"
-                  }
-                },
-                "merklSupplys": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MerklOpportunityGroup"
-                  }
-                },
-                "merklBorrows": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MerklOpportunityGroup"
-                  }
-                },
-                "merklHolds": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MerklOpportunityGroup"
-                  }
-                },
-                "brevisSupplys": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BrevisCampaignItem"
-                  }
-                },
-                "brevisBorrows": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BrevisCampaignItem"
-                  }
-                }
-              },
-              "required": [
-                "reserveId",
-                "marketName",
-                "chainName",
-                "chainId",
-                "tokenName",
-                "tokenSymbol",
-                "tokenAddress"
-              ]
-            }
-          }
-        },
-        "required": [
-          "snapshot",
-          "reserves"
-        ]
-      },
       "MarketsErrorResponse": {
         "type": "object",
         "properties": {
@@ -808,205 +176,728 @@
           "message"
         ]
       },
-      "SideDataMetaResponse": {
-        "type": "object",
-        "properties": {
-          "generatedAt": {
-            "type": "string"
-          },
-          "partial": {
-            "type": "boolean"
-          },
-          "categories": {
+      "MarketsResponse": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$ref": "#/components/schemas/MarketsResponse",
+        "definitions": {
+          "MarketsResponse": {
             "type": "object",
             "properties": {
-              "uniqueSymbolsStablecoins": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "uniqueSymbolsEth": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "fetchedAt": {
-                "type": "string"
-              },
-              "staleTimeMs": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "uniqueSymbolsStablecoins",
-              "uniqueSymbolsEth",
-              "fetchedAt",
-              "staleTimeMs"
-            ]
-          },
-          "fdv": {
-            "type": "object",
-            "properties": {
-              "items": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "symbol": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "fdvUsd": {
-                      "type": "number",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "symbol",
-                    "fdvUsd"
-                  ]
-                }
-              },
-              "fetchedAt": {
-                "type": "string"
-              },
-              "staleTimeMs": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "items",
-              "fetchedAt",
-              "staleTimeMs"
-            ]
-          },
-          "forecast": {
-            "type": "object",
-            "properties": {
-              "items": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "campaignId": {
-                      "type": "string"
-                    },
-                    "requiredDaily": {
-                      "type": "number"
-                    },
-                    "distributedSoFar": {
-                      "type": "number"
-                    },
-                    "endTimestamp": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "campaignId",
-                    "distributedSoFar",
-                    "endTimestamp"
-                  ]
-                }
-              },
-              "errors": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "campaignId": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "campaignId",
-                    "message"
-                  ]
-                }
-              },
-              "staleTimeMs": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "items",
-              "errors",
-              "staleTimeMs"
-            ]
-          },
-          "campaignAccess": {
-            "type": "object",
-            "properties": {
-              "campaigns": {
+              "snapshot": {
                 "type": "object",
-                "additionalProperties": {
-                  "type": "object",
-                  "properties": {
-                    "chainId": {
-                      "type": "number"
-                    },
-                    "whitelist": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "blacklist": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "borrowHookProtocols": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "protocol": {
-                            "type": "number"
-                          },
-                          "borrowBytesLike": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "required": [
-                          "protocol",
-                          "borrowBytesLike"
-                        ]
-                      }
+                "properties": {
+                  "lastUpdated": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string",
+                    "const": "snapshot-v3"
+                  },
+                  "staleTimeMs": {
+                    "type": "number"
+                  },
+                  "schemaFingerprint": {
+                    "type": "string"
+                  },
+                  "deficitFallbackReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   },
-                  "required": [
-                    "chainId",
-                    "whitelist",
-                    "blacklist"
-                  ]
+                  "v4FallbackReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "stale": {
+                    "type": "boolean"
+                  },
+                  "staleAgeMs": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "lastUpdated",
+                  "version",
+                  "staleTimeMs",
+                  "deficitFallbackReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              "reserves": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketWithSpread"
+                }
+              }
+            },
+            "required": [
+              "snapshot",
+              "reserves"
+            ],
+            "additionalProperties": false
+          },
+          "MarketWithSpread": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "supplyApy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "borrowApy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "meritSupplys": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMeritCampaignGroup"
                 }
               },
-              "updatedAt": {
+              "meritBorrows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+                }
+              },
+              "merklSupplys": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                }
+              },
+              "merklBorrows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                }
+              },
+              "merklHolds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+                }
+              },
+              "brevisSupplys": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+                }
+              },
+              "brevisBorrows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+                }
+              },
+              "reserveId": {
+                "type": "string"
+              },
+              "marketName": {
+                "type": "string"
+              },
+              "chainName": {
+                "type": "string"
+              },
+              "chainId": {
+                "type": "number"
+              },
+              "tokenName": {
+                "type": "string"
+              },
+              "tokenSymbol": {
+                "type": "string"
+              },
+              "tokenAddress": {
+                "type": "string"
+              },
+              "tokenPrice": {
+                "type": "number"
+              },
+              "utilizationPct": {
+                "type": "number"
+              },
+              "aTokenAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vTokenAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "supplyDisabled": {
+                "type": "boolean"
+              },
+              "isFrozen": {
+                "type": "boolean"
+              },
+              "isPaused": {
+                "type": "boolean"
+              },
+              "isActive": {
+                "type": "boolean",
+                "const": false
+              },
+              "borrowDisabled": {
+                "type": "boolean"
+              },
+              "decimals": {
+                "type": "number"
+              },
+              "supplyCap": {
+                "type": "string"
+              },
+              "borrowCap": {
+                "type": "string"
+              },
+              "deficit": {
+                "type": "string"
+              },
+              "supplied": {
+                "type": "string"
+              },
+              "borrowed": {
+                "type": "string"
+              },
+              "hubBorrowed": {
+                "type": "string"
+              },
+              "hubSupplied": {
+                "type": "string"
+              },
+              "liquidity": {
+                "type": "string"
+              },
+              "protocolFee": {
+                "type": "number"
+              },
+              "slopeBelowOptimal": {
+                "type": "number"
+              },
+              "slopeAboveOptimal": {
+                "type": "number"
+              },
+              "optimalUtilization": {
+                "type": "number"
+              },
+              "baseBorrowRate": {
+                "type": "number"
+              },
+              "aaveProReserveId": {
+                "type": "string"
+              },
+              "hubId": {
+                "type": "string"
+              },
+              "hubName": {
+                "type": "string"
+              },
+              "hubAddress": {
+                "type": "string"
+              },
+              "spokeId": {
+                "type": "string"
+              },
+              "spokeName": {
+                "type": "string"
+              },
+              "spokeAddress": {
+                "type": "string"
+              },
+              "collateralRisk": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "chainId",
+              "chainName",
+              "marketName",
+              "reserveId",
+              "tokenAddress",
+              "tokenName",
+              "tokenSymbol"
+            ],
+            "description": "GET /api/markets 响应形状；收益率类数字为百分数（序列化层由比例 ×100）。 从 RuntimeReserveData 派生：覆写 nullable 漂移字段 + 激励子类型截断。"
+          },
+          "ApiMeritCampaignGroup": {
+            "$ref": "#/components/schemas/CampaignGroup<ApiMeritCampaignBreakdown>"
+          },
+          "CampaignGroup<ApiMeritCampaignBreakdown>": {
+            "type": "object",
+            "properties": {
+              "link": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "breakdowns": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMeritCampaignBreakdown"
+                }
+              },
+              "netPositionConstraint": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "offsetReserveIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "borrowBlacklist": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "link",
+              "breakdowns"
+            ],
+            "additionalProperties": false
+          },
+          "ApiMeritCampaignBreakdown": {
+            "type": "object",
+            "properties": {
+              "campaignApr": {
+                "type": "number"
+              },
+              "campaignStartedAt": {
+                "type": "string"
+              },
+              "campaignEndedAt": {
+                "type": "string"
+              },
+              "campaignId": {
+                "type": "string"
+              },
+              "campaignType": {
+                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+              },
+              "positionCapNative": {
+                "type": "string",
+                "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
+              },
+              "positionCapUsd": {
+                "type": "number",
+                "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
+              },
+              "isCombineCap": {
+                "type": "boolean",
+                "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
+              },
+              "message": {
+                "type": "string"
+              },
+              "aprCap": {
+                "type": "number"
+              },
+              "rewardTokenSymbol": {
+                "type": "string"
+              },
+              "totalBudget": {
+                "type": "number"
+              },
+              "latestTvl": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "campaignApr",
+              "campaignStartedAt",
+              "campaignEndedAt",
+              "campaignId"
+            ],
+            "additionalProperties": false
+          },
+          "ForecastCampaignTypeLite": {
+            "type": "string",
+            "enum": [
+              "MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
+              "DUTCH_AUCTION",
+              "FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
+              "TARGET_TOTAL_APR",
+              "FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE",
+              "FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT",
+              "MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT"
+            ]
+          },
+          "ApiMerklOpportunityGroup": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "opportunityId": {
+                "type": "string"
+              },
+              "link": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "breakdowns": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiMerklBreakdown"
+                }
+              },
+              "netPositionConstraint": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "offsetReserveIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "borrowBlacklist": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "breakdowns",
+              "link"
+            ]
+          },
+          "ApiMerklBreakdown": {
+            "$ref": "#/components/schemas/MerklCampaignBreakdown"
+          },
+          "MerklCampaignBreakdown": {
+            "type": "object",
+            "properties": {
+              "campaignApr": {
+                "type": "number"
+              },
+              "campaignStartedAt": {
+                "type": "string"
+              },
+              "campaignEndedAt": {
+                "type": "string"
+              },
+              "campaignId": {
+                "type": "string",
+                "description": "Merkl Campaign Hash ID (hex, e.g. 0x0cf07a3891...). Used as Map key and in Merkl web UI URLs."
+              },
+              "positionCapNative": {
+                "type": "string",
+                "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
+              },
+              "positionCapUsd": {
+                "type": "number",
+                "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
+              },
+              "isCombineCap": {
+                "type": "boolean",
+                "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
+              },
+              "databaseId": {
+                "type": "string",
+                "description": "Merkl Campaign Database ID (numeric). Used as input to /v4/campaigns/{databaseId} API endpoints (metrics, details)."
+              },
+              "whitelistOnly": {
+                "type": "boolean"
+              },
+              "pointsPerThousandUsd": {
+                "type": "number"
+              },
+              "rewardTokenSymbol": {
+                "type": "string"
+              },
+              "rewardTokenIconUrl": {
+                "type": "string"
+              },
+              "rewardTokenId": {
+                "type": "string"
+              },
+              "campaignType": {
+                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+              },
+              "totalBudget": {
+                "type": "number"
+              },
+              "aprCap": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "latestTvl": {
+                "type": "number"
+              },
+              "plannedDaily": {
+                "type": "number"
+              },
+              "budgetBoundMode": {
+                "type": "string"
+              },
+              "parentCampaignId": {
+                "type": "string",
+                "description": "V4 Spoke campaign's parent Hub campaign ID (for Hub/Spoke deduplication; stripped from API payload)."
+              },
+              "lastEndedCampaign": {
+                "type": "object",
+                "properties": {
+                  "startedAt": {
+                    "type": "string"
+                  },
+                  "endedAt": {
+                    "type": "string"
+                  },
+                  "campaignId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "startedAt",
+                  "endedAt",
+                  "campaignId"
+                ],
+                "additionalProperties": false,
+                "description": "Most recently ended campaign embedded into this live breakdown (matched by rewardTokenSymbol)."
+              }
+            },
+            "required": [
+              "campaignApr",
+              "campaignEndedAt",
+              "campaignId",
+              "campaignStartedAt"
+            ],
+            "additionalProperties": false
+          },
+          "ApiBrevisCampaignItem": {
+            "$ref": "#/components/schemas/CampaignGroup<ApiBrevisBreakdown>"
+          },
+          "CampaignGroup<ApiBrevisBreakdown>": {
+            "type": "object",
+            "properties": {
+              "link": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "breakdowns": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiBrevisBreakdown"
+                }
+              },
+              "netPositionConstraint": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "offsetReserveIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "borrowBlacklist": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "link",
+              "breakdowns"
+            ],
+            "additionalProperties": false
+          },
+          "ApiBrevisBreakdown": {
+            "type": "object",
+            "properties": {
+              "campaignApr": {
+                "type": "number"
+              },
+              "campaignStartedAt": {
+                "type": "string"
+              },
+              "campaignEndedAt": {
+                "type": "string"
+              },
+              "campaignId": {
+                "type": "string"
+              },
+              "campaignType": {
+                "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+              },
+              "aprCap": {
+                "type": "number"
+              },
+              "totalBudget": {
+                "type": "number"
+              },
+              "latestTvl": {
+                "type": "number"
+              },
+              "positionCapNative": {
+                "type": "string",
+                "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
+              },
+              "positionCapUsd": {
+                "type": "number",
+                "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
+              },
+              "isCombineCap": {
+                "type": "boolean",
+                "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
+              },
+              "rewardTokenSymbol": {
                 "type": "string"
               }
             },
             "required": [
-              "campaigns",
-              "updatedAt"
-            ]
+              "campaignApr",
+              "campaignStartedAt",
+              "campaignEndedAt",
+              "campaignId"
+            ],
+            "additionalProperties": false
           }
         }
       },
-      "Reserve": {
+      "MarketWithSpread": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
+          "supplyApy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "borrowApy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "meritSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+            }
+          },
+          "meritBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMeritCampaignGroup"
+            }
+          },
+          "merklSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+            }
+          },
+          "merklBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+            }
+          },
+          "merklHolds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMerklOpportunityGroup"
+            }
+          },
+          "brevisSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+            }
+          },
+          "brevisBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiBrevisCampaignItem"
+            }
+          },
           "reserveId": {
             "type": "string"
           },
@@ -1035,47 +926,18 @@
             "type": "number"
           },
           "aTokenAddress": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "vTokenAddress": {
-            "type": "string",
-            "nullable": true
-          },
-          "supplied": {
-            "type": "string"
-          },
-          "borrowed": {
-            "type": "string"
-          },
-          "liquidity": {
-            "type": "string"
-          },
-          "supplyCap": {
-            "type": "string"
-          },
-          "borrowCap": {
-            "type": "string"
-          },
-          "deficit": {
-            "type": "string"
-          },
-          "hubId": {
-            "type": "string"
-          },
-          "hubName": {
-            "type": "string"
-          },
-          "spokeId": {
-            "type": "string"
-          },
-          "spokeName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "supplyDisabled": {
-            "type": "boolean"
-          },
-          "borrowDisabled": {
             "type": "boolean"
           },
           "isFrozen": {
@@ -1086,22 +948,37 @@
           },
           "isActive": {
             "type": "boolean",
-            "description": "Always false when present"
+            "const": false
           },
-          "aaveProReserveId": {
-            "type": "string"
+          "borrowDisabled": {
+            "type": "boolean"
           },
           "decimals": {
-            "type": "number",
-            "description": "Present when !== 18"
+            "type": "number"
           },
-          "supplyApy": {
-            "type": "number",
-            "nullable": true
+          "supplyCap": {
+            "type": "string"
           },
-          "borrowApy": {
-            "type": "number",
-            "nullable": true
+          "borrowCap": {
+            "type": "string"
+          },
+          "deficit": {
+            "type": "string"
+          },
+          "supplied": {
+            "type": "string"
+          },
+          "borrowed": {
+            "type": "string"
+          },
+          "hubBorrowed": {
+            "type": "string"
+          },
+          "hubSupplied": {
+            "type": "string"
+          },
+          "liquidity": {
+            "type": "string"
           },
           "protocolFee": {
             "type": "number"
@@ -1118,63 +995,101 @@
           "baseBorrowRate": {
             "type": "number"
           },
+          "aaveProReserveId": {
+            "type": "string"
+          },
+          "hubId": {
+            "type": "string"
+          },
+          "hubName": {
+            "type": "string"
+          },
+          "hubAddress": {
+            "type": "string"
+          },
+          "spokeId": {
+            "type": "string"
+          },
+          "spokeName": {
+            "type": "string"
+          },
+          "spokeAddress": {
+            "type": "string"
+          },
           "collateralRisk": {
             "type": "number"
-          },
-          "meritSupplys": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MeritCampaignGroup"
-            }
-          },
-          "meritBorrows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MeritCampaignGroup"
-            }
-          },
-          "merklSupplys": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MerklOpportunityGroup"
-            }
-          },
-          "merklBorrows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MerklOpportunityGroup"
-            }
-          },
-          "merklHolds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MerklOpportunityGroup"
-            }
-          },
-          "brevisSupplys": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BrevisCampaignItem"
-            }
-          },
-          "brevisBorrows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BrevisCampaignItem"
-            }
           }
         },
         "required": [
-          "reserveId",
-          "marketName",
-          "chainName",
           "chainId",
+          "chainName",
+          "marketName",
+          "reserveId",
+          "tokenAddress",
           "tokenName",
-          "tokenSymbol",
-          "tokenAddress"
-        ]
+          "tokenSymbol"
+        ],
+        "description": "GET /api/markets 响应形状；收益率类数字为百分数（序列化层由比例 ×100）。 从 RuntimeReserveData 派生：覆写 nullable 漂移字段 + 激励子类型截断。"
       },
-      "MeritCampaignBreakdown": {
+      "ApiMeritCampaignGroup": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiMeritCampaignBreakdown"
+            }
+          },
+          "netPositionConstraint": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "offsetReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "borrowBlacklist": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "link",
+          "breakdowns"
+        ],
+        "additionalProperties": false
+      },
+      "ApiMeritCampaignBreakdown": {
         "type": "object",
         "properties": {
           "campaignApr": {
@@ -1190,19 +1105,19 @@
             "type": "string"
           },
           "campaignType": {
-            "type": "string"
+            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
           },
           "positionCapNative": {
             "type": "string",
-            "description": "Per-user position cap as native raw amount string (Merkl/Brevis). Mutually exclusive with positionCapUsd."
+            "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
           },
           "positionCapUsd": {
             "type": "number",
-            "description": "Per-user position cap in USD (Merit). Mutually exclusive with positionCapNative."
+            "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
           },
           "isCombineCap": {
             "type": "boolean",
-            "description": "Whether the position cap is shared across supply+borrow sides"
+            "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
           },
           "message": {
             "type": "string"
@@ -1225,11 +1140,28 @@
           "campaignStartedAt",
           "campaignEndedAt",
           "campaignId"
+        ],
+        "additionalProperties": false
+      },
+      "ForecastCampaignTypeLite": {
+        "type": "string",
+        "enum": [
+          "MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
+          "DUTCH_AUCTION",
+          "FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
+          "TARGET_TOTAL_APR",
+          "FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE",
+          "FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT",
+          "MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT"
         ]
       },
-      "MeritCampaignGroup": {
+      "ApiMerklOpportunityGroup": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
+          "opportunityId": {
+            "type": "string"
+          },
           "link": {
             "type": "string"
           },
@@ -1242,63 +1174,50 @@
           "breakdowns": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "campaignApr": {
-                  "type": "number"
-                },
-                "campaignStartedAt": {
-                  "type": "string"
-                },
-                "campaignEndedAt": {
-                  "type": "string"
-                },
-                "campaignId": {
-                  "type": "string"
-                },
-                "campaignType": {
-                  "type": "string"
-                },
-                "positionCapNative": {
-                  "type": "string",
-                  "description": "Per-user position cap as native raw amount string (Merkl/Brevis). Mutually exclusive with positionCapUsd."
-                },
-                "positionCapUsd": {
-                  "type": "number",
-                  "description": "Per-user position cap in USD (Merit). Mutually exclusive with positionCapNative."
-                },
-                "isCombineCap": {
-                  "type": "boolean",
-                  "description": "Whether the position cap is shared across supply+borrow sides"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "aprCap": {
-                  "type": "number"
-                },
-                "rewardTokenSymbol": {
-                  "type": "string"
-                },
-                "totalBudget": {
-                  "type": "number"
-                },
-                "latestTvl": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "campaignApr",
-                "campaignStartedAt",
-                "campaignEndedAt",
-                "campaignId"
-              ]
+              "$ref": "#/components/schemas/ApiMerklBreakdown"
             }
+          },
+          "netPositionConstraint": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "offsetReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "borrowBlacklist": {
+            "type": "boolean"
           }
         },
         "required": [
-          "breakdowns"
+          "breakdowns",
+          "link"
         ]
+      },
+      "ApiMerklBreakdown": {
+        "$ref": "#/components/schemas/MerklCampaignBreakdown"
       },
       "MerklCampaignBreakdown": {
         "type": "object",
@@ -1313,11 +1232,24 @@
             "type": "string"
           },
           "campaignId": {
-            "type": "string"
+            "type": "string",
+            "description": "Merkl Campaign Hash ID (hex, e.g. 0x0cf07a3891...). Used as Map key and in Merkl web UI URLs."
+          },
+          "positionCapNative": {
+            "type": "string",
+            "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
+          },
+          "positionCapUsd": {
+            "type": "number",
+            "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
+          },
+          "isCombineCap": {
+            "type": "boolean",
+            "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
           },
           "databaseId": {
             "type": "string",
-            "description": "Merkl Campaign Database ID — used as input to /v4/campaigns/{databaseId} API endpoints (metrics, details)"
+            "description": "Merkl Campaign Database ID (numeric). Used as input to /v4/campaigns/{databaseId} API endpoints (metrics, details)."
           },
           "whitelistOnly": {
             "type": "boolean"
@@ -1335,17 +1267,16 @@
             "type": "string"
           },
           "campaignType": {
-            "type": "string"
+            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
           },
           "totalBudget": {
             "type": "number"
           },
-          "budgetBoundMode": {
-            "type": "string"
-          },
           "aprCap": {
-            "type": "number",
-            "nullable": true
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "latestTvl": {
             "type": "number"
@@ -1353,17 +1284,12 @@
           "plannedDaily": {
             "type": "number"
           },
-          "positionCapNative": {
+          "budgetBoundMode": {
+            "type": "string"
+          },
+          "parentCampaignId": {
             "type": "string",
-            "description": "Per-user position cap as native raw amount string (from computeMethod=maxDeposit campaigns). Mutually exclusive with positionCapUsd."
-          },
-          "positionCapUsd": {
-            "type": "number",
-            "description": "Per-user position cap in USD (Merit). Mutually exclusive with positionCapNative."
-          },
-          "isCombineCap": {
-            "type": "boolean",
-            "description": "Whether the position cap is shared across supply+borrow sides"
+            "description": "V4 Spoke campaign's parent Hub campaign ID (for Hub/Spoke deduplication; stripped from API payload)."
           },
           "lastEndedCampaign": {
             "type": "object",
@@ -1382,7 +1308,118 @@
               "startedAt",
               "endedAt",
               "campaignId"
+            ],
+            "additionalProperties": false,
+            "description": "Most recently ended campaign embedded into this live breakdown (matched by rewardTokenSymbol)."
+          }
+        },
+        "required": [
+          "campaignApr",
+          "campaignEndedAt",
+          "campaignId",
+          "campaignStartedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ApiBrevisCampaignItem": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiBrevisBreakdown"
+            }
+          },
+          "netPositionConstraint": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "offsetReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
             ]
+          },
+          "borrowBlacklist": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "link",
+          "breakdowns"
+        ],
+        "additionalProperties": false
+      },
+      "ApiBrevisBreakdown": {
+        "type": "object",
+        "properties": {
+          "campaignApr": {
+            "type": "number"
+          },
+          "campaignStartedAt": {
+            "type": "string"
+          },
+          "campaignEndedAt": {
+            "type": "string"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "campaignType": {
+            "$ref": "#/components/schemas/ForecastCampaignTypeLite"
+          },
+          "aprCap": {
+            "type": "number"
+          },
+          "totalBudget": {
+            "type": "number"
+          },
+          "latestTvl": {
+            "type": "number"
+          },
+          "positionCapNative": {
+            "type": "string",
+            "description": "Per-user position cap as native raw amount string (e.g. \"20150000000000000000\" for 20.15 WETH). Used by Merkl/Brevis. Mutually exclusive with positionCapUsd."
+          },
+          "positionCapUsd": {
+            "type": "number",
+            "description": "Per-user position cap in USD. Used by Merit (extracted from \"$X\" text). Mutually exclusive with positionCapNative."
+          },
+          "isCombineCap": {
+            "type": "boolean",
+            "description": "Whether the position cap is shared across supply+borrow sides (true) or per-side (false/default)."
+          },
+          "rewardTokenSymbol": {
+            "type": "string"
           }
         },
         "required": [
@@ -1390,258 +1427,241 @@
           "campaignStartedAt",
           "campaignEndedAt",
           "campaignId"
-        ]
+        ],
+        "additionalProperties": false
       },
-      "MerklOpportunityGroup": {
+      "SideDataPayload": {
         "type": "object",
         "properties": {
-          "link": {
+          "generatedAt": {
             "type": "string"
           },
-          "name": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "breakdowns": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "campaignApr": {
-                  "type": "number"
-                },
-                "campaignStartedAt": {
-                  "type": "string"
-                },
-                "campaignEndedAt": {
-                  "type": "string"
-                },
-                "campaignId": {
-                  "type": "string"
-                },
-                "databaseId": {
-                  "type": "string",
-                  "description": "Merkl Campaign Database ID — used as input to /v4/campaigns/{databaseId} API endpoints (metrics, details)"
-                },
-                "whitelistOnly": {
-                  "type": "boolean"
-                },
-                "pointsPerThousandUsd": {
-                  "type": "number"
-                },
-                "rewardTokenSymbol": {
-                  "type": "string"
-                },
-                "rewardTokenIconUrl": {
-                  "type": "string"
-                },
-                "rewardTokenId": {
-                  "type": "string"
-                },
-                "campaignType": {
-                  "type": "string"
-                },
-                "totalBudget": {
-                  "type": "number"
-                },
-                "budgetBoundMode": {
-                  "type": "string"
-                },
-                "aprCap": {
-                  "type": "number",
-                  "nullable": true
-                },
-                "latestTvl": {
-                  "type": "number"
-                },
-                "plannedDaily": {
-                  "type": "number"
-                },
-                "positionCapNative": {
-                  "type": "string",
-                  "description": "Per-user position cap as native raw amount string (from computeMethod=maxDeposit campaigns). Mutually exclusive with positionCapUsd."
-                },
-                "positionCapUsd": {
-                  "type": "number",
-                  "description": "Per-user position cap in USD (Merit). Mutually exclusive with positionCapNative."
-                },
-                "isCombineCap": {
-                  "type": "boolean",
-                  "description": "Whether the position cap is shared across supply+borrow sides"
-                },
-                "lastEndedCampaign": {
-                  "type": "object",
-                  "properties": {
-                    "startedAt": {
-                      "type": "string"
-                    },
-                    "endedAt": {
-                      "type": "string"
-                    },
-                    "campaignId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "startedAt",
-                    "endedAt",
-                    "campaignId"
-                  ]
-                }
-              },
-              "required": [
-                "campaignApr",
-                "campaignStartedAt",
-                "campaignEndedAt",
-                "campaignId"
-              ]
-            }
-          },
-          "opportunityType": {
-            "type": "string"
-          },
-          "netPositionConstraint": {
+          "categories": {
             "type": "object",
             "properties": {
-              "sourceSide": {
-                "type": "string",
-                "enum": [
-                  "supply",
-                  "borrow"
-                ]
-              },
-              "offsetReserveIds": {
+              "uniqueSymbolsStablecoins": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
+              },
+              "uniqueSymbolsEth": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fetchedAt": {
+                "type": "string"
+              },
+              "staleTimeMs": {
+                "type": "number"
               }
             },
             "required": [
-              "sourceSide",
-              "offsetReserveIds"
+              "uniqueSymbolsStablecoins",
+              "uniqueSymbolsEth",
+              "fetchedAt",
+              "staleTimeMs"
             ],
-            "nullable": true
-          }
-        },
-        "required": [
-          "breakdowns"
-        ]
-      },
-      "BrevisCampaignBreakdown": {
-        "type": "object",
-        "properties": {
-          "campaignApr": {
-            "type": "number"
+            "additionalProperties": false
           },
-          "campaignStartedAt": {
-            "type": "string"
-          },
-          "campaignEndedAt": {
-            "type": "string"
-          },
-          "campaignId": {
-            "type": "string"
-          },
-          "totalBudget": {
-            "type": "number"
-          },
-          "latestTvl": {
-            "type": "number"
-          },
-          "positionCapUsd": {
-            "type": "number",
-            "description": "Per-user position cap in USD (from MetaMask description text). Mutually exclusive with positionCapNative."
-          },
-          "isCombineCap": {
-            "type": "boolean",
-            "description": "Whether the position cap is shared across supply+borrow sides"
-          }
-        },
-        "required": [
-          "campaignApr",
-          "campaignStartedAt",
-          "campaignEndedAt"
-        ]
-      },
-      "BrevisCampaignItem": {
-        "type": "object",
-        "properties": {
-          "link": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "breakdowns": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "campaignApr": {
-                  "type": "number"
-                },
-                "campaignStartedAt": {
-                  "type": "string"
-                },
-                "campaignEndedAt": {
-                  "type": "string"
-                },
-                "campaignId": {
-                  "type": "string"
-                },
-                "totalBudget": {
-                  "type": "number"
-                },
-                "latestTvl": {
-                  "type": "number"
-                },
-                "positionCapUsd": {
-                  "type": "number",
-                  "description": "Per-user position cap in USD (from MetaMask description text). Mutually exclusive with positionCapNative."
-                },
-                "isCombineCap": {
-                  "type": "boolean",
-                  "description": "Whether the position cap is shared across supply+borrow sides"
+          "fdv": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "fdvUsd": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "fdvUsd"
+                  ],
+                  "additionalProperties": false
                 }
               },
-              "required": [
-                "campaignApr",
-                "campaignStartedAt",
-                "campaignEndedAt"
-              ]
-            }
+              "fetchedAt": {
+                "type": "string"
+              },
+              "staleTimeMs": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "items",
+              "fetchedAt",
+              "staleTimeMs"
+            ],
+            "additionalProperties": false
           },
-          "campaignApr": {
-            "type": "number"
+          "forecast": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "campaignId": {
+                      "type": "string"
+                    },
+                    "requiredDaily": {
+                      "type": "number"
+                    },
+                    "distributedSoFar": {
+                      "type": "number"
+                    },
+                    "endTimestamp": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "campaignId",
+                    "distributedSoFar",
+                    "endTimestamp"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "campaignId": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "campaignId",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "staleTimeMs": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "items",
+              "errors",
+              "staleTimeMs"
+            ],
+            "additionalProperties": false
           },
-          "campaignStartedAt": {
-            "type": "string"
+          "campaignAccess": {
+            "type": "object",
+            "properties": {
+              "campaigns": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "chainId": {
+                      "type": "number"
+                    },
+                    "whitelist": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "blacklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "borrowHookProtocols": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MerklBorrowHookProtocol"
+                      }
+                    }
+                  },
+                  "required": [
+                    "chainId",
+                    "whitelist",
+                    "blacklist"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "campaigns",
+              "updatedAt"
+            ],
+            "additionalProperties": false
           },
-          "campaignEndedAt": {
-            "type": "string"
-          },
-          "campaignId": {
-            "type": "string"
-          },
-          "totalBudget": {
-            "type": "number"
-          },
-          "latestTvl": {
-            "type": "number"
-          },
-          "positionCapUsd": {
-            "type": "number"
+          "errors": {
+            "$ref": "#/components/schemas/SideDataSubSourceErrors"
           }
         },
         "required": [
-          "link"
-        ]
+          "generatedAt"
+        ],
+        "additionalProperties": false,
+        "description": "GET /api/meta/side-data response payload."
+      },
+      "MerklBorrowHookProtocol": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "number"
+          },
+          "borrowBytesLike": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "protocol",
+          "borrowBytesLike"
+        ],
+        "additionalProperties": false
+      },
+      "SideDataSubSourceErrors": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "string"
+          },
+          "fdv": {
+            "type": "string"
+          },
+          "forecast": {
+            "type": "string"
+          },
+          "campaignAccess": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Structured per-sub-source errors, replacing the removed `partial: boolean` field."
       }
     }
   }
