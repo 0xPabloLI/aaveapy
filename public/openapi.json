@@ -1524,6 +1524,9 @@
               "offsetReserveIds"
             ],
             "nullable": true
+          },
+          "borrowBlacklist": {
+            "type": "boolean",
           }
         },
         "required": [

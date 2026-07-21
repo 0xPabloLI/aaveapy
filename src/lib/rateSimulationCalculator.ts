@@ -1290,6 +1290,11 @@ export function buildRateSimulationResult({
   const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
     return (group) => {
+      // AAV-962: BORROW_BL — supply incentive zeroed when user has borrow position.
+      // Binary zeroing (unlike netPositionConstraint which is proportional).
+      if (group.borrowBlacklist === true && side === 'supply' && borrowGrossForEligibility > 0) {
+        return 0;
+      }
       const constraint = group.netPositionConstraint;
       // AAV-1100/AAV-1113: offsetReserveIds always includes self (confirmed in all real data).
       // crossReserveRatio already deducts same-reserve borrow via computeCrossReserveNetEligible.
@@ -1309,6 +1314,11 @@ export function buildRateSimulationResult({
   const walletMerklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? walletSupplyGrossForEligibility : walletBorrowGrossForEligibility;
     return (group) => {
+      // AAV-962: BORROW_BL — supply incentive zeroed when wallet has borrow position.
+      // Uses wallet-only borrow (not simulation input) to preserve Golden Rule #1.
+      if (group.borrowBlacklist === true && side === 'supply' && walletBorrowGrossForEligibility > 0) {
+        return 0;
+      }
       const constraint = group.netPositionConstraint;
       // AAV-1100/AAV-1113: Same as merklGroupMultiplier — sameReserveFactor dead code removed.
       return constraint && walletCrossReservePositions && walletCrossReservePositions.size > 0
@@ -1328,6 +1338,11 @@ export function buildRateSimulationResult({
   const crossReserveNetEligibleUsdFn = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
     return (group) => {
+      // AAV-962: BORROW_BL — supply incentive zeroed when user has borrow position.
+      // Returns 0 so unified eligibility path produces rate = apr * 0 / gross = 0.
+      if (group.borrowBlacklist === true && side === 'supply' && borrowGrossForEligibility > 0) {
+        return 0;
+      }
       const constraint = group.netPositionConstraint;
       if (!constraint || !crossReservePositions || crossReservePositions.size === 0) return grossUsd;
       return computeCrossReserveNetEligible({
@@ -1342,6 +1357,11 @@ export function buildRateSimulationResult({
   const walletCrossReserveNetEligibleUsdFn = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? walletSupplyGrossForEligibility : walletBorrowGrossForEligibility;
     return (group) => {
+      // AAV-962: BORROW_BL — supply incentive zeroed when wallet has borrow position.
+      // Uses wallet-only borrow to preserve Golden Rule #1 (current* never changes with input).
+      if (group.borrowBlacklist === true && side === 'supply' && walletBorrowGrossForEligibility > 0) {
+        return 0;
+      }
       const constraint = group.netPositionConstraint;
       if (!constraint || !walletCrossReservePositions || walletCrossReservePositions.size === 0) return grossUsd;
       return computeCrossReserveNetEligible({

@@ -72,6 +72,8 @@ export const MerklOpportunityGroupSchema = z.object({
     sourceSide: z.enum(['supply', 'borrow']),
     offsetReserveIds: z.array(z.string()),
   }).nullable().optional(),
+  /** BORROW_BL: supply incentive zeroed when user has borrow position. AAV-962. */
+  borrowBlacklist: z.literal(true).optional(),
 });
 
 export const BrevisCampaignBreakdownSchema = z.object({

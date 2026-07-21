@@ -123,6 +123,48 @@ describe('CampaignGroup netPositionConstraint field-name canary', () => {
   });
 });
 
+describe('CampaignGroup borrowBlacklist field-name canary (AAV-962)', () => {
+  it('group.borrowBlacklist is true when set', () => {
+    const group: CampaignGroup = {
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      borrowBlacklist: true,
+    };
+    expect(group.borrowBlacklist).toBe(true);
+  });
+
+  it('group without borrowBlacklist is valid (optional)', () => {
+    const plain: CampaignGroup = { link: 'https://merkl.xyz', breakdowns: [] };
+    expect(plain.borrowBlacklist).toBeUndefined();
+  });
+
+  it('MerklOpportunityGroupSchema accepts borrowBlacklist: true', async () => {
+    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+    const parsed = MerklOpportunityGroupSchema.parse({
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      borrowBlacklist: true,
+    });
+    expect(parsed.borrowBlacklist).toBe(true);
+  });
+
+  it('MerklOpportunityGroupSchema strips unknown values but keeps borrowBlacklist', async () => {
+    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+    const parsed = MerklOpportunityGroupSchema.parse({
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      borrowBlacklist: true,
+    });
+    expect(parsed.borrowBlacklist).toBe(true);
+    // Absent case
+    const parsed2 = MerklOpportunityGroupSchema.parse({
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+    });
+    expect(parsed2.borrowBlacklist).toBeUndefined();
+  });
+});
+
 describe('SideDataSubSourceErrors field-name canary', () => {
   const errors: SideDataSubSourceErrors = {
     categories: 'fetch timeout',
