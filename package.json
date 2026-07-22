@@ -35,7 +35,6 @@
     "lint:all": "npm run lint && npm run lint:colors",
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
-    "openapi:generate": "node --experimental-strip-types scripts/generate-openapi-cli.ts",
     "openapi:fetch": "node --experimental-strip-types scripts/fetch-openapi.ts",
     "openapi:check": "node --experimental-strip-types scripts/fetch-openapi.ts && git diff --exit-code -- public/openapi.json",
     "schema:codegen": "openapi-zod-client openapi-zod-client.config.ts",

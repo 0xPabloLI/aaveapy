@@ -1,4 +1,12 @@
+/**
+ * API schemas — Phase 2 wrapper layer (AAV-1214).
+ *
+ * Re-exports core schemas from `schemas.ts` (which wraps generated schemas).
+ * Additional schemas (SideDataMetaResponse, helper schemas) are based on
+ * generated schemas where available.
+ */
 import { z } from 'zod';
+import { schemas as generated } from '@/generated/api/schemas';
 
 export {
   MarketsResponseSchema,
@@ -10,11 +18,9 @@ export {
   BrevisCampaignBreakdownSchema,
 } from '../shared/market-contract/schemas.ts';
 
-export const MarketsErrorResponseSchema = z.object({
-  errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
-  error: z.string(),
-  message: z.string(),
-});
+// ── Error response schema ──
+// Based on generated MarketsErrorResponse + passthrough for tolerance.
+export const MarketsErrorResponseSchema = generated.MarketsErrorResponse.passthrough();
 
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
@@ -43,42 +49,49 @@ const MerklForecastErrorSchema = z.object({
   message: z.string(),
 }).passthrough();
 
-export const SideDataMetaResponseSchema = z.object({
-  // Kept: debug timestamp for side-data generation time (zero cost, aids debugging)
-  generatedAt: z.string().optional(),
-  // Replaced partial (boolean) with structured per-sub-source errors (ADR-0007).
-  // Keys are strict; unknown sub-sources are not type-safe at compile time.
-  errors: z.object({
-    categories: z.string().optional(),
-    fdv: z.string().optional(),
-    forecast: z.string().optional(),
-    campaignAccess: z.string().optional(),
-  }).optional(),
-  categories: z.object({
-    uniqueSymbolsStablecoins: z.array(z.string()),
-    uniqueSymbolsEth: z.array(z.string()),
-    // Kept: debug timestamp for category fetch time
-    fetchedAt: z.string(),
-    staleTimeMs: z.number(),
-  }).optional(),
-  fdv: z.object({
-    items: z.array(CoingeckoFdvItemSchema),
-    fetchedAt: z.string(),
-    staleTimeMs: z.number(),
-  }).optional(),
-  forecast: z.object({
-    items: z.array(MerklForecastItemSchema),
-    errors: z.array(MerklForecastErrorSchema),
-    staleTimeMs: z.number(),
-  }).optional(),
-  // Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
-  // Embedded in side-data; consumed by useCampaignAccess() gated on wallet connection.
-  campaignAccess: z.object({
-    campaigns: z.record(z.string(), z.object({
-      chainId: z.number(),
-      whitelist: z.array(z.string()),
-      blacklist: z.array(z.string()),
-    })),
-    updatedAt: z.string(),
-  }).optional(),
-}).passthrough();
+// ── Side data errors schema ──
+// Override generated SideDataSubSourceErrors: all fields should be optional
+// (backend type is Partial<Record<SideDataSubSource, string>>).
+const SideDataSubSourceErrorsSchema = z.object({
+  categories: z.string().optional(),
+  fdv: z.string().optional(),
+  forecast: z.string().optional(),
+  campaignAccess: z.string().optional(),
+});
+
+// ── Side data response schema ──
+// Based on generated SideDataPayload + frontend-specific overrides.
+// Overrides:
+//   - generatedAt: optional (generated has required)
+//   - errors: use optional-fields schema (generated has all required)
+//   - sub-source schemas: use frontend-specific versions where they differ
+export const SideDataMetaResponseSchema = generated.SideDataPayload
+  .extend({
+    generatedAt: z.string().optional(),
+    errors: SideDataSubSourceErrorsSchema.optional(),
+    categories: z.object({
+      uniqueSymbolsStablecoins: z.array(z.string()),
+      uniqueSymbolsEth: z.array(z.string()),
+      fetchedAt: z.string(),
+      staleTimeMs: z.number(),
+    }).optional(),
+    fdv: z.object({
+      items: z.array(CoingeckoFdvItemSchema),
+      fetchedAt: z.string(),
+      staleTimeMs: z.number(),
+    }).optional(),
+    forecast: z.object({
+      items: z.array(MerklForecastItemSchema),
+      errors: z.array(MerklForecastErrorSchema),
+      staleTimeMs: z.number(),
+    }).optional(),
+    campaignAccess: z.object({
+      campaigns: z.record(z.string(), z.object({
+        chainId: z.number(),
+        whitelist: z.array(z.string()),
+        blacklist: z.array(z.string()),
+      })),
+      updatedAt: z.string(),
+    }).optional(),
+  })
+  .passthrough();

@@ -1,5 +1,24 @@
+/**
+ * Frontend Zod schemas — Phase 2 wrapper layer (AAV-1214).
+ *
+ * All schemas are now based on generated schemas from `src/generated/api/schemas.ts`
+ * (which are auto-generated from the backend OpenAPI spec). Each schema applies
+ * `.passthrough()` for tolerance during the transition period.
+ *
+ * Frontend-specific extensions (transforms, recursive types, looser type overrides)
+ * are applied via `.extend()` on the generated base. Nested schemas (e.g. `breakdowns`
+ * inside campaign groups) are explicitly overridden to use wrapper versions, because
+ * `.extend()` only overrides top-level keys — nested Zod schemas still reference the
+ * generated versions.
+ *
+ * In Phase 3 (AAV-1216), these wrappers will be removed and business code will
+ * import generated schemas directly (with strict mode).
+ */
 import { z } from 'zod';
+import { schemas as generated } from '@/generated/api/schemas';
 
+// ── Frontend-specific recursive IncentiveMessage type ──
+// Generated schemas use z.string() for message fields; frontend needs recursive parsing.
 type IncentiveMessageScalar = string | number | boolean | null;
 type IncentiveMessage = string | IncentiveMessage[] | {
   [key: string]: IncentiveMessageScalar | IncentiveMessage;
@@ -14,66 +33,47 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
   ])
 );
 
-export const MeritCampaignBreakdownSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  campaignType: z.string().optional(),
-  positionCapNative: z.string().optional(),
-  positionCapUsd: z.number().optional(),
-  isCombineCap: z.boolean().optional(),
-  aprCap: z.number().nullable().optional(),
-  rewardTokenSymbol: z.string().optional(),
-  totalBudget: z.number().optional(),
-  latestTvl: z.number().optional(),
-  message: IncentiveMessageSchema.optional(),
-});
+// ── Campaign breakdown schemas ──
+// Override: hand-written has campaignType as z.string() (looser than generated enum),
+// and aprCap as z.number().nullable() (generated has z.number() only).
+export const MeritCampaignBreakdownSchema = generated.ApiMeritCampaignBreakdown
+  .extend({
+    campaignType: z.string().optional(),
+    aprCap: z.number().nullable().optional(),
+  })
+  .passthrough();
 
-export const MeritCampaignGroupSchema = z.object({
-  link: z.string().optional(),
-  name: z.string().optional(),
-  message: IncentiveMessageSchema.optional(),
-  breakdowns: z.array(MeritCampaignBreakdownSchema),
-});
+// Override: hand-written has link as optional (generated has required),
+// uses IncentiveMessageSchema for message (generated uses z.string()),
+// and breakdowns must use wrapper version (generated uses ApiMeritCampaignBreakdown).
+export const MeritCampaignGroupSchema = generated.ApiMeritCampaignGroup
+  .extend({
+    link: z.string().optional(),
+    message: IncentiveMessageSchema.optional(),
+    breakdowns: z.array(MeritCampaignBreakdownSchema),
+  })
+  .passthrough();
 
-export const MerklCampaignBreakdownSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  whitelistOnly: z.boolean().optional(),
-  pointsPerThousandUsd: z.number().optional(),
-  rewardTokenSymbol: z.string().optional(),
-  rewardTokenIconUrl: z.string().optional(),
-  campaignType: z.string().optional(),
-  totalBudget: z.number().optional(),
-  aprCap: z.number().nullable().optional(),
-  latestTvl: z.number().optional(),
-  plannedDaily: z.number().optional(),
-  budgetBoundMode: z.string().optional(),
-  positionCapNative: z.string().optional(),
-  positionCapUsd: z.number().optional(),
-  isCombineCap: z.boolean().optional(),
-  lastEndedCampaign: z.object({
-    startedAt: z.string(),
-    endedAt: z.string(),
-    campaignId: z.string(),
-  }).optional(),
-});
+// MerklCampaignBreakdown: generated schema is compatible, just override aprCap for nullable.
+export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown
+  .extend({
+    aprCap: z.number().nullable().optional(),
+  })
+  .passthrough();
 
-export const MerklOpportunityGroupSchema = z.object({
-  link: z.string().optional(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  breakdowns: z.array(MerklCampaignBreakdownSchema),
-  opportunityId: z.string().optional(),
-  netPositionConstraint: z.object({
-    sourceSide: z.enum(['supply', 'borrow']),
-    offsetReserveIds: z.array(z.string()),
-  }).nullable().optional(),
-});
+// MerklOpportunityGroup: override link to optional (generated has required),
+// breakdowns to use wrapper version.
+export const MerklOpportunityGroupSchema = generated.ApiMerklOpportunityGroup
+  .extend({
+    link: z.string().optional(),
+    breakdowns: z.array(MerklCampaignBreakdownSchema),
+  })
+  .passthrough();
 
+// ── Brevis schemas (frontend-specific normalization) ──
+// Brevis API returns either grouped (with breakdowns array) or flat format.
+// Frontend normalizes to flat via transform. Generated schema only models grouped format.
+// These schemas stay hand-written because the transform is frontend-specific logic.
 export const BrevisCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
@@ -146,57 +146,33 @@ const normalizeBrevisIncentives = (
   return normalized.length > 0 ? normalized : undefined;
 };
 
-export const ReserveWithSpreadSchema = z.object({
-  reserveId: z.string(),
-  marketName: z.string(),
-  chainName: z.string(),
-  chainId: z.number(),
-  tokenName: z.string(),
-  tokenSymbol: z.string(),
-  tokenAddress: z.string(),
-  tokenPrice: z.number().optional(),
-  utilizationPct: z.number().optional(),
-  supplyDisabled: z.boolean().optional(),
-  borrowDisabled: z.boolean().optional(),
-  isFrozen: z.boolean().optional(),
-  isPaused: z.boolean().optional(),
-  isActive: z.literal(false).optional(),
-  aTokenAddress: z.string().nullish(),
-  vTokenAddress: z.string().nullish(),
-  supplyApy: z.number().optional(),
-  borrowApy: z.number().optional(),
-  supplyIncentives: z.array(z.number()).optional(),
-  borrowIncentives: z.array(z.number()).optional(),
-  meritSupplys: z.array(MeritCampaignGroupSchema).optional(),
-  meritBorrows: z.array(MeritCampaignGroupSchema).optional(),
-  merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
-  merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
-  merklHolds: z.array(MerklOpportunityGroupSchema).optional(),
-  brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-  brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-  decimals: z.number().optional(),
-  supplied: z.string().optional(),
-  borrowed: z.string().optional(),
-  liquidity: z.string().optional(),
-  supplyCap: z.string().optional(),
-  borrowCap: z.string().optional(),
-  suppliable: z.string().optional(),
-  borrowable: z.string().optional(),
-  deficit: z.string().optional(),
-  protocolFee: z.number().optional(),
-  slopeBelowOptimal: z.number().optional(),
-  slopeAboveOptimal: z.number().optional(),
-  optimalUtilization: z.number().optional(),
-  baseBorrowRate: z.number().optional(),
-  aaveProReserveId: z.string().optional(),
-  hubId: z.string().optional(),
-  hubName: z.string().optional(),
-  hubBorrowed: z.string().optional(),
-  hubSupplied: z.string().optional(),
-  spokeId: z.string().optional(),
-  spokeName: z.string().optional(),
-}).passthrough();
+// ── Reserve schema ──
+// Based on generated MarketWithSpread + frontend-specific extensions.
+// Nested campaign group arrays are overridden to use wrapper versions.
+export const ReserveWithSpreadSchema = generated.MarketWithSpread
+  .extend({
+    // Frontend-specific fields not in generated spec
+    supplyIncentives: z.array(z.number()).optional(),
+    borrowIncentives: z.array(z.number()).optional(),
+    suppliable: z.string().optional(),
+    borrowable: z.string().optional(),
+    // Type overrides for backward compat
+    isActive: z.literal(false).optional(),
+    aTokenAddress: z.string().nullish(),
+    vTokenAddress: z.string().nullish(),
+    // Override nested arrays to use wrapper schemas
+    meritSupplys: z.array(MeritCampaignGroupSchema).optional(),
+    meritBorrows: z.array(MeritCampaignGroupSchema).optional(),
+    merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
+    merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
+    merklHolds: z.array(MerklOpportunityGroupSchema).optional(),
+    // Brevis normalization transform (frontend-specific)
+    brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
+    brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
+  })
+  .passthrough();
 
+// ── Markets response schema ──
 export const MarketsResponseSchema = z.object({
   snapshot: z.object({
     lastUpdated: z.string(),
