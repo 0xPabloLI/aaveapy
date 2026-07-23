@@ -3240,3 +3240,194 @@ describe('AAV-1177: APR→APY conversion order reconciliation', () => {
     expect(rows[0].current).not.toBeCloseTo(convertThenScale, 2);
   });
 });
+
+describe('AAV-962: BORROW_BL incentive zeroing in simulation', () => {
+  const BORROW_BL_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    supplyIncentives: [],
+    merklSupplys: [{
+      name: 'BORROW_BL supply opp',
+      link: 'https://merkl.angle.money',
+      breakdowns: [{
+        campaignId: 'merkl-borrow-bl-sim',
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+      }],
+      opportunityId: 'borrow-bl-1',
+      borrowBlacklist: true,
+    }],
+  };
+
+  it('Shared Scenario: current unchanged (no wallet), after zeroed when borrowInput > 0', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '500',
+      forecastStates: {},
+    });
+    // No wallet → current = headline (not zeroed, no borrow position in wallet)
+    expect(result.supply.sources.merkl?.current).toBeCloseTo(10, 1);
+    // After = 0 because user simulates borrow → BORROW_BL triggers
+    expect(result.supply.sources.merkl?.after).toBeCloseTo(0, 6);
+  });
+
+  it('Shared Scenario: neither current nor after zeroed when no borrow input', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+    });
+    expect(result.supply.sources.merkl?.current).toBeCloseTo(10, 1);
+    expect(result.supply.sources.merkl?.after).toBeCloseTo(10, 1);
+  });
+
+  it('Portfolio: current zeroed when wallet has borrow position', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1000,
+      totalBorrowUsd: 500,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 500,
+    });
+    // Wallet has borrow → current zeroed
+    expect(result.supply.sources.merkl?.current).toBeCloseTo(0, 6);
+    // No simulation input → after is null
+    expect(result.supply.afterIncentive).toBeNull();
+  });
+
+  it('Portfolio: both current and after zeroed when wallet has borrow + supply input', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 500,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 500,
+    });
+    // Wallet has borrow → current zeroed
+    expect(result.supply.sources.merkl?.current).toBeCloseTo(0, 6);
+    // After also zeroed (totalBorrowUsd > 0 from wallet)
+    expect(result.supply.sources.merkl?.after).toBeCloseTo(0, 6);
+  });
+
+  it('Portfolio: not zeroed when wallet has no borrow position', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: 1000,
+    });
+    // No borrow position → not zeroed
+    expect(result.supply.sources.merkl?.current).toBeCloseTo(10, 1);
+    expect(result.supply.sources.merkl?.after).toBeCloseTo(10, 1);
+  });
+
+  it('Golden Rule: current does NOT change with simulation input (AAV-1121)', () => {
+    // Wallet has both supply and borrow → current should be 0 (zeroed)
+    // Changing simulation input must not change current
+    const baseParams = {
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 500,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 500,
+    };
+
+    const r1 = buildRateSimulationResult({ ...baseParams, supplyInput: '0', borrowInput: '0' });
+    const r2 = buildRateSimulationResult({ ...baseParams, supplyInput: '500', borrowInput: '0' });
+    const r3 = buildRateSimulationResult({ ...baseParams, supplyInput: '0', borrowInput: '200' });
+
+    // current must be identical across all three
+    expect(r1.supply.sources.merkl?.current).toBeCloseTo(r2.supply.sources.merkl?.current ?? -1, 10);
+    expect(r1.supply.sources.merkl?.current).toBeCloseTo(r3.supply.sources.merkl?.current ?? -1, 10);
+    // And it should be 0 (zeroed because wallet has borrow)
+    expect(r1.supply.sources.merkl?.current).toBeCloseTo(0, 6);
+  });
+
+  it('per-campaign detail rows also show zeroed current and after', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '500',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1500,
+      totalBorrowUsd: 500,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 500,
+    });
+
+    const campaigns = result.supply.sources.merkl?.campaigns ?? [];
+    expect(campaigns.length).toBe(1);
+    expect(campaigns[0].current).toBeCloseTo(0, 6);
+    expect(campaigns[0].after).toBeCloseTo(0, 6);
+  });
+
+  it('aggregate currentIncentive matches per-source sum when BORROW_BL zeroed', () => {
+    const result = buildRateSimulationResult({
+      reserve: BORROW_BL_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1000,
+      totalBorrowUsd: 500,
+      walletSupplyUsd: 1000,
+      walletBorrowUsd: 500,
+    });
+
+    const merklCurrent = result.supply.sources.merkl?.current ?? 0;
+    const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
+    const perSourceSum = protocolCurrent + merklCurrent;
+    expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 6);
+  });
+});
