@@ -3,6 +3,51 @@
 > Issue: AAV-962
 > Project: Incentive Source Upper-Layer Unification
 > 估计: 1 session
+> **Status: In Review** — commit `041909b9`, branch `feat/aav-962-borrow-bl-incentive`, PR #458
+
+## 标准工作流合规性审查（2026-07-21）
+
+> ⚠️ Phase 1 实施未走完标准工作流，以下是逐项对照：
+
+| 步骤 | 状态 | 说明 |
+|------|------|------|
+| 1. Grill with Docs | ❌ 未执行 | 无 grill-with-docs skill 记录；设计决策直接在 plan 中确认，未经 ADR/glossary 审查 |
+| 2. To Spec | ❌ 未执行 | 无 spec 文档（`docs/specs/` 下无 borrow-bl 相关文件） |
+| 3. To Tickets | ❌ 未执行 | 未拆分为 tracer-bullet tickets，直接整块实现 |
+| 4. TDD Implement | ⚠️ 部分 | 17 个测试与实现在同一 commit 中，无法确认 red→green→refactor 顺序 |
+| 5. Code Review | ❌ 未执行 | 无 code-review skill 记录（Standards + Spec 双轴审查） |
+| 6. Dev Server + Playwright | ❌ 未执行 | 纯 calculator 逻辑无 UI 交互，但未做浏览器验证 |
+| 7. Commit | ✅ 已执行 | 单 commit `041909b9`，7 文件 331 行 |
+| 8. 更新文档及 Issue | ❌ 未执行 | Linear AAV-962 未更新状态；Phase 1 plan 已有实施结论但未补充工作流审查 |
+
+### 补救措施
+
+- [ ] 补走 Code Review（Standards + Spec 双轴审查）
+- [ ] 补更新 Linear AAV-962 状态
+- [ ] 后续 Phase 必须严格走完标准工作流
+
+---
+
+## 实施结论（2026-07-21）
+
+### 设计决策确认
+
+1. **`current` 也乘 `groupMul`** — plan 描述已过时。代码中 `current` 已通过 `walletMerklGroupMultiplier` 乘 groupMul（AAV-1101）。真正的问题是 unified eligibility 路径（`crossReserveNetEligibleUsdFn`）忽略 `merklGroupMultiplier`，需要单独加 BORROW_BL 归零。
+2. **`walletBorrowUsd` 参与归零判断** — 确认。`current` 用 `walletBorrowGrossForEligibility`，`after` 用 `borrowGrossForEligibility`。Golden Rule #1 保持。
+3. **`borrowBlacklist?: true`** — 确认。与 `isActive?: false` 模式一致。
+
+### 改动清单（实际执行）
+
+1. `src/types/aave.ts` — `CampaignGroup` 新增 `borrowBlacklist?: true` ✅
+2. `src/shared/market-contract/schemas.ts` — `MerklOpportunityGroupSchema` 新增 `borrowBlacklist: z.literal(true).optional()` ✅
+3. `public/openapi.json` — 新增 `borrowBlacklist` 字段 ✅
+4. `src/types/field-canary.test.ts` — 4 个 canary 测试 ✅
+5. `src/lib/rateSimulationCalculator.ts` — 4 个函数新增 BORROW_BL 归零分支 ✅
+   - `merklGroupMultiplier` (after, fallback path)
+   - `walletMerklGroupMultiplier` (current, fallback path + per-campaign)
+   - `crossReserveNetEligibleUsdFn` (after, unified eligibility path)
+   - `walletCrossReserveNetEligibleUsdFn` (current, unified eligibility path)
+6. 测试：5 aggregation + 8 simulation + 4 field-canary = 17 个新测试 ✅
 
 ## 问题
 
