@@ -167,12 +167,12 @@ describe('apiSchemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('preserves partial field via passthrough for backend transition', () => {
+    it('strips unknown fields (strict contract, no passthrough)', () => {
       const parsed = SideDataMetaResponseSchema.parse({
         partial: true,
         errors: { fdv: 'rate limited' },
       });
-      expect((parsed as Record<string, unknown>).partial).toBe(true);
+      expect((parsed as Record<string, unknown>).partial).toBeUndefined();
       expect(parsed.errors?.fdv).toBe('rate limited');
     });
 
@@ -247,11 +247,12 @@ describe('apiSchemas', () => {
     expect(brevis?.totalBudget).toBe(25_000);
     expect(brevis?.positionCapUsd).toBe(5000);
     expect(brevis?.campaignId).toBe('linea-usdc');
-    expect('totalRewardAmount' in (brevis ?? {})).toBe(true);
-    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(true);
-    expect('description' in (brevis ?? {})).toBe(true);
-    expect('tvlUsd' in (brevis ?? {})).toBe(true);
-    expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
+    // Unknown fields are stripped in strict/strip mode (AAV-1216).
+    expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
+    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
+    expect('description' in (brevis ?? {})).toBe(false);
+    expect('tvlUsd' in (brevis ?? {})).toBe(false);
+    expect('totalRewardUsd' in (brevis ?? {})).toBe(false);
   });
 
   it('accepts isFrozen, isPaused, and isActive fields on reserves', () => {
@@ -409,7 +410,8 @@ describe('apiSchemas', () => {
     expect(brevisSupplys[0]?.campaignId).toBe('1754995104');
     expect(brevisSupplys[0]?.link).toBe('https://example.com/brevis-group');
     expect(brevisSupplys[0]?.message).toBe('Group-level message');
-    expect((brevisSupplys[0] as Record<string, unknown>)?.customBreakdownField).toBe('from-breakdown');
+    // Unknown fields are stripped in strict/strip mode (AAV-1216).
+    expect((brevisSupplys[0] as Record<string, unknown>)?.customBreakdownField).toBeUndefined();
     expect(brevisSupplys[1]?.campaignApr).toBe(1.2);
     expect(brevisSupplys[1]?.campaignId).toBe('1754995105');
     expect(brevisSupplys[1]?.link).toBe('https://example.com/brevis-group');

@@ -1,18 +1,15 @@
 /**
- * Frontend Zod schemas — Phase 2 wrapper layer (AAV-1214).
+ * Frontend Zod schemas — Phase 3 strict layer (AAV-1216).
  *
- * All schemas are now based on generated schemas from `src/generated/api/schemas.ts`
- * (which are auto-generated from the backend OpenAPI spec). Each schema applies
- * `.passthrough()` for tolerance during the transition period.
+ * All schemas are based on generated schemas from `src/generated/api/schemas.ts`
+ * (which are auto-generated from the backend OpenAPI spec). Unknown keys are
+ * stripped (Zod default strip mode) — the spec is now a strict contract.
  *
  * Frontend-specific extensions (transforms, recursive types, looser type overrides)
  * are applied via `.extend()` on the generated base. Nested schemas (e.g. `breakdowns`
  * inside campaign groups) are explicitly overridden to use wrapper versions, because
  * `.extend()` only overrides top-level keys — nested Zod schemas still reference the
  * generated versions.
- *
- * In Phase 3 (AAV-1216), these wrappers will be removed and business code will
- * import generated schemas directly (with strict mode).
  */
 import { z } from 'zod';
 import { schemas as generated } from '@/generated/api/schemas';
@@ -40,8 +37,7 @@ export const MeritCampaignBreakdownSchema = generated.ApiMeritCampaignBreakdown
   .extend({
     campaignType: z.string().optional(),
     aprCap: z.number().nullable().optional(),
-  })
-  .passthrough();
+  });
 
 // Override: hand-written has link as optional (generated has required),
 // uses IncentiveMessageSchema for message (generated uses z.string()),
@@ -51,15 +47,13 @@ export const MeritCampaignGroupSchema = generated.ApiMeritCampaignGroup
     link: z.string().optional(),
     message: IncentiveMessageSchema.optional(),
     breakdowns: z.array(MeritCampaignBreakdownSchema),
-  })
-  .passthrough();
+  });
 
 // MerklCampaignBreakdown: generated schema is compatible, just override aprCap for nullable.
 export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown
   .extend({
     aprCap: z.number().nullable().optional(),
-  })
-  .passthrough();
+  });
 
 // MerklOpportunityGroup: override link to optional (generated has required),
 // breakdowns to use wrapper version.
@@ -67,8 +61,7 @@ export const MerklOpportunityGroupSchema = generated.ApiMerklOpportunityGroup
   .extend({
     link: z.string().optional(),
     breakdowns: z.array(MerklCampaignBreakdownSchema),
-  })
-  .passthrough();
+  });
 
 // ── Brevis schemas (frontend-specific normalization) ──
 // Brevis API returns either grouped (with breakdowns array) or flat format.
@@ -86,7 +79,7 @@ export const BrevisCampaignBreakdownSchema = z.object({
   positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   rewardTokenSymbol: z.string().optional(),
-}).passthrough();
+});
 
 export const BrevisIncentiveSchema = z.object({
   link: z.string(),
@@ -103,14 +96,14 @@ export const BrevisIncentiveSchema = z.object({
   positionCapUsd: z.number().optional(),
   isCombineCap: z.boolean().optional(),
   campaignId: z.string().optional(),
-}).passthrough();
+});
 
 const BrevisGroupedIncentiveSchema = z.object({
   link: z.string(),
   name: z.string().optional(),
   message: z.string().optional(),
   breakdowns: z.array(BrevisCampaignBreakdownSchema),
-}).passthrough();
+});
 
 const BrevisRawIncentiveSchema = z.union([
   BrevisGroupedIncentiveSchema,
@@ -169,8 +162,7 @@ export const ReserveWithSpreadSchema = generated.MarketWithSpread
     // Brevis normalization transform (frontend-specific)
     brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
     brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-  })
-  .passthrough();
+  });
 
 // ── Markets response schema ──
 export const MarketsResponseSchema = z.object({

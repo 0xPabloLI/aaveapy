@@ -1,9 +1,9 @@
 /**
- * API schemas — Phase 2 wrapper layer (AAV-1214).
+ * API schemas — Phase 3 strict layer (AAV-1216).
  *
  * Re-exports core schemas from `schemas.ts` (which wraps generated schemas).
  * Additional schemas (SideDataMetaResponse, helper schemas) are based on
- * generated schemas where available.
+ * generated schemas where available. Unknown keys are stripped.
  */
 import { z } from 'zod';
 import { schemas as generated } from '@/generated/api/schemas';
@@ -19,21 +19,21 @@ export {
 } from '../shared/market-contract/schemas.ts';
 
 // ── Error response schema ──
-// Based on generated MarketsErrorResponse + passthrough for tolerance.
-export const MarketsErrorResponseSchema = generated.MarketsErrorResponse.passthrough();
+// Generated base has .passthrough(); override to strip mode for strict contract.
+export const MarketsErrorResponseSchema = generated.MarketsErrorResponse.strip();
 
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
   price: z.number(),
-}).passthrough();
+});
 
 // ── CoinGecko FDV ──
 // Kept: symbol + fdvUsd are consumed by InkAprCalculator.
-// Removed: id, name, source — frontend never reads them (backend may still send; passthrough strips).
+// Removed: id, name, source — frontend never reads them (strip mode drops them).
 const CoingeckoFdvItemSchema = z.object({
   symbol: z.string().nullable(),
   fdvUsd: z.number().nullable(),
-}).passthrough();
+});
 // Schema accepts the union shape: MAX has requiredDaily; FIX omits it.
 // Both have distributedSoFar and endTimestamp.
 const MerklForecastItemSchema = z.object({
@@ -41,17 +41,17 @@ const MerklForecastItemSchema = z.object({
   requiredDaily: z.number().optional(),
   distributedSoFar: z.number(),
   endTimestamp: z.number(),
-}).passthrough();
+});
 
 const MerklForecastErrorSchema = z.object({
   campaignId: z.string(),
   status: z.number().optional(),
   message: z.string(),
-}).passthrough();
+});
 
 // ── Side data errors schema ──
-// Override generated SideDataSubSourceErrors: all fields should be optional
-// (backend type is Partial<Record<SideDataSubSource, string>>).
+// Frontend-specific schema with all fields optional (matches backend Partial<Record>).
+// Generated schema also uses .partial() after spec sync, but we keep this for explicitness.
 const SideDataSubSourceErrorsSchema = z.object({
   categories: z.string().optional(),
   fdv: z.string().optional(),
@@ -63,7 +63,7 @@ const SideDataSubSourceErrorsSchema = z.object({
 // Based on generated SideDataPayload + frontend-specific overrides.
 // Overrides:
 //   - generatedAt: optional (generated has required)
-//   - errors: use optional-fields schema (generated has all required)
+//   - errors: use explicit optional-fields schema for clarity
 //   - sub-source schemas: use frontend-specific versions where they differ
 export const SideDataMetaResponseSchema = generated.SideDataPayload
   .extend({
@@ -94,4 +94,4 @@ export const SideDataMetaResponseSchema = generated.SideDataPayload
       updatedAt: z.string(),
     }).optional(),
   })
-  .passthrough();
+  .strip();
