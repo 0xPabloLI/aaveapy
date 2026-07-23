@@ -35,10 +35,9 @@
     "lint:all": "npm run lint && npm run lint:colors",
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
-    "openapi:generate": "node --experimental-strip-types scripts/generate-openapi-cli.ts",
     "openapi:fetch": "node --experimental-strip-types scripts/fetch-openapi.ts",
     "openapi:check": "node --experimental-strip-types scripts/fetch-openapi.ts && git diff --exit-code -- public/openapi.json",
-    "schema:codegen": "openapi-zod-client openapi-zod-client.config.ts",
+    "schema:codegen": "openapi-zod-client public/openapi.json -o src/generated/api/schemas.ts --export-schemas --with-alias",
     "schema:check": "npm run schema:codegen && git diff --exit-code -- src/generated/api/",
     "sync-token-icons": "node --experimental-strip-types scripts/sync-token-icons.mjs",
     "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
@@ -151,7 +150,10 @@
     "react": "$react",
     "react-dom": "$react-dom",
     "shell-quote": "1.9.0",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "@zodios/core": {
+      "zod": "$zod"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

@@ -1,9 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
-import { generateOpenApiDocument } from '../../scripts/generate-openapi.ts';
 
 const SRC_DIR = resolve(__dirname, '..');
+const ROOT_DIR = resolve(SRC_DIR, '..');
+
+/**
+ * Load the OpenAPI spec from public/openapi.json.
+ * Replaces the old generateOpenApiDocument() call (AAV-1214).
+ * The spec is now backend-generated via ts-json-schema-generator.
+ */
+function loadOpenApiSpec(): Record<string, unknown> {
+  const raw = readFileSync(resolve(ROOT_DIR, 'public/openapi.json'), 'utf-8');
+  return JSON.parse(raw);
+}
 
 function readFile(relativePath: string): string {
   return readFileSync(resolve(SRC_DIR, relativePath), 'utf8');
@@ -124,7 +134,7 @@ describe('Architecture guard: formatters must not re-import extracted module sym
 
 describe('Architecture guard: all GET endpoints must define 429 and 503 responses', () => {
   it('every GET endpoint has 429 with Retry-After header', () => {
-    const doc = generateOpenApiDocument();
+    const doc = loadOpenApiSpec();
     const paths = doc.paths as Record<string, unknown>;
     const violations: string[] = [];
 
@@ -144,8 +154,8 @@ describe('Architecture guard: all GET endpoints must define 429 and 503 response
     expect(violations, `Endpoints missing 429/Retry-After: ${violations.join(', ')}`).toEqual([]);
   });
 
-  it('every GET endpoint has 503 with Retry-After header and error body $ref', () => {
-    const doc = generateOpenApiDocument();
+  it('every GET endpoint has 503 with Retry-After header and error body schema', () => {
+    const doc = loadOpenApiSpec();
     const paths = doc.paths as Record<string, unknown>;
     const violations: string[] = [];
 
@@ -161,7 +171,8 @@ describe('Architecture guard: all GET endpoints must define 429 and 503 response
       const retryAfter = (r503.headers as Record<string, unknown>)?.['Retry-After'];
       if (!retryAfter) violations.push(`${pathKey} 503 missing Retry-After header`);
       const schema = (r503?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
-      if (!schema?.$ref) violations.push(`${pathKey} 503 missing error body $ref`);
+      // Accept either $ref or inline schema with properties (backend-generated spec uses inline)
+      if (!schema || (!schema.$ref && !schema.properties)) violations.push(`${pathKey} 503 missing error body schema`);
     }
 
     expect(violations, `Endpoints missing 503/error body: ${violations.join(', ')}`).toEqual([]);

@@ -10,12 +10,14 @@ const MerklBorrowHookProtocol = z.object({
   protocol: z.number(),
   borrowBytesLike: z.array(z.string()),
 });
-const SideDataSubSourceErrors = z.object({
-  categories: z.string(),
-  fdv: z.string(),
-  forecast: z.string(),
-  campaignAccess: z.string(),
-});
+const SideDataSubSourceErrors = z
+  .object({
+    categories: z.string(),
+    fdv: z.string(),
+    forecast: z.string(),
+    campaignAccess: z.string(),
+  })
+  .partial();
 const SideDataPayload = z.object({
   generatedAt: z.string(),
   categories: z

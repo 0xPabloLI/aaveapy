@@ -12,7 +12,7 @@ npm run schema:codegen
 
 - Input: `public/openapi.json` (fetched from backend via `npm run openapi:fetch`)
 - Tool: `openapi-zod-client`
-- Config: `openapi-zod-client.config.ts`
+- Flags: `--export-schemas --with-alias`
 
 ## CI Check
 
