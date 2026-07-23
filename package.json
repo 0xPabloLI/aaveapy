@@ -150,7 +150,10 @@
     "react": "$react",
     "react-dom": "$react-dom",
     "shell-quote": "1.9.0",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "@zodios/core": {
+      "zod": "$zod"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
