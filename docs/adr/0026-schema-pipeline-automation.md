@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (Phase 1-2 of 3 complete; Phase 3 tracked in AAV-1216)
+Accepted (All 3 phases complete: Phase 1 AAV-1210~1213, Phase 2 AAV-1214, Phase 3 AAV-1216)
 
 ## Context
 
@@ -46,7 +46,7 @@ Zero manual sync at any stage.
 6. **Migration strategy (3 phases)**:
    - **Phase 1** (✅ complete — AAV-1213): `src/generated/api/` exists alongside hand-written schemas. No business code imports generated code yet. `.passthrough()` tolerance will be applied in Phase 2 wrapper.
    - **Phase 2** (✅ complete — AAV-1214): `schemas.ts` / `apiSchemas.ts` become wrappers that re-export from generated + apply `.passthrough()`. Business code import paths unchanged. Deleted `scripts/generate-openapi.ts` (frontend reverse-generation, wrong direction) and related tests. `architecture-guard.test.ts` reads `public/openapi.json` instead of calling `generateOpenApiDocument()`. Added `schema-equivalence.test.ts` for transition safety.
-   - **Phase 3** (AAV-1216, pending): Remove `.passthrough()`, delete hand-written schema definitions, business code imports generated directly.
+   - **Phase 3** (✅ complete — AAV-1216): Removed all `.passthrough()` from wrapper schemas — unknown keys are now stripped (Zod default strip mode). Spec is a strict contract. Deleted transition-period `schema-equivalence.test.ts`. Fixed broken `schema:codegen` script (was referencing non-existent config file, now uses direct CLI flags). Regenerated `schemas.ts` with `.partial()` on `SideDataSubSourceErrors` (spec sync). `aave.ts` types remain hand-written (all are frontend-derived: inheritance chains, generics, `BannedReserveUsdFields` guard — no pure API types to migrate).
 
 ### Key implementation details
 
@@ -67,8 +67,7 @@ Zero manual sync at any stage.
 
 - Spec: `docs/specs/schema-pipeline-automation.md`
 - Parent issue: AAV-1209
-- Completed tickets: AAV-1210, AAV-1211, AAV-1212, AAV-1213, AAV-1214, AAV-1215
-- Pending tickets: AAV-1216 (Phase 3)
+- Completed tickets: AAV-1210, AAV-1211, AAV-1212, AAV-1213, AAV-1214, AAV-1215, AAV-1216
 
 ## Date
 
