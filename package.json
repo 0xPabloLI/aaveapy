@@ -1,7 +1,7 @@
 {
   "name": "aaveapy",
   "version": "1.0.0",
-  "description": "React dashboard for Aave V3 market data with yield comparisons across multiple chains",
+  "description": "Aave yield dashboard & simulator — compare supply/borrow APY, capped incentives, and spread across every V3 + V4 pool on 21 chains. Simulate portfolio positions with Merit, Merkl, and Brevis incentive modeling.",
   "author": "0xPabloLI <0xpablo.li@proton.me>",
   "license": "MIT",
   "repository": {
@@ -35,9 +35,10 @@
     "lint:all": "npm run lint && npm run lint:colors",
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
-    "openapi:generate": "node --experimental-strip-types scripts/generate-openapi-cli.ts",
     "openapi:fetch": "node --experimental-strip-types scripts/fetch-openapi.ts",
     "openapi:check": "node --experimental-strip-types scripts/fetch-openapi.ts && git diff --exit-code -- public/openapi.json",
+    "schema:codegen": "openapi-zod-client public/openapi.json -o src/generated/api/schemas.ts --export-schemas --with-alias",
+    "schema:check": "npm run schema:codegen && git diff --exit-code -- src/generated/api/",
     "sync-token-icons": "node --experimental-strip-types scripts/sync-token-icons.mjs",
     "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",
@@ -149,7 +150,10 @@
     "react": "$react",
     "react-dom": "$react-dom",
     "shell-quote": "1.9.0",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "@zodios/core": {
+      "zod": "$zod"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -163,6 +167,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.3.0",
+    "ajv": "^8.20.0",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
@@ -174,6 +179,7 @@
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
     "lovable-tagger": "^1.3.1",
+    "openapi-zod-client": "^1.18.3",
     "picomatch": "^4.0.4",
     "postcss": "^8.5.10",
     "rollup": "^4.60.0",
