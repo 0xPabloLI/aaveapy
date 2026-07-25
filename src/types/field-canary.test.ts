@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ReserveWithSpread, CampaignGroup } from './aave';
+import type { ReserveWithSpread, CampaignGroup, CampaignAccessEntry } from './aave';
 import type { SideDataMetaResponse, SideDataSubSourceErrors } from '@/hooks/useSideDataMeta';
 import { nativeToUsd, getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 
@@ -162,6 +162,32 @@ describe('CampaignGroup borrowBlacklist field-name canary (AAV-962)', () => {
       breakdowns: [],
     });
     expect(parsed2.borrowBlacklist).toBeUndefined();
+  });
+});
+
+describe('CampaignAccessEntry borrowHookProtocols field-name canary (AAV-1013)', () => {
+  it('entry.borrowHookProtocols is array of protocols when set', () => {
+    const entry: CampaignAccessEntry = {
+      chainId: 1,
+      whitelist: [],
+      blacklist: [],
+      borrowHookProtocols: [
+        { protocol: 2, borrowBytesLike: ['0xabc', '0xdef'] },
+        { protocol: 1, borrowBytesLike: ['0x123'] },
+      ],
+    };
+    expect(entry.borrowHookProtocols).toHaveLength(2);
+    expect(entry.borrowHookProtocols![0].protocol).toBe(2);
+    expect(entry.borrowHookProtocols![0].borrowBytesLike).toEqual(['0xabc', '0xdef']);
+  });
+
+  it('entry without borrowHookProtocols is valid (optional)', () => {
+    const plain: CampaignAccessEntry = {
+      chainId: 1,
+      whitelist: [],
+      blacklist: [],
+    };
+    expect(plain.borrowHookProtocols).toBeUndefined();
   });
 });
 
