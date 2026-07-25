@@ -118,6 +118,8 @@ lovable 分支在 PR 合并后还新增了两个 commit（可能来自其他 ses
 
 1. **AAV-1013 已完成**：AAV-962（核心归零）+ AAV-1219（类型+canary）+ AAV-1220（Tooltip 显示一致性）全部 Done。hookType=17 HEALTH_FACTOR 排除条件显示留待 AAV-1071（语义不同，独立 issue）。
 
-2. **dev 与 lovable 已同步**：PR #468 合并后 dev 包含了 lovable 的所有改动。后续 lovable → dev 的同步 PR 不再有冲突风险（除非 dev 有新的独立 commit）。
+2. **AAV-1071（AAV-1013 遗留项）**：`hookType=17` (HEALTH_FACTOR) 排除条件显示。与 BORROW_BL（`hookType=14`，二元归零）语义不同——HEALTH_FACTOR 是基于用户健康因子阈值（`healthFactorThreshold`）的排除条件。需后端提供 `healthFactorHooks` 字段（当前 OpenAPI spec 中缺失），前端需新增阈值显示逻辑。实施前需确认后端是否已就绪。
 
-3. **schema pipeline 已稳定运行**：`openapi-sync` bot 会自动创建 PR 同步 spec + generated 代码。最近的 PR #463/#465 都是自动同步，无需人工干预。
+3. **dev 与 lovable 已同步**：PR #468 合并后 dev 包含了 lovable 的所有改动。后续 lovable → dev 的同步 PR 不再有冲突风险（除非 dev 有新的独立 commit）。
+
+4. **schema pipeline 已稳定运行**：`openapi-sync` bot 会自动创建 PR 同步 spec + generated 代码。最近的 PR #463/#465 都是自动同步，无需人工干预。
