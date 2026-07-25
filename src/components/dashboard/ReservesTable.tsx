@@ -250,6 +250,12 @@ const ReservesTable = ({
   const walletCrossReservePositions = portfolioInputsResult?.walletCrossReservePositions;
   const reserveSymbolById = portfolioInputsResult?.reserveSymbolById;
 
+  // AAV-1013: Derive userHasBorrow for tooltip from perReserveInputs (not portfolioEntries).
+  // perReserveInputs already filters hidden/orphan entries, matching calculator's walletBorrowGrossForEligibility.
+  const tooltipUserHasBorrow = tooltipState && perReserveInputs
+    ? (perReserveInputs.get(tooltipState.reserve.reserveId)?.walletBorrowUsd ?? 0) > 0
+    : false;
+
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves: isPortfolioMode ? allReserves : reserves,
     isApy,
@@ -998,7 +1004,7 @@ const ReservesTable = ({
         />
 
 
-        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} userHasBorrow={tooltipUserHasBorrow} />
 
         <ReservesTableFloatingScroll
           tableInView={tableInView}
@@ -1230,7 +1236,7 @@ const ReservesTable = ({
         />
       )}
 
-      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} pointRateMap={pointRateMap} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} userHasBorrow={tooltipUserHasBorrow} />
 
       <ReservesTableFloatingScroll
         tableInView={tableInView}
