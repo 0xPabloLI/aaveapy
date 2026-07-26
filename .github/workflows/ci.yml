@@ -239,7 +239,9 @@ jobs:
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Audit runtime dependencies (High/Critical)
-        # Known: ws Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) via viem — upstream fix pending.
+        # Known vulnerabilities that do not affect this project:
+        # - react-router RSC CSRF (GHSA-qwww-vcr4-c8h2): affects RSC mode only; this is a client-side SPA
+        # - ws Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) via viem — upstream fix pending
         continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
 
