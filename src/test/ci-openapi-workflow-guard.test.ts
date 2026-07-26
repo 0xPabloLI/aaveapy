@@ -11,19 +11,46 @@ function getJobBlock(workflow: string, jobName: string): string {
   return workflow.slice(start, nextJob === -1 ? undefined : start + 1 + nextJob);
 }
 
-function getLiveApiBase(jobBlock: string): string | undefined {
-  return jobBlock.match(/LIVE_API_BASE:\s*(.+)/)?.[1]?.trim();
-}
-
 describe('OpenAPI CI workflow guard', () => {
-  it('checks and syncs the OpenAPI spec against the same backend', () => {
+  it('openapi-check uses step-based API target selection', () => {
     const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
-    const checkApiBase = getLiveApiBase(getJobBlock(workflow, 'openapi-check'));
-    const syncApiBase = getLiveApiBase(getJobBlock(workflow, 'openapi-sync'));
+    const checkBlock = getJobBlock(workflow, 'openapi-check');
 
-    expect(checkApiBase).toBe(
-      "${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}",
-    );
-    expect(syncApiBase).toBe(checkApiBase);
+    // Must have a "Determine API target" step
+    expect(checkBlock).toContain('Determine API target');
+    // Must reference production API for main branch
+    expect(checkBlock).toContain('https://api.aaveapy.com/api');
+    // Must reference staging API as fallback
+    expect(checkBlock).toContain('staging-api.aaveapy.com');
+    // Must use step output, not hardcoded env
+    expect(checkBlock).toContain('steps.api_target.outputs.api_base');
+  });
+
+  it('openapi-sync uses step-based API target selection', () => {
+    const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
+    const syncBlock = getJobBlock(workflow, 'openapi-sync');
+
+    // Must have a "Determine API target" step
+    expect(syncBlock).toContain('Determine API target');
+    // Must reference production API for main branch
+    expect(syncBlock).toContain('https://api.aaveapy.com/api');
+    // Must reference staging API as fallback
+    expect(syncBlock).toContain('staging-api.aaveapy.com');
+    // Must use step output, not hardcoded env
+    expect(syncBlock).toContain('steps.api_target.outputs.api_base');
+  });
+
+  it('both openapi-check and openapi-sync use the same API target logic', () => {
+    const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
+    const checkBlock = getJobBlock(workflow, 'openapi-check');
+    const syncBlock = getJobBlock(workflow, 'openapi-sync');
+
+    // Both must have the Determine API target step
+    expect(checkBlock).toContain('Determine API target');
+    expect(syncBlock).toContain('Determine API target');
+
+    // Both must reference the same production and staging URLs
+    expect(checkBlock).toContain('https://api.aaveapy.com/api');
+    expect(syncBlock).toContain('https://api.aaveapy.com/api');
   });
 });

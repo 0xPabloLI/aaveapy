@@ -216,9 +216,21 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
+      - name: Determine API target
+        id: api_target
+        run: |
+          # Production PRs (→ main) must match production API.
+          # All other branches check staging API (staging usually updates first).
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.base_ref }}" = "main" ]; then
+            echo "api_base=https://api.aaveapy.com/api" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "api_base=https://api.aaveapy.com/api" >> "$GITHUB_OUTPUT"
+          else
+            echo "api_base=${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Check OpenAPI spec is up to date
         env:
-          LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+          LIVE_API_BASE: ${{ steps.api_target.outputs.api_base }}
         run: npm run openapi:check
 
   security-audit:
@@ -254,8 +266,6 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       needs.openapi-check.result == 'failure'
     runs-on: ubuntu-latest
-    env:
-      LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     permissions:
       contents: write
       pull-requests: write
@@ -274,7 +284,19 @@ jobs:
       - name: Install dependencies
         run: npm run ci:lockcheck
 
+      - name: Determine API target
+        id: api_target
+        run: |
+          # Sync from the same API that check uses: production for main, staging for others.
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "api_base=https://api.aaveapy.com/api" >> "$GITHUB_OUTPUT"
+          else
+            echo "api_base=${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fetch OpenAPI spec from backend
+        env:
+          LIVE_API_BASE: ${{ steps.api_target.outputs.api_base }}
         run: npm run openapi:fetch
 
       - name: Generate Zod schemas from spec
