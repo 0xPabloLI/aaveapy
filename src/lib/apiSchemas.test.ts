@@ -133,7 +133,7 @@ describe('apiSchemas', () => {
     expect(item?.endTimestamp).toBe(1774965600);
   });
 
-  describe('SideDataMetaResponseSchema.errors (replaces partial)', () => {
+  describe('SideDataMetaResponseSchema.errors', () => {
     it('parses successfully when errors is absent', () => {
       const result = SideDataMetaResponseSchema.safeParse({ generatedAt: '2026-01-01' });
       expect(result.success).toBe(true);
@@ -170,9 +170,12 @@ describe('apiSchemas', () => {
     it('strips unknown fields (strict contract, no passthrough)', () => {
       const parsed = SideDataMetaResponseSchema.parse({
         partial: true,
+        unknownField: 'should be stripped',
         errors: { fdv: 'rate limited' },
       });
-      expect((parsed as Record<string, unknown>).partial).toBeUndefined();
+      // partial is a legitimate field in the production API spec
+      expect((parsed as Record<string, unknown>).partial).toBe(true);
+      expect((parsed as Record<string, unknown>).unknownField).toBeUndefined();
       expect(parsed.errors?.fdv).toBe('rate limited');
     });
 
