@@ -33,7 +33,7 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
 // ── Campaign breakdown schemas ──
 // Override: hand-written has campaignType as z.string() (looser than generated enum),
 // and aprCap as z.number().nullable() (generated has z.number() only).
-export const MeritCampaignBreakdownSchema = generated.MeritCampaignBreakdown
+export const MeritCampaignBreakdownSchema = generated.ApiMeritCampaignBreakdown
   .extend({
     campaignType: z.string().optional(),
     aprCap: z.number().nullable().optional(),
@@ -42,7 +42,7 @@ export const MeritCampaignBreakdownSchema = generated.MeritCampaignBreakdown
 // Override: hand-written has link as optional (generated has required),
 // uses IncentiveMessageSchema for message (generated uses z.string()),
 // and breakdowns must use wrapper version (generated uses ApiMeritCampaignBreakdown).
-export const MeritCampaignGroupSchema = generated.MeritCampaignGroup
+export const MeritCampaignGroupSchema = generated.ApiMeritCampaignGroup
   .extend({
     link: z.string().optional(),
     message: IncentiveMessageSchema.optional(),
@@ -57,7 +57,7 @@ export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown
 
 // MerklOpportunityGroup: override link to optional (generated has required),
 // breakdowns to use wrapper version.
-export const MerklOpportunityGroupSchema = generated.MerklOpportunityGroup
+export const MerklOpportunityGroupSchema = generated.ApiMerklOpportunityGroup
   .extend({
     link: z.string().optional(),
     breakdowns: z.array(MerklCampaignBreakdownSchema),
@@ -142,7 +142,7 @@ const normalizeBrevisIncentives = (
 // ── Reserve schema ──
 // Based on generated MarketWithSpread + frontend-specific extensions.
 // Nested campaign group arrays are overridden to use wrapper versions.
-export const ReserveWithSpreadSchema = generated.Reserve
+export const ReserveWithSpreadSchema = generated.MarketWithSpread
   .extend({
     // Frontend-specific fields not in generated spec
     supplyIncentives: z.array(z.number()).optional(),

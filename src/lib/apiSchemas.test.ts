@@ -173,8 +173,9 @@ describe('apiSchemas', () => {
         unknownField: 'should be stripped',
         errors: { fdv: 'rate limited' },
       });
-      // partial is a legitimate field in the production API spec
-      expect((parsed as Record<string, unknown>).partial).toBe(true);
+      // `partial` was removed from the API spec (replaced by structured `errors`);
+      // it should be stripped as an unknown field, just like `unknownField`.
+      expect((parsed as Record<string, unknown>).partial).toBeUndefined();
       expect((parsed as Record<string, unknown>).unknownField).toBeUndefined();
       expect(parsed.errors?.fdv).toBe('rate limited');
     });

@@ -65,7 +65,7 @@ const SideDataSubSourceErrorsSchema = z.object({
 //   - generatedAt: optional (generated has required)
 //   - errors: use explicit optional-fields schema for clarity
 //   - sub-source schemas: use frontend-specific versions where they differ
-export const SideDataMetaResponseSchema = generated.SideDataMetaResponse
+export const SideDataMetaResponseSchema = generated.SideDataPayload
   .extend({
     generatedAt: z.string().optional(),
     errors: SideDataSubSourceErrorsSchema.optional(),
