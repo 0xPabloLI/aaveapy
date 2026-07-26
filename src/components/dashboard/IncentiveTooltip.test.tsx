@@ -59,6 +59,7 @@ const defaultProps: Parameters<typeof IncentiveTooltip>[0] = {
   whitelistMerklCampaignIds: new Set<string>(),
   onToggleWhitelistMerklCampaign: vi.fn(),
   forecastStates: undefined,
+  userHasBorrow: false,
 };
 
 function renderTooltip(props: Parameters<typeof IncentiveTooltip>[0] = defaultProps) {
@@ -1072,6 +1073,112 @@ describe('IncentiveTooltip', () => {
       expect(campaignRow.className).toContain('flex');
       expect(headerRow.className).not.toContain('grid-cols-[1fr_5rem]');
       expect(campaignRow.className).not.toContain('grid-cols-[1fr_5rem]');
+    });
+  });
+
+  describe('borrowBlacklist display (AAV-1013)', () => {
+    const reserveWithBorrowBlacklist: ReserveWithSpread = {
+      ...mockReserve,
+      merklSupplys: [{
+        name: 'Lend USDtb on Aave',
+        link: 'https://merkl.angle.money',
+        message: 'Borrowers of USDtb on any Ethereum-based market or protocol are not eligible for rewards',
+        borrowBlacklist: true,
+        breakdowns: [{
+          campaignId: 'merkl-bl-1',
+          campaignApr: 5.0,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2027-12-31',
+        }],
+      }],
+    };
+
+    it('shows full APR when userHasBorrow is false (no wallet / no borrow)', () => {
+      const { container } = renderTooltip({
+        ...defaultProps,
+        reserve: reserveWithBorrowBlacklist,
+        isApy: false,
+        userHasBorrow: false,
+      });
+      const text = container.textContent!;
+      expect(text).toContain('Lend USDtb on Aave');
+      expect(text).toContain('5.00%');
+    });
+
+    it('shows 0% when userHasBorrow is true and borrowBlacklist is true', () => {
+      const { container } = renderTooltip({
+        ...defaultProps,
+        reserve: reserveWithBorrowBlacklist,
+        isApy: false,
+        userHasBorrow: true,
+      });
+      const text = container.textContent!;
+      expect(text).toContain('Lend USDtb on Aave');
+      expect(text).toContain('0.00%');
+      expect(text).toContain('Borrowers of USDtb');
+    });
+
+    it('shows full APR when borrowBlacklist is absent even if userHasBorrow is true', () => {
+      const reserveWithoutBL: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend USDC on Aave',
+          link: 'https://merkl.angle.money',
+          breakdowns: [{
+            campaignId: 'merkl-nobl-1',
+            campaignApr: 3.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+          }],
+        }],
+      };
+      const { container } = renderTooltip({
+        ...defaultProps,
+        reserve: reserveWithoutBL,
+        isApy: false,
+        userHasBorrow: true,
+      });
+      const text = container.textContent!;
+      expect(text).toContain('3.00%');
+    });
+
+    it('shows 0% when borrowBlacklist and netPositionConstraint coexist with userHasBorrow (short-circuit)', () => {
+      const reserveWithBoth: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend USDtb on Aave',
+          link: 'https://merkl.angle.money',
+          borrowBlacklist: true,
+          netPositionConstraint: { sourceSide: 'supply', offsetReserveIds: ['1:0xabc'] },
+          breakdowns: [{
+            campaignId: 'merkl-bl-npc-1',
+            campaignApr: 4.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+            positionCapUsd: 1000,
+            isCombineCap: false,
+          }],
+        }],
+      };
+      const { container } = renderTooltip({
+        ...defaultProps,
+        reserve: reserveWithBoth,
+        isApy: false,
+        userHasBorrow: true,
+      });
+      const text = container.textContent!;
+      expect(text).toContain('0.00%');
+    });
+
+    it('shows full APR by default when userHasBorrow is false (backward compat)', () => {
+      const { container } = renderTooltip({
+        ...defaultProps,
+        reserve: reserveWithBorrowBlacklist,
+        isApy: false,
+        userHasBorrow: false,
+      });
+      const text = container.textContent!;
+      expect(text).toContain('5.00%');
     });
   });
 });

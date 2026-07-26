@@ -241,10 +241,19 @@ export type MerklForecastWireItem =
 
 // Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
 // Embedded in side-data response; consumed by useCampaignAccess() gated on wallet connection.
+export interface MerklBorrowHookProtocol {
+  /** Merkl protocol identifier (0=Aave, others=external protocols). */
+  protocol: number;
+  /** Excluded borrow market contract addresses for this protocol. */
+  borrowBytesLike: string[];
+}
+
 export interface CampaignAccessEntry {
   chainId?: number;
   whitelist: string[];
   blacklist: string[];
+  /** Cross-protocol borrow exclusion details (AAV-1013). Only present for hookType=14 campaigns. */
+  borrowHookProtocols?: MerklBorrowHookProtocol[];
 }
 
 export interface CampaignAccessPayload {
