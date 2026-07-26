@@ -12,7 +12,7 @@
  * generated versions.
  */
 import { z } from 'zod';
-import { schemas as generated } from '@/generated/api/schemas';
+import { schemas as generated } from '../../generated/api/schemas.ts';
 
 // ── Frontend-specific recursive IncentiveMessage type ──
 // Generated schemas use z.string() for message fields; frontend needs recursive parsing.

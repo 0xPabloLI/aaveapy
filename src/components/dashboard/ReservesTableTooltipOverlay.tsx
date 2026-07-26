@@ -21,6 +21,7 @@ interface ReservesTableTooltipOverlayProps {
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   forecastStates?: Record<string, MerklForecastWireItem>;
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+  userHasBorrow?: boolean;
 }
 
 export default function ReservesTableTooltipOverlay({
@@ -33,6 +34,7 @@ export default function ReservesTableTooltipOverlay({
   onToggleWhitelistMerklCampaign,
   forecastStates,
   campaignAccessStatuses,
+  userHasBorrow,
 }: ReservesTableTooltipOverlayProps) {
   if (!tooltipState) return null;
   return (
@@ -53,6 +55,7 @@ export default function ReservesTableTooltipOverlay({
       onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
       forecastStates={forecastStates}
       campaignAccessStatuses={campaignAccessStatuses}
+      userHasBorrow={userHasBorrow}
     />
   );
 }

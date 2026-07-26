@@ -6,7 +6,7 @@
  * generated schemas where available. Unknown keys are stripped.
  */
 import { z } from 'zod';
-import { schemas as generated } from '@/generated/api/schemas';
+import { schemas as generated } from '../generated/api/schemas.ts';
 
 export {
   MarketsResponseSchema,
