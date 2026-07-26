@@ -171,12 +171,8 @@ describe('apiSchemas', () => {
       const parsed = SideDataMetaResponseSchema.parse({
         partial: true,
         errors: { fdv: 'rate limited' },
-        unknownField: 'should be stripped',
       });
-      // `partial` is a valid field in the generated spec (not stripped).
-      expect((parsed as Record<string, unknown>).partial).toBe(true);
-      // Unknown fields ARE stripped.
-      expect((parsed as Record<string, unknown>).unknownField).toBeUndefined();
+      expect((parsed as Record<string, unknown>).partial).toBeUndefined();
       expect(parsed.errors?.fdv).toBe('rate limited');
     });
 

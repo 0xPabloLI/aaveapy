@@ -60,12 +60,12 @@ const SideDataSubSourceErrorsSchema = z.object({
 });
 
 // ── Side data response schema ──
-// Based on generated SideDataMetaResponse + frontend-specific overrides.
+// Based on generated SideDataPayload + frontend-specific overrides.
 // Overrides:
 //   - generatedAt: optional (generated has required)
 //   - errors: use explicit optional-fields schema for clarity
 //   - sub-source schemas: use frontend-specific versions where they differ
-export const SideDataMetaResponseSchema = generated.SideDataMetaResponse
+export const SideDataMetaResponseSchema = generated.SideDataPayload
   .extend({
     generatedAt: z.string().optional(),
     errors: SideDataSubSourceErrorsSchema.optional(),
