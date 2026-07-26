@@ -49,6 +49,13 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
   breakdowns: TBreakdown[];
   opportunityId?: string;
   netPositionConstraint?: NetPositionConstraint | null;
+  /**
+   * BORROW_BL: when true, the entire supply incentive for this group is zeroed
+   * if the user has any borrow position on this token.
+   * Binary zeroing (unlike netPositionConstraint which is proportional).
+   * Only `true` is meaningful — absent means no blacklist. AAV-962.
+   */
+  borrowBlacklist?: true;
 }
 
 export interface MerklCampaignBreakdown extends ForecastableBreakdown {
@@ -234,10 +241,19 @@ export type MerklForecastWireItem =
 
 // Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
 // Embedded in side-data response; consumed by useCampaignAccess() gated on wallet connection.
+export interface MerklBorrowHookProtocol {
+  /** Merkl protocol identifier (0=Aave, others=external protocols). */
+  protocol: number;
+  /** Excluded borrow market contract addresses for this protocol. */
+  borrowBytesLike: string[];
+}
+
 export interface CampaignAccessEntry {
   chainId?: number;
   whitelist: string[];
   blacklist: string[];
+  /** Cross-protocol borrow exclusion details (AAV-1013). Only present for hookType=14 campaigns. */
+  borrowHookProtocols?: MerklBorrowHookProtocol[];
 }
 
 export interface CampaignAccessPayload {

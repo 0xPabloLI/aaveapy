@@ -115,6 +115,8 @@ interface IncentiveTooltipProps {
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   forecastStates?: Record<string, MerklForecastWireItem>;
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+  /** When true, Merkl supply opportunities with `borrowBlacklist` are zeroed (AAV-1013). */
+  userHasBorrow?: boolean;
 }
 
 interface IncentiveCampaign {
@@ -425,6 +427,7 @@ const IncentiveTooltip = ({
   onToggleWhitelistMerklCampaign,
   forecastStates,
   campaignAccessStatuses,
+  userHasBorrow = false,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -643,16 +646,20 @@ const IncentiveTooltip = ({
 
         for (const breakdown of opportunity.breakdowns) {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
-          const effectiveRate = pointRateMap
-            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
-            : tydroPointToUsdRate;
-          const apr = forecastStates
+        const effectiveRate = pointRateMap
+          ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+          : tydroPointToUsdRate;
+        // AAV-1013: borrowBlacklist short-circuits — if user has borrow and opportunity has borrowBlacklist, incentive is 0.
+        const isBorrowBlacklisted = opportunity.borrowBlacklist === true && userHasBorrow;
+        const apr = isBorrowBlacklisted ? 0 : (
+          forecastStates
             ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
-            : getMerklBreakdownApr(breakdown, effectiveRate);
-          const whitelistOnly = breakdown.whitelistOnly === true;
-          const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
-          if (!isNaN(apr) && apr >= 0) {
-            const displayValue = isApy ? convertAprToApy(apr) : apr;
+            : getMerklBreakdownApr(breakdown, effectiveRate)
+        );
+        const whitelistOnly = breakdown.whitelistOnly === true;
+        const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
+        if (!isNaN(apr) && apr >= 0) {
+          const displayValue = isApy ? convertAprToApy(apr) : apr;
             const oppLink = getMerklOppLink(opportunity);
             const campaignUrl = oppLink ? `${oppLink}/campaigns/${breakdown.campaignId}` : undefined;
             sources.push({

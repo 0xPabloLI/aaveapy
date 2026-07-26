@@ -600,3 +600,68 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
     expect(result).toBeCloseTo(3 * 0.5, 6);
   });
 });
+
+describe('AAV-962: BORROW_BL incentive zeroing', () => {
+  const makeBorrowBlOpportunity = (overrides: Partial<MerklOpportunityGroup> = {}): MerklOpportunityGroup => ({
+    name: 'BORROW_BL Test',
+    link: 'https://merkl.angle.money',
+    breakdowns: [{
+      campaignId: 'merkl-borrow-bl-1',
+      campaignApr: 5.0,
+      campaignStartedAt: '2026-01-01',
+      campaignEndedAt: '2027-12-31',
+    }],
+    borrowBlacklist: true,
+    ...overrides,
+  });
+
+  it('sumMerklIncentiveApr returns 0 when merklGroupMultiplier returns 0 for BORROW_BL', () => {
+    const opportunities = [makeBorrowBlOpportunity()];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+    });
+    expect(result).toBe(0);
+  });
+
+  it('sumMerklIncentiveApr returns 0 when crossReserveNetEligibleUsd returns 0 for BORROW_BL (unified path)', () => {
+    const opportunities = [makeBorrowBlOpportunity()];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      crossReserveNetEligibleUsd: (group) => group.borrowBlacklist ? 0 : 1000,
+    });
+    expect(result).toBe(0);
+  });
+
+  it('sumMerklIncentiveApy returns 0 when merklGroupMultiplier returns 0 for BORROW_BL', () => {
+    const opportunities = [makeBorrowBlOpportunity()];
+    const result = sumMerklIncentiveApy(opportunities, 1, {
+      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+    });
+    expect(result).toBe(0);
+  });
+
+  it('non-BORROW_BL group is unaffected by the zeroing multiplier', () => {
+    const opportunities = [
+      makeBorrowBlOpportunity({ name: 'bl-group' }),
+      makeMerklOpportunity({ name: 'normal-group' }),
+    ];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+    });
+    // Only the normal group's 3% APR remains
+    expect(result).toBeCloseTo(3.0, 6);
+  });
+
+  it('non-BORROW_BL group is unaffected by the zeroing crossReserveNetEligibleUsd', () => {
+    const opportunities = [
+      makeBorrowBlOpportunity({ name: 'bl-group' }),
+      makeMerklOpportunity({ name: 'normal-group' }),
+    ];
+    const result = sumMerklIncentiveApr(opportunities, 1, {
+      positionUsd: 1000,
+      crossReserveNetEligibleUsd: (group) => group.borrowBlacklist ? 0 : 1000,
+    });
+    // Only the normal group's 3% APR remains
+    expect(result).toBeCloseTo(3.0, 6);
+  });
+});

@@ -239,7 +239,9 @@ jobs:
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Audit runtime dependencies (High/Critical)
-        # Known: ws Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) via viem — upstream fix pending.
+        # Known vulnerabilities that do not affect this project:
+        # - react-router RSC CSRF (GHSA-qwww-vcr4-c8h2): affects RSC mode only; this is a client-side SPA
+        # - ws Memory exhaustion DoS (GHSA-96hv-2xvq-fx4p) via viem — upstream fix pending
         continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
 
@@ -275,10 +277,13 @@ jobs:
       - name: Fetch OpenAPI spec from backend
         run: npm run openapi:fetch
 
+      - name: Generate Zod schemas from spec
+        run: npm run schema:codegen
+
       - name: Check for spec changes
         id: diff
         run: |
-          if git diff --quiet -- public/openapi.json; then
+          if git diff --quiet -- public/openapi.json src/generated/api/; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -288,14 +293,18 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          commit-message: "chore(openapi): sync spec from backend"
+          commit-message: "chore(openapi): sync spec + generated schemas from backend"
           branch: "bot/openapi-sync-${{ github.run_id }}"
           delete-branch: true
-          title: "chore(openapi): sync spec from backend (${{ github.ref_name }})"
+          title: "chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})"
           body: |
-            Auto-generated OpenAPI spec sync.
+            Auto-generated OpenAPI spec + Zod schema sync.
 
             Trigger: `${{ github.event_name }}` on `${{ github.ref_name }}`
-            The `openapi-check` job detected a spec drift; this PR syncs `public/openapi.json` from the live backend.
+            The `openapi-check` job detected a spec drift; this PR syncs:
+            - `public/openapi.json` from the live backend
+            - `src/generated/api/schemas.ts` via `npm run schema:codegen`
+
+            ⚠️ Generated code may break compilation — review before merge.
           labels: openapi-sync
           base: ${{ github.ref_name }}
