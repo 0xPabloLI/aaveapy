@@ -27,6 +27,33 @@
 
 ---
 
+## 当前状态（2026-07-27）
+
+- **分支**：`lovable` = `dev` = `main`，零 divergence
+- **工作树**：干净
+- **Open PRs**：0
+- **阻塞项**：AAV-756（等后端 AAV-1222）、Phase 12（等 AAV-1022）、Phase 13（等 AAV-842）
+
+### 下一步顺序
+
+Ready / Partial 的按编号顺序做；Blocked 的等解除后插入；Backlog 的在 Ready/Partial 都做完后按编号做。
+
+| 顺序 | Phase | Issue | 状态 |
+|------|-------|-------|------|
+| **1** | 5 | AAV-755 | 📋 Ready — **立即开始** |
+| 2 | 3 | AAV-1193/1194 | 🔄 Partial |
+| 3 | 7 | AAV-1096 | 🔄 Partial |
+| 4 | 8 | AAV-1104/783/1141 | 🔄 Partial |
+| 5 | 9 | skip→describe 迁移 | 🔄 Partial |
+| 6 | 10 | AAV-1107 等 | 📝 Backlog |
+| 7 | 11 | AAV-1136 等 | 📝 Backlog |
+| — | 4 | AAV-756 | ⏸️ Blocked |
+| — | 12 | AAV-1023 | ⏸️ Blocked |
+| — | 13 | AAV-843 | ⏸️ Blocked |
+| — | 14 | AAV-364 等 | 📝 Backlog |
+
+---
+
 ## lovable 分支恢复记录（2026-07-21）
 
 `lovable` 分支于 2026-07-18 后被删除（无分支保护，最可能由 Lovable 平台 bot 在 sync 操作中删除）。已从本地 `refs/remotes/origin/lovable` 恢复到远程。`lovable` 分支缺少 `allow_deletions: false` 保护规则（仅 `dev` 和 `main` 有），建议后续补充。

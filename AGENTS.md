@@ -193,7 +193,6 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - If user requests "先给方案", provide plan first before coding.
 - Keep implementation scoped; avoid unrelated refactors.
 - Avoid filling missing backend fields with guessed defaults.
-- **调查方法论**：验证"X 是否在集合 Y 中"时，必须用 `.filter()` 枚举所有匹配项，不能用 `.find()` 只看第一个。下根因结论前必须穷举所有可能性（一个 chain 可能有多个 address book 模块）。
 
 ## Git Stash Safety
 禁止未经确认执行 `stash pop/apply/drop/clear`；暂存用 `stash push -m "msg"`，恢复前先 `stash list` 供审查。
