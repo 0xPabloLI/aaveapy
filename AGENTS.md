@@ -147,6 +147,28 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 
 **为什么用 merge commit 而不是 squash**：dev 和 lovable 的 commit 历史不同源（dev 有早期 Lovable 平台自动 commit），squash 会进一步割裂历史，使后续 PR 更容易 DIRTY。merge commit 保持双向可追踪。
 
+## 前后端协同部署工作流
+
+**核心原则**：后端是 Source of Truth，前端通过自动化管道消费后端 spec。部署顺序：后端 Staging → 前端 Staging 验证 → 前端 Production（暂连 Staging API）→ 后端 Production → 前端切 Production API。
+
+**分支映射**：后端 `railway`（Staging）→ `main`（Production）；前端 `lovable` → `dev` → `main`
+
+### Spec 自动化管道
+1. **后端**：`backend/scripts/generate-openapi.ts` 用 `ts-json-schema-generator` 从 TS 类型生成 spec，包含 `$ref` 重写（`#/definitions/` → `#/components/schemas/`）和 schema 名称清理（移除 `<>`）
+2. **前端**：`npm run openapi:fetch`（从 staging API 拉取）→ `npm run schema:codegen`（生成 Zod schemas）→ 更新 wrapper 引用 → validation gate
+3. **CI**：前端所有分支统一检查 staging API（`LIVE_API_BASE` 始终指向 staging）
+
+### 部署顺序（5 步无缝过渡）
+1. 后端 `railway` 部署到 Staging → 验证 staging API spec
+2. 前端从 staging 拉取 spec + 生成 schemas → 合并到 `dev`（CI 验证 staging API）
+3. 前端 `dev` → `main`（Vercel 部署 Production，**暂连 Staging API**）
+4. 后端 `railway` → `main` PR（Railway 部署 Production）
+5. 前端 Vercel 环境变量切到 Production API → 重新部署
+
+**注意**：当前 `.env.production` 直接配置 `https://api.aaveapy.com/api`，步骤 3-5 的"暂连 Staging API"需要手动调整 Vercel 环境变量。前后端 spec 一致时可跳过此中间步骤。
+
+详见 `docs/workflows/frontend-backend-coordinated-deployment.md`
+
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
 - Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
@@ -155,6 +177,7 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## Key References
+- `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
 - `docs/design/frontend-interaction-guardrails.md`
 - `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - `docs/rate-calculation.md`

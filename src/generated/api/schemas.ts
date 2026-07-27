@@ -102,7 +102,7 @@ const ApiMeritCampaignBreakdown = z.object({
   totalBudget: z.number().optional(),
   latestTvl: z.number().optional(),
 });
-const ApiMeritCampaignGroup = z.object({
+const CampaignGroupApiMeritCampaignBreakdown = z.object({
   link: z.string(),
   name: z.string().optional(),
   message: z.string().optional(),
@@ -178,7 +178,7 @@ const ApiBrevisBreakdown = z.object({
   isCombineCap: z.boolean().optional(),
   rewardTokenSymbol: z.string().optional(),
 });
-const ApiBrevisCampaignItem = z.object({
+const CampaignGroupApiBrevisBreakdown = z.object({
   link: z.string(),
   name: z.string().optional(),
   message: z.string().optional(),
@@ -197,13 +197,13 @@ const ApiBrevisCampaignItem = z.object({
 const MarketWithSpread = z.object({
   supplyApy: z.union([z.number(), z.null()]).optional(),
   borrowApy: z.union([z.number(), z.null()]).optional(),
-  meritSupplys: z.array(ApiMeritCampaignGroup).optional(),
-  meritBorrows: z.array(ApiMeritCampaignGroup).optional(),
+  meritSupplys: z.array(CampaignGroupApiMeritCampaignBreakdown).optional(),
+  meritBorrows: z.array(CampaignGroupApiMeritCampaignBreakdown).optional(),
   merklSupplys: z.array(ApiMerklOpportunityGroup).optional(),
   merklBorrows: z.array(ApiMerklOpportunityGroup).optional(),
   merklHolds: z.array(ApiMerklOpportunityGroup).optional(),
-  brevisSupplys: z.array(ApiBrevisCampaignItem).optional(),
-  brevisBorrows: z.array(ApiBrevisCampaignItem).optional(),
+  brevisSupplys: z.array(CampaignGroupApiBrevisBreakdown).optional(),
+  brevisBorrows: z.array(CampaignGroupApiBrevisBreakdown).optional(),
   reserveId: z.string(),
   marketName: z.string(),
   chainName: z.string(),
@@ -243,7 +243,9 @@ const MarketWithSpread = z.object({
   spokeAddress: z.string().optional(),
   collateralRisk: z.number().optional(),
 });
+const ApiMeritCampaignGroup = CampaignGroupApiMeritCampaignBreakdown;
 const ApiMerklBreakdown = MerklCampaignBreakdown;
+const ApiBrevisCampaignItem = CampaignGroupApiBrevisBreakdown;
 
 export const schemas = {
   MarketsResponse,
@@ -253,13 +255,15 @@ export const schemas = {
   MarketsErrorResponse,
   ForecastCampaignTypeLite,
   ApiMeritCampaignBreakdown,
-  ApiMeritCampaignGroup,
+  CampaignGroupApiMeritCampaignBreakdown,
   MerklCampaignBreakdown,
   ApiMerklOpportunityGroup,
   ApiBrevisBreakdown,
-  ApiBrevisCampaignItem,
+  CampaignGroupApiBrevisBreakdown,
   MarketWithSpread,
+  ApiMeritCampaignGroup,
   ApiMerklBreakdown,
+  ApiBrevisCampaignItem,
 };
 
 const endpoints = makeApi([
