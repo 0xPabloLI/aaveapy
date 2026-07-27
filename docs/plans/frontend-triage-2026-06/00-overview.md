@@ -12,7 +12,7 @@
 | ✅ Done | 2 | AAV-1013 | 962/1219/1220 全部 Done；剩余 hookType=17 拆分到 AAV-1071 |
 | 🔄 Partial | 3 | AAV-1192/1193/1194 | T1/T2 Done，T3（测试完善+文档）待做 |
 | ⏸️ Blocked | 4 | AAV-756 | 阻塞于后端 AAV-1222（ltv/liquidationThreshold 字段） |
-| 📋 Ready | 5 | AAV-755 | URL 指向 market ← **下一个** |
+| ✅ Done | 5 | AAV-755 | URL 指向 market — query param 方案（AAV-1225/1226 子 issue） |
 | ✅ Done | 6 | AAV-802 | Plasma console error（问题已自然消失） |
 | 🔄 Partial | 7 | AAV-1096 | 主体 grid→flex Done，RecentlyEnded section 待统一 |
 | 🔄 Partial | 8 | AAV-1104/734/1095/783/1141 | destructive hover ✅, URL 优化待做, memory leak 验证待做 |
@@ -23,7 +23,7 @@
 | ⏸️ Blocked | 13 | AAV-843 | 阻塞于 AAV-842（Brevis 后端 distributedSoFarUsd） |
 | 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
 
-**统计**：✅ Done 3 | 🔄 Partial 4 | 📋 Ready 1 | ⏸️ Blocked 3 | 📝 Backlog 3
+**统计**：✅ Done 4 | 🔄 Partial 4 | 📋 Ready 0 | ⏸️ Blocked 3 | 📝 Backlog 3
 
 ---
 
@@ -40,7 +40,7 @@ Ready / Partial 的按编号顺序做；Blocked 的等解除后插入；Backlog 
 
 | 顺序 | Phase | Issue | 状态 |
 |------|-------|-------|------|
-| **1** | 5 | AAV-755 | 📋 Ready — **立即开始** |
+| **1** | 5 | AAV-755 | ✅ Done — 2026-07-28 |
 | 2 | 3 | AAV-1193/1194 | 🔄 Partial |
 | 3 | 7 | AAV-1096 | 🔄 Partial |
 | 4 | 8 | AAV-1104/783/1141 | 🔄 Partial |
