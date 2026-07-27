@@ -42,9 +42,9 @@
 | 1 | `phase1-borrow-bl.md` | AAV-962 | `CampaignGroup.borrowBlacklist` + `merklGroupMultiplier` 归零 + current 也乘 groupMul + 测试 | PR #458 In Review | `feat/aav-962-borrow-bl-incentive` |
 | 2 | `phase2-borrow-blacklist-tooltip.md` | AAV-1013 (剩余) | IncentiveTooltip 传 `userHasBorrow` + BORROW_BL 归零文案 + `CampaignAccessEntry.borrowHookProtocols` | Backlog (blocked by 1) | `feat/aav-1013-borrow-bl-tooltip` |
 | 3 | `phase3-reserve-identity.md` | AAV-1192, AAV-1193, AAV-1194 | ReserveIdentity 补全：MobilePortfolioCard 评估 + 测试完善 + 文档更新 | Backlog (T1/T2 已 Done) | `refactor/aav-1192-reserve-identity` |
-| 4 | `phase4-portfolio-ltv.md` | AAV-756 | Portfolio LTV constraint + Net Effective APY (with LTV) + Health Factor | Todo (阻塞于后端 API) | `feat/aav-756-portfolio-ltv` |
+| 4 | `phase4-portfolio-ltv.md` | AAV-756 | Portfolio LTV constraint + Net Effective APY (with LTV) + Health Factor | Todo (阻塞于后端 AAV-1222) | `feat/aav-756-portfolio-ltv` |
 | 5 | `phase5-url-market.md` | AAV-755 | URL 只指向 chain → 改为指向 market | Ready for agent | `fix/aav-755-url-market` |
-| 6 | `phase6-plasma-console-error.md` | AAV-802 | Console 报 plasma chain 请求错误 | Ready for agent | `fix/aav-802-plasma-console` |
+| 6 | `phase6-plasma-console-error.md` | AAV-802 | Console 报 plasma chain 请求错误 | ✅ Done (2026-07-27) | `fix/aav-802-plasma-console` |
 | 7 | `phase7-incentive-tooltip-layout.md` | AAV-1096 | IncentiveTooltip RecentlyEnded section grid→flex 统一 | Backlog (部分完成, 测试与代码不一致) | `ui/aav-1096-tooltip-layout` |
 | 8 | `phase8-frontend-infra.md` | AAV-1104, AAV-734, AAV-1095, AAV-783, AAV-1141 | 前端基础设施：URL query 优化 + destructive hover 统一 + Zod schema 统一 + memory leak 验证 + 性能 | Backlog (部分完成) | `refactor/aav-1141-frontend-infra` |
 | 9 | `phase9-e2e-test-hardening.md` | AAV-1144→1145~1149; AAV-1151→1152~1158; AAV-1150 | E2E 测试加固：staging API ✅ + testid ✅ + skip→describe 迁移 (大量未完成) | Backlog (核心已完成, skip 迁移待做) | `test/aav-1144-e2e-hardening` |
@@ -71,7 +71,7 @@
 Phase 1 ──→ Phase 2 (tooltip 文案依赖归零逻辑)
 Phase 5 ←──→ Phase 8 / AAV-1104 (URL 路由重构有重叠，建议合并)
 Phase 12 (阻塞于 AAV-1022 — 外部 issue，不在本 plan 内)
-Phase 4 (阻塞于后端 API — ltv/liquidationThreshold 字段)
+Phase 4 (阻塞于后端 AAV-1222 — ltv/liquidationThreshold 字段)
 Phase 13 (阻塞于 AAV-842 — Brevis 后端 distributedSoFarUsd)
 ```
 
