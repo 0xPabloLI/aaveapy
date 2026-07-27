@@ -1,89 +1,55 @@
-# Triage — 2026-07-23（更新于 2026-07-27）
+# Session Handoff — 2026-07-27
 
-> 快照时间：2026-07-27 UTC+8  
-> 分支：`lovable` = `dev` = `main`（三分支完全同步）
-
----
-
-## 一、Open PRs（0 个）
-
-无 open PR。上次 triage 的两个 Dependabot PR 均已 merge：
-
-| PR | 方向 | 内容 | 状态 |
-|---|---|---|---|
-| **#469** | → main | bump npm_and_yarn group (2 updates) | ✅ Merged 2026-07-25 |
-| **#456** | → main | bump actions/setup-node 6.4.0 → 7.0.0 | ✅ Merged 2026-07-25 |
+> 这是最后一个 handoff 文档。后续不再新建 handoff，直接以 `docs/plans/frontend-triage-2026-06/00-overview.md` 的总进度表为唯一状态跟踪源。
 
 ---
 
-## 二、未提交的本地变更
+## 本 Session 完成的工作
 
-无。工作树干净。上次 triage 的 3 个未提交文件已在 commit `3aa3e429` 中提交。
-
----
-
-## 三、Ready for Agent Issues（按优先级）
-
-### 3.1 High Priority
-
-| Issue | 标题 | 关键说明 |
-|---|---|---|
-| **AAV-756** | Portfolio LTV constraint + Net Effective APY + Health Factor | 标记为 **Urgent**，状态 Todo。阻塞于后端 issue AAV-1222（需增加 ltv + liquidationThreshold 字段） |
-| **AAV-895** | Borrow ETH with cbETH collateral — cross-asset net position | 独立，需专门 offset 公式 |
-| ~~AAV-802~~ | ~~Plasma chain console error~~ | ✅ **Done**（2026-07-27 验证：问题已不存在，RPC 正常 + address book 有 Pool） |
-| **AAV-755** | URL 指向 market 而非 chain | 独立 UX 改进 |
-| **AAV-783** | 验证 memory leak 修复效果 | AAV-329 子任务 |
-
-### 3.2 Medium Priority
-
-| Issue | 标题 | 关键说明 |
-|---|---|---|
-| **AAV-862** | 统一 normalize campaignType 逻辑 (parent) | 含子任务 AAV-868 / AAV-870 / AAV-866 |
-| **AAV-843** | Brevis per-user API Dashboard | 独立 feature |
-| **AAV-726** | Refactor: flatten monorepo to single-package backend | 独立 tech debt |
-| **AAV-734** | 统一 destructive hover 样式 | 独立 UI 改进 |
-| **AAV-781** | Unify endDate semantics in Merit cache | 独立 |
-| **AAV-782** | Distinguish extraction failed vs not target type | 独立 |
-
-### 3.3 Low / No Priority
-
-| Issue | 标题 |
-|---|---|
-| AAV-829 | Unify `toLowerCase()` → `normalizeAddress()` |
-| AAV-830 | Migrate merit-api to ProviderPool |
-| AAV-517 | onchain 查询 spokeAddress |
-| AAV-449 | 移除 spokeName 字段 |
+1. **Dependabot PRs 全部 merge**：#469 (npm_and_yarn) + #456 (setup-node 7.0.0) → main
+2. **三分支同步**：`lovable` = `dev` = `main`（PR #479/#480）
+3. **AAV-802 (Plasma console error) 关闭**：验证后问题已自然消失（address book 有 `AaveV3Plasma` 模块 + RPC 正常 + production 零 error）
+4. **AAV-1222 创建**：后端 blocker issue — 要求 `GET /markets` API 增加 `ltv` + `liquidationThreshold` 字段。AAV-756 设为其子任务
+5. **Triage 文档全面更新**：overview 总进度表 + phase4/phase6 状态同步
+6. **AGENTS.md 新增调查方法论规则**：验证集合成员关系时必须用 `.filter()` 枚举所有匹配项
 
 ---
 
-## 四、推荐下一步（按优先级）
+## 当前状态
 
-```
-第 1 步：提交本地未提交的变更 ✅ 已完成 (3aa3e429)
-
-第 2 步：Dependabot PRs ✅ 已完成 (#469 + #456 merged)
-
-第 3 步：下一个开发任务（按优先级）
-  ├─ AAV-756 — Portfolio LTV + Health Factor（Urgent）→ 阻塞于后端 AAV-1222
-  ├─ AAV-802 — Plasma console error ✅ Done（问题已不存在）
-  ├─ AAV-755 — URL 指向 market ← 下一个
-  └─ AAV-895 — cross-asset net position offset formula
-```
+- **分支**：`lovable` = `dev` = `main`，零 divergence
+- **工作树**：干净
+- **Open PRs**：0
+- **阻塞项**：AAV-756（等后端 AAV-1222）、Phase 12（等 AAV-1022）、Phase 13（等 AAV-842）
 
 ---
 
-## 五、注意事项
+## 下一步
 
-1. **三分支完全同步**：`lovable` = `dev` = `main`，零 divergence（PR #479/#480 完成同步）。
+按 `docs/plans/frontend-triage-2026-06/00-overview.md` 总进度表，从 Phase 5 开始：
 
-2. **schema pipeline 已稳定运行**：`openapi-sync` bot 自动创建 PR 同步 spec + generated 代码。最近包含 16 个 schema 更新。
+| 顺序 | Phase | Issue | 状态 | 说明 |
+|------|-------|-------|------|------|
+| **1** | 5 | AAV-755 | 📋 Ready | URL 指向 market — **立即开始** |
+| 2 | 3 | AAV-1193/1194 | 🔄 Partial | ReserveIdentity 测试完善 + 文档 |
+| 3 | 7 | AAV-1096 | 🔄 Partial | IncentiveTooltip RecentlyEnded grid→flex |
+| 4 | 8 | AAV-1104/783/1141 | 🔄 Partial | URL 优化 + memory leak 验证 + 性能 |
+| 5 | 9 | skip→describe | 🔄 Partial | E2E skip 迁移（大量） |
+| 6 | 10 | AAV-1107 等 | 📝 Backlog | Reserve table UI |
+| 7 | 11 | AAV-1136 等 | 📝 Backlog | Portfolio sim UI |
+| — | 4 | AAV-756 | ⏸️ Blocked | 等后端 AAV-1222 |
+| — | 12 | AAV-1023 | ⏸️ Blocked | 等外部 AAV-1022 |
+| — | 13 | AAV-843 | ⏸️ Blocked | 等后端 AAV-842 |
+| — | 14 | AAV-364 等 | 📝 Backlog | 长期 roadmap |
 
-3. **hardcode sync 已修复**：`schemas.ts` 使用 Vite alias 导致 Node.js 脚本无法解析的问题已修复（commit `06665f0a`）。
+> Ready/Partial 的按编号顺序做；Blocked 的等解除后插入；Backlog 的在 Ready/Partial 都做完后按编号做。
 
-4. **AAV-1013 已完成**：AAV-962（核心归零逻辑）、AAV-1219（类型 + canary）、AAV-1220（Tooltip 增强）全部 Done。剩余的 hookType=17 HEALTH_FACTOR 显示已拆分到独立 issue AAV-1071。
+---
 
-5. **AAV-802 已关闭**（2026-07-27）：Plasma (9745) 在 address book 中有 `AaveV3Plasma` 模块（有 POOL 地址），已在 `AAVE_CHAIN_IDS` 中。三个 RPC 端点均正常。Production 站点 Playwright 测试：零 plasma console error。问题已自然消失。
+## 教训记录
 
-6. **AAV-756 后端 blocker 已创建**：AAV-1222 — 要求后端 `GET /markets` API 增加 per-reserve `ltv` + `liquidationThreshold` 字段。AAV-756 已设为其子任务。
+### 调查方法论：`.find()` vs `.filter()`
 
-7. **前后端协同部署工作流已文档化**：`docs/workflows/frontend-backend-coordinated-deployment.md` + AGENTS.md 中的 5 步部署说明。
+调查 AAV-802 时，用 `Object.entries(ab).find(...)` 查找 chainId=9745 的 address book 模块，只返回了 `GovernanceV3Plasma`（治理模块，无 POOL），导致错误结论"plasma 不在 AAVE_CHAIN_IDS 中"。实际上 address book 对 chain 9745 有 4 个模块，其中 `AaveV3Plasma` 有 POOL 地址。
+
+**规则**（已写入 AGENTS.md）：验证"X 是否在集合 Y 中"时，必须用 `.filter()` 枚举所有匹配项，不能用 `.find()` 只看第一个。下根因结论前必须穷举所有可能性。

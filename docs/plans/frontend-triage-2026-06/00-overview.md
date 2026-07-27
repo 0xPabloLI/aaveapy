@@ -2,6 +2,31 @@
 
 > `docs/plans/frontend-triage-2026-06/`
 
+## 总进度（2026-07-27 更新）
+
+> 这是所有 triage phase 的**唯一状态跟踪源**。每次完成一个 phase 或 issue 后更新此表。
+
+| 状态 | Phase | Issue(s) | 说明 |
+|------|-------|----------|------|
+| ✅ Done | 1 | AAV-962 | BorrowBL incentive 归零逻辑 |
+| ✅ Done | 2 | AAV-1013 | 962/1219/1220 全部 Done；剩余 hookType=17 拆分到 AAV-1071 |
+| 🔄 Partial | 3 | AAV-1192/1193/1194 | T1/T2 Done，T3（测试完善+文档）待做 |
+| ⏸️ Blocked | 4 | AAV-756 | 阻塞于后端 AAV-1222（ltv/liquidationThreshold 字段） |
+| 📋 Ready | 5 | AAV-755 | URL 指向 market ← **下一个** |
+| ✅ Done | 6 | AAV-802 | Plasma console error（问题已自然消失） |
+| 🔄 Partial | 7 | AAV-1096 | 主体 grid→flex Done，RecentlyEnded section 待统一 |
+| 🔄 Partial | 8 | AAV-1104/734/1095/783/1141 | destructive hover ✅, URL 优化待做, memory leak 验证待做 |
+| 🔄 Partial | 9 | AAV-1144~1158 | staging API ✅, testid ✅, skip→describe 迁移大量待做 |
+| 📝 Backlog | 10 | AAV-1107/1084/1121/1114/1113/738 | Reserve table 展开部分 UI 修复 |
+| 📝 Backlog | 11 | AAV-1136/1135/1123/1122/1110/1102/1162/1160/1159/733 | Portfolio simulation UI 全面优化 |
+| ⏸️ Blocked | 12 | AAV-1023/1024 | 阻塞于 AAV-1022（外部 issue） |
+| ⏸️ Blocked | 13 | AAV-843 | 阻塞于 AAV-842（Brevis 后端 distributedSoFarUsd） |
+| 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
+
+**统计**：✅ Done 3 | 🔄 Partial 4 | 📋 Ready 1 | ⏸️ Blocked 3 | 📝 Backlog 3
+
+---
+
 ## lovable 分支恢复记录（2026-07-21）
 
 `lovable` 分支于 2026-07-18 后被删除（无分支保护，最可能由 Lovable 平台 bot 在 sync 操作中删除）。已从本地 `refs/remotes/origin/lovable` 恢复到远程。`lovable` 分支缺少 `allow_deletions: false` 保护规则（仅 `dev` 和 `main` 有），建议后续补充。
@@ -40,7 +65,7 @@
 | Phase | File | Issue(s) | Scope | Status | Branch |
 |-------|------|----------|-------|--------|--------|
 | 1 | `phase1-borrow-bl.md` | AAV-962 | `CampaignGroup.borrowBlacklist` + `merklGroupMultiplier` 归零 + current 也乘 groupMul + 测试 | PR #458 In Review | `feat/aav-962-borrow-bl-incentive` |
-| 2 | `phase2-borrow-blacklist-tooltip.md` | AAV-1013 (剩余) | IncentiveTooltip 传 `userHasBorrow` + BORROW_BL 归零文案 + `CampaignAccessEntry.borrowHookProtocols` | Backlog (blocked by 1) | `feat/aav-1013-borrow-bl-tooltip` |
+| 2 | `phase2-borrow-blacklist-tooltip.md` | AAV-1013 (剩余) | IncentiveTooltip 传 `userHasBorrow` + BORROW_BL 归零文案 + `CampaignAccessEntry.borrowHookProtocols` | ✅ Done (962/1219/1220 全部 Done) | `feat/aav-1013-borrow-bl-tooltip` |
 | 3 | `phase3-reserve-identity.md` | AAV-1192, AAV-1193, AAV-1194 | ReserveIdentity 补全：MobilePortfolioCard 评估 + 测试完善 + 文档更新 | Backlog (T1/T2 已 Done) | `refactor/aav-1192-reserve-identity` |
 | 4 | `phase4-portfolio-ltv.md` | AAV-756 | Portfolio LTV constraint + Net Effective APY (with LTV) + Health Factor | Todo (阻塞于后端 AAV-1222) | `feat/aav-756-portfolio-ltv` |
 | 5 | `phase5-url-market.md` | AAV-755 | URL 只指向 chain → 改为指向 market | Ready for agent | `fix/aav-755-url-market` |
