@@ -129,6 +129,49 @@ URL hydration 和 two-way sync 行为。但 Index.tsx 组件庞大、依赖众�
 | S22 | category+market共存 | `?chain=ethereum&market=core&category=stablecoin` | 两者都生效 | 中 |
 | S23 | search+market共存 | `?chain=ethereum&market=core&search=usdc` | 两者都生效 | 中 |
 | S24 | 刷新页面 | URL 有 market param | 状态从 URL 恢复 | 高 |
+| R1 | Slug 碰撞 | 两个 marketName slugify 到同一 slug | console.warn + last-wins | 高 |
+| R2 | 重复 slug 输入 | `['core', 'core']` | 解析为重复 key（调用方应去重） | 中 |
+| R3 | 空串 slug | `['core', '']` | '' 归入 invalid | 低 |
+| R4 | 带空格 slug | `[' core ']` | 不匹配（调用方须 pre-trim） | 中 |
+| R5 | 大小写敏感 | `['Core']` | 不匹配 'core' | 低 |
+
+## Risk Analysis
+
+### setSearchParams 时序
+
+hydration effect 的 cleanup `setSearchParams` 和 two-way sync effect 的 `setSearchParams`
+按 React effect 排序保证安全：
+
+1. **Hydration effect**（第一次运行）：读取 URL params → 设置 `selectedMarkets` → 
+   cleanup 删除无效 params → 设置 `initialParamsAppliedRef.current = true`
+2. **Re-render**：`derivedChainSlug` 和 `derivedMarketSlugs` 重算
+3. **Two-way sync effect**（首次运行，因为 `initialParamsAppliedRef.current` 变为 true）：
+   基于 `derivedMarketSlugs` set/delete market param
+
+时序保证：two-way sync effect 依赖 `derivedMarketSlugs`（useMemo），而 `derivedMarketSlugs`
+依赖 `selectedMarkets`。hydration effect 设置 `selectedMarkets` 后触发 re-render，useMemo
+重算后 two-way sync effect 才运行。不存在两者同时操作同一 URL 的竞态。
+
+### API 不可用降级
+
+hydration effect 有 guard：`if (chainParam && effectiveMarketsList.length === 0) return;`
+API 失败且无缓存时，effect 提前返回，URL params 不被处理。`initialParamsAppliedRef`
+保持 false，two-way sync effect 也不运行。URL 保持原样（不被修改）。
+
+当 `effectiveMarketsList` 从缓存或 API 恢复时，effect 重新运行（依赖数组包含
+`effectiveMarketsList`），正常处理 URL params。
+
+### URL 编码
+
+逗号在 URL query param 中会被浏览器编码为 `%2C`（如 `market=core%2Cprime`）。
+这是标准行为，`URLSearchParams.get('market')` 返回解码后的 `core,prime`。
+功能不受影响，但 URL 可读性略降。
+
+### 性能
+
+`derivedMarketSlugs` useMemo 对每个 `selectedMarket` 调用 `effectiveMarketsList.find()`，
+复杂度 O(n×m)。与 `derivedChainSlug` 同模式（已有技术债）。333+ reserves 场景下
+单次计算约 0.1ms，useMemo 缓存后不构成性能瓶颈。
 
 ## Out of Scope
 

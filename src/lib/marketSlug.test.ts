@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { slugifyMarketLabel, resolveMarketSlugs } from './marketSlug';
 import type { MarketListItem } from '@/types/aave';
 
@@ -106,5 +106,56 @@ describe('resolveMarketSlugs', () => {
     const result = resolveMarketSlugs(['core'], 8453, ALL_MARKETS);
     expect(result.resolved).toEqual([]);
     expect(result.invalid).toEqual(['core']);
+  });
+});
+
+// ── Risk scenarios: collision, duplicate, edge formats ──────────────────────
+
+describe('resolveMarketSlugs — risk scenarios', () => {
+  // R1: Slug collision — AaveV3Test and AaveV4Test both slugify to 'test'
+  it('warns and last-wins when two markets produce the same slug', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const COLLISION_MARKETS: MarketListItem[] = [
+      { marketName: 'AaveV3Test', chainName: 'TestChain', chainId: 999 },
+      { marketName: 'AaveV4Test', chainName: 'TestChain', chainId: 999 },
+    ];
+    // Both slugify to 'test' (V3 strips 'AaveV3' → 'Test', V4 strips 'AaveV4' → 'Test')
+    const result = resolveMarketSlugs(['test'], 999, COLLISION_MARKETS);
+    // Last-wins: AaveV4Test overwrites AaveV3Test in the Map
+    expect(result.resolved).toEqual(['999:AaveV4Test']);
+    expect(result.invalid).toEqual([]);
+    // Collision warning was emitted
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('[marketSlug] Collision'),
+    );
+    spy.mockRestore();
+  });
+
+  // R2: Duplicate slug in input — ['core', 'core'] resolves to same key twice
+  it('resolves duplicate slugs to duplicate keys (caller should deduplicate)', () => {
+    const result = resolveMarketSlugs(['core', 'core'], 1, ETH_MARKETS);
+    expect(result.resolved).toEqual(['1:AaveV3Ethereum', '1:AaveV3Ethereum']);
+    expect(result.invalid).toEqual([]);
+  });
+
+  // R3: Empty string in slug array — treated as invalid (caller should filter)
+  it('treats empty string slug as invalid', () => {
+    const result = resolveMarketSlugs(['core', ''], 1, ETH_MARKETS);
+    expect(result.resolved).toEqual(['1:AaveV3Ethereum']);
+    expect(result.invalid).toEqual(['']);
+  });
+
+  // R4: Whitespace in slug — does not match (caller must pre-trim)
+  it('does not resolve a slug with leading/trailing whitespace (caller must trim)', () => {
+    const result = resolveMarketSlugs([' core '], 1, ETH_MARKETS);
+    expect(result.resolved).toEqual([]);
+    expect(result.invalid).toEqual([' core ']);
+  });
+
+  // R5: Case sensitivity — slug is case-sensitive
+  it('does not resolve uppercase slug (slug is lowercase by design)', () => {
+    const result = resolveMarketSlugs(['Core'], 1, ETH_MARKETS);
+    expect(result.resolved).toEqual([]);
+    expect(result.invalid).toEqual(['Core']);
   });
 });
