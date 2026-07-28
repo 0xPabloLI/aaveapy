@@ -1,27 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Cross-reserve Merkl offset — portfolio simulation E2E.
+ * Shared setup, types, API discovery, and scenario runners for
+ * Cross-reserve Merkl offset E2E tests.
  *
- * Dynamically discovers reserves with Merkl netPositionConstraint from
- * the staging API at module load time, then verifies that adding an
- * offset borrow position reduces the target reserve's supply incentive
- * (the data-after attribute on the incentive cell).
- *
- * Two scenario types:
- * - cross-reserve: target supply + different offset reserve borrow
- * - self-loop: same reserve supply + borrow (looping offset)
- *
- * Assertions are behavioural (relative changes, proportional to Merkl APR),
- * not value-specific, to remain resilient to APR changes over time.
- *
- * If no cross-offset campaigns are found in staging data, all tests skip.
- * Desktop + mobile variants are generated from the same scenario list.
+ * Extracted from portfolio-cross-reserve-offset.spec.ts to allow
+ * desktop/mobile spec files to share the same infrastructure.
  */
 
 // ─── Types ─────────────────────────────────────────────────────────
 
-interface CrossOffsetScenario {
+export interface CrossOffsetScenario {
   type: 'cross-reserve' | 'self-loop';
   targetSymbol: string;
   targetMarketLabel: string;
@@ -140,9 +129,9 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
 
 // Discover at module load (top-level await — Playwright supports ESM TLA)
 const allScenarios = await discoverScenarios();
-const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reserve').slice(0, 3);
-const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
-const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
+export const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reserve').slice(0, 3);
+export const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
+export const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
 
 // ─── UI Helpers ────────────────────────────────────────────────────
 
@@ -257,7 +246,7 @@ async function readSupplyIncentiveAfter(
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossReserveScenario(
+export async function runCrossReserveScenario(
   page: Page,
   s: CrossOffsetScenario,
   isMobile: boolean,
@@ -331,7 +320,7 @@ async function runCrossReserveScenario(
   ).toBeLessThanOrEqual(0.05);
 }
 
-async function runSelfLoopScenario(
+export async function runSelfLoopScenario(
   page: Page,
   s: CrossOffsetScenario,
   isMobile: boolean,
@@ -390,70 +379,4 @@ async function runSelfLoopScenario(
   ).toBeLessThanOrEqual(0.05);
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────
 
-test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
-  // ── Desktop ──────────────────────────────────────────────────────
-
-  test.describe('desktop', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-    });
-
-    if (!hasScenarios) {
-      test('no cross-offset scenarios found in staging data', () => {
-        test.skip('No cross-offset Merkl campaigns found in current staging data');
-      });
-    }
-
-    for (const s of crossReserveScenarios) {
-      test(
-        `cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`,
-        async ({ page }) => {
-          await runCrossReserveScenario(page, s, false);
-        },
-      );
-    }
-
-    for (const s of selfLoopScenarios) {
-      test(
-        `self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`,
-        async ({ page }) => {
-          await runSelfLoopScenario(page, s, false);
-        },
-      );
-    }
-  });
-
-  // ── Mobile ───────────────────────────────────────────────────────
-
-  test.describe('mobile', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-    });
-
-    if (!hasScenarios) {
-      test('no cross-offset scenarios found in staging data', () => {
-        test.skip('No cross-offset Merkl campaigns found in current staging data');
-      });
-    }
-
-    for (const s of crossReserveScenarios) {
-      test(
-        `cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`,
-        async ({ page }) => {
-          await runCrossReserveScenario(page, s, true);
-        },
-      );
-    }
-
-    for (const s of selfLoopScenarios) {
-      test(
-        `self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`,
-        async ({ page }) => {
-          await runSelfLoopScenario(page, s, true);
-        },
-      );
-    }
-  });
-});

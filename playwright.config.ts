@@ -26,6 +26,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: [
+        /.*\.mobile\.spec\.ts/,
+        /top-opportunities-mobile-layout\.spec\.ts/,
+        /portfolio-mobile-spacing\.spec\.ts/,
+        /reserves-table-mobile-interactions\.spec\.ts/,
+      ],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1600, height: 1200 },
@@ -36,6 +42,11 @@ export default defineConfig({
       testIgnore: [
         /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
         /reserves-table-simulation-nested-scroll\.spec\.ts/,
+        /.*\.desktop\.spec\.ts/,
+        /portfolio-results-inline-delta\.spec\.ts/,
+        /reserves-table-market-filter-pin\.spec\.ts/,
+        /reserves-table-interactions\.spec\.ts/,
+        /reserves-table-stick\.spec\.ts/,
       ],
       use: {
         ...devices['Pixel 7'],

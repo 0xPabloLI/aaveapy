@@ -101,13 +101,6 @@ async function assertExpandedRowPinnedToAnchor(
 }
 
 test.describe('Market filter pin scroll (desktop)', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Pin scroll is desktop-specific',
-    );
-  });
-
   test('(1) not at anchor → apply market filter → pins to top anchor', async ({ page }) => {
     await page.goto('/');
     await waitDesktopTable(page);
