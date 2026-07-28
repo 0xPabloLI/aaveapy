@@ -1076,6 +1076,47 @@ describe('IncentiveTooltip', () => {
     });
   });
 
+  describe('RecentlyEnded section layout (AAV-1096)', () => {
+    it('uses flex layout for RecentlyEnded source header and campaign rows', () => {
+      const reserve: ReserveWithSpread = {
+        ...mockReserve,
+        merklSupplys: [{
+          name: 'Lend GHO on Merkl',
+          link: 'https://merkl.angle.money',
+          breakdowns: [
+            {
+              campaignId: 'merkl-1',
+              campaignApr: 10,
+              campaignStartedAt: '2026-01-01',
+              campaignEndedAt: '2027-12-31',
+              rewardTokenSymbol: 'INK',
+              rewardTokenIconUrl: 'https://example.com/ink.svg',
+              lastEndedCampaign: {
+                startedAt: '2025-06-01',
+                endedAt: '2025-12-31',
+                campaignId: 'merkl-old-1',
+              },
+            },
+          ],
+        }],
+      };
+      const { baseElement } = renderTooltip({ ...defaultProps, reserve });
+      // Expand the RecentlyEnded section
+      const expandButton = screen.getByText(/Recently Ended/);
+      fireEvent.click(expandButton);
+      // Assert source header row uses flex, not grid
+      const endedHeader = baseElement.querySelector('[data-testid="ended-source-header"]');
+      expect(endedHeader).toBeTruthy();
+      expect(endedHeader!.className).toContain('flex');
+      expect(endedHeader!.className).not.toContain('grid-cols-[1fr_5rem]');
+      // Assert campaign row uses flex, not grid
+      const endedCampaignRow = baseElement.querySelector('[data-testid="ended-campaign-row"]');
+      expect(endedCampaignRow).toBeTruthy();
+      expect(endedCampaignRow!.className).toContain('flex');
+      expect(endedCampaignRow!.className).not.toContain('grid-cols-[1fr_5rem]');
+    });
+  });
+
   describe('borrowBlacklist display (AAV-1013)', () => {
     const reserveWithBorrowBlacklist: ReserveWithSpread = {
       ...mockReserve,
