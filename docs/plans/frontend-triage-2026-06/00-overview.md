@@ -14,7 +14,7 @@
 | ⏸️ Blocked | 4 | AAV-756 | 阻塞于后端 AAV-1222（ltv/liquidationThreshold 字段） |
 | ✅ Done | 5 | AAV-755 | URL 指向 market — query param 方案（AAV-1225/1226 子 issue） |
 | ✅ Done | 6 | AAV-802 | Plasma console error（问题已自然消失） |
-| 🔄 Partial | 7 | AAV-1096 | 主体 grid→flex Done，RecentlyEnded section 待统一（2 处 `grid-cols-[1fr_5rem]` 仍在） |
+| ✅ Done | 7 | AAV-1096 | grid→flex 统一完成（commit `103254c5`，子 issue AAV-1234 Done） |
 | 🔄 Shrunk | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; 剩 AAV-783（后端）+ AAV-1141（低优先） |
 | 🔄 Partial | 9 | AAV-1144~1158 | staging API ✅, testid ✅; 21 处 platform-conditional skip 需迁移 |
 | 📝 Re-eval | 10 | AAV-1107/1084/1121/1114/1113/738 | Reserve table 展开 UI — 需浏览器验证 bug 是否仍复现 |
@@ -23,7 +23,7 @@
 | 🔄 Unblocked | 13 | AAV-843 | 阻塞项 AAV-842 已 Canceled；per-user API 独立于 distributedSoFarUsd，可解除阻塞 |
 | 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
 
-**统计**：✅ Done 7 | 🔄 Partial/Shrunk 3 | 📝 Re-eval/Backlog 3 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
+**统计**：✅ Done 8 | 🔄 Partial/Shrunk 2 | 📝 Re-eval/Backlog 3 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
 
 ---
 
@@ -77,11 +77,10 @@
 
 | 顺序 | Phase | Issue | 状态 | 估计 |
 |------|-------|-------|------|------|
-| **1** | 7 | AAV-1096 | 🔄 Partial — 2 处 grid→flex | 0.5 session |
-| **2** | 9 | 21 处 platform skip→describe 迁移 | 🔄 Partial | 0.5 session |
-| **3** | 10 | AAV-1107 等 | 📝 Re-eval — 先浏览器验证 bug 是否复现 | 0.5 session 验证 |
-| **4** | 11 | AAV-1136 等 | 📝 Re-eval — 先浏览器验证哪些已被覆盖 | 0.5 session 验证 |
-| **5** | 13 | AAV-843 | 🔄 Unblocked — 需单独 spec | 2-3 sessions |
+| **1** | 9 | 21 处 platform skip→describe 迁移 | 🔄 Partial | 0.5 session |
+| **2** | 10 | AAV-1107 等 | 📝 Re-eval — 先浏览器验证 bug 是否复现 | 0.5 session 验证 |
+| **3** | 11 | AAV-1136 等 | 📝 Re-eval — 先浏览器验证哪些已被覆盖 | 0.5 session 验证 |
+| **4** | 13 | AAV-843 | 🔄 Unblocked — 需单独 spec | 2-3 sessions |
 | — | 8 | AAV-1141 | 📉 低优先 — 需先 Lighthouse | 待定 |
 | — | 4 | AAV-756 | ⏸️ Blocked — 等后端 AAV-1222 | — |
 | — | 12 | AAV-1023 | ⚠️ Dormant — AAV-1022 No priority | — |
@@ -117,9 +116,7 @@
 
 部分完成的 issue（保留在 plan 中，标注进度）：
 
-| Issue | 当前 Phase | 已完成 | 未完成 |
-|-------|-----------|--------|--------|
-| AAV-1096 | Phase 7 | IncentiveTooltip 主体 grid→flex + 测试 | RecentlyEnded section 仍有 `grid-cols-[1fr_5rem]`（第 341/383 行） |
+（无 — Phase 7 AAV-1096 已全部完成，commit `103254c5`）
 
 ---
 
@@ -133,7 +130,7 @@
 | 4 | `phase4-portfolio-ltv.md` | AAV-756 | Portfolio LTV constraint + Net Effective APY (with LTV) + Health Factor | ⏸️ Blocked (后端 AAV-1222) | `feat/aav-756-portfolio-ltv` |
 | 5 | `phase5-url-market.md` | AAV-755 | URL 只指向 chain → 改为指向 market | ✅ Done | `fix/aav-755-url-market` |
 | 6 | `phase6-plasma-console-error.md` | AAV-802 | Console 报 plasma chain 请求错误 | ✅ Done | `fix/aav-802-plasma-console` |
-| 7 | `phase7-incentive-tooltip-layout.md` | AAV-1096 | IncentiveTooltip RecentlyEnded section grid→flex 统一 | 🔄 Partial (2 处 grid 仍在) | `ui/aav-1096-tooltip-layout` |
+| 7 | `phase7-incentive-tooltip-layout.md` | AAV-1096 | IncentiveTooltip RecentlyEnded section grid→flex 统一 | ✅ Done (commit `103254c5`) | `ui/aav-1096-tooltip-layout` |
 | 8 | `phase8-frontend-infra.md` | AAV-1141 (剩余) | ~~AAV-734 Done~~ ~~AAV-1095 Done~~ ~~AAV-1104 Canceled~~ AAV-783 后端跟踪 | 🔄 Shrunk (仅 AAV-1141 低优先) | `refactor/aav-1141-frontend-infra` |
 | 9 | `phase9-e2e-test-hardening.md` | 21 处 platform skip | E2E 测试加固：staging API ✅ + testid ✅ + skip→describe 迁移 (21 处) | 🔄 Partial | `test/aav-1144-e2e-hardening` |
 | 10 | `phase10-reserve-table-expand-ui.md` | AAV-1107, AAV-1084, AAV-1121, AAV-1114, AAV-1113, AAV-738 | Reserve table 展开部分 UI 修复 + 优化 | 📝 Re-eval (需浏览器验证) | `fix/aav-1107-reserve-expand-ui` |
