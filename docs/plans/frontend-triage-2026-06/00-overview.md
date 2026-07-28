@@ -2,7 +2,7 @@
 
 > `docs/plans/frontend-triage-2026-06/`
 
-## 总进度（2026-07-27 更新）
+## 总进度（2026-07-28 更新）
 
 > 这是所有 triage phase 的**唯一状态跟踪源**。每次完成一个 phase 或 issue 后更新此表。
 
@@ -10,7 +10,7 @@
 |------|-------|----------|------|
 | ✅ Done | 1 | AAV-962 | BorrowBL incentive 归零逻辑 |
 | ✅ Done | 2 | AAV-1013 | 962/1219/1220 全部 Done；剩余 hookType=17 拆分到 AAV-1071 |
-| 🔄 Partial | 3 | AAV-1192/1193/1194 | T1/T2 Done，T3（测试完善+文档）待做 |
+| ✅ Done | 3 | AAV-1192/1193/1194 | T1/T2/T3 全部 Done；MobilePortfolioCard 保留内联（ADR-0028） |
 | ⏸️ Blocked | 4 | AAV-756 | 阻塞于后端 AAV-1222（ltv/liquidationThreshold 字段） |
 | ✅ Done | 5 | AAV-755 | URL 指向 market — query param 方案（AAV-1225/1226 子 issue） |
 | ✅ Done | 6 | AAV-802 | Plasma console error（问题已自然消失） |
@@ -23,11 +23,11 @@
 | ⏸️ Blocked | 13 | AAV-843 | 阻塞于 AAV-842（Brevis 后端 distributedSoFarUsd） |
 | 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
 
-**统计**：✅ Done 4 | 🔄 Partial 4 | 📋 Ready 0 | ⏸️ Blocked 3 | 📝 Backlog 3
+**统计**：✅ Done 5 | 🔄 Partial 3 | 📋 Ready 0 | ⏸️ Blocked 3 | 📝 Backlog 3
 
 ---
 
-## 当前状态（2026-07-27）
+## 当前状态（2026-07-28）
 
 - **分支**：`lovable` = `dev` = `main`，零 divergence
 - **工作树**：干净
@@ -41,7 +41,7 @@ Ready / Partial 的按编号顺序做；Blocked 的等解除后插入；Backlog 
 | 顺序 | Phase | Issue | 状态 |
 |------|-------|-------|------|
 | **1** | 5 | AAV-755 | ✅ Done — 2026-07-28 |
-| 2 | 3 | AAV-1193/1194 | 🔄 Partial |
+| **2** | 3 | AAV-1192/1193/1194 | ✅ Done — 2026-07-28 |
 | 3 | 7 | AAV-1096 | 🔄 Partial |
 | 4 | 8 | AAV-1104/783/1141 | 🔄 Partial |
 | 5 | 9 | skip→describe 迁移 | 🔄 Partial |

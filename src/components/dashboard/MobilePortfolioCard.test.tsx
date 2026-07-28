@@ -18,6 +18,8 @@ vi.mock('@/lib/chainIcons', () => ({
 
 vi.mock('@/lib/marketLabels', () => ({
   getMarketChipLabel: () => 'Ethereum',
+  isV4Market: (marketName: string) => marketName.startsWith('AaveV4'),
+  getHubChipClass: (isV4: boolean) => isV4 ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground',
 }));
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
@@ -33,6 +35,14 @@ const makeEntry = (symbol: string): PortfolioReserveEntry => ({
   hidden: false,
   isOrphan: false,
   restrictedStatus: null,
+});
+
+const makeV4Entry = (symbol: string): PortfolioReserveEntry => ({
+  ...makeEntry(symbol),
+  reserveId: `AaveV4Ethereum-${symbol}`,
+  marketName: 'AaveV4Ethereum',
+  hubName: 'Core',
+  hubId: 'hub-core',
 });
 
 const makeReserve = (symbol: string): ReserveWithSpread => ({
@@ -272,6 +282,42 @@ describe('MobilePortfolioCard — P1 gradient→solid + Summary $/day (AAV-1185)
       expect(span.className).not.toContain('text-foreground/');
       expect(span.className).toMatch(/ds-text-emerald-600-70|ds-text-brand-cyan-70/);
     }
+  });
+});
+
+// ── AAV-1192: V4 hub chip visibility ────────────────────────────
+
+describe('MobilePortfolioCard — V4 hub chip visibility (AAV-1192)', () => {
+  afterEach(() => cleanup());
+
+  it('renders hubName chip for V4 entry', () => {
+    const entries = [makeV4Entry('USDC')];
+    const { container } = renderCard(entries);
+    const hubChip = container.querySelector('[title="Hub: Core"]');
+    expect(hubChip).toBeTruthy();
+    expect(hubChip?.textContent).toBe('Core');
+  });
+
+  it('does not render hub chip for V3 entry', () => {
+    const entries = [makeEntry('USDC')];
+    const { container } = renderCard(entries);
+    const hubChip = container.querySelector('[title^="Hub:"]');
+    expect(hubChip).toBeNull();
+  });
+
+  it('hub chip uses V4 brand magenta style for V4 market', () => {
+    const entries = [makeV4Entry('USDC')];
+    const { container } = renderCard(entries);
+    const hubChip = container.querySelector('[title="Hub: Core"]');
+    expect(hubChip?.className).toContain('rgb(var(--ds-brand-magenta-rgb))');
+  });
+
+  it('hub chip is a non-interactive span (no cursor-pointer)', () => {
+    const entries = [makeV4Entry('USDC')];
+    const { container } = renderCard(entries);
+    const hubChip = container.querySelector('[title="Hub: Core"]');
+    expect(hubChip?.tagName).toBe('SPAN');
+    expect(hubChip?.className).not.toContain('cursor-pointer');
   });
 });
 
