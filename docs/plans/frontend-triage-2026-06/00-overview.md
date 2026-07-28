@@ -17,13 +17,13 @@
 | ✅ Done | 7 | AAV-1096 | grid→flex 统一完成（commit `103254c5`，子 issue AAV-1234 Done） |
 | 🔄 Shrunk | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; 剩 AAV-783（后端）+ AAV-1141（低优先） |
 | ✅ Done | 9 | AAV-1144~1158 | staging API ✅, testid ✅; 25 处 platform-conditional skip → project config routing (AAV-1154 Done) |
-| 📝 Re-eval | 10 | AAV-1107/1084/1121/1114/1113/738 | Reserve table 展开 UI — 需浏览器验证 bug 是否仍复现 |
+| ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed; AAV-1107 verified fixed; AAV-1114 not a bug (Canceled); AAV-738 feature request; AAV-1113 no data |
 | 📝 Re-eval | 11 | AAV-1136/1135/1123/1122/1110/1102/1162/1160/1159/733 | Portfolio simulation UI — 需重新评估（部分可能已被后续改动覆盖） |
 | ⚠️ Dormant | 12 | AAV-1023/1024 | 阻塞于 AAV-1022（No priority, 自 6/27 无进展）；投入产出比低 |
 | 🔄 Unblocked | 13 | AAV-843 | 阻塞项 AAV-842 已 Canceled；per-user API 独立于 distributedSoFarUsd，可解除阻塞 |
 | 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
 
-**统计**：✅ Done 9 | 🔄 Shrunk 1 | 📝 Re-eval/Backlog 3 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
+**统计**：✅ Done 10 | 🔄 Shrunk 1 | 📝 Re-eval/Backlog 2 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
 
 ---
 
@@ -78,7 +78,7 @@
 | 顺序 | Phase | Issue | 状态 | 估计 |
 |------|-------|-------|------|------|
 | ~~1~~ | ~~9~~ | ~~21 处 platform skip→describe 迁移~~ | ✅ Done (AAV-1154) | ~~0.5 session~~ |
-| **1** | 10 | AAV-1107 等 | 📝 Re-eval — 先浏览器验证 bug 是否复现 | 0.5 session 验证 |
+| ~~1~~ | ~~10~~ | ~~AAV-1107 等~~ | ✅ Done (commit `738a068c`) — AAV-1121+1084 fixed, 1107 verified, 1114 canceled | ~~0.5 session~~ |
 | **2** | 11 | AAV-1136 等 | 📝 Re-eval — 先浏览器验证哪些已被覆盖 | 0.5 session 验证 |
 | **3** | 13 | AAV-843 | 🔄 Unblocked — 需单独 spec | 2-3 sessions |
 | — | 8 | AAV-1141 | 📉 低优先 — 需先 Lighthouse | 待定 |
@@ -133,7 +133,7 @@
 | 7 | `phase7-incentive-tooltip-layout.md` | AAV-1096 | IncentiveTooltip RecentlyEnded section grid→flex 统一 | ✅ Done (commit `103254c5`) | `ui/aav-1096-tooltip-layout` |
 | 8 | `phase8-frontend-infra.md` | AAV-1141 (剩余) | ~~AAV-734 Done~~ ~~AAV-1095 Done~~ ~~AAV-1104 Canceled~~ AAV-783 后端跟踪 | 🔄 Shrunk (仅 AAV-1141 低优先) | `refactor/aav-1141-frontend-infra` |
 | 9 | `phase9-e2e-test-hardening.md` | 25 处 platform skip | E2E 测试加固：staging API ✅ + testid ✅ + skip→describe 迁移 (25 处, AAV-1154 Done) | ✅ Done | `test/aav-1154-e2e-skip-migration` |
-| 10 | `phase10-reserve-table-expand-ui.md` | AAV-1107, AAV-1084, AAV-1121, AAV-1114, AAV-1113, AAV-738 | Reserve table 展开部分 UI 修复 + 优化 | 📝 Re-eval (需浏览器验证) | `fix/aav-1107-reserve-expand-ui` |
+| 10 | `phase10-reserve-table-expand-ui.md` | AAV-1107, AAV-1084, AAV-1121, AAV-1114, AAV-1113, AAV-738 | Reserve table 展开部分 UI 修复 + 优化 | ✅ Done (commit `738a068c`) — AAV-1121 cap spacer height + AAV-1084 flex-wrap; AAV-1107/1114 verified; AAV-738 feature request; AAV-1113 no data | `fix/aav-1107-reserve-expand-ui` |
 | 11 | `phase11-portfolio-simulation-ui.md` | AAV-1136, AAV-1135, AAV-1123, AAV-1122, AAV-1110, AAV-1102, AAV-1162, AAV-1160, AAV-1159, AAV-733 | Portfolio simulation UI 全面优化 | 📝 Re-eval (需浏览器验证) | `ui/aav-1136-portfolio-sim-ui` |
 | 12 | `phase12-offset-reserve-table.md` | AAV-1023 + AAV-1024 | Reserve table offset 规则改造 + Shared scenario 同步 | ⚠️ Dormant (AAV-1022 No priority) | `refactor/aav-1023-offset-reserve` |
 | 13 | `phase13-brevis-user-dashboard.md` | AAV-843 | Brevis per-user API 接入：Dashboard + Claim | 🔄 Unblocked (AAV-842 Canceled) | `feat/aav-843-brevis-dashboard` |
