@@ -510,13 +510,12 @@ const SimulationSubRow = ({
       <tr data-align-key={mainAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-            {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
-                container has no `min-w-0` and the spans are not truncated, so the content
-                visually bleeds into the right-aligned Current column's left-side whitespace
-                when the label cell alone is too narrow (e.g. Celo USDT `Supplied / Cap $19.50M`).
-                The outer table wrapper still hard-clips, so the bleed never causes horizontal
-                scrolling — it only consumes the natural inter-column gap. */}
-            <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
+            {/* Label + cap use `flex-wrap` so the cap text drops to a second line
+                when the label cell cannot fit both on one line, instead of bleeding
+                into the right-aligned Current column's whitespace (AAV-1084).
+                Each span keeps `whitespace-nowrap` so individual tokens are never
+                broken. Matches the compact layout's flex-wrap pattern. */}
+            <div className="flex flex-wrap items-baseline gap-x-1.5">
               {row.href ? (
                 <a
                   href={row.href}
@@ -1173,6 +1172,12 @@ const SimulationSubRow = ({
           <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={3} className={`pt-0 pb-1 ${valuePx}`}>
               <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
+              {/* Invisible text placeholder matching note spacer row height (AAV-1121).
+                  Uses the same class pattern as the note spacer's <p> so both spacer
+                  types have consistent row heights without magic numbers. */}
+              <p className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none ${noteIndentClass}`}>
+                {row.notePlaceholder ?? '.'}
+              </p>
             </td>
           </tr>
         ) : null}

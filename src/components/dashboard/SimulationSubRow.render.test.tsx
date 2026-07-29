@@ -419,3 +419,42 @@ describe('SimulationSubRow — headline reference (AAV-1167)', () => {
     expect(html.indexOf('Headline')).toBeGreaterThan(html.indexOf('Incentive'));
   });
 });
+
+describe('SimulationSubRow — AAV-1121: cap spacer row height alignment', () => {
+  it('TC-1121-01: cap spacer row contains invisible text placeholder (text-transparent)', () => {
+    const html = renderDesktop({ ...baseReserve });
+    // Find all <tr> elements that contain opacity-0 (cap spacer rows).
+    // Each such <tr> should also contain text-transparent (invisible text placeholder).
+    const capSpacerPattern = /<tr[^>]*aria-hidden[^>]*>[\s\S]*?opacity-0[\s\S]*?<\/tr>/g;
+    const capSpacers = html.match(capSpacerPattern) ?? [];
+    expect(capSpacers.length).toBeGreaterThan(0);
+    for (const spacer of capSpacers) {
+      expect(spacer).toContain('text-transparent');
+    }
+  });
+
+  it('TC-1121-02: cap spacer row preserves opacity-0 progress bar', () => {
+    const html = renderDesktop({ ...baseReserve });
+    expect(html).toContain('opacity-0');
+    expect(html).toContain('h-1.5');
+  });
+
+  it('TC-1121-03: note spacer row unchanged (still has text-transparent)', () => {
+    const html = renderDesktop({ ...baseReserve });
+    expect(html).toContain('text-transparent');
+  });
+});
+
+describe('SimulationSubRow — AAV-1084: desktop label cell flex-wrap', () => {
+  it('TC-1084-01: desktop renderRow label flex container uses flex-wrap (not whitespace-nowrap on container)', () => {
+    const html = renderDesktop({ ...baseReserve });
+    // After fix: the label flex container should use flex-wrap, matching compact layout.
+    // Class: "flex flex-wrap items-baseline gap-x-1.5"
+    expect(html).toContain('flex flex-wrap items-baseline gap-x-1.5');
+  });
+
+  it('TC-1084-02: compact layout label cell still uses flex-wrap (regression)', () => {
+    const html = renderCompact({ ...baseReserve });
+    expect(html).toContain('flex flex-wrap items-baseline gap-x-1.5');
+  });
+});

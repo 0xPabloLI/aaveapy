@@ -1,11 +1,11 @@
 # Phase 4: Portfolio LTV Constraint + Net Effective APY + Health Factor
 
-> Issue: AAV-756 (Urgent)
+> Issue: AAV-756 (Urgent) — 子任务 of AAV-1222
 > 估计: 2-3 sessions
 > Branch: `feat/aav-756-portfolio-ltv`
-> Linear 状态: Todo
+> Linear 状态: Todo（阻塞于后端 AAV-1222）
 
-## 代码审查状态（2026-07-21）
+## 代码审查状态（2026-07-27）
 
 ### 已有基础
 
@@ -41,4 +41,6 @@
 
 ## 阻塞
 
-- 后端 API 需先增加 `ltv` 和 `liquidationThreshold` 字段
+- **后端 issue AAV-1222**（2026-07-27 创建）：要求 `GET /markets` API 增加 per-reserve `ltv` 和 `liquidationThreshold` 字段
+- AAV-756 已设为 AAV-1222 的子任务
+- 后端完成后，前端可立即开始实施

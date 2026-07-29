@@ -159,6 +159,10 @@ _Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径; S
 **Reserve Lookup Strategy**:
 `buildReserveMap`（key=reserveId）用于精确 O(1) 查找；`buildReserveLookupByChainAndToken`（key=`{chainId}:{tokenAddress}`）用于 fallback 反查。`resolvePositionMetaByReserveId` 实现三级查找：composeReserveId 精确 → chainToken fallback（带歧义警告）→ orphan。V4 多 hubName 场景遍历 `hubNames[]` 尝试匹配。
 
+**Reserve Identity (V4 Hub Display)**:
+V4 reserve 的唯一标识由 `tokenSymbol + chainIcon + marketLabel + hubName chip` 四部分组成。共享组件 `ReserveIdentity`（`src/components/primitives/ReserveIdentity.tsx`）提供 `compact`（行内）和 `stacked`（垂直）两种 variant，被 `PortfolioUnifiedTable`、`PopularTokenChip`、`SearchResultRow` 消费。`DesktopReserveRow` 和 `MobileReserveCard` 有独立的 hub chip 实现（交互需求不同：可点击 filter + 外链），不强制统一到 ReserveIdentity。`MobilePortfolioCard` 同样保留内联 hub pill 实现（水平右侧 pill 布局与 ReserveIdentity 的 compact/stacked variant 根本不同）。V4 hub chip 使用品红渐变色（`getHubChipClass(true)`），V3 无 hub chip。hubName/hubId 从 API → reserve → `walletPositionToPortfolio` / `usePortfolioToggle` → `addReserve` → `PortfolioReserveEntry` 全链路传递，仅在 `!= null` 时展开到 entry 上。
+_Avoid_: 强制所有 UI 表面统一到 ReserveIdentity（布局/交互需求不同）；把 hubName 当作 reserveId 的一部分（它是 display 属性，不影响 identity）
+
 ---
 
 ## Hard-Learned Lessons

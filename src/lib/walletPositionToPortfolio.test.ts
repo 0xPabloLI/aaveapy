@@ -30,7 +30,7 @@ const makeWalletPos = (overrides: Partial<WalletPosition> & { reserveId: string;
 const reserves: ReserveWithSpread[] = [
   makeReserve({ reserveId: 'eth-usdc-v3', chainId: 1, marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'USDC' }),
   makeReserve({ reserveId: 'arb-usdc-v3', chainId: 42161, marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum', tokenSymbol: 'USDC' }),
-  makeReserve({ reserveId: 'eth-usdc-v4', chainId: 1, marketName: 'AaveV4Ethereum', chainName: 'Ethereum', tokenSymbol: 'USDC', spokeAddress: '0xV4Spoke' }),
+  makeReserve({ reserveId: 'eth-usdc-v4', chainId: 1, marketName: 'AaveV4Ethereum', chainName: 'Ethereum', tokenSymbol: 'USDC', spokeAddress: '0xV4Spoke', hubName: 'Core', hubId: 'hub-core' }),
 ]
 
 describe('convertWalletPositionsToEntries', () => {
@@ -129,6 +129,25 @@ describe('convertWalletPositionsToEntries', () => {
     ]
     const result = convertWalletPositionsToEntries(wallet, reserves)
     expect(result[0].supply.source).toBe('sdk')
+  })
+
+  it('propagates hubName and hubId for V4 reserves', () => {
+    const wallet: WalletPosition[] = [
+      makeWalletPos({ reserveId: 'eth-usdc-v4', chainId: 1, side: 'supply', amountUsd: 3000 }),
+    ]
+    const result = convertWalletPositionsToEntries(wallet, reserves)
+    expect(result).toHaveLength(1)
+    expect(result[0].hubName).toBe('Core')
+    expect(result[0].hubId).toBe('hub-core')
+  })
+
+  it('leaves hubName and hubId undefined for V3 reserves', () => {
+    const wallet: WalletPosition[] = [
+      makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', amountUsd: 1000 }),
+    ]
+    const result = convertWalletPositionsToEntries(wallet, reserves)
+    expect(result[0].hubName).toBeUndefined()
+    expect(result[0].hubId).toBeUndefined()
   })
 
   it('preserves onchain-v4 source', () => {
