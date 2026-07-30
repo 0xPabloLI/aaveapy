@@ -319,7 +319,7 @@ function MobileCard({
                 : 'text-foreground/50',
             )}
           >
-            {activeResult ? (
+            {activeResult && incentiveHasValue ? (
               <>
                 <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} skipTooltip />
                 {activeResult.forecastUnavailableCampaignCount != null && activeResult.forecastUnavailableCampaignCount > 0 && (
