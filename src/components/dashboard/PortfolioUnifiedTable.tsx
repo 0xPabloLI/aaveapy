@@ -322,7 +322,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Supply Incentive */}
                 <td data-cell="supply-incentive" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
-                    {supplyResult ? (
+                    {supplyResult && supplyResult.incentivePercent !== 0 ? (
                       <>
                         <MetricValue afterValue={supplyResult.incentivePercent} metric={supplyResult.incentiveMetric} formatFn={formatPercent} />
                         {supplyResult.forecastUnavailableCampaignCount != null && supplyResult.forecastUnavailableCampaignCount > 0 && (
@@ -336,7 +336,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Borrow Incentive */}
                 <td data-cell="borrow-incentive" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
-                    {borrowResult ? (
+                    {borrowResult && borrowResult.incentivePercent !== 0 ? (
                       <>
                         <MetricValue afterValue={borrowResult.incentivePercent} metric={borrowResult.incentiveMetric} formatFn={formatPercent} />
                         {borrowResult.forecastUnavailableCampaignCount != null && borrowResult.forecastUnavailableCampaignCount > 0 && (

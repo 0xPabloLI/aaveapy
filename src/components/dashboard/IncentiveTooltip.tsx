@@ -836,7 +836,7 @@ const IncentiveTooltip = ({
         )}
         {renderCampaignTypeDescription(campaign)}
          {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
-           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
+           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-amber-600 dark:text-amber-400">
               Incentive on first {campaign.positionCapNative != null && campaign.tokenSymbol != null
                 ? (formatPositionCapNativeDisplay(campaign.positionCapNative, campaign.tokenSymbol, reserve.decimals) ?? formatUsd(campaign.positionCapUsd))
                 : formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only

@@ -173,4 +173,25 @@ test.describe('Reserves table interaction matrix', () => {
     await page.waitForTimeout(450);
     await expectExpandedRowInViewport(page, reserveId);
   });
+
+  test('AAV-1107: chain filter → expand → unfilter does not leave scroll spacer', async ({ page }) => {
+    // 1. Select a chain filter (e.g., Celo) to reduce to a small set
+    const chainChip = page.locator('button:has-text("Celo")').first();
+    await chainChip.click();
+    await page.waitForTimeout(1000);
+    const filteredRows = page.locator('tbody tr[data-reserve-id]');
+    await expect(filteredRows.first()).toBeVisible();
+
+    // 2. Expand a reserve in the filtered view
+    await expandFirstRow(page);
+
+    // 3. Remove the chain filter (unfilter) → all reserves shown
+    await chainChip.click();
+    await page.waitForTimeout(1000);
+
+    // 4. Verify no scroll spacer is rendered (the bug was: spacer stayed,
+    //    creating ~1400px blank space at the bottom)
+    const scrollSpacer = page.locator('[data-testid="reserves-expanded-scroll-spacer"]');
+    await expect(scrollSpacer).toHaveCount(0);
+  });
 });
