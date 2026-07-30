@@ -346,3 +346,67 @@ describe('Architecture guard: docs/plans directory structure', () => {
     expect(entries).not.toContain('handoff');
   });
 });
+
+describe('Architecture guard: test files must mock viem for value imports', () => {
+  /**
+   * Prevents flaky CI failures from tests that accidentally make real RPC
+   * network calls via viem's createPublicClient / http transport.
+   *
+   * Rule: if a test file has a *value* import from 'viem' (not `import type`),
+   * it must also call vi.mock('viem') or vi.doMock('viem').
+   *
+   * Type-only imports (`import type { PublicClient } from 'viem'`) are safe —
+   * they are erased at compile time and create no runtime dependency.
+   *
+   * See: AAV-1235 (CI failure from unmocked viem in aaveV4UserClient.test.ts)
+   */
+  const SRC_ROOT = resolve(__dirname, '..');
+
+  function globTestFiles(dir: string): string[] {
+    const results: string[] = [];
+    let entries: string[];
+    try {
+      entries = readdirSync(resolve(SRC_ROOT, dir));
+    } catch {
+      return results;
+    }
+    for (const entry of entries) {
+      const full = resolve(SRC_ROOT, dir, entry);
+      if (statSync(full).isDirectory()) {
+        results.push(...globTestFiles(`${dir}/${entry}`));
+      } else if (entry.endsWith('.test.ts') || entry.endsWith('.test.tsx')) {
+        results.push(`${dir}/${entry}`);
+      }
+    }
+    return results;
+  }
+
+  const TEST_DIRS = ['lib', 'hooks', 'components', 'test', 'providers', 'types', 'config'];
+  const ALL_TEST_FILES = TEST_DIRS.flatMap(globTestFiles);
+
+  for (const file of ALL_TEST_FILES) {
+    it(`${file} mocks viem if it value-imports it`, () => {
+      const src = readFile(file);
+
+      // Find all lines that import from 'viem'
+      const viemImportLines = src.match(/^\s*import\s+.*\bfrom\s*['"]viem['"]/gm) ?? [];
+      if (viemImportLines.length === 0) return;
+
+      // Check if ANY import is a value import (not `import type`)
+      const hasValueImport = viemImportLines.some(
+        (line) => !/^\s*import\s+type\s/.test(line),
+      );
+      if (!hasValueImport) return; // All imports are type-only — safe
+
+      // Value import present — must have a corresponding mock
+      const hasMock = /vi\.(mock|doMock)\s*\(\s*['"]viem['"]/.test(src);
+      expect(
+        hasMock,
+        `${file} has a value import from 'viem' but does not mock it.\n` +
+        'This can cause flaky CI failures from real network calls.\n' +
+        "Fix: add vi.mock('viem', () => ({ createPublicClient: vi.fn(), http: vi.fn() }))\n" +
+        'Or: convert to "import type { ... } from \'viem\'" if only types are needed.',
+      ).toBe(true);
+    });
+  }
+});

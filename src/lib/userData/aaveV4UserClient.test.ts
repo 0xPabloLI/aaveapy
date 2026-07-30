@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   V4_SPOKE_ADDRESSES,
   V4_HUB_ADDRESSES,
@@ -19,6 +19,11 @@ import { getAllRpcUrls } from './chainDiscovery'
 
 vi.mock('./chainDiscovery', () => ({
   getAllRpcUrls: vi.fn().mockReturnValue([]),
+}))
+
+vi.mock('viem', () => ({
+  createPublicClient: vi.fn(),
+  http: vi.fn(() => 'mocked-transport'),
 }))
 
 describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
@@ -329,6 +334,10 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 })
 
 describe('createClientWithRpcRotation', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('returns null for chain with no RPC URLs', async () => {
     vi.mocked(getAllRpcUrls).mockReturnValue([])
     const result = await createClientWithRpcRotation(999991)
@@ -337,6 +346,9 @@ describe('createClientWithRpcRotation', () => {
 
   it('returns a client for a known chain', async () => {
     vi.mocked(getAllRpcUrls).mockReturnValue(['https://eth.drpc.org'])
+    vi.mocked(createPublicClient).mockReturnValue({
+      getChainId: vi.fn().mockResolvedValue(1),
+    } as unknown as ReturnType<typeof createPublicClient>)
     const result = await createClientWithRpcRotation(1)
     expect(result).not.toBeNull()
   })

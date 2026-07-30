@@ -2,7 +2,7 @@
 
 > `docs/plans/frontend-triage-2026-06/`
 
-## 总进度（2026-07-28 更新）
+## 总进度（2026-07-30 更新）
 
 > 这是所有 triage phase 的**唯一状态跟踪源**。每次完成一个 phase 或 issue 后更新此表。
 
@@ -17,7 +17,7 @@
 | ✅ Done | 7 | AAV-1096 | grid→flex 统一完成（commit `103254c5`，子 issue AAV-1234 Done） |
 | 🔄 Shrunk | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; 剩 AAV-783（后端）+ AAV-1141（低优先） |
 | ✅ Done | 9 | AAV-1144~1158 | staging API ✅, testid ✅; 25 处 platform-conditional skip → project config routing (AAV-1154 Done) |
-| ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed; AAV-1107 verified fixed; AAV-1114 not a bug (Canceled); AAV-738 feature request; AAV-1113 no data |
+| ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed+staged; AAV-1107 verified on staging; AAV-1114 Canceled; AAV-738 Backlog; AAV-1113 Backlog（有数据但代码未满足：每个note是独立`<tr>`，需改为inline） |
 | 📝 Re-eval | 11 | AAV-1136/1135/1123/1122/1110/1102/1162/1160/1159/733 | Portfolio simulation UI — 需重新评估（部分可能已被后续改动覆盖） |
 | ⚠️ Dormant | 12 | AAV-1023/1024 | 阻塞于 AAV-1022（No priority, 自 6/27 无进展）；投入产出比低 |
 | 🔄 Unblocked | 13 | AAV-843 | 阻塞项 AAV-842 已 Canceled；per-user API 独立于 distributedSoFarUsd，可解除阻塞 |
@@ -79,7 +79,7 @@
 |------|-------|-------|------|------|
 | ~~1~~ | ~~9~~ | ~~21 处 platform skip→describe 迁移~~ | ✅ Done (AAV-1154) | ~~0.5 session~~ |
 | ~~1~~ | ~~10~~ | ~~AAV-1107 等~~ | ✅ Done (commit `738a068c`) — AAV-1121+1084 fixed, 1107 verified, 1114 canceled | ~~0.5 session~~ |
-| **2** | 11 | AAV-1136 等 | 📝 Re-eval — 先浏览器验证哪些已被覆盖 | 0.5 session 验证 |
+| **1** | 11 | AAV-1136 等 | 📝 Re-eval — 先浏览器验证哪些已被覆盖 | 0.5 session 验证 |
 | **3** | 13 | AAV-843 | 🔄 Unblocked — 需单独 spec | 2-3 sessions |
 | — | 8 | AAV-1141 | 📉 低优先 — 需先 Lighthouse | 待定 |
 | — | 4 | AAV-756 | ⏸️ Blocked — 等后端 AAV-1222 | — |
