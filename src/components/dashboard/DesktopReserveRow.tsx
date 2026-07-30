@@ -17,6 +17,7 @@ import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
+import { hasPositionCap } from '@/lib/incentiveCaps';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
@@ -762,6 +763,9 @@ const DesktopReserveRow = memo(({
                 >
                   <span>{formatPercent(displaySupplyIncentive)}</span>
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                  {hasPositionCap(reserve, 'supply') && (
+                    <span className="size-1 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" aria-label="Position cap" />
+                  )}
                 </button>
               </div>
             ) : !supplyBlocked ? (
@@ -817,6 +821,9 @@ const DesktopReserveRow = memo(({
                 >
                   <span>{formatPercent(displayBorrowIncentive)}</span>
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                  {hasPositionCap(reserve, 'borrow') && (
+                    <span className="size-1 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" aria-label="Position cap" />
+                  )}
                 </button>
               </div>
             ) : !borrowBlocked ? (
