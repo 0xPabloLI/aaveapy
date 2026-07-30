@@ -10,7 +10,15 @@ import {
 } from './aaveV3UserClient'
 import { createClientWithRpcRotation } from './rpcResilience'
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains'
-import { createPublicClient, http } from 'viem'
+import type { createPublicClient } from 'viem'
+
+vi.mock('./chainDiscovery', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./chainDiscovery')>()
+  return {
+    ...actual,
+    getAllRpcUrls: vi.fn().mockReturnValue([]),
+  }
+})
 
 describe('V3_POOL_ADDRESSES', () => {
   it('covers all V3 mainnet chain IDs', () => {
