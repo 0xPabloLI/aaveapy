@@ -17,7 +17,7 @@
 | ✅ Done | 7 | AAV-1096 | grid→flex 统一完成（commit `103254c5`，子 issue AAV-1234 Done） |
 | 🔄 Shrunk | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; 剩 AAV-783（后端）+ AAV-1141（低优先） |
 | ✅ Done | 9 | AAV-1144~1158 | staging API ✅, testid ✅; 25 处 platform-conditional skip → project config routing (AAV-1154 Done) |
-| ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed+staged; AAV-1107 verified on staging; AAV-1114 Canceled; AAV-738 Backlog; AAV-1113 Backlog（有数据但代码未满足：每个note是独立`<tr>`，需改为inline） |
+| ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed; AAV-1107 fixed (scroll spacer reset on data change, PR #489); AAV-1114 Canceled; AAV-738 Backlog; AAV-1113 Backlog（有数据但代码未满足：每个note是独立`<tr>`，需改为inline） |
 | 📝 Re-eval | 11 | AAV-1136/1135/1123/1122/1110/1102/1162/1160/1159/733 | Portfolio simulation UI — 需重新评估（部分可能已被后续改动覆盖） |
 | ⚠️ Dormant | 12 | AAV-1023/1024 | 阻塞于 AAV-1022（No priority, 自 6/27 无进展）；投入产出比低 |
 | 🔄 Unblocked | 13 | AAV-843 | 阻塞项 AAV-842 已 Canceled；per-user API 独立于 distributedSoFarUsd，可解除阻塞 |
