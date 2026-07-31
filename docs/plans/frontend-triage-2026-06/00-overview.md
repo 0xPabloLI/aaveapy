@@ -94,7 +94,7 @@
 
 ---
 
-## 代码对比结果（2026-07-28 更新）
+## 代码对比结果（2026-07-31 更新）
 
 以下 issue 经代码对比确认已完成，已从 plan 中剔除并同步 Linear 状态为 Done：
 
@@ -112,7 +112,11 @@
 | AAV-1199 | — | `loadRegistryChainIds` regex 修复 — Done ✅ |
 | AAV-734 | 原 Phase 8 | `PortfolioPanel.tsx` 已用 `destructive` token；全项目 `hover:bg-red`/`hover:text-red-500` 零匹配；`PortfolioTokenRow.tsx` 已被 UnifiedTable 替代 — Done ✅ |
 | AAV-1095 | 原 Phase 8 | Schema pipeline 完成（ADR-0026）；`src/generated/api/schemas.ts` 存在 — Done ✅ |
-| AAV-1104 | 原 Phase 8 | ADR-0027 正式接受 query param 方案；原始诉求"去掉?"被推翻 — Canceled ❌ |
+| AAV-1104 | 原 Phase 8 | ADR-0027 正式接受 query param 方案；原始诉求“去掉?”被推翻 — Canceled ❌ |
+| AAV-808 | — | `PortfolioPanel.tsx` L362 `mb-2.5` + L499 `py-1 md:py-0` — 搜索条间距已缩小 — Done ✅ |
+| AAV-809 | — | `PortfolioPanel.tsx` L188-190 `searchOpen = entries.length === 0` — Import 后不主动打开搜索 — Done ✅ |
+| AAV-83 | — | `TopOpportunities.tsx` L568-569 移动端动画已禁用 + L1062 `transform-gpu` GPU 加速 — Done ✅ |
+| AAV-1141 | 原 Phase 8 | Lighthouse Perf=89/A11y=97/BP=96/SEO=100 — 无可操作瓶颈 — Done ✅ |
 
 部分完成的 issue（保留在 plan 中，标注进度）：
 
