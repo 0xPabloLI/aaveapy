@@ -6,6 +6,7 @@ import type {
   PortfolioSummary,
   PortfolioSimulationMetric,
   PortfolioSide,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { ScenarioInputMode, SimulationLane, SimulationCampaignDetail } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
@@ -58,6 +59,8 @@ export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
 export interface SimulatePortfolioResult {
   results: PortfolioPositionResult[];
   summary: PortfolioSummary;
+  /** Per-pool/spoke health factors (AAV-1251). Undefined when no positions. */
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 interface SideSlot {
@@ -428,6 +431,52 @@ function computeResultsFromGroups(
   return results;
 }
 
+/**
+ * Compute per-pool/spoke Health Factor from simulation results (AAV-1251).
+ *
+ * Groups results by (chainId, marketName) — the protocol isolation boundary.
+ * Within each group:
+ *   totalCollateralUsd = Σ(supplyUsd × liquidationThreshold / 100)
+ *   totalDebtUsd = Σ(effective borrowUsd)  — post-clamp
+ *   HF = totalCollateralUsd / totalDebtUsd  (null when totalDebtUsd = 0)
+ */
+function computeHealthFactors(
+  results: PortfolioPositionResult[],
+  reserves: ReserveWithSpread[],
+): PortfolioHealthFactor[] {
+  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
+
+  const poolGroups = new Map<string, {
+    totalCollateralUsd: number;
+    totalDebtUsd: number;
+  }>();
+
+  for (const result of results) {
+    const key = getReserveKey({ reserveId: result.reserveId });
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+
+    const poolKey = `${reserve.chainId}:${reserve.marketName}`;
+    const lt = reserve.liquidationThreshold ?? 0;
+
+    const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0 };
+
+    if (result.side === 'supply') {
+      poolGroup.totalCollateralUsd += result.amountUsd * lt / 100;
+    } else {
+      poolGroup.totalDebtUsd += result.amountUsd;
+    }
+    poolGroups.set(poolKey, poolGroup);
+  }
+
+  const healthFactors: PortfolioHealthFactor[] = [];
+  for (const [poolKey, { totalCollateralUsd, totalDebtUsd }] of poolGroups) {
+    const healthFactor = totalDebtUsd > 0 ? totalCollateralUsd / totalDebtUsd : null;
+    healthFactors.push({ poolKey, healthFactor, totalCollateralUsd, totalDebtUsd });
+  }
+  return healthFactors;
+}
+
 export function simulatePortfolioFromEntries(
   args: SimulatePortfolioEntriesArgs,
 ): SimulatePortfolioResult {
@@ -442,7 +491,7 @@ export function simulatePortfolioFromEntries(
 
   const visibleEntries = entries.filter((e) => !e.hidden && !e.isOrphan);
   if (visibleEntries.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
+    return { results: [], summary: aggregatePortfolioSummary([]), healthFactors: [] };
   }
 
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
@@ -464,7 +513,7 @@ export function simulatePortfolioFromEntries(
   buildGroupMapFromSlots(borrowSlots, 'borrow', reserveMap, groupMap);
 
   if (groupMap.size === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
+    return { results: [], summary: aggregatePortfolioSummary([]), healthFactors: [] };
   }
 
   // AAV-1250: Compute LTV (maxBorrow) clamping per pool/spoke group.
@@ -477,9 +526,13 @@ export function simulatePortfolioFromEntries(
     ltvClampBySlot,
   );
 
+  // AAV-1251: Compute per-pool/spoke Health Factor from post-clamp results.
+  const healthFactors = computeHealthFactors(results, reserves);
+
   return {
     results,
     summary: aggregatePortfolioSummary(results),
+    healthFactors,
   };
 }
 

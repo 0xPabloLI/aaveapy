@@ -126,6 +126,18 @@ export interface PortfolioSummary {
   borrowWeightedApyMetric?: PortfolioSimulationMetric;
 }
 
+/** Per-pool/spoke health factor after simulation. */
+export interface PortfolioHealthFactor {
+  /** `${chainId}:${marketName}` — protocol isolation boundary. */
+  poolKey: string;
+  /** HF = totalCollateralUsd / totalDebtUsd. null = no borrow (display "—"). */
+  healthFactor: number | null;
+  /** Σ(supplyUsd × liquidationThreshold / 100) — risk-adjusted collateral. */
+  totalCollateralUsd: number;
+  /** Σ(effective borrowUsd) — post-clamp debt. */
+  totalDebtUsd: number;
+}
+
 /** A saved snapshot for comparison. */
 export interface PortfolioSnapshot {
   id: string;
