@@ -725,9 +725,10 @@ const Index = () => {
               scrollToReserveId={pendingScrollReserveId}
               simulationMode={simulationMode}
               onSimulationModeChange={setSimulationMode}
-              portfolioEntries={portfolio.entries}
-              portfolioActions={portfolio.actions}
-              portfolioSnapshots={portfolio.snapshots}
+portfolioEntries={portfolio.entries}
+portfolioActions={portfolio.actions}
+portfolioSnapshots={portfolio.snapshots}
+lastModifiedReserveId={portfolio.lastModifiedReserveId}
               onWalletSync={handleWalletSync}
               walletLoadState={walletLoadState}
               onRefresh={handleRefresh}

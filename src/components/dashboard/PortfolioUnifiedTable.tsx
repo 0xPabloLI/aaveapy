@@ -216,6 +216,13 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
             const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
 
+            // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
+            // (ltvClampedUsd === amountUsd means LTV determined the final amount)
+            const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+              ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+              : [];
+            const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
+
             const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
 
             const handleMinusClick = () => {
@@ -306,7 +313,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                         capLimitUsd={borrowCapLimitUsd}
                       />
                     </div>
-                    {borrowInputWarns.length > 0 && <WarningMarker warnings={borrowInputWarns} />}
+                    {borrowInputWithLtvWarns.length > 0 && <WarningMarker warnings={borrowInputWithLtvWarns} />}
                   </div>
                 </td>
 

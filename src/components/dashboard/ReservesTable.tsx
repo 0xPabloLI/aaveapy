@@ -83,9 +83,10 @@ interface ReservesTableProps {
   /** Portfolio simulation mode. */
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
-  portfolioEntries?: PortfolioReserveEntry[];
-  portfolioActions?: PortfolioSimulationActions;
-  portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+portfolioEntries?: PortfolioReserveEntry[];
+portfolioActions?: PortfolioSimulationActions;
+portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+lastModifiedReserveId?: string;
   onWalletSync?: () => void;
   walletLoadState?: WalletLoadState;
   onRefresh?: () => Promise<void>;
@@ -117,9 +118,10 @@ const ReservesTable = ({
   scrollToReserveId,
   simulationMode = 'single',
   onSimulationModeChange,
-  portfolioEntries,
-  portfolioActions,
-  portfolioSnapshots,
+portfolioEntries,
+portfolioActions,
+portfolioSnapshots,
+lastModifiedReserveId,
   onWalletSync,
   walletLoadState,
   onRefresh,
@@ -843,13 +845,14 @@ const ReservesTable = ({
     handlePortfolioToggle,
     portfolioResults,
     portfolioSummary,
-  } = usePortfolioToggle({
-    isPortfolioMode,
-    reserves: allReserves,
-    entries: portfolioEntries,
-    portfolioActions,
-    simulationContext: portfolioSimulationContext,
-  });
+} = usePortfolioToggle({
+isPortfolioMode,
+reserves: allReserves,
+entries: portfolioEntries,
+portfolioActions,
+simulationContext: portfolioSimulationContext,
+lastModifiedReserveId,
+});
 
   const portfolioCapWarningsMap = useMemo(() => {
     if (!isPortfolioMode || !portfolioEntries) return undefined;

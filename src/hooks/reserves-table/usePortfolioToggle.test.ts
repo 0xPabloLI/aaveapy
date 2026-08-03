@@ -610,6 +610,7 @@ describe('usePortfolioToggle', () => {
         merklBorrows: [],
         brevisSupplys: [],
         brevisBorrows: [],
+        ltv: 80,
         ...overrides,
       }) as ReserveWithSpread & RateCalcInput;
 

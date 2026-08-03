@@ -29,6 +29,7 @@ export interface UsePortfolioToggleArgs {
   entries?: PortfolioReserveEntry[];
   portfolioActions?: PortfolioSimulationActions;
   simulationContext?: PortfolioSimulationContext;
+  lastModifiedReserveId?: string;
 }
 
 export interface UsePortfolioToggleResult {
@@ -49,6 +50,7 @@ export const usePortfolioToggle = ({
   entries,
   portfolioActions,
   simulationContext,
+  lastModifiedReserveId,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
   const effectiveEntries = useMemo(() => entries ?? [], [entries]);
   const portfolioReserveIds = useMemo(() => {
@@ -140,6 +142,7 @@ export const usePortfolioToggle = ({
         whitelistMerklCampaignIds: simulationContext.whitelistMerklCampaignIds,
         tydroPointToUsdRate: simulationContext.tydroPointToUsdRate,
         forecastStates: simulationContext.forecastStates,
+        lastModifiedReserveId,
       });
       return { portfolioResults: results, portfolioSummary: summary };
     }
@@ -171,7 +174,7 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext]);
+  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext, lastModifiedReserveId]);
 
   return {
     portfolioReserveIds,

@@ -95,6 +95,8 @@ export interface PortfolioPositionResult {
   usdPerDayMetric?: PortfolioSimulationMetric;
   /** Count of incentive campaigns without forecast data (using current APR). */
   forecastUnavailableCampaignCount?: number;
+  /** USD amount after LTV (maxBorrow) clamping. Undefined when LTV did not clamp. */
+  ltvClampedUsd?: number;
 }
 
 /** Aggregated portfolio summary. */

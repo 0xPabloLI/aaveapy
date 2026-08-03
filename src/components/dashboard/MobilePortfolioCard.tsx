@@ -148,6 +148,12 @@ function MobileCard({
   const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
   const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
 
+  // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
+  const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+    ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+    : [];
+  const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
+
   const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
 
   const handleMinusClick = () => {
@@ -176,7 +182,7 @@ function MobileCard({
   const trashHoverTextMobile = 'active:ds-text-blue-500 md:hover:ds-text-blue-500';
 
   const activeResult = activeTab === 'supply' ? supplyResult : borrowResult;
-  const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWarns;
+  const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWithLtvWarns;
   const activeIncentWarns = activeTab === 'supply' ? supplyIncentWarns : borrowIncentWarns;
   const activeCapLimit = activeTab === 'supply' ? supplyCapLimitUsd : borrowCapLimitUsd;
   const activeDisabled = activeTab === 'supply' ? !!disabledNotice.supply : !!disabledNotice.borrow;

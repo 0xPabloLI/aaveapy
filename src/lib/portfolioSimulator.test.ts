@@ -45,6 +45,7 @@ const makeRateCalcReserve = (
     merklBorrows: [],
     brevisSupplys: [],
     brevisBorrows: [],
+    ltv: 80,
     ...overrides,
   }) as ReserveWithSpread & RateCalcInput;
 
@@ -73,6 +74,7 @@ const baseEntriesSimArgs = (
   whitelistMerklCampaignIds: undefined,
   tydroPointToUsdRate: 0,
   forecastStates: {},
+  lastModifiedReserveId: undefined,
   ...overrides,
 });
 
@@ -585,7 +587,8 @@ describe('simulatePortfolioFromEntries', () => {
     expect(results).toHaveLength(1);
     expect(results[0].side).toBe('borrow');
     expect(results[0].nativePercent).toBeGreaterThan(0);
-    expect(results[0].amountUsd).toBe(5000);
+    // AAV-1250: Pure borrow without supply → LTV maxBorrow=0, clamped to 0
+    expect(results[0].amountUsd).toBe(0);
   });
 
   it('empty entries returns empty results', () => {
@@ -1123,5 +1126,299 @@ describe('buildMetricsFromLane', () => {
       metrics.usdPerDayMetric!.after!,
       6,
     );
+  });
+});
+
+// ─── AAV-1250 (P3): LTV maxBorrow constraint ───
+// 19 scenario tests from spec AAV-1250 Scenario & Risk Verification Matrix.
+
+describe('LTV maxBorrow constraint (AAV-1250)', () => {
+  // Helper: find borrow result by reserveId
+  const findBorrow = (results: ReturnType<typeof simulatePortfolioFromEntries>['results'], reserveId: string) =>
+    results.find((r) => r.reserveId === reserveId && r.side === 'borrow')!;
+
+  // S1: Single reserve, borrow within LTV limit → no clamp
+  it('S1: borrow within LTV limit → no clamp', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(5000);
+    expect(borrow.ltvClampedUsd).toBeUndefined();
+  });
+
+  // S2: Single reserve, borrow exceeds LTV → clamp
+  it('S2: borrow exceeds LTV → clamped to maxBorrow', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S3: Single reserve, no supply → maxBorrow=0, clamp to 0
+  it('S3: no supply → maxBorrow=0, borrow clamped to 0', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(0);
+    expect(borrow.ltvClampedUsd).toBe(0);
+  });
+
+  // S4: Single reserve, ltv=0 (frozen) → maxBorrow=0
+  it('S4: ltv=0 (frozen) → maxBorrow=0', () => {
+    const reserve = makeRateCalcReserve({ ltv: 0 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(0);
+    expect(borrow.ltvClampedUsd).toBe(0);
+  });
+
+  // S5: Single reserve, ltv=undefined → maxBorrow=0
+  it('S5: ltv=undefined → maxBorrow=0', () => {
+    const reserve = makeRateCalcReserve({ ltv: undefined });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(0);
+    expect(borrow.ltvClampedUsd).toBe(0);
+  });
+
+  // S6: Same pool two reserves, second exceeds remaining
+  it('S6: same pool two reserves, borrow exceeds group maxBorrow', () => {
+    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r2 = makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1, tokenPrice: 3000 });
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '13000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-weth' }));
+    const borrow = findBorrow(results, 'r-weth');
+    // group maxBorrow = 10k*0.8 + 5k*0.8 = 12k
+    expect(borrow.amountUsd).toBe(12000);
+    expect(borrow.ltvClampedUsd).toBe(12000);
+  });
+
+  // S7: Different pool two reserves, independent
+  it('S7: different pool → isolation, each independent', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }));
+    const borrow = findBorrow(results, 'r-b');
+    // pool B maxBorrow = 10k * 0.8 = 8k
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S8: Same pool two borrow entries, lastModified gets remaining
+  it('S8: lastModified entry gets remaining after non-last entries', () => {
+    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-usdt' }));
+    const borrowR1 = findBorrow(results, 'r-usdc');
+    const borrowR2 = findBorrow(results, 'r-usdt');
+    // group maxBorrow = 10k * 0.8 = 8k; r1 non-last gets full 3k; r2 gets 5k remaining
+    expect(borrowR1.amountUsd).toBe(3000);
+    expect(borrowR1.ltvClampedUsd).toBeUndefined();
+    expect(borrowR2.amountUsd).toBe(5000);
+    expect(borrowR2.ltvClampedUsd).toBe(5000);
+  });
+
+  // S9: borrowCap < maxBorrow → borrowCap binds, no ltvClampedUsd
+  it('S9: borrowCap lower than LTV → borrowCap binds, no LTV clamp', () => {
+    const reserve = makeRateCalcReserve({
+      ltv: 80,
+      borrowed: '0',
+      borrowCap: '5000000000',
+      borrowable: '5000000000',
+      liquidity: '5000000000',
+    });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '7000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // maxBorrow = 8k, borrowCapRoom = 5k, userInput = 7k → min = 5k (borrowCap binds)
+    expect(borrow.amountUsd).toBe(5000);
+    expect(borrow.ltvClampedUsd).toBeUndefined();
+  });
+
+  // S10: maxBorrow < borrowCap → LTV binds
+  it('S10: LTV lower than borrowCap → LTV binds', () => {
+    const reserve = makeRateCalcReserve({
+      ltv: 80,
+      borrowed: '0',
+      borrowCap: '15000000000',
+      borrowable: '15000000000',
+      liquidity: '15000000000',
+    });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // maxBorrow = 8k, borrowCapRoom = 15k, userInput = 9k → min = 8k (LTV binds)
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S11: All three constraints trigger → min of all
+  it('S11: all three constraints → effective = min(userInput, maxBorrow, borrowCapRoom)', () => {
+    const reserve = makeRateCalcReserve({
+      ltv: 80,
+      borrowed: '0',
+      borrowCap: '5000000000',
+      borrowable: '5000000000',
+      liquidity: '5000000000',
+    });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '15000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // maxBorrow = 8k, borrowCapRoom = 5k, userInput = 15k → min = 5k (borrowCap binds)
+    // LTV would clamp to 8k, so ltvClampedUsd = 8k
+    expect(borrow.amountUsd).toBe(5000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S12: V4 same chain different spoke → isolated
+  it('S12: V4 same chain different spoke → isolation', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV4EthereumHub_usdt', chainId: 1 });
+    const entries = [
+      makeEntry({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdt', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-spoke-b' }));
+    const borrow = findBorrow(results, 'r-spoke-b');
+    // spoke B maxBorrow = 10k * 0.8 = 8k
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S13: wallet + delta combined position
+  it('S13: wallet + delta → total position basis for maxBorrow', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: 5000 }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // total supply = 10k (wallet 5k + delta 5k), maxBorrow = 8k
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S14: Same reserve multiple entries aggregated
+  it('S14: same reserve multiple entries → aggregated supply for maxBorrow', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-usdc-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // aggregated supply = 10k, maxBorrow = 8k
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S15: Supply delta negative (withdrawal) reduces collateral
+  it('S15: negative supply delta → reduced collateral for maxBorrow', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 10000 }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    // effective supply = 5k (wallet 10k - delta 5k), maxBorrow = 4k
+    expect(borrow.amountUsd).toBe(4000);
+    expect(borrow.ltvClampedUsd).toBe(4000);
+  });
+
+  // S16: lastModifiedReserveId empty → sequential fallback
+  it('S16: no lastModifiedReserveId → sequential fallback (first gets full, second gets remaining)', () => {
+    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2] }));
+    const borrowR1 = findBorrow(results, 'r-usdc');
+    const borrowR2 = findBorrow(results, 'r-usdt');
+    // no lastModified → r1 (first) gets full 3k, r2 gets 5k remaining
+    expect(borrowR1.amountUsd).toBe(3000);
+    expect(borrowR1.ltvClampedUsd).toBeUndefined();
+    expect(borrowR2.amountUsd).toBe(5000);
+    expect(borrowR2.ltvClampedUsd).toBe(5000);
+  });
+
+  // S17: lastModified not in current group → group-level fallback
+  it('S17: lastModified in different pool → this pool uses sequential fallback', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { ...emptySide }, borrow: { ...emptySide } }),
+    ];
+    // lastModified is r-b (pool B), but pool A has the over-limit borrow
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }));
+    const borrow = findBorrow(results, 'r-a');
+    // pool A: only r-a, sequential → r-a gets min(9k, 8k) = 8k
+    expect(borrow.amountUsd).toBe(8000);
+    expect(borrow.ltvClampedUsd).toBe(8000);
+  });
+
+  // S18: 100% LTV (V4 collateralFactor=100) → full amount
+  it('S18: 100% LTV → maxBorrow = full supply, no clamp', () => {
+    const reserve = makeRateCalcReserve({ ltv: 100 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const borrow = findBorrow(results, 'r-usdc-v3');
+    expect(borrow.amountUsd).toBe(10000);
+    expect(borrow.ltvClampedUsd).toBeUndefined();
+  });
+
+  // S19: Multiple groups simultaneously over limit → parallel safety
+  it('S19: multiple groups over limit → independent clamping', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-a' }));
+    const borrowA = findBorrow(results, 'r-a');
+    const borrowB = findBorrow(results, 'r-b');
+    // both pools: maxBorrow = 8k, borrow 9k → clamp to 8k each
+    expect(borrowA.amountUsd).toBe(8000);
+    expect(borrowA.ltvClampedUsd).toBe(8000);
+    expect(borrowB.amountUsd).toBe(8000);
+    expect(borrowB.ltvClampedUsd).toBe(8000);
   });
 });

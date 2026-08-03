@@ -51,6 +51,8 @@ interface SimulateCommonArgs {
 
 export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
   entries: PortfolioReserveEntry[];
+  /** ReserveId of the entry currently being modified. Used for LTV clamping priority. */
+  lastModifiedReserveId?: string;
 }
 
 export interface SimulatePortfolioResult {
@@ -177,6 +179,79 @@ function buildGroupMapFromSlots(
   }
 }
 
+/**
+ * Compute LTV (maxBorrow) clamping per pool/spoke group.
+ *
+ * Groups borrow entries by (chainId, marketName) — the protocol isolation boundary.
+ * Within each group, non-lastModified entries consume capacity first; the
+ * lastModified entry receives whatever remaining capacity is left.
+ *
+ * Returns a Map<SideSlot, number> mapping each borrow slot to its LTV-clamped amount.
+ */
+function computeLtvClamping(
+  groupMap: Map<string, EntryGroup>,
+  reserveMap: Map<string, ReserveWithSpread>,
+  lastModifiedReserveId: string | undefined,
+): Map<SideSlot, number> {
+  const ltvClampBySlot = new Map<SideSlot, number>();
+
+  // Build pool groups keyed by (chainId, marketName)
+  interface PoolBorrowEntry {
+    slot: SideSlot;
+    amountUsd: number;
+    isLastModified: boolean;
+  }
+  const poolGroups = new Map<string, {
+    totalBorrowCapacity: number;
+    borrowEntries: PoolBorrowEntry[];
+  }>();
+
+  for (const [key, group] of groupMap) {
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+
+    const poolKey = `${reserve.chainId}:${reserve.marketName}`;
+    const ltv = reserve.ltv ?? 0;
+    const collateralContribution = group.supplyUsd * ltv / 100;
+
+    const poolGroup = poolGroups.get(poolKey) ?? {
+      totalBorrowCapacity: 0,
+      borrowEntries: [],
+    };
+    poolGroup.totalBorrowCapacity += collateralContribution;
+
+    for (const slot of group.borrowSlots) {
+      const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+      const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+      poolGroup.borrowEntries.push({
+        slot,
+        amountUsd,
+        isLastModified: slot.reserveId === lastModifiedReserveId,
+      });
+    }
+    poolGroups.set(poolKey, poolGroup);
+  }
+
+  // For each pool group, allocate capacity: non-lastModified first, lastModified gets remaining
+  for (const { totalBorrowCapacity, borrowEntries } of poolGroups.values()) {
+    // Sort: non-lastModified first (stable), lastModified entries last
+    const sorted = [...borrowEntries].sort((a, b) => {
+      if (a.isLastModified && !b.isLastModified) return 1;
+      if (!a.isLastModified && b.isLastModified) return -1;
+      return 0;
+    });
+
+    let remaining = totalBorrowCapacity;
+    for (const entry of sorted) {
+      const clamped = Math.min(entry.amountUsd, Math.max(0, remaining));
+      remaining -= clamped;
+      ltvClampBySlot.set(entry.slot, clamped);
+    }
+  }
+
+  return ltvClampBySlot;
+}
+
 function computeResultsFromGroups(
   groupMap: Map<string, EntryGroup>,
   reserveMap: Map<string, ReserveWithSpread>,
@@ -184,6 +259,7 @@ function computeResultsFromGroups(
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number,
   forecastStates: Record<string, MerklForecastWireItem>,
+  ltvClampBySlot: Map<SideSlot, number>,
 ): PortfolioPositionResult[] {
   const results: PortfolioPositionResult[] = [];
 
@@ -301,14 +377,21 @@ function computeResultsFromGroups(
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableBorrowRoomUsd;
-        const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        const borrowCapCappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        // LTV clamping: min(userInput, maxBorrowRemaining)
+        const ltvCappedUsd = ltvClampBySlot.get(slot);
+        const effectiveUsd = ltvCappedUsd != null
+          ? Math.min(borrowCapCappedUsd, ltvCappedUsd)
+          : borrowCapCappedUsd;
+        // ltvClampedUsd on result: only when LTV actually reduced the amount
+        const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
         const nativePercent = simResult.borrow.afterNative
           ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
         const incentivePercent = simResult.borrow.afterIncentive
           ?? simResult.borrow.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', cappedUsd, isApy, walletUsd);
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', effectiveUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue, cappedUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue, effectiveUsd, ltvClampedResult),
         );
       }
     } else {
@@ -328,11 +411,15 @@ function computeResultsFromGroups(
         const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue;
+        // LTV clamping applies even in fallback path
+        const ltvCappedUsd = ltvClampBySlot.get(slot);
+        const effectiveUsd = ltvCappedUsd != null ? Math.min(amountUsd, ltvCappedUsd) : amountUsd;
+        const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd, effectiveUsd, ltvClampedResult),
         );
       }
     }
@@ -380,8 +467,14 @@ export function simulatePortfolioFromEntries(
     return { results: [], summary: aggregatePortfolioSummary([]) };
   }
 
+  // AAV-1250: Compute LTV (maxBorrow) clamping per pool/spoke group.
+  // Must happen after groupMap is built (needs supplyUsd/borrowUsd per reserve)
+  // and before computeResultsFromGroups (which applies the clamped amounts).
+  const ltvClampBySlot = computeLtvClamping(groupMap, reserveMap, args.lastModifiedReserveId);
+
   const results = computeResultsFromGroups(
     groupMap, reserveMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+    ltvClampBySlot,
   );
 
   return {

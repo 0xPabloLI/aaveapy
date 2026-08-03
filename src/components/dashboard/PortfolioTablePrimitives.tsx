@@ -115,7 +115,7 @@ export function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] })
   if (warnings.length === 0) return null;
 
   const hasAmber = warnings.some(w => {
-    if (w.kind === 'protocol_cap') return true;
+    if (w.kind === 'protocol_cap' || w.kind === 'ltv_cap') return true;
     const notes = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).notes : (w as IncentiveOffsetWarning).notes;
     return notes?.some(n => n.color === 'amber');
   });
@@ -150,6 +150,13 @@ export function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] })
               return (
                 <div key={i} className="text-amber-600 dark:text-amber-400">
                   {label}
+                </div>
+              );
+            }
+            if (w.kind === 'ltv_cap') {
+              return (
+                <div key={i} className="text-amber-600 dark:text-amber-400">
+                  Borrow limited by LTV: max {formatUsd(w.clampedUsd)}
                 </div>
               );
             }
