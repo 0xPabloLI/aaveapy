@@ -420,6 +420,14 @@
               },
               "collateralRisk": {
                 "type": "number"
+              },
+              "ltv": {
+                "type": "number",
+                "description": "Collateral LTV (percent: 80 = 80%). V3: supplyInfo.maxLTV, V4: settings.collateralFactor."
+              },
+              "liquidationThreshold": {
+                "type": "number",
+                "description": "Liquidation threshold (percent: 82.5 = 82.5%). V3: supplyInfo.liquidationThreshold, V4: = ltv (collateralFactor)."
               }
             },
             "required": [
@@ -1018,6 +1026,14 @@
           },
           "collateralRisk": {
             "type": "number"
+          },
+          "ltv": {
+            "type": "number",
+            "description": "Collateral LTV (percent: 80 = 80%). V3: supplyInfo.maxLTV, V4: settings.collateralFactor."
+          },
+          "liquidationThreshold": {
+            "type": "number",
+            "description": "Liquidation threshold (percent: 82.5 = 82.5%). V3: supplyInfo.liquidationThreshold, V4: = ltv (collateralFactor)."
           }
         },
         "required": [
