@@ -5,4 +5,4 @@
 // When the backend API response shape changes, the backend snapshot
 // test (apiSchemaFingerprint.test.ts) will fail. Update this value
 // to match the new fingerprint from the test output.
-export const SCHEMA_FP = '541bf2ebdf0c';
+export const SCHEMA_FP = '2d1059421baf';

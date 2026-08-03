@@ -242,6 +242,8 @@ const MarketWithSpread = z.object({
   spokeName: z.string().optional(),
   spokeAddress: z.string().optional(),
   collateralRisk: z.number().optional(),
+  ltv: z.number().optional(),
+  liquidationThreshold: z.number().optional(),
 });
 const ApiMeritCampaignGroup = CampaignGroupApiMeritCampaignBreakdown;
 const ApiMerklBreakdown = MerklCampaignBreakdown;
