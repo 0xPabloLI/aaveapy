@@ -83,6 +83,9 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
         // Skip reserves that cannot be added to portfolio or have supply disabled
         if (r.isFrozen || r.isPaused || r.isActive === false) continue;
         if (r.supplyDisabled === true) continue;
+        // AAV-1250: LTV clamping prevents borrow when ltv=0 (frozen/non-collateral)
+        // Filter out reserves with ltv=0 or undefined — they can't be borrowed against
+        if (!r.ltv || r.ltv === 0) continue;
 
         const marketLabel = getMarketChipLabel(
           r.marketName as string,
@@ -99,6 +102,8 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
           // Skip if offset reserve cannot be added or has borrow disabled
           if (offsetReserve.isFrozen || offsetReserve.isPaused || offsetReserve.isActive === false) continue;
           if (offsetReserve.borrowDisabled === true) continue;
+          // AAV-1250: offset reserve also needs ltv > 0 for borrow to not be clamped to 0
+          if (!offsetReserve.ltv || offsetReserve.ltv === 0) continue;
           scenarios.push({
             type,
             targetSymbol: r.tokenSymbol as string,
@@ -265,14 +270,14 @@ async function runCrossReserveScenario(
   test.setTimeout(120_000);
   await setupPortfolioMode(page);
 
-  // Add target reserve, supply $1000
+  // Add target reserve, supply $100000 (large enough for LTV clamping at common ltv rates)
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added, `Should find and add ${s.targetSymbol} (${s.targetMarketLabel})`).toBe(true);
-  await fillSupplyAmount(page, s.targetSymbol, '1000');
+  await fillSupplyAmount(page, s.targetSymbol, '100000');
   const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
-  // Add offset reserve, borrow $500 (50% of supply)
+  // Add offset reserve with supply to give it borrowing power (AAV-1250: LTV clamping)
   const offsetAdded = await addReserveToPortfolio(
     page,
     s.offsetSymbol!,
@@ -281,6 +286,8 @@ async function runCrossReserveScenario(
   expect(offsetAdded, `Should find and add ${s.offsetSymbol} (${s.offsetMarketLabel})`).toBe(
     true,
   );
+  // Supply on offset reserve so its borrow is not LTV-clamped to 0
+  await fillSupplyAmount(page, s.offsetSymbol!, '100000');
 
   const fillOffsetBorrow = isMobile
     ? (amount: string) =>
@@ -300,7 +307,7 @@ async function runCrossReserveScenario(
     'Incentive should decrease when offset borrow is added',
   ).toBeLessThan(baselineAfter);
 
-  // Full offset: borrow = supply ($1000)
+  // Full offset: borrow = $1000 (well within maxBorrow at $100000 supply)
   await fillOffsetBorrow('1000');
   const fullOffsetAfter = await readSupplyIncentiveAfter(
     page,
@@ -318,7 +325,7 @@ async function runCrossReserveScenario(
     'Decrease should be proportional to Merkl APR (>= 40% of advertised APR)',
   ).toBeGreaterThanOrEqual(s.targetApr * 0.4);
 
-  // Over-offset: borrow > supply ($2000) — should clamp
+  // Over-offset: borrow > target supply ($2000) — should clamp via offset logic
   await fillOffsetBorrow('2000');
   const overOffsetAfter = await readSupplyIncentiveAfter(
     page,
@@ -341,7 +348,7 @@ async function runSelfLoopScenario(
 
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added).toBe(true);
-  await fillSupplyAmount(page, s.targetSymbol, '1000');
+  await fillSupplyAmount(page, s.targetSymbol, '100000');
   const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
@@ -350,8 +357,8 @@ async function runSelfLoopScenario(
         fillBorrowAmountMobile(page, s.targetReserveId, s.targetSymbol, amount)
     : (amount: string) => fillBorrowAmountDesktop(page, s.targetSymbol, amount);
 
-  // Half offset: borrow = $500
-  await fillOwnBorrow('500');
+  // Half offset: borrow = $50000 (50% of supply, within LTV limit)
+  await fillOwnBorrow('50000');
   const halfOffsetAfter = await readSupplyIncentiveAfter(
     page,
     s.targetReserveId,
@@ -362,8 +369,8 @@ async function runSelfLoopScenario(
     'Incentive should decrease when own borrow is added',
   ).toBeLessThan(baselineAfter);
 
-  // Full offset: borrow = $1000
-  await fillOwnBorrow('1000');
+  // Full offset: borrow = $100000 (= supply, may be LTV-clamped to supply×ltv/100)
+  await fillOwnBorrow('100000');
   const fullOffsetAfter = await readSupplyIncentiveAfter(
     page,
     s.targetReserveId,
@@ -377,8 +384,8 @@ async function runSelfLoopScenario(
     'Decrease should be proportional to Merkl APR (>= 40% of advertised APR)',
   ).toBeGreaterThanOrEqual(s.targetApr * 0.4);
 
-  // Over-offset: borrow = $2000 — should clamp
-  await fillOwnBorrow('2000');
+  // Over-offset: borrow = $200000 (> supply, should be LTV-clamped)
+  await fillOwnBorrow('200000');
   const overOffsetAfter = await readSupplyIncentiveAfter(
     page,
     s.targetReserveId,

@@ -15,18 +15,42 @@ import { expect, test } from '@playwright/test';
 const PERCENT_RE = /\-?\d+\.\d{2}%/;
 const USD_PER_DAY_RE = /^[+-]?\$[\d,]+(\.\d{2})?$/;
 
+/** Token + market to use for portfolio tests. Must have supply incentives AND ltv > 0 on staging.
+ *  GHO on Monad has ltv=75 and merklSupplys — see AAV-1250 E2E fix. */
+const PORTFOLIO_TEST_TOKEN = 'GHO';
+const PORTFOLIO_TEST_MARKET = 'Monad';
+
 async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
   await page.goto('/');
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
   await page.getByTestId('portfolio-mode-toggle').click();
   await page.getByRole('button', { name: 'Search tokens' }).click();
-  await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
-  const addBtn = page
-    .getByRole('button', { name: /^Add .+ \(supply and borrow\)$/ })
-    .first();
-  await expect(addBtn).toBeVisible();
-  await addBtn.click();
-  const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
+  await page.getByRole('textbox', { name: 'Search tokens to add' }).fill(PORTFOLIO_TEST_TOKEN);
+  await page.waitForTimeout(500);
+  // Find the Add button matching the desired market (handles same-symbol on multiple chains)
+  const addButtons = page.getByRole('button', {
+    name: `Add ${PORTFOLIO_TEST_TOKEN} (supply and borrow)`,
+  });
+  const count = await addButtons.count();
+  if (count === 0) {
+    throw new Error(`No Add button found for ${PORTFOLIO_TEST_TOKEN}`);
+  }
+  // Pick the button that matches the desired market label
+  let clicked = false;
+  for (let i = 0; i < count; i++) {
+    const btn = addButtons.nth(i);
+    const text = await btn.textContent();
+    if (text && text.includes(PORTFOLIO_TEST_MARKET)) {
+      await btn.click();
+      clicked = true;
+      break;
+    }
+  }
+  if (!clicked) {
+    // Fallback: first result
+    await addButtons.first().click();
+  }
+  const supplyInput = page.getByRole('textbox', { name: new RegExp(`Supply amount for ${PORTFOLIO_TEST_TOKEN}`, 'i') }).first();
   await expect(supplyInput).toBeVisible();
   return supplyInput;
 }
