@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves';
 
 /**
  * Portfolio ResultsTable inline delta regression.
@@ -9,48 +10,25 @@ import { expect, test } from '@playwright/test';
  * Total Supply / Net Daily Earn / Net Effective APY.
  *
  * This test does NOT depend on a wallet address — it uses manual entry.
+ * Test reserve is dynamically discovered from staging API.
  */
 
-/** Token + market to use for portfolio tests — must have supply incentives on staging (AAV-1250 E2E fix). */
-const PORTFOLIO_TEST_TOKEN = 'GHO';
-const PORTFOLIO_TEST_MARKET = 'Monad';
+const testReserve = await findIncentiveReserve();
 
-async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await page.getByTestId('portfolio-mode-toggle').click();
-  await page.getByRole('button', { name: 'Search tokens' }).click();
-  await page.getByRole('textbox', { name: 'Search tokens to add' }).fill(PORTFOLIO_TEST_TOKEN);
-  await page.waitForTimeout(500);
-  const addButtons = page.getByRole('button', {
-    name: `Add ${PORTFOLIO_TEST_TOKEN} (supply and borrow)`,
-  });
-  const count = await addButtons.count();
-  if (count === 0) throw new Error(`No Add button found for ${PORTFOLIO_TEST_TOKEN}`);
-  let clicked = false;
-  for (let i = 0; i < count; i++) {
-    const btn = addButtons.nth(i);
-    const text = await btn.textContent();
-    if (text && text.includes(PORTFOLIO_TEST_MARKET)) {
-      await btn.click();
-      clicked = true;
-      break;
-    }
-  }
-  if (!clicked) await addButtons.first().click();
-  const supplyInput = page.getByRole('textbox', { name: new RegExp(`Supply amount for ${PORTFOLIO_TEST_TOKEN}`, 'i') }).first();
-  await expect(supplyInput).toBeVisible();
-  return supplyInput;
+async function setupPortfolio(page: Page) {
+  if (!testReserve) throw new Error('No suitable reserve found');
+  return setupPortfolioWithReserve(page, testReserve);
 }
 
 test.describe('Portfolio ResultsTable — inline delta', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('shows inline delta badges after manual position input', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const resultsTable = page.locator('table').filter({ hasText: 'Reserve' }).filter({ hasText: 'Native' });
@@ -62,7 +40,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
 
     // AAV-1150: SummaryCard DOM selector needs investigation
     test.skip('SummaryCard shows delta when simulation is active', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const summaryCard = page.locator('div.grid').filter({ hasText: 'Total Supply' }).filter({ hasText: 'Net Daily Earn' });
@@ -73,7 +51,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
     });
 
     test('delta badges disappear when amount is cleared', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const resultsTable = page.locator('table').filter({ hasText: 'Reserve' }).filter({ hasText: 'Native' });

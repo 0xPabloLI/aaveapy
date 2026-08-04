@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { findAnyActiveReserve, setupPortfolioWithReserve } from './test-reserves';
 
 /**
  * Portfolio decimal input regression tests.
@@ -10,26 +11,23 @@ import { expect, test } from '@playwright/test';
  * Key scenario: focus an input that already has a formatted value
  * like "1,000", then type "." — the input should show "1,000." (not
  * "0." or "1,000" with the dot swallowed).
+ *
+ * Test reserve is dynamically discovered from staging API.
  */
+const testReserve = await findAnyActiveReserve();
+
+async function setupPortfolio(page: Page) {
+  if (!testReserve) throw new Error('No suitable reserve found');
+  return setupPortfolioWithReserve(page, testReserve);
+}
+
 test.describe('Portfolio input — decimal point entry', () => {
-  async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
-    await page.goto('/');
-    await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-    await page.getByTestId('portfolio-mode-toggle').click();
-    await page.getByRole('button', { name: 'Search tokens' }).click();
-    await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
-    const addBtn = page
-      .getByRole('button', { name: /^Add .+ \(supply and borrow\)$/ })
-      .first();
-    await expect(addBtn).toBeVisible();
-    await addBtn.click();
-    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
-    await expect(supplyInput).toBeVisible();
-    return supplyInput;
-  }
+  test.beforeEach(() => {
+    test.skip(!testReserve, 'No active reserve with ltv > 0 found on staging');
+  });
 
   test('typing decimal point right after focus preserves cursor position', async ({ page }) => {
-    const supplyInput = await setupPortfolioWithReserve(page);
+    const supplyInput = await setupPortfolio(page);
 
     // Enter a whole number, then blur to get it formatted with commas.
     await supplyInput.fill('1000');
@@ -51,7 +49,7 @@ test.describe('Portfolio input — decimal point entry', () => {
   });
 
   test('typing decimal point on empty input produces "0."', async ({ page }) => {
-    const supplyInput = await setupPortfolioWithReserve(page);
+    const supplyInput = await setupPortfolio(page);
 
     // Input is empty — focus and type a dot.
     await supplyInput.focus();
@@ -62,7 +60,7 @@ test.describe('Portfolio input — decimal point entry', () => {
   });
 
   test('cursor is at correct position after typing decimal mid-number', async ({ page }) => {
-    const supplyInput = await setupPortfolioWithReserve(page);
+    const supplyInput = await setupPortfolio(page);
 
     // Type "12.34" via sequential keystrokes.
     await supplyInput.focus();
@@ -81,7 +79,7 @@ test.describe('Portfolio input — decimal point entry', () => {
   });
 
   test('re-focusing formatted value then appending digits works', async ({ page }) => {
-    const supplyInput = await setupPortfolioWithReserve(page);
+    const supplyInput = await setupPortfolio(page);
 
     // Enter a number and blur to get formatting.
     await supplyInput.fill('5000');

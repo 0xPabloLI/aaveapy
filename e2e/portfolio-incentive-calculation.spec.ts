@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves';
 
 /**
  * Portfolio incentive calculation E2E verification (AAV-1143).
@@ -10,49 +11,20 @@ import { expect, test } from '@playwright/test';
  * Uses data-cell, data-testid, data-current/data-after attributes.
  * Does NOT depend on a wallet address — uses manual entry.
  * Validation is format+existence only, not exact numeric values.
+ *
+ * Test reserve is dynamically discovered from staging API to avoid
+ * breakage when hardcoded tokens lose incentives or change LTV.
  */
 
 const PERCENT_RE = /\-?\d+\.\d{2}%/;
 const USD_PER_DAY_RE = /^[+-]?\$[\d,]+(\.\d{2})?$/;
 
-/** Token + market to use for portfolio tests. Must have supply incentives AND ltv > 0 on staging.
- *  GHO on Monad has ltv=75 and merklSupplys — see AAV-1250 E2E fix. */
-const PORTFOLIO_TEST_TOKEN = 'GHO';
-const PORTFOLIO_TEST_MARKET = 'Monad';
+// Dynamically discover a reserve with supply incentives AND ltv > 0
+const testReserve = await findIncentiveReserve();
 
-async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await page.getByTestId('portfolio-mode-toggle').click();
-  await page.getByRole('button', { name: 'Search tokens' }).click();
-  await page.getByRole('textbox', { name: 'Search tokens to add' }).fill(PORTFOLIO_TEST_TOKEN);
-  await page.waitForTimeout(500);
-  // Find the Add button matching the desired market (handles same-symbol on multiple chains)
-  const addButtons = page.getByRole('button', {
-    name: `Add ${PORTFOLIO_TEST_TOKEN} (supply and borrow)`,
-  });
-  const count = await addButtons.count();
-  if (count === 0) {
-    throw new Error(`No Add button found for ${PORTFOLIO_TEST_TOKEN}`);
-  }
-  // Pick the button that matches the desired market label
-  let clicked = false;
-  for (let i = 0; i < count; i++) {
-    const btn = addButtons.nth(i);
-    const text = await btn.textContent();
-    if (text && text.includes(PORTFOLIO_TEST_MARKET)) {
-      await btn.click();
-      clicked = true;
-      break;
-    }
-  }
-  if (!clicked) {
-    // Fallback: first result
-    await addButtons.first().click();
-  }
-  const supplyInput = page.getByRole('textbox', { name: new RegExp(`Supply amount for ${PORTFOLIO_TEST_TOKEN}`, 'i') }).first();
-  await expect(supplyInput).toBeVisible();
-  return supplyInput;
+async function setupPortfolio(page: Page) {
+  if (!testReserve) throw new Error('No suitable reserve found');
+  return setupPortfolioWithReserve(page, testReserve);
 }
 
 /* ── T4: Incentive values display ──────────────────────────────── */
@@ -61,10 +33,11 @@ test.describe('Portfolio incentive values display', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('incentive columns show percentage values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -85,7 +58,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('total columns show percentage values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -105,7 +78,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('native columns show percentage values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -128,10 +101,11 @@ test.describe('Portfolio incentive values display', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('metric bar shows incentive and total values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
@@ -156,10 +130,11 @@ test.describe('Golden Rule §1 — current invariance', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -183,10 +158,11 @@ test.describe('Golden Rule §1 — current invariance', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile DeltaRow only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
@@ -220,10 +196,11 @@ test.describe('Cap threshold crossing — current invariance', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -247,10 +224,11 @@ test.describe('Cap threshold crossing — current invariance', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000');
 
       const card = page.locator('[data-reserve-id]').first();
@@ -279,10 +257,11 @@ test.describe('Delta badge after manual position input', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('supply $/day cell shows delta after entering amount', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const row = page.locator('tr[data-reserve-id]').first();
@@ -298,10 +277,11 @@ test.describe('Delta badge after manual position input', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('usd-per-day shows value after entering amount', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
@@ -321,10 +301,11 @@ test.describe('APR/APY toggle updates incentive values', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const aprRadio = page.getByRole('radio', { name: 'APR' }).first();
@@ -360,10 +341,11 @@ test.describe('APR/APY toggle updates incentive values', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const aprRadio = page.getByRole('radio', { name: 'APR' }).first();
