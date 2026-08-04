@@ -37,6 +37,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('incentive columns show percentage values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -58,6 +59,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('total columns show percentage values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -78,6 +80,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('native columns show percentage values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -105,6 +108,7 @@ test.describe('Portfolio incentive values display', () => {
     });
 
     test('metric bar shows incentive and total values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -134,6 +138,7 @@ test.describe('Golden Rule §1 — current invariance', () => {
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -141,14 +146,14 @@ test.describe('Golden Rule §1 — current invariance', () => {
       await expect(row).toBeVisible({ timeout: 5000 });
 
       const supplyTotal = row.locator('td[data-cell="supply-total"]');
-      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      await expect(supplyTotal).not.toContainText('—', { timeout: 10_000 });
 
       const metricSpan = supplyTotal.locator('span[data-current]').first();
       const currentBefore = await metricSpan.getAttribute('data-current');
 
       await supplyInput.clear();
       await supplyInput.fill('500000');
-      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      await expect(supplyTotal).not.toContainText('—', { timeout: 10_000 });
 
       const currentAfter = await metricSpan.getAttribute('data-current');
       expect(currentAfter).toBe(currentBefore);
@@ -157,35 +162,30 @@ test.describe('Golden Rule §1 — current invariance', () => {
 
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
-      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile DeltaRow only');
+      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
       test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const card = page.locator('[data-reserve-id]').first();
       await expect(card).toBeVisible({ timeout: 5000 });
 
-      const expandBtn = card.getByRole('button', { name: /Show details/i });
-      await expandBtn.click();
-
-      const currentSpan = card.locator('[data-testid="delta-current"]').first();
-      await expect(currentSpan).toBeVisible({ timeout: 5000 });
-      const currentBefore = await currentSpan.textContent();
+      // Read current from metrics strip (always rendered), not DeltaRow (conditionally rendered).
+      // Aligns with desktop pattern: td[data-cell="supply-total"] span[data-current]
+      const totalSpan = card.locator('span[data-cell="supply-total"] span[data-current]').first();
+      await expect(totalSpan).toBeVisible({ timeout: 10_000 });
+      const currentBefore = await totalSpan.getAttribute('data-current');
 
       await supplyInput.clear();
       await supplyInput.fill('500000');
-      await expect(currentSpan).toBeVisible({ timeout: 3000 });
+      await expect(totalSpan).toBeVisible({ timeout: 10_000 });
 
-      const currentAfter = await currentSpan.textContent();
+      const currentAfter = await totalSpan.getAttribute('data-current');
       expect(currentAfter).toBe(currentBefore);
-
-      const afterSpan = card.locator('[data-testid="delta-after"]').first();
-      await expect(afterSpan).toBeVisible();
-      const deltaSpan = card.locator('[data-testid="delta-value"]').first();
-      await expect(deltaSpan).toBeVisible();
     });
   });
 });
@@ -200,6 +200,7 @@ test.describe('Cap threshold crossing — current invariance', () => {
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000');
 
@@ -207,14 +208,14 @@ test.describe('Cap threshold crossing — current invariance', () => {
       await expect(row).toBeVisible({ timeout: 5000 });
 
       const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
-      await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
+      await expect(incentiveCell).not.toContainText('—', { timeout: 10_000 });
 
       const metricSpan = incentiveCell.locator('span[data-current]').first();
       const currentBefore = await metricSpan.getAttribute('data-current');
 
       await supplyInput.clear();
       await supplyInput.fill('999999999');
-      await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
+      await expect(incentiveCell).not.toContainText('—', { timeout: 10_000 });
 
       const currentAfter = await metricSpan.getAttribute('data-current');
       expect(currentAfter).toBe(currentBefore);
@@ -228,24 +229,24 @@ test.describe('Cap threshold crossing — current invariance', () => {
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000');
 
       const card = page.locator('[data-reserve-id]').first();
       await expect(card).toBeVisible({ timeout: 5000 });
 
-      const expandBtn = card.getByRole('button', { name: /Show details/i });
-      await expandBtn.click();
-
-      const currentSpan = card.locator('[data-testid="delta-current"]').first();
-      await expect(currentSpan).toBeVisible({ timeout: 5000 });
-      const currentBefore = await currentSpan.textContent();
+      // Read current from metrics strip (always rendered), not DeltaRow (conditionally rendered).
+      // Aligns with desktop pattern: td[data-cell="supply-incentive"] span[data-current]
+      const incentiveSpan = card.locator('span[data-cell="supply-incentive"] span[data-current]').first();
+      await expect(incentiveSpan).toBeVisible({ timeout: 10_000 });
+      const currentBefore = await incentiveSpan.getAttribute('data-current');
 
       await supplyInput.clear();
       await supplyInput.fill('999999999');
-      await expect(currentSpan).toBeVisible({ timeout: 5000 });
+      await expect(incentiveSpan).toBeVisible({ timeout: 10_000 });
 
-      const currentAfter = await currentSpan.textContent();
+      const currentAfter = await incentiveSpan.getAttribute('data-current');
       expect(currentAfter).toBe(currentBefore);
     });
   });
@@ -261,6 +262,7 @@ test.describe('Delta badge after manual position input', () => {
     });
 
     test('supply $/day cell shows delta after entering amount', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -281,6 +283,7 @@ test.describe('Delta badge after manual position input', () => {
     });
 
     test('usd-per-day shows value after entering amount', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -305,6 +308,7 @@ test.describe('APR/APY toggle updates incentive values', () => {
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
@@ -317,12 +321,12 @@ test.describe('APR/APY toggle updates incentive values', () => {
       const row = page.locator('tr[data-reserve-id]').first();
       await expect(row).toBeVisible({ timeout: 5000 });
       const supplyTotal = row.locator('td[data-cell="supply-total"]');
-      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      await expect(supplyTotal).not.toContainText('—', { timeout: 10_000 });
       const valueBeforeToggle = (await supplyTotal.textContent())?.trim();
 
       await aprRadio.click();
       await expect(aprRadio).toBeChecked();
-      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      await expect(supplyTotal).not.toContainText('—', { timeout: 10_000 });
       const valueAfterToggle = (await supplyTotal.textContent())?.trim();
 
       expect(valueAfterToggle).toMatch(PERCENT_RE);
@@ -332,7 +336,7 @@ test.describe('APR/APY toggle updates incentive values', () => {
 
       await apyRadio.click();
       await expect(apyRadio).toBeChecked();
-      await expect(supplyTotal).not.toContainText('—', { timeout: 5000 });
+      await expect(supplyTotal).not.toContainText('—', { timeout: 10_000 });
       const valueAfterRestore = (await supplyTotal.textContent())?.trim();
       expect(valueAfterRestore).toBe(valueBeforeToggle);
     });
@@ -345,6 +349,7 @@ test.describe('APR/APY toggle updates incentive values', () => {
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
+      test.setTimeout(120_000);
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 

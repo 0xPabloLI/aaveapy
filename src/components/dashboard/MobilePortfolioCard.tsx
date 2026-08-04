@@ -81,7 +81,7 @@ function DeltaRow({
     <div className="flex items-center justify-between ds-text-11 py-0.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1 tabular-nums">
-        <span data-testid="delta-current" className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
+        <span data-testid="delta-current" data-current={metric!.current?.toFixed(4)} className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
         <span className="text-muted-foreground/40">→</span>
         <span data-testid="delta-after" className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
         <span data-testid="delta-value" className={cn('font-medium', deltaColor)}>{deltaStr}</span>

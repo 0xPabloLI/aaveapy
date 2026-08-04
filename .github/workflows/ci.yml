@@ -154,11 +154,6 @@ jobs:
   e2e:
     name: e2e
     runs-on: ubuntu-latest
-    # TODO: Remove continue-on-error once the pre-existing mobile E2E failure is fixed.
-    # Tracked as Linear follow-up issue — "Cap threshold crossing — current invariance › mobile"
-    # The failure is unrelated to any recent change; large delta changes utilization rate
-    # which changes the current incentive value.
-    continue-on-error: true
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
@@ -176,7 +171,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run Playwright E2E tests
-        run: npx playwright test --project=chromium
+        run: npx playwright test --project=chromium --project=mobile-chromium
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
