@@ -154,6 +154,7 @@ jobs:
   e2e-desktop:
     name: e2e-desktop (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         shard: [1, 2]
@@ -187,6 +188,7 @@ jobs:
   e2e-mobile:
     name: e2e-mobile (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         shard: [1, 2]
