@@ -151,8 +151,8 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  e2e:
-    name: e2e
+  e2e-desktop:
+    name: e2e-desktop
     runs-on: ubuntu-latest
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
@@ -170,13 +170,42 @@ jobs:
         run: npm run ci:lockcheck
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      - name: Run Playwright E2E tests
-        run: npx playwright test --project=chromium --project=mobile-chromium
+      - name: Run desktop E2E tests
+        run: npx playwright test --project=chromium
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-results
+          name: playwright-results-desktop
+          path: test-results/
+          retention-days: 7
+
+  e2e-mobile:
+    name: e2e-mobile
+    runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run mobile E2E tests
+        run: npx playwright test --project=mobile-chromium
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-mobile
           path: test-results/
           retention-days: 7
 
