@@ -28,6 +28,7 @@ const OUTPUT_DIR = path.join(process.cwd(), 'playwright-report', 'explorer-links
  */
 test.describe('Explorer links — all markets verify getReserveDeficit DOM', () => {
   test.describe.configure({ mode: 'parallel' });
+  test.skip(!!process.env.CI, 'External explorer sites blocked by Cloudflare in CI');
 
   test.beforeAll(async () => {
     await mkdir(OUTPUT_DIR, { recursive: true });

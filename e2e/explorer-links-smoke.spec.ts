@@ -31,6 +31,7 @@ async function isExplorerReachable(url: string): Promise<boolean> {
 
 test.describe('Explorer deep-link smoke tests', () => {
   test.describe.configure({ mode: 'parallel' });
+  test.skip(!!process.env.CI, 'External explorer sites blocked by Cloudflare in CI');
 
   for (const { market, name, expectedTitle } of EXPLORER_SMOKE_TESTS) {
     test(`[${name}] ${market} URL loads and shows contract`, async ({ page }) => {
