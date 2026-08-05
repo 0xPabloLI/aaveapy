@@ -6,6 +6,8 @@ import type { SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
 import { buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
 import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
+import { wadToHf } from '@/lib/userData/onchainHealthFactor';
 
 const makeRateCalcReserve = (
   overrides: Partial<ReserveWithSpread> = {},
@@ -1703,5 +1705,197 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const hfB = findHF(healthFactors, '137:AaveV3Polygon');
     expect(hfA.totalBorrowCapacityUsd).toBe(8000);
     expect(hfB.totalBorrowCapacityUsd).toBe(4000);
+  });
+});
+
+// ─── AAV-1253 (P7): On-chain HF baseline (current → after → delta) ───
+// Tests for computeHealthFactors with onchainHfMap.
+
+describe('On-chain HF baseline (AAV-1253)', () => {
+  const findHF = (hfs: ReturnType<typeof simulatePortfolioFromEntries>['healthFactors'], poolKey: string) =>
+    hfs!.find((h) => h.poolKey === poolKey)!;
+
+  // C1: wallet + borrow + on-chain HF → current/delta present
+  it('C1: onchainHfMap provided → currentHealthFactor and deltaHealthFactor populated', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Simulated HF = (10000 × 0.8) / 5000 = 1.6
+    // On-chain HF = 1.8
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.8 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.healthFactor).toBeCloseTo(1.6, 5);
+    expect(hf.currentHealthFactor).toBeCloseTo(1.8, 5);
+    expect(hf.deltaHealthFactor).toBeCloseTo(-0.2, 5); // 1.6 - 1.8 = -0.2
+  });
+
+  // C2: wallet + no borrow → on-chain HF = null (max uint256)
+  it('C2: no borrow → currentHealthFactor = null even if onchainHfMap has entry', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    // On-chain HF = null (no debt → max uint256 → null)
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: null }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.healthFactor).toBeNull();
+    expect(hf.currentHealthFactor).toBeNull();
+    expect(hf.deltaHealthFactor).toBeNull();
+  });
+
+  // C3: onchainHfMap = undefined (RPC fail) → current/delta = null, after still works
+  it('C3: onchainHfMap undefined → currentHealthFactor = null, healthFactor normal', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.healthFactor).toBeCloseTo(1.6, 5);
+    expect(hf.currentHealthFactor).toBeNull();
+    expect(hf.deltaHealthFactor).toBeNull();
+  });
+
+  // C4: no wallet (onchainHfMap not provided) → same as C3
+  it('C4: no wallet → currentHealthFactor = null', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.currentHealthFactor).toBeNull();
+    expect(hf.deltaHealthFactor).toBeNull();
+  });
+
+  // C6: poolKey mismatch → current = null (no crash)
+  it('C6: poolKey not in onchainHfMap → currentHealthFactor = null', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Map has a different poolKey
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['999:UnknownMarket', { healthFactor: 1.5 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.healthFactor).toBeCloseTo(1.6, 5);
+    expect(hf.currentHealthFactor).toBeNull();
+    expect(hf.deltaHealthFactor).toBeNull();
+  });
+
+  // C8: multi-pool, partial on-chain data
+  it('C8: multi-pool with partial on-chain data → mixed current/delta', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Only pool A has on-chain data, pool B's RPC failed
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
+    const hfB = findHF(healthFactors, '137:AaveV3Polygon');
+    // A: after=1.6, current=1.7, delta=-0.1
+    expect(hfA.healthFactor).toBeCloseTo(1.6, 5);
+    expect(hfA.currentHealthFactor).toBeCloseTo(1.7, 5);
+    expect(hfA.deltaHealthFactor).toBeCloseTo(-0.1, 5);
+    // B: after=2.0, current=null (RPC failed)
+    expect(hfB.healthFactor).toBeCloseTo(2.0, 5);
+    expect(hfB.currentHealthFactor).toBeNull();
+    expect(hfB.deltaHealthFactor).toBeNull();
+  });
+
+  // C9: delta = 0 (simulated HF unchanged from on-chain)
+  it('C9: delta = 0 when after === current', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Simulated HF = 1.6, on-chain HF = 1.6 → delta = 0
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.6 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.deltaHealthFactor).toBeCloseTo(0, 10);
+  });
+
+  // C11: delta > 0 (HF improved)
+  it('C11: delta > 0 when after > current', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Simulated HF = 1.6, on-chain HF = 1.2 → delta = 0.4 (improved)
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.2 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.deltaHealthFactor).toBeCloseTo(0.4, 5);
+  });
+
+  // C12: delta < 0 (HF worsened)
+  it('C12: delta < 0 when after < current', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Simulated HF = 1.6, on-chain HF = 2.0 → delta = -0.4 (worsened)
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 2.0 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.deltaHealthFactor).toBeCloseTo(-0.4, 5);
+  });
+
+  // C13/C14: wadToHf with max uint256 → null
+  it('C13: wadToHf(max uint256) → null (no debt)', () => {
+    const MAX_UINT256 = (2n ** 256n) - 1n;
+    expect(wadToHf(MAX_UINT256)).toBeNull();
+  });
+
+  it('C14: wadToHf(1.5e18) → 1.5', () => {
+    expect(wadToHf(15n * 10n ** 17n)).toBeCloseTo(1.5, 5);
+  });
+
+  it('C14b: wadToHf(1e18) → 1.0 (liquidation threshold)', () => {
+    expect(wadToHf(10n ** 18n)).toBeCloseTo(1.0, 5);
+  });
+
+  // C18: two V4 spokes same chain → independent poolKeys, each with own current/delta
+  it('C18: two V4 spokes same chain → independent current/delta', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdt', chainId: 1 });
+    const entries = [
+      makeEntry({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdt', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV4EthereumHub_usdc', { healthFactor: 1.5 }],
+      ['1:AaveV4EthereumHub_usdt', { healthFactor: 2.5 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const hfA = findHF(healthFactors, '1:AaveV4EthereumHub_usdc');
+    const hfB = findHF(healthFactors, '1:AaveV4EthereumHub_usdt');
+    // A: after=1.6, current=1.5, delta=0.1
+    expect(hfA.currentHealthFactor).toBeCloseTo(1.5, 5);
+    expect(hfA.deltaHealthFactor).toBeCloseTo(0.1, 5);
+    // B: after=2.0, current=2.5, delta=-0.5
+    expect(hfB.currentHealthFactor).toBeCloseTo(2.5, 5);
+    expect(hfB.deltaHealthFactor).toBeCloseTo(-0.5, 5);
   });
 });

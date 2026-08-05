@@ -80,6 +80,8 @@ export interface V4UserPosition {
 export interface V4AccountSummary {
   chainId: number
   spokeName: string
+  /** Canonical matching key — address book raw key (e.g. MAIN_SPOKE) ≠ SDK spoke.name (e.g. Main). Use spokeAddress for cross-system matching. (AAV-1253 P7) */
+  spokeAddress: `0x${string}`
   healthFactor: bigint
   totalCollateralValue: bigint
   totalDebtValueRay: bigint
@@ -256,6 +258,7 @@ export async function getV4UserPositionsOnChain(
     accountSummaries.push({
       chainId,
       spokeName,
+      spokeAddress,
       healthFactor: r.healthFactor,
       totalCollateralValue: r.totalCollateralValue,
       totalDebtValueRay: r.totalDebtValueRay,

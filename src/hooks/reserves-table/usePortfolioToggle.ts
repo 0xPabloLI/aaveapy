@@ -8,6 +8,7 @@ import type {
   PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
@@ -31,6 +32,8 @@ export interface UsePortfolioToggleArgs {
   portfolioActions?: PortfolioSimulationActions;
   simulationContext?: PortfolioSimulationContext;
   lastModifiedReserveId?: string;
+  /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
+  onchainHfMap?: OnchainHfMap;
 }
 
 export interface UsePortfolioToggleResult {
@@ -53,6 +56,7 @@ export const usePortfolioToggle = ({
   portfolioActions,
   simulationContext,
   lastModifiedReserveId,
+  onchainHfMap,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
   const effectiveEntries = useMemo(() => entries ?? [], [entries]);
   const portfolioReserveIds = useMemo(() => {
@@ -146,6 +150,7 @@ export const usePortfolioToggle = ({
         tydroPointToUsdRate: simulationContext.tydroPointToUsdRate,
         forecastStates: simulationContext.forecastStates,
         lastModifiedReserveId,
+        onchainHfMap,
       });
       return { portfolioResults: results, portfolioSummary: summary, portfolioHealthFactors: healthFactors };
     }
@@ -177,7 +182,7 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext, lastModifiedReserveId]);
+  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext, lastModifiedReserveId, onchainHfMap]);
 
   return {
     portfolioReserveIds,

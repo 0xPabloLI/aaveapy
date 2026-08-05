@@ -5,6 +5,7 @@ import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
 import { useWallet } from '@/hooks/useWallet';
+import { useOnchainHealthFactor } from '@/hooks/useOnchainHealthFactor';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useChainDiscovery } from '@/hooks/useChainDiscovery';
@@ -364,6 +365,13 @@ const Index = () => {
     onImport: () => setSimulationMode('portfolio'),
     onDisconnect: () => setSimulationMode('single'),
   });
+
+// On-chain HF baseline (AAV-1253 P7) — fetch real HF per pool/spoke when wallet is connected
+const onchainHfResult = useOnchainHealthFactor({
+  address: walletAddress,
+  entries: portfolio.entries,
+  reserves: stableReserves,
+});
 
   const handleWalletSync = useCallback(() => {
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
@@ -729,13 +737,14 @@ portfolioEntries={portfolio.entries}
 portfolioActions={portfolio.actions}
 portfolioSnapshots={portfolio.snapshots}
 lastModifiedReserveId={portfolio.lastModifiedReserveId}
-              onWalletSync={handleWalletSync}
-              walletLoadState={walletLoadState}
-              onRefresh={handleRefresh}
-              dataUpdatedAt={dataUpdatedAt}
-              topOppsRef={topOppsRef}
-              campaignAccessStatuses={campaignAccessStatuses}
-            />
+onWalletSync={handleWalletSync}
+walletLoadState={walletLoadState}
+onRefresh={handleRefresh}
+dataUpdatedAt={dataUpdatedAt}
+topOppsRef={topOppsRef}
+campaignAccessStatuses={campaignAccessStatuses}
+onchainHfMap={onchainHfResult.onchainHfMap}
+/>
           </div>
 
           {/* Empty state */}

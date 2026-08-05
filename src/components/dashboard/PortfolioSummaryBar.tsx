@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatReserveSizeUsd } from '@/lib/formatters';
-import { getHfColorClass, getMinHf } from '@/lib/portfolioCalculator';
+import { getHfColorClass, getMinHf, getLowestHfDelta } from '@/lib/portfolioCalculator';
 import type { PortfolioSummary, PortfolioHealthFactor } from '@/types/portfolio';
 
 interface PortfolioSummaryBarProps {
@@ -39,6 +39,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
 
   const hfs = healthFactors ?? [];
   const minHf = getMinHf(hfs);
+  const { direction: hfDirection } = getLowestHfDelta(hfs);
   const hasHealthFactors = hfs.length > 0;
   const hasAnyValidHf = hfs.some(hf => hf.healthFactor != null && hf.healthFactor > 0);
 
@@ -51,7 +52,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
       {/* Summary bar — always visible */}
       <div data-testid="portfolio-summary-bar" className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">HF</span>
+          <span className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">Lowest HF</span>
           <span
             data-testid="portfolio-min-hf"
             data-hf-color={getHfColorName(minHf)}
@@ -59,6 +60,12 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
           >
             {formatHfValue(minHf)}
           </span>
+          {hfDirection === 'up' && (
+            <span data-testid="portfolio-hf-delta-arrow" className="text-emerald-600 dark:text-emerald-400 ds-text-10 font-bold">↑</span>
+          )}
+          {hfDirection === 'down' && (
+            <span data-testid="portfolio-hf-delta-arrow" className="text-red-500 dark:text-red-400 ds-text-10 font-bold">↓</span>
+          )}
         </div>
         {hasHealthFactors && (
           <button
@@ -86,6 +93,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
               {hfs.map(hf => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;
+                const hasCurrent = hf.currentHealthFactor != null;
                 return (
                   <div
                     key={hf.poolKey}
@@ -95,6 +103,14 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
                   >
                     <span className="text-muted-foreground truncate">{poolName}</span>
                     <span className="flex items-center gap-2">
+                      {hasCurrent ? (
+                        <>
+                          <span className="text-muted-foreground tabular-nums">
+                            {formatHfValue(hf.currentHealthFactor)}
+                          </span>
+                          <span className="text-muted-foreground ds-text-10">→</span>
+                        </>
+                      ) : null}
                       <span className={cn('font-bold tabular-nums', getHfColorClass(hf.healthFactor))}>
                         {formatHfValue(hf.healthFactor)}
                       </span>

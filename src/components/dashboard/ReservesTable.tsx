@@ -60,6 +60,7 @@ import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle'
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import { extractCapWarnings, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
@@ -87,12 +88,14 @@ portfolioEntries?: PortfolioReserveEntry[];
 portfolioActions?: PortfolioSimulationActions;
 portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
 lastModifiedReserveId?: string;
-  onWalletSync?: () => void;
-  walletLoadState?: WalletLoadState;
-  onRefresh?: () => Promise<void>;
-  dataUpdatedAt?: number;
-  topOppsRef?: React.RefObject<HTMLDivElement | null>;
-  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+onWalletSync?: () => void;
+walletLoadState?: WalletLoadState;
+onRefresh?: () => Promise<void>;
+dataUpdatedAt?: number;
+topOppsRef?: React.RefObject<HTMLDivElement | null>;
+campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+/** On-chain HF baseline per pool (AAV-1253 P7). */
+onchainHfMap?: OnchainHfMap;
 }
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -128,6 +131,7 @@ lastModifiedReserveId,
   dataUpdatedAt,
   topOppsRef,
   campaignAccessStatuses,
+  onchainHfMap,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
 
@@ -853,6 +857,7 @@ entries: portfolioEntries,
 portfolioActions,
 simulationContext: portfolioSimulationContext,
 lastModifiedReserveId,
+onchainHfMap,
 });
 
   const portfolioCapWarningsMap = useMemo(() => {

@@ -22,6 +22,7 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { parseNumberInput } from '@/lib/numberFormat';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 
 export interface PerReserveInput {
   supplyInput: string;
@@ -54,6 +55,8 @@ export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
   entries: PortfolioReserveEntry[];
   /** ReserveId of the entry currently being modified. Used for LTV clamping priority. */
   lastModifiedReserveId?: string;
+  /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
+  onchainHfMap?: OnchainHfMap;
 }
 
 export interface SimulatePortfolioResult {
@@ -439,10 +442,13 @@ function computeResultsFromGroups(
  *   totalCollateralUsd = Σ(supplyUsd × liquidationThreshold / 100)
  *   totalDebtUsd = Σ(effective borrowUsd)  — post-clamp
  *   HF = totalCollateralUsd / totalDebtUsd  (null when totalDebtUsd = 0)
+ *
+ * AAV-1253 (P7): Merges on-chain HF baseline as `currentHealthFactor`.
  */
 function computeHealthFactors(
   results: PortfolioPositionResult[],
   reserves: ReserveWithSpread[],
+  onchainHfMap?: OnchainHfMap,
 ): PortfolioHealthFactor[] {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
@@ -475,7 +481,15 @@ function computeHealthFactors(
   const healthFactors: PortfolioHealthFactor[] = [];
   for (const [poolKey, { totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd }] of poolGroups) {
     const healthFactor = totalDebtUsd > 0 ? totalCollateralUsd / totalDebtUsd : null;
-    healthFactors.push({ poolKey, healthFactor, totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd });
+
+    // AAV-1253 (P7): merge on-chain baseline
+    const onchain = onchainHfMap?.get(poolKey);
+    const currentHealthFactor = onchain?.healthFactor ?? null;
+    const deltaHealthFactor = (healthFactor != null && currentHealthFactor != null)
+      ? healthFactor - currentHealthFactor
+      : null;
+
+    healthFactors.push({ poolKey, healthFactor, currentHealthFactor, deltaHealthFactor, totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd });
   }
   return healthFactors;
 }
@@ -530,7 +544,8 @@ export function simulatePortfolioFromEntries(
   );
 
   // AAV-1251: Compute per-pool/spoke Health Factor from post-clamp results.
-  const healthFactors = computeHealthFactors(results, reserves);
+  // AAV-1253 (P7): Pass on-chain HF baseline for current/delta computation.
+  const healthFactors = computeHealthFactors(results, reserves, args.onchainHfMap);
 
   return {
     results,

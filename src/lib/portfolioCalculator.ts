@@ -261,3 +261,34 @@ export function getMinHf(healthFactors: { healthFactor: number | null }[]): numb
   return validHfs.length > 0 ? Math.min(...validHfs) : null;
 }
 
+/**
+ * Get the delta and direction of the Lowest HF pool (AAV-1253 P7).
+ *
+ * Finds the pool with the lowest `after` HF (matching the badge value),
+ * then returns its delta and direction for arrow display.
+ *
+ * - `direction = 'up'` → HF improved (safer)
+ * - `direction = 'down'` → HF worsened (riskier)
+ * - `direction = 'flat'` → |delta| < 0.01 (no visible change)
+ * - `direction = null` → no current baseline (no wallet / no on-chain data)
+ */
+export function getLowestHfDelta(
+  healthFactors: { healthFactor: number | null; deltaHealthFactor: number | null }[],
+): { delta: number | null; direction: 'up' | 'down' | 'flat' | null } {
+  const poolsWithAfter = healthFactors.filter(
+    hf => hf.healthFactor != null && hf.healthFactor > 0,
+  );
+  if (poolsWithAfter.length === 0) return { delta: null, direction: null };
+
+  // Find the pool with the lowest `after` HF (matches the badge)
+  const lowest = poolsWithAfter.reduce((min, hf) =>
+    (hf.healthFactor ?? Infinity) < (min.healthFactor ?? Infinity) ? hf : min,
+  );
+
+  if (lowest.deltaHealthFactor == null) return { delta: null, direction: null };
+
+  const delta = lowest.deltaHealthFactor;
+  const direction = Math.abs(delta) < 0.01 ? 'flat' : delta > 0 ? 'up' : 'down';
+  return { delta, direction };
+}
+

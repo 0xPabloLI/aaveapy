@@ -36,6 +36,8 @@ export interface V3UserPosition {
 
 export interface V3AccountSummary {
   chainId: number
+  /** Market name for poolKey construction (e.g. "AaveV3Ethereum"). (AAV-1253 P7) */
+  marketName: string
   totalCollateralBaseWad: bigint
   totalDebtBaseWad: bigint
   availableBorrowsBaseWad: bigint
@@ -160,6 +162,7 @@ export async function getV3UserPositionsOnChain(
     const r = accountResult.result
     accountSummary = {
       chainId,
+      marketName,
       totalCollateralBaseWad: r.totalCollateralBase,
       totalDebtBaseWad: r.totalDebtBase,
       availableBorrowsBaseWad: r.availableBorrowsBase,

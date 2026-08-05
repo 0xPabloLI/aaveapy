@@ -130,8 +130,12 @@ export interface PortfolioSummary {
 export interface PortfolioHealthFactor {
   /** `${chainId}:${marketName}` — protocol isolation boundary. */
   poolKey: string;
-  /** HF = totalCollateralUsd / totalDebtUsd. null = no borrow (display "—"). */
+  /** Simulated HF (after). null = no borrow (display "—"). */
   healthFactor: number | null;
+  /** On-chain HF (current). null = no wallet / no on-chain data / no borrow. (AAV-1253 P7) */
+  currentHealthFactor: number | null;
+  /** Delta = after - current. null = no current baseline. (AAV-1253 P7) */
+  deltaHealthFactor: number | null;
   /** Σ(supplyUsd × liquidationThreshold / 100) — risk-adjusted collateral. */
   totalCollateralUsd: number;
   /** Σ(effective borrowUsd) — post-clamp debt. */
