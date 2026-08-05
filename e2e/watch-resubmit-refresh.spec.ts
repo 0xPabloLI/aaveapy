@@ -86,7 +86,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     // fixed timeout — CI runners are slower and 4s may not be enough.
     await expect.poll(
       () => userPositionRequests.length,
-      { timeout: 15_000, message: 'initial V3+V4 user-position GraphQL requests' },
+      { timeout: 30_000, message: 'initial V3+V4 user-position GraphQL requests' },
     ).toBeGreaterThan(0);
     const initialCount = userPositionRequests.length;
 
@@ -101,8 +101,11 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
       timeout: 10_000,
     });
 
-    // Give the refetch a moment to fire (urql batched → network round-trip).
-    await page.waitForTimeout(6_000);
+    // Wait for the refetch to fire by polling for new requests.
+    await expect.poll(
+      () => userPositionRequests.length,
+      { timeout: 20_000, message: 'refired V3+V4 user-position GraphQL requests after re-submit' },
+    ).toBeGreaterThan(initialCount);
     const afterResubmitCount = userPositionRequests.length;
 
     // We expect at least the V3 + V4 UserSupplies + UserBorrows to re-fire
@@ -157,7 +160,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     // Wait for initial position fetch with polling — CI runners need more time.
     await expect.poll(
       () => userPositionRequests.length,
-      { timeout: 15_000, message: 'initial V3+V4 user-position GraphQL requests' },
+      { timeout: 30_000, message: 'initial V3+V4 user-position GraphQL requests' },
     ).toBeGreaterThan(0);
     const initialCount = userPositionRequests.length;
 
@@ -171,7 +174,11 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
       timeout: 10_000,
     });
 
-    await page.waitForTimeout(6_000);
+    // Wait for the refetch to fire by polling for new requests.
+    await expect.poll(
+      () => userPositionRequests.length,
+      { timeout: 20_000, message: 'refired V3+V4 user-position GraphQL requests after re-submit (different address)' },
+    ).toBeGreaterThan(initialCount);
     const afterResubmitCount = userPositionRequests.length;
 
     expect(
