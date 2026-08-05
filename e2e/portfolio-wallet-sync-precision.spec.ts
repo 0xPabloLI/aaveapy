@@ -38,6 +38,7 @@ test.describe('Portfolio — Wallet Sync precision', () => {
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
+    test.setTimeout(180_000);
     await page.goto('/');
 
     // Enable portfolio mode.

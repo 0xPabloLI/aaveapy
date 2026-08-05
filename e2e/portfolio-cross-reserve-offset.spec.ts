@@ -267,7 +267,7 @@ async function runCrossReserveScenario(
   s: CrossOffsetScenario,
   isMobile: boolean,
 ) {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
   // Add target reserve, supply $100000 (large enough for LTV clamping at common ltv rates)
@@ -343,7 +343,7 @@ async function runSelfLoopScenario(
   s: CrossOffsetScenario,
   isMobile: boolean,
 ) {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);

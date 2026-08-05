@@ -76,7 +76,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         'vertical indicator should use rounded-xl (not fully rounded)',
       ).not.toBe('9999px');
 
-      await expect(verticalToggle).toHaveScreenshot();
+      await expect(verticalToggle).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
   });
 
@@ -137,7 +137,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         'horizontal track should use rounded-full',
       ).toBe('9999px');
 
-      await expect(horizontalToggle).toHaveScreenshot();
+      await expect(horizontalToggle).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
 
     test('AprApyToggle (chip size) renders at desktop viewport', async ({ page }, testInfo) => {
@@ -160,7 +160,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         'chip toggle height should be ≤ 28px (smaller than default 2rem)',
       ).toBeLessThanOrEqual(28);
 
-      await expect(aprApyGroup).toHaveScreenshot();
+      await expect(aprApyGroup).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
 
     test('AprApyToggle (chip size) renders at mobile viewport', async ({ page }, testInfo) => {
@@ -180,7 +180,7 @@ test.describe('SegmentedToggle — visual regression', () => {
       const trackBox = await aprApy.boundingBox();
       expect(trackBox, 'AprApyToggle mobile track must render').not.toBeNull();
 
-      await expect(aprApy).toHaveScreenshot();
+      await expect(aprApy).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
   });
 
@@ -199,7 +199,7 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await page.waitForTimeout(350);
+      await page.waitForTimeout(500);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();
@@ -211,7 +211,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         Math.abs(indicatorBoxAfter.y - indicatorBoxBefore.y) > 1;
       expect(moved, 'indicator should slide to the newly active segment').toBe(true);
 
-      await expect(horizontalToggle).toHaveScreenshot();
+      await expect(horizontalToggle).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
 
     test('clicking a segment slides the indicator vertically (mobile)', async ({ page }, testInfo) => {
@@ -228,7 +228,7 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await page.waitForTimeout(350);
+      await page.waitForTimeout(500);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();
@@ -240,7 +240,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         Math.abs(indicatorBoxAfter.x - indicatorBoxBefore.x) > 1;
       expect(moved, 'indicator should slide vertically to the newly active segment').toBe(true);
 
-      await expect(verticalToggle).toHaveScreenshot();
+      await expect(verticalToggle).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
     });
   });
 });

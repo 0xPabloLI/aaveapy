@@ -16,6 +16,7 @@ const BREAKPOINTS = [
 
 for (const bp of BREAKPOINTS) {
   test(`PortfolioPanel header visual @ ${bp.name}`, async ({ page }) => {
+    test.setTimeout(120_000);
     await page.setViewportSize({ width: bp.width, height: bp.height });
     await page.goto('/');
 

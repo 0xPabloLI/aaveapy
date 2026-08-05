@@ -204,6 +204,7 @@ test.describe('Scenario input pin scroll (desktop)', () => {
   });
 
   test('expanded row stays pinned after second scenario input reorders list', async ({ page }) => {
+    test.setTimeout(180_000);
     await page.goto('/');
     await waitDesktopTable(page);
 

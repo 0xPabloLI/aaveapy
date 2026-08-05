@@ -53,6 +53,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     page,
   }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
+    test.setTimeout(120_000);
 
     const userPositionRequests: number[] = [];
 
@@ -81,10 +82,13 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     });
 
     // Wait for the initial position fetch to settle. urql V3 + V4 fire 4 ops
-    // (UserSupplies + UserBorrows on each client). Generous window.
-    await page.waitForTimeout(4_000);
+    // (UserSupplies + UserBorrows on each client). Use polling instead of a
+    // fixed timeout — CI runners are slower and 4s may not be enough.
+    await expect.poll(
+      () => userPositionRequests.length,
+      { timeout: 15_000, message: 'initial V3+V4 user-position GraphQL requests' },
+    ).toBeGreaterThan(0);
     const initialCount = userPositionRequests.length;
-    expect(initialCount, 'initial V3+V4 user-position GraphQL requests').toBeGreaterThan(0);
 
     // Open the watch input again and re-submit the same address.
     await page.getByRole('button', { name: /View address/i }).first().click();
@@ -98,7 +102,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     });
 
     // Give the refetch a moment to fire (urql batched → network round-trip).
-    await page.waitForTimeout(4_000);
+    await page.waitForTimeout(6_000);
     const afterResubmitCount = userPositionRequests.length;
 
     // We expect at least the V3 + V4 UserSupplies + UserBorrows to re-fire
@@ -113,6 +117,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     page,
   }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
+    test.setTimeout(120_000);
 
     // E2E_WATCH_ADDRESS_ALT is REQUIRED for this test — it covers the
     // address-change path of `useWatchModeConnect`, which only triggers
@@ -149,9 +154,12 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
       timeout: 10_000,
     });
 
-    await page.waitForTimeout(4_000);
+    // Wait for initial position fetch with polling — CI runners need more time.
+    await expect.poll(
+      () => userPositionRequests.length,
+      { timeout: 15_000, message: 'initial V3+V4 user-position GraphQL requests' },
+    ).toBeGreaterThan(0);
     const initialCount = userPositionRequests.length;
-    expect(initialCount, 'initial V3+V4 user-position GraphQL requests').toBeGreaterThan(0);
 
     // Re-submit a *different* address — exercises the address-change path of
     // `useWatchModeConnect`, which still routes through `refetchEvent`.
@@ -163,7 +171,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
       timeout: 10_000,
     });
 
-    await page.waitForTimeout(4_000);
+    await page.waitForTimeout(6_000);
     const afterResubmitCount = userPositionRequests.length;
 
     expect(

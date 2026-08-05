@@ -13,8 +13,12 @@ const NEW_FIELDS = [
 
 test.describe('API fields v3 — UI rendering verification', () => {
   test('main page loads with reserve data visible', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
-    await page.waitForTimeout(3000);
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
+
+    // Wait for the reserves table to render instead of using a fixed timeout.
+    await expect(page.locator('tbody tr[data-reserve-id]').first())
+      .toBeVisible({ timeout: 120_000 });
 
     const title = await page.title();
     expect(title).toBeTruthy();
@@ -26,7 +30,8 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('reserves table renders with at least 10 visible rows (virtual scroll)', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
@@ -36,12 +41,15 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('no console errors from field name mismatch', async ({ page }) => {
+    test.setTimeout(180_000);
     const consoleErrors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
+    await expect(page.locator('tbody tr[data-reserve-id]').first())
+      .toBeVisible({ timeout: 120_000 });
 
     const fieldErrors = consoleErrors.filter(e =>
       OLD_FIELDS.some(f => e.toLowerCase().includes(f.toLowerCase())) ||
@@ -51,12 +59,15 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
+    // Wait for detail panel content to appear instead of a fixed timeout.
+    await expect(page.locator('text=/supply|total|liquidity|available|tvl/i').first())
+      .toBeVisible({ timeout: 15_000 });
 
     const detailText = (await page.locator('body').textContent()) ?? '';
     const hasLiquidityOrSupply = /supply|total|liquidity|available|tvl/i.test(detailText);
@@ -67,29 +78,28 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('utilization indicator renders with percentage value', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
+    await expect(page.locator('text=/\\d+(\\.\\d+)?\\s*%/').first())
+      .toBeVisible({ timeout: 15_000 });
 
     const utilPercent = page.locator('text=/\\d+(\\.\\d+)?\\s*%/').first();
-    await expect(utilPercent).toBeVisible({ timeout: 10000 });
-
     const text = await utilPercent.textContent();
     expect(text).toMatch(/\d+(\.\d+)?\s*%/);
   });
 
   test('rate simulation slider is interactable', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
-
     const slider = page.locator('input[type="range" i], [role="slider"]').first();
-    await expect(slider).toBeVisible({ timeout: 15000 });
+    await expect(slider).toBeVisible({ timeout: 15_000 });
   });
 });
