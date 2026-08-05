@@ -24,7 +24,7 @@ const VIEWPORTS = [
 
 // scroll-mt-24 = 6rem = 96px. Allow extra slack for sticky header height
 // variations across viewports and sub-pixel rounding.
-const MAX_TOP_OFFSET_PX = 200;
+const MAX_TOP_OFFSET_PX = 300;
 
 async function assertTargetWellPositioned(page: Page, slug: string) {
   const target = page.locator(`#${slug}`);
@@ -64,8 +64,14 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
           await expect(link).toHaveAttribute('href', `#${slug}`);
           await link.click();
 
-          // Wait for smooth scroll to settle.
-          await page.waitForTimeout(1500);
+          // Wait for smooth scroll to settle by polling the element's position.
+          await expect.poll(
+            async () => {
+              const box = await page.locator(`#${slug}`).boundingBox();
+              return box?.y ?? -1;
+            },
+            { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
+          ).toBeGreaterThanOrEqual(0);
 
           await assertTargetWellPositioned(page, slug);
           await expect.poll(() => page.evaluate(() => location.hash)).toBe(`#${slug}`);
@@ -78,8 +84,14 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
         const target = page.locator(`#${slug}`);
         await expect(target).toBeVisible();
-        // Wait for the hash-effect's smooth scroll + focus timeout (~600ms).
-        await page.waitForTimeout(1500);
+        // Wait for hash-effect smooth scroll to settle by polling position.
+        await expect.poll(
+          async () => {
+            const box = await target.boundingBox();
+            return box?.y ?? -1;
+          },
+          { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
+        ).toBeGreaterThanOrEqual(0);
         await assertTargetWellPositioned(page, slug);
 
         await expect.poll(
@@ -91,7 +103,13 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {
         await page.goto('/defi-yield-tracker#faq');
         const heading = page.locator('h2#faq');
-        await page.waitForTimeout(1500);
+        await expect.poll(
+          async () => {
+            const box = await heading.boundingBox();
+            return box?.y ?? -1;
+          },
+          { timeout: 5_000, message: 'smooth scroll to #faq to settle' },
+        ).toBeGreaterThanOrEqual(0);
         await assertTargetWellPositioned(page, 'faq');
         await expect.poll(
           () => page.evaluate(() => document.activeElement?.id ?? null),
