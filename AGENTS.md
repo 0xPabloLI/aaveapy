@@ -176,6 +176,27 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
+## main Branch Protection (4 层防御)
+
+main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶意代码无法自动合并到 main：
+
+### Layer 1: Bot PR 不 auto-merge 到 main
+- `token-icon-sync.yml`、`hardcode-sync.yml`、`ci.yml` (openapi-sync) 的 labels 字段使用条件表达式：`${{ target != 'main' && 'automerge' || '' }}`
+- 只有 `lovable`/`dev` 分支的 bot PR 会获得 `automerge` label；main 的 bot PR 必须人工 review
+### Layer 2: Branch Protection + CODEOWNERS
+- main 分支规则：`required_approving_review_count=1`、`require_code_owner_reviews=true`、`enforce_admins=true`
+- `.github/CODEOWNERS` 覆盖关键路径：链接（`poolExplorerLinks.ts`、`aaveLinks.ts`）、地址（`hardcode.ts`）、API schema（`openapi.json`、`generated/`）、钱包（`useWallet*.ts`、`wagmi/`）、CI 定义（`.github/workflows/`）
+- 即使 bot PR 的 CI 全部通过，也必须经过 code owner approval 才能合并
+### Layer 3: Content Security CI Check
+- `content-security-check` CI job 运行 `scripts/check-external-urls.ts`
+- 扫描所有非测试源文件中的 `https://` URL，与白名单比对
+- 任何未知域名（如钓鱼 explorer 域名）会导致 CI 失败
+- 白名单维护：在 `scripts/check-external-urls.ts` 的 `WHITELIST` Set 中增减
+### Layer 4: Commit Signature Verification (手动启用)
+- GitHub Settings → Branches → main → "Require signed commits"
+- ⚠️ 此设置无法通过 REST API 或 GraphQL 编程修改，必须在 repo UI 手动启用
+- 启用后，即使攻击者拿到 write 权限，没有 GPG 签名也无法直接 push 到 main
+
 ## Key References
 - `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
 - `docs/design/frontend-interaction-guardrails.md`
