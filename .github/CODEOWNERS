@@ -21,6 +21,9 @@
 /src/hooks/useWallet*.ts         @0xPabloLI
 /src/lib/wagmi/                  @0xPabloLI
 
+# ===== Content security (whitelist) =====
+/scripts/check-external-urls.ts @0xPabloLI
+
 # ===== CI / workflow definitions =====
 /.github/workflows/              @0xPabloLI
 

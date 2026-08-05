@@ -6,8 +6,19 @@
  * injecting phishing links (e.g., a fake explorer domain that steals wallet
  * signatures) even if a bot PR passes all other CI checks.
  *
+ * Matching logic:
+ * - Root domain in whitelist → all subdomains pass (e.g., "drpc.org" covers
+ *   "eth.drpc.org", "bsc.drpc.org", etc.)
+ * - Phishing-safe: "etherscan.io.evil.com" does NOT match "etherscan.io"
+ *   because the check is `domain === entry || domain.endsWith('.' + entry)`
+ *
  * Usage: npx tsx scripts/check-external-urls.ts
  * Exit 0 = all domains whitelisted; Exit 1 = unknown domains found.
+ *
+ * When adding a new legitimate URL:
+ * 1. Add the root domain to the WHITELIST below (same PR)
+ * 2. CI passes → code owner reviews the whitelist change in the diff
+ * 3. If the domain looks suspicious, reviewer rejects — this is Layer 2 defense
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -17,24 +28,31 @@ const SOURCE_DIRS = ['src/lib', 'src/hooks', 'src/config', 'src/pages', 'src/com
 const EXCLUDE_PATTERNS = ['.test.', '.live.', '.spec.', '__mocks__', 'check-external-urls'];
 const VALID_EXTENSIONS = new Set(['.ts', '.tsx']);
 
-// Whitelisted domains — production-only.
-// Test/placeholder domains (*.example, example.com) are excluded;
-// test files are skipped entirely so they can use mock URLs freely.
+/**
+ * Whitelisted root domains.
+ *
+ * For each URL found in source code, we check if the domain matches any entry:
+ * - Exact match: domain === entry
+ * - Subdomain match: domain.endsWith('.' + entry)
+ *
+ * This means adding "drpc.org" covers ALL *.drpc.org subdomains.
+ * But "etherscan.io.evil.com" does NOT match "etherscan.io" (no suffix match).
+ *
+ * DO NOT add domains where anyone can register subdomains
+ * (e.g., github.io, vercel.app, herokuapp.com, pages.dev).
+ * For those, list the specific subdomain explicitly.
+ */
 const WHITELIST = new Set([
-  // === AaveAPY own domains ===
-  'aaveapy.com',
-  'api.aaveapy.com',
-  'staging-api.aaveapy.com',
+  // === AaveAPY (own infrastructure) ===
+  'aaveapy.com',          // covers api.aaveapy.com, staging-api.aaveapy.com
 
   // === Aave protocol ===
-  'app.aave.com',
-  'pro.aave.com',
-  'apps.aavechan.com',
+  'aave.com',             // covers app.aave.com, pro.aave.com
+  'aavechan.com',         // covers apps.aavechan.com
 
-  // === Block explorers ===
-  'etherscan.io',
+  // === Block explorers (different root domains per chain) ===
+  'etherscan.io',         // covers optimistic.etherscan.io, mega.etherscan.io
   'arbiscan.io',
-  'optimistic.etherscan.io',
   'polygonscan.com',
   'basescan.org',
   'gnosisscan.io',
@@ -42,112 +60,58 @@ const WHITELIST = new Set([
   'lineascan.build',
   'sonicscan.org',
   'celoscan.io',
-  'mega.etherscan.io',
   'plasmascan.to',
   'snowscan.xyz',
   'scrollscan.com',
   'metisscan.info',
   'mantlescan.xyz',
-  'explorer.inkonchain.com',
-  'explorer.zksync.io',
-  'zksync.blockscout.com',
-  'soneium.blockscout.com',
-  'www.oklink.com',
+  'blockscout.com',       // covers zksync.blockscout.com, soneium.blockscout.com
+  'oklink.com',           // covers www.oklink.com
+  'inkonchain.com',       // covers explorer.inkonchain.com
+  'zksync.io',            // covers explorer.zksync.io, mainnet.era.zksync.io
 
-  // === RPC providers (public endpoints) — all chain-specific subdomains ===
+  // === RPC providers (trusted, control all subdomains) ===
+  'drpc.org',             // covers eth.drpc.org, bsc.drpc.org, etc.
+  'publicnode.com',       // covers ethereum-rpc.publicnode.com, bsc.publicnode.com, etc.
+  'blastapi.io',          // covers eth-mainnet.public.blastapi.io, etc.
+  'llamarpc.com',         // covers base.llamarpc.com
+  'nodies.app',           // covers polygon-pokt.nodies.app
+  'fastnode.io',          // covers public-op-mainnet.fastnode.io
+  'quiknode.pro',         // covers rpc-mainnet.matic.quiknode.pro
+  'onfinality.io',        // covers gnosis.api.onfinality.io, plasma.api.onfinality.io
+  'tenderly.co',          // covers gateway.tenderly.co, *.gateway.tenderly.co
+  'tatum.io',             // covers celo-mainnet.gateway.tatum.io
   '1rpc.io',
-  'drpc.org',
-  'eth.drpc.org',
-  'optimism.drpc.org',
-  'bsc.drpc.org',
-  'gnosis.drpc.org',
-  'polygon.drpc.org',
-  'sonic.drpc.org',
-  'xlayer.drpc.org',
-  'zksync.drpc.org',
-  'soneium.drpc.org',
-  'celo.drpc.org',
-  'mantle.drpc.org',
-  'base.drpc.org',
-  'metis.drpc.org',
-  'ink.drpc.org',
-  'linea.drpc.org',
-  'arbitrum.drpc.org',
-  'avalanche.drpc.org',
-  'scroll.drpc.org',
-  'megaeth.drpc.org',
-  'plasma.drpc.org',
-  'monad.drpc.org',
-  'publicnode.com',
-  'ethereum-rpc.publicnode.com',
-  'optimism-rpc.publicnode.com',
-  'bsc.publicnode.com',
-  'gnosis-rpc.publicnode.com',
-  'polygon-bor-rpc.publicnode.com',
-  'sonic-rpc.publicnode.com',
-  'soneium-rpc.publicnode.com',
-  'metis-rpc.publicnode.com',
-  'linea-rpc.publicnode.com',
-  'arbitrum-one-rpc.publicnode.com',
-  'avalanche-c-chain-rpc.publicnode.com',
-  'scroll-rpc.publicnode.com',
-  'mantle.publicnode.com',
-  'base.publicnode.com',
-  'blastapi.io',
-  'eth-mainnet.public.blastapi.io',
-  'bsc-mainnet.public.blastapi.io',
-  'base-mainnet.public.blastapi.io',
-  'llamarpc.com',
-  'base.llamarpc.com',
-  'nodies.app',
-  'polygon-pokt.nodies.app',
-  'fastnode.io',
-  'public-op-mainnet.fastnode.io',
-  'quiknode.pro',
-  'rpc-mainnet.matic.quiknode.pro',
-  'onfinality.io',
-  'gnosis.api.onfinality.io',
-  'plasma.api.onfinality.io',
-  'tenderly.co',
-  'gateway.tenderly.co',
-  'metis-andromeda.gateway.tenderly.co',
-  'soneium.gateway.tenderly.co',
-  'mantle.gateway.tenderly.co',
-  'tatum.io',
-  'celo-mainnet.gateway.tatum.io',
   'chainid.network',
   'chainlist.org',
+
+  // === Chain-specific RPC endpoints (standalone domains) ===
   'forno.celo.org',
   'arb1.arbitrum.io',
-  'api.avax.network',
-  'rpc.gnosischain.com',
-  'rpc.linea.build',
-  'rpc.mantle.xyz',
-  'rpc.monad.xyz',
-  'rpc.plasma.to',
-  'rpc.scroll.io',
-  'rpc.soneium.org',
-  'rpc.soniclabs.com',
-  'rpc.xlayer.tech',
-  'mainnet.era.zksync.io',
-  'mainnet.megaeth.com',
-  'static-rpc.megaeth.com',
-  'andromeda.metis.io',
-  'zksync-era.public-rpc.com',
-  'xlayerrpc.okx.com',
-  'rpc-gel.inkonchain.com',
-  'rpc-qnd.inkonchain.com',
+  'avax.network',         // covers api.avax.network
+  'gnosischain.com',      // covers rpc.gnosischain.com
+  'linea.build',          // covers rpc.linea.build
+  'mantle.xyz',           // covers rpc.mantle.xyz
+  'monad.xyz',            // covers rpc.monad.xyz
+  'plasma.to',            // covers rpc.plasma.to
+  'scroll.io',            // covers rpc.scroll.io
+  'soneium.org',          // covers rpc.soneium.org
+  'soniclabs.com',        // covers rpc.soniclabs.com
+  'xlayer.tech',          // covers rpc.xlayer.tech
+  'megaeth.com',          // covers mainnet.megaeth.com, static-rpc.megaeth.com
+  'metis.io',             // covers andromeda.metis.io
+  'public-rpc.com',       // covers zksync-era.public-rpc.com
+  'okx.com',              // covers xlayerrpc.okx.com
 
   // === Incentive/campaign platforms ===
-  'app.merit.systems',
-  'app.merkl.xyz',
-  'merkl.angle.money',
-  'app.tydro.com',
-  'brevis.network',
-  'incentra.brevis.network',
+  'merit.systems',        // covers app.merit.systems
+  'merkl.xyz',            // covers app.merkl.xyz
+  'angle.money',          // covers merkl.angle.money
+  'tydro.com',            // covers app.tydro.com
+  'brevis.network',       // covers incentra.brevis.network
 
   // === Market data ===
-  'api.coingecko.com',
+  'coingecko.com',        // covers api.coingecko.com
   'coinmarketcap.com',
 
   // === Social ===
@@ -155,12 +119,27 @@ const WHITELIST = new Set([
   'twitter.com',
   'x.com',
 
-  // === Schema / metadata (not external links, but matched by regex) ===
+  // === Schema / metadata (not user-facing links) ===
   'github.com',
   'schema.org',
 ]);
 
 const URL_REGEX = /https:\/\/([a-zA-Z0-9._-]+)/g;
+
+/**
+ * Check if a domain is whitelisted.
+ * Matches if domain equals an entry or is a subdomain of an entry.
+ * e.g., "eth.drpc.org" matches "drpc.org" (subdomain).
+ *       "etherscan.io.evil.com" does NOT match "etherscan.io" (not a suffix).
+ */
+function isWhitelisted(domain: string): boolean {
+  for (const entry of WHITELIST) {
+    if (domain === entry || domain.endsWith('.' + entry)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function walkDir(dir: string, results: string[] = []): string[] {
   let entries: string[];
@@ -197,7 +176,7 @@ for (const dir of SOURCE_DIRS) {
     let match;
     while ((match = URL_REGEX.exec(content)) !== null) {
       const domain = match[1];
-      if (!WHITELIST.has(domain)) {
+      if (!isWhitelisted(domain)) {
         if (!unknownDomains.has(domain)) {
           unknownDomains.set(domain, []);
         }
@@ -223,6 +202,7 @@ if (unknownDomains.size === 0) {
       console.error(`    ... and ${locations.length - 5} more`);
     }
   }
-  console.error('\nIf these are legitimate new domains, add them to the WHITELIST in scripts/check-external-urls.ts');
+  console.error('\nIf these are legitimate new domains, add the ROOT domain to the WHITELIST in scripts/check-external-urls.ts');
+  console.error('Adding a root domain (e.g., "drpc.org") automatically covers all subdomains (eth.drpc.org, bsc.drpc.org, etc.)')
   process.exit(1);
 }
