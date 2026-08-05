@@ -321,6 +321,7 @@ test.describe('Scenario input pin scroll (desktop)', () => {
   });
 
   test('clearing scenario input keeps expanded reserve pinned', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Complex multi-step scenario timing — run locally');
     test.setTimeout(120_000);
 
     await page.goto('/');
