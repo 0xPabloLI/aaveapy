@@ -62,6 +62,16 @@
    6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
    7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
    8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
+   9. **Session 结束验证** — 在 session 结束前，逐条确认 Step 1-8 全部完成。**未完成的步骤必须当场补做或显式标注为"跳过 + 原因"**。确认清单：
+      - [ ] Step 1 Grill 完成（有 spec 或对话记录佐证）
+      - [ ] Step 2 Spec 完成（有 spec 文件，含 Scenario Matrix）
+      - [ ] Step 3 Tickets 完成（有 ticket 拆分）
+      - [ ] Step 4 TDD 完成（测试 red → green → refactor）
+      - [ ] Step 5 Code Review 完成（有审查报告）
+      - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
+      - [ ] Step 7 Commit 完成（有 commit hash）
+      - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
+      - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
 ## Commit Cadence (并行 agent 安全)
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
