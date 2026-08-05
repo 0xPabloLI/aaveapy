@@ -68,7 +68,7 @@ jobs:
           base: ${{ matrix.target_branch }}
           delete-branch: true
           labels: |
-            automerge
+            ${{ matrix.target_branch != 'main' && 'automerge' || '' }}
             assets
 
       - name: Warn when PAT is missing

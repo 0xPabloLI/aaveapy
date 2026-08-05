@@ -381,7 +381,7 @@ jobs:
 
             ⚠️ Generated code may break compilation — review before merge.
           labels: |
-            automerge
+            ${{ github.ref_name != 'main' && 'automerge' || '' }}
             openapi-sync
           base: ${{ github.ref_name }}
 
