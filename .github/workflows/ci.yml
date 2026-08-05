@@ -152,8 +152,12 @@ jobs:
         run: npm test
 
   e2e-desktop:
-    name: e2e-desktop
+    name: e2e-desktop (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2]
+        total: [2]
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
@@ -171,18 +175,22 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run desktop E2E tests
-        run: npx playwright test --project=chromium
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/${{ matrix.total }}
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-results-desktop
+          name: playwright-results-desktop-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
 
   e2e-mobile:
-    name: e2e-mobile
+    name: e2e-mobile (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2]
+        total: [2]
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
@@ -200,12 +208,12 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run mobile E2E tests
-        run: npx playwright test --project=mobile-chromium
+        run: npx playwright test --project=mobile-chromium --shard=${{ matrix.shard }}/${{ matrix.total }}
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-results-mobile
+          name: playwright-results-mobile-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
 
