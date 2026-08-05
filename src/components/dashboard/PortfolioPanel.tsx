@@ -15,7 +15,7 @@ import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { formatUsd } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioReserveEntry, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioReserveEntry, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot, PortfolioHealthFactor } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
@@ -59,8 +59,10 @@ interface PortfolioPanelProps {
   walletLoadState?: WalletLoadState;
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
-  /** Per-reserve cap warnings for portfolio input fields. */
-  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+/** Per-reserve cap warnings for portfolio input fields. */
+capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+/** Per-pool/spoke health factors (AAV-1252 P6). */
+healthFactors?: PortfolioHealthFactor[];
 }
 
 /**
@@ -175,6 +177,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   simulationMode,
   onSimulationModeChange,
   capWarningsMap,
+healthFactors,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -576,23 +579,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {/* Unified table (desktop) / Card list (mobile) */}
         {entries.length > 0 ? (
           isMobile ? (
-            <MobilePortfolioCard
-              entries={sortedEntries}
-              actions={actions}
-              reserves={reserves}
-              positionResults={positionResults}
-              summary={summary}
-              capWarningsMap={capWarningsMap}
-            />
+<MobilePortfolioCard
+entries={sortedEntries}
+actions={actions}
+reserves={reserves}
+positionResults={positionResults}
+summary={summary}
+capWarningsMap={capWarningsMap}
+healthFactors={healthFactors}
+/>
           ) : (
-            <PortfolioUnifiedTable
-              entries={sortedEntries}
-              actions={actions}
-              reserves={reserves}
-              positionResults={positionResults}
-              summary={summary}
-              capWarningsMap={capWarningsMap}
-            />
+<PortfolioUnifiedTable
+entries={sortedEntries}
+actions={actions}
+reserves={reserves}
+positionResults={positionResults}
+summary={summary}
+capWarningsMap={capWarningsMap}
+healthFactors={healthFactors}
+/>
           )
         ) : (
           <div

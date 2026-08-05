@@ -5,6 +5,7 @@ import type {
   PortfolioReserveEntry,
   PortfolioPositionResult,
   PortfolioSummary,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import {
@@ -42,6 +43,7 @@ export interface UsePortfolioToggleResult {
   ) => void;
   portfolioResults: PortfolioPositionResult[];
   portfolioSummary: PortfolioSummary;
+  portfolioHealthFactors?: PortfolioHealthFactor[];
 }
 
 export const usePortfolioToggle = ({
@@ -127,15 +129,16 @@ export const usePortfolioToggle = ({
     [portfolioActions, effectiveEntries, portfolioReserveIds],
   );
 
-  const { portfolioResults, portfolioSummary } = useMemo<{
+  const { portfolioResults, portfolioSummary, healthFactors: portfolioHealthFactors } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
     portfolioSummary: PortfolioSummary;
+    portfolioHealthFactors?: PortfolioHealthFactor[];
   }>(() => {
     if (!isPortfolioMode || effectiveEntries.length === 0) {
       return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
     }
     if (simulationContext) {
-      const { results, summary } = simulatePortfolioFromEntries({
+      const { results, summary, healthFactors } = simulatePortfolioFromEntries({
         entries: effectiveEntries,
         reserves,
         isApy: simulationContext.isApy,
@@ -144,7 +147,7 @@ export const usePortfolioToggle = ({
         forecastStates: simulationContext.forecastStates,
         lastModifiedReserveId,
       });
-      return { portfolioResults: results, portfolioSummary: summary };
+      return { portfolioResults: results, portfolioSummary: summary, portfolioHealthFactors: healthFactors };
     }
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
     const results: PortfolioPositionResult[] = effectiveEntries
@@ -182,5 +185,6 @@ export const usePortfolioToggle = ({
     handlePortfolioToggle,
     portfolioResults,
     portfolioSummary,
+    portfolioHealthFactors,
   };
 };

@@ -136,6 +136,8 @@ export interface PortfolioHealthFactor {
   totalCollateralUsd: number;
   /** Σ(effective borrowUsd) — post-clamp debt. */
   totalDebtUsd: number;
+  /** Σ(supplyUsd × ltv / 100) — max borrow capacity (AAV-1252 P6). */
+  totalBorrowCapacityUsd: number;
 }
 
 /** A saved snapshot for comparison. */

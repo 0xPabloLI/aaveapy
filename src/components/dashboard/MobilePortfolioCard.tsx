@@ -23,19 +23,21 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import type {
-  PortfolioReserveEntry,
-  PortfolioPositionResult,
-  PortfolioSummary,
+PortfolioReserveEntry,
+PortfolioPositionResult,
+PortfolioSummary,
+PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
-  CompactInput,
-  MetricValue,
-  WarningMarker,
-  type MetricShape,
+CompactInput,
+MetricValue,
+WarningMarker,
+type MetricShape,
 } from './PortfolioTablePrimitives';
+import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 import {
   formatProtocolCapText,
   type PortfolioCapWarning,
@@ -91,12 +93,13 @@ function DeltaRow({
 }
 
 interface MobilePortfolioCardProps {
-  entries: PortfolioReserveEntry[];
-  actions: PortfolioSimulationActions;
-  reserves: ReserveWithSpread[];
-  positionResults?: PortfolioPositionResult[];
-  summary?: PortfolioSummary;
-  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+entries: PortfolioReserveEntry[];
+actions: PortfolioSimulationActions;
+reserves: ReserveWithSpread[];
+positionResults?: PortfolioPositionResult[];
+summary?: PortfolioSummary;
+capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+healthFactors?: PortfolioHealthFactor[];
 }
 
 /* ── Single card ────────────────────────────────────────────────── */
@@ -464,12 +467,13 @@ function MobileCard({
 /* ── Main component ─────────────────────────────────────────────── */
 
 const MobilePortfolioCard = memo(function MobilePortfolioCard({
-  entries,
-  actions,
-  reserves,
-  positionResults,
-  summary,
-  capWarningsMap,
+entries,
+actions,
+reserves,
+positionResults,
+summary,
+capWarningsMap,
+healthFactors,
 }: MobilePortfolioCardProps) {
   if (entries.length === 0) return null;
 
@@ -565,6 +569,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
           </div>
         </div>
       )}
+      <PortfolioSummaryBar summary={summary} healthFactors={healthFactors} />
     </div>
   );
 });

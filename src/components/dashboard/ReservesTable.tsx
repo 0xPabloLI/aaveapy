@@ -839,12 +839,13 @@ lastModifiedReserveId,
     forecastStates,
   }), [isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates]);
 
-  const {
-    portfolioReserveIds,
-    hiddenReserveIds,
-    handlePortfolioToggle,
-    portfolioResults,
-    portfolioSummary,
+const {
+portfolioReserveIds,
+hiddenReserveIds,
+handlePortfolioToggle,
+portfolioResults,
+portfolioSummary,
+portfolioHealthFactors,
 } = usePortfolioToggle({
 isPortfolioMode,
 reserves: allReserves,
@@ -905,13 +906,14 @@ lastModifiedReserveId,
       ) : isLoading && reserves.length === 0 ? (
         <PortfolioPanelSkeleton />
       ) : portfolioEntries && portfolioActions ? (
-        <PortfolioPanel
-          entries={portfolioEntries}
-          actions={portfolioActions}
-          reserves={allReserves}
-          positionResults={portfolioResults}
-          summary={portfolioSummary}
-          snapshots={portfolioSnapshots}
+<PortfolioPanel
+entries={portfolioEntries}
+actions={portfolioActions}
+reserves={allReserves}
+positionResults={portfolioResults}
+summary={portfolioSummary}
+healthFactors={portfolioHealthFactors}
+snapshots={portfolioSnapshots}
           onWalletSync={onWalletSync}
           walletLoadState={walletLoadState}
           simulationMode={simulationMode}

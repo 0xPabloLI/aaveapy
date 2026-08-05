@@ -230,3 +230,34 @@ export {
   MAX_PORTFOLIO_AMOUNT_SIG_DIGITS,
 } from './portfolioAmountFormat';
 
+/**
+ * Get CSS color class for a Health Factor value (AAV-1252 P6).
+ *
+ * Thresholds:
+ * - HF >= 2:   green (safe)
+ * - HF >= 1.5: yellow (caution)
+ * - HF >= 1:   orange (warning)
+ * - HF < 1:    red (danger)
+ * - null / 0:  muted (no borrow or missing data)
+ */
+export function getHfColorClass(hf: number | null): string {
+  if (hf == null || hf === 0) return 'text-muted-foreground';
+  if (hf >= 2) return 'text-emerald-600 dark:text-emerald-400';
+  if (hf >= 1.5) return 'text-yellow-600 dark:text-yellow-400';
+  if (hf >= 1) return 'text-orange-600 dark:text-orange-400';
+  return 'text-red-500 dark:text-red-400';
+}
+
+/**
+ * Get the minimum Health Factor across all pools (AAV-1252 P6).
+ *
+ * Skips null (no borrow) and 0 (liquidationThreshold undefined) HFs.
+ * Returns null when no valid HF exists.
+ */
+export function getMinHf(healthFactors: { healthFactor: number | null }[]): number | null {
+  const validHfs = healthFactors
+    .map(hf => hf.healthFactor)
+    .filter((hf): hf is number => hf != null && hf > 0);
+  return validHfs.length > 0 ? Math.min(...validHfs) : null;
+}
+

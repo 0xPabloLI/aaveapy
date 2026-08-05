@@ -449,6 +449,7 @@ function computeHealthFactors(
   const poolGroups = new Map<string, {
     totalCollateralUsd: number;
     totalDebtUsd: number;
+    totalBorrowCapacityUsd: number;
   }>();
 
   for (const result of results) {
@@ -458,11 +459,13 @@ function computeHealthFactors(
 
     const poolKey = `${reserve.chainId}:${reserve.marketName}`;
     const lt = reserve.liquidationThreshold ?? 0;
+    const ltv = reserve.ltv ?? 0;
 
-    const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0 };
+    const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0, totalBorrowCapacityUsd: 0 };
 
     if (result.side === 'supply') {
       poolGroup.totalCollateralUsd += result.amountUsd * lt / 100;
+      poolGroup.totalBorrowCapacityUsd += result.amountUsd * ltv / 100;
     } else {
       poolGroup.totalDebtUsd += result.amountUsd;
     }
@@ -470,9 +473,9 @@ function computeHealthFactors(
   }
 
   const healthFactors: PortfolioHealthFactor[] = [];
-  for (const [poolKey, { totalCollateralUsd, totalDebtUsd }] of poolGroups) {
+  for (const [poolKey, { totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd }] of poolGroups) {
     const healthFactor = totalDebtUsd > 0 ? totalCollateralUsd / totalDebtUsd : null;
-    healthFactors.push({ poolKey, healthFactor, totalCollateralUsd, totalDebtUsd });
+    healthFactors.push({ poolKey, healthFactor, totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd });
   }
   return healthFactors;
 }

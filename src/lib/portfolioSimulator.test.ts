@@ -1654,4 +1654,54 @@ describe('Health Factor calculation (AAV-1251)', () => {
     // HF = 8000/4000 = 2.0
     expect(hf.healthFactor).toBeCloseTo(2.0, 5);
   });
+
+  // ─── AAV-1252 (P6): totalBorrowCapacityUsd ───
+
+  it('BC1: totalBorrowCapacityUsd = Σ(supplyUsd × ltv / 100)', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    // totalBorrowCapacity = 10000 × 80 / 100 = 8000
+    expect(hf.totalBorrowCapacityUsd).toBe(8000);
+  });
+
+  it('BC2: ltv=undefined → totalBorrowCapacityUsd = 0', () => {
+    const reserve = makeRateCalcReserve({ ltv: undefined, liquidationThreshold: 80 });
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.totalBorrowCapacityUsd).toBe(0);
+  });
+
+  it('BC3: multiple supply reserves → aggregated capacity', () => {
+    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 75, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2] }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    // totalBorrowCapacity = 10000×0.8 + 5000×0.75 = 8000 + 3750 = 11750
+    expect(hf.totalBorrowCapacityUsd).toBe(11750);
+  });
+
+  it('BC4: different pools → independent capacity', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB] }));
+    const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
+    const hfB = findHF(healthFactors, '137:AaveV3Polygon');
+    expect(hfA.totalBorrowCapacityUsd).toBe(8000);
+    expect(hfB.totalBorrowCapacityUsd).toBe(4000);
+  });
 });
