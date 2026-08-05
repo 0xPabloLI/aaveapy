@@ -51,8 +51,9 @@ interface PoolTargets {
 
 /**
  * Extract unique V3 pools and V4 spokes from portfolio entries + reserves.
+ * Exported for unit testing (C5/C7/C17/C20).
  */
-function extractPoolTargets(
+export function extractPoolTargets(
   entries: PortfolioReserveEntry[],
   reserves: ReserveWithSpread[],
 ): PoolTargets {

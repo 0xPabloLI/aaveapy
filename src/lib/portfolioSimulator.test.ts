@@ -4,6 +4,7 @@ import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
+import { getLowestHfDelta } from './portfolioCalculator';
 import { buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
 import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
 import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
@@ -1897,5 +1898,108 @@ describe('On-chain HF baseline (AAV-1253)', () => {
     // B: after=2.0, current=2.5, delta=-0.5
     expect(hfB.currentHealthFactor).toBeCloseTo(2.5, 5);
     expect(hfB.deltaHealthFactor).toBeCloseTo(-0.5, 5);
+  });
+
+  // C10: delta tiny (< 0.01) — after ≈ current, direction should be 'flat'
+  it('C10: delta < 0.01 → deltaHealthFactor is tiny, getLowestHfDelta returns flat', () => {
+    const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
+    // Simulated HF = (10000 × 0.8) / 5000 = 1.6
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // On-chain HF = 1.5999 → delta = 0.0001 (tiny)
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.5999 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const hf = findHF(healthFactors, '1:AaveV3Ethereum');
+    expect(hf.deltaHealthFactor).toBeCloseTo(0.0001, 4);
+    // Verify via getLowestHfDelta that direction is 'flat'
+    const { direction } = getLowestHfDelta(healthFactors!);
+    expect(direction).toBe('flat');
+  });
+
+  // C15: V3-only wallet positions — V3 pool has current/delta, no V4 pool appears
+  it('C15: only V3 entries → only V3 pool has current/delta, no V4 pool', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-v3-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-v3-b', tokenSymbol: 'WETH', ltv: 82, liquidationThreshold: 82, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-v3-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-v3-b', tokenSymbol: 'WETH', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '8000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
+      ['137:AaveV3Polygon', { healthFactor: 2.1 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    // Only 2 V3 pools, no V4
+    expect(healthFactors).toHaveLength(2);
+    const poolKeys = healthFactors!.map(h => h.poolKey).sort();
+    expect(poolKeys).toEqual(['137:AaveV3Polygon', '1:AaveV3Ethereum']);
+    // Both have current/delta
+    const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
+    const hfB = findHF(healthFactors, '137:AaveV3Polygon');
+    expect(hfA.currentHealthFactor).toBeCloseTo(1.7, 5);
+    expect(hfB.currentHealthFactor).toBeCloseTo(2.1, 5);
+  });
+
+  // C16: V4-only wallet positions — V4 pools have current/delta, no V3 pool appears
+  it('C16: only V4 entries → only V4 pools have current/delta, no V3 pool', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-v4-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1, spokeAddress: '0xabc0000000000000000000000000000000000001' });
+    const rB = makeRateCalcReserve({ reserveId: 'r-v4-b', tokenSymbol: 'WETH', ltv: 82, liquidationThreshold: 82, marketName: 'AaveV4EthereumHub_weth', chainId: 1, spokeAddress: '0xabc0000000000000000000000000000000000002' });
+    const entries = [
+      makeEntry({ reserveId: 'r-v4-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-v4-b', tokenSymbol: 'WETH', marketName: 'AaveV4EthereumHub_weth', chainName: 'Ethereum', chainId: 1, supply: { amount: '8000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const onchainHfMap: OnchainHfMap = new Map([
+      ['1:AaveV4EthereumHub_usdc', { healthFactor: 1.5 }],
+      ['1:AaveV4EthereumHub_weth', { healthFactor: 2.5 }],
+    ]);
+    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    // Only 2 V4 pools, no V3
+    expect(healthFactors).toHaveLength(2);
+    const poolKeys = healthFactors!.map(h => h.poolKey).sort();
+    expect(poolKeys).toEqual(['1:AaveV4EthereumHub_usdc', '1:AaveV4EthereumHub_weth']);
+    // Both have current/delta
+    const hfA = findHF(healthFactors, '1:AaveV4EthereumHub_usdc');
+    const hfB = findHF(healthFactors, '1:AaveV4EthereumHub_weth');
+    expect(hfA.currentHealthFactor).toBeCloseTo(1.5, 5);
+    expect(hfB.currentHealthFactor).toBeCloseTo(2.5, 5);
+  });
+
+  // C19: wallet disconnect — onchainHfMap = undefined, all current/delta = null
+  // (Semantic: wallet was connected then disconnected. At simulator level, same as C4
+  //  but tested with multi-pool to ensure ALL pools lose their baseline.)
+  it('C19: wallet disconnect (onchainHfMap = undefined) → all pools lose current/delta', () => {
+    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'WETH', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const entries = [
+      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-b', tokenSymbol: 'WETH', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    // Before disconnect: had on-chain data
+    const withWallet = simulatePortfolioFromEntries(baseEntriesSimArgs({
+      entries, reserves: [rA, rB],
+      onchainHfMap: new Map([
+        ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
+        ['137:AaveV3Polygon', { healthFactor: 2.1 }],
+      ]),
+    }));
+    expect(findHF(withWallet.healthFactors, '1:AaveV3Ethereum').currentHealthFactor).toBeCloseTo(1.7, 5);
+
+    // After disconnect: onchainHfMap = undefined
+    const afterDisconnect = simulatePortfolioFromEntries(baseEntriesSimArgs({
+      entries, reserves: [rA, rB],
+      // onchainHfMap intentionally omitted — simulates wallet disconnect
+    }));
+    const hfA = findHF(afterDisconnect.healthFactors, '1:AaveV3Ethereum');
+    const hfB = findHF(afterDisconnect.healthFactors, '137:AaveV3Polygon');
+    expect(hfA.currentHealthFactor).toBeNull();
+    expect(hfA.deltaHealthFactor).toBeNull();
+    expect(hfB.currentHealthFactor).toBeNull();
+    expect(hfB.deltaHealthFactor).toBeNull();
+    // Simulated HF still works
+    expect(hfA.healthFactor).toBeCloseTo(1.6, 5);
+    expect(hfB.healthFactor).toBeCloseTo(1.6, 5);
   });
 });
