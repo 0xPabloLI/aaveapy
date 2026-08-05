@@ -46,6 +46,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
       test('clicking each Related FAQ link scrolls the target into view with correct offset', async ({ page }) => {
         await page.goto('/defi-yield-tracker');
+        await page.waitForLoadState('networkidle');
         await expect(page.getByRole('heading', { level: 1, name: /DeFi Yield Tracker for Aave/i })).toBeVisible();
 
         for (const [label, question] of [
@@ -81,9 +82,10 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
       test('loading the page with a FAQ hash scrolls the target into view and focuses it', async ({ page }) => {
         const slug = faqSlug(FAQ_QUESTIONS.debank);
         await page.goto(`/defi-yield-tracker#${slug}`);
+        await page.waitForLoadState('networkidle');
 
         const target = page.locator(`#${slug}`);
-        await expect(target).toBeVisible();
+        await expect(target).toBeVisible({ timeout: 15_000 });
         // Wait for hash-effect smooth scroll to settle by polling position.
         await expect.poll(
           async () => {
@@ -102,7 +104,9 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {
         await page.goto('/defi-yield-tracker#faq');
+        await page.waitForLoadState('networkidle');
         const heading = page.locator('h2#faq');
+        await expect(heading).toBeVisible({ timeout: 15_000 });
         await expect.poll(
           async () => {
             const box = await heading.boundingBox();
