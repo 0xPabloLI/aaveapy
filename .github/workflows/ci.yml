@@ -162,6 +162,9 @@ jobs:
         total: [2]
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+      # Use Railway direct URL (from LIVE_TEST_API_BASE_CI secret) to bypass Cloudflare/WAF.
+      # Falls back to staging-api.aaveapy.com when secret is unset.
+      VITE_API_BASE_URL: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -199,6 +202,9 @@ jobs:
         total: [2]
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+      # Use Railway direct URL (from LIVE_TEST_API_BASE_CI secret) to bypass Cloudflare/WAF.
+      # Falls back to staging-api.aaveapy.com when secret is unset.
+      VITE_API_BASE_URL: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
