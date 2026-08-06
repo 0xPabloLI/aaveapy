@@ -12,12 +12,12 @@ const STAGING_URL = 'https://staging.aaveapy.com';
 const STAGING_API = 'https://staging-api.aaveapy.com/api';
 
 test.describe('Staging smoke tests', () => {
-  test.describe.configure({ timeout: 60_000 });
+  // Skip entire suite in CI — staging environment unstable / returns "Login – Vercel"
+  test.describe.configure({ mode: process.env.CI ? 'skip' as const : 'default', timeout: 60_000 });
 
   // Staging site is behind Vercel Authentication — CI Playwright can't bypass it.
   // API tests also get 403 from Cloudflare/WAF. Skip entirely in CI.
   // See: docs handoff commit 2b385f41 (Vercel Auth CI fix — shareable URL bypass)
-  test.skip(!!process.env.CI, 'Staging site requires Vercel Auth — run locally');
 
   // API tests that only use request fixture — skip on mobile (no UI difference)
   // UI tests that use table tbody tr — skip on mobile (card layout)
@@ -175,7 +175,8 @@ test.describe('Staging smoke tests', () => {
         !e.includes('net::ERR') &&
         !e.includes('ResizeObserver') &&
         !e.includes('wasm-unsafe') && // CSP directive warnings (being fixed)
-        !e.includes("Provider's accounts list is empty"), // wagmi: no wallet connected
+        !e.includes("Provider's accounts list is empty") && // wagmi: no wallet connected
+        !e.includes('[GSI_LOGGER]'), // Google Sign-In FedCM errors (expected)
     );
 
     expect(unexpectedErrors).toEqual([]);
