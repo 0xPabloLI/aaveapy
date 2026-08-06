@@ -194,7 +194,8 @@ main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶
 - `token-icon-sync.yml`、`hardcode-sync.yml`、`ci.yml` (openapi-sync) 的 labels 字段使用条件表达式：`${{ target != 'main' && 'automerge' || '' }}`
 - 只有 `lovable`/`dev` 分支的 bot PR 会获得 `automerge` label；main 的 bot PR 必须人工 review
 ### Layer 2: Branch Protection + CODEOWNERS
-- main 分支规则：`required_approving_review_count=1`、`require_code_owner_reviews=true`、`enforce_admins=true`
+- main 分支规则：`required_approving_review_count=0`（solo developer，可自行 merge）、`require_code_owner_reviews=true`、`enforce_admins=true`
+- 注意：solo developer 无法 self-approve PR，所以 `required_approving_review_count=0`。保护来自 Layer 1（bot PR 不 auto-merge 到 main）+ `enforce_admins`（禁止直接 push）
 - `.github/CODEOWNERS` 覆盖关键路径：链接（`poolExplorerLinks.ts`、`aaveLinks.ts`）、地址（`hardcode.ts`）、API schema（`openapi.json`、`generated/`）、钱包（`useWallet*.ts`、`wagmi/`）、CI 定义（`.github/workflows/`）
 - 即使 bot PR 的 CI 全部通过，也必须经过 code owner approval 才能合并
 ### Layer 3: Content Security CI Check
