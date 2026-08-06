@@ -34,6 +34,11 @@ jobs:
       SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || github.ref_name == 'dev' && 'https://staging.aaveapy.com' || '' }}
       ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'staging' || 'preview' }}
       VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+      # Vercel Automation Bypass secret — required for ALL curl calls to Vercel-protected
+      # custom domains (staging.aaveapy.com, aaveapy.com).  Exposed at job level so
+      # every step can build the bypass header with the same one-liner:
+      #   BYPASS_HEADER=""; [ -n "$VERCEL_BYPASS_SECRET" ] && BYPASS_HEADER="-H x-vercel-protection-bypass:$VERCEL_BYPASS_SECRET"
+      VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
     steps:
       - name: Wait for Vercel deployment (poll commit SHA via API)
@@ -100,11 +105,11 @@ jobs:
         id: site_check
         if: env.SITE_URL != ''
         run: |
-          # Vercel Authentication bypass: use secret as header if configured
+          # Build bypass header from job-level env (shared pattern — see VERCEL_BYPASS_SECRET above)
           BYPASS_HEADER=""
-          if [ -n "${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}" ]; then
-            BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
-            echo "🔐 Using Vercel Automation Bypass (secret configured)"
+          if [ -n "$VERCEL_BYPASS_SECRET" ]; then
+            BYPASS_HEADER="-H x-vercel-protection-bypass:$VERCEL_BYPASS_SECRET"
+            echo "🔐 Using Vercel Automation Bypass for site check"
           else
             echo "⚠️ VERCEL_AUTOMATION_BYPASS_SECRET not configured — Vercel Authentication may block site check"
           fi
@@ -121,15 +126,19 @@ jobs:
             exit 1
           fi
 
-          # Check if we got a Vercel Authentication page instead of the app
-          if grep -qF 'Vercel Authentication' /tmp/page.html 2>/dev/null; then
-            echo "❌ Vercel Authentication page detected — configure VERCEL_AUTOMATION_BYPASS_SECRET"
+          # Check if we got a Vercel Authentication / interstitial page instead of the app.
+          # Vercel auth pages may return HTTP 200 but won't contain our SPA markers.
+          # We check for multiple Vercel-specific markers for robustness.
+          if grep -qF 'Vercel Authentication' /tmp/page.html 2>/dev/null \
+            || grep -qF '__VERCEL_TRACK_SUSPENSE_FALLBACK__' /tmp/page.html 2>/dev/null \
+            || grep -qF 'x-is-human' /tmp/page.html 2>/dev/null; then
+            echo "❌ Vercel Authentication/interstitial page detected — configure VERCEL_AUTOMATION_BYPASS_SECRET"
             exit 1
           fi
 
           # Verify it's our SPA (check for root div and module script)
           if ! grep -q 'id="root"' /tmp/page.html; then
-            echo "❌ Page missing #root element — not our SPA"
+            echo "❌ Page missing #root element — not our SPA (check Vercel Auth bypass or deployment status)"
             exit 1
           fi
 
@@ -213,11 +222,11 @@ jobs:
           EXPECTED_SHA="${{ github.sha }}"
           DEPLOY_FULL_URL="https://${{ env.DEPLOY_URL }}"
 
-          # Vercel Authentication bypass: use secret as header if configured
+          # Build bypass header from job-level env (shared pattern — see VERCEL_BYPASS_SECRET above)
           BYPASS_HEADER=""
-          if [ -n "${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}" ]; then
-            BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
-            echo "🔐 Using Vercel Automation Bypass (secret configured)"
+          if [ -n "$VERCEL_BYPASS_SECRET" ]; then
+            BYPASS_HEADER="-H x-vercel-protection-bypass:$VERCEL_BYPASS_SECRET"
+            echo "🔐 Using Vercel Automation Bypass"
           else
             echo "⚠️ VERCEL_AUTOMATION_BYPASS_SECRET not configured"
             echo "💡 To fix Vercel Authentication blocks, add this secret:"
@@ -232,9 +241,11 @@ jobs:
 
           echo "HTTP status: $HTTP_CODE"
 
-          # Check if we got a Vercel Authentication page instead of the app
-          if grep -qF 'Vercel Authentication' /tmp/deploy-page.html 2>/dev/null; then
-            echo "❌ Vercel Authentication page detected — configure VERCEL_AUTOMATION_BYPASS_SECRET"
+          # Check if we got a Vercel Authentication / interstitial page instead of the app.
+          if grep -qF 'Vercel Authentication' /tmp/deploy-page.html 2>/dev/null \
+            || grep -qF '__VERCEL_TRACK_SUSPENSE_FALLBACK__' /tmp/deploy-page.html 2>/dev/null \
+            || grep -qF 'x-is-human' /tmp/deploy-page.html 2>/dev/null; then
+            echo "❌ Vercel Authentication/interstitial page detected — configure VERCEL_AUTOMATION_BYPASS_SECRET"
             exit 1
           fi
 

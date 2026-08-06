@@ -331,6 +331,11 @@ jobs:
 
   openapi-check:
     name: openapi-check
+    # Dependabot PRs cannot access LIVE_TEST_API_BASE_CI secret (GitHub treats
+    # them as fork PRs), so the fallback URL gets 403'd by Cloudflare WAF.
+    # Dependabot only updates dependencies — it never changes the API spec —
+    # so skipping is safe.  The daily schedule job will catch any real drift.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
