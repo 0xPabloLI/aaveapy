@@ -49,19 +49,21 @@ import { formatPercent, formatReserveSizeUsd, formatSignedReserveSizeUsd } from 
 import ReserveIdentity from '@/components/primitives/ReserveIdentity';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type {
-  PortfolioReserveEntry,
-  PortfolioPositionResult,
-  PortfolioSummary,
+PortfolioReserveEntry,
+PortfolioPositionResult,
+PortfolioSummary,
+PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
-  CompactInput,
-  MetricValue,
-  WarningMarker,
+CompactInput,
+MetricValue,
+WarningMarker,
 } from './PortfolioTablePrimitives';
+import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
@@ -130,21 +132,23 @@ const SIDE_SEP = 'border-l border-border/40';
 /* ── Main component ──────────────────────────────────────────────── */
 
 interface PortfolioUnifiedTableProps {
-  entries: PortfolioReserveEntry[];
-  actions: PortfolioSimulationActions;
-  reserves: ReserveWithSpread[];
-  positionResults?: PortfolioPositionResult[];
-  summary?: PortfolioSummary;
-  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+entries: PortfolioReserveEntry[];
+actions: PortfolioSimulationActions;
+reserves: ReserveWithSpread[];
+positionResults?: PortfolioPositionResult[];
+summary?: PortfolioSummary;
+capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+healthFactors?: PortfolioHealthFactor[];
 }
 
 const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
-  entries,
-  actions,
-  reserves,
-  positionResults,
-  summary,
-  capWarningsMap,
+entries,
+actions,
+reserves,
+positionResults,
+summary,
+capWarningsMap,
+healthFactors,
 }: PortfolioUnifiedTableProps) {
   if (entries.length === 0) return null;
 
@@ -215,6 +219,13 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             const supplyIncentWarns = supplyWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
             const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
             const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
+
+            // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
+            // (ltvClampedUsd === amountUsd means LTV determined the final amount)
+            const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+              ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+              : [];
+            const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
 
             const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
 
@@ -306,7 +317,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                         capLimitUsd={borrowCapLimitUsd}
                       />
                     </div>
-                    {borrowInputWarns.length > 0 && <WarningMarker warnings={borrowInputWarns} />}
+                    {borrowInputWithLtvWarns.length > 0 && <WarningMarker warnings={borrowInputWithLtvWarns} />}
                   </div>
                 </td>
 
@@ -406,6 +417,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           * No forecast data — using current APR.
         </p>
       )}
+      <PortfolioSummaryBar summary={summary} healthFactors={healthFactors} />
     </div>
   );
 });

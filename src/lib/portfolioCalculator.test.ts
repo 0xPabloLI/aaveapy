@@ -6,6 +6,9 @@ import {
   buildPortfolioPositionResult,
   convertPortfolioInputAmount,
   formatConvertedAmount,
+  getHfColorClass,
+  getMinHf,
+  getLowestHfDelta,
 } from './portfolioCalculator';
 import type { PortfolioPositionResult, PortfolioSideData } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -400,5 +403,138 @@ describe('formatConvertedAmount', () => {
 
   it('handles large numbers', () => {
     expect(formatConvertedAmount(1000000)).toBe('1000000');
+  });
+});
+
+describe('getHfColorClass', () => {
+  it('returns muted for null', () => {
+    expect(getHfColorClass(null)).toBe('text-muted-foreground');
+  });
+
+  it('returns muted for 0', () => {
+    expect(getHfColorClass(0)).toBe('text-muted-foreground');
+  });
+
+  it('returns red for HF < 1', () => {
+    expect(getHfColorClass(0.5)).toBe('text-red-500 dark:text-red-400');
+    expect(getHfColorClass(0.99)).toBe('text-red-500 dark:text-red-400');
+  });
+
+  it('returns orange for 1 <= HF < 1.5', () => {
+    expect(getHfColorClass(1.0)).toBe('text-orange-600 dark:text-orange-400');
+    expect(getHfColorClass(1.2)).toBe('text-orange-600 dark:text-orange-400');
+    expect(getHfColorClass(1.49)).toBe('text-orange-600 dark:text-orange-400');
+  });
+
+  it('returns yellow for 1.5 <= HF < 2', () => {
+    expect(getHfColorClass(1.5)).toBe('text-yellow-600 dark:text-yellow-400');
+    expect(getHfColorClass(1.6)).toBe('text-yellow-600 dark:text-yellow-400');
+    expect(getHfColorClass(1.99)).toBe('text-yellow-600 dark:text-yellow-400');
+  });
+
+  it('returns green for HF >= 2', () => {
+    expect(getHfColorClass(2.0)).toBe('text-emerald-600 dark:text-emerald-400');
+    expect(getHfColorClass(3.0)).toBe('text-emerald-600 dark:text-emerald-400');
+  });
+});
+
+describe('getMinHf', () => {
+  it('returns min of valid HFs', () => {
+    const hfs = [
+      { healthFactor: 2.5 },
+      { healthFactor: 1.6 },
+      { healthFactor: 0.9 },
+    ];
+    expect(getMinHf(hfs)).toBeCloseTo(0.9, 5);
+  });
+
+  it('skips null HFs', () => {
+    const hfs = [
+      { healthFactor: null },
+      { healthFactor: 1.6 },
+    ];
+    expect(getMinHf(hfs)).toBeCloseTo(1.6, 5);
+  });
+
+  it('skips zero HFs', () => {
+    const hfs = [
+      { healthFactor: 0 },
+      { healthFactor: 1.6 },
+    ];
+    expect(getMinHf(hfs)).toBeCloseTo(1.6, 5);
+  });
+
+  it('returns null when all HFs are null', () => {
+    const hfs = [
+      { healthFactor: null },
+      { healthFactor: null },
+    ];
+    expect(getMinHf(hfs)).toBeNull();
+  });
+
+  it('returns null for empty array', () => {
+    expect(getMinHf([])).toBeNull();
+  });
+});
+
+describe('getLowestHfDelta', () => {
+  it('returns up direction when delta > 0', () => {
+    const hfs = [
+      { healthFactor: 2.0, deltaHealthFactor: 0.5 },
+      { healthFactor: 1.6, deltaHealthFactor: 0.3 }, // lowest after
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.delta).toBeCloseTo(0.3, 5);
+    expect(result.direction).toBe('up');
+  });
+
+  it('returns down direction when delta < 0', () => {
+    const hfs = [
+      { healthFactor: 2.0, deltaHealthFactor: 0.5 },
+      { healthFactor: 1.6, deltaHealthFactor: -0.4 }, // lowest after
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.delta).toBeCloseTo(-0.4, 5);
+    expect(result.direction).toBe('down');
+  });
+
+  it('returns flat direction when |delta| < 0.01', () => {
+    const hfs = [
+      { healthFactor: 1.6, deltaHealthFactor: 0.005 },
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.direction).toBe('flat');
+  });
+
+  it('returns null direction when deltaHealthFactor is null', () => {
+    const hfs = [
+      { healthFactor: 1.6, deltaHealthFactor: null },
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.delta).toBeNull();
+    expect(result.direction).toBeNull();
+  });
+
+  it('returns null direction when no valid HFs', () => {
+    const hfs = [
+      { healthFactor: null, deltaHealthFactor: null },
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.delta).toBeNull();
+    expect(result.direction).toBeNull();
+  });
+
+  it('returns null for empty array', () => {
+    expect(getLowestHfDelta([])).toEqual({ delta: null, direction: null });
+  });
+
+  it('finds the lowest after HF pool, not the lowest delta', () => {
+    const hfs = [
+      { healthFactor: 1.2, deltaHealthFactor: 0.1 },  // lowest after
+      { healthFactor: 2.0, deltaHealthFactor: -0.5 },   // larger delta but higher after
+    ];
+    const result = getLowestHfDelta(hfs);
+    expect(result.delta).toBeCloseTo(0.1, 5);
+    expect(result.direction).toBe('up');
   });
 });

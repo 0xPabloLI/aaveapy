@@ -179,6 +179,7 @@ export function buildPortfolioPositionResult(
   forecastUnavailableCampaignCount?: number,
   walletUsd?: number | null,
   effectiveUsd?: number,
+  ltvClampedUsd?: number,
 ): PortfolioPositionResult {
   const totalPercent = side === 'supply'
     ? nativeAprPercent + incentiveAprPercent
@@ -205,6 +206,7 @@ export function buildPortfolioPositionResult(
     totalMetric: metrics?.totalMetric,
     usdPerDayMetric: metrics?.usdPerDayMetric,
     forecastUnavailableCampaignCount,
+    ltvClampedUsd,
   };
 }
 
@@ -227,4 +229,66 @@ export {
   formatPortfolioAmount as formatConvertedAmount,
   MAX_PORTFOLIO_AMOUNT_SIG_DIGITS,
 } from './portfolioAmountFormat';
+
+/**
+ * Get CSS color class for a Health Factor value (AAV-1252 P6).
+ *
+ * Thresholds:
+ * - HF >= 2:   green (safe)
+ * - HF >= 1.5: yellow (caution)
+ * - HF >= 1:   orange (warning)
+ * - HF < 1:    red (danger)
+ * - null / 0:  muted (no borrow or missing data)
+ */
+export function getHfColorClass(hf: number | null): string {
+  if (hf == null || hf === 0) return 'text-muted-foreground';
+  if (hf >= 2) return 'text-emerald-600 dark:text-emerald-400';
+  if (hf >= 1.5) return 'text-yellow-600 dark:text-yellow-400';
+  if (hf >= 1) return 'text-orange-600 dark:text-orange-400';
+  return 'text-red-500 dark:text-red-400';
+}
+
+/**
+ * Get the minimum Health Factor across all pools (AAV-1252 P6).
+ *
+ * Skips null (no borrow) and 0 (liquidationThreshold undefined) HFs.
+ * Returns null when no valid HF exists.
+ */
+export function getMinHf(healthFactors: { healthFactor: number | null }[]): number | null {
+  const validHfs = healthFactors
+    .map(hf => hf.healthFactor)
+    .filter((hf): hf is number => hf != null && hf > 0);
+  return validHfs.length > 0 ? Math.min(...validHfs) : null;
+}
+
+/**
+ * Get the delta and direction of the Lowest HF pool (AAV-1253 P7).
+ *
+ * Finds the pool with the lowest `after` HF (matching the badge value),
+ * then returns its delta and direction for arrow display.
+ *
+ * - `direction = 'up'` → HF improved (safer)
+ * - `direction = 'down'` → HF worsened (riskier)
+ * - `direction = 'flat'` → |delta| < 0.01 (no visible change)
+ * - `direction = null` → no current baseline (no wallet / no on-chain data)
+ */
+export function getLowestHfDelta(
+  healthFactors: { healthFactor: number | null; deltaHealthFactor: number | null }[],
+): { delta: number | null; direction: 'up' | 'down' | 'flat' | null } {
+  const poolsWithAfter = healthFactors.filter(
+    hf => hf.healthFactor != null && hf.healthFactor > 0,
+  );
+  if (poolsWithAfter.length === 0) return { delta: null, direction: null };
+
+  // Find the pool with the lowest `after` HF (matches the badge)
+  const lowest = poolsWithAfter.reduce((min, hf) =>
+    (hf.healthFactor ?? Infinity) < (min.healthFactor ?? Infinity) ? hf : min,
+  );
+
+  if (lowest.deltaHealthFactor == null) return { delta: null, direction: null };
+
+  const delta = lowest.deltaHealthFactor;
+  const direction = Math.abs(delta) < 0.01 ? 'flat' : delta > 0 ? 'up' : 'down';
+  return { delta, direction };
+}
 

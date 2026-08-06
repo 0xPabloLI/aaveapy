@@ -35,9 +35,11 @@ function significantDigits(raw: string): number {
 test.describe('Portfolio — Wallet Sync precision', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
+    test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
+    test.setTimeout(180_000);
     await page.goto('/');
 
     // Enable portfolio mode.

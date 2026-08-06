@@ -6,6 +6,7 @@ import type {
   PortfolioSummary,
   PortfolioSimulationMetric,
   PortfolioSide,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { ScenarioInputMode, SimulationLane, SimulationCampaignDetail } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
@@ -21,6 +22,7 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { parseNumberInput } from '@/lib/numberFormat';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 
 export interface PerReserveInput {
   supplyInput: string;
@@ -51,11 +53,17 @@ interface SimulateCommonArgs {
 
 export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
   entries: PortfolioReserveEntry[];
+  /** ReserveId of the entry currently being modified. Used for LTV clamping priority. */
+  lastModifiedReserveId?: string;
+  /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
+  onchainHfMap?: OnchainHfMap;
 }
 
 export interface SimulatePortfolioResult {
   results: PortfolioPositionResult[];
   summary: PortfolioSummary;
+  /** Per-pool/spoke health factors (AAV-1251). Undefined when no positions. */
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 interface SideSlot {
@@ -177,6 +185,79 @@ function buildGroupMapFromSlots(
   }
 }
 
+/**
+ * Compute LTV (maxBorrow) clamping per pool/spoke group.
+ *
+ * Groups borrow entries by (chainId, marketName) — the protocol isolation boundary.
+ * Within each group, non-lastModified entries consume capacity first; the
+ * lastModified entry receives whatever remaining capacity is left.
+ *
+ * Returns a Map<SideSlot, number> mapping each borrow slot to its LTV-clamped amount.
+ */
+function computeLtvClamping(
+  groupMap: Map<string, EntryGroup>,
+  reserveMap: Map<string, ReserveWithSpread>,
+  lastModifiedReserveId: string | undefined,
+): Map<SideSlot, number> {
+  const ltvClampBySlot = new Map<SideSlot, number>();
+
+  // Build pool groups keyed by (chainId, marketName)
+  interface PoolBorrowEntry {
+    slot: SideSlot;
+    amountUsd: number;
+    isLastModified: boolean;
+  }
+  const poolGroups = new Map<string, {
+    totalBorrowCapacity: number;
+    borrowEntries: PoolBorrowEntry[];
+  }>();
+
+  for (const [key, group] of groupMap) {
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+
+    const poolKey = `${reserve.chainId}:${reserve.marketName}`;
+    const ltv = reserve.ltv ?? 0;
+    const collateralContribution = group.supplyUsd * ltv / 100;
+
+    const poolGroup = poolGroups.get(poolKey) ?? {
+      totalBorrowCapacity: 0,
+      borrowEntries: [],
+    };
+    poolGroup.totalBorrowCapacity += collateralContribution;
+
+    for (const slot of group.borrowSlots) {
+      const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
+      const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
+      poolGroup.borrowEntries.push({
+        slot,
+        amountUsd,
+        isLastModified: slot.reserveId === lastModifiedReserveId,
+      });
+    }
+    poolGroups.set(poolKey, poolGroup);
+  }
+
+  // For each pool group, allocate capacity: non-lastModified first, lastModified gets remaining
+  for (const { totalBorrowCapacity, borrowEntries } of poolGroups.values()) {
+    // Sort: non-lastModified first (stable), lastModified entries last
+    const sorted = [...borrowEntries].sort((a, b) => {
+      if (a.isLastModified && !b.isLastModified) return 1;
+      if (!a.isLastModified && b.isLastModified) return -1;
+      return 0;
+    });
+
+    let remaining = totalBorrowCapacity;
+    for (const entry of sorted) {
+      const clamped = Math.min(entry.amountUsd, Math.max(0, remaining));
+      remaining -= clamped;
+      ltvClampBySlot.set(entry.slot, clamped);
+    }
+  }
+
+  return ltvClampBySlot;
+}
+
 function computeResultsFromGroups(
   groupMap: Map<string, EntryGroup>,
   reserveMap: Map<string, ReserveWithSpread>,
@@ -184,6 +265,7 @@ function computeResultsFromGroups(
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number,
   forecastStates: Record<string, MerklForecastWireItem>,
+  ltvClampBySlot: Map<SideSlot, number>,
 ): PortfolioPositionResult[] {
   const results: PortfolioPositionResult[] = [];
 
@@ -301,14 +383,21 @@ function computeResultsFromGroups(
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableBorrowRoomUsd;
-        const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        const borrowCapCappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        // LTV clamping: min(userInput, maxBorrowRemaining)
+        const ltvCappedUsd = ltvClampBySlot.get(slot);
+        const effectiveUsd = ltvCappedUsd != null
+          ? Math.min(borrowCapCappedUsd, ltvCappedUsd)
+          : borrowCapCappedUsd;
+        // ltvClampedUsd on result: only when LTV actually reduced the amount
+        const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
         const nativePercent = simResult.borrow.afterNative
           ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
         const incentivePercent = simResult.borrow.afterIncentive
           ?? simResult.borrow.currentIncentive ?? 0;
-        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', cappedUsd, isApy, walletUsd);
+        const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', effectiveUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue, cappedUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue, effectiveUsd, ltvClampedResult),
         );
       }
     } else {
@@ -328,17 +417,81 @@ function computeResultsFromGroups(
         const resolvedUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue;
+        // LTV clamping applies even in fallback path
+        const ltvCappedUsd = ltvClampBySlot.get(slot);
+        const effectiveUsd = ltvCappedUsd != null ? Math.min(amountUsd, ltvCappedUsd) : amountUsd;
+        const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd, effectiveUsd, ltvClampedResult),
         );
       }
     }
   }
 
   return results;
+}
+
+/**
+ * Compute per-pool/spoke Health Factor from simulation results (AAV-1251).
+ *
+ * Groups results by (chainId, marketName) — the protocol isolation boundary.
+ * Within each group:
+ *   totalCollateralUsd = Σ(supplyUsd × liquidationThreshold / 100)
+ *   totalDebtUsd = Σ(effective borrowUsd)  — post-clamp
+ *   HF = totalCollateralUsd / totalDebtUsd  (null when totalDebtUsd = 0)
+ *
+ * AAV-1253 (P7): Merges on-chain HF baseline as `currentHealthFactor`.
+ */
+function computeHealthFactors(
+  results: PortfolioPositionResult[],
+  reserves: ReserveWithSpread[],
+  onchainHfMap?: OnchainHfMap,
+): PortfolioHealthFactor[] {
+  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
+
+  const poolGroups = new Map<string, {
+    totalCollateralUsd: number;
+    totalDebtUsd: number;
+    totalBorrowCapacityUsd: number;
+  }>();
+
+  for (const result of results) {
+    const key = getReserveKey({ reserveId: result.reserveId });
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+
+    const poolKey = `${reserve.chainId}:${reserve.marketName}`;
+    const lt = reserve.liquidationThreshold ?? 0;
+    const ltv = reserve.ltv ?? 0;
+
+    const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0, totalBorrowCapacityUsd: 0 };
+
+    if (result.side === 'supply') {
+      poolGroup.totalCollateralUsd += result.amountUsd * lt / 100;
+      poolGroup.totalBorrowCapacityUsd += result.amountUsd * ltv / 100;
+    } else {
+      poolGroup.totalDebtUsd += result.amountUsd;
+    }
+    poolGroups.set(poolKey, poolGroup);
+  }
+
+  const healthFactors: PortfolioHealthFactor[] = [];
+  for (const [poolKey, { totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd }] of poolGroups) {
+    const healthFactor = totalDebtUsd > 0 ? totalCollateralUsd / totalDebtUsd : null;
+
+    // AAV-1253 (P7): merge on-chain baseline
+    const onchain = onchainHfMap?.get(poolKey);
+    const currentHealthFactor = onchain?.healthFactor ?? null;
+    const deltaHealthFactor = (healthFactor != null && currentHealthFactor != null)
+      ? healthFactor - currentHealthFactor
+      : null;
+
+    healthFactors.push({ poolKey, healthFactor, currentHealthFactor, deltaHealthFactor, totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd });
+  }
+  return healthFactors;
 }
 
 export function simulatePortfolioFromEntries(
@@ -355,7 +508,7 @@ export function simulatePortfolioFromEntries(
 
   const visibleEntries = entries.filter((e) => !e.hidden && !e.isOrphan);
   if (visibleEntries.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
+    return { results: [], summary: aggregatePortfolioSummary([]), healthFactors: [] };
   }
 
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
@@ -377,16 +530,27 @@ export function simulatePortfolioFromEntries(
   buildGroupMapFromSlots(borrowSlots, 'borrow', reserveMap, groupMap);
 
   if (groupMap.size === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
+    return { results: [], summary: aggregatePortfolioSummary([]), healthFactors: [] };
   }
+
+  // AAV-1250: Compute LTV (maxBorrow) clamping per pool/spoke group.
+  // Must happen after groupMap is built (needs supplyUsd/borrowUsd per reserve)
+  // and before computeResultsFromGroups (which applies the clamped amounts).
+  const ltvClampBySlot = computeLtvClamping(groupMap, reserveMap, args.lastModifiedReserveId);
 
   const results = computeResultsFromGroups(
     groupMap, reserveMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+    ltvClampBySlot,
   );
+
+  // AAV-1251: Compute per-pool/spoke Health Factor from post-clamp results.
+  // AAV-1253 (P7): Pass on-chain HF baseline for current/delta computation.
+  const healthFactors = computeHealthFactors(results, reserves, args.onchainHfMap);
 
   return {
     results,
     summary: aggregatePortfolioSummary(results),
+    healthFactors,
   };
 }
 

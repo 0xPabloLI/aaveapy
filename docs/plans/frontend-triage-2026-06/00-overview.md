@@ -15,7 +15,7 @@
 | ✅ Done | 5 | AAV-755 | URL 指向 market — query param 方案（AAV-1225/1226 子 issue） |
 | ✅ Done | 6 | AAV-802 | Plasma console error（问题已自然消失） |
 | ✅ Done | 7 | AAV-1096 | grid→flex 统一完成（commit `103254c5`，子 issue AAV-1234 Done） |
-| 🔄 Shrunk | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; 剩 AAV-783（后端）+ AAV-1141（低优先） |
+| ✅ Done | 8 | AAV-1104/734/1095/783/1141 | AAV-734 Done, AAV-1095 Done, AAV-1104 Canceled（ADR-0027）; AAV-1141 Done (Lighthouse Perf=89); AAV-783 后端跟踪 |
 | ✅ Done | 9 | AAV-1144~1158 | staging API ✅, testid ✅; 25 处 platform-conditional skip → project config routing (AAV-1154 Done) |
 | ✅ Done | 10 | AAV-1107/1084/1121/1114/1113/738 | AAV-1121+1084 fixed; AAV-1107 fixed (scroll spacer reset on data change, PR #489); AAV-1114 Canceled; AAV-738 Backlog; AAV-1113 Backlog（有数据但代码未满足：每个note是独立`<tr>`，需改为inline） |
 | ✅ Done | 11 | AAV-1136/1135/1123/1122/1110/1102/1162/1160/1159/733 | Re-eval + 实施完成：733/1135/1102/1123/1110/1160/1159 Done; 1136/1122 搁置(Backlog); 1162 暂缓(需浏览器验证) |
@@ -23,7 +23,7 @@
 | 🔄 Unblocked | 13 | AAV-843 | 阻塞项 AAV-842 已 Canceled；per-user API 独立于 distributedSoFarUsd，可解除阻塞 |
 | 📝 Backlog | 14 | AAV-364/564/333+482/1071/248/512 | 前端功能扩展（长期 roadmap） |
 
-**统计**：✅ Done 11 | 🔄 Shrunk 1 | 📝 Backlog 2 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
+**统计**：✅ Done 12 | 📝 Backlog 2 | ⏸️ Blocked 1 | ⚠️ Dormant 1 | 🔄 Unblocked 1
 
 ---
 
@@ -81,7 +81,7 @@
 | ~~1~~ | ~~10~~ | ~~AAV-1107 等~~ | ✅ Done (commit `738a068c`) — AAV-1121+1084 fixed, 1107 verified, 1114 canceled | ~~0.5 session~~ |
 | ~~1~~ | ~~11~~ | ~~AAV-1136 等~~ | ✅ Done — Re-eval + 实施: 9 Done, 2 搁置, 1 暂缓 | ~~1.5 session~~ |
 | **3** | 13 | AAV-843 | 🔄 Unblocked — 需单独 spec | 2-3 sessions |
-| — | 8 | AAV-1141 | 📉 低优先 — 需先 Lighthouse | 待定 |
+| ~~—~~ | ~~8~~ | ~~AAV-1141~~ | ✅ Done — Lighthouse Perf=89, no actionable bottleneck | ~~待定~~ |
 | — | 4 | AAV-756 | ⏸️ Blocked — 等后端 AAV-1222 | — |
 | — | 12 | AAV-1023 | ⚠️ Dormant — AAV-1022 No priority | — |
 | — | 14 | AAV-364 等 | 📝 Backlog — 长期 roadmap | — |
@@ -94,7 +94,7 @@
 
 ---
 
-## 代码对比结果（2026-07-28 更新）
+## 代码对比结果（2026-07-31 更新）
 
 以下 issue 经代码对比确认已完成，已从 plan 中剔除并同步 Linear 状态为 Done：
 
@@ -112,7 +112,11 @@
 | AAV-1199 | — | `loadRegistryChainIds` regex 修复 — Done ✅ |
 | AAV-734 | 原 Phase 8 | `PortfolioPanel.tsx` 已用 `destructive` token；全项目 `hover:bg-red`/`hover:text-red-500` 零匹配；`PortfolioTokenRow.tsx` 已被 UnifiedTable 替代 — Done ✅ |
 | AAV-1095 | 原 Phase 8 | Schema pipeline 完成（ADR-0026）；`src/generated/api/schemas.ts` 存在 — Done ✅ |
-| AAV-1104 | 原 Phase 8 | ADR-0027 正式接受 query param 方案；原始诉求"去掉?"被推翻 — Canceled ❌ |
+| AAV-1104 | 原 Phase 8 | ADR-0027 正式接受 query param 方案；原始诉求“去掉?”被推翻 — Canceled ❌ |
+| AAV-808 | — | `PortfolioPanel.tsx` L362 `mb-2.5` + L499 `py-1 md:py-0` — 搜索条间距已缩小 — Done ✅ |
+| AAV-809 | — | `PortfolioPanel.tsx` L188-190 `searchOpen = entries.length === 0` — Import 后不主动打开搜索 — Done ✅ |
+| AAV-83 | — | `TopOpportunities.tsx` L568-569 移动端动画已禁用 + L1062 `transform-gpu` GPU 加速 — Done ✅ |
+| AAV-1141 | 原 Phase 8 | Lighthouse Perf=89/A11y=97/BP=96/SEO=100 — 无可操作瓶颈 — Done ✅ |
 
 部分完成的 issue（保留在 plan 中，标注进度）：
 
@@ -131,7 +135,7 @@
 | 5 | `phase5-url-market.md` | AAV-755 | URL 只指向 chain → 改为指向 market | ✅ Done | `fix/aav-755-url-market` |
 | 6 | `phase6-plasma-console-error.md` | AAV-802 | Console 报 plasma chain 请求错误 | ✅ Done | `fix/aav-802-plasma-console` |
 | 7 | `phase7-incentive-tooltip-layout.md` | AAV-1096 | IncentiveTooltip RecentlyEnded section grid→flex 统一 | ✅ Done (commit `103254c5`) | `ui/aav-1096-tooltip-layout` |
-| 8 | `phase8-frontend-infra.md` | AAV-1141 (剩余) | ~~AAV-734 Done~~ ~~AAV-1095 Done~~ ~~AAV-1104 Canceled~~ AAV-783 后端跟踪 | 🔄 Shrunk (仅 AAV-1141 低优先) | `refactor/aav-1141-frontend-infra` |
+| 8 | `phase8-frontend-infra.md` | ~~AAV-734/1095 Done~~ ~~AAV-1104 Canceled~~ AAV-1141 Done (Lighthouse 89/97/96/100) AAV-783 后端 | ✅ Done | `refactor/aav-1141-frontend-infra` |
 | 9 | `phase9-e2e-test-hardening.md` | 25 处 platform skip | E2E 测试加固：staging API ✅ + testid ✅ + skip→describe 迁移 (25 处, AAV-1154 Done) | ✅ Done | `test/aav-1154-e2e-skip-migration` |
 | 10 | `phase10-reserve-table-expand-ui.md` | AAV-1107, AAV-1084, AAV-1121, AAV-1114, AAV-1113, AAV-738 | Reserve table 展开部分 UI 修复 + 优化 | ✅ Done (commit `738a068c`) — AAV-1121 cap spacer height + AAV-1084 flex-wrap; AAV-1107/1114 verified; AAV-738 feature request; AAV-1113 no data | `fix/aav-1107-reserve-expand-ui` |
 | 11 | `phase11-portfolio-simulation-ui.md` | AAV-1160, AAV-1159 (已实施); AAV-1162 (暂缓) | Portfolio simulation UI — Re-eval + 实施完成: 9 Done, 2 搁置, 1 暂缓 | ✅ Done (commit `881b1102` + `0430c85b`) | `ui/aav-1136-portfolio-sim-ui` |

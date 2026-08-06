@@ -1,0 +1,32 @@
+# CODEOWNERS — main branch protection
+# These paths require code owner review before merge to main.
+# This prevents bot PRs (openapi-sync, token-icon-sync, hardcode-sync)
+# from auto-merging changes to critical files without human review.
+
+# ===== Link / Explorer paths (phishing risk) =====
+/src/lib/poolExplorerLinks.ts    @0xPabloLI
+/src/lib/aaveLinks.ts            @0xPabloLI
+/src/lib/explorerIcons.ts        @0xPabloLI
+/src/lib/chainIcons.ts           @0xPabloLI
+
+# ===== Hardcoded contract addresses / RPC URLs =====
+/src/lib/hardcode.ts             @0xPabloLI
+/src/lib/userData/               @0xPabloLI
+
+# ===== API schema (bot PR touches these) =====
+/public/openapi.json             @0xPabloLI
+/src/generated/                  @0xPabloLI
+
+# ===== Wallet / signing / transaction =====
+/src/hooks/useWallet*.ts         @0xPabloLI
+/src/lib/wagmi/                  @0xPabloLI
+
+# ===== Content security (whitelist) =====
+/scripts/check-external-urls.ts @0xPabloLI
+
+# ===== CI / workflow definitions =====
+/.github/workflows/              @0xPabloLI
+
+# ===== Root config =====
+/package.json                    @0xPabloLI
+/package-lock.json               @0xPabloLI

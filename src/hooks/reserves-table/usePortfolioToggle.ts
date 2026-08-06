@@ -5,8 +5,10 @@ import type {
   PortfolioReserveEntry,
   PortfolioPositionResult,
   PortfolioSummary,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
@@ -29,6 +31,9 @@ export interface UsePortfolioToggleArgs {
   entries?: PortfolioReserveEntry[];
   portfolioActions?: PortfolioSimulationActions;
   simulationContext?: PortfolioSimulationContext;
+  lastModifiedReserveId?: string;
+  /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
+  onchainHfMap?: OnchainHfMap;
 }
 
 export interface UsePortfolioToggleResult {
@@ -41,6 +46,7 @@ export interface UsePortfolioToggleResult {
   ) => void;
   portfolioResults: PortfolioPositionResult[];
   portfolioSummary: PortfolioSummary;
+  portfolioHealthFactors?: PortfolioHealthFactor[];
 }
 
 export const usePortfolioToggle = ({
@@ -49,6 +55,8 @@ export const usePortfolioToggle = ({
   entries,
   portfolioActions,
   simulationContext,
+  lastModifiedReserveId,
+  onchainHfMap,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
   const effectiveEntries = useMemo(() => entries ?? [], [entries]);
   const portfolioReserveIds = useMemo(() => {
@@ -125,23 +133,26 @@ export const usePortfolioToggle = ({
     [portfolioActions, effectiveEntries, portfolioReserveIds],
   );
 
-  const { portfolioResults, portfolioSummary } = useMemo<{
+  const { portfolioResults, portfolioSummary, healthFactors: portfolioHealthFactors } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
     portfolioSummary: PortfolioSummary;
+    portfolioHealthFactors?: PortfolioHealthFactor[];
   }>(() => {
     if (!isPortfolioMode || effectiveEntries.length === 0) {
       return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
     }
     if (simulationContext) {
-      const { results, summary } = simulatePortfolioFromEntries({
+      const { results, summary, healthFactors } = simulatePortfolioFromEntries({
         entries: effectiveEntries,
         reserves,
         isApy: simulationContext.isApy,
         whitelistMerklCampaignIds: simulationContext.whitelistMerklCampaignIds,
         tydroPointToUsdRate: simulationContext.tydroPointToUsdRate,
         forecastStates: simulationContext.forecastStates,
+        lastModifiedReserveId,
+        onchainHfMap,
       });
-      return { portfolioResults: results, portfolioSummary: summary };
+      return { portfolioResults: results, portfolioSummary: summary, portfolioHealthFactors: healthFactors };
     }
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
     const results: PortfolioPositionResult[] = effectiveEntries
@@ -171,7 +182,7 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext]);
+  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext, lastModifiedReserveId, onchainHfMap]);
 
   return {
     portfolioReserveIds,
@@ -179,5 +190,6 @@ export const usePortfolioToggle = ({
     handlePortfolioToggle,
     portfolioResults,
     portfolioSummary,
+    portfolioHealthFactors,
   };
 };

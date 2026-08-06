@@ -28,17 +28,37 @@ const OUTPUT_DIR = path.join(process.cwd(), 'playwright-report', 'explorer-links
  */
 test.describe('Explorer links — all markets verify getReserveDeficit DOM', () => {
   test.describe.configure({ mode: 'parallel' });
+  test.skip(!!process.env.CI, 'External explorer sites blocked by Cloudflare in CI');
 
   test.beforeAll(async () => {
     await mkdir(OUTPUT_DIR, { recursive: true });
   });
 
+  /** Quick reachability check to avoid wasting full test timeout on down sites. */
+  async function isExplorerReachable(url: string): Promise<boolean> {
+    try {
+      const resp = await fetch(url, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(10_000),
+        redirect: 'follow',
+      });
+      return resp.ok || resp.status === 403;
+    } catch {
+      return false;
+    }
+  }
+
   const allMarkets = getExplorerMarketNames();
 
   for (const market of allMarkets) {
     test(`${market} opens explorer and verifies getReserveDeficit DOM`, async ({ page }) => {
+      test.setTimeout(120_000);
       const url = buildPoolExplorerUrl(market);
       expect(url).toBeTruthy();
+
+      // Skip if the explorer is not reachable (external service may be down).
+      const reachable = await isExplorerReachable(url!);
+      test.skip(!reachable, `${market} explorer is not reachable`);
 
       const pool = getPoolAddress(market);
       expect(pool).toBeTruthy();

@@ -151,6 +151,74 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+  e2e-desktop:
+    name: e2e-desktop (${{ matrix.shard }}/${{ matrix.total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        shard: [1, 2]
+        total: [2]
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run desktop E2E tests
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/${{ matrix.total }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-desktop-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  e2e-mobile:
+    name: e2e-mobile (${{ matrix.shard }}/${{ matrix.total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        shard: [1, 2]
+        total: [2]
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run mobile E2E tests
+        run: npx playwright test --project=mobile-chromium --shard=${{ matrix.shard }}/${{ matrix.total }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-mobile-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
   live-schema-validation:
     name: live-schema-validation
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lovable') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -198,6 +266,26 @@ jobs:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
         run: npm run test:live:simulation:staging
+
+  content-security-check:
+    name: content-security-check
+    runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Check external URL whitelist
+        run: npx tsx scripts/check-external-urls.ts
 
   openapi-check:
     name: openapi-check
@@ -256,9 +344,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+      HAS_SYNC_PAT: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' || secrets.HARDCODE_SYNC_PAT != '' }}
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -290,9 +380,13 @@ jobs:
           fi
 
       - name: Create spec sync PR
+        id: cpr
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
+          # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
+          token: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' && secrets.TOKEN_ICON_SYNC_PAT || secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
           commit-message: "chore(openapi): sync spec + generated schemas from backend"
           branch: "bot/openapi-sync-${{ github.run_id }}"
           delete-branch: true
@@ -306,5 +400,30 @@ jobs:
             - `src/generated/api/schemas.ts` via `npm run schema:codegen`
 
             ⚠️ Generated code may break compilation — review before merge.
-          labels: openapi-sync
+          labels: |
+            ${{ github.ref_name != 'main' && 'automerge' || '' }}
+            openapi-sync
           base: ${{ github.ref_name }}
+
+      - name: Warn when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
+        run: |
+          echo "::warning::TOKEN_ICON_SYNC_PAT/HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so pull_request CI may stay in 'Expected'. Fallback workflow_dispatch CI will be triggered on the PR branch."
+
+      - name: Trigger fallback CI when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}`;
+            const targetRef = `${{ steps.cpr.outputs.pull-request-head-sha }}` || workflowRef;
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              ref: workflowRef,
+              inputs: {
+                target_ref: targetRef
+              }
+            });
+            core.info(`Triggered fallback workflow_dispatch for ci.yml on ref ${workflowRef}, target_ref ${targetRef}`);

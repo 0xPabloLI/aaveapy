@@ -27,7 +27,14 @@ export interface IncentiveOffsetWarning {
   notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
-export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning | IncentiveOffsetWarning;
+export interface LtvCapWarning {
+  kind: 'ltv_cap';
+  side: 'supply' | 'borrow';
+  /** USD amount after LTV clamping (the maxBorrow limit). */
+  clampedUsd: number;
+}
+
+export type PortfolioCapWarning = ProtocolCapWarning | IncentiveCapWarning | IncentiveOffsetWarning | LtvCapWarning;
 
 interface OtherSideEntry {
   reserveId: string;
