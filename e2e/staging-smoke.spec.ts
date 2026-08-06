@@ -14,6 +14,11 @@ const STAGING_API = 'https://staging-api.aaveapy.com/api';
 test.describe('Staging smoke tests', () => {
   test.describe.configure({ timeout: 60_000 });
 
+  // Staging site is behind Vercel Authentication — CI Playwright can't bypass it.
+  // API tests also get 403 from Cloudflare/WAF. Skip entirely in CI.
+  // See: docs handoff commit 2b385f41 (Vercel Auth CI fix — shareable URL bypass)
+  test.skip(!!process.env.CI, 'Staging site requires Vercel Auth — run locally');
+
   // API tests that only use request fixture — skip on mobile (no UI difference)
   // UI tests that use table tbody tr — skip on mobile (card layout)
 
