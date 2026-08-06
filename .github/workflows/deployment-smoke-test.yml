@@ -195,13 +195,33 @@ jobs:
             exit 0
           fi
 
-          echo "🔗 Checking Vercel deployment URL (https://${{ env.DEPLOY_URL }})..."
           EXPECTED_SHA="${{ github.sha }}"
+          DEPLOY_FULL_URL="https://${{ env.DEPLOY_URL }}"
+
+          # Vercel Authentication bypass: use secret as header if configured
+          BYPASS_HEADER=""
+          if [ -n "${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}" ]; then
+            BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
+            echo "🔐 Using Vercel Automation Bypass (secret configured)"
+          else
+            echo "⚠️ VERCEL_AUTOMATION_BYPASS_SECRET not configured"
+            echo "💡 To fix Vercel Authentication blocks, add this secret:"
+            echo "   Run: ./scripts/generate-vercel-bypass-secret.sh"
+            echo "   Then: gh secret set VERCEL_AUTOMATION_BYPASS_SECRET"
+          fi
+
+          echo "🔗 Checking Vercel deployment URL ($DEPLOY_FULL_URL)..."
           HTTP_CODE=$(curl -s -o /tmp/deploy-page.html -w "%{http_code}" \
             --max-time 30 --retry 2 --retry-delay 10 --retry-all-errors \
-            -L "https://${{ env.DEPLOY_URL }}")
+            -L $BYPASS_HEADER "$DEPLOY_FULL_URL")
 
           echo "HTTP status: $HTTP_CODE"
+
+          # Check if we got a Vercel Authentication page instead of the app
+          if grep -qF 'Vercel Authentication' /tmp/deploy-page.html 2>/dev/null; then
+            echo "❌ Vercel Authentication page detected — configure VERCEL_AUTOMATION_BYPASS_SECRET"
+            exit 1
+          fi
 
           if [ "$HTTP_CODE" -ne 200 ]; then
             echo "❌ Deployment URL returned HTTP $HTTP_CODE"
