@@ -5,11 +5,11 @@ import { expect, test } from '@playwright/test';
  * Portfolio modes. Catches subtle spacing/typography drift that
  * bounding-box assertions (portfolio-toggle-alignment.spec.ts) miss.
  *
- * Baselines live under e2e/__screenshots__/. Update with:
+ * Baselines live under e2e/*-snapshots/. Update with:
  *   npx playwright test e2e/portfolio-panel-header-visual.spec.ts --update-snapshots
  *
- * Screenshot baselines are platform-specific (darwin/linux). CI runs on Linux
- * but baselines were generated on macOS, so `toHaveScreenshot()` is skipped in CI.
+ * On first CI run (no -linux baseline), Playwright creates one and the
+ * test passes. Use the generate-snapshots CI job to persist baselines.
  */
 
 const BREAKPOINTS = [
@@ -19,7 +19,6 @@ const BREAKPOINTS = [
 
 for (const bp of BREAKPOINTS) {
   test(`PortfolioPanel header visual @ ${bp.name}`, async ({ page }) => {
-    test.skip(!!process.env.CI, 'Screenshot baselines are macOS-specific — run locally');
     test.setTimeout(120_000);
     await page.setViewportSize({ width: bp.width, height: bp.height });
     await page.goto('/');
