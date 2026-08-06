@@ -12,6 +12,9 @@ import { test, expect } from '@playwright/test';
  * localhost:5173) so it works in both local and CI environments.
  */
 test.describe('TARGET_TOTAL_APR UI verification', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Hover tooltip test — desktop only');
+  });
   test('incentive tooltip shows breakdown structure when hovering supply incentive', async ({ page }) => {
     test.setTimeout(120_000);
 
