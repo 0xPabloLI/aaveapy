@@ -34,9 +34,12 @@ test.describe('Staging smoke tests', () => {
   });
 
   test('API /meta/side-data returns valid data', async ({ request }) => {
-    const res = await request.get(`${STAGING_API}/meta/side-data`);
     // 403 = Cloudflare/WAF blocking CI IP — staging infra issue, not a code bug
-    test.skip(res.status() === 403, 'Staging API returned 403 (likely Cloudflare)');
+    const res = await request.get(`${STAGING_API}/meta/side-data`);
+    if (res.status() === 403) {
+      test.skip(true, 'Staging API returned 403 (likely Cloudflare)');
+      return;
+    }
     expect(res.status()).toBe(200);
     const body = await res.json();
     const keys = Object.keys(body);

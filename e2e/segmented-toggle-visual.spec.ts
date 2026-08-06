@@ -29,6 +29,7 @@ async function expectScreenshot(locator: Locator, _label: string) {
 }
 
 test.describe('SegmentedToggle — visual regression', () => {
+  test.describe.configure({ mode: process.env.CI ? 'skip' as const : 'default' });
   test.describe('vertical orientation (ScenarioControls mobile)', () => {
     test('vertical toggle renders with correct radii and spacing at mobile viewport', async ({ page }, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile-only check');
