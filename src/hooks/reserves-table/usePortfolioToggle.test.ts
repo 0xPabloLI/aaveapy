@@ -611,6 +611,7 @@ describe('usePortfolioToggle', () => {
         brevisSupplys: [],
         brevisBorrows: [],
         ltv: 80,
+        liquidationThreshold: 80,
         ...overrides,
       }) as ReserveWithSpread & RateCalcInput;
 
@@ -639,6 +640,13 @@ describe('usePortfolioToggle', () => {
       expect(result.current.portfolioResults).toHaveLength(2);
       expect(result.current.portfolioSummary.totalSupplyUsd).toBeGreaterThan(0);
       expect(result.current.portfolioSummary.totalBorrowUsd).toBeGreaterThan(0);
+      // Regression: portfolioHealthFactors must be defined (not undefined) when
+      // simulationContext is provided.  Previously a key mismatch in useMemo
+      // destructuring caused it to always be undefined.
+      expect(result.current.portfolioHealthFactors).toBeDefined();
+      expect(result.current.portfolioHealthFactors).toHaveLength(1);
+      expect(result.current.portfolioHealthFactors![0].healthFactor).not.toBeNull();
+      expect(result.current.portfolioHealthFactors![0].healthFactor!).toBeGreaterThan(0);
     });
 
     it('falls back to simplified calculation without simulationContext', () => {
