@@ -59,10 +59,10 @@ interface PortfolioPanelProps {
   walletLoadState?: WalletLoadState;
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
-/** Per-reserve cap warnings for portfolio input fields. */
-capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
-/** Per-pool/spoke health factors (AAV-1252 P6). */
-healthFactors?: PortfolioHealthFactor[];
+  /** Per-reserve cap warnings for portfolio input fields. */
+  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+  /** Per-pool/spoke health factors (AAV-1252 P6). */
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 /**
@@ -177,7 +177,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   simulationMode,
   onSimulationModeChange,
   capWarningsMap,
-healthFactors,
+  healthFactors,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -579,25 +579,25 @@ healthFactors,
         {/* Unified table (desktop) / Card list (mobile) */}
         {entries.length > 0 ? (
           isMobile ? (
-<MobilePortfolioCard
-entries={sortedEntries}
-actions={actions}
-reserves={reserves}
-positionResults={positionResults}
-summary={summary}
-capWarningsMap={capWarningsMap}
-healthFactors={healthFactors}
-/>
+            <MobilePortfolioCard
+              entries={sortedEntries}
+              actions={actions}
+              reserves={reserves}
+              positionResults={positionResults}
+              summary={summary}
+              capWarningsMap={capWarningsMap}
+              healthFactors={healthFactors}
+            />
           ) : (
-<PortfolioUnifiedTable
-entries={sortedEntries}
-actions={actions}
-reserves={reserves}
-positionResults={positionResults}
-summary={summary}
-capWarningsMap={capWarningsMap}
-healthFactors={healthFactors}
-/>
+            <PortfolioUnifiedTable
+              entries={sortedEntries}
+              actions={actions}
+              reserves={reserves}
+              positionResults={positionResults}
+              summary={summary}
+              capWarningsMap={capWarningsMap}
+              healthFactors={healthFactors}
+            />
           )
         ) : (
           <div

@@ -67,8 +67,14 @@ test.describe('Portfolio — Wallet Sync precision', () => {
     // Click Wallet Sync again (refresh) — find by accessible label.
     await page.getByRole('button', { name: /Wallet sync|Sync wallet|Refresh wallet/i }).first().click();
 
-    // Give the resync a tick to land.
-    await page.waitForTimeout(1500);
+    // Wait for the resync to land by polling for amount inputs to be populated.
+    await expect.poll(
+      async () => {
+        const vals = (await snapshot()).filter((v) => v.trim() !== '');
+        return vals.length;
+      },
+      { timeout: 15_000, message: 'wallet sync re-sync to populate amount inputs' },
+    ).toBeGreaterThan(0);
 
     const after = (await snapshot()).filter((v) => v.trim() !== '');
     expect(after.length).toBeGreaterThan(0);

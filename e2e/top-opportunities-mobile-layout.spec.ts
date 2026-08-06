@@ -56,9 +56,17 @@ test.describe('Top Opportunities mobile layout', () => {
     // Click the next-page chevron to advance.
     const nextBtn = page.getByRole('button', { name: /next slide/i }).first();
     await nextBtn.click();
-    await page.waitForTimeout(500);
 
+    // Wait for the second slide to snap into the viewport by polling its position.
     const second = slides.nth(1);
+    await expect.poll(
+      async () => {
+        const box = await second.boundingBox();
+        return box?.x ?? Number.POSITIVE_INFINITY;
+      },
+      { timeout: 5_000, message: 'carousel second slide to snap into viewport' },
+    ).toBeGreaterThanOrEqual(-2);
+
     const box = await second.boundingBox();
     const viewport = page.viewportSize();
     expect(box).not.toBeNull();

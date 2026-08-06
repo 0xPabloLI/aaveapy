@@ -19,8 +19,8 @@ test.describe('API fields v3 — UI rendering verification', () => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
 
-    // Wait for the reserves table to render instead of using a fixed timeout.
-    await expect(page.locator('tbody tr[data-reserve-id]').first())
+    // Use [data-reserve-id] which works for both desktop (tbody tr) and mobile (div) layouts
+    await expect(page.locator('[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     const title = await page.title();
@@ -36,10 +36,10 @@ test.describe('API fields v3 — UI rendering verification', () => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('tbody tr[data-reserve-id]').first())
+    await expect(page.locator('[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
-    const count = await page.locator('tbody tr[data-reserve-id]').count();
+    const count = await page.locator('[data-reserve-id]').count();
     expect(count).toBeGreaterThanOrEqual(10);
   });
 
@@ -51,7 +51,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
     });
 
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
-    await expect(page.locator('tbody tr[data-reserve-id]').first())
+    await expect(page.locator('[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     const fieldErrors = consoleErrors.filter(e =>
@@ -62,7 +62,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Detail panel layout differs on mobile');
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
@@ -82,7 +82,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('utilization indicator renders with percentage value', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Detail panel layout differs on mobile');
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
@@ -98,7 +98,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('rate simulation slider is interactable', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Slider not available in mobile detail view');
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())

@@ -231,21 +231,40 @@ export {
 } from './portfolioAmountFormat';
 
 /**
- * Get CSS color class for a Health Factor value (AAV-1252 P6).
+ * Get semantic color name for a Health Factor value (AAV-1252 P6).
+ *
+ * Used for `data-hf-color` test attributes and as the single source of
+ * truth for HF color thresholds. `getHfColorClass` derives from this.
  *
  * Thresholds:
  * - HF >= 2:   green (safe)
  * - HF >= 1.5: yellow (caution)
  * - HF >= 1:   orange (warning)
  * - HF < 1:    red (danger)
- * - null / 0:  muted (no borrow or missing data)
+ * - null / 0:  none (no borrow or missing data)
+ */
+export function getHfColorName(hf: number | null): string {
+  if (hf == null || hf === 0) return 'none';
+  if (hf >= 2) return 'green';
+  if (hf >= 1.5) return 'yellow';
+  if (hf >= 1) return 'orange';
+  return 'red';
+}
+
+const HF_COLOR_CLASS_MAP: Record<string, string> = {
+  none: 'text-muted-foreground',
+  green: 'text-emerald-600 dark:text-emerald-400',
+  yellow: 'text-yellow-600 dark:text-yellow-400',
+  orange: 'text-orange-600 dark:text-orange-400',
+  red: 'text-red-500 dark:text-red-400',
+};
+
+/**
+ * Get CSS color class for a Health Factor value (AAV-1252 P6).
+ * Derives from `getHfColorName` to ensure single-source thresholds.
  */
 export function getHfColorClass(hf: number | null): string {
-  if (hf == null || hf === 0) return 'text-muted-foreground';
-  if (hf >= 2) return 'text-emerald-600 dark:text-emerald-400';
-  if (hf >= 1.5) return 'text-yellow-600 dark:text-yellow-400';
-  if (hf >= 1) return 'text-orange-600 dark:text-orange-400';
-  return 'text-red-500 dark:text-red-400';
+  return HF_COLOR_CLASS_MAP[getHfColorName(hf)] ?? HF_COLOR_CLASS_MAP.none;
 }
 
 /**

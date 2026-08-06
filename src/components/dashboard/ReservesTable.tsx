@@ -84,18 +84,18 @@ interface ReservesTableProps {
   /** Portfolio simulation mode. */
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
-portfolioEntries?: PortfolioReserveEntry[];
-portfolioActions?: PortfolioSimulationActions;
-portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
-lastModifiedReserveId?: string;
-onWalletSync?: () => void;
-walletLoadState?: WalletLoadState;
-onRefresh?: () => Promise<void>;
-dataUpdatedAt?: number;
-topOppsRef?: React.RefObject<HTMLDivElement | null>;
-campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
-/** On-chain HF baseline per pool (AAV-1253 P7). */
-onchainHfMap?: OnchainHfMap;
+  portfolioEntries?: PortfolioReserveEntry[];
+  portfolioActions?: PortfolioSimulationActions;
+  portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  lastModifiedReserveId?: string;
+  onWalletSync?: () => void;
+  walletLoadState?: WalletLoadState;
+  onRefresh?: () => Promise<void>;
+  dataUpdatedAt?: number;
+  topOppsRef?: React.RefObject<HTMLDivElement | null>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+  /** On-chain HF baseline per pool (AAV-1253 P7). */
+  onchainHfMap?: OnchainHfMap;
 }
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -121,10 +121,10 @@ const ReservesTable = ({
   scrollToReserveId,
   simulationMode = 'single',
   onSimulationModeChange,
-portfolioEntries,
-portfolioActions,
-portfolioSnapshots,
-lastModifiedReserveId,
+  portfolioEntries,
+  portfolioActions,
+  portfolioSnapshots,
+  lastModifiedReserveId,
   onWalletSync,
   walletLoadState,
   onRefresh,

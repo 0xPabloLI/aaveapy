@@ -11,20 +11,12 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatReserveSizeUsd } from '@/lib/formatters';
-import { getHfColorClass, getMinHf, getLowestHfDelta } from '@/lib/portfolioCalculator';
+import { getHfColorClass, getHfColorName, getMinHf, getLowestHfDelta } from '@/lib/portfolioCalculator';
 import type { PortfolioSummary, PortfolioHealthFactor } from '@/types/portfolio';
 
 interface PortfolioSummaryBarProps {
   summary?: PortfolioSummary;
   healthFactors?: PortfolioHealthFactor[];
-}
-
-function getHfColorName(hf: number | null): string {
-  if (hf == null || hf === 0) return 'none';
-  if (hf >= 2) return 'green';
-  if (hf >= 1.5) return 'yellow';
-  if (hf >= 1) return 'orange';
-  return 'red';
 }
 
 function formatHfValue(hf: number | null): string {

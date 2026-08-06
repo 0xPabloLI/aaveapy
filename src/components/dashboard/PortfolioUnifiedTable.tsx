@@ -49,10 +49,10 @@ import { formatPercent, formatReserveSizeUsd, formatSignedReserveSizeUsd } from 
 import ReserveIdentity from '@/components/primitives/ReserveIdentity';
 import { PORTFOLIO_THEME } from './portfolioTheme';
 import type {
-PortfolioReserveEntry,
-PortfolioPositionResult,
-PortfolioSummary,
-PortfolioHealthFactor,
+  PortfolioReserveEntry,
+  PortfolioPositionResult,
+  PortfolioSummary,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -132,23 +132,23 @@ const SIDE_SEP = 'border-l border-border/40';
 /* ── Main component ──────────────────────────────────────────────── */
 
 interface PortfolioUnifiedTableProps {
-entries: PortfolioReserveEntry[];
-actions: PortfolioSimulationActions;
-reserves: ReserveWithSpread[];
-positionResults?: PortfolioPositionResult[];
-summary?: PortfolioSummary;
-capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
-healthFactors?: PortfolioHealthFactor[];
+  entries: PortfolioReserveEntry[];
+  actions: PortfolioSimulationActions;
+  reserves: ReserveWithSpread[];
+  positionResults?: PortfolioPositionResult[];
+  summary?: PortfolioSummary;
+  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
-entries,
-actions,
-reserves,
-positionResults,
-summary,
-capWarningsMap,
-healthFactors,
+  entries,
+  actions,
+  reserves,
+  positionResults,
+  summary,
+  capWarningsMap,
+  healthFactors,
 }: PortfolioUnifiedTableProps) {
   if (entries.length === 0) return null;
 
