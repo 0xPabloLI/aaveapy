@@ -22,9 +22,9 @@ const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
 ] as const;
 
-// scroll-mt-24 = 6rem = 96px. Allow extra slack for sticky header height
+// scroll-mt-24 = 6rem = 96px. Allow slack for sticky header height
 // variations across viewports and sub-pixel rounding.
-const MAX_TOP_OFFSET_PX = 300;
+const MAX_TOP_OFFSET_PX = 200;
 
 async function assertTargetWellPositioned(page: Page, slug: string) {
   const target = page.locator(`#${slug}`);
@@ -39,15 +39,13 @@ async function assertTargetWellPositioned(page: Page, slug: string) {
 
 test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
-  test.skip(!!process.env.CI, 'FAQ section rendering depends on staging API data availability — run locally');
 
   for (const vp of VIEWPORTS) {
     test.describe(`${vp.name} (${vp.width}x${vp.height})`, () => {
       test.use({ viewport: { width: vp.width, height: vp.height } });
 
       test('clicking each Related FAQ link scrolls the target into view with correct offset', async ({ page }) => {
-        await page.goto('/defi-yield-tracker');
-        await page.waitForLoadState('networkidle');
+        await page.goto('/defi-yield-tracker', { waitUntil: 'domcontentloaded' });
         await expect(page.getByRole('heading', { level: 1, name: /DeFi Yield Tracker for Aave/i })).toBeVisible();
 
         for (const [label, question] of [
@@ -82,8 +80,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
       test('loading the page with a FAQ hash scrolls the target into view and focuses it', async ({ page }) => {
         const slug = faqSlug(FAQ_QUESTIONS.debank);
-        await page.goto(`/defi-yield-tracker#${slug}`);
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/defi-yield-tracker#${slug}`, { waitUntil: 'domcontentloaded' });
 
         const target = page.locator(`#${slug}`);
         await expect(target).toBeVisible({ timeout: 15_000 });
@@ -104,8 +101,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
       });
 
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {
-        await page.goto('/defi-yield-tracker#faq');
-        await page.waitForLoadState('networkidle');
+        await page.goto('/defi-yield-tracker#faq', { waitUntil: 'domcontentloaded' });
         const heading = page.locator('h2#faq');
         await expect(heading).toBeVisible({ timeout: 15_000 });
         await expect.poll(

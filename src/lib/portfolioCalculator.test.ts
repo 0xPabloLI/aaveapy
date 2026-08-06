@@ -7,6 +7,7 @@ import {
   convertPortfolioInputAmount,
   formatConvertedAmount,
   getHfColorClass,
+  getHfColorName,
   getMinHf,
   getLowestHfDelta,
 } from './portfolioCalculator';
@@ -435,6 +436,36 @@ describe('getHfColorClass', () => {
   it('returns green for HF >= 2', () => {
     expect(getHfColorClass(2.0)).toBe('text-emerald-600 dark:text-emerald-400');
     expect(getHfColorClass(3.0)).toBe('text-emerald-600 dark:text-emerald-400');
+  });
+});
+
+describe('getHfColorName', () => {
+  it('returns none for null', () => {
+    expect(getHfColorName(null)).toBe('none');
+  });
+
+  it('returns none for 0', () => {
+    expect(getHfColorName(0)).toBe('none');
+  });
+
+  it('returns red for HF < 1', () => {
+    expect(getHfColorName(0.5)).toBe('red');
+    expect(getHfColorName(0.99)).toBe('red');
+  });
+
+  it('returns orange for 1 <= HF < 1.5', () => {
+    expect(getHfColorName(1.0)).toBe('orange');
+    expect(getHfColorName(1.49)).toBe('orange');
+  });
+
+  it('returns yellow for 1.5 <= HF < 2', () => {
+    expect(getHfColorName(1.5)).toBe('yellow');
+    expect(getHfColorName(1.99)).toBe('yellow');
+  });
+
+  it('returns green for HF >= 2', () => {
+    expect(getHfColorName(2.0)).toBe('green');
+    expect(getHfColorName(3.0)).toBe('green');
   });
 });
 
