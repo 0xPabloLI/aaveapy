@@ -168,6 +168,8 @@ export interface UsePortfolioSimulationReturn {
   entries: PortfolioReserveEntry[];
   snapshots: PortfolioSnapshot[];
   actions: PortfolioSimulationActions;
+  /** ReserveId of the entry most recently modified by the user. Used for LTV clamping priority. */
+  lastModifiedReserveId: string | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +180,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
   const [entries, setEntries] = useState<PortfolioReserveEntry[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
+  const [lastModifiedReserveId, setLastModifiedReserveId] = useState<string | undefined>(undefined);
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
 
@@ -227,6 +230,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
 
   const updateReserve = useCallback(
     (reserveId: string, patch: ReservePatch, priceInUsd?: number) => {
+      setLastModifiedReserveId(reserveId);
       setEntries((prev) =>
         prev.map((e) => {
           if (e.reserveId !== reserveId) return e;
@@ -401,5 +405,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     entries,
     snapshots,
     actions,
+    lastModifiedReserveId,
   };
 }

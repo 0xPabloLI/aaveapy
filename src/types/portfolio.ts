@@ -95,6 +95,8 @@ export interface PortfolioPositionResult {
   usdPerDayMetric?: PortfolioSimulationMetric;
   /** Count of incentive campaigns without forecast data (using current APR). */
   forecastUnavailableCampaignCount?: number;
+  /** USD amount after LTV (maxBorrow) clamping. Undefined when LTV did not clamp. */
+  ltvClampedUsd?: number;
 }
 
 /** Aggregated portfolio summary. */
@@ -122,6 +124,24 @@ export interface PortfolioSummary {
   netEffectiveApyMetric?: PortfolioSimulationMetric;
   supplyWeightedApyMetric?: PortfolioSimulationMetric;
   borrowWeightedApyMetric?: PortfolioSimulationMetric;
+}
+
+/** Per-pool/spoke health factor after simulation. */
+export interface PortfolioHealthFactor {
+  /** `${chainId}:${marketName}` — protocol isolation boundary. */
+  poolKey: string;
+  /** Simulated HF (after). null = no borrow (display "—"). */
+  healthFactor: number | null;
+  /** On-chain HF (current). null = no wallet / no on-chain data / no borrow. (AAV-1253 P7) */
+  currentHealthFactor: number | null;
+  /** Delta = after - current. null = no current baseline. (AAV-1253 P7) */
+  deltaHealthFactor: number | null;
+  /** Σ(supplyUsd × liquidationThreshold / 100) — risk-adjusted collateral. */
+  totalCollateralUsd: number;
+  /** Σ(effective borrowUsd) — post-clamp debt. */
+  totalDebtUsd: number;
+  /** Σ(supplyUsd × ltv / 100) — max borrow capacity (AAV-1252 P6). */
+  totalBorrowCapacityUsd: number;
 }
 
 /** A saved snapshot for comparison. */

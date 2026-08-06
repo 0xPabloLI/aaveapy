@@ -23,19 +23,21 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import type {
-  PortfolioReserveEntry,
-  PortfolioPositionResult,
-  PortfolioSummary,
+PortfolioReserveEntry,
+PortfolioPositionResult,
+PortfolioSummary,
+PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
-  CompactInput,
-  MetricValue,
-  WarningMarker,
-  type MetricShape,
+CompactInput,
+MetricValue,
+WarningMarker,
+type MetricShape,
 } from './PortfolioTablePrimitives';
+import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 import {
   formatProtocolCapText,
   type PortfolioCapWarning,
@@ -81,7 +83,7 @@ function DeltaRow({
     <div className="flex items-center justify-between ds-text-11 py-0.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1 tabular-nums">
-        <span data-testid="delta-current" className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
+        <span data-testid="delta-current" data-current={metric!.current?.toFixed(4)} className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
         <span className="text-muted-foreground/40">→</span>
         <span data-testid="delta-after" className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
         <span data-testid="delta-value" className={cn('font-medium', deltaColor)}>{deltaStr}</span>
@@ -91,12 +93,13 @@ function DeltaRow({
 }
 
 interface MobilePortfolioCardProps {
-  entries: PortfolioReserveEntry[];
-  actions: PortfolioSimulationActions;
-  reserves: ReserveWithSpread[];
-  positionResults?: PortfolioPositionResult[];
-  summary?: PortfolioSummary;
-  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+entries: PortfolioReserveEntry[];
+actions: PortfolioSimulationActions;
+reserves: ReserveWithSpread[];
+positionResults?: PortfolioPositionResult[];
+summary?: PortfolioSummary;
+capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+healthFactors?: PortfolioHealthFactor[];
 }
 
 /* ── Single card ────────────────────────────────────────────────── */
@@ -148,6 +151,12 @@ function MobileCard({
   const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
   const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
 
+  // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
+  const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+    ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+    : [];
+  const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
+
   const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
 
   const handleMinusClick = () => {
@@ -176,7 +185,7 @@ function MobileCard({
   const trashHoverTextMobile = 'active:ds-text-blue-500 md:hover:ds-text-blue-500';
 
   const activeResult = activeTab === 'supply' ? supplyResult : borrowResult;
-  const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWarns;
+  const activeInputWarns = activeTab === 'supply' ? supplyInputWarns : borrowInputWithLtvWarns;
   const activeIncentWarns = activeTab === 'supply' ? supplyIncentWarns : borrowIncentWarns;
   const activeCapLimit = activeTab === 'supply' ? supplyCapLimitUsd : borrowCapLimitUsd;
   const activeDisabled = activeTab === 'supply' ? !!disabledNotice.supply : !!disabledNotice.borrow;
@@ -319,7 +328,7 @@ function MobileCard({
                 : 'text-foreground/50',
             )}
           >
-            {activeResult ? (
+            {activeResult && incentiveHasValue ? (
               <>
                 <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} skipTooltip />
                 {activeResult.forecastUnavailableCampaignCount != null && activeResult.forecastUnavailableCampaignCount > 0 && (
@@ -458,12 +467,13 @@ function MobileCard({
 /* ── Main component ─────────────────────────────────────────────── */
 
 const MobilePortfolioCard = memo(function MobilePortfolioCard({
-  entries,
-  actions,
-  reserves,
-  positionResults,
-  summary,
-  capWarningsMap,
+entries,
+actions,
+reserves,
+positionResults,
+summary,
+capWarningsMap,
+healthFactors,
 }: MobilePortfolioCardProps) {
   if (entries.length === 0) return null;
 
@@ -559,6 +569,7 @@ const MobilePortfolioCard = memo(function MobilePortfolioCard({
           </div>
         </div>
       )}
+      <PortfolioSummaryBar summary={summary} healthFactors={healthFactors} />
     </div>
   );
 });

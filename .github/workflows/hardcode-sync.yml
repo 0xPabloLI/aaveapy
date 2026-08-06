@@ -145,7 +145,7 @@ jobs:
           base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
-            automerge
+            ${{ env.TARGET_BRANCH != 'main' && 'automerge' || '' }}
             hardcode
 
       - name: Approve and enable auto-merge for bot PR

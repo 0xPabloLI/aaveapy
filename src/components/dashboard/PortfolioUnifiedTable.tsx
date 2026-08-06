@@ -52,16 +52,18 @@ import type {
   PortfolioReserveEntry,
   PortfolioPositionResult,
   PortfolioSummary,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
-  CompactInput,
-  MetricValue,
-  WarningMarker,
+CompactInput,
+MetricValue,
+WarningMarker,
 } from './PortfolioTablePrimitives';
+import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 
 /* ── Column geometry ─────────────────────────────────────────────── */
 
@@ -136,6 +138,7 @@ interface PortfolioUnifiedTableProps {
   positionResults?: PortfolioPositionResult[];
   summary?: PortfolioSummary;
   capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
@@ -145,6 +148,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
   positionResults,
   summary,
   capWarningsMap,
+  healthFactors,
 }: PortfolioUnifiedTableProps) {
   if (entries.length === 0) return null;
 
@@ -215,6 +219,13 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             const supplyIncentWarns = supplyWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
             const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
             const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
+
+            // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
+            // (ltvClampedUsd === amountUsd means LTV determined the final amount)
+            const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+              ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+              : [];
+            const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
 
             const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
 
@@ -306,7 +317,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                         capLimitUsd={borrowCapLimitUsd}
                       />
                     </div>
-                    {borrowInputWarns.length > 0 && <WarningMarker warnings={borrowInputWarns} />}
+                    {borrowInputWithLtvWarns.length > 0 && <WarningMarker warnings={borrowInputWithLtvWarns} />}
                   </div>
                 </td>
 
@@ -322,7 +333,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Supply Incentive */}
                 <td data-cell="supply-incentive" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
-                    {supplyResult ? (
+                    {supplyResult && supplyResult.incentivePercent !== 0 ? (
                       <>
                         <MetricValue afterValue={supplyResult.incentivePercent} metric={supplyResult.incentiveMetric} formatFn={formatPercent} />
                         {supplyResult.forecastUnavailableCampaignCount != null && supplyResult.forecastUnavailableCampaignCount > 0 && (
@@ -336,7 +347,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 {/* Borrow Incentive */}
                 <td data-cell="borrow-incentive" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
                   <span className="inline-flex items-center gap-0.5 justify-end">
-                    {borrowResult ? (
+                    {borrowResult && borrowResult.incentivePercent !== 0 ? (
                       <>
                         <MetricValue afterValue={borrowResult.incentivePercent} metric={borrowResult.incentiveMetric} formatFn={formatPercent} />
                         {borrowResult.forecastUnavailableCampaignCount != null && borrowResult.forecastUnavailableCampaignCount > 0 && (
@@ -406,6 +417,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           * No forecast data — using current APR.
         </p>
       )}
+      <PortfolioSummaryBar summary={summary} healthFactors={healthFactors} />
     </div>
   );
 });

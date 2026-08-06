@@ -17,6 +17,7 @@ import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { isSupplyDisabled, isBorrowDisabled, isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
+import { hasPositionCap } from '@/lib/incentiveCaps';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
@@ -757,7 +758,9 @@ const DesktopReserveRow = memo(({
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     supplyBlocked
                       ? 'bg-emerald-500/10 text-emerald-500/50 hover:bg-emerald-500/20 ring-emerald-500/20'
-                      : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
+                      : hasPositionCap(reserve, 'supply')
+                        ? 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 ring-amber-500/40 hover:ring-amber-500/60'
+                        : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
                   }`}
                 >
                   <span>{formatPercent(displaySupplyIncentive)}</span>
@@ -812,7 +815,9 @@ const DesktopReserveRow = memo(({
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     borrowBlocked
                       ? 'bg-cyan-500/10 text-cyan-500/50 hover:bg-cyan-500/20 ring-cyan-500/20'
-                      : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
+                      : hasPositionCap(reserve, 'borrow')
+                        ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 ring-amber-500/40 hover:ring-amber-500/60'
+                        : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
                   }`}
                 >
                   <span>{formatPercent(displayBorrowIncentive)}</span>

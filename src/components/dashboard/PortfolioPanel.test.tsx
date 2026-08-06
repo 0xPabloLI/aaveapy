@@ -157,6 +157,35 @@ describe('PortfolioPanel', () => {
     expect(actions.addReserve).toHaveBeenCalledTimes(1);
   });
 
+  it('renders V4 hubName in search results when searching', () => {
+    const v4Reserve: ReserveWithSpread = {
+      ...makeReserve('USDC', 'AaveV4Ethereum'),
+      reserveId: 'AaveV4Ethereum-USDC',
+      hubName: 'Core',
+      hubId: 'hub-core',
+    };
+    const { container } = renderWithRouter(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <TooltipProvider>
+            <PortfolioPanel
+              entries={[]}
+              actions={makeActions()}
+              reserves={[v4Reserve]}
+            />
+            </TooltipProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.change(searchInput, { target: { value: 'USDC' } });
+    const hubChip = container.querySelector('[title="Hub: Core"]');
+    expect(hubChip).toBeTruthy();
+    expect(hubChip?.textContent).toContain('Core');
+  });
+
   it('shows entry rows for existing entries', () => {
     const reserves = [makeReserve('USDC')];
     const entries: PortfolioReserveEntry[] = [

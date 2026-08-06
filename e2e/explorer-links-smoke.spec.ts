@@ -12,13 +12,35 @@ const EXPLORER_SMOKE_TESTS = [
   { market: 'AaveV3XLayer', name: 'OKLink XLayer', expectedTitle: /OKLink|X Layer/i },
 ];
 
+/**
+ * Quick network reachability check — avoids wasting the full test timeout
+ * on a site that is down or blocked by Cloudflare.
+ */
+async function isExplorerReachable(url: string): Promise<boolean> {
+  try {
+    const resp = await fetch(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(10_000),
+      redirect: 'follow',
+    });
+    return resp.ok || resp.status === 403; // 403 = Cloudflare challenge, page still exists
+  } catch {
+    return false;
+  }
+}
+
 test.describe('Explorer deep-link smoke tests', () => {
   test.describe.configure({ mode: 'parallel' });
+  test.skip(!!process.env.CI, 'External explorer sites blocked by Cloudflare in CI');
 
   for (const { market, name, expectedTitle } of EXPLORER_SMOKE_TESTS) {
     test(`[${name}] ${market} URL loads and shows contract`, async ({ page }) => {
       const url = buildPoolExplorerUrl(market);
       test.skip(!url, `No explorer URL configured for ${market}`);
+
+      // Skip if the explorer is not reachable (external service may be down).
+      const reachable = await isExplorerReachable(url!);
+      test.skip(!reachable, `${name} is not reachable`);
 
       // Navigate to the explorer URL directly
       await page.goto(url!, { timeout: 30000 });

@@ -5,6 +5,7 @@ import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
 import { useWallet } from '@/hooks/useWallet';
+import { useOnchainHealthFactor } from '@/hooks/useOnchainHealthFactor';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useChainDiscovery } from '@/hooks/useChainDiscovery';
@@ -39,6 +40,7 @@ import {
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList, getChainCount } from '@/lib/marketsList';
 import { marketKey } from '@/lib/marketKey';
+import { slugifyMarketLabel, resolveMarketSlugs } from '@/lib/marketSlug';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -147,10 +149,11 @@ const Index = () => {
     let chainParam = searchParams.get('chain');
     let categoryParam = searchParams.get('category');
     let searchParam = searchParams.get('search');
+    let marketParam = searchParams.get('market');
 
     // Fallback to persisted filters when URL params are absent.
-    let persisted: { chain?: string | null; category?: string | null; search?: string | null } | null = null;
-    if (chainParam === null && categoryParam === null && searchParam === null) {
+    let persisted: { chain?: string | null; category?: string | null; search?: string | null; market?: string | null } | null = null;
+    if (chainParam === null && categoryParam === null && searchParam === null && marketParam === null) {
       try {
         const raw = typeof window !== 'undefined' ? window.localStorage.getItem('aaveapy:filters') : null;
         if (raw) persisted = JSON.parse(raw);
@@ -161,6 +164,7 @@ const Index = () => {
         chainParam = persisted.chain ?? null;
         categoryParam = persisted.category ?? null;
         searchParam = persisted.search ?? null;
+        marketParam = persisted.market ?? null;
       }
     }
 
@@ -168,6 +172,7 @@ const Index = () => {
     if (chainParam && effectiveMarketsList.length === 0) return;
 
     let hasInvalidParam = false;
+    let marketHadInvalid = false;
 
     if (chainParam) {
       const chainFilter = chainParam.trim().toLowerCase();
@@ -176,7 +181,26 @@ const Index = () => {
           .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
           .map((m) => marketKey(m.chainId, m.marketName));
         if (matchedKeys.length > 0) {
-          setSelectedMarkets(matchedKeys);
+          // If market param present, narrow down to specific markets
+          let finalKeys = matchedKeys;
+          if (marketParam) {
+            const chainId = effectiveMarketsList.find(
+              (m) => m.chainName.toLowerCase().includes(chainFilter),
+            )?.chainId;
+            if (chainId !== undefined) {
+              const slugs = marketParam.split(',').map((s) => s.trim()).filter(Boolean);
+              const { resolved, invalid } = resolveMarketSlugs(slugs, chainId, effectiveMarketsList);
+              if (resolved.length > 0 && resolved.length < matchedKeys.length) {
+                finalKeys = resolved;
+              }
+              if (invalid.length > 0) {
+                hasInvalidParam = true;
+                marketHadInvalid = true;
+                toast.info(`Market "${invalid.join(', ')}" not found — showing all ${chainParam} markets`);
+              }
+            }
+          }
+          setSelectedMarkets(finalKeys);
           setMarketViewMode('chain');
         } else {
           hasInvalidParam = true;
@@ -207,7 +231,11 @@ const Index = () => {
         const chainMatched =
           chainFilter &&
           effectiveMarketsList.some((m) => m.chainName.toLowerCase().includes(chainFilter));
-        if (!chainMatched) next.delete('chain');
+        if (!chainMatched) {
+          next.delete('chain');
+          next.delete('market'); // market without valid chain is meaningless
+        }
+        if (marketHadInvalid) next.delete('market');
 
         const cat = categoryParam?.trim().toLowerCase() ?? '';
         const catValid = ['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat);
@@ -232,6 +260,27 @@ const Index = () => {
     return [...chains][0].toLowerCase().replace(/\s+/g, '-');
   }, [selectedMarkets, effectiveMarketsList]);
 
+  // Derive market slugs from selected markets — only when all share a single chain
+  // and NOT all markets of that chain are selected (full-select omits market param).
+  const derivedMarketSlugs = useMemo(() => {
+    if (selectedMarkets.length === 0 || effectiveMarketsList.length === 0) return null;
+    const chains = new Set<string>();
+    for (const key of selectedMarkets) {
+      const m = effectiveMarketsList.find((x) => marketKey(x.chainId, x.marketName) === key);
+      if (m?.chainName) chains.add(m.chainName);
+    }
+    if (chains.size !== 1) return null;
+    const chainName = [...chains][0];
+    const chainMarketCount = effectiveMarketsList.filter((m) => m.chainName === chainName).length;
+    if (selectedMarkets.length >= chainMarketCount) return null; // full-select
+    return selectedMarkets
+      .map((key) => {
+        const m = effectiveMarketsList.find((x) => marketKey(x.chainId, x.marketName) === key);
+        return m ? slugifyMarketLabel(m.marketName) : null;
+      })
+      .filter((slug): slug is string => slug !== null);
+  }, [selectedMarkets, effectiveMarketsList]);
+
 
   // Two-way sync: push current filter state into URL whenever it changes,
   // and mirror to localStorage so refresh/reopen restores the same view.
@@ -242,6 +291,8 @@ const Index = () => {
       const next = new URLSearchParams(prev);
       if (derivedChainSlug) next.set('chain', derivedChainSlug);
       else next.delete('chain');
+      if (derivedMarketSlugs) next.set('market', derivedMarketSlugs.join(','));
+      else next.delete('market');
       if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
       else next.delete('category');
       if (trimmed) next.set('search', trimmed);
@@ -253,10 +304,11 @@ const Index = () => {
       if (typeof window !== 'undefined') {
         const payload = {
           chain: derivedChainSlug ?? null,
+          market: derivedMarketSlugs ? derivedMarketSlugs.join(',') : null,
           category: selectedCategory && selectedCategory !== 'all' ? selectedCategory : null,
           search: trimmed || null,
         };
-        if (!payload.chain && !payload.category && !payload.search) {
+        if (!payload.chain && !payload.market && !payload.category && !payload.search) {
           window.localStorage.removeItem('aaveapy:filters');
         } else {
           window.localStorage.setItem('aaveapy:filters', JSON.stringify(payload));
@@ -265,7 +317,7 @@ const Index = () => {
     } catch {
       // ignore storage errors (quota / private mode)
     }
-  }, [derivedChainSlug, selectedCategory, searchQuery, setSearchParams]);
+  }, [derivedChainSlug, derivedMarketSlugs, selectedCategory, searchQuery, setSearchParams]);
 
 
   useEffect(() => {
@@ -313,6 +365,13 @@ const Index = () => {
     onImport: () => setSimulationMode('portfolio'),
     onDisconnect: () => setSimulationMode('single'),
   });
+
+// On-chain HF baseline (AAV-1253 P7) — fetch real HF per pool/spoke when wallet is connected
+const onchainHfResult = useOnchainHealthFactor({
+  address: walletAddress,
+  entries: portfolio.entries,
+  reserves: stableReserves,
+});
 
   const handleWalletSync = useCallback(() => {
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
@@ -674,16 +733,18 @@ const Index = () => {
               scrollToReserveId={pendingScrollReserveId}
               simulationMode={simulationMode}
               onSimulationModeChange={setSimulationMode}
-              portfolioEntries={portfolio.entries}
-              portfolioActions={portfolio.actions}
-              portfolioSnapshots={portfolio.snapshots}
-              onWalletSync={handleWalletSync}
-              walletLoadState={walletLoadState}
-              onRefresh={handleRefresh}
-              dataUpdatedAt={dataUpdatedAt}
-              topOppsRef={topOppsRef}
-              campaignAccessStatuses={campaignAccessStatuses}
-            />
+portfolioEntries={portfolio.entries}
+portfolioActions={portfolio.actions}
+portfolioSnapshots={portfolio.snapshots}
+lastModifiedReserveId={portfolio.lastModifiedReserveId}
+onWalletSync={handleWalletSync}
+walletLoadState={walletLoadState}
+onRefresh={handleRefresh}
+dataUpdatedAt={dataUpdatedAt}
+topOppsRef={topOppsRef}
+campaignAccessStatuses={campaignAccessStatuses}
+onchainHfMap={onchainHfResult.onchainHfMap}
+/>
           </div>
 
           {/* Empty state */}

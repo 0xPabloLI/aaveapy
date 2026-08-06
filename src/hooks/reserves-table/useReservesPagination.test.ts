@@ -171,4 +171,102 @@ describe('useReservesPagination', () => {
       expect(result.current.showAll).toBe(false);
     });
   });
+
+  describe('significant data change resets pagination (AAV-1107)', () => {
+    it('resets minVisibleCount to null when sortedData grows significantly (filter removed)', () => {
+      // Simulate: 30 reserves (Celo filter), expand row 25 (past DEFAULT_VISIBLE_COUNT),
+      // then remove filter → 200 reserves. Auto-grow fired on expand (31 > 20),
+      // but after data change it should reset.
+      const smallData = makeReserves(30);
+      const expandedSimId = smallData[25].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data, expandedId }: { data: ReserveWithSpread[]; expandedId: string | null }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedId }),
+        { initialProps: { data: smallData, expandedId: null } },
+      );
+
+      // Expand row 25 → auto-grow fires (25+6=31 > DEFAULT_VISIBLE_COUNT=20)
+      rerender({ data: smallData, expandedId: expandedSimId });
+      expect(result.current.minVisibleCount).toBe(30); // capped to 30 (only 30 reserves)
+
+      // Remove filter → 200 reserves (significant change: 30 → 200)
+      const bigData = makeReserves(200);
+      // Keep expandedId the same — expansion is preserved across filter changes
+      rerender({ data: bigData, expandedId: expandedSimId });
+
+      // minVisibleCount should be reset to null (default 20)
+      expect(result.current.minVisibleCount).toBeNull();
+      expect(result.current.displayData).toHaveLength(DEFAULT_VISIBLE_COUNT);
+    });
+
+    it('resets minVisibleCount when sortedData shrinks significantly (filter applied)', () => {
+      const bigData = makeReserves(100);
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: null }),
+        { initialProps: { data: bigData } },
+      );
+
+      // Show all → minVisibleCount = 100
+      act(() => result.current.showAllRows());
+      expect(result.current.minVisibleCount).toBe(100);
+
+      // Apply filter → 5 reserves (significant change: 100 → 5)
+      const smallData = makeReserves(5);
+      rerender({ data: smallData });
+      expect(result.current.minVisibleCount).toBeNull();
+      expect(result.current.displayData).toHaveLength(5); // only 5 reserves
+    });
+
+    it('does NOT reset minVisibleCount on small data changes (data refresh)', () => {
+      const data = makeReserves(50);
+      const { result, rerender } = renderHook(
+        ({ d }: { d: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: d, expandedReserveId: null }),
+        { initialProps: { d: data } },
+      );
+
+      // Show all → minVisibleCount = 50
+      act(() => result.current.showAllRows());
+      expect(result.current.minVisibleCount).toBe(50);
+
+      // Small change: 50 → 52 (within threshold, should NOT reset)
+      const refreshed = makeReserves(52);
+      rerender({ d: refreshed });
+      expect(result.current.minVisibleCount).toBe(50); // preserved
+    });
+
+    it('does NOT auto-grow minVisibleCount when sortedData changes under existing expansion', () => {
+      // AAV-1107 core scenario: expand in a filtered view (30 reserves, row 25),
+      // then unfilter to 80 reserves. Auto-grow should NOT re-fire because
+      // expandedReserveId didn't change.
+      const smallData = makeReserves(30);
+      const expandedSimId = smallData[25].reserveId; // index 25
+      const { result, rerender } = renderHook(
+        ({ data, expandedId }: { data: ReserveWithSpread[]; expandedId: string | null }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedId }),
+        { initialProps: { data: smallData, expandedId: null } },
+      );
+
+      // Expand row 25 → auto-grow fires (25+6=31 > 20)
+      rerender({ data: smallData, expandedId: expandedSimId });
+      expect(result.current.minVisibleCount).toBe(30); // capped to 30 (only 30 reserves)
+
+      // Remove filter → 80 reserves. expandedReserveId is PRESERVED (same value).
+      // The expanded row is now at index 25 in a list of 80 — past the first 20.
+      // minVisibleCount should reset (significant data change), and auto-grow
+      // should NOT re-fire (expandedReserveId didn't change).
+      const bigData = makeReserves(80);
+      // Overwrite index 25's reserveId to match the expanded id
+      (bigData[25] as { reserveId: string }).reserveId = expandedSimId;
+      rerender({ data: bigData, expandedId: expandedSimId });
+
+      // minVisibleCount should be reset to null (significant data change 30→80)
+      expect(result.current.minVisibleCount).toBeNull();
+      // displayData should be the default 20 (not grown to 31)
+      expect(result.current.displayData).toHaveLength(DEFAULT_VISIBLE_COUNT);
+      // The expanded row (index 25) is NOT in displayData (past first 20)
+      // This means renderedExpandedReserveId will be null → no scroll spacer
+    });
+  });
 });

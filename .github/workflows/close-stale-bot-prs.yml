@@ -1,0 +1,118 @@
+# Closes stale bot PRs that have been superseded by newer sync runs.
+# Runs 10 minutes before the sync workflows (04:10 UTC vs 04:20 UTC).
+# A bot PR is considered stale if:
+#   - It's from a bot/* branch
+#   - It's open and not merged
+#   - It has the same labels as a newer open PR targeting the same base branch
+#   - OR it's older than 48 hours (safety net for orphaned PRs)
+name: Close Stale Bot PRs
+
+on:
+  schedule:
+    - cron: "10 4 * * *"  # 04:10 UTC — 10 min before sync workflows
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  actions: write
+
+jobs:
+  close-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const now = Date.now();
+            const STALE_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+            // Fetch all open PRs from bot/ branches
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+
+            const botPrs = prs.filter(pr => pr.head.ref.startsWith('bot/'));
+            if (botPrs.length === 0) {
+              core.info('No open bot PRs found.');
+              return;
+            }
+
+            core.info(`Found ${botPrs.length} open bot PR(s). Checking for stale ones...`);
+
+            // Group PRs by (base branch + label set) to find duplicates
+            const groups = new Map();
+            for (const pr of botPrs) {
+              const labels = pr.labels.map(l => l.name).filter(n =>
+                n !== 'automerge' // automerge label doesn't affect "same type" grouping
+              ).sort().join(',');
+              const key = `${pr.base.ref}|${labels}`;
+              if (!groups.has(key)) groups.set(key, []);
+              groups.get(key).push(pr);
+            }
+
+            const toClose = new Set();
+
+            // For each group, keep only the newest PR; close the rest
+            for (const [key, groupPrs] of groups) {
+              if (groupPrs.length <= 1) continue;
+
+              // Sort by created_at descending (newest first)
+              groupPrs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const newest = groupPrs[0];
+              const stale = groupPrs.slice(1);
+
+              core.info(`Group [${key}]: keeping #${newest.number} (newest), closing ${stale.map(p => '#' + p.number).join(', ')}`);
+              for (const pr of stale) toClose.add(pr);
+            }
+
+            // Safety net: close any bot PR older than 48 hours
+            for (const pr of botPrs) {
+              const age = now - new Date(pr.created_at).getTime();
+              if (age > STALE_MS) {
+                core.info(`PR #${pr.number} is ${Math.round(age / 3600000)}h old (>48h safety net) — marking for closure`);
+                toClose.add(pr);
+              }
+            }
+
+            if (toClose.size === 0) {
+              core.info('No stale bot PRs to close.');
+              return;
+            }
+
+            for (const pr of toClose) {
+              const age = Math.round((now - new Date(pr.created_at).getTime()) / 3600000);
+              try {
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  state: 'closed',
+                });
+                core.info(`Closed PR #${pr.number} (${pr.head.ref} → ${pr.base.ref}, ${age}h old)`);
+
+                // Delete the bot branch if it still exists
+                try {
+                  await github.rest.git.deleteRef({
+                    owner,
+                    repo,
+                    ref: `heads/${pr.head.ref}`,
+                  });
+                  core.info(`Deleted branch ${pr.head.ref}`);
+                } catch (e) {
+                  if (e.status === 422) {
+                    core.info(`Branch ${pr.head.ref} already deleted.`);
+                  } else {
+                    core.warning(`Could not delete branch ${pr.head.ref}: ${e.message}`);
+                  }
+                }
+              } catch (error) {
+                core.warning(`Failed to close PR #${pr.number}: ${error.message}`);
+              }
+            }
+
+            core.info(`Closed ${toClose.size} stale bot PR(s).`);

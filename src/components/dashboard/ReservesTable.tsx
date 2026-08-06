@@ -60,6 +60,7 @@ import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle'
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import { extractCapWarnings, type PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
@@ -86,12 +87,15 @@ interface ReservesTableProps {
   portfolioEntries?: PortfolioReserveEntry[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  lastModifiedReserveId?: string;
   onWalletSync?: () => void;
   walletLoadState?: WalletLoadState;
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
+  /** On-chain HF baseline per pool (AAV-1253 P7). */
+  onchainHfMap?: OnchainHfMap;
 }
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -120,12 +124,14 @@ const ReservesTable = ({
   portfolioEntries,
   portfolioActions,
   portfolioSnapshots,
+  lastModifiedReserveId,
   onWalletSync,
   walletLoadState,
   onRefresh,
   dataUpdatedAt,
   topOppsRef,
   campaignAccessStatuses,
+  onchainHfMap,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
 
@@ -837,19 +843,22 @@ const ReservesTable = ({
     forecastStates,
   }), [isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates]);
 
-  const {
-    portfolioReserveIds,
-    hiddenReserveIds,
-    handlePortfolioToggle,
-    portfolioResults,
-    portfolioSummary,
-  } = usePortfolioToggle({
-    isPortfolioMode,
-    reserves: allReserves,
-    entries: portfolioEntries,
-    portfolioActions,
-    simulationContext: portfolioSimulationContext,
-  });
+const {
+portfolioReserveIds,
+hiddenReserveIds,
+handlePortfolioToggle,
+portfolioResults,
+portfolioSummary,
+portfolioHealthFactors,
+} = usePortfolioToggle({
+isPortfolioMode,
+reserves: allReserves,
+entries: portfolioEntries,
+portfolioActions,
+simulationContext: portfolioSimulationContext,
+lastModifiedReserveId,
+onchainHfMap,
+});
 
   const portfolioCapWarningsMap = useMemo(() => {
     if (!isPortfolioMode || !portfolioEntries) return undefined;
@@ -902,13 +911,14 @@ const ReservesTable = ({
       ) : isLoading && reserves.length === 0 ? (
         <PortfolioPanelSkeleton />
       ) : portfolioEntries && portfolioActions ? (
-        <PortfolioPanel
-          entries={portfolioEntries}
-          actions={portfolioActions}
-          reserves={allReserves}
-          positionResults={portfolioResults}
-          summary={portfolioSummary}
-          snapshots={portfolioSnapshots}
+<PortfolioPanel
+entries={portfolioEntries}
+actions={portfolioActions}
+reserves={allReserves}
+positionResults={portfolioResults}
+summary={portfolioSummary}
+healthFactors={portfolioHealthFactors}
+snapshots={portfolioSnapshots}
           onWalletSync={onWalletSync}
           walletLoadState={walletLoadState}
           simulationMode={simulationMode}

@@ -338,7 +338,7 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                 key={`ended-${sourceIndex}`}
                 className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
               >
-                <div className="grid grid-cols-[1fr_5rem] items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+                <div data-testid="ended-source-header" className="flex items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0">
                     {iconSrc && (
                       <span
@@ -380,7 +380,7 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                     key={`ended-${sourceIndex}-c-${ci}`}
                     className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
                   >
-                    <div className="ds-tooltip-body grid grid-cols-[1fr_5rem] items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
+                    <div data-testid="ended-campaign-row" className="ds-tooltip-body flex items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
                       <span className="break-words min-w-0 flex items-center gap-1.5">
                         {dateRangeText}
                         {endedCampaignUrl ? (
@@ -836,7 +836,7 @@ const IncentiveTooltip = ({
         )}
         {renderCampaignTypeDescription(campaign)}
          {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
-           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-foreground/70">
+           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-amber-600 dark:text-amber-400">
               Incentive on first {campaign.positionCapNative != null && campaign.tokenSymbol != null
                 ? (formatPositionCapNativeDisplay(campaign.positionCapNative, campaign.tokenSymbol, reserve.decimals) ?? formatUsd(campaign.positionCapUsd))
                 : formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only

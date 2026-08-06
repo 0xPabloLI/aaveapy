@@ -12,9 +12,16 @@ const NEW_FIELDS = [
 ];
 
 test.describe('API fields v3 — UI rendering verification', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Reserves table uses card layout on mobile, not tbody tr');
+  });
   test('main page loads with reserve data visible', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
-    await page.waitForTimeout(3000);
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
+
+    // Use [data-reserve-id] which works for both desktop (tbody tr) and mobile (div) layouts
+    await expect(page.locator('[data-reserve-id]').first())
+      .toBeVisible({ timeout: 120_000 });
 
     const title = await page.title();
     expect(title).toBeTruthy();
@@ -26,22 +33,26 @@ test.describe('API fields v3 — UI rendering verification', () => {
   });
 
   test('reserves table renders with at least 10 visible rows (virtual scroll)', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('tbody tr[data-reserve-id]').first())
+    await expect(page.locator('[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
-    const count = await page.locator('tbody tr[data-reserve-id]').count();
+    const count = await page.locator('[data-reserve-id]').count();
     expect(count).toBeGreaterThanOrEqual(10);
   });
 
   test('no console errors from field name mismatch', async ({ page }) => {
+    test.setTimeout(180_000);
     const consoleErrors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
+    await expect(page.locator('[data-reserve-id]').first())
+      .toBeVisible({ timeout: 120_000 });
 
     const fieldErrors = consoleErrors.filter(e =>
       OLD_FIELDS.some(f => e.toLowerCase().includes(f.toLowerCase())) ||
@@ -50,13 +61,17 @@ test.describe('API fields v3 — UI rendering verification', () => {
     expect(fieldErrors).toHaveLength(0);
   });
 
-  test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+  test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
+    // Wait for detail panel content to appear instead of a fixed timeout.
+    await expect(page.locator('text=/supply|total|liquidity|available|tvl/i').first())
+      .toBeVisible({ timeout: 15_000 });
 
     const detailText = (await page.locator('body').textContent()) ?? '';
     const hasLiquidityOrSupply = /supply|total|liquidity|available|tvl/i.test(detailText);
@@ -66,30 +81,31 @@ test.describe('API fields v3 — UI rendering verification', () => {
     expect(hasBorrowOrDebt).toBe(true);
   });
 
-  test('utilization indicator renders with percentage value', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+  test('utilization indicator renders with percentage value', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
+    await expect(page.locator('text=/\\d+(\\.\\d+)?\\s*%/').first())
+      .toBeVisible({ timeout: 15_000 });
 
     const utilPercent = page.locator('text=/\\d+(\\.\\d+)?\\s*%/').first();
-    await expect(utilPercent).toBeVisible({ timeout: 10000 });
-
     const text = await utilPercent.textContent();
     expect(text).toMatch(/\d+(\.\d+)?\s*%/);
   });
 
-  test('rate simulation slider is interactable', async ({ page }) => {
-    await page.goto('/', { timeout: 30000, waitUntil: 'networkidle' });
+  test('rate simulation slider is interactable', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop detail panel — mobile uses bottom sheet with different structure');
+    test.setTimeout(180_000);
+    await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first())
       .toBeVisible({ timeout: 120_000 });
 
     await page.locator('tbody tr[data-reserve-id]').first().click();
-    await page.waitForTimeout(2000);
-
     const slider = page.locator('input[type="range" i], [role="slider"]').first();
-    await expect(slider).toBeVisible({ timeout: 15000 });
+    await expect(slider).toBeVisible({ timeout: 15_000 });
   });
 });

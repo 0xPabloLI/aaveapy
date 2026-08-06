@@ -54,7 +54,7 @@
 3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 4. **No code changes without explicit go-ahead**: 在用户确认开始或给出明确实施指令前，不修改任何代码文件。讨论、调研、Grill 阶段只做分析和方案设计。
 5. **Mandatory implementation workflow**: 每次改代码之前必须走完以下工作流，不得跳步：
-   1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案。**必须主动做场景风险分析**：穷举边界场景，验证跨消费者一致性。详见 `docs/conventions/scenario-matrix.md`。
+   1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案。**必须主动做场景风险分析**：按 `docs/conventions/scenario-enumeration-checklist.md` 逐类**穷举**边界场景（含跨 step 接口契约验证），验证跨消费者一致性。格式见 `docs/conventions/scenario-matrix.md`。
    2. **To Spec** — 用 `to-spec` skill 合成 spec。**必须包含 Scenario & Risk Verification 章节**（场景矩阵），矩阵行直接成为 TDD 测试用例。**无矩阵 = spec 不完整**。
    3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
    4. **TDD Implement** — 逐 ticket 先思考最佳实践的改法是什么，再用 `implement` skill 实施；`implement` 必须强制调用 `tdd`（red → green → refactor），关键逻辑必须先写测试。**测试用例必须覆盖场景矩阵的所有行**。
@@ -62,6 +62,16 @@
    6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
    7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
    8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
+   9. **Session 结束验证** — 在 session 结束前，逐条确认 Step 1-8 全部完成。**未完成的步骤必须当场补做或显式标注为"跳过 + 原因"**。确认清单：
+      - [ ] Step 1 Grill 完成（有 spec 或对话记录佐证）
+      - [ ] Step 2 Spec 完成（有 spec 文件，含 Scenario Matrix）
+      - [ ] Step 3 Tickets 完成（有 ticket 拆分）
+      - [ ] Step 4 TDD 完成（测试 red → green → refactor）
+      - [ ] Step 5 Code Review 完成（有审查报告）
+      - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
+      - [ ] Step 7 Commit 完成（有 commit hash）
+      - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
+      - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
 ## Commit Cadence (并行 agent 安全)
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
@@ -175,6 +185,28 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
   - **Supply-Borrow 不可分**: 添加/移除 token 必须同时操作 supply+borrow 两个 side（见 `docs/conventions/design-principles.md` §7）。`PortfolioReserveEntry` 从类型层面保证不可分；`addReserve` 总是创建 supply+borrow 两侧。
 - Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
+
+## main Branch Protection (4 层防御)
+
+main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶意代码无法自动合并到 main：
+
+### Layer 1: Bot PR 不 auto-merge 到 main
+- `token-icon-sync.yml`、`hardcode-sync.yml`、`ci.yml` (openapi-sync) 的 labels 字段使用条件表达式：`${{ target != 'main' && 'automerge' || '' }}`
+- 只有 `lovable`/`dev` 分支的 bot PR 会获得 `automerge` label；main 的 bot PR 必须人工 review
+### Layer 2: Branch Protection + CODEOWNERS
+- main 分支规则：`required_approving_review_count=0`（solo developer，可自行 merge）、`require_code_owner_reviews=true`、`enforce_admins=true`
+- 注意：solo developer 无法 self-approve PR，所以 `required_approving_review_count=0`。保护来自 Layer 1（bot PR 不 auto-merge 到 main）+ `enforce_admins`（禁止直接 push）
+- `.github/CODEOWNERS` 覆盖关键路径：链接（`poolExplorerLinks.ts`、`aaveLinks.ts`）、地址（`hardcode.ts`）、API schema（`openapi.json`、`generated/`）、钱包（`useWallet*.ts`、`wagmi/`）、CI 定义（`.github/workflows/`）
+- 即使 bot PR 的 CI 全部通过，也必须经过 code owner approval 才能合并
+### Layer 3: Content Security CI Check
+- `content-security-check` CI job 运行 `scripts/check-external-urls.ts`
+- 扫描所有非测试源文件中的 `https://` URL，与白名单比对
+- 任何未知域名（如钓鱼 explorer 域名）会导致 CI 失败
+- 白名单维护：在 `scripts/check-external-urls.ts` 的 `WHITELIST` Set 中增减
+### Layer 4: Commit Signature Verification (手动启用)
+- GitHub Settings → Branches → main → "Require signed commits"
+- ⚠️ 此设置无法通过 REST API 或 GraphQL 编程修改，必须在 repo UI 手动启用
+- 启用后，即使攻击者拿到 write 权限，没有 GPG 签名也无法直接 push 到 main
 
 ## Key References
 - `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流

@@ -1,6 +1,7 @@
 import { formatUsd } from '@/lib/formatters';
 import { applyPositionCap, computeBudgetRemainingDays } from '@/lib/incentiveMath';
 import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
+import type { ReserveWithSpread } from '@/types/aave';
 
 /**
  * Parse a raw bigint string (e.g. "1000000000") into a native token amount number.
@@ -299,4 +300,41 @@ export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput
   const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
   const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
   return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} net eligible (${sideLabel}${offsets})`;
+}
+
+/**
+ * Check if a reserve has any position cap across all incentive sources for a given side.
+ * Used by Reserve table to show a position-cap indicator dot next to incentive buttons.
+ *
+ * Checks: merklSupplys/borrows, meritSupplys/borrows, brevisSupplys/borrows.
+ * For Brevis, positionCapUsd can be at the top level (legacy) or in breakdowns.
+ * For Merkl/Merit, positionCapUsd is in breakdowns.
+ * positionCapNative is also checked (can be resolved to USD).
+ */
+export function hasPositionCap(reserve: ReserveWithSpread, side: 'supply' | 'borrow'): boolean {
+  const tokenPrice = reserve.tokenPrice;
+  const decimals = reserve.decimals;
+
+  // Merkl
+  const merklGroups = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+  if (merklGroups?.some(g => g.breakdowns?.some(b =>
+    resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
+  ))) return true;
+
+  // Merit
+  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  if (meritGroups?.some(g => g.breakdowns?.some(b =>
+    resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
+  ))) return true;
+
+  // Brevis — positionCapUsd can be at top level or in breakdowns
+  const brevisGroups = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
+  if (brevisGroups?.some(g => {
+    if (g.positionCapUsd != null && g.positionCapUsd > 0) return true;
+    return g.breakdowns?.some(b =>
+      resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
+    );
+  })) return true;
+
+  return false;
 }

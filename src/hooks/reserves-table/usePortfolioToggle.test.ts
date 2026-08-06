@@ -210,6 +210,59 @@ describe('usePortfolioToggle', () => {
       expect(actions.addReserve).not.toHaveBeenCalled();
     });
 
+    it('passes hubName and hubId when adding a V4 reserve', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({
+        reserveId: 'r-v4',
+        marketName: 'AaveV4Ethereum',
+        hubName: 'Core',
+        hubId: 'hub-core',
+      });
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          entries: [],
+          portfolioActions: actions,
+        }),
+      );
+
+      act(() => result.current.handlePortfolioToggle('r-v4', reserve));
+
+      expect(actions.addReserve).toHaveBeenCalledWith({
+        reserveId: 'r-v4',
+        marketName: 'AaveV4Ethereum',
+        chainName: 'Ethereum',
+        tokenSymbol: 'WETH',
+        restrictedStatus: null,
+        hubName: 'Core',
+        hubId: 'hub-core',
+      });
+    });
+
+    it('omits hubName and hubId when adding a V3 reserve', () => {
+      const actions = makeActions();
+      const reserve = makeReserve({ reserveId: 'r-1' });
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          entries: [],
+          portfolioActions: actions,
+        }),
+      );
+
+      act(() => result.current.handlePortfolioToggle('r-1', reserve));
+
+      expect(actions.addReserve).toHaveBeenCalledWith({
+        reserveId: 'r-1',
+        marketName: 'Ethereum-Core',
+        chainName: 'Ethereum',
+        tokenSymbol: 'WETH',
+        restrictedStatus: null,
+      });
+    });
+
     it('is a no-op when actions are not provided', () => {
       const { result } = renderHook(() =>
         usePortfolioToggle({
@@ -557,6 +610,8 @@ describe('usePortfolioToggle', () => {
         merklBorrows: [],
         brevisSupplys: [],
         brevisBorrows: [],
+        ltv: 80,
+        liquidationThreshold: 80,
         ...overrides,
       }) as ReserveWithSpread & RateCalcInput;
 
@@ -585,6 +640,13 @@ describe('usePortfolioToggle', () => {
       expect(result.current.portfolioResults).toHaveLength(2);
       expect(result.current.portfolioSummary.totalSupplyUsd).toBeGreaterThan(0);
       expect(result.current.portfolioSummary.totalBorrowUsd).toBeGreaterThan(0);
+      // Regression: portfolioHealthFactors must be defined (not undefined) when
+      // simulationContext is provided.  Previously a key mismatch in useMemo
+      // destructuring caused it to always be undefined.
+      expect(result.current.portfolioHealthFactors).toBeDefined();
+      expect(result.current.portfolioHealthFactors).toHaveLength(1);
+      expect(result.current.portfolioHealthFactors![0].healthFactor).not.toBeNull();
+      expect(result.current.portfolioHealthFactors![0].healthFactor!).toBeGreaterThan(0);
     });
 
     it('falls back to simplified calculation without simulationContext', () => {

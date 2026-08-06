@@ -169,6 +169,12 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   deficit?: string;
   baseBorrowRate?: number;
 
+  // Collateral parameters (percent: 80 = 80%).
+  // V3: ltv = baseLTVasCollateral, liquidationThreshold = liquidationThreshold (independent values).
+  // V4: both = collateralFactor (same value).
+  ltv?: number;
+  liquidationThreshold?: number;
+
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
   borrowIncentives?: number[];

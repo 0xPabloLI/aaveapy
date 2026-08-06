@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ReserveWithSpread } from '@/types/aave';
 import { getReserveKey } from '@/lib/reserveKey';
@@ -85,9 +85,38 @@ export function useReservesPagination(
     }
   }, [sortedData.length, minVisibleCount]);
 
-  // Auto-expand visible count when a row is expanded (persist even after collapse).
+  // Reset minVisibleCount when the dataset changes significantly (e.g., filter
+  // applied/removed). This prevents stale pagination from keeping the scroll
+  // spacer alive when the expanded row is no longer near the bottom of the
+  // visible window (AAV-1107).
+  const prevDataLengthRef = useRef(sortedData.length);
   useEffect(() => {
-    if (!expandedReserveId) return;
+    const prev = prevDataLengthRef.current;
+    const curr = sortedData.length;
+    if (prev === curr) return;
+    prevDataLengthRef.current = curr;
+    if (minVisibleCount === null) return;
+    // Only reset when the dataset changed significantly (> 50% of the larger
+    // value). Small changes (data refresh, single reserve added/removed) should
+    // not reset the user's pagination state.
+    const threshold = Math.max(prev, curr, DEFAULT_VISIBLE_COUNT) * 0.5;
+    if (Math.abs(curr - prev) > threshold) {
+      setMinVisibleCount(null);
+    }
+  }, [sortedData.length]); // eslint-disable-line react-hooks/exhaustive-deps -- minVisibleCount read via closure; only re-run on length change
+
+  // Auto-expand visible count when a row is expanded. Only fires on
+  // user-initiated expansion (expandedReserveId changes), NOT on data changes
+  // under an existing expansion. This prevents the scroll spacer from being
+  // rendered after a filter is removed and the expanded row is deep in the
+  // full list (AAV-1107).
+  const prevExpandedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevExpandedRef.current;
+    prevExpandedRef.current = expandedReserveId;
+    // Only auto-grow when expandedReserveId itself changed (user click),
+    // not when sortedData changed under an existing expansion.
+    if (expandedReserveId === prev || expandedReserveId === null) return;
     const expandedIndex = sortedData.findIndex(
       (r) => getReserveSimulationId(r) === expandedReserveId,
     );

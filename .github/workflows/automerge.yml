@@ -59,11 +59,14 @@ jobs:
               return;
             }
 
+            // lovable → dev uses MERGE to preserve history connectivity (AGENTS.md).
+            // All other PRs (bot sync, dev → main) use SQUASH.
+            const mergeMethod = (pr.head.ref === 'lovable' && pr.base.ref === 'dev') ? 'MERGE' : 'SQUASH';
             const enableAutoMergeMutation = `
-              mutation($pullRequestId: ID!) {
+              mutation($pullRequestId: ID!, $mergeMethod: MergeMethod!) {
                 enablePullRequestAutoMerge(input: {
                   pullRequestId: $pullRequestId,
-                  mergeMethod: SQUASH
+                  mergeMethod: $mergeMethod
                 }) {
                   pullRequest {
                     number
@@ -72,9 +75,19 @@ jobs:
               }
             `;
 
+            const statusQuery = `
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    mergeStateStatus
+                  }
+                }
+              }
+            `;
+
             try {
-              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-              core.info(`Enabled auto-merge for PR #${pr.number}`);
+              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
+              core.info(`Enabled auto-merge for PR #${pr.number} (method: ${mergeMethod})`);
               return;
             } catch (error) {
               const message = String(error.message || error);
@@ -85,39 +98,52 @@ jobs:
                 return;
               }
 
-              core.info(`PR #${pr.number} unstable status; checking mergeStateStatus...`);
-              const mergeStatus = prInfo.mergeStateStatus;
+              // CI is still running (UNSTABLE or UNKNOWN). Retry for up to 5 minutes
+              // (10 × 30s) — CI typically takes 2-3 minutes to complete.
+              core.info(`PR #${pr.number} unstable status; will retry with 30s backoff...`);
 
-              if (mergeStatus === 'CLEAN') {
+              for (let attempt = 1; attempt <= 10; attempt++) {
+                await new Promise((r) => setTimeout(r, 30000));
+
+                let currentStatus;
                 try {
-                  await github.rest.pulls.merge({
+                  const { repository: { pullRequest: current } } = await github.graphql(statusQuery, {
                     owner: context.repo.owner,
                     repo: context.repo.repo,
-                    pull_number: pr.number,
-                    merge_method: 'squash',
+                    number: pr.number
                   });
-                  core.info(`PR #${pr.number} was CLEAN; merged directly as fallback.`);
-                  return;
-                } catch (mergeError) {
-                  core.warning(`Direct merge failed for PR #${pr.number}: ${mergeError.message}`);
-                  return;
+                  currentStatus = current.mergeStateStatus;
+                } catch (queryError) {
+                  core.warning(`Retry ${attempt}/10: failed to query mergeStateStatus: ${queryError.message}`);
+                  continue;
                 }
-              }
 
-              if (mergeStatus === 'UNKNOWN') {
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                  await new Promise((r) => setTimeout(r, 10000));
+                core.info(`Retry ${attempt}/10: mergeStateStatus=${currentStatus}`);
+
+                if (currentStatus === 'CLEAN') {
                   try {
-                    await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-                    core.info(`Enabled auto-merge for PR #${pr.number} on retry ${attempt}/3`);
+                    await github.rest.pulls.merge({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: pr.number,
+                      merge_method: mergeMethod.toLowerCase(),
+                    });
+                    core.info(`PR #${pr.number} became CLEAN on retry ${attempt}/10; merged directly (${mergeMethod}).`);
                     return;
-                  } catch (retryError) {
-                    core.warning(`Retry ${attempt}/3 failed: ${retryError.message}`);
+                  } catch (mergeError) {
+                    core.warning(`Direct merge failed on retry ${attempt}/10: ${mergeError.message}`);
                   }
                 }
-                core.warning(`Could not enable auto-merge for PR #${pr.number} after 3 retries. mergeStateStatus=${mergeStatus}`);
-                return;
+
+                // Try enabling auto-merge regardless of status
+                try {
+                  await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
+                  core.info(`Enabled auto-merge for PR #${pr.number} on retry ${attempt}/10`);
+                  return;
+                } catch (retryError) {
+                  core.warning(`Retry ${attempt}/10 enableAutoMerge failed: ${retryError.message}`);
+                }
               }
 
-              core.warning(`Could not enable auto-merge for PR #${pr.number}. mergeStateStatus=${mergeStatus}`);
+              core.warning(`Could not enable auto-merge for PR #${pr.number} after 10 retries (5 min).`);
             }

@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves';
 
 /**
  * Portfolio ResultsTable inline delta regression.
@@ -9,32 +10,25 @@ import { expect, test } from '@playwright/test';
  * Total Supply / Net Daily Earn / Net Effective APY.
  *
  * This test does NOT depend on a wallet address — it uses manual entry.
+ * Test reserve is dynamically discovered from staging API.
  */
 
-async function setupPortfolioWithReserve(page: import('@playwright/test').Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await page.getByTestId('portfolio-mode-toggle').click();
-  await page.getByRole('button', { name: 'Search tokens' }).click();
-  await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
-  const addBtn = page
-    .getByRole('button', { name: /^Add .+ \(supply and borrow\)$/ })
-    .first();
-  await expect(addBtn).toBeVisible();
-  await addBtn.click();
-  const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
-  await expect(supplyInput).toBeVisible();
-  return supplyInput;
+const testReserve = await findIncentiveReserve();
+
+async function setupPortfolio(page: Page) {
+  if (!testReserve) throw new Error('No suitable reserve found');
+  return setupPortfolioWithReserve(page, testReserve);
 }
 
 test.describe('Portfolio ResultsTable — inline delta', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
     });
 
     test('shows inline delta badges after manual position input', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const resultsTable = page.locator('table').filter({ hasText: 'Reserve' }).filter({ hasText: 'Native' });
@@ -46,7 +40,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
 
     // AAV-1150: SummaryCard DOM selector needs investigation
     test.skip('SummaryCard shows delta when simulation is active', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const summaryCard = page.locator('div.grid').filter({ hasText: 'Total Supply' }).filter({ hasText: 'Net Daily Earn' });
@@ -57,7 +51,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
     });
 
     test('delta badges disappear when amount is cleared', async ({ page }) => {
-      const supplyInput = await setupPortfolioWithReserve(page);
+      const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
       const resultsTable = page.locator('table').filter({ hasText: 'Reserve' }).filter({ hasText: 'Native' });

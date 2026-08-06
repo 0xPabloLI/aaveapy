@@ -88,6 +88,27 @@ describe('ReserveWithSpread canonical field-name canary', () => {
     expect(typeof mock.supplyApy).toBe('number');
     expect(typeof mock.borrowApy).toBe('number');
   });
+
+  it('reserve.ltv is an optional number (collateral LTV percent, AAV-756 P2)', () => {
+    const withLtv: ReserveWithSpread = { ...mock, ltv: 80 };
+    expect(typeof withLtv.ltv).toBe('number');
+    expect(withLtv.ltv).toBe(80);
+    expect(mock.ltv).toBeUndefined();
+  });
+
+  it('reserve.liquidationThreshold is an optional number (liquidation threshold percent, AAV-756 P2)', () => {
+    const withLt: ReserveWithSpread = { ...mock, liquidationThreshold: 82.5 };
+    expect(typeof withLt.liquidationThreshold).toBe('number');
+    expect(withLt.liquidationThreshold).toBe(82.5);
+    expect(mock.liquidationThreshold).toBeUndefined();
+  });
+
+  it('V4 reserve has ltv === liquidationThreshold (collateralFactor), V3 may differ', () => {
+    const v4Reserve: ReserveWithSpread = { ...mock, ltv: 75, liquidationThreshold: 75 };
+    expect(v4Reserve.ltv).toBe(v4Reserve.liquidationThreshold);
+    const v3Reserve: ReserveWithSpread = { ...mock, ltv: 80, liquidationThreshold: 82.5 };
+    expect(v3Reserve.ltv).not.toBe(v3Reserve.liquidationThreshold);
+  });
 });
 
 describe('CampaignGroup netPositionConstraint field-name canary', () => {

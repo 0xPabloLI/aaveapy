@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { findAnyActiveReserve, setupPortfolioWithReserve } from './test-reserves';
 
 /**
  * Mobile-only spacing assertion for the portfolio card layout.
@@ -7,46 +8,40 @@ import { expect, test } from '@playwright/test';
  * between the token header, pill tabs, and CompactInput.
  * Original grid-cols-subgrid layout has been replaced by a
  * vertical card layout — see MobilePortfolioCard.tsx.
+ *
+ * Test reserve is dynamically discovered from staging API.
  */
+const testReserve = await findAnyActiveReserve();
+
+async function setupPortfolio(page: Page) {
+  if (!testReserve) throw new Error('No suitable reserve found');
+  return setupPortfolioWithReserve(page, testReserve);
+}
+
 test.describe('Portfolio input — mobile spacing', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+      test.skip(!testReserve, 'No active reserve with ltv > 0 found on staging');
     });
 
     test('token card renders with compact input area', async ({ page }, testInfo) => {
-    await page.goto('/');
+      const supplyInput = await setupPortfolio(page);
 
-    await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
+      const inputBox = await supplyInput.boundingBox();
+      expect(inputBox, 'supply input must render').not.toBeNull();
+      if (!inputBox) return;
 
-    await page.getByTestId('portfolio-mode-toggle').click();
+      expect(inputBox.width, 'supply input should be wide enough to use').toBeGreaterThan(80);
 
-    await page.getByRole('button', { name: 'Search tokens' }).click();
-    await page.getByRole('textbox', { name: 'Search tokens to add' }).fill('USDC');
+      const tokenLabel = page.getByText(testReserve!.symbol, { exact: true }).first();
+      await expect(tokenLabel).toBeVisible();
+      const tokenBox = await tokenLabel.boundingBox();
+      expect(tokenBox, 'token label must render').not.toBeNull();
 
-    const addBtn = page
-      .getByRole('button', { name: /^Add .+ \(supply and borrow\)$/ })
-      .first();
-    await expect(addBtn).toBeVisible();
-    await addBtn.click();
-
-    const supplyInput = page.getByRole('textbox', { name: /Supply amount for USDC/i }).first();
-    await expect(supplyInput).toBeVisible();
-
-    const inputBox = await supplyInput.boundingBox();
-    expect(inputBox, 'supply input must render').not.toBeNull();
-    if (!inputBox) return;
-
-    expect(inputBox.width, 'supply input should be wide enough to use').toBeGreaterThan(80);
-
-    const tokenLabel = page.getByText('USDC', { exact: true }).first();
-    await expect(tokenLabel).toBeVisible();
-    const tokenBox = await tokenLabel.boundingBox();
-    expect(tokenBox, 'token label must render').not.toBeNull();
-
-    await supplyInput.screenshot({
-      path: testInfo.outputPath('portfolio-card-mobile.png'),
-    });
+      await supplyInput.screenshot({
+        path: testInfo.outputPath('portfolio-card-mobile.png'),
+      });
     });
   });
 });
