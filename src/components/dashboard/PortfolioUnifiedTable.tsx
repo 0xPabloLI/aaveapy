@@ -59,9 +59,9 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
-  CompactInput,
-  MetricValue,
-  WarningMarker,
+CompactInput,
+MetricValue,
+WarningMarker,
 } from './PortfolioTablePrimitives';
 import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 

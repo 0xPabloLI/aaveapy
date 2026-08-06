@@ -12,6 +12,9 @@ const NEW_FIELDS = [
 ];
 
 test.describe('API fields v3 — UI rendering verification', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Reserves table uses card layout on mobile, not tbody tr');
+  });
   test('main page loads with reserve data visible', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
