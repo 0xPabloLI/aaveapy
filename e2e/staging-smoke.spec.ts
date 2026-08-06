@@ -14,6 +14,9 @@ const STAGING_API = 'https://staging-api.aaveapy.com/api';
 test.describe('Staging smoke tests', () => {
   test.describe.configure({ timeout: 60_000 });
 
+  // API tests that only use request fixture — skip on mobile (no UI difference)
+  // UI tests that use table tbody tr — skip on mobile (card layout)
+
   test('API /markets returns valid data', async ({ request }) => {
     const res = await request.get(`${STAGING_API}/markets`);
     // 403 = Cloudflare/WAF blocking CI IP — staging infra issue, not a code bug
@@ -40,7 +43,8 @@ test.describe('Staging smoke tests', () => {
     expect(keys.length).toBeGreaterThan(0);
   });
 
-  test('Frontend homepage loads with reserves table', async ({ page }) => {
+  test('Frontend homepage loads with reserves table', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Mobile uses card layout, not table rows');
     await page.goto(STAGING_URL);
     await page.waitForLoadState('networkidle');
 
@@ -57,7 +61,8 @@ test.describe('Staging smoke tests', () => {
     await expect(tableRows).toBeVisible({ timeout: 30_000 });
   });
 
-  test('Reserve row expand shows simulation panel', async ({ page }) => {
+  test('Reserve row expand shows simulation panel', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Mobile uses card layout, not table rows');
     await page.goto(STAGING_URL);
     await page.waitForLoadState('networkidle');
 
@@ -95,7 +100,8 @@ test.describe('Staging smoke tests', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  test('Chain filter works', async ({ page }) => {
+  test('Chain filter works', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Mobile uses card layout, not table rows');
     await page.goto(STAGING_URL);
     await page.waitForLoadState('networkidle');
 
