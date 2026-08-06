@@ -225,7 +225,36 @@ jobs:
             e2e/*-snapshots/*-linux.png
           retention-days: 7
 
-  generate-snapshots:n    name: generate-snapshotsn    if: github.event_name == workflow_dispatch\n    runs-on: ubuntu-latestn    timeout-minutes: 15n    env:n      CI_REF: ${{ github.event.pull_request.head_sha || github.event.inputs.target_ref || github.sha }}n    steps:n      - name: Checkoutn        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1n        with:n          ref: ${{ env.CI_REF }}n      - name: Setup Noden        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0n        with:n          node-version: "22"n          cache: npmn      - name: Install dependenciesn        run: npm run ci:lockcheckn      - name: Install Playwright browsersn        run: npx playwright install --with-deps chromiumn      - name: Generate Linux screenshot baselinesn        run: npx playwright test e2e/segmented-toggle-visual.spec.ts e2e/portfolio-panel-header-visual.spec.ts --update-snapshotsn      - name: Upload Linux baselinesn        uses: actions/upload-artifact@v4n        with:n          name: linux-screenshot-baselinesn          path: e2e/*-snapshots/*-linux.pngn          retention-days: 30
+  generate-snapshots:
+    name: generate-snapshots
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI_REF: ${{ github.event.pull_request.head_sha || github.event.inputs.target_ref || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Generate Linux screenshot baselines
+        run: npx playwright test e2e/segmented-toggle-visual.spec.ts e2e/portfolio-panel-header-visual.spec.ts --update-snapshots
+      - name: Upload Linux baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-screenshot-baselines
+          path: e2e/*-snapshots/*-linux.png
+          retention-days: 30
+
   live-schema-validation:
     name: live-schema-validation
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lovable') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
