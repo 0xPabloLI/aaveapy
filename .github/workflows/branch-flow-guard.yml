@@ -1,0 +1,35 @@
+name: Branch Flow Guard
+
+# Ensures lovable → dev → main flow. Any PR targeting main from a branch
+# other than dev will fail this check, preventing non-standard production
+# deployments. Add "branch-flow-guard" to main's required status checks.
+#
+# Solo developer note: required_approving_review_count=0 means the user can
+# self-merge any PR that passes CI. This check is the mechanism that enforces
+# the branch flow, since GitHub has no native "require source branch" rule.
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  enforce-dev-to-main:
+    name: branch-flow-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "PR: $HEAD_REF → $BASE_REF"
+          if [ "$HEAD_REF" != "dev" ]; then
+            echo "::error::Direct $HEAD_REF → $BASE_REF PR is not allowed. Standard flow: lovable → dev → main. Create a PR from dev to main instead."
+            exit 1
+          fi
+          echo "✅ Source branch is dev — standard flow confirmed."
