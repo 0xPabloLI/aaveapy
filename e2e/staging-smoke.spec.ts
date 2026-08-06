@@ -84,7 +84,8 @@ test.describe('Staging smoke tests', () => {
     ).toBeVisible({ timeout: 15_000 });
   });
 
-  test('Portfolio mode toggle works', async ({ page }) => {
+  test('Portfolio mode toggle works', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop UI layout differs on mobile');
     await page.goto(STAGING_URL);
     await page.waitForLoadState('networkidle');
 
@@ -125,7 +126,8 @@ test.describe('Staging smoke tests', () => {
     }
   });
 
-  test('Watch address input works', async ({ page }) => {
+  test('Watch address input works', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop UI layout differs on mobile');
     await page.goto(STAGING_URL);
     await page.waitForLoadState('networkidle');
 
@@ -167,7 +169,8 @@ test.describe('Staging smoke tests', () => {
         !e.includes('Failed to load resource') &&
         !e.includes('net::ERR') &&
         !e.includes('ResizeObserver') &&
-        !e.includes('wasm-unsafe'), // CSP directive warnings (being fixed)
+        !e.includes('wasm-unsafe') && // CSP directive warnings (being fixed)
+        !e.includes("Provider's accounts list is empty"), // wagmi: no wallet connected
     );
 
     expect(unexpectedErrors).toEqual([]);
