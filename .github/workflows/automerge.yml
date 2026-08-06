@@ -59,11 +59,14 @@ jobs:
               return;
             }
 
+            // lovable → dev uses MERGE to preserve history connectivity (AGENTS.md).
+            // All other PRs (bot sync, dev → main) use SQUASH.
+            const mergeMethod = (pr.head.ref === 'lovable' && pr.base.ref === 'dev') ? 'MERGE' : 'SQUASH';
             const enableAutoMergeMutation = `
-              mutation($pullRequestId: ID!) {
+              mutation($pullRequestId: ID!, $mergeMethod: MergeMethod!) {
                 enablePullRequestAutoMerge(input: {
                   pullRequestId: $pullRequestId,
-                  mergeMethod: SQUASH
+                  mergeMethod: $mergeMethod
                 }) {
                   pullRequest {
                     number
@@ -83,8 +86,8 @@ jobs:
             `;
 
             try {
-              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
-              core.info(`Enabled auto-merge for PR #${pr.number}`);
+              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
+              core.info(`Enabled auto-merge for PR #${pr.number} (method: ${mergeMethod})`);
               return;
             } catch (error) {
               const message = String(error.message || error);
@@ -123,9 +126,9 @@ jobs:
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       pull_number: pr.number,
-                      merge_method: 'squash',
+                      merge_method: mergeMethod.toLowerCase(),
                     });
-                    core.info(`PR #${pr.number} became CLEAN on retry ${attempt}/10; merged directly.`);
+                    core.info(`PR #${pr.number} became CLEAN on retry ${attempt}/10; merged directly (${mergeMethod}).`);
                     return;
                   } catch (mergeError) {
                     core.warning(`Direct merge failed on retry ${attempt}/10: ${mergeError.message}`);
@@ -134,7 +137,7 @@ jobs:
 
                 // Try enabling auto-merge regardless of status
                 try {
-                  await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
+                  await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
                   core.info(`Enabled auto-merge for PR #${pr.number} on retry ${attempt}/10`);
                   return;
                 } catch (retryError) {
