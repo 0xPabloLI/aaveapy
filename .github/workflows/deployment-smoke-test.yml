@@ -198,32 +198,22 @@ jobs:
           EXPECTED_SHA="${{ github.sha }}"
           DEPLOY_FULL_URL="https://${{ env.DEPLOY_URL }}"
 
-          # Build curl args with Vercel Authentication bypass if secret is configured
-          CURL_ARGS=(
-            -s -o /tmp/deploy-page.html
-            -w "%{http_code}"
-            --max-time 30 --retry 2 --retry-delay 10 --retry-all-errors
-            -L
-          )
-
+          # Vercel Authentication bypass: use secret as header if configured
+          BYPASS_HEADER=""
           if [ -n "${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}" ]; then
-            # Use bypass secret as header (recommended for automation)
-            CURL_ARGS+=(-H "x-vercel-protection-bypass: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}")
+            BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
             echo "🔐 Using Vercel Automation Bypass (secret configured)"
           else
             echo "⚠️ VERCEL_AUTOMATION_BYPASS_SECRET not configured"
             echo "💡 To fix Vercel Authentication blocks, add this secret:"
-            echo "   1. Generate via Vercel API: curl -X PATCH \\"
-            echo "        -H \"Authorization: Bearer \$VERCEL_TOKEN\" \\"
-            echo "        -H \"Content-Type: application/json\" \\"
-            echo "        -d '{\"generate\":{}}' \\"
-            echo "        \"https://api.vercel.com/v1/projects/prj_vs0UPjeN0vNdKSZHYWBR1RJgJLzY/protection-bypass?teamId=team_nL4bmoEAVyVCzIn6her0vz7B\""
-            echo "   2. Add the returned protectionBypass secret as GitHub Actions secret:"
-            echo "      VERCEL_AUTOMATION_BYPASS_SECRET"
+            echo "   Run: ./scripts/generate-vercel-bypass-secret.sh"
+            echo "   Then: gh secret set VERCEL_AUTOMATION_BYPASS_SECRET"
           fi
 
           echo "🔗 Checking Vercel deployment URL ($DEPLOY_FULL_URL)..."
-          HTTP_CODE=$("${CURL_ARGS[@]}" "$DEPLOY_FULL_URL")
+          HTTP_CODE=$(curl -s -o /tmp/deploy-page.html -w "%{http_code}" \
+            --max-time 30 --retry 2 --retry-delay 10 --retry-all-errors \
+            -L $BYPASS_HEADER "$DEPLOY_FULL_URL")
 
           echo "HTTP status: $HTTP_CODE"
 

@@ -6,19 +6,19 @@ import { expect, test } from '@playwright/test';
  *
  * Frontend: https://staging.aaveapy.com
  * API:      https://staging-api.aaveapy.com/api
+ *
+ * NOTE: Entire suite is skipped in CI because staging.aaveapy.com is behind
+ * Vercel Authentication (ssoProtection). CI Playwright can't bypass it.
+ * API tests also get 403 from Cloudflare/WAF. Run locally against staging.
  */
 
 const STAGING_URL = 'https://staging.aaveapy.com';
 const STAGING_API = 'https://staging-api.aaveapy.com/api';
 
-test.describe('Staging smoke tests', () => {
-  // Skip entire suite in CI — staging environment unstable / returns "Login – Vercel"
-  test.describe.configure({ mode: process.env.CI ? 'skip' as const : 'default', timeout: 60_000 });
+// Skip entire suite in CI — staging is behind Vercel Authentication
+const stagingDescribe = process.env.CI ? test.describe.skip : test.describe;
 
-  // Staging site is behind Vercel Authentication — CI Playwright can't bypass it.
-  // API tests also get 403 from Cloudflare/WAF. Skip entirely in CI.
-  // See: docs handoff commit 2b385f41 (Vercel Auth CI fix — shareable URL bypass)
-
+stagingDescribe('Staging smoke tests', () => {
   // API tests that only use request fixture — skip on mobile (no UI difference)
   // UI tests that use table tbody tr — skip on mobile (card layout)
 
