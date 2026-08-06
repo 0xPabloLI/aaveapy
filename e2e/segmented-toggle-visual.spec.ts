@@ -19,12 +19,11 @@ import { expect, test, type Locator } from '@playwright/test';
  */
 
 /**
- * Conditionally run `toHaveScreenshot()` only outside CI.
- * Baselines are macOS-specific; CI (Linux) will always fail due to
- * font-rendering and anti-aliasing differences.
+ * Conditionally run `toHaveScreenshot()` — on first CI run (no Linux
+ * baseline), Playwright creates one and the test passes. Subsequent runs
+ * compare against it. To persist baselines, use the generate-snapshots CI job.
  */
 async function expectScreenshot(locator: Locator, _label: string) {
-  if (process.env.CI) return; // Skip screenshot comparison in CI
   await expect(locator).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
 }
 
@@ -211,7 +210,15 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await page.waitForTimeout(500);
+      // Wait for indicator to slide to new position.
+      await expect.poll(
+        async () => {
+          const box = await indicator.boundingBox();
+          if (!box || !indicatorBoxBefore) return 0;
+          return Math.abs(box.x - indicatorBoxBefore.x);
+        },
+        { timeout: 3_000, message: 'indicator to slide after click' },
+      ).toBeGreaterThan(1);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();
@@ -240,7 +247,15 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await page.waitForTimeout(500);
+      // Wait for indicator to slide vertically to new position.
+      await expect.poll(
+        async () => {
+          const box = await indicator.boundingBox();
+          if (!box || !indicatorBoxBefore) return 0;
+          return Math.abs(box.y - indicatorBoxBefore.y);
+        },
+        { timeout: 3_000, message: 'indicator to slide vertically after click' },
+      ).toBeGreaterThan(1);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();

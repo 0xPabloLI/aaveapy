@@ -35,7 +35,6 @@ function significantDigits(raw: string): number {
 test.describe('Portfolio — Wallet Sync precision', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
-    test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
@@ -67,8 +66,14 @@ test.describe('Portfolio — Wallet Sync precision', () => {
     // Click Wallet Sync again (refresh) — find by accessible label.
     await page.getByRole('button', { name: /Wallet sync|Sync wallet|Refresh wallet/i }).first().click();
 
-    // Give the resync a tick to land.
-    await page.waitForTimeout(1500);
+    // Wait for the resync to land by polling for amount inputs to be populated.
+    await expect.poll(
+      async () => {
+        const vals = (await snapshot()).filter((v) => v.trim() !== '');
+        return vals.length;
+      },
+      { timeout: 15_000, message: 'wallet sync re-sync to populate amount inputs' },
+    ).toBeGreaterThan(0);
 
     const after = (await snapshot()).filter((v) => v.trim() !== '');
     expect(after.length).toBeGreaterThan(0);

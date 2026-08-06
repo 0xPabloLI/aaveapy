@@ -48,7 +48,6 @@ function extractOperationName(body: unknown): string | null {
 }
 
 test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', () => {
-  test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
 
   test('re-submitting the same watch address bumps UserSupplies/Borrows requests', async ({
     page,

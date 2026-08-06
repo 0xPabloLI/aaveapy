@@ -210,7 +210,11 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
     const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
     await supplyInput.fill('100');
-    await page.waitForTimeout(900);
+    // Wait for scenario input to take effect (table re-sort).
+    await expect.poll(
+      async () => page.locator('tbody tr[data-reserve-id]').count(),
+      { timeout: 10_000, message: 'table to re-sort after scenario input' },
+    ).toBeGreaterThan(0);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
@@ -222,7 +226,8 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
     await expect(targetRow).toHaveClass(/bg-muted\/30/);
-    await page.waitForTimeout(500);
+    // Wait for the expanded simulation row to appear.
+    await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 
     const borrowInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]');
     await borrowInput.fill('100');
@@ -235,7 +240,6 @@ test.describe('Scenario input pin scroll (desktop)', () => {
   });
 
   test('reorder pins and non-reorder scenario change does not force pin', async ({ page }) => {
-    test.skip(!!process.env.CI, 'Complex 8-step scenario timing — run locally');
     test.setTimeout(180_000);
 
     await page.goto('/');
@@ -243,7 +247,11 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await installScrollByProbe(page);
 
     await setScenarioInputs(page, { supply: '100', borrow: '0' });
-    await page.waitForTimeout(900);
+    // Wait for scenario input to take effect.
+    await expect.poll(
+      async () => page.locator('tbody tr[data-reserve-id]').count(),
+      { timeout: 10_000, message: 'table to re-sort after scenario input' },
+    ).toBeGreaterThan(0);
     await maybeExpandDesktopRowsToFullList(page);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
@@ -256,7 +264,8 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
     await expect(targetRow).toHaveClass(/bg-muted\/30/);
-    await page.waitForTimeout(500);
+    // Wait for the expanded simulation row to appear.
+    await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 
     const steps = [
       { supply: '250', borrow: '0' },
@@ -276,7 +285,14 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       await moveExpandedRowAwayFromPinBand(page, reserveId);
       await resetScrollByProbe(page);
       await setScenarioInputs(page, step);
-      await page.waitForTimeout(1200);
+      // Wait for the table to settle after scenario change.
+      await expect.poll(
+        async () => {
+          const order = await getVisibleReserveOrder(page);
+          return order.length;
+        },
+        { timeout: 10_000, message: `table to settle after scenario step ${i + 1}` },
+      ).toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
       const scrollByCalls = await getScrollByProbeCount(page);
 
@@ -303,7 +319,14 @@ test.describe('Scenario input pin scroll (desktop)', () => {
         reserveId,
         `expanded row should pin with full simulation visible on reorder edit #${i + 1}`,
       );
-      await page.waitForTimeout(1200);
+      // Wait for pin scroll to settle.
+      await expect.poll(
+        async () => {
+          const b = await page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).boundingBox();
+          return b ? b.y : Number.POSITIVE_INFINITY;
+        },
+        { timeout: 5_000, message: `pin scroll to settle after reorder edit #${i + 1}` },
+      ).toBeLessThanOrEqual(await getPinnedTopY(page) + 24);
     }
 
     expect(reorderAssertCount, 'expected multiple scenario edits to reorder visible reserves').toBeGreaterThanOrEqual(2);
@@ -313,7 +336,11 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await moveExpandedRowAwayFromPinBand(page, reserveId);
     await resetScrollByProbe(page);
     await setScenarioInputs(page, stableStep);
-    await page.waitForTimeout(650);
+    // Wait briefly for any potential scroll to fire.
+    await expect.poll(
+      () => getScrollByProbeCount(page),
+      { timeout: 3_000, message: 'stable scenario input — no scroll expected' },
+    ).toBe(0);
     const stableScrollByCalls = await getScrollByProbeCount(page);
     expect(stableScrollByCalls, 'same scenario inputs should not force pin scroll').toBe(0);
     const stableOffset = await getMainRowOffsetFromPinBand(page, reserveId);
@@ -321,7 +348,6 @@ test.describe('Scenario input pin scroll (desktop)', () => {
   });
 
   test('clearing scenario input keeps expanded reserve pinned', async ({ page }) => {
-    test.skip(!!process.env.CI, 'Complex multi-step scenario timing — run locally');
     test.setTimeout(120_000);
 
     await page.goto('/');
@@ -330,7 +356,11 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
     // Start from non-empty scenario so clearing path (has input -> empty) is exercised.
     await setScenarioInputs(page, { supply: '1200', borrow: '' });
-    await page.waitForTimeout(900);
+    // Wait for scenario input to take effect.
+    await expect.poll(
+      async () => page.locator('tbody tr[data-reserve-id]').count(),
+      { timeout: 10_000, message: 'table to re-sort after scenario input' },
+    ).toBeGreaterThan(0);
     await maybeExpandDesktopRowsToFullList(page);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
@@ -343,7 +373,8 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
     await expect(targetRow).toHaveClass(/bg-muted\/30/);
-    await page.waitForTimeout(500);
+    // Wait for the expanded simulation row to appear.
+    await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 
     // Path A: remove supply value directly (equivalent to deleting supply input).
     await moveExpandedRowAwayFromPinBand(page, reserveId);
@@ -366,7 +397,11 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
     // Restore a non-empty scenario, then verify Clear button path.
     await setScenarioInputs(page, { supply: '900', borrow: '' });
-    await page.waitForTimeout(900);
+    // Wait for scenario input to take effect.
+    await expect.poll(
+      async () => page.locator('tbody tr[data-reserve-id]').count(),
+      { timeout: 10_000, message: 'table to re-sort after restoring scenario' },
+    ).toBeGreaterThan(0);
     await moveExpandedRowAwayFromPinBand(page, reserveId);
     await resetScrollByProbe(page);
 
