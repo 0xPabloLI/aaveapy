@@ -28,11 +28,15 @@ Production traffic in deployed sites is expected to set `VITE_API_BASE_URL` at b
 
 ## GitHub Actions
 
-| Variable (Repository **Variables**) | Injected as job env | Used by |
+| Variable (Repository **Secret**) | Injected as job env | Used by |
 |-------------------------------------|---------------------|---------|
-| `LIVE_TEST_API_BASE_CI` | Often `env.LIVE_TEST_API_BASE_CI` or mapped to `LIVE_TEST_API_BASE` in `ci.yml` | Live schema job, `hardcode-drift-check`, `hardcode-sync`, coingecko scripts |
+| `LIVE_TEST_API_BASE_CI` | `env.LIVE_TEST_API_BASE_CI` or mapped to `LIVE_TEST_API_BASE` / `VITE_API_BASE_URL` in `ci.yml` | Live schema job, `hardcode-drift-check`, `hardcode-sync`, coingecko scripts, **E2E (e2e-desktop, e2e-mobile)** |
 
 If `LIVE_TEST_API_BASE_CI` is **unset**, workflows fall back to **staging** (same expression as `ci.yml`). Prefer setting it to a **Railway (or other) direct URL** when the public production or staging host blocks automated clients (403 / edge).
+
+### E2E (Playwright)
+
+CI E2E jobs (`e2e-desktop`, `e2e-mobile`) inject `LIVE_TEST_API_BASE_CI` as `VITE_API_BASE_URL` into the job environment. The `build:staging` and `preview:staging` npm scripts use `${VITE_API_BASE_URL:-…}` shell expansion, so the Railway direct URL is picked up at build time. `e2e/test-reserves.ts` also reads `process.env.VITE_API_BASE_URL` to fetch test reserve data directly from Railway, bypassing Cloudflare.
 
 ## Node scripts (`/markets` and similar)
 

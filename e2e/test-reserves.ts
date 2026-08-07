@@ -15,7 +15,10 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * If no suitable reserve is found, tests skip gracefully.
  */
 
-const STAGING_API = 'https://staging-api.aaveapy.com/api';
+// Resolve API base from env: CI sets VITE_API_BASE_URL to the Railway direct
+// URL (via LIVE_TEST_API_BASE_CI secret) to bypass Cloudflare/WAF 403s.
+// Falls back to staging-api.aaveapy.com for local development.
+const STAGING_API = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 
 export interface TestReserve {
   symbol: string;
