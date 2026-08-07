@@ -1,7 +1,16 @@
-# npm: 由 hardcode-sync CI 统一管理（每日 npm update address-book + sync），不需要 Dependabot 开 PR。
-# Security updates 仍可在 Repo → Settings → Code security 中单独启用。
+# npm regular updates: 由 hardcode-sync CI 统一管理（每日 npm update address-book + sync）。
+# npm security updates: 通过 Dependabot security updates（Repo → Settings → Code security）启用。
+#   target-branch: dev 确保 security PR 走 dev → main 标准流程，避免 branch-flow-guard 失败。
+#   open-pull-requests-limit: 0 阻止 regular version update PR，只允许 security update PR。
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 0
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
