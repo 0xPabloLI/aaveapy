@@ -492,6 +492,45 @@
                   }
                 ]
               },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "borrowBlacklist": {
                 "type": "boolean"
               }
@@ -612,6 +651,45 @@
                     "required": [
                       "sourceSide",
                       "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
                     ],
                     "additionalProperties": false
                   },
@@ -777,6 +855,45 @@
                     "required": [
                       "sourceSide",
                       "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
                     ],
                     "additionalProperties": false
                   },
@@ -1098,6 +1215,45 @@
               }
             ]
           },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "borrowBlacklist": {
             "type": "boolean"
           }
@@ -1218,6 +1374,45 @@
                 "required": [
                   "sourceSide",
                   "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
                 ],
                 "additionalProperties": false
               },
@@ -1383,6 +1578,45 @@
                 "required": [
                   "sourceSide",
                   "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
                 ],
                 "additionalProperties": false
               },
