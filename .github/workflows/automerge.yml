@@ -65,11 +65,13 @@ jobs:
             // lovable → dev uses MERGE to preserve history connectivity (AGENTS.md).
             // All other PRs (bot sync, dev → main) use SQUASH.
             const mergeMethod = (pr.head.ref === 'lovable' && pr.base.ref === 'dev') ? 'MERGE' : 'SQUASH';
+            // GitHub GraphQL API doesn't support MergeMethod as a variable type.
+            // Inline the mergeMethod value directly into the mutation string.
             const enableAutoMergeMutation = `
-              mutation($pullRequestId: ID!, $mergeMethod: MergeMethod!) {
+              mutation($pullRequestId: ID!) {
                 enablePullRequestAutoMerge(input: {
                   pullRequestId: $pullRequestId,
-                  mergeMethod: $mergeMethod
+                  mergeMethod: ${mergeMethod}
                 }) {
                   pullRequest {
                     number
@@ -140,7 +142,7 @@ jobs:
 
                 // Try enabling auto-merge regardless of status
                 try {
-                  await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
+                  await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
                   core.info(`Enabled auto-merge for PR #${pr.number} on retry ${attempt}/10`);
                   return;
                 } catch (retryError) {
