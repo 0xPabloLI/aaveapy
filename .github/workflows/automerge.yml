@@ -91,7 +91,7 @@ jobs:
             `;
 
             try {
-              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id, mergeMethod });
+              await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
               core.info(`Enabled auto-merge for PR #${pr.number} (method: ${mergeMethod})`);
               return;
             } catch (error) {
