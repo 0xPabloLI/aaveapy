@@ -117,6 +117,16 @@ Record:
 
 Treat framework warnings and missing preview-only analytics scripts separately from app regressions. Treat runtime page errors, blank pages, broken layout, and value mismatch as blockers.
 
+## E2E flaky test prevention
+
+CI E2E tests (`playwright.config.ts`, `e2e/` directory) are prone to flakiness from staging data changes, external service unavailability, and timing issues. Follow these rules to prevent flaky tests from accumulating:
+
+1. **Never hardcode staging API values** — use format/structure assertions (e.g., assert a `\d+\.\d{2}%` pattern instead of a specific APR value). Staging data refreshes invalidate hardcoded expectations. Use `e2e/test-reserves.ts` dynamic discovery instead of hardcoding token symbols.
+2. **Set reasonable timeouts** — `test.setTimeout(120_000)` for tests that involve Portfolio setup + large input + staging API round-trips. Default 60s timeout is insufficient for wallet-mode tests.
+3. **Mark external dependencies** — `test.skip` when external services (block explorers, Merkl API) are unreachable. Do not let third-party downtime block CI.
+4. **Use tolerant visual regression** — `toHaveScreenshot(expected, { maxDiffPixelRatio: 0.01 })` instead of pixel-perfect. Font rendering and anti-aliasing differ across CI environments.
+5. **CI E2E uses Railway direct URL** — `VITE_API_BASE_URL` is injected from `LIVE_TEST_API_BASE_CI` secret to bypass Cloudflare/WAF. See ADR-0029 for details.
+
 ## Numeric consistency checks
 
 When the UI shows a combined total and visible breakdowns, verify the display remains internally consistent.
