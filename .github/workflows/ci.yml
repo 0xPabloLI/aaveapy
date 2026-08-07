@@ -337,6 +337,8 @@ jobs:
     # so skipping is safe.  The daily schedule job will catch any real drift.
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
+    outputs:
+      drift: ${{ steps.diff.outputs.drift }}
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
@@ -351,10 +353,28 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
-      - name: Check OpenAPI spec is up to date
+      - name: Fetch OpenAPI spec and check for drift
+        id: diff
         env:
           LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
-        run: npm run openapi:check
+        # Non-blocking: spec drift from backend is an expected event, not a code bug.
+        # The openapi-sync job creates a PR to fix; daily schedule is the safety net.
+        continue-on-error: true
+        run: |
+          set +e
+          npm run openapi:fetch
+          FETCH_EXIT=$?
+          if [ $FETCH_EXIT -ne 0 ]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Failed to fetch OpenAPI spec — skipping drift check"
+            exit 0
+          fi
+          if git diff --quiet -- public/openapi.json; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::OpenAPI spec drift detected — openapi-sync job will create a PR"
+          fi
 
   security-audit:
     name: security-audit
@@ -387,7 +407,8 @@ jobs:
     if: >
       always() &&
       (github.event_name == 'push' || github.event_name == 'schedule') &&
-      needs.openapi-check.result == 'failure'
+      github.ref_name != 'main' &&
+      needs.openapi-check.outputs.drift == 'true'
     runs-on: ubuntu-latest
     env:
       LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}

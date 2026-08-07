@@ -420,6 +420,14 @@
               },
               "collateralRisk": {
                 "type": "number"
+              },
+              "ltv": {
+                "type": "number",
+                "description": "Collateral LTV (percent: 80 = 80%). V3: supplyInfo.maxLTV, V4: settings.collateralFactor."
+              },
+              "liquidationThreshold": {
+                "type": "number",
+                "description": "Liquidation threshold (percent: 82.5 = 82.5%). V3: supplyInfo.liquidationThreshold, V4: = ltv (collateralFactor)."
               }
             },
             "required": [
@@ -476,6 +484,45 @@
                     "required": [
                       "sourceSide",
                       "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
                     ],
                     "additionalProperties": false
                   },
@@ -604,6 +651,45 @@
                     "required": [
                       "sourceSide",
                       "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
                     ],
                     "additionalProperties": false
                   },
@@ -769,6 +855,45 @@
                     "required": [
                       "sourceSide",
                       "offsetReserveIds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crossAssetPairing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sourceSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "pairedReserveId": {
+                        "type": "string"
+                      },
+                      "pairedSide": {
+                        "type": "string",
+                        "enum": [
+                          "supply",
+                          "borrow"
+                        ]
+                      },
+                      "discountFactor": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "sourceSide",
+                      "pairedReserveId",
+                      "pairedSide",
+                      "discountFactor"
                     ],
                     "additionalProperties": false
                   },
@@ -1018,6 +1143,14 @@
           },
           "collateralRisk": {
             "type": "number"
+          },
+          "ltv": {
+            "type": "number",
+            "description": "Collateral LTV (percent: 80 = 80%). V3: supplyInfo.maxLTV, V4: settings.collateralFactor."
+          },
+          "liquidationThreshold": {
+            "type": "number",
+            "description": "Liquidation threshold (percent: 82.5 = 82.5%). V3: supplyInfo.liquidationThreshold, V4: = ltv (collateralFactor)."
           }
         },
         "required": [
@@ -1074,6 +1207,45 @@
                 "required": [
                   "sourceSide",
                   "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
                 ],
                 "additionalProperties": false
               },
@@ -1202,6 +1374,45 @@
                 "required": [
                   "sourceSide",
                   "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
                 ],
                 "additionalProperties": false
               },
@@ -1367,6 +1578,45 @@
                 "required": [
                   "sourceSide",
                   "offsetReserveIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crossAssetPairing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "pairedReserveId": {
+                    "type": "string"
+                  },
+                  "pairedSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "discountFactor": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "pairedReserveId",
+                  "pairedSide",
+                  "discountFactor"
                 ],
                 "additionalProperties": false
               },
