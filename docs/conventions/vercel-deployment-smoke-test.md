@@ -20,8 +20,20 @@ Configure in the GitHub repository:
 | `VERCEL_TOKEN` | API token (smoke polling + rollback) |
 | `VERCEL_PROJECT_ID` | Project ID |
 | `VERCEL_TEAM_ID` | Optional; team scope for the token |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | Bypass Vercel Authentication for CI curl requests (site_check + deploy_url_check) |
 
 If `VERCEL_TOKEN` is missing, the smoke test and rollback steps **skip** (exit 0) with a log message.
+
+If `VERCEL_AUTOMATION_BYPASS_SECRET` is missing, curl requests to Vercel-served URLs will receive the Vercel Authentication login page instead of the SPA, causing `site_check` and `deploy_url_check` failures. The workflow logs a warning but does not hard-fail on missing secret — the curl failure itself is the signal. See ADR-0029 for the full rationale.
+
+### How the bypass works
+
+Both `site_check` and `deploy_url_check` steps construct a `BYPASS_HEADER` from the secret:
+```bash
+BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
+curl -L $BYPASS_HEADER "$SITE_URL"
+```
+Vercel recognises the `x-vercel-protection-bypass` header and skips the Authentication interstitial, returning the actual SPA HTML. Setup steps: `docs/setup-vercel-auth-bypass.md`.
 
 ## Deploy SHA verification
 
@@ -58,3 +70,5 @@ When editing rollback logic, **do not** compare these fields as raw strings with
 ## Related docs
 
 - [`api-base-urls.md`](./api-base-urls.md) — API URLs for apps and CI scripts (separate from this Vercel workflow).
+- [ADR-0029](../adr/0029-vercel-auth-bypass-ci-access.md) — Vercel Authentication bypass + Railway direct URL decision record.
+- [`setup-vercel-auth-bypass.md`](../setup-vercel-auth-bypass.md) — Step-by-step bypass secret generation guide.
