@@ -116,6 +116,17 @@ const CampaignGroupApiMeritCampaignBreakdown = z.object({
       z.null(),
     ])
     .optional(),
+  crossAssetPairing: z
+    .union([
+      z.object({
+        sourceSide: z.enum(["supply", "borrow"]),
+        pairedReserveId: z.string(),
+        pairedSide: z.enum(["supply", "borrow"]),
+        discountFactor: z.number(),
+      }),
+      z.null(),
+    ])
+    .optional(),
   borrowBlacklist: z.boolean().optional(),
 });
 const MerklCampaignBreakdown = z.object({
@@ -162,6 +173,17 @@ const ApiMerklOpportunityGroup = z.object({
       z.null(),
     ])
     .optional(),
+  crossAssetPairing: z
+    .union([
+      z.object({
+        sourceSide: z.enum(["supply", "borrow"]),
+        pairedReserveId: z.string(),
+        pairedSide: z.enum(["supply", "borrow"]),
+        discountFactor: z.number(),
+      }),
+      z.null(),
+    ])
+    .optional(),
   borrowBlacklist: z.boolean().optional(),
 });
 const ApiBrevisBreakdown = z.object({
@@ -188,6 +210,17 @@ const CampaignGroupApiBrevisBreakdown = z.object({
       z.object({
         sourceSide: z.enum(["supply", "borrow"]),
         offsetReserveIds: z.array(z.string()),
+      }),
+      z.null(),
+    ])
+    .optional(),
+  crossAssetPairing: z
+    .union([
+      z.object({
+        sourceSide: z.enum(["supply", "borrow"]),
+        pairedReserveId: z.string(),
+        pairedSide: z.enum(["supply", "borrow"]),
+        discountFactor: z.number(),
       }),
       z.null(),
     ])
