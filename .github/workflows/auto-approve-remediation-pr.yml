@@ -18,7 +18,7 @@ jobs:
       - name: Policy-check changed files, approve, and enable auto-merge
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          github-token: ${{ secrets.CODEX_BOT_TOKEN != '' && secrets.CODEX_BOT_TOKEN || github.token }}
+          github-token: ${{ secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const prNumber = context.payload.pull_request.number;

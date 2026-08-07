@@ -302,6 +302,31 @@ export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput
   return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} net eligible (${sideLabel}${offsets})`;
 }
 
+// ============================================================
+// AAV-895: Cross-Asset Pairing note
+// ============================================================
+
+export interface CrossAssetPairingNoteInput {
+  effectiveUsd: number;
+  grossUsd: number;
+  pairedSymbol: string;
+  pairedSide: 'supply' | 'borrow';
+  discountFactor: number;
+}
+
+/**
+ * Build a human-readable note for cross-asset pairing constraint (AAV-895).
+ *
+ * Returns null when there's no reduction (effective >= gross or gross <= 0).
+ * Otherwise: "$41.15 of $100.00 effective (capped by cbETH supply ×0.823)"
+ */
+export function buildCrossAssetPairingNote(input: CrossAssetPairingNoteInput): string | null {
+  const { effectiveUsd, grossUsd, pairedSymbol, pairedSide, discountFactor } = input;
+  if (grossUsd <= 0 || effectiveUsd >= grossUsd) return null;
+  const sideLabel = pairedSide === 'supply' ? 'supply' : 'borrow';
+  return `${formatUsd(effectiveUsd)} of ${formatUsd(grossUsd)} effective (capped by ${pairedSymbol} ${sideLabel} ×${discountFactor})`;
+}
+
 /**
  * Check if a reserve has any position cap across all incentive sources for a given side.
  * Used by Reserve table to show a position-cap indicator dot next to incentive buttons.
