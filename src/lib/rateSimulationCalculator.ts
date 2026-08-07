@@ -28,6 +28,7 @@ import {
   buildMaxRewardCapEffect,
   buildNetEligibleNote,
   buildCrossReserveNetEligibleNote,
+  buildCrossAssetPairingNote,
   capEffectToNote,
   netEligibleToNote,
   applyPositionCapToForecastResult,
@@ -66,6 +67,8 @@ import { nativeToUsd } from '@/lib/scenarioSize';
 import {
   computeCrossReserveEligibilityRatio,
   computeCrossReserveNetEligible,
+  computeCrossAssetEligibilityRatio,
+  computeCrossAssetNetEligible,
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
 import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
@@ -1295,6 +1298,15 @@ export function buildRateSimulationResult({
       if (group.borrowBlacklist === true && side === 'supply' && borrowGrossForEligibility > 0) {
         return 0;
       }
+      // AAV-895: Cross-asset pairing (min(1,2)) — checked before netPositionConstraint (mutually exclusive).
+      const pairing = group.crossAssetPairing;
+      if (pairing && crossReservePositions && crossReservePositions.size > 0) {
+        return computeCrossAssetEligibilityRatio({
+          sourceGrossUsd: grossUsd,
+          pairing,
+          crossReservePositions,
+        });
+      }
       const constraint = group.netPositionConstraint;
       // AAV-1100/AAV-1113: offsetReserveIds always includes self (confirmed in all real data).
       // crossReserveRatio already deducts same-reserve borrow via computeCrossReserveNetEligible.
@@ -1318,6 +1330,15 @@ export function buildRateSimulationResult({
       // Uses wallet-only borrow (not simulation input) to preserve Golden Rule #1.
       if (group.borrowBlacklist === true && side === 'supply' && walletBorrowGrossForEligibility > 0) {
         return 0;
+      }
+      // AAV-895: Cross-asset pairing (min(1,2)) — checked before netPositionConstraint (mutually exclusive).
+      const pairing = group.crossAssetPairing;
+      if (pairing && walletCrossReservePositions && walletCrossReservePositions.size > 0) {
+        return computeCrossAssetEligibilityRatio({
+          sourceGrossUsd: grossUsd,
+          pairing,
+          crossReservePositions: walletCrossReservePositions,
+        });
       }
       const constraint = group.netPositionConstraint;
       // AAV-1100/AAV-1113: Same as merklGroupMultiplier — sameReserveFactor dead code removed.
@@ -1343,6 +1364,15 @@ export function buildRateSimulationResult({
       if (group.borrowBlacklist === true && side === 'supply' && borrowGrossForEligibility > 0) {
         return 0;
       }
+      // AAV-895: Cross-asset pairing (min(1,2)) — checked before netPositionConstraint (mutually exclusive).
+      const pairing = group.crossAssetPairing;
+      if (pairing && crossReservePositions && crossReservePositions.size > 0) {
+        return computeCrossAssetNetEligible({
+          sourceGrossUsd: grossUsd,
+          pairing,
+          crossReservePositions,
+        });
+      }
       const constraint = group.netPositionConstraint;
       if (!constraint || !crossReservePositions || crossReservePositions.size === 0) return grossUsd;
       return computeCrossReserveNetEligible({
@@ -1362,6 +1392,15 @@ export function buildRateSimulationResult({
       if (group.borrowBlacklist === true && side === 'supply' && walletBorrowGrossForEligibility > 0) {
         return 0;
       }
+      // AAV-895: Cross-asset pairing (min(1,2)) — checked before netPositionConstraint (mutually exclusive).
+      const pairing = group.crossAssetPairing;
+      if (pairing && walletCrossReservePositions && walletCrossReservePositions.size > 0) {
+        return computeCrossAssetNetEligible({
+          sourceGrossUsd: grossUsd,
+          pairing,
+          crossReservePositions: walletCrossReservePositions,
+        });
+      }
       const constraint = group.netPositionConstraint;
       if (!constraint || !walletCrossReservePositions || walletCrossReservePositions.size === 0) return grossUsd;
       return computeCrossReserveNetEligible({
@@ -1376,6 +1415,23 @@ export function buildRateSimulationResult({
   const merklCrossReserveNote = (side: RateSide): ((group: MerklOpportunityGroup) => string | null) => {
     const grossUsd = side === 'supply' ? supplyGrossForEligibility : borrowGrossForEligibility;
     return (group) => {
+      // AAV-895: Cross-asset pairing note — checked before netPositionConstraint (mutually exclusive).
+      const pairing = group.crossAssetPairing;
+      if (pairing && crossReservePositions && crossReservePositions.size > 0 && reserveSymbolById) {
+        const effectiveUsd = computeCrossAssetNetEligible({
+          sourceGrossUsd: grossUsd,
+          pairing,
+          crossReservePositions,
+        });
+        const pairedSymbol = reserveSymbolById.get(pairing.pairedReserveId) ?? pairing.pairedReserveId;
+        return buildCrossAssetPairingNote({
+          effectiveUsd,
+          grossUsd,
+          pairedSymbol,
+          pairedSide: pairing.pairedSide,
+          discountFactor: pairing.discountFactor,
+        });
+      }
       const constraint = group.netPositionConstraint;
       if (!constraint || !crossReservePositions || crossReservePositions.size === 0 || !reserveSymbolById) return null;
       const netUsd = computeCrossReserveNetEligible({

@@ -42,6 +42,26 @@ export interface NetPositionConstraint {
   offsetReserveIds: string[];
 }
 
+/**
+ * Cross-asset pairing constraint for Merkl min(1,2) opportunities (AAV-895).
+ *
+ * Unlike NetPositionConstraint (which uses subtraction: source - Σoffset),
+ * cross-asset pairing uses min(): min(sourcePos, pairedPos × discountFactor).
+ *
+ * This is an independent constraint type — not a net position constraint.
+ * Mutually exclusive with netPositionConstraint on the same opportunity.
+ */
+export interface CrossAssetPairing {
+  /** Source side direction (matches opportunity action: LEND→supply, BORROW→borrow). */
+  sourceSide: 'supply' | 'borrow';
+  /** Reserve ID of the paired token (resolved within same pool/spoke). */
+  pairedReserveId: string;
+  /** Paired side direction (determined by targetToken type: aToken→supply, vToken→borrow). */
+  pairedSide: 'supply' | 'borrow';
+  /** Paired-side multiplier from composedMultiplier / 1e9 (e.g. 0.823 for cbETH, 1.196 for sUSDe). */
+  discountFactor: number;
+}
+
 export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCampaignBreakdown> {
   link?: string;
   name?: string;
@@ -49,6 +69,11 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
   breakdowns: TBreakdown[];
   opportunityId?: string;
   netPositionConstraint?: NetPositionConstraint | null;
+  /**
+   * Cross-asset pairing constraint (AAV-895). Mutually exclusive with netPositionConstraint.
+   * Present when opportunity uses min(1,2) composed compute with different underlying tokens.
+   */
+  crossAssetPairing?: CrossAssetPairing | null;
   /**
    * BORROW_BL: when true, the entire supply incentive for this group is zeroed
    * if the user has any borrow position on this token.
