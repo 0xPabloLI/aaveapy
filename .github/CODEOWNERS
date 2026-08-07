@@ -30,3 +30,4 @@
 # ===== Root config =====
 /package.json                    @0xPabloLI
 /package-lock.json               @0xPabloLI
+# test
