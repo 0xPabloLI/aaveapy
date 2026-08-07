@@ -8,6 +8,7 @@ import {
   netEligibleToNote,
   applyPositionCapToForecastResult,
   checkForecastAvailability,
+  buildCrossAssetPairingNote,
 } from './incentiveCaps';
 
 describe('buildPositionCapEffect', () => {
@@ -298,5 +299,61 @@ describe('netEligibleToNote', () => {
       text: '$500 of $1,000 net eligible',
       color: 'muted',
     });
+  });
+});
+
+// ============================================================
+// AAV-895: Cross-Asset Pairing note
+// ============================================================
+
+describe('buildCrossAssetPairingNote', () => {
+  it('F12: generates note when effective < gross', () => {
+    const note = buildCrossAssetPairingNote({
+      effectiveUsd: 41.15,
+      grossUsd: 100,
+      pairedSymbol: 'cbETH',
+      pairedSide: 'supply',
+      discountFactor: 0.823,
+    });
+    expect(note).not.toBeNull();
+    expect(note).toContain('$41.15');
+    expect(note).toContain('$100.00');
+    expect(note).toContain('cbETH');
+    expect(note).toContain('supply');
+    expect(note).toContain('0.823');
+  });
+
+  it('returns null when grossUsd <= 0', () => {
+    const note = buildCrossAssetPairingNote({
+      effectiveUsd: 0,
+      grossUsd: 0,
+      pairedSymbol: 'cbETH',
+      pairedSide: 'supply',
+      discountFactor: 0.823,
+    });
+    expect(note).toBeNull();
+  });
+
+  it('returns null when effective >= gross (no reduction)', () => {
+    const note = buildCrossAssetPairingNote({
+      effectiveUsd: 100,
+      grossUsd: 100,
+      pairedSymbol: 'cbETH',
+      pairedSide: 'supply',
+      discountFactor: 0.823,
+    });
+    expect(note).toBeNull();
+  });
+
+  it('uses borrow label when pairedSide is borrow', () => {
+    const note = buildCrossAssetPairingNote({
+      effectiveUsd: 30,
+      grossUsd: 100,
+      pairedSymbol: 'ETH',
+      pairedSide: 'borrow',
+      discountFactor: 0.5,
+    });
+    expect(note).not.toBeNull();
+    expect(note).toContain('borrow');
   });
 });

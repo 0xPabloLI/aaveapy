@@ -186,6 +186,68 @@ describe('CampaignGroup borrowBlacklist field-name canary (AAV-962)', () => {
   });
 });
 
+// F11: AAV-895 — crossAssetPairing field-name canary
+describe('CampaignGroup crossAssetPairing field-name canary (AAV-895)', () => {
+  it('group.crossAssetPairing fields are correct types when set', () => {
+    const group: CampaignGroup = {
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      crossAssetPairing: {
+        sourceSide: 'borrow',
+        pairedReserveId: '8453:0xA736:0x2Ae3',
+        pairedSide: 'supply',
+        discountFactor: 0.823,
+      },
+    };
+    expect(group.crossAssetPairing).not.toBeNull();
+    expect(['supply', 'borrow']).toContain(group.crossAssetPairing!.sourceSide);
+    expect(typeof group.crossAssetPairing!.pairedReserveId).toBe('string');
+    expect(['supply', 'borrow']).toContain(group.crossAssetPairing!.pairedSide);
+    expect(typeof group.crossAssetPairing!.discountFactor).toBe('number');
+  });
+
+  it('group without crossAssetPairing is valid (optional)', () => {
+    const plain: CampaignGroup = { link: 'https://merkl.xyz', breakdowns: [] };
+    expect(plain.crossAssetPairing).toBeUndefined();
+  });
+
+  it('group with crossAssetPairing: null is valid', () => {
+    const group: CampaignGroup = {
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      crossAssetPairing: null,
+    };
+    expect(group.crossAssetPairing).toBeNull();
+  });
+
+  it('MerklOpportunityGroupSchema accepts crossAssetPairing', async () => {
+    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+    const parsed = MerklOpportunityGroupSchema.parse({
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      crossAssetPairing: {
+        sourceSide: 'borrow',
+        pairedReserveId: '8453:0xA736:0x2Ae3',
+        pairedSide: 'supply',
+        discountFactor: 0.823,
+      },
+    });
+    expect(parsed.crossAssetPairing).not.toBeNull();
+    expect(parsed.crossAssetPairing!.sourceSide).toBe('borrow');
+    expect(parsed.crossAssetPairing!.discountFactor).toBeCloseTo(0.823, 10);
+  });
+
+  it('MerklOpportunityGroupSchema accepts null crossAssetPairing', async () => {
+    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+    const parsed = MerklOpportunityGroupSchema.parse({
+      link: 'https://merkl.xyz',
+      breakdowns: [],
+      crossAssetPairing: null,
+    });
+    expect(parsed.crossAssetPairing).toBeNull();
+  });
+});
+
 describe('CampaignAccessEntry borrowHookProtocols field-name canary (AAV-1013)', () => {
   it('entry.borrowHookProtocols is array of protocols when set', () => {
     const entry: CampaignAccessEntry = {

@@ -57,10 +57,20 @@ export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown
 
 // MerklOpportunityGroup: override link to optional (generated has required),
 // breakdowns to use wrapper version.
+// AAV-895: crossAssetPairing added here because generated schema hasn't been regenerated yet.
 export const MerklOpportunityGroupSchema = generated.ApiMerklOpportunityGroup
   .extend({
     link: z.string().optional(),
     breakdowns: z.array(MerklCampaignBreakdownSchema),
+    crossAssetPairing: z
+      .object({
+        sourceSide: z.enum(['supply', 'borrow']),
+        pairedReserveId: z.string(),
+        pairedSide: z.enum(['supply', 'borrow']),
+        discountFactor: z.number(),
+      })
+      .nullable()
+      .optional(),
   });
 
 // ── Brevis schemas (frontend-specific normalization) ──
