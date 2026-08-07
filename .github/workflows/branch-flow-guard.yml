@@ -20,10 +20,6 @@ permissions:
 jobs:
   enforce-dev-to-main:
     name: branch-flow-guard
-    # Dependabot security updates target main directly (beyond our control).
-    # They only bump dependency versions — no code changes that need the
-    # lovable → dev → main flow. CI still runs lint/build/e2e on these PRs.
-    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check PR source branch
