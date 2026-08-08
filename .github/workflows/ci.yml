@@ -155,6 +155,11 @@ jobs:
     name: e2e-desktop (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # E2E tests depend on live staging API data and are inherently flaky.
+    # On `lovable` push (no PR review), make them non-blocking so transient
+    # failures don't trigger ci-failure-alert issues.  They remain blocking
+    # on PRs and on `dev`/`main` pushes.
+    continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/lovable' }}
     strategy:
       fail-fast: false
       matrix:
@@ -195,6 +200,11 @@ jobs:
     name: e2e-mobile (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # E2E tests depend on live staging API data and are inherently flaky.
+    # On `lovable` push (no PR review), make them non-blocking so transient
+    # failures don't trigger ci-failure-alert issues.  They remain blocking
+    # on PRs and on `dev`/`main` pushes.
+    continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/lovable' }}
     strategy:
       fail-fast: false
       matrix:
