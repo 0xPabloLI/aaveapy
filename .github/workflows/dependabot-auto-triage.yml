@@ -26,7 +26,9 @@ jobs:
           DEPENDENCY_TYPE: ${{ steps.metadata.outputs.dependency-type }}
           ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT so that label/review events trigger downstream workflows
+          # (automerge.yml). GITHUB_TOKEN actions don't fire new workflow runs.
+          github-token: ${{ secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const pull_number = context.payload.pull_request.number;

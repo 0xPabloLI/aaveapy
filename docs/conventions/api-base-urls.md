@@ -28,7 +28,7 @@ Production traffic in deployed sites is expected to set `VITE_API_BASE_URL` at b
 
 ## GitHub Actions
 
-| Variable (Repository **Secret**) | Injected as job env | Used by |
+| Secret (Repository **Secrets**) | Injected as job env | Used by |
 |-------------------------------------|---------------------|---------|
 | `LIVE_TEST_API_BASE_CI` | `env.LIVE_TEST_API_BASE_CI` or mapped to `LIVE_TEST_API_BASE` / `VITE_API_BASE_URL` in `ci.yml` | Live schema job, `hardcode-drift-check`, `hardcode-sync`, coingecko scripts, **E2E (e2e-desktop, e2e-mobile)** |
 
@@ -37,6 +37,8 @@ If `LIVE_TEST_API_BASE_CI` is **unset**, workflows fall back to **staging** (sam
 ### E2E (Playwright)
 
 CI E2E jobs (`e2e-desktop`, `e2e-mobile`) inject `LIVE_TEST_API_BASE_CI` as `VITE_API_BASE_URL` into the job environment. The `build:staging` and `preview:staging` npm scripts use `${VITE_API_BASE_URL:-…}` shell expansion, so the Railway direct URL is picked up at build time. `e2e/test-reserves.ts` also reads `process.env.VITE_API_BASE_URL` to fetch test reserve data directly from Railway, bypassing Cloudflare.
+
+See ADR-0029 for the full decision record on CI access bypass strategies.
 
 ## Node scripts (`/markets` and similar)
 
@@ -50,5 +52,7 @@ To compare against **production** from a laptop or CI that can reach it, set the
 
 ## Related docs
 
+- [ADR-0029](../adr/0029-vercel-auth-bypass-ci-access.md) — Vercel Authentication bypass + Railway direct URL decision record
 - `docs/conventions/ci-live-schema-cloudflare.md` — Cloudflare / CI access to staging
+- `docs/conventions/vercel-deployment-smoke-test.md` — Smoke test workflow (uses `VERCEL_AUTOMATION_BYPASS_SECRET` for Vercel Auth bypass)
 - `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` — hardcode sync / drift checks
