@@ -54,7 +54,7 @@
 
 ### Decision: Lightweight or Substantial?
 - **Lightweight**（检查、解释、常规工作）：直接进行，不需要加载额外 skill。
-- **UI/UX 设计任务**: 用 `impeccable` skill（`shape` 规划、`craft` 构建、`critique` 审查、`polish` 精修）。不要自动加载 `brainstorming`——`impeccable` 已覆盖其全部功能且更专业。
+- **UI/UX 设计任务**: 用 `impeccable` skill。
 - **Substantial implementation**: 按以下 Mandatory Implementation Workflow 执行。
 
 ### Rules
