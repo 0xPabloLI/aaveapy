@@ -41,7 +41,7 @@ console.log('   This typically takes ~2 min. Playwright will start a dev server 
 console.log('');
 
 try {
-  execSync('npx playwright test --project=chromium', {
+  execSync('npx playwright test --project=chromium --retries=1', {
     stdio: 'inherit',
     env: { ...process.env },
   });
