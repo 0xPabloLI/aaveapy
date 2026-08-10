@@ -170,35 +170,57 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 
 ## 标准上线流程 (Production Deployment Checklist)
 
-**每次合并到 main 都必须走完以下流程，不得跳步。** 涉及 API spec 变更时，在此流程基础上额外执行"前后端协同部署工作流"的 5 步无缝过渡。
+**每次合并到 main 都必须走完以下流程，不得跳步。**
 
 ### 前置条件
 - lovable 分支代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
 - `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
 
-### Step 1: lovable → dev（自动合并）
-1. 创建 PR：`gh pr create --base dev --head lovable --title "Sync lovable to dev" --body "..."`
-2. 启用 auto-merge（merge commit）：`gh pr merge <PR> --merge --auto`
-3. CI 通过后自动合并
+### 分支映射
+- 后端：`railway`（Staging）→ `main`（Production）
+- 前端：`lovable` → `dev` → `main`
 
-### Step 2: dev → main PR（创建，不合并）
-1. 创建 PR：`gh pr create --base main --head dev --title "Production: <概述>" --body "..."`
+### Step 1: 后端 Staging 上线
+1. 后端 `railway` 分支部署到 Staging（Railway 自动部署）
+2. 验证 staging API spec：`https://staging-api.aaveapy.com/api/docs/openapi.json`
+3. 确认 API 行为符合预期
+
+### Step 2: 前端 Staging 接后端 Staging 验证
+1. 前端从 staging 拉取最新 spec + 生成 schemas：
+   ```bash
+   LIVE_API_BASE=https://staging-api.aaveapy.com/api npm run openapi:fetch
+   npm run schema:codegen
+   ```
+2. 更新 wrapper 引用（如需要），运行 validation gate
+3. 创建 lovable → dev PR（merge commit）：`gh pr create --base dev --head lovable`
+4. 启用 auto-merge：`gh pr merge <PR> --merge --auto`
+5. CI 通过后自动合并（CI 统一检查 staging API）
+6. **验证 staging.aaveapy.com 功能正常**，重点关注本次变更涉及的功能点
+7. 如有问题，修复后回到 Step 1
+
+### Step 3: 前端 Production 上线（暂连后端 Staging API）
+1. 创建 dev → main PR：`gh pr create --base main --head dev --title "Production: <概述>"`
 2. **禁止自动合并** — main 有 GPG 签名要求（Layer 4），CLI 无法产生签名 merge commit
-3. Agent 只负责创建 PR，不执行合并
+3. **Agent 只负责创建 PR，不执行合并**
+4. 用户在 GitHub UI 手动合并 dev → main PR（满足 GPG 签名要求）
+5. Vercel 自动部署 Production（此时前端 Production **暂连后端 Staging API**）
+6. **验证 aaveapy.com 正常**，确认前端 Production + 后端 Staging 组合无问题
+7. 如有问题，回滚 main 分支，回到 Step 2
 
-### Step 3: Staging 验证
-1. 访问 [staging.aaveapy.com](https://staging.aaveapy.com) 验证功能正常
-2. 重点关注本次变更涉及的功能点
-3. 如有问题，修复后回到 Step 1
+### Step 4: 后端 Production 上线
+1. 创建后端 `railway` → `main` PR
+2. CI 验证通过后，用户在 GitHub UI 合并
+3. Railway 自动部署到 Production
+4. **验证后端 Production API 正常**：`https://api.aaveapy.com/api`
 
-### Step 4: 用户手动合并
-1. 用户在 GitHub UI 手动合并 dev → main PR（满足 GPG 签名要求）
-2. Vercel 自动部署 production
+### Step 5: 前端 Production 切到后端 Production API
+1. 更新 Vercel 环境变量：`VITE_API_BASE_URL` 从 staging 改为 production
+2. Vercel 重新部署（环境变量更新触发）
+3. **最终验证 aaveapy.com**：确认前端 Production 正常连接后端 Production API
+4. 确认无 regression
 
-### Step 5: Production 验证
-1. 访问 [aaveapy.com](https://aaveapy.com) 验证 production 正常
-2. 检查 Vercel deployment 状态
-3. 确认无 regression
+### 无 API 变更时的简化流程
+当前后端 spec 无变更时，跳过 Step 1-2 的 spec 同步，直接从 Step 2 的第 3 步开始（lovable → dev PR），然后走 Step 3（dev → main PR）。Step 4-5 跳过。
 
 ### Agent 行为约束
 - **dev → main PR 绝对不自动合并**，无论用户说什么（包括"按标准流程走完合并"），只创建不合并
@@ -206,25 +228,12 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - 遇到 branch protection 阻塞时，报告给用户决定，不自行绕过
 - 已在 AAV-556/562 两次违规合并，用户明确警告
 
-## 前后端协同部署工作流
-
-**核心原则**：后端是 Source of Truth，前端通过自动化管道消费后端 spec。部署顺序：后端 Staging → 前端 Staging 验证 → 前端 Production（暂连 Staging API）→ 后端 Production → 前端切 Production API。
-
-**分支映射**：后端 `railway`（Staging）→ `main`（Production）；前端 `lovable` → `dev` → `main`
-
-### Spec 自动化管道
+### Spec 自动化管道（参考）
 1. **后端**：`backend/scripts/generate-openapi.ts` 用 `ts-json-schema-generator` 从 TS 类型生成 spec，包含 `$ref` 重写（`#/definitions/` → `#/components/schemas/`）和 schema 名称清理（移除 `<>`）
 2. **前端**：`npm run openapi:fetch`（从 staging API 拉取）→ `npm run schema:codegen`（生成 Zod schemas）→ 更新 wrapper 引用 → validation gate
 3. **CI**：前端所有分支统一检查 staging API（`LIVE_API_BASE` 始终指向 staging）
 
-### 部署顺序（5 步无缝过渡）
-1. 后端 `railway` 部署到 Staging → 验证 staging API spec
-2. 前端从 staging 拉取 spec + 生成 schemas → 合并到 `dev`（CI 验证 staging API）
-3. 前端 `dev` → `main`（Vercel 部署 Production，**暂连 Staging API**）
-4. 后端 `railway` → `main` PR（Railway 部署 Production）
-5. 前端 Vercel 环境变量切到 Production API → 重新部署
-
-**注意**：当前 `.env.production` 直接配置 `https://api.aaveapy.com/api`，步骤 3-5 的"暂连 Staging API"需要手动调整 Vercel 环境变量。前后端 spec 一致时可跳过此中间步骤。
+**注意**：当前 `.env.production` 直接配置 `https://api.aaveapy.com/api`，Step 3-5 的"暂连 Staging API"需要手动调整 Vercel 环境变量。前后端 spec 一致时可跳过此中间步骤。
 
 详见 `docs/workflows/frontend-backend-coordinated-deployment.md`
 
