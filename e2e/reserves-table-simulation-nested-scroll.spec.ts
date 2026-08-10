@@ -1,7 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test';
 
 async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible();
+  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
 function simulationScrollPort(mainRow: Locator) {

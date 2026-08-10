@@ -59,6 +59,8 @@ export interface SimulationTableRow {
   warning?: boolean;
   nestedUnderIncentive?: boolean;
   notes?: IncentiveNote[];
+  /** Offset notes (net_eligible) — separated from cap notes (AAV-1036). */
+  offsetNotes?: IncentiveNote[];
 }
 
 export interface IncentiveSourceRow extends SimulationSourceDetail {
@@ -116,6 +118,7 @@ export function incentiveSourceToTableRows(
   const prefix = `${side}-${sourceIndex}`;
   const campaigns = src.campaigns;
   const sourceNotesForMainRow = !campaigns?.length ? src.notes : undefined;
+  const offsetNotes = src.offsetNotes?.length ? src.offsetNotes : undefined;
   const main: SimulationTableRow = {
     rowKey: `${prefix}-agg`,
     label: src.label,
@@ -128,6 +131,7 @@ export function incentiveSourceToTableRows(
     isSubBreakdown: nestedUnderIncentive,
     nestedUnderIncentive,
     notes: sourceNotesForMainRow,
+    offsetNotes,
   };
   if (!campaigns?.length) return [main];
   if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
@@ -145,6 +149,7 @@ export function incentiveSourceToTableRows(
           isSubBreakdown: nestedUnderIncentive,
           nestedUnderIncentive,
           notes: c.notes,
+          offsetNotes,
         },
       ];
   }
@@ -161,6 +166,7 @@ export function incentiveSourceToTableRows(
       isSubBreakdown: true,
       nestedUnderIncentive,
       notes: c.notes,
+      offsetNotes: ci === 0 ? offsetNotes : undefined,
     }));
   }
   return [

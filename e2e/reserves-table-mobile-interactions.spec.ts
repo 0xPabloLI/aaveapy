@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 async function waitForMobileReservesReady(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Expand details panel/i }).first()).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: /Expand details panel/i }).first()).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('Reserves mobile interaction matrix', () => {

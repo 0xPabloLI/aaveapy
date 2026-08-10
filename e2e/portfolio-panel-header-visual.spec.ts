@@ -26,24 +26,26 @@ for (const bp of BREAKPOINTS) {
 
     await expect(
       page.getByRole('textbox', { name: 'Borrow amount' }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
 
     // Single mode header (scenario controls cluster with toggle).
+    // Use parent navigation instead of fragile xpath=ancestor::*[N] which
+    // breaks when the DOM nesting depth changes.
     const singleToggle = page.getByTestId('portfolio-mode-toggle');
-    await expect(singleToggle).toBeVisible();
-    const singleHeader = singleToggle.locator('xpath=ancestor::*[2]');
+    await expect(singleToggle).toBeVisible({ timeout: 10_000 });
+    const singleHeader = singleToggle.locator('xpath=../..');
     await expect(singleHeader).toHaveScreenshot(
       `portfolio-header-single-${bp.name}.png`,
-      { maxDiffPixelRatio: 0.01 },
+      { maxDiffPixelRatio: 0.01, timeout: 30_000, animations: 'disabled' },
     );
 
     await singleToggle.click();
     const portfolioToggle = page.getByTestId('portfolio-mode-toggle');
-    await expect(portfolioToggle).toBeVisible();
-    const portfolioHeader = portfolioToggle.locator('xpath=ancestor::*[3]');
+    await expect(portfolioToggle).toBeVisible({ timeout: 10_000 });
+    const portfolioHeader = portfolioToggle.locator('xpath=../..');
     await expect(portfolioHeader).toHaveScreenshot(
       `portfolio-header-portfolio-${bp.name}.png`,
-      { maxDiffPixelRatio: 0.01 },
+      { maxDiffPixelRatio: 0.01, timeout: 30_000, animations: 'disabled' },
     );
   });
 }

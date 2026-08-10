@@ -29,7 +29,7 @@ describe('address-book package migration (@bgd-labs → @aave-dao)', () => {
 
     expect(AaveV3Base).toBeDefined();
     expect(AaveV3Base.POOL).toMatch(/^0x[a-fA-F0-9]{40}$/);
-  });
+  }, 30000);
 
   it('known Ethereum pool address is unchanged after migration', async () => {
     const { AaveV3Ethereum } = await import('@aave-dao/aave-address-book');

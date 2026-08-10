@@ -22,6 +22,8 @@
 
 ## 部署流程
 
+> **注意**：`AGENTS.md` 中的"标准上线流程 (Production Deployment Checklist)"已将本工作流的 5 步流程整合为统一的 Step 1-5。本文件保留作为详细参考文档。
+
 ### Phase 1: Backend Staging Update
 
 1. **后端开发者**在 `railway` 分支进行开发

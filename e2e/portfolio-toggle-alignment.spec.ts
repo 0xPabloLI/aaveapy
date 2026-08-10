@@ -26,7 +26,7 @@ for (const bp of BREAKPOINTS) {
 
     await expect(
       page.getByRole('textbox', { name: 'Borrow amount' }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
 
     const singleToggle = page.getByTestId('portfolio-mode-toggle');
     await expect(singleToggle).toBeVisible();

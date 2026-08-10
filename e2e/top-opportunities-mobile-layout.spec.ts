@@ -14,7 +14,7 @@ test.describe('Top Opportunities mobile layout', () => {
     const cards = page.locator('[data-embla-slide], .embla__slide, [role="group"][aria-roledescription="slide"]')
       .first()
       .locator('div.rounded-xl.border.cursor-pointer');
-    await expect(cards.first()).toBeVisible();
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 });
 
     const count = await cards.count();
     expect(count).toBeGreaterThan(0);

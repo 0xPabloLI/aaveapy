@@ -158,7 +158,10 @@ const countForecastUnavailable = (rows: SimulationCampaignDetail[]): number =>
 
 export interface SimulationSourceDetail extends SimulationMetric {
   campaigns?: SimulationCampaignDetail[];
+  /** Cap notes (position_cap, pool_budget, apr_cap). */
   notes?: import('./incentiveCaps').IncentiveNote[];
+  /** Offset notes (net_eligible) — separated from cap notes (AAV-1036). */
+  offsetNotes?: import('./incentiveCaps').IncentiveNote[];
 }
 
 export interface SimulationLane {
@@ -984,19 +987,13 @@ export const buildBrevisCampaignDetails = ({
 export const attachCampaigns = (
   metric: SimulationMetric,
   campaigns: SimulationCampaignDetail[],
-  sourceNotes?: IncentiveNote[],
+  offsetNotes?: IncentiveNote[],
 ): SimulationSourceDetail => {
-  if (campaigns.length === 0 && !sourceNotes?.length) return { ...metric };
-  const enriched = sourceNotes?.length
-    ? campaigns.map((c, i) => ({
-        ...c,
-        notes: [...(c.notes ?? []), ...(sourceNotes ?? [])],
-      }))
-    : campaigns;
+  if (campaigns.length === 0 && !offsetNotes?.length) return { ...metric };
   return {
     ...metric,
-    campaigns: enriched.length > 0 ? enriched : undefined,
-    notes: sourceNotes,
+    campaigns: campaigns.length > 0 ? campaigns : undefined,
+    offsetNotes: offsetNotes?.length ? offsetNotes : undefined,
   };
 };
 
