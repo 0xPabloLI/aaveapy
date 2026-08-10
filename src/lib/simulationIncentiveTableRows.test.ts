@@ -225,3 +225,77 @@ describe('hasAnyIncentiveBreakdownHref', () => {
     expect(hasAnyIncentiveBreakdownHref(sources)).toBe(false);
   });
 });
+
+describe('incentiveSourceToTableRows: offsetNotes placement (AAV-1036)', () => {
+  const offsetNote = { type: 'net_eligible' as const, text: '$500 of $1,000 net eligible', color: 'muted' as const };
+
+  it('places offsetNotes on aggregate row when campaigns exist', () => {
+    const src: IncentiveSourceRow = {
+      label: 'Merkl Incentive',
+      current: 1,
+      after: 1,
+      delta: 0,
+      href: null,
+      offsetNotes: [offsetNote],
+      campaigns: [
+        { id: 'c1', label: 'Campaign A', current: 0.5, after: 0.5, delta: 0 },
+        { id: 'c2', label: 'Campaign B', current: 0.5, after: 0.5, delta: 0 },
+      ],
+    };
+    const rows = incentiveSourceToTableRows(src, 0, 'supply', true);
+    expect(rows).toHaveLength(3); // aggregate + 2 campaigns
+    expect(rows[0].offsetNotes).toEqual([offsetNote]);
+    expect(rows[1].offsetNotes).toBeUndefined();
+    expect(rows[2].offsetNotes).toBeUndefined();
+  });
+
+  it('places offsetNotes on first campaign row when hideAggregateWhenCampaigns', () => {
+    const src: IncentiveSourceRow = {
+      label: 'Merkl Incentive',
+      current: 1,
+      after: 1,
+      delta: 0,
+      href: null,
+      hideAggregateWhenCampaigns: true,
+      offsetNotes: [offsetNote],
+      campaigns: [
+        { id: 'c1', label: 'Campaign A', current: 0.5, after: 0.5, delta: 0 },
+        { id: 'c2', label: 'Campaign B', current: 0.5, after: 0.5, delta: 0 },
+      ],
+    };
+    const rows = incentiveSourceToTableRows(src, 0, 'supply', true);
+    expect(rows).toHaveLength(2); // no aggregate
+    expect(rows[0].offsetNotes).toEqual([offsetNote]);
+    expect(rows[1].offsetNotes).toBeUndefined();
+  });
+
+  it('places offsetNotes on merged row when mergeSingleCampaignRow', () => {
+    const src: IncentiveSourceRow = {
+      label: 'Brevis Incentive',
+      current: 2,
+      after: 2,
+      delta: 0,
+      href: null,
+      mergeSingleCampaignRow: true,
+      offsetNotes: [offsetNote],
+      campaigns: [{ id: 'b1', label: 'Brevis', current: 2, after: 2, delta: 0 }],
+    };
+    const rows = incentiveSourceToTableRows(src, 0, 'supply', true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].offsetNotes).toEqual([offsetNote]);
+  });
+
+  it('places offsetNotes on main row when no campaigns', () => {
+    const src: IncentiveSourceRow = {
+      label: 'Protocol Incentive',
+      current: 1,
+      after: 1,
+      delta: 0,
+      href: null,
+      offsetNotes: [offsetNote],
+    };
+    const rows = incentiveSourceToTableRows(src, 0, 'supply', false);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].offsetNotes).toEqual([offsetNote]);
+  });
+});
