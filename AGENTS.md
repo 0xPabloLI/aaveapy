@@ -1,9 +1,24 @@
-# Repository Guidelines (Slim)
+# Repository Guidelines
 
 ## Quick Reference
 
 - **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — holds Aave V3 positions on mainnet. Source: `e2e/test-wallets.ts`. Use in Playwright via the "Watch address" input.
 - **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
+
+## Project Snapshot
+
+- Frontend app: React + TypeScript + Vite for Aave market analysis UI.
+- Main data sources: backend `GET /markets` and `GET /meta/side-data`.
+- Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
+- **技术架构**: `docs/ARCHITECTURE.md`（目录结构、数据流、shared schema、simulation、错误处理模式）。
+
+## Core Commands
+
+- `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
+- `npm run lint` — ESLint
+- `npm test` — Vitest
+- `npm run build` — production build
+- `npm run ci:remote` — full local gate (used by pre-push hook)
 
 ## Design Context
 
@@ -35,49 +50,39 @@
 - **阴影**：7 级（2xs→2xl），暗色比亮色更深
 - **详细规范**：`docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）
 
-## Project Snapshot
-- Frontend app: React + TypeScript + Vite for Aave market analysis UI.
-- Main data sources: backend `GET /markets` and `GET /meta/side-data`.
-- Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
-- **技术架构**: `docs/ARCHITECTURE.md`（目录结构、数据流、shared schema、simulation、错误处理模式）。
-
-## Core Commands
-- `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
-- `npm run lint` — ESLint
-- `npm test` — Vitest
-- `npm run build` — production build
-- `npm run ci:remote` — full local gate (used by pre-push hook)
-
 ## Session Workflow
-1. **Bootstrap when needed**: For substantial implementation, debugging, or design sessions, load `using-superpowers` via skill tool. Load `brainstorming` only for feature design, behavior changes, or solution exploration — skip for lightweight inspection, explanation, and routine work.
-2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
-3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
-4. **No code changes without explicit go-ahead**: 在用户确认开始或给出明确实施指令前，不修改任何代码文件。讨论、调研、Grill 阶段只做分析和方案设计。
-5. **Mandatory implementation workflow**: 每次改代码之前必须走完以下工作流，不得跳步：
-   1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案。**必须主动做场景风险分析**：按 `docs/conventions/scenario-enumeration-checklist.md` 逐类**穷举**边界场景（含跨 step 接口契约验证），验证跨消费者一致性。格式见 `docs/conventions/scenario-matrix.md`。
-   2. **To Spec** — 用 `to-spec` skill 合成 spec。**必须包含 Scenario & Risk Verification 章节**（场景矩阵），矩阵行直接成为 TDD 测试用例。**无矩阵 = spec 不完整**。
-   3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
-   4. **TDD Implement** — 逐 ticket 先思考最佳实践的改法是什么，再用 `implement` skill 实施；`implement` 必须强制调用 `tdd`（red → green → refactor），关键逻辑必须先写测试。**测试用例必须覆盖场景矩阵的所有行**。
-   5. **Code Review** — 实施完成后用 `code-review` skill 做双轴审查（Standards + Spec）
-   6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
-   7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
-   8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
-   9. **Session 结束验证** — 在 session 结束前，逐条确认 Step 1-8 全部完成。**未完成的步骤必须当场补做或显式标注为"跳过 + 原因"**。确认清单：
-      - [ ] Step 1 Grill 完成（有 spec 或对话记录佐证）
-      - [ ] Step 2 Spec 完成（有 spec 文件，含 Scenario Matrix）
-      - [ ] Step 3 Tickets 完成（有 ticket 拆分）
-      - [ ] Step 4 TDD 完成（测试 red → green → refactor）
-      - [ ] Step 5 Code Review 完成（有审查报告）
-      - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
-      - [ ] Step 7 Commit 完成（有 commit hash）
-      - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
-      - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
-## Commit Cadence (并行 agent 安全)
-**TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
+### Decision: Lightweight or Substantial?
+- **Lightweight**（检查、解释、常规工作）：直接进行，不需要加载额外 skill。
+- **UI/UX 设计任务**: 用 `impeccable` skill。
+- **Substantial implementation**: 按以下 Mandatory Implementation Workflow 执行。
 
-## 每次修改都用最佳实践
-详见 `docs/conventions/design-principles.md`；架构守卫测试 `src/test/architecture-guard.test.ts` 自动拦截。
+### Rules
+1. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
+2. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
+3. **No code changes without explicit go-ahead**: 在用户确认开始或给出明确实施指令前，不修改任何代码文件。讨论、调研、Grill 阶段只做分析和方案设计。
+
+### Mandatory Implementation Workflow
+每次改代码之前必须走完以下工作流，不得跳步：
+
+1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案。**必须主动做场景风险分析**：按 `docs/conventions/scenario-enumeration-checklist.md` 逐类**穷举**边界场景（含跨 step 接口契约验证），验证跨消费者一致性。格式见 `docs/conventions/scenario-matrix.md`。
+2. **To Spec** — 用 `to-spec` skill 合成 spec。**必须包含 Scenario & Risk Verification 章节**（场景矩阵），矩阵行直接成为 TDD 测试用例。**无矩阵 = spec 不完整**。
+3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
+4. **TDD Implement** — 逐 ticket 先思考最佳实践的改法是什么，再用 `implement` skill 实施。`implement` 内部驱动 TDD 流程（red → green → refactor），关键逻辑必须先写测试。**测试用例必须覆盖场景矩阵的所有行**。
+5. **Code Review** — 实施完成后用 `code-review` skill 做双轴审查（Standards + Spec）
+6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
+7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
+8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
+9. **Session 结束验证** — 在 session 结束前，逐条确认 Step 1-8 全部完成。**未完成的步骤必须当场补做或显式标注为"跳过 + 原因"**。确认清单：
+   - [ ] Step 1 Grill 完成（有 spec 或对话记录佐证）
+   - [ ] Step 2 Spec 完成（有 spec 文件，含 Scenario Matrix）
+   - [ ] Step 3 Tickets 完成（有 ticket 拆分）
+   - [ ] Step 4 TDD 完成（测试 red → green → refactor）
+   - [ ] Step 5 Code Review 完成（有审查报告）
+   - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
+   - [ ] Step 7 Commit 完成（有 commit hash）
+   - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
+   - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
 ## Coding Conventions
 - TypeScript + functional React components/hooks.
@@ -97,7 +102,13 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
-**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需手动探索交互时用 `playwright-interactive`；仅截图/快照用 `playwright`。
+**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需手动探索交互时用 `playwright-interactive`。
+
+## Commit Cadence (并行 agent 安全)
+**TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
+
+## 最佳实践
+详见 `docs/conventions/design-principles.md`；架构守卫测试 `src/test/architecture-guard.test.ts` 自动拦截。
 
 ## PR / Merge Guardrails
 - Commits: 简洁的 conventional 格式;不在 message 里放 URL。
@@ -186,9 +197,9 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
-## main Branch Protection (4 层防御)
+## main Branch Protection (5 层防御)
 
-main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶意代码无法自动合并到 main：
+main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶意代码无法自动合并到 main：
 
 ### Layer 1: Bot PR 不 auto-merge 到 main
 - `token-icon-sync.yml`、`hardcode-sync.yml`、`ci.yml` (openapi-sync) 的 labels 字段使用条件表达式：`${{ target != 'main' && 'automerge' || '' }}`
@@ -213,37 +224,6 @@ main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶
 - `branch-flow-guard` 已加入 main 的 required status checks，阻止非 `dev → main` PR 的合并
 - **根因**：solo developer 的 `required_approving_review_count=0` 意味着用户可以 self-merge 任何 CI 通过的 PR。Layer 1 只阻止 bot auto-merge，不阻止手动 merge。Layer 5 通过 CI check 机制性阻止 `lovable → main` 等非标准流程的 PR 被合并
 - **启用步骤**：push workflow → 等 CI 运行一次 → 在 GitHub Settings → Branches → main required checks 中添加 `branch-flow-guard`
-
-## Key References
-- `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
-- `docs/design/frontend-interaction-guardrails.md`
-- `docs/design/DESIGN-SYSTEM-REFERENCE.md`
-- `docs/rate-calculation.md`
-- `docs/PR_ANALYSIS.md`
-- `docs/conventions/merge-summary.md`
-- `docs/conventions/frontend-regression-checklist.md`
-- `docs/conventions/api-contract-checklist.md`
-- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`
-
-## Learned Preferences (Condensed)
-- Prefer Chinese for collaboration text and direct execution once confirmed.
-- Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
-- If user requests "先给方案", provide plan first before coding.
-- Keep implementation scoped; avoid unrelated refactors.
-- Avoid filling missing backend fields with guessed defaults.
-
-## Git Stash Safety
-禁止未经确认执行 `stash pop/apply/drop/clear`；暂存用 `stash push -m "msg"`，恢复前先 `stash list` 供审查。
-
-## Session Boundary
-不修非本 session 引入的问题；`git diff` 确认来源，已有问题告知用户决定。
-
-## Mobile Layout
-紧凑原则：复用留白不加独占行；去冗余标签优先图标+Tooltip；一行多信息纵向省空间；次要信息用最小档字体/间距；absolute 定位元素不含可变长度文字。
-
-## Canary & Hooks
-- `src/types/field-canary.test.ts` 穷举字段名，重命名时 tsc + test 双防线拦截。
-- Pre-push: stash > 3 警告清理。
 
 ## Golden Rules: Rate Simulation Calculator
 
@@ -277,6 +257,26 @@ main 是生产分支，直接面向用户。以下 4 层机制性保护确保恶
 - Eligibility gap info（cap、offset、eligible amount）是独立结构化数据，不重载到 delta。
 - Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `forecastStates`、无 `merklGroupMultiplier`、无 `positionUsd` 参数）。
 
+## Learned Preferences
+- Prefer Chinese for collaboration text and direct execution once confirmed.
+- Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
+- If user requests "先给方案", provide plan first before coding.
+- Keep implementation scoped; avoid unrelated refactors.
+- Avoid filling missing backend fields with guessed defaults.
+
+## Git Stash Safety
+禁止未经确认执行 `stash pop/apply/drop/clear`；暂存用 `stash push -m "msg"`，恢复前先 `stash list` 供审查。
+
+## Session Boundary
+不修非本 session 引入的问题；`git diff` 确认来源，已有问题告知用户决定。
+
+## Mobile Layout
+紧凑原则：复用留白不加独占行；去冗余标签优先图标+Tooltip；一行多信息纵向省空间；次要信息用最小档字体/间距；absolute 定位元素不含可变长度文字。
+
+## Canary & Hooks
+- `src/types/field-canary.test.ts` 穷举字段名，重命名时 tsc + test 双防线拦截。
+- Pre-push: stash > 3 警告清理。
+
 ## Learned Lessons (Index)
 详细 lessons 已外迁到以下文件，按需查阅：
 - `docs/lessons/rate-simulation.md` — Rate Simulation Calculator/incentive 计算相关（AAV-739/745/761/771/978/980/1059/1060/1075/1086/1097 等）
@@ -298,16 +298,13 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
 
-### Matt Pocock Skills v1.1 workflow
-
-Main flow: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/implement` (per ticket).
-
-- `/grill-with-docs` — sharpen idea via interview + ADR/glossary (has codebase). No codebase? Use `/grill-me`.
-- `/grilling` — the underlying interview primitive; `grill-me` and `grill-with-docs` both delegate to it.
-- `/to-spec` — synthesize conversation into spec (was `/to-prd`).
-- `/to-tickets` — split spec into tracer-bullet tickets with blocking edges (replaces `/to-issues`).
-- `/implement` — build per ticket; internally drives `/tdd` + `/code-review`.
-- `/wayfinder` — on-ramp for huge/foggy efforts; charts investigation map, merges onto main flow at `/to-spec`.
-- `/research` — delegate reading to a background agent; keeps you working while it reads.
-- `/ask-matt` — router: describe your situation, get the right skill path.
-
+## Key References
+- `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
+- `docs/design/frontend-interaction-guardrails.md`
+- `docs/design/DESIGN-SYSTEM-REFERENCE.md`
+- `docs/rate-calculation.md`
+- `docs/PR_ANALYSIS.md`
+- `docs/conventions/merge-summary.md`
+- `docs/conventions/frontend-regression-checklist.md`
+- `docs/conventions/api-contract-checklist.md`
+- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`

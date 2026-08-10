@@ -12,4 +12,4 @@ if [ "$STASH_COUNT" -gt 3 ]; then
   echo ""
 fi
 
-npm run ci:remote
+npm run ci:remote && npm run test:e2e:pre-push

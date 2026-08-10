@@ -3431,3 +3431,166 @@ describe('AAV-962: BORROW_BL incentive zeroing in simulation', () => {
     expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 6);
   });
 });
+
+describe('AAV-1024: Shared scenario generic offset note', () => {
+  const OFFSET_RESERVE_ID = '1:0xoffset:0xoffset';
+  const PAIRED_RESERVE_ID = '1:0xpaired:0xpaired';
+
+  const NPC_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    merklSupplys: [{
+      name: 'Net lending group',
+      breakdowns: [{
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'npc-shared-test',
+      }],
+      opportunityId: 'npc-1',
+      netPositionConstraint: {
+        sourceSide: 'supply',
+        offsetReserveIds: [OFFSET_RESERVE_ID],
+      },
+    }],
+  };
+
+  const CAP_RESERVE: ReserveWithSpread = {
+    ...BASE_RESERVE,
+    merklSupplys: [{
+      name: 'Cross-asset pairing group',
+      breakdowns: [{
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'cap-shared-test',
+      }],
+      opportunityId: 'cap-1',
+      crossAssetPairing: {
+        sourceSide: 'supply',
+        pairedReserveId: PAIRED_RESERVE_ID,
+        pairedSide: 'supply',
+        discountFactor: 0.823,
+      },
+    }],
+  };
+
+  // S1: Reserve has NPC, Shared scenario → no offset; show generic NPC note
+  it('S1: NPC reserve in Shared scenario shows generic NPC note', () => {
+    const result = buildRateSimulationResult({
+      reserve: NPC_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      // No crossReservePositions → Shared scenario
+    });
+
+    const merklNotes = result.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeDefined();
+    expect(merklNotes!.length).toBeGreaterThan(0);
+    const noteText = merklNotes![0].text;
+    expect(noteText).toContain('net position only');
+    expect(noteText).toContain('Portfolio mode');
+  });
+
+  // S2: Reserve has no NPC/CAP, Shared scenario → no note
+  it('S2: Reserve without NPC/CAP in Shared scenario shows no note', () => {
+    const result = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+    });
+
+    const merklNotes = result.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeUndefined();
+  });
+
+  // S13: Reserve has CAP (non-NPC), Shared scenario → no offset; show generic CAP note
+  it('S13: CAP reserve in Shared scenario shows generic CAP note', () => {
+    const result = buildRateSimulationResult({
+      reserve: CAP_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      // No crossReservePositions → Shared scenario
+    });
+
+    const merklNotes = result.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeDefined();
+    expect(merklNotes!.length).toBeGreaterThan(0);
+    const noteText = merklNotes![0].text;
+    expect(noteText).toContain('capped by paired asset');
+    expect(noteText).toContain('Portfolio mode');
+  });
+
+  // S14: crossReservePositions = undefined vs empty Map → same behavior
+  it('S14: NPC reserve with empty Map crossReservePositions shows same generic note as undefined', () => {
+    const resultWithEmptyMap = buildRateSimulationResult({
+      reserve: NPC_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      crossReservePositions: new Map(),
+    });
+
+    const merklNotes = resultWithEmptyMap.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeDefined();
+    expect(merklNotes!.length).toBeGreaterThan(0);
+    const noteText = merklNotes![0].text;
+    expect(noteText).toContain('net position only');
+    expect(noteText).toContain('Portfolio mode');
+  });
+
+  // Regression: Portfolio mode with crossReservePositions still shows precise note (S3)
+  it('S3 regression: NPC reserve in Portfolio mode shows precise note (not generic)', () => {
+    const result = buildRateSimulationResult({
+      reserve: NPC_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      totalSupplyUsd: 1000,
+      crossReservePositions: new Map([
+        [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 400 }],
+      ]),
+      reserveSymbolById: new Map([
+        [OFFSET_RESERVE_ID, 'USDe'],
+        [NPC_RESERVE.reserveId, 'USDC'],
+      ]),
+    });
+
+    const merklNotes = result.supply.sources.merkl?.notes;
+    expect(merklNotes).toBeDefined();
+    expect(merklNotes!.length).toBeGreaterThan(0);
+    const noteText = merklNotes![0].text;
+    // Precise note contains dollar amounts and "net eligible"
+    expect(noteText).toContain('net eligible');
+    expect(noteText).toContain('$');
+    // Should NOT contain the generic note text
+    expect(noteText).not.toContain('Cross-reserve borrows may reduce');
+  });
+});
