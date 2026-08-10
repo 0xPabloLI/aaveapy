@@ -44,19 +44,17 @@ if (!hasChromium) {
 // Exclude tests that depend on external services or local-only resources.
 // These are covered by manual testing or dedicated CI jobs.
 const GREP_INVERT = [
-  'Explorer',                      // Cloudflare blocks headless browsers
-  'Staging smoke',                 // staging.aaveapy.com behind Vercel Auth
-  'visual regression',             // macOS screenshot baselines
-  'header visual',                 // screenshot pixel-diff
-  'Wallet Sync',                   // requires live Aave SDK GraphQL
-  'Watch Mode',                    // requires live SDK + wallet
-  'Scenario input pin scroll',     // flaky scroll-position assertions (pre-existing)
-  'native columns show percentage', // data-dependent assertion on staging incentives
+  'Explorer',          // Cloudflare blocks headless browsers
+  'Staging smoke',     // staging.aaveapy.com behind Vercel Auth
+  'visual regression', // macOS screenshot baselines (slow, display-sensitive)
+  'header visual',     // screenshot pixel-diff
+  'Wallet Sync',       // requires live Aave SDK GraphQL
+  'Watch Mode',        // requires live SDK + wallet
 ].join('|');
 
 console.log('');
 console.log('🧪 Running e2e tests (desktop chromium, 2 workers, staging API)...');
-console.log('   Excludes: explorer, staging-smoke, visual, wallet-sync, watch-mode, scenario-pin, native-columns.');
+console.log('   Excludes: explorer links, staging-smoke, visual, wallet-sync, watch-mode.');
 console.log('   This typically takes ~2-3 min.');
 console.log('');
 
