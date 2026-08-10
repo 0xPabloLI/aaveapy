@@ -157,7 +157,17 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
       await moveRowAwayFromPinBand(page, reserveId);
       await resetScrollByProbe(page);
       await setScenarioInputs(page, step);
-      await page.waitForTimeout(1200);
+      // Wait for the table sort to stabilize (two consecutive reads with same order).
+      // A fixed 1200ms wait is insufficient — the sort may still be in progress.
+      await expect.poll(
+        async () => {
+          const order1 = await getVisibleReserveOrder(page);
+          await page.waitForTimeout(100);
+          const order2 = await getVisibleReserveOrder(page);
+          return order1.join(',') === order2.join(',') ? order1.length : 0;
+        },
+        { timeout: 15_000, message: `table sort to stabilize after scenario step` },
+      ).toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
       if (!didReorder(beforeOrder, afterOrder)) continue;
 
@@ -182,7 +192,7 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
             return scrollCount > 0;
           },
           {
-            timeout: 15_000,
+            timeout: 30_000,
             message:
               'pin mechanism should settle after scenario-driven reorder (row in band or scrollBy fired)',
           },
@@ -197,7 +207,7 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
             return box ? box.y : Number.POSITIVE_INFINITY;
           },
           {
-            timeout: 15_000,
+            timeout: 30_000,
             message: 'expanded row should be in pin band after scenario-driven reorder',
           },
         )

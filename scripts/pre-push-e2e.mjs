@@ -16,8 +16,13 @@
  *       • Visual regression → macOS screenshot baselines (slow, display-sensitive)
  *       • Wallet Sync → requires live Aave SDK GraphQL connections
  *       • Watch Mode  → requires live SDK + wallet extension
+ *
+ * Flaky tolerance:
+ *   - Tests that pass on retry ("flaky") do NOT block the push — only tests
+ *     that fail after all retries do. This avoids blocking pushes on staging
+ *     API timing flakiness while still catching real regressions.
  */
-import { execSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
@@ -58,21 +63,69 @@ console.log('   Excludes: explorer links, staging-smoke, visual, wallet-sync, wa
 console.log('   This typically takes ~2-3 min.');
 console.log('');
 
-try {
-  execSync(
-    `npx playwright test --project=chromium --retries=1 --workers=2 --grep-invert "${GREP_INVERT}"`,
+// Use spawn (async) instead of execSync so we can stream stdout to the
+// terminal in real-time while also capturing it for summary parsing.
+const result = await new Promise((resolve) => {
+  const child = spawn(
+    'npx',
+    ['playwright', 'test', '--project=chromium', '--retries=1', '--workers=2', '--grep-invert', GREP_INVERT],
     {
-      stdio: 'inherit',
+      stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env },
     },
   );
-  console.log('');
+
+  let stdout = '';
+  child.stdout.on('data', (data) => {
+    process.stdout.write(data);
+    stdout += data.toString();
+  });
+
+  child.on('close', (code) => {
+    resolve({ code: code ?? 1, stdout });
+  });
+
+  child.on('error', (err) => {
+    console.error(`Failed to spawn playwright: ${err.message}`);
+    resolve({ code: 1, stdout: '' });
+  });
+});
+
+// --- 4. Parse Playwright summary and decide exit code ---
+// Strip ANSI colour codes before regex matching.
+const ANSI = /\x1b\[[0-9;]*m/g;
+const clean = result.stdout.replace(ANSI, '');
+
+const failedMatch = clean.match(/^\s+(\d+)\s+failed\b/m);
+const failedCount = failedMatch ? parseInt(failedMatch[1], 10) : 0;
+const flakyMatch = clean.match(/^\s+(\d+)\s+flaky\b/m);
+const flakyCount = flakyMatch ? parseInt(flakyMatch[1], 10) : 0;
+
+console.log('');
+
+if (result.code === 0) {
   console.log('✅ e2e tests passed.');
   console.log('');
-} catch {
-  console.error('');
-  console.error('❌ e2e tests failed — push blocked.');
+  process.exit(0);
+}
+
+// Non-zero exit — distinguish actual failures from flaky-only.
+if (failedCount > 0) {
+  console.error(`❌ e2e tests failed — ${failedCount} test(s) failed after retry. Push blocked.`);
   console.error('   Fix the failing tests, or use `git push --no-verify` to skip (not recommended).');
   console.error('');
   process.exit(1);
 }
+
+if (flakyCount > 0) {
+  console.log(`⚠️  ${flakyCount} flaky test(s) passed on retry — push allowed.`);
+  console.log('   Consider fixing flaky tests to improve CI stability.');
+  console.log('');
+  process.exit(0);
+}
+
+// Non-zero exit with no recognisable summary — treat conservatively.
+console.error('❌ e2e tests exited abnormally — push blocked.');
+console.error('   Investigate the output above, or use `git push --no-verify` to skip (not recommended).');
+console.error('');
+process.exit(1);

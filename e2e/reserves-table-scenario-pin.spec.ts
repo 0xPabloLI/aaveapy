@@ -286,18 +286,23 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       await moveExpandedRowAwayFromPinBand(page, reserveId);
       await resetScrollByProbe(page);
       await setScenarioInputs(page, step);
-      // Wait for the table to settle after scenario change.
+      // Wait for the table sort to stabilize (two consecutive reads with same order).
+      // Just checking order.length > 0 is insufficient — the sort may still be in progress.
       await expect.poll(
         async () => {
-          const order = await getVisibleReserveOrder(page);
-          return order.length;
+          const order1 = await getVisibleReserveOrder(page);
+          await page.waitForTimeout(100);
+          const order2 = await getVisibleReserveOrder(page);
+          return order1.join(',') === order2.join(',') ? order1.length : 0;
         },
-        { timeout: 10_000, message: `table to settle after scenario step ${i + 1}` },
+        { timeout: 15_000, message: `table sort to stabilize after scenario step ${i + 1}` },
       ).toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
-      const scrollByCalls = await getScrollByProbeCount(page);
 
       if (!didReorder(beforeOrder, afterOrder, reserveId)) {
+        // Non-reorder: wait a bit to confirm no pin scroll fires.
+        await page.waitForTimeout(500);
+        const scrollByCalls = await getScrollByProbeCount(page);
         expect(
           scrollByCalls,
           `non-reorder edit #${i + 1} should not force pin scroll`,
@@ -310,6 +315,12 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       }
 
       reorderAssertCount += 1;
+      // Pin scroll is scheduled with a 320ms delay + rAF. Wait for it to fire.
+      await expect.poll(
+        () => getScrollByProbeCount(page),
+        { timeout: 10_000, message: `reorder edit #${i + 1} pin scroll to fire` },
+      ).toBeGreaterThan(0);
+      const scrollByCalls = await getScrollByProbeCount(page);
       expect(
         scrollByCalls,
         `reorder edit #${i + 1} must trigger pin scroll`,
