@@ -92,8 +92,8 @@ export interface SimulationTableRow {
 | 条件 | offsetNotes 放置 | notes 放置 |
 |------|-----------------|-----------|
 | 无 campaigns | main row | main row (如有) |
-| 有 campaigns + 显示 aggregate | main row | 每个 campaign row |
-| 有 campaigns + `hideAggregateWhenCampaigns` | 第一个 campaign row | 每个 campaign row |
+| 有 campaigns + 显示 aggregate | aggregate row + 每个 campaign row | 每个 campaign row |
+| 有 campaigns + `hideAggregateWhenCampaigns` | 每个 campaign row | 每个 campaign row |
 | 有 campaigns + `mergeSingleCampaignRow` | merged row | merged row |
 
 ### D5: `extractIncentiveCapWarnings()` 简化

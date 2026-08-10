@@ -166,7 +166,7 @@ export function incentiveSourceToTableRows(
       isSubBreakdown: true,
       nestedUnderIncentive,
       notes: c.notes,
-      offsetNotes: ci === 0 ? offsetNotes : undefined,
+      offsetNotes,
     }));
   }
   return [
@@ -183,6 +183,7 @@ export function incentiveSourceToTableRows(
       isSubBreakdown: true,
       nestedUnderIncentive,
       notes: c.notes,
+      offsetNotes,
     })),
   ];
 }
