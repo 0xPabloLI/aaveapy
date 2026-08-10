@@ -22,6 +22,8 @@
 
 ## 部署流程
 
+> **注意**：每次合并到 main 都必须先走完 `AGENTS.md` 中的"标准上线流程 (Production Deployment Checklist)"。本节的 5 步流程是在标准流程基础上的**扩展**，仅当前后端 API spec 有变更时才需要执行。无 API 变更时，标准流程的 Step 1-5 即为完整流程。
+
 ### Phase 1: Backend Staging Update
 
 1. **后端开发者**在 `railway` 分支进行开发

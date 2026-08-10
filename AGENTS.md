@@ -168,6 +168,44 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 
 **为什么用 merge commit 而不是 squash**：dev 和 lovable 的 commit 历史不同源（dev 有早期 Lovable 平台自动 commit），squash 会进一步割裂历史，使后续 PR 更容易 DIRTY。merge commit 保持双向可追踪。
 
+## 标准上线流程 (Production Deployment Checklist)
+
+**每次合并到 main 都必须走完以下流程，不得跳步。** 涉及 API spec 变更时，在此流程基础上额外执行"前后端协同部署工作流"的 5 步无缝过渡。
+
+### 前置条件
+- lovable 分支代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
+- `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
+
+### Step 1: lovable → dev（自动合并）
+1. 创建 PR：`gh pr create --base dev --head lovable --title "Sync lovable to dev" --body "..."`
+2. 启用 auto-merge（merge commit）：`gh pr merge <PR> --merge --auto`
+3. CI 通过后自动合并
+
+### Step 2: dev → main PR（创建，不合并）
+1. 创建 PR：`gh pr create --base main --head dev --title "Production: <概述>" --body "..."`
+2. **禁止自动合并** — main 有 GPG 签名要求（Layer 4），CLI 无法产生签名 merge commit
+3. Agent 只负责创建 PR，不执行合并
+
+### Step 3: Staging 验证
+1. 访问 [staging.aaveapy.com](https://staging.aaveapy.com) 验证功能正常
+2. 重点关注本次变更涉及的功能点
+3. 如有问题，修复后回到 Step 1
+
+### Step 4: 用户手动合并
+1. 用户在 GitHub UI 手动合并 dev → main PR（满足 GPG 签名要求）
+2. Vercel 自动部署 production
+
+### Step 5: Production 验证
+1. 访问 [aaveapy.com](https://aaveapy.com) 验证 production 正常
+2. 检查 Vercel deployment 状态
+3. 确认无 regression
+
+### Agent 行为约束
+- **dev → main PR 绝对不自动合并**，无论用户说什么（包括"按标准流程走完合并"），只创建不合并
+- 必须等用户明确说"合并"或"merge"后才能提示用户在 GitHub UI 操作
+- 遇到 branch protection 阻塞时，报告给用户决定，不自行绕过
+- 已在 AAV-556/562 两次违规合并，用户明确警告
+
 ## 前后端协同部署工作流
 
 **核心原则**：后端是 Source of Truth，前端通过自动化管道消费后端 spec。部署顺序：后端 Staging → 前端 Staging 验证 → 前端 Production（暂连 Staging API）→ 后端 Production → 前端切 Production API。
