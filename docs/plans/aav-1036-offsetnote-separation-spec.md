@@ -92,8 +92,7 @@ export interface SimulationTableRow {
 | 条件 | offsetNotes 放置 | notes 放置 |
 |------|-----------------|-----------|
 | 无 campaigns | main row | main row (如有) |
-| 有 campaigns + 显示 aggregate | aggregate row + 每个 campaign row | 每个 campaign row |
-| 有 campaigns + `hideAggregateWhenCampaigns` | 每个 campaign row | 每个 campaign row |
+| 有 campaigns | 每个 campaign row | 每个 campaign row |
 | 有 campaigns + `mergeSingleCampaignRow` | merged row | merged row |
 
 ### D5: `extractIncentiveCapWarnings()` 简化
@@ -217,7 +216,7 @@ SimulationSubRow.tsx
 |---|------|---------|---------|---------|
 | S1 | Source 有 offsetNotes，无 campaigns | Null/Undefined | offsetNotes 在 main row | `rateSimulationCalculator.test.ts` |
 | S2 | Source 有 offsetNotes + campaigns (aggregate shown) | 正常路径 | offsetNotes 在 main row，不在 campaign rows | `rateSimulationCalculator.test.ts` |
-| S3 | Source 有 offsetNotes + campaigns + `hideAggregateWhenCampaigns` | 渲染 fallback | offsetNotes 在第一个 campaign row | `simulationIncentiveTableRows.test.ts` |
+| S3 | Source 有 offsetNotes + campaigns | 正常路径 | offsetNotes 在每个 campaign row | `simulationIncentiveTableRows.test.ts` |
 | S4 | Source 有 offsetNotes + campaigns + `mergeSingleCampaignRow` | 边界 | offsetNotes 在 merged row | `simulationIncentiveTableRows.test.ts` |
 | S5 | Source 无 offsetNotes | Null/Undefined | offsetNotes = undefined，无渲染，无 crash | `rateSimulationCalculator.test.ts` |
 | S6 | Source offsetNotes = [] (空数组) | Empty boundary | 同 undefined，无渲染 | `rateSimulationCalculator.test.ts` |
