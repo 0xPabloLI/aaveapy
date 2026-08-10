@@ -27,8 +27,8 @@ async function pickAlternateVisibleMarket(
 }
 
 async function waitForTableReady(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
 async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise<string> {

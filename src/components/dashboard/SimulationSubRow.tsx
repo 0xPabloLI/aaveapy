@@ -498,8 +498,9 @@ const SimulationSubRow = ({
 
     /** Indent cap note to match label column hierarchy; row uses colspan so note can use full table width. */
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
-    const labelCellPy = row.notes?.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
-    const valueCellPy = row.notes?.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const allNotes = [...(row.notes ?? []), ...(row.offsetNotes ?? [])];
+    const labelCellPy = allNotes.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const valueCellPy = allNotes.length ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
     const capRowPb = tight ? 'pb-0.5' : 'pb-1';
     const resolvedAlignBand = alignBand ?? getDesktopAlignBandFromRowKey(row.rowKey);
     const mainAlignKey = getDesktopAlignKey(resolvedAlignBand, 'main');
@@ -603,7 +604,7 @@ const SimulationSubRow = ({
       </tr>
     ) : null;
 
-    const capNotePlaceholder = !row.notes?.length && peerCapInfo?.hasCapNote ? (
+    const capNotePlaceholder = !allNotes.length && peerCapInfo?.hasCapNote ? (
       <tr data-align-key={noteAlignKey} aria-hidden>
         <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
           <p className="ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none">
@@ -617,17 +618,19 @@ const SimulationSubRow = ({
       <Fragment key={row.rowKey}>
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
-        {row.notes?.map((note, ni) => (
-          <tr key={`${row.rowKey}-note-${ni}`} data-align-key={noteAlignKey} className={note.color === 'amber' ? 'ds-bg-warning-row' : ''}>
-            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
-              <p
-                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-              >
-                {note.text}
-              </p>
-            </td>
-          </tr>
-        )) ?? capNotePlaceholder}
+        {allNotes.length > 0
+          ? allNotes.map((note, ni) => (
+              <tr key={`${row.rowKey}-note-${ni}`} data-align-key={noteAlignKey} className={note.color === 'amber' ? 'ds-bg-warning-row' : ''}>
+                <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+                  <p
+                    className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                  >
+                    {note.text}
+                  </p>
+                </td>
+              </tr>
+            ))
+          : capNotePlaceholder}
       </Fragment>
     );
   };
@@ -661,10 +664,11 @@ const SimulationSubRow = ({
           : 'ml-2 pl-2 border-l'
         : '';
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+    const allNotes = [...(row.notes ?? []), ...(row.offsetNotes ?? [])];
     const rowBgClass = row.warning ? 'ds-bg-warning-row' : '';
     const cellBgClass = `${rowBgClass} ${sectionClass}`.trim();
-    const labelCellPy = row.notes?.length ? 'pt-0.5 pb-0' : 'py-1';
-    const valueCellPy = row.notes?.length ? 'pt-0.5 pb-0' : 'py-1';
+    const labelCellPy = allNotes.length ? 'pt-0.5 pb-0' : 'py-1';
+    const valueCellPy = allNotes.length ? 'pt-0.5 pb-0' : 'py-1';
 
     const capProgressBar = (() => {
       if (row.cap == null || row.type !== 'usd') return null;
@@ -754,7 +758,7 @@ const SimulationSubRow = ({
           </div>
         </div>
         {capProgressBar}
-        {row.notes?.map((note, ni) => (
+        {allNotes.map((note, ni) => (
           <div key={`note-${ni}`} role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${note.color === 'amber' ? 'ds-bg-warning-row' : ''}`}>
             <p
               className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
@@ -947,9 +951,10 @@ const SimulationSubRow = ({
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
-            const peerHasCapNote = Boolean(peer?.notes?.length);
+            const peerAllNotes = [...(peer?.notes ?? []), ...(peer?.offsetNotes ?? [])];
+            const peerHasCapNote = peerAllNotes.length > 0;
             const peerCapInfo = peerHasCapBar || peerHasCapNote
-              ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNoteText: peer?.notes?.[0]?.text }
+              ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNoteText: peerAllNotes[0]?.text }
               : undefined;
             return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
@@ -964,10 +969,10 @@ const SimulationSubRow = ({
   const showHeaderBlock = showEmptyStateNote;
   const scenarioAccrual = simulation.scenarioUsdAccrual;
   const supplyDesktopAlignSignature = supplyRows
-    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.notes?.[0]?.text ?? ''}`)
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${[...(row.notes ?? []), ...(row.offsetNotes ?? [])][0]?.text ?? ''}`)
     .join('|');
   const borrowDesktopAlignSignature = borrowRows
-    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.notes?.[0]?.text ?? ''}`)
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${[...(row.notes ?? []), ...(row.offsetNotes ?? [])][0]?.text ?? ''}`)
     .join('|');
 
   useEffect(() => {
@@ -1073,8 +1078,14 @@ const SimulationSubRow = ({
       const borrowRow = borrowRowByKey.get(borrowKey);
       return {
         hasCapSpacer: supplyRow?.cap != null || borrowRow?.cap != null,
-        hasNoteSpacer: Boolean(supplyRow?.notes?.length || borrowRow?.notes?.length),
-        notePlaceholder: getLongestNote([supplyRow?.notes?.[0]?.text, borrowRow?.notes?.[0]?.text]),
+        hasNoteSpacer: Boolean(
+          (supplyRow?.notes?.length ?? 0) + (supplyRow?.offsetNotes?.length ?? 0) > 0 ||
+          (borrowRow?.notes?.length ?? 0) + (borrowRow?.offsetNotes?.length ?? 0) > 0,
+        ),
+        notePlaceholder: getLongestNote([
+          [...(supplyRow?.notes ?? []), ...(supplyRow?.offsetNotes ?? [])][0]?.text,
+          [...(borrowRow?.notes ?? []), ...(borrowRow?.offsetNotes ?? [])][0]?.text,
+        ]),
         capWarning: Boolean(supplyRow?.warning || borrowRow?.warning),
         maxCap: Math.max(supplyRow?.cap ?? 0, borrowRow?.cap ?? 0),
       };

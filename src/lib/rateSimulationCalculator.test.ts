@@ -1681,40 +1681,47 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
   });
 });
 
-describe('attachCampaigns: sourceNotes propagation to all campaigns', () => {
+describe('attachCampaigns: offsetNotes separation (AAV-1036)', () => {
   const metric = { current: 1, after: 2, delta: 1 };
-  const sourceNote: import('./incentiveCaps').IncentiveNote = { type: 'net_eligible', text: '$500 of $1,000 net eligible', color: 'muted' };
+  const offsetNote: import('./incentiveCaps').IncentiveNote = { type: 'net_eligible', text: '$500 of $1,000 net eligible', color: 'muted' };
   const campaigns = [
     { id: 'c1', label: 'Campaign 1', current: 0.5, after: 0.6, delta: 0.1 },
     { id: 'c2', label: 'Campaign 2', current: 0.3, after: 0.4, delta: 0.1 },
     { id: 'c3', label: 'Campaign 3', current: 0.2, after: 0.3, delta: 0.1 },
   ];
 
-  it('attaches sourceNotes to every campaign row', () => {
-    const result = attachCampaigns(metric, campaigns, [sourceNote]);
+  it('does NOT attach offsetNotes to campaign rows', () => {
+    const result = attachCampaigns(metric, campaigns, [offsetNote]);
     expect(result.campaigns).toHaveLength(3);
     for (const c of result.campaigns!) {
-      expect(c.notes).toContainEqual(sourceNote);
+      expect(c.notes).toBeUndefined();
     }
   });
 
-  it('preserves existing campaign notes alongside sourceNotes', () => {
-    const campaignWithNote = { ...campaigns[0], notes: [{ type: 'position_cap' as const, text: 'cap hit', color: 'amber' as const }] };
-    const result = attachCampaigns(metric, [campaignWithNote, campaigns[1]], [sourceNote]);
-    expect(result.campaigns![0].notes).toHaveLength(2);
-    expect(result.campaigns![1].notes).toHaveLength(1);
-    expect(result.campaigns![0].notes).toContainEqual(sourceNote);
+  it('preserves existing campaign cap notes without polluting with offsetNotes', () => {
+    const capNote = { type: 'position_cap' as const, text: 'cap hit', color: 'amber' as const };
+    const campaignWithNote = { ...campaigns[0], notes: [capNote] };
+    const result = attachCampaigns(metric, [campaignWithNote, campaigns[1]], [offsetNote]);
+    expect(result.campaigns![0].notes).toEqual([capNote]);
+    expect(result.campaigns![1].notes).toBeUndefined();
   });
 
-  it('returns sourceNotes on the source-level notes field', () => {
-    const result = attachCampaigns(metric, campaigns, [sourceNote]);
-    expect(result.notes).toEqual([sourceNote]);
+  it('returns offsetNotes on the source-level offsetNotes field', () => {
+    const result = attachCampaigns(metric, campaigns, [offsetNote]);
+    expect(result.offsetNotes).toEqual([offsetNote]);
+    expect(result.notes).toBeUndefined();
   });
 
-  it('returns campaigns unchanged when no sourceNotes', () => {
+  it('returns campaigns unchanged when no offsetNotes', () => {
     const result = attachCampaigns(metric, campaigns);
     expect(result.campaigns).toEqual(campaigns);
-    expect(result.notes).toBeUndefined();
+    expect(result.offsetNotes).toBeUndefined();
+  });
+
+  it('returns offsetNotes and no campaigns when campaigns empty', () => {
+    const result = attachCampaigns(metric, [], [offsetNote]);
+    expect(result.campaigns).toBeUndefined();
+    expect(result.offsetNotes).toEqual([offsetNote]);
   });
 });
 
@@ -1921,10 +1928,10 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
       crossReservePositions,
     });
 
-    const merklNotes = result.supply.sources.merkl?.notes;
-    expect(merklNotes).toBeDefined();
-    expect(merklNotes!.length).toBeGreaterThan(0);
-    const noteText = merklNotes![0].text;
+    const merklOffsetNotes = result.supply.sources.merkl?.offsetNotes;
+    expect(merklOffsetNotes).toBeDefined();
+    expect(merklOffsetNotes!.length).toBeGreaterThan(0);
+    const noteText = merklOffsetNotes![0].text;
     expect(noteText).toContain('$1,042');
     expect(noteText).toContain('net eligible');
   });
@@ -3489,10 +3496,10 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
       // No crossReservePositions → Shared scenario
     });
 
-    const merklNotes = result.supply.sources.merkl?.notes;
-    expect(merklNotes).toBeDefined();
-    expect(merklNotes!.length).toBeGreaterThan(0);
-    const noteText = merklNotes![0].text;
+    const merklOffsetNotes = result.supply.sources.merkl?.offsetNotes;
+    expect(merklOffsetNotes).toBeDefined();
+    expect(merklOffsetNotes!.length).toBeGreaterThan(0);
+    const noteText = merklOffsetNotes![0].text;
     expect(noteText).toContain('net position only');
     expect(noteText).toContain('Portfolio mode');
   });
@@ -3530,10 +3537,10 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
       // No crossReservePositions → Shared scenario
     });
 
-    const merklNotes = result.supply.sources.merkl?.notes;
-    expect(merklNotes).toBeDefined();
-    expect(merklNotes!.length).toBeGreaterThan(0);
-    const noteText = merklNotes![0].text;
+    const merklOffsetNotes = result.supply.sources.merkl?.offsetNotes;
+    expect(merklOffsetNotes).toBeDefined();
+    expect(merklOffsetNotes!.length).toBeGreaterThan(0);
+    const noteText = merklOffsetNotes![0].text;
     expect(noteText).toContain('capped by paired asset');
     expect(noteText).toContain('Portfolio mode');
   });
@@ -3553,10 +3560,10 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
       crossReservePositions: new Map(),
     });
 
-    const merklNotes = resultWithEmptyMap.supply.sources.merkl?.notes;
-    expect(merklNotes).toBeDefined();
-    expect(merklNotes!.length).toBeGreaterThan(0);
-    const noteText = merklNotes![0].text;
+    const merklOffsetNotes = resultWithEmptyMap.supply.sources.merkl?.offsetNotes;
+    expect(merklOffsetNotes).toBeDefined();
+    expect(merklOffsetNotes!.length).toBeGreaterThan(0);
+    const noteText = merklOffsetNotes![0].text;
     expect(noteText).toContain('net position only');
     expect(noteText).toContain('Portfolio mode');
   });
@@ -3583,10 +3590,10 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
       ]),
     });
 
-    const merklNotes = result.supply.sources.merkl?.notes;
-    expect(merklNotes).toBeDefined();
-    expect(merklNotes!.length).toBeGreaterThan(0);
-    const noteText = merklNotes![0].text;
+    const merklOffsetNotes = result.supply.sources.merkl?.offsetNotes;
+    expect(merklOffsetNotes).toBeDefined();
+    expect(merklOffsetNotes!.length).toBeGreaterThan(0);
+    const noteText = merklOffsetNotes![0].text;
     // Precise note contains dollar amounts and "net eligible"
     expect(noteText).toContain('net eligible');
     expect(noteText).toContain('$');

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread, CampaignGroup, CampaignAccessEntry } from './aave';
 import type { SideDataMetaResponse, SideDataSubSourceErrors } from '@/hooks/useSideDataMeta';
 import { nativeToUsd, getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { MerklOpportunityGroupSchema } from '@/shared/market-contract/schemas';
 
 const mock: ReserveWithSpread = {
   reserveId: 'canary-1',
@@ -159,8 +160,7 @@ describe('CampaignGroup borrowBlacklist field-name canary (AAV-962)', () => {
     expect(plain.borrowBlacklist).toBeUndefined();
   });
 
-  it('MerklOpportunityGroupSchema accepts borrowBlacklist: true', async () => {
-    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+  it('MerklOpportunityGroupSchema accepts borrowBlacklist: true', () => {
     const parsed = MerklOpportunityGroupSchema.parse({
       link: 'https://merkl.xyz',
       breakdowns: [],
@@ -169,8 +169,7 @@ describe('CampaignGroup borrowBlacklist field-name canary (AAV-962)', () => {
     expect(parsed.borrowBlacklist).toBe(true);
   });
 
-  it('MerklOpportunityGroupSchema strips unknown values but keeps borrowBlacklist', async () => {
-    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+  it('MerklOpportunityGroupSchema strips unknown values but keeps borrowBlacklist', () => {
     const parsed = MerklOpportunityGroupSchema.parse({
       link: 'https://merkl.xyz',
       breakdowns: [],
@@ -220,8 +219,7 @@ describe('CampaignGroup crossAssetPairing field-name canary (AAV-895)', () => {
     expect(group.crossAssetPairing).toBeNull();
   });
 
-  it('MerklOpportunityGroupSchema accepts crossAssetPairing', async () => {
-    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+  it('MerklOpportunityGroupSchema accepts crossAssetPairing', () => {
     const parsed = MerklOpportunityGroupSchema.parse({
       link: 'https://merkl.xyz',
       breakdowns: [],
@@ -237,8 +235,7 @@ describe('CampaignGroup crossAssetPairing field-name canary (AAV-895)', () => {
     expect(parsed.crossAssetPairing!.discountFactor).toBeCloseTo(0.823, 10);
   });
 
-  it('MerklOpportunityGroupSchema accepts null crossAssetPairing', async () => {
-    const { MerklOpportunityGroupSchema } = await import('@/shared/market-contract/schemas');
+  it('MerklOpportunityGroupSchema accepts null crossAssetPairing', () => {
     const parsed = MerklOpportunityGroupSchema.parse({
       link: 'https://merkl.xyz',
       breakdowns: [],

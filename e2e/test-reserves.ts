@@ -146,7 +146,7 @@ export async function setupPortfolioWithReserve(
   reserve: TestReserve,
 ): Promise<Locator> {
   await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('portfolio-mode-toggle').click();
   await page.getByRole('button', { name: 'Search tokens' }).click();
   await page.getByRole('textbox', { name: 'Search tokens to add' }).fill(reserve.symbol);

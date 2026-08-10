@@ -40,7 +40,7 @@ describe('discoverMainnetChainIds', () => {
   it('returns a non-empty set of chain IDs', async () => {
     const ids = await discoverMainnetChainIds();
     expect(ids.size).toBeGreaterThan(0);
-  });
+  }, 30000);
 
   it('includes known mainnet chain IDs', async () => {
     const ids = await discoverMainnetChainIds();

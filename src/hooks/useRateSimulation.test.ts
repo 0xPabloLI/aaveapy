@@ -1886,7 +1886,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
     expect(merklCampaigns![0].notes?.find(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap')).toBeUndefined();
-    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text).toContain('USDe');
+    expect(result.supply.sources.merkl.offsetNotes?.find(n => n.type === 'net_eligible')?.text).toContain('USDe');
   });
 
   it('no cross-reserve note when no reserveSymbolById', () => {

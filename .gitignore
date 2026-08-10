@@ -52,6 +52,8 @@ test-results/
 # Personal agent skill symlinks and hooks (absolute paths into ~/.agents)
 .agents/
 .agent/
+agent/
+.factory/
 .trae/skills/
 .claude/
 .codex/
@@ -61,6 +63,7 @@ test-results/
 .github/hooks/
 .impeccable/
 .opencode/
+skills-lock.json
 
 # Debug scripts and pages (development-only, not committed)
 scripts/debug-*
