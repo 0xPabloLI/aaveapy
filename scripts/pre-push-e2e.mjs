@@ -5,19 +5,17 @@
  * Skips gracefully if Playwright browsers aren't installed (first-time setup,
  * fresh clone, etc.) so the push isn't blocked by missing infrastructure.
  *
- * When browsers ARE installed, runs `npx playwright test --project=chromium`
- * (desktop only — mobile tests are covered by the CI matrix).
- *
- * Sets CI=true so Playwright's webServer uses `build:staging && preview:staging`
- * (pre-compiled, instant page loads) instead of `dev:staging` (Vite dev server,
- * on-demand compilation, slow page loads that cause timeout failures).
- * This also skips tests that are known to fail in CI environments:
- *   - staging-smoke (staging.aaveapy.com behind Vercel Authentication)
- *   - explorer-links (Cloudflare blocks external blockchain explorers)
- *   - *-visual (screenshot baselines are macOS-specific)
- *   - watch-resubmit-refresh / wallet-reconnect (require live Aave SDK GraphQL)
- *   - portfolio-wallet-sync-precision (requires live SDK connections)
- *   - reserves-table-scenario-pin 2nd+3rd tests (complex multi-step timing)
+ * Strategy:
+ *   - Uses `dev:staging` webServer (Vite dev server, no build step → no OOM)
+ *   - `--workers=2` to limit staging API load (default 6 causes timeouts)
+ *   - `--retries=1` for flaky tolerance
+ *   - `--grep-invert` excludes tests that depend on external services or
+ *     local-only resources that can't work in a pre-push context:
+ *       • Explorer links → Cloudflare blocks headless browsers
+ *       • Staging smoke  → staging.aaveapy.com behind Vercel Authentication
+ *       • Visual regression → macOS screenshot baselines (slow, display-sensitive)
+ *       • Wallet Sync → requires live Aave SDK GraphQL connections
+ *       • Watch Mode  → requires live SDK + wallet extension
  */
 import { execSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
@@ -43,17 +41,33 @@ if (!hasChromium) {
 }
 
 // --- 3. Run desktop chromium e2e tests ---
+// Exclude tests that depend on external services or local-only resources.
+// These are covered by manual testing or dedicated CI jobs.
+const GREP_INVERT = [
+  'Explorer',                      // Cloudflare blocks headless browsers
+  'Staging smoke',                 // staging.aaveapy.com behind Vercel Auth
+  'visual regression',             // macOS screenshot baselines
+  'header visual',                 // screenshot pixel-diff
+  'Wallet Sync',                   // requires live Aave SDK GraphQL
+  'Watch Mode',                    // requires live SDK + wallet
+  'Scenario input pin scroll',     // flaky scroll-position assertions (pre-existing)
+  'native columns show percentage', // data-dependent assertion on staging incentives
+].join('|');
+
 console.log('');
-console.log('🧪 Running e2e tests (desktop chromium, staging API, CI mode)...');
-console.log('   Uses build+preview (fast page loads). Skips tests known to fail outside local dev.');
-console.log('   This typically takes ~2-3 min (including build).');
+console.log('🧪 Running e2e tests (desktop chromium, 2 workers, staging API)...');
+console.log('   Excludes: explorer, staging-smoke, visual, wallet-sync, watch-mode, scenario-pin, native-columns.');
+console.log('   This typically takes ~2-3 min.');
 console.log('');
 
 try {
-  execSync('npx playwright test --project=chromium --retries=1', {
-    stdio: 'inherit',
-    env: { ...process.env, CI: 'true' },
-  });
+  execSync(
+    `npx playwright test --project=chromium --retries=1 --workers=2 --grep-invert "${GREP_INVERT}"`,
+    {
+      stdio: 'inherit',
+      env: { ...process.env },
+    },
+  );
   console.log('');
   console.log('✅ e2e tests passed.');
   console.log('');

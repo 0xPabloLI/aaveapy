@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const strictStickAssertEnabled = process.env.STRICT_STICK_ASSERT === 'true';
 
 async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible();
+  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
 async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
