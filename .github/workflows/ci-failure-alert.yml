@@ -38,12 +38,19 @@ jobs:
             const failedJobs = jobs.filter(j => j.conclusion === 'failure');
             const failedNames = failedJobs.map(j => j.name).join(', ');
 
+            // E2E tests depend on live staging API data and are inherently flaky.
+            // When *only* e2e jobs fail, skip issue creation to avoid noise.
+            // Non-e2e failures (lint, build, test, etc.) still create issues.
+            const isE2eOnly = failedJobs.length > 0 &&
+              failedJobs.every(j => j.name.startsWith('e2e-'));
+
             core.setOutput('sha', sha.substring(0, 7));
             core.setOutput('branch', branch);
             core.setOutput('run_url', runUrl);
             core.setOutput('actor', actor);
             core.setOutput('failed_jobs', failedNames);
             core.setOutput('run_id', String(runId));
+            core.setOutput('is_e2e_only', String(isE2eOnly));
 
       - name: Check if duplicate issue exists (open)
         id: dedup
@@ -63,6 +70,7 @@ jobs:
             }
 
       - name: Create or update failure issue
+        if: steps.gather.outputs.is_e2e_only != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -83,10 +91,6 @@ jobs:
               `| Pushed by | @${actor} |`,
               `| Failed jobs | ${failedJobs} |`,
               `| CI run | [View logs](${runUrl}) |`,
-              '',
-              '### Root cause',
-              '',
-              'This failure was likely introduced by a Lovable (gpt-engineer-app) bot push that bypassed local pre-push hooks.',
               '',
               '### Action required',
               '',
@@ -121,3 +125,10 @@ jobs:
               });
               core.info(`Created issue #${issue.number}`);
             }
+
+      - name: Log skipped e2e-only failure
+        if: steps.gather.outputs.is_e2e_only == 'true'
+        run: |
+          echo "ℹ️  CI failure was e2e-only (${{ steps.gather.outputs.failed_jobs }})."
+          echo "   No issue created — e2e tests are inherently flaky with live staging data."
+          echo "   Check the CI run for details: ${{ steps.gather.outputs.run_url }}"

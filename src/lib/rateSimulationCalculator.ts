@@ -1432,7 +1432,16 @@ export function buildRateSimulationResult({
           discountFactor: pairing.discountFactor,
         });
       }
+      // AAV-1024: Generic note for Shared scenario (no crossReservePositions).
+      // CAP and NPC are mutually exclusive, so this won't fire if the precise CAP note above returned.
+      if (pairing && (!crossReservePositions || crossReservePositions.size === 0)) {
+        return '⚠️ In Portfolio mode, this incentive is capped by paired asset position. See Portfolio for precise values.';
+      }
       const constraint = group.netPositionConstraint;
+      // AAV-1024: Generic note for Shared scenario (no crossReservePositions).
+      if (constraint && (!crossReservePositions || crossReservePositions.size === 0)) {
+        return '⚠️ In Portfolio mode, this incentive applies to net position only. Cross-reserve borrows may reduce eligibility.';
+      }
       if (!constraint || !crossReservePositions || crossReservePositions.size === 0 || !reserveSymbolById) return null;
       const netUsd = computeCrossReserveNetEligible({
         sourceSide: constraint.sourceSide,

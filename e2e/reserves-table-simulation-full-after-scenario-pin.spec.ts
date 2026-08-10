@@ -163,14 +163,35 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
       const afterOrder = await getVisibleReserveOrder(page);
       if (!didReorder(beforeOrder, afterOrder)) continue;
 
-      await expect
-        .poll(() => getScrollByProbeCount(page), {
-          timeout: 15_000,
-          message: 'a scenario-driven reorder should trigger pin scrolling',
-        })
-        .toBeGreaterThan(0);
-
+      // After a scenario-driven reorder, the pin-scroll mechanism should
+      // bring the expanded row into the pin band.  This happens either:
+      //  (a) via window.scrollBy — row was outside the pin band after reorder, or
+      //  (b) as a no-op — row already ended up near the pin band after reorder
+      //      (shouldScrollExpandedSimulationIntoView returns false when delta < 10px).
+      // Both outcomes are valid; requiring scrollBy > 0 unconditionally causes
+      // false failures when live staging data produces a reorder that moves the
+      // row into the band without needing a scroll.
       const pinnedTopY = await getPinnedTopY(page);
+      await expect
+        .poll(
+          async () => {
+            const box = await expandedMain.boundingBox();
+            if (!box) return false;
+            const inBand = box.y <= pinnedTopY + 28;
+            if (inBand) return true;
+            // Row is outside pin band — pin scroll should have called scrollBy.
+            const scrollCount = await getScrollByProbeCount(page);
+            return scrollCount > 0;
+          },
+          {
+            timeout: 15_000,
+            message:
+              'pin mechanism should settle after scenario-driven reorder (row in band or scrollBy fired)',
+          },
+        )
+        .toBe(true);
+
+      // Verify the row actually ended up pinned (covers both scroll and no-scroll paths).
       await expect
         .poll(
           async () => {
@@ -179,7 +200,7 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
           },
           {
             timeout: 15_000,
-            message: 'expanded row should pin after an observed scenario-driven reorder',
+            message: 'expanded row should be in pin band after scenario-driven reorder',
           },
         )
         .toBeLessThanOrEqual(pinnedTopY + 28);
