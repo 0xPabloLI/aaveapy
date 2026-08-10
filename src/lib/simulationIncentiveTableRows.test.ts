@@ -16,7 +16,6 @@ describe('incentiveSourceToTableRows', () => {
       after: 1,
       delta: 0,
       href: 'https://merkl.example/opps',
-      hideAggregateWhenCampaigns: true,
       campaigns: [
         {
           id: 'c1',
@@ -40,7 +39,6 @@ describe('incentiveSourceToTableRows', () => {
       after: 1,
       delta: 0,
       href: 'https://merkl.example/opps',
-      hideAggregateWhenCampaigns: true,
       campaigns: [
         {
           id: 'c1',
@@ -56,7 +54,7 @@ describe('incentiveSourceToTableRows', () => {
     expect(rows[0].href).toBe('https://campaign.example/a');
   });
 
-  it('sub-rows under aggregate use src.href when campaign omits href', () => {
+  it('campaign row uses src.href when campaign omits href', () => {
     const src: IncentiveSourceRow = {
       label: 'Protocol Incentive',
       current: 0.5,
@@ -74,8 +72,8 @@ describe('incentiveSourceToTableRows', () => {
       ],
     };
     const rows = incentiveSourceToTableRows(src, 0, 'borrow', false);
-    expect(rows).toHaveLength(2);
-    expect(rows[1].href).toBe('https://aave.example/reserve');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].href).toBe('https://aave.example/reserve');
   });
 
   it('mergeSingleCampaignRow uses c.href ?? src.href', () => {
@@ -229,7 +227,7 @@ describe('hasAnyIncentiveBreakdownHref', () => {
 describe('incentiveSourceToTableRows: offsetNotes placement (AAV-1036)', () => {
   const offsetNote = { type: 'net_eligible' as const, text: '$500 of $1,000 net eligible', color: 'muted' as const };
 
-  it('places offsetNotes on aggregate and every campaign when both shown', () => {
+  it('places offsetNotes on every campaign row', () => {
     const src: IncentiveSourceRow = {
       label: 'Merkl Incentive',
       current: 1,
@@ -243,28 +241,7 @@ describe('incentiveSourceToTableRows: offsetNotes placement (AAV-1036)', () => {
       ],
     };
     const rows = incentiveSourceToTableRows(src, 0, 'supply', true);
-    expect(rows).toHaveLength(3); // aggregate + 2 campaigns
-    expect(rows[0].offsetNotes).toEqual([offsetNote]);
-    expect(rows[1].offsetNotes).toEqual([offsetNote]);
-    expect(rows[2].offsetNotes).toEqual([offsetNote]);
-  });
-
-  it('places offsetNotes on every campaign row when hideAggregateWhenCampaigns', () => {
-    const src: IncentiveSourceRow = {
-      label: 'Merkl Incentive',
-      current: 1,
-      after: 1,
-      delta: 0,
-      href: null,
-      hideAggregateWhenCampaigns: true,
-      offsetNotes: [offsetNote],
-      campaigns: [
-        { id: 'c1', label: 'Campaign A', current: 0.5, after: 0.5, delta: 0 },
-        { id: 'c2', label: 'Campaign B', current: 0.5, after: 0.5, delta: 0 },
-      ],
-    };
-    const rows = incentiveSourceToTableRows(src, 0, 'supply', true);
-    expect(rows).toHaveLength(2); // no aggregate
+    expect(rows).toHaveLength(2);
     expect(rows[0].offsetNotes).toEqual([offsetNote]);
     expect(rows[1].offsetNotes).toEqual([offsetNote]);
   });

@@ -68,8 +68,6 @@ export interface IncentiveSourceRow extends SimulationSourceDetail {
   href: string | null;
   /** When one campaign, merge into the source row so notes show under the main label (Brevis cap/duration). */
   mergeSingleCampaignRow?: boolean;
-  /** Hide source aggregate row when campaigns exist; only list campaign rows (fallback href on src). */
-  hideAggregateWhenCampaigns?: boolean;
 }
 
 /**
@@ -153,37 +151,18 @@ export function incentiveSourceToTableRows(
         },
       ];
   }
-  if (src.hideAggregateWhenCampaigns) {
-    return campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
-      rowKey: `${prefix}-c-${ci}-${c.id}`,
-      label: c.label,
-      current: c.current,
-      after: c.after,
-      delta: c.delta,
-      type: 'rate' as RowType,
-      href: c.href ?? src.href ?? null,
-      isBreakdown: true,
-      isSubBreakdown: true,
-      nestedUnderIncentive,
-      notes: c.notes,
-      offsetNotes,
-    }));
-  }
-  return [
-    main,
-    ...campaigns.map((c: SimulationCampaignDetail) => ({
-      rowKey: `${prefix}-c-${campaigns.indexOf(c)}-${c.id}`,
-      label: c.label,
-      current: c.current,
-      after: c.after,
-      delta: c.delta,
-      type: 'rate' as RowType,
-      href: c.href ?? src.href ?? null,
-      isBreakdown: true,
-      isSubBreakdown: true,
-      nestedUnderIncentive,
-      notes: c.notes,
-      offsetNotes,
-    })),
-  ];
+  return campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
+    rowKey: `${prefix}-c-${ci}-${c.id}`,
+    label: c.label,
+    current: c.current,
+    after: c.after,
+    delta: c.delta,
+    type: 'rate' as RowType,
+    href: c.href ?? src.href ?? null,
+    isBreakdown: true,
+    isSubBreakdown: true,
+    nestedUnderIncentive,
+    notes: c.notes,
+    offsetNotes,
+  }));
 }
