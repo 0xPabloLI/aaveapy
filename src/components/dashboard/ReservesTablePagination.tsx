@@ -25,10 +25,18 @@ export function ReservesTableShowMore({
 }: ReservesTableShowMoreProps) {
   const hasMore = totalCount > displayCount;
   const canShowLess = showAll && totalCount > defaultVisibleCount;
-
-  if (!hasMore && !canShowLess) return null;
-
   const isDesktop = variant === 'desktop';
+
+  if (!hasMore && !canShowLess) {
+    // Desktop: render a minimal spacer to maintain visual rhythm when the
+    // Show More button is not needed (e.g. after filtering). Without this,
+    // the table's last-row border-b and the FAQ section's border-t sit too
+    // close together (~22px), creating a "double border" effect.
+    // Mobile: no spacer needed — card layout has its own spacing.
+    if (isDesktop) return <div className="p-[var(--ds-space-4)]" aria-hidden />;
+    return null;
+  }
+
   const buttonBg = isDesktop ? 'bg-muted/30' : 'bg-card';
   const buttonBase = `w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border ${buttonBg} hover:bg-muted/50 transition-colors text-foreground font-semibold`;
   const mobileMargin = isDesktop ? '' : ' mt-[var(--ds-space-4)]';
