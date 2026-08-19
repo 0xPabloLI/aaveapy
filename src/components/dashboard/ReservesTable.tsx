@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -538,6 +538,30 @@ const ReservesTable = ({
       ? visibleExpandedReserveId
       : null;
   }, [displayData, visibleExpandedReserveId]);
+
+  // Track the sortedData length at the time the user expanded a row. If the
+  // data changes significantly after expansion (e.g., chain filter removed),
+  // suppress the scroll spacer — the expansion is preserved but the spacer
+  // is not needed in the new data context (AAV-1107).
+  const sortedDataLengthRef = useRef(sortedData.length);
+  sortedDataLengthRef.current = sortedData.length;
+  const expansionDataLengthRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (expandedReserveId) {
+      expansionDataLengthRef.current = sortedDataLengthRef.current;
+    } else {
+      expansionDataLengthRef.current = null;
+    }
+  }, [expandedReserveId]);
+
+  const dataChangedSinceExpansion = useMemo(() => {
+    const expansionLen = expansionDataLengthRef.current;
+    if (expansionLen == null) return false;
+    const currLen = sortedData.length;
+    if (expansionLen === currLen) return false;
+    const threshold = Math.max(expansionLen, currLen, DEFAULT_VISIBLE_COUNT) * 0.5;
+    return Math.abs(currLen - expansionLen) > threshold;
+  }, [sortedData.length]); // eslint-disable-line react-hooks/exhaustive-deps -- refs are read via closure
 
   const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
     reserves,
@@ -1237,8 +1261,9 @@ snapshots={portfolioSnapshots}
       
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
-      {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
-      {renderedExpandedReserveId && (
+      {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band.
+          Suppressed when the data changed significantly since expansion (AAV-1107). */}
+      {renderedExpandedReserveId && !dataChangedSinceExpansion && (
         <div
           aria-hidden
           data-testid="reserves-expanded-scroll-spacer"
