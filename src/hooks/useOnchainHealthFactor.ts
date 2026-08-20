@@ -272,7 +272,6 @@ export function useOnchainHealthFactor({
     return subscribeRefetch(() => {
       void queryClient.invalidateQueries({ queryKey: ['onchain-hf', address] })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, queryClient])
 
   return {

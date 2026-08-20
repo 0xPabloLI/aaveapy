@@ -462,7 +462,7 @@ const SimulationSubRow = ({
     // When the side is frozen/paused/disabled, mask After + Delta so the
     // simulation does not appear to react to user input.
     if (disabled) {
-      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, offsetNotes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
@@ -642,7 +642,7 @@ const SimulationSubRow = ({
     disabled = false,
   ) => {
     if (disabled) {
-      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, offsetNotes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
