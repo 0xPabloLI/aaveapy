@@ -36,7 +36,7 @@ jobs:
             const dependencyType = process.env.DEPENDENCY_TYPE;
             const ecosystem = process.env.ECOSYSTEM;
             const safeSemver = ['version-update:semver-patch', 'version-update:semver-minor'].includes(updateType);
-            const safeNpm = ecosystem === 'npm' && safeSemver && dependencyType === 'direct:development';
+            const safeNpm = (ecosystem === 'npm' || ecosystem === 'npm_and_yarn') && safeSemver && dependencyType === 'direct:development';
             const safeActions = (ecosystem === 'github-actions' || ecosystem === 'github_actions') && safeSemver;
             const safe = safeNpm || safeActions;
 
