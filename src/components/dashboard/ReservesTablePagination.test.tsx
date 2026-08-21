@@ -72,7 +72,7 @@ describe('ReservesTableShowMore', () => {
     expect(onShowLess).toHaveBeenCalledOnce();
   });
 
-  it('renders nothing when all reserves are shown and showAll is false', () => {
+    it('renders a desktop spacer div when all reserves are shown and showAll is false (desktop)', () => {
     const { container } = render(
       <ReservesTableShowMore
         totalCount={20}
@@ -82,8 +82,26 @@ describe('ReservesTableShowMore', () => {
         variant="desktop"
         onShowAll={vi.fn()}
         onShowLess={vi.fn()}
-      />,
-    );
+      />,    );
+    // Desktop renders a minimal spacer (not empty) to maintain visual rhythm
+    // and prevent the "double border" effect between table and FAQ section.
+    expect(container.innerHTML).not.toBe('');
+    const spacer = container.firstChild as HTMLElement;
+    expect(spacer.className).toContain('p-[var(--ds-space-4)]');
+    expect(spacer.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('renders nothing when all reserves are shown and showAll is false (mobile)', () => {
+    const { container } = render(
+      <ReservesTableShowMore
+        totalCount={20}
+        displayCount={20}
+        showAll={false}
+        defaultVisibleCount={20}
+        variant="mobile"
+        onShowAll={vi.fn()}
+        onShowLess={vi.fn()}
+      />,    );
     expect(container.innerHTML).toBe('');
   });
 

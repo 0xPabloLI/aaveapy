@@ -255,26 +255,22 @@ const SimulationSubRow = ({
       label: incentiveLabel('Protocol Incentive', 'Protocol'),
       ...simulation.supply.sources.protocol,
       href: aaveUrl,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('ACI Incentive', 'ACI'),
       ...simulation.supply.sources.merit,
       href: supplyMeritLink,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('Merkl Incentive', 'Merkl'),
       ...simulation.supply.sources.merkl,
       href: supplyMerklLink,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('Brevis Incentive', 'Brevis'),
       ...simulation.supply.sources.brevis,
       href: supplyBrevisLink,
       mergeSingleCampaignRow: true,
-      hideAggregateWhenCampaigns: true,
     },
   ].filter(includeIncentiveSourceInBreakdown);
 
@@ -283,26 +279,22 @@ const SimulationSubRow = ({
       label: incentiveLabel('Protocol Incentive', 'Protocol'),
       ...simulation.borrow.sources.protocol,
       href: aaveUrl,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('ACI Incentive', 'ACI'),
       ...simulation.borrow.sources.merit,
       href: borrowMeritLink,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('Merkl Incentive', 'Merkl'),
       ...simulation.borrow.sources.merkl,
       href: borrowMerklLink,
-      hideAggregateWhenCampaigns: true,
     },
     {
       label: incentiveLabel('Brevis Incentive', 'Brevis'),
       ...simulation.borrow.sources.brevis,
       href: borrowBrevisLink,
       mergeSingleCampaignRow: true,
-      hideAggregateWhenCampaigns: true,
     },
   ].filter(includeIncentiveSourceInBreakdown);
 
@@ -470,7 +462,7 @@ const SimulationSubRow = ({
     // When the side is frozen/paused/disabled, mask After + Delta so the
     // simulation does not appear to react to user input.
     if (disabled) {
-      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, offsetNotes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
@@ -650,7 +642,7 @@ const SimulationSubRow = ({
     disabled = false,
   ) => {
     if (disabled) {
-      row = { ...row, after: null, delta: null, notes: undefined, warning: false };
+      row = { ...row, after: null, delta: null, notes: undefined, offsetNotes: undefined, warning: false };
     }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
