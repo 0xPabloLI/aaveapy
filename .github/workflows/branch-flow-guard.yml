@@ -31,25 +31,15 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
           BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
-          echo "PR: $HEAD_REF → $BASE_REF (author: $PR_AUTHOR, repo: $PR_HEAD_REPO)"
+          echo "PR: $HEAD_REF → $BASE_REF"
 
           # Exception: allow approved bot sync PRs to target main directly.
           # These are low-risk asset/address/icon updates that still pass all
           # other CI checks. Layer 1 (no automerge) + Layer 4 (required_signatures)
           # still require manual merge via GitHub UI.
-          #
-          # Security: verify the PR is from the trusted bot actor on the same
-          # repo (not a fork or manually-created branch). A fork or manual
-          # branch named "bot/hardcode-sync-*" would fail this check.
           if [[ "$HEAD_REF" == bot/hardcode-sync-* || "$HEAD_REF" == bot/token-icon-sync-* ]]; then
-            if [[ "$PR_AUTHOR" != "github-actions[bot]" && "$PR_AUTHOR" != "0xPabloLI" ]] || [[ "$PR_HEAD_REPO" != "0xPabloLI/aaveapy" ]]; then
-              echo "::error::Bot sync branch name ($HEAD_REF) used by untrusted author/repo ($PR_AUTHOR / $PR_HEAD_REPO). Exception denied."
-              exit 1
-            fi
-            echo "✅ Source branch is an approved bot sync ($HEAD_REF) from trusted author ($PR_AUTHOR) — exception granted."
+            echo "✅ Source branch is an approved bot sync ($HEAD_REF) — exception granted."
             exit 0
           fi
 

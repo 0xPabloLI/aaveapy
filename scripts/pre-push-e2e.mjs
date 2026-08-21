@@ -54,7 +54,7 @@ const GREP_INVERT = [
   'visual regression', // macOS screenshot baselines (slow, display-sensitive)
   'header visual',     // screenshot pixel-diff
   'Wallet Sync',       // requires live Aave SDK GraphQL
-  '[Ww]atch [Mm]ode',   // requires live SDK + wallet (case-insensitive)
+  'Watch Mode',        // requires live SDK + wallet
 ].join('|');
 
 console.log('');
