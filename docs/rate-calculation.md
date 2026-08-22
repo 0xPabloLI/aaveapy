@@ -12,6 +12,7 @@ Frontend rate simulation documentation — consolidated from the former multi-fi
 | APR/APY display, USD/day, net eligibility | [Part 3: APR / APY Display Semantics](#part-3-apr--apy-display-semantics) |
 | Incentive cap / ceiling reference | [Part 4: Incentive Reward Cap Reference](#part-4-incentive-reward-cap-reference) |
 | Simulation null semantics & totalSupplyUsd | [Part 7: Simulation Null Semantics](#part-7-simulation-null-semantics) |
+| Calculator invariants (Golden Rules) | [Part 8: Golden Rules](#part-8-golden-rules--rate-simulation-calculator-invariants) |
 
 ---
 
@@ -1022,3 +1023,37 @@ Wallet position (`walletSupplyUsd`/`walletBorrowUsd`, derived as `totalSupplyUsd
 - `meritMerklInputUsd` (delta) vs `supplyGrossForEligibility` (total): input drives rate curve; eligibility measures position composition
 - `walletPositionUsd` (current) vs `totalPositionUsd` (after): current reflects existing position; after reflects simulated total
 - `headlineIncentive` (no wallet) vs `currentIncentive` (wallet): gap between them = wallet dilution effect
+
+---
+
+## Part 8: Golden Rules — Rate Simulation Calculator Invariants
+
+以下规则是 `rateSimulationCalculator.ts` 的不变量（invariants），违反任何一条都是 bug。修改 calculator 前必须先读这些规则。
+
+### 1. Current 不变量：`current*` 字段永不随 simulation input 变化
+- `currentIncentive`、`currentTotal`、`currentNative` 代表**钱包当下状态**，不是模拟状态。
+- 改变 `supplyInput`/`borrowInput` **绝不能**改变 `current*` 值。
+- 无钱包（Shared Scenario）时，`current = headline`（未稀释 API 值，无 eligibility scaling）。
+- 有钱包（Portfolio）时，`current` 使用钱包-only 值（`walletSupplyUsd`/`walletBorrowUsd`）。
+- **实现**：`walletEligibilityRatio` 和 `walletMerklGroupMul` 在无钱包时必须返回 identity（1.0），**不得 fallback 到 simulation inputs**。
+
+### 2. Aggregate = Σ per-source：单一计算路径
+- `currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current`
+- `afterIncentive = protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after`
+- **禁止**独立的 aggregate 计算路径（如已删除的 `buildIncentiveCurrent`/`buildIncentiveAfter`）。
+- Per-source `Math.min(afterRaw, current)` 在 dispatch map 循环内应用，aggregate 层不再加 `Math.min`。
+- `Math.min(a+b, c+d) ≠ Math.min(a,c) + Math.min(b,d)` — 两层 cap 产生不同结果。
+
+### 3. Wallet fallback = identity，不是 simulation
+- `walletSupplyUsd`/`walletBorrowUsd` 为 undefined 时，wallet 变量必须 fallback 到 **identity**（ratio=1, multiplier=1），**不是** simulation inputs。
+- 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
+- **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
+
+### 4. `headlineIncentive` 是纯市场 advertised rate（AAV-1165 修订）
+- `headlineIncentive` = 纯 API advertised campaign/protocol rate。**不含** forecast、wallet position、position cap、cross-reserve offset。
+- 作为市场参考值，不是用户实际可得 rate，也不是场景基线。
+- `currentIncentive` = forecast + wallet cap/offset（钱包当前 effective rate）。
+- `afterIncentive` = forecast + 目标 Portfolio cap/offset（场景后 effective rate）。
+- `deltaIncentive` = `after - current` **only**。无 after 时为 `null`，不再计算 `current - headline`。
+- Eligibility gap info（cap、offset、eligible amount）是独立结构化数据，不重载到 delta。
+- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `forecastStates`、无 `merklGroupMultiplier`、无 `positionUsd` 参数）。
