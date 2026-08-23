@@ -282,6 +282,60 @@ jobs:
           echo "  Deploy Check:   ${{ steps.deploy_url_check.outcome }}"
           echo "========================================"
 
+      - name: Auto-close stale smoke-test-failure issues on success
+        if: success()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
+        with:
+          script: |
+            const env = '${{ env.ENV_LABEL }}';
+            const sha = '${{ github.sha }}';
+            const branch = '${{ github.ref_name }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'smoke-test-failure',
+            });
+
+            // Match issues for this environment (title pattern: "🚨 {env} smoke test failed ...")
+            const envIssues = issues.data.filter(i =>
+              i.title.includes(env) && i.title.includes('smoke test failed')
+            );
+
+            if (envIssues.length === 0) {
+              core.info(`No open smoke-test-failure issues for ${env} — nothing to close.`);
+              return;
+            }
+
+            const commentBody = [
+              `✅ Smoke test passed for **${env}** — closing this issue automatically.`,
+              '',
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| Branch | ${branch} |`,
+              `| Commit | \`${sha.slice(0, 7)}\` |`,
+              `| Workflow Run | [View run](${runUrl}) |`,
+            ].join('\n');
+
+            for (const issue of envIssues) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: commentBody,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed issue #${issue.number} (${issue.title})`);
+            }
+
   # ── Auto-rollback on smoke test failure ──
   rollback:
     needs: smoke-test
