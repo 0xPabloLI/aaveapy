@@ -43,12 +43,7 @@
 5. **Mobile as First-Class Citizen** — 移动端禁止 `hover:`，改用 `active:`；浮层用 bottom sheet；触控目标 ≥44px
 
 ### Design Token Quick Reference
-- **字体**：Source Sans Pro (sans) / Source Serif Pro (serif) / Source Code Pro (mono)
-- **字号**：8px–36px（`--ds-text-8` ~ `--ds-text-36`），标题 `clamp(20px, 2vw+10px, 24px)`
-- **间距**：4px 基准（`--ds-space-1` = 4px），最大 64px
-- **圆角**：基于 `--radius` (1rem) 派生 lg/md/sm
-- **阴影**：7 级（2xs→2xl），暗色比亮色更深
-- **详细规范**：`docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）
+字体/字号/间距/圆角/阴影等 token 详见 `docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）。涉及 UI 样式实现时查阅。
 
 ## Session Workflow
 
@@ -115,127 +110,15 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
 
 ## Cross-Branch Workflow（禁止本地切分支）
-**核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。
-
-### 场景 1：需要向 main 提交改动（main 有分支保护，必须走 PR）
-```bash
-# 1. 创建 worktree（不会切换当前分支）
-git worktree add /tmp/aaveapy-main main
-# 2. 在 worktree 中操作
-cd /tmp/aaveapy-main
-git checkout -b fix/xxx
-# 编辑文件、commit
-git push -u origin fix/xxx
-gh pr create --title "fix: xxx" --body "..." --base main --head fix/xxx
-gh pr merge <PR_NUMBER> --squash --auto   # CI 通过后自动合并
-# 3. 清理 worktree
-cd <original-repo>
-git worktree remove /tmp/aaveapy-main
-```
-
-### 场景 2：需要从其他分支 cherry-pick 到当前分支
-```bash
-git cherry-pick <commit-sha>   # 不需要切分支，直接在当前分支操作
-```
-
-### 场景 3：需要查看其他分支的文件
-```bash
-git show main:path/to/file     # 不切分支，直接读取
-git diff main..lovable -- path/to/file
-```
-
-### 场景 4：需要将 lovable 的改动合入 main
-通过 PR：从 lovable 向 main 开 PR，不要本地 merge。
-
-### 场景 5：lovable → dev 同步（避免 DIRTY PR）
-
-lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required checks），应通过 PR 合并。
-
-**标准流程**：
-1. 从 lovable 向 dev 开 PR（merge commit 方式，不要 squash）
-2. 启用 auto-merge：`gh pr merge <PR_NUMBER> --merge --auto`
-3. CI 通过后自动合并
-
-**如果 PR 报 DIRTY（有合并冲突）**：
-1. 在 lovable 分支上合并 dev 解决冲突：`git merge origin/dev`
-2. 解决冲突后 commit + push lovable
-3. PR 自动变为 CLEAN，auto-merge 正常执行
-
-**禁止的操作**：
-- ❌ 不要用 worktree 直接 merge + push 绕过 PR（违反 dev 分支保护规则）
-- ❌ 不要用 squash merge 同步 lovable→dev（会丢失历史连通性，导致下次同步更容易 DIRTY）
-- ❌ 不要攒大量 commit 才同步（减少冲突概率）
-
-**为什么用 merge commit 而不是 squash**：dev 和 lovable 的 commit 历史不同源（dev 有早期 Lovable 平台自动 commit），squash 会进一步割裂历史，使后续 PR 更容易 DIRTY。merge commit 保持双向可追踪。
+**核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。场景和命令详见 `docs/workflows/cross-branch-workflow.md`。
 
 ## 标准上线流程 (Production Deployment Checklist)
 
 **每次合并到 main 都必须走完以下流程，不得跳步。**
 
-### 前置条件
-- lovable 分支代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
-- `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
-
-### 分支映射
-- 后端：`railway`（Staging）→ `main`（Production）
-- 前端：`lovable` → `dev` → `main`
-
-### Step 1: 后端 Staging 上线
-1. 后端 `railway` 分支部署到 Staging（Railway 自动部署）
-2. 验证 staging API spec：`https://staging-api.aaveapy.com/api/docs/openapi.json`
-3. 确认 API 行为符合预期
-
-### Step 2: 前端 Staging 接后端 Staging 验证
-1. 前端从 staging 拉取最新 spec + 生成 schemas：
-   ```bash
-   LIVE_API_BASE=https://staging-api.aaveapy.com/api npm run openapi:fetch
-   npm run schema:codegen
-   ```
-2. 更新 wrapper 引用（如需要），运行 validation gate
-3. 创建 lovable → dev PR（merge commit）：`gh pr create --base dev --head lovable`
-4. 启用 auto-merge：`gh pr merge <PR> --merge --auto`
-5. CI 通过后自动合并（CI 统一检查 staging API）
-6. **验证 staging.aaveapy.com 功能正常**，重点关注本次变更涉及的功能点
-7. 如有问题，修复后回到 Step 1
-
-### Step 3: 前端 Production 上线（暂连后端 Staging API）
-1. 创建 dev → main PR：`gh pr create --base main --head dev --title "Production: <概述>"`
-2. **禁止自动合并** — main 有 GPG 签名要求（Layer 4），CLI 无法产生签名 merge commit
-3. **Agent 只负责创建 PR，不执行合并**
-4. 用户在 GitHub UI 手动合并 dev → main PR（满足 GPG 签名要求）
-5. Vercel 自动部署 Production（此时前端 Production **暂连后端 Staging API**）
-6. **验证 aaveapy.com 正常**，确认前端 Production + 后端 Staging 组合无问题
-7. 如有问题，回滚 main 分支，回到 Step 2
-
-### Step 4: 后端 Production 上线
-1. 创建后端 `railway` → `main` PR
-2. CI 验证通过后，用户在 GitHub UI 合并
-3. Railway 自动部署到 Production
-4. **验证后端 Production API 正常**：`https://api.aaveapy.com/api`
-
-### Step 5: 前端 Production 切到后端 Production API
-1. 更新 Vercel 环境变量：`VITE_API_BASE_URL` 从 staging 改为 production
-2. Vercel 重新部署（环境变量更新触发）
-3. **最终验证 aaveapy.com**：确认前端 Production 正常连接后端 Production API
-4. 确认无 regression
-
-### 无 API 变更时的简化流程
-当前后端 spec 无变更时，跳过 Step 1-2 的 spec 同步，直接从 Step 2 的第 3 步开始（lovable → dev PR），然后走 Step 3（dev → main PR）。Step 4-5 跳过。
-
-### Agent 行为约束
-- **dev → main PR 绝对不自动合并**，无论用户说什么（包括"按标准流程走完合并"），只创建不合并
-- 必须等用户明确说"合并"或"merge"后才能提示用户在 GitHub UI 操作
-- 遇到 branch protection 阻塞时，报告给用户决定，不自行绕过
-- 已在 AAV-556/562 两次违规合并，用户明确警告
-
-### Spec 自动化管道（参考）
-1. **后端**：`backend/scripts/generate-openapi.ts` 用 `ts-json-schema-generator` 从 TS 类型生成 spec，包含 `$ref` 重写（`#/definitions/` → `#/components/schemas/`）和 schema 名称清理（移除 `<>`）
-2. **前端**：`npm run openapi:fetch`（从 staging API 拉取）→ `npm run schema:codegen`（生成 Zod schemas）→ 更新 wrapper 引用 → validation gate
-3. **CI**：前端所有分支统一检查 staging API（`LIVE_API_BASE` 始终指向 staging）
-
-**注意**：当前 `.env.production` 直接配置 `https://api.aaveapy.com/api`，Step 3-5 的"暂连 Staging API"需要手动调整 Vercel 环境变量。前后端 spec 一致时可跳过此中间步骤。
-
-详见 `docs/workflows/frontend-backend-coordinated-deployment.md`
+- 分支映射：后端 `railway`（Staging）→ `main`（Production）；前端 `lovable` → `dev` → `main`
+- Phase 1-5（后端 staging → 前端 staging sync → 前端 production → 后端 production → 切 production API）+ 无 API 变更简化流程 + Agent 行为约束 + Spec 自动化管道详见 `docs/workflows/frontend-backend-coordinated-deployment.md`。
+- **Agent 行为约束**：dev → main PR 只创建不合并，等用户明确说"合并"后才提示用户在 GitHub UI 操作。已在 AAV-556/562 两次违规合并，用户明确警告。
 
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
@@ -245,65 +128,10 @@ lovable 和 dev 需要保持同步。dev 有分支保护（lint + build required
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## main Branch Protection (5 层防御)
-
-main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶意代码无法自动合并到 main：
-
-### Layer 1: Bot PR 不 auto-merge 到 main
-- `token-icon-sync.yml`、`hardcode-sync.yml`、`ci.yml` (openapi-sync) 的 labels 字段使用条件表达式：`${{ target != 'main' && 'automerge' || '' }}`
-- 只有 `lovable`/`dev` 分支的 bot PR 会获得 `automerge` label；main 的 bot PR 必须人工 review
-### Layer 2: Branch Protection + CODEOWNERS
-- main 分支规则：`required_approving_review_count=0`（solo developer，可自行 merge）、`require_code_owner_reviews=true`、`enforce_admins=true`
-- 注意：solo developer 无法 self-approve PR，所以 `required_approving_review_count=0`。保护来自 Layer 1（bot PR 不 auto-merge 到 main）+ `enforce_admins`（禁止直接 push）
-- `.github/CODEOWNERS` 覆盖关键路径：链接（`poolExplorerLinks.ts`、`aaveLinks.ts`）、地址（`hardcode.ts`）、API schema（`openapi.json`、`generated/`）、钱包（`useWallet*.ts`、`wagmi/`）、CI 定义（`.github/workflows/`）
-- 即使 bot PR 的 CI 全部通过，也必须经过 code owner approval 才能合并
-### Layer 3: Content Security CI Check
-- `content-security-check` CI job 运行 `scripts/check-external-urls.ts`
-- 扫描所有非测试源文件中的 `https://` URL，与白名单比对
-- 任何未知域名（如钓鱼 explorer 域名）会导致 CI 失败
-- 白名单维护：在 `scripts/check-external-urls.ts` 的 `WHITELIST` Set 中增减
-### Layer 4: Commit Signature Verification (手动启用)
-- GitHub Settings → Branches → main → "Require signed commits"
-- ⚠️ 此设置无法通过 REST API 或 GraphQL 编程修改，必须在 repo UI 手动启用
-- 启用后，即使攻击者拿到 write 权限，没有 GPG 签名也无法直接 push 到 main
-
-### Layer 5: Branch Flow Guard (CI required check)
-- `.github/workflows/branch-flow-guard.yml` — 任何 `→ main` 的 PR，如果 head branch 不是 `dev`（且不在 bot sync 例外列表中），CI check `branch-flow-guard` 会 fail
-- `branch-flow-guard` 已加入 main 的 required status checks，阻止非 `dev → main` PR 的合并
-- **根因**：solo developer 的 `required_approving_review_count=0` 意味着用户可以 self-merge 任何 CI 通过的 PR。Layer 1 只阻止 bot auto-merge，不阻止手动 merge。Layer 5 通过 CI check 机制性阻止 `lovable → main` 等非标准流程的 PR 被合并
-- **启用步骤**：push workflow → 等 CI 运行一次 → 在 GitHub Settings → Branches → main required checks 中添加 `branch-flow-guard`
-- **Bot sync 例外**：`bot/hardcode-sync-*` 和 `bot/token-icon-sync-*` 分支可以绕过 branch-flow-guard 直接向 main 开 PR。这些是低风险的资产/地址/图标同步更新，仍然通过所有其他 CI 检查。Layer 1（不加 automerge label）+ Layer 4（required_signatures）确保这些 PR 仍需在 GitHub UI 手动合并
+main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 auto-merge + Branch Protection/CODEOWNERS + Content Security CI + Commit Signature + Branch Flow Guard）确保恶意代码无法自动合并。遇到 branch protection 阻塞时报告给用户决定，详见 `docs/conventions/branch-protection.md`。
 
 ## Golden Rules: Rate Simulation Calculator
-
-以下规则是 `rateSimulationCalculator.ts` 的不变量（invariants），违反任何一条都是 bug。修改 calculator 前必须先读这些规则。
-
-### 1. Current 不变量：`current*` 字段永不随 simulation input 变化
-- `currentIncentive`、`currentTotal`、`currentNative` 代表**钱包当下状态**，不是模拟状态。
-- 改变 `supplyInput`/`borrowInput` **绝不能**改变 `current*` 值。
-- 无钱包（Shared Scenario）时，`current = headline`（未稀释 API 值，无 eligibility scaling）。
-- 有钱包（Portfolio）时，`current` 使用钱包-only 值（`walletSupplyUsd`/`walletBorrowUsd`）。
-- **实现**：`walletEligibilityRatio` 和 `walletMerklGroupMul` 在无钱包时必须返回 identity（1.0），**不得 fallback 到 simulation inputs**。
-
-### 2. Aggregate = Σ per-source：单一计算路径
-- `currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current`
-- `afterIncentive = protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after`
-- **禁止**独立的 aggregate 计算路径（如已删除的 `buildIncentiveCurrent`/`buildIncentiveAfter`）。
-- Per-source `Math.min(afterRaw, current)` 在 dispatch map 循环内应用，aggregate 层不再加 `Math.min`。
-- `Math.min(a+b, c+d) ≠ Math.min(a,c) + Math.min(b,d)` — 两层 cap 产生不同结果。
-
-### 3. Wallet fallback = identity，不是 simulation
-- `walletSupplyUsd`/`walletBorrowUsd` 为 undefined 时，wallet 变量必须 fallback 到 **identity**（ratio=1, multiplier=1），**不是** simulation inputs。
-- 原因：无钱包 = 无仓位 = 无稀释 = 无 eligibility scaling。Simulation inputs 是假设值，不是当下值。
-- **违反此规则会导致 Shared Scenario 下 `current` 随输入剧烈变化（50% drop bug AAV-1121）。**
-
-### 4. `headlineIncentive` 是纯市场 advertised rate（AAV-1165 修订）
-- `headlineIncentive` = 纯 API advertised campaign/protocol rate。**不含** forecast、wallet position、position cap、cross-reserve offset。
-- 作为市场参考值，不是用户实际可得 rate，也不是场景基线。
-- `currentIncentive` = forecast + wallet cap/offset（钱包当前 effective rate）。
-- `afterIncentive` = forecast + 目标 Portfolio cap/offset（场景后 effective rate）。
-- `deltaIncentive` = `after - current` **only**。无 after 时为 `null`，不再计算 `current - headline`。
-- Eligibility gap info（cap、offset、eligible amount）是独立结构化数据，不重载到 delta。
-- Headline **不**经过 dispatch map，使用 `calculateTotalIncentiveApy/Apr`（无 `forecastStates`、无 `merklGroupMultiplier`、无 `positionUsd` 参数）。
+`rateSimulationCalculator.ts` 的不变量（4 条 Golden Rules：current 不变量 / aggregate 单一路径 / wallet fallback = identity / headline 纯市场 rate）见 `docs/rate-calculation.md` Part 8。修改 calculator 前必须先读这些规则。
 
 ## Learned Preferences
 - Prefer Chinese for collaboration text and direct execution once confirmed.
@@ -348,6 +176,8 @@ Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/dom
 
 ## Key References
 - `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
+- `docs/workflows/cross-branch-workflow.md` — 跨分支操作场景和命令
+- `docs/conventions/branch-protection.md` — main 分支 5 层防御
 - `docs/design/frontend-interaction-guardrails.md`
 - `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - `docs/rate-calculation.md`

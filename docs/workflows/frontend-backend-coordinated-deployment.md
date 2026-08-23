@@ -20,9 +20,11 @@
 | `lovable` | — | 前端开发分支（GPT-engineer） |
 | `dev` | — | 前端集成分支（lovable → dev → main） |
 
-## 部署流程
+## 前置条件
+- lovable 分支代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
+- `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
 
-> **注意**：`AGENTS.md` 中的"标准上线流程 (Production Deployment Checklist)"已将本工作流的 5 步流程整合为统一的 Step 1-5。本文件保留作为详细参考文档。
+## 部署流程
 
 ### Phase 1: Backend Staging Update
 
@@ -57,32 +59,38 @@
 
 ### Phase 3: Frontend Production Deploy (Still on Staging API)
 
-1. **合并 lovable → dev**：
-   ```bash
-   git checkout dev && git merge lovable --no-edit
-   ```
-2. **CI 验证**：dev 分支 CI 检查 staging API（所有分支统一检查 staging）
-3. **合并 dev → main**：
-   ```bash
-   git checkout main && git merge dev --no-edit
-   ```
-4. **Vercel 部署**：main 分支自动部署到 production Vercel
-5. **关键点**：此时 production 前端**仍连接 staging API**（通过 `VITE_API_BASE_URL` 环境变量配置）
-   - 确保前端 production 部署期间，后端 staging API 保持稳定
-   - 前端用户无感知，因为 API 行为未变
+1. 创建 dev → main PR：`gh pr create --base main --head dev --title "Production: <概述>"`
+2. 等 Vercel Preview 部署完成（通常 1-2 分钟）→ 用 Playwright 打开 preview URL → 验证页面加载正常 + reserves 渲染 + 无 console error
+3. 验证通过后向用户汇报"PR 已创建，Preview 验证通过，等待你决定是否合并"
+4. 用户在 GitHub UI 手动合并 dev → main PR（main 要求签名 commit，GitHub UI merge 自动用 web-flow GPG key 签名）
+5. Vercel 自动部署 Production。有 API 变更时需先在 Vercel 将 `VITE_API_BASE_URL` 改为 staging API，无 API 变更时跳过此步（`.env.production` 已指向 production API）
+6. **验证 aaveapy.com 正常**，重点关注本次变更涉及的功能点
+7. 如有问题，回滚 main 分支，回到 Phase 2
+
+> **注意**：lovable → dev 合并通过 PR（merge commit 方式），不要本地 `git checkout dev && git merge`。详见 `docs/workflows/cross-branch-workflow.md` 场景 5。
 
 ### Phase 4: Backend Staging → Production
 
-1. **创建 PR**：`railway` → `main`
-2. **CI 验证**：PR CI 运行，验证 production 环境（分支保护）
-3. **Review & Merge**：通过 review 后 merge（推荐用 merge commit 保留历史）
-4. **Railway Production 部署**：合并后自动部署到 production
+1. 创建后端 `railway` → `main` PR
+2. CI 验证通过后，用户在 GitHub UI 合并
+3. Railway 自动部署到 Production
+4. **验证后端 Production API 正常**：`https://api.aaveapy.com/api`
 
 ### Phase 5: Frontend Production → Production API
 
-1. **更新 Vercel 环境变量**：将 `VITE_API_BASE_URL` 从 staging 改为 production
-2. **Vercel 重新部署**：环境变量更新触发重新部署
-3. **验证**：检查 production 前端是否正常连接 production API
+1. 更新 Vercel 环境变量：`VITE_API_BASE_URL` 从 staging 改为 production
+2. Vercel 重新部署（环境变量更新触发）
+3. **最终验证 aaveapy.com**：确认前端 Production 正常连接后端 Production API
+4. 确认无 regression
+
+## 无 API 变更时的简化流程
+
+当前后端 spec 无变更时，跳过 Phase 1-2 的 spec 同步，直接从 Phase 2 的 lovable → dev PR 开始，然后走 Phase 3（dev → main PR）。Phase 4-5 跳过。
+
+## Agent 行为约束
+- dev → main PR 只创建，等用户明确说"合并"或"merge"后提示用户在 GitHub UI 操作。API squash merge 虽可绕过 required_signatures，但不得擅自使用。
+- 遇到 branch protection 阻塞时，报告给用户决定，自行解决路由问题。
+- 已在 AAV-556/562 两次违规合并，用户明确警告。
 
 ## Spec 生成管道
 
