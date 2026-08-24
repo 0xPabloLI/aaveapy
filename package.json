@@ -177,7 +177,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.3.0",
     "ajv": "^8.20.0",
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.5.4",
     "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.4",
