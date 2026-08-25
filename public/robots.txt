@@ -14,4 +14,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://aaveapy.com/sitemap.xml
+Sitemap: https://aaveapy.lovable.app/sitemap.xml
