@@ -219,7 +219,7 @@ describe('useWalletAutoImport', () => {
     const addressA = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
     const addressB = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`
     const positionsA = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
-    const positionsB = [{ reserveId: 'r2', side: 'borrow' }]
+    const positionsB = [{ reserveId: 'r2', side: 'borrow' }] as unknown as WalletPosition[]
 
     const { rerender } = renderHook(
       (props: { address: `0x${string}`; positions: WalletPosition[] }) =>
