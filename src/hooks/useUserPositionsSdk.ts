@@ -48,6 +48,16 @@ import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery'
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge'
 import { subscribeRefetch } from '@/lib/userData/refetchEvent'
 
+interface SdkQueryResult {
+  loading: boolean
+  error?: unknown
+  data?: unknown
+}
+
+interface RefreshableClient {
+  refreshQueryWhere: (document: unknown, predicate: (variables: never) => boolean) => unknown
+}
+
 export type WalletLoadState = 'idle' | 'loading' | 'success-empty' | 'success' | 'error'
 
 export interface UserPositionsData {
@@ -95,7 +105,7 @@ export function enrichV3BorrowPositions(
 }
 
 export function enrichV4SupplyPositions(
-  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { supplied: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; balance: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
+  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string; address?: string } }[]; [k: string]: unknown }; summary: { supplied: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; balance: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
     reserve: {
@@ -114,7 +124,7 @@ export function enrichV4SupplyPositions(
 }
 
 export function enrichV4BorrowPositions(
-  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { borrowed: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; principal: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
+  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string; address?: string } }[]; [k: string]: unknown }; summary: { borrowed: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; principal: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
     reserve: {
@@ -211,8 +221,8 @@ export function useUserPositionsSdk(
   // `AaveProviders`. Each client tracks its own urql query registry, so we
   // must call `refreshQueryWhere` on each one to invalidate every active
   // user-position query. See ADR-0015 §S4.
-  const v3Client = useV3AaveClient()
-  const v4Client = useV4AaveClient()
+  const v3Client = useV3AaveClient() as unknown as RefreshableClient
+  const v4Client = useV4AaveClient() as unknown as RefreshableClient
 
   const enabled = isConnected && !!address
   const account = (enabled ? address : undefined) as `0x${string}`
@@ -235,8 +245,11 @@ export function useUserPositionsSdk(
     [reserves, sdkCoverage],
   )
 
-  const v3Supplies = useV3UserSupplies(v3SdkArgs)
-  const v3Borrows = useV3UserBorrows(v3SdkArgs)
+  // The V3 package bundles its own copy of `@aave/types`, so the branded
+  // `EvmAddress` nominal type differs from the root one. Structurally the
+  // values are identical; cast to bridge the duplicated brand.
+  const v3Supplies = useV3UserSupplies(v3SdkArgs as never) as unknown as SdkQueryResult
+  const v3Borrows = useV3UserBorrows(v3SdkArgs as never) as unknown as SdkQueryResult
   const v4Supplies = useV4UserSupplies(v4SdkArgs)
   const v4Borrows = useV4UserBorrows(v4SdkArgs)
 
@@ -314,11 +327,11 @@ export function useUserPositionsSdk(
         typeof user === 'string' && user.toLowerCase() === address.toLowerCase()
       void v3Client.refreshQueryWhere(
         V3UserSuppliesQuery,
-        (variables) => v3Matches(variables.request.user),
+        ((variables: { request: { user: unknown } }) => v3Matches(variables.request.user)) as never,
       )
       void v3Client.refreshQueryWhere(
         V3UserBorrowsQuery,
-        (variables) => v3Matches(variables.request.user),
+        ((variables: { request: { user: unknown } }) => v3Matches(variables.request.user)) as never,
       )
 
       // V4: `request.query` is a union of `userChains` and `userSpoke`.
@@ -330,8 +343,8 @@ export function useUserPositionsSdk(
         const q = variables.request.query
         return v3Matches(q.userChains?.user) || v3Matches(q.userSpoke?.user)
       }
-      void v4Client.refreshQueryWhere(V4UserSuppliesQuery, matchesV4User)
-      void v4Client.refreshQueryWhere(V4UserBorrowsQuery, matchesV4User)
+      void v4Client.refreshQueryWhere(V4UserSuppliesQuery, matchesV4User as never)
+      void v4Client.refreshQueryWhere(V4UserBorrowsQuery, matchesV4User as never)
     })
     // Deps rationale:
     //   * `address` — must re-subscribe on wallet change so the captured
@@ -355,15 +368,15 @@ export function useUserPositionsSdk(
   const sdkReserveMap = useMemo(() => buildSdkReserveMap(reserves), [reserves])
 
   if (!v3SdkFailed && v3Supplies.data && v3Borrows.data) {
-    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV3SupplyPositions(v3Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
-    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV3SupplyPositions(v3Supplies.data as unknown as Parameters<typeof enrichV3SupplyPositions>[0]), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data as unknown as Parameters<typeof enrichV3BorrowPositions>[0]), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v3SdkFailed) {
     sdkFailed.push('sdk-v3')
   }
 
   if (!v4SdkFailed && v4Supplies.data && v4Borrows.data) {
-    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV4SupplyPositions(v4Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
-    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV4SupplyPositions(v4Supplies.data as unknown as Parameters<typeof enrichV4SupplyPositions>[0]), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data as unknown as Parameters<typeof enrichV4BorrowPositions>[0]), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v4SdkFailed) {
     sdkFailed.push('sdk-v4')
   }

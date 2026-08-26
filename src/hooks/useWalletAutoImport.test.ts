@@ -165,7 +165,7 @@ describe('useWalletAutoImport', () => {
   })
 
   it('does not re-import for same address', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
 
     const { rerender } = renderHook(
       (props: { walletResult: DegradedResult }) =>
@@ -190,7 +190,7 @@ describe('useWalletAutoImport', () => {
   })
 
   it('resets state when wallet disconnects', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
 
     const { rerender } = renderHook(
       (props: { isConnected: boolean }) =>
@@ -218,8 +218,8 @@ describe('useWalletAutoImport', () => {
   it('re-imports when wallet switches to a different address', () => {
     const addressA = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
     const addressB = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`
-    const positionsA = [{ reserveId: 'r1', side: 'supply' }]
-    const positionsB = [{ reserveId: 'r2', side: 'borrow' }]
+    const positionsA = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+    const positionsB = [{ reserveId: 'r2', side: 'borrow' }] as unknown as WalletPosition[]
 
     const { rerender } = renderHook(
       (props: { address: `0x${string}`; positions: WalletPosition[] }) =>
@@ -247,7 +247,7 @@ describe('useWalletAutoImport', () => {
   it('does not re-import when same address with different checksum casing', () => {
     const addressLower = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
     const addressUpper = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as `0x${string}`
-    const positions = [{ reserveId: 'r1', side: 'supply' }]
+    const positions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
 
     const { rerender } = renderHook(
       (props: { address: `0x${string}` }) =>
@@ -390,7 +390,7 @@ describe('useWalletAutoImport', () => {
     it('calls onDisconnect before re-import on reconnect', () => {
       const onDisconnect = vi.fn()
       const onImport = vi.fn()
-      const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -423,7 +423,7 @@ describe('useWalletAutoImport', () => {
 
     it('calls onDisconnect on multiple connect/disconnect cycles', () => {
       const onDisconnect = vi.fn()
-      const walletPositions = [{ reserveId: 'r1', side: 'supply' }]
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>

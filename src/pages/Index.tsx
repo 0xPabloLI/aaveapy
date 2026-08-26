@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
@@ -565,7 +565,18 @@ const onchainHfResult = useOnchainHealthFactor({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <Helmet>
+        <title>AaveAPY — Compare Aave V3 & V4 APYs Across Chains</title>
+        <meta
+          name="description"
+          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare Merit, Merkl and Brevis incentives, and simulate portfolio rates in real time."
+        />
         <link rel="canonical" href={`${SITE_ORIGIN}/`} />
+        <meta property="og:title" content="AaveAPY — Compare Aave V3 & V4 APYs Across Chains" />
+        <meta
+          property="og:description"
+          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare incentives, and simulate portfolio rates in real time."
+        />
+        <meta property="og:url" content={`${SITE_ORIGIN}/`} />
       </Helmet>
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
@@ -802,6 +813,18 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                   Brevis
                 </a>
               </p>
+
+              <nav aria-label="More from AaveAPY">
+                <p className="text-center ds-text-14 text-muted-foreground leading-relaxed">
+                  <Link to="/defi-yield-tracker" className="text-secondary hover:underline">
+                    DeFi Yield Tracker
+                  </Link>
+                  {' · '}
+                  <Link to="/usa-stablecoin-apy" className="text-secondary hover:underline">
+                    USA Stablecoin APY
+                  </Link>
+                </p>
+              </nav>
 
               <p className="text-xs sm:text-sm text-signature opacity-85">
                 Built with ❤️ by{' '}
