@@ -29,7 +29,7 @@ export function useUserSummarySdk() {
   const enabled = isConnected && !!address
 
   const account = (enabled ? address : undefined) as `0x${string}`
-  const result = useV4UserSummary({ user: account, pause: !enabled } as never) as {
+  const result = useV4UserSummary({ user: account, pause: !enabled } as never) as unknown as {
     loading: boolean
     error?: unknown
     data?: Record<string, unknown> & { totalPositions: number; lowestHealthFactor?: unknown }
