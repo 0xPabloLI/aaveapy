@@ -565,7 +565,18 @@ const onchainHfResult = useOnchainHealthFactor({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <Helmet>
+        <title>AaveAPY — Compare Aave V3 & V4 APYs Across Chains</title>
+        <meta
+          name="description"
+          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare Merit, Merkl and Brevis incentives, and simulate portfolio rates in real time."
+        />
         <link rel="canonical" href={`${SITE_ORIGIN}/`} />
+        <meta property="og:title" content="AaveAPY — Compare Aave V3 & V4 APYs Across Chains" />
+        <meta
+          property="og:description"
+          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare incentives, and simulate portfolio rates in real time."
+        />
+        <meta property="og:url" content={`${SITE_ORIGIN}/`} />
       </Helmet>
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
