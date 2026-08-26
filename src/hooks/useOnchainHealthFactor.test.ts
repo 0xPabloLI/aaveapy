@@ -58,6 +58,7 @@ const makeEntry = (
   reserveId: 'r-usdc-v3',
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
+  chainId: 1,
   tokenSymbol: 'USDC',
   supply: { amount: '10000', inputMode: 'usd', walletValue: null },
   borrow: { amount: '', inputMode: 'usd', walletValue: null },
