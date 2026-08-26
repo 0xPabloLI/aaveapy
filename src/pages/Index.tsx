@@ -814,6 +814,18 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                 </a>
               </p>
 
+              <nav aria-label="More from AaveAPY">
+                <p className="text-center ds-text-14 text-muted-foreground leading-relaxed">
+                  <Link to="/defi-yield-tracker" className="text-secondary hover:underline">
+                    DeFi Yield Tracker
+                  </Link>
+                  {' · '}
+                  <Link to="/usa-stablecoin-apy" className="text-secondary hover:underline">
+                    USA Stablecoin APY
+                  </Link>
+                </p>
+              </nav>
+
               <p className="text-xs sm:text-sm text-signature opacity-85">
                 Built with ❤️ by{' '}
                 <a
