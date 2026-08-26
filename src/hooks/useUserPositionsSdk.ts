@@ -48,6 +48,12 @@ import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery'
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge'
 import { subscribeRefetch } from '@/lib/userData/refetchEvent'
 
+interface SdkQueryResult {
+  loading: boolean
+  error?: unknown
+  data?: unknown
+}
+
 interface RefreshableClient {
   refreshQueryWhere: (document: unknown, predicate: (variables: never) => boolean) => unknown
 }
@@ -242,8 +248,8 @@ export function useUserPositionsSdk(
   // The V3 package bundles its own copy of `@aave/types`, so the branded
   // `EvmAddress` nominal type differs from the root one. Structurally the
   // values are identical; cast to bridge the duplicated brand.
-  const v3Supplies = useV3UserSupplies(v3SdkArgs as never)
-  const v3Borrows = useV3UserBorrows(v3SdkArgs as never)
+  const v3Supplies = useV3UserSupplies(v3SdkArgs as never) as unknown as SdkQueryResult
+  const v3Borrows = useV3UserBorrows(v3SdkArgs as never) as unknown as SdkQueryResult
   const v4Supplies = useV4UserSupplies(v4SdkArgs)
   const v4Borrows = useV4UserBorrows(v4SdkArgs)
 
