@@ -108,7 +108,7 @@ export function watchModeConnector() {
         config.emitter.emit('disconnect')
       },
     }
-  })
+  }) as unknown as Parameters<typeof createConnector>[0])
 
   return Object.assign(connector, { setWatchAddress, type: 'watchMode' as const })
 }
