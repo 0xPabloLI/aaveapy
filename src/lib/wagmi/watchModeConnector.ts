@@ -34,7 +34,7 @@ export function watchModeConnector() {
       type: 'watchMode' as const,
       setWatchAddress,
 
-      async connect({ chainId } = {}) {
+      async connect({ chainId }: { chainId?: number } = {}) {
         const address = watchAddress
           ?? (localStorage.getItem(STORAGE_KEY) as `0x${string}` | null)
           ?? undefined
@@ -60,7 +60,7 @@ export function watchModeConnector() {
         return config.chains[0].id
       },
 
-      async getProvider({ chainId } = {}) {
+      async getProvider({ chainId }: { chainId?: number } = {}) {
         const resolvedChainId = chainId ?? config.chains[0].id
         const provider: WatchProvider = {
           async request({ method }) {
