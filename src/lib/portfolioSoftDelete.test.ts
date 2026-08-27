@@ -11,6 +11,7 @@ const makeEntry = (overrides: Partial<PortfolioReserveEntry> & { reserveId: stri
   borrow: { amount: '', inputMode: 'usd', walletValue: null },
   hidden: false,
   isOrphan: false,
+  restrictedStatus: null,
   ...overrides,
 })
 

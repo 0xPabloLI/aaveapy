@@ -7,6 +7,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
   tokenPrice: 1,
   supply: {
     hasInput: true,
+    headlineIncentive: 0,
     inputAmount: 1000,
     inputUsd: 1000,
     currentNative: 3,
@@ -23,6 +24,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
   },
   borrow: {
     hasInput: true,
+    headlineIncentive: 0,
     inputAmount: 500,
     inputUsd: 500,
     currentNative: 5,

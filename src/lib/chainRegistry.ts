@@ -85,7 +85,7 @@ const ENTRIES: readonly DiscoveredEntry[] = (() => {
  *
  * To add RPC URLs for a new chain: add an entry here. That's it.
  */
-const CHAIN_RPC_URLS: Record<number, readonly string[]> = {
+const CHAIN_RPC_URLS: Record<number, string[]> = {
   1: ['https://ethereum-rpc.publicnode.com', 'https://eth-mainnet.public.blastapi.io', 'https://eth.drpc.org', 'https://1rpc.io/eth'],
   10: ['https://public-op-mainnet.fastnode.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://1rpc.io/op'],
   56: ['https://bsc.publicnode.com', 'https://bsc-mainnet.public.blastapi.io', 'https://1rpc.io/bnb', 'https://bsc.drpc.org'],

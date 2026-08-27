@@ -86,7 +86,7 @@ describe('getBrevisResolvedBreakdown', () => {
   it('prefers breakdown values over top-level when provided', () => {
     const brevis = makeBrevis({
       campaignApr: 1.5,
-      breakdowns: [{ campaignApr: 2.25, campaignStartedAt: '2026-04-01T00:00:00.000Z', campaignEndedAt: '2026-05-01T00:00:00.000Z' }],
+      breakdowns: [{ campaignId: 'brevis-b1', campaignApr: 2.25, campaignStartedAt: '2026-04-01T00:00:00.000Z', campaignEndedAt: '2026-05-01T00:00:00.000Z' }],
     });
     const resolved = getBrevisResolvedBreakdown(brevis, brevis.breakdowns?.[0]);
     expect(resolved.campaignApr).toBe(2.25);
