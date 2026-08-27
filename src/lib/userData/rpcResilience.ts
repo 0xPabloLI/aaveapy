@@ -47,7 +47,7 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
       nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
       rpcUrls: { default: { http: [url] } },
     }
-    const client = createPublicClient({ chain, transport: http(url), batch: { multicall: true } })
+    const client = createPublicClient({ chain, transport: http(url), batch: { multicall: true } }) as PublicClient
     try {
       await withTimeout(client.getChainId(), 3000, `rpc-rotation-chain-${chainId}`)
       return client

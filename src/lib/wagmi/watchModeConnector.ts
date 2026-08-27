@@ -23,7 +23,7 @@ export function watchModeConnector() {
     emitWatchAddressChange?.(addr)
   }
 
-  const connector = createConnector((config) => {
+  const connector = createConnector(((config) => {
     emitWatchAddressChange = (address) => {
       config.emitter.emit('change', { accounts: [address] })
     }

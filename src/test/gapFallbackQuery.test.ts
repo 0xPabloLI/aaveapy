@@ -79,7 +79,7 @@ describe('fetchGapPositions', () => {
     }
 
     vi.mocked(getV3UserPositionsMultiChain).mockResolvedValue({
-      results: [{ positions: [], accountSummary: { totalCollateralBase: 0n, totalDebtBase: 0n, healthFactor: 0n, availableBorrowsBase: 0n } }],
+      results: [{ positions: [], accountSummary: null }],
       errors: [],
     })
 
@@ -130,7 +130,7 @@ describe('fetchGapPositions', () => {
     }
 
     vi.mocked(getV3UserPositionsMultiChain).mockResolvedValue({
-      results: [{ positions: [], accountSummary: { totalCollateralBase: 0n, totalDebtBase: 0n, healthFactor: 0n, availableBorrowsBase: 0n } }],
+      results: [{ positions: [], accountSummary: null }],
       errors: [],
     })
     vi.mocked(getV4UserPositionsAllSpokes).mockResolvedValue({
