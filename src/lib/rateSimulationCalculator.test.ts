@@ -1103,7 +1103,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('marks campaign as forecastUnavailable when forecastStates lacks the campaignId', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+      'camp-with-forecast': { campaignId: 'camp-with-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
     };
     const rows = buildMerklCampaignDetails({
       opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
@@ -1116,7 +1116,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('does not mark campaign as forecastUnavailable when forecastStates has the campaignId', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'camp-with-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+      'camp-with-forecast': { campaignId: 'camp-with-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
     };
     const rows = buildMerklCampaignDetails({
       opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
@@ -1171,7 +1171,7 @@ describe('buildMerklCampaignDetails — position cap native amount display', () 
 
   it('displays native token amount in capNote when tokenSymbol is provided', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
+      'merkl-capped': { campaignId: 'merkl-capped', requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
     };
     const rows = buildMerklCampaignDetails({
       opportunities: opportunitiesWithPositionCap,
@@ -1195,7 +1195,7 @@ describe('buildMerklCampaignDetails — position cap native amount display', () 
 
   it('falls back to USD when tokenSymbol is not provided', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'merkl-capped': { requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
+      'merkl-capped': { campaignId: 'merkl-capped', requiredDaily: 100, distributedSoFar: 0, endTimestamp: 2000000000 },
     };
     const rows = buildMerklCampaignDetails({
       opportunities: opportunitiesWithPositionCap,
@@ -1339,8 +1339,8 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
         campaignStartedAt: '2025-01-01',
         campaignEndedAt: '2030-12-31',
         message: 'Test Brevis',
-        positionCapUsd: null,
-        totalBudget: null,
+        positionCapUsd: undefined,
+        totalBudget: undefined,
       },
     ];
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
@@ -1361,12 +1361,12 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
         campaignStartedAt: '2025-01-01',
         campaignEndedAt: '2030-12-31',
         message: 'Test Brevis',
-        positionCapUsd: null,
-        totalBudget: null,
+        positionCapUsd: undefined,
+        totalBudget: undefined,
       },
     ];
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'brevis-1': { requiredDaily: 50, distributedSoFar: 20, endTimestamp: 2000000000 },
+      'brevis-1': { campaignId: 'brevis-1', requiredDaily: 50, distributedSoFar: 20, endTimestamp: 2000000000 },
     };
     const rows = buildBrevisCampaignDetails({
       items: brevis, isApy: false, inputUsd: 1000, shouldComputeAfter: true, forecastStates,
@@ -1386,7 +1386,7 @@ describe('Brevis position cap — totalPositionUsd fallback (AAV-1060 #10)', () 
       campaignEndedAt: '2030-12-31',
       message: 'Brevis Cap Test',
       positionCapUsd: 5000,
-      totalBudget: null,
+      totalBudget: undefined,
     },
   ];
 
@@ -1463,8 +1463,8 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
         campaignStartedAt: '2025-01-01',
         campaignEndedAt: '2030-12-31',
         message: 'Brevis No Forecast',
-        positionCapUsd: null,
-        totalBudget: null,
+        positionCapUsd: undefined,
+        totalBudget: undefined,
       }],
     };
     const result = buildRateSimulationResult({
@@ -1499,7 +1499,7 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
       ...BASE_PARAMS,
       supplyInput: '1000',
       forecastStates: {
-        'has-forecast': { requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+        'has-forecast': { campaignId: 'has-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
       },
     });
     expect(result.forecastUnavailableCampaignCount).toBe(0);
@@ -2137,7 +2137,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       campaignEndedAt: '2099-01-01T00:00:00.000Z',
       message: 'Brevis Cap Test',
       positionCapUsd: 5000,
-      totalBudget: null,
+      totalBudget: undefined,
       breakdowns: [{
         campaignId: 'brevis-cap-test',
         campaignApr: 10,
@@ -2145,7 +2145,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
         campaignStartedAt: '2025-01-01T00:00:00.000Z',
         campaignEndedAt: '2099-01-01T00:00:00.000Z',
         positionCapUsd: 5000,
-        totalBudget: null,
+        totalBudget: undefined,
       }],
     }],
   };
