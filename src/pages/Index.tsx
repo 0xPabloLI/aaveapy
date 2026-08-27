@@ -565,19 +565,33 @@ const onchainHfResult = useOnchainHealthFactor({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <Helmet>
-        <title>AaveAPY — Compare Aave V3 & V4 APYs Across Chains</title>
+        <title>Aave APY — Live Aave V3 &amp; V4 Rates by Chain</title>
         <meta
           name="description"
-          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare Merit, Merkl and Brevis incentives, and simulate portfolio rates in real time."
+          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track Merit, Merkl and Brevis incentives, and simulate your portfolio yield."
         />
         <link rel="canonical" href={`${SITE_ORIGIN}/`} />
-        <meta property="og:title" content="AaveAPY — Compare Aave V3 & V4 APYs Across Chains" />
+        <meta property="og:title" content="Aave APY — Live Aave V3 & V4 Rates by Chain" />
         <meta
           property="og:description"
-          content="Track Aave V3 and V4 supply and borrow APYs across every supported chain, compare incentives, and simulate portfolio rates in real time."
+          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track incentives, and simulate your portfolio yield."
         />
         <meta property="og:url" content={`${SITE_ORIGIN}/`} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'AaveAPY',
+            url: `${SITE_ORIGIN}/`,
+            applicationCategory: 'FinanceApplication',
+            operatingSystem: 'Web',
+            description:
+              'Live Aave APY tracker for Aave V3 and V4 supply and borrow rates across all supported chains, including Merit, Merkl and Brevis incentives.',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          })}
+        </script>
       </Helmet>
+
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
