@@ -1668,12 +1668,16 @@ export function buildRateSimulationResult({
 
     // Merit/Merkl/Brevis (dispatch map) — single source of truth for per-source current
     const sr = {} as Record<SourceKey, { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }>;
-    for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
-      const current = sourceDispatch[key].sumCurrent(currentData[key], ctx);
-      const afterRaw = shouldComputeAfter ? sourceDispatch[key].sumAfter(currentData[key], ctx) : null;
+    const runSource = <K extends SourceKey>(key: K) => {
+      const handler = sourceDispatch[key];
+      const data = currentData[key];
+      const current = handler.sumCurrent(data, ctx);
+      const afterRaw = shouldComputeAfter ? handler.sumAfter(data, ctx) : null;
       const after = afterRaw !== null ? Math.min(afterRaw, current) : null;
-      const campaigns = sourceDispatch[key].buildDetails(currentData[key], ctx);
-      sr[key] = { current, after, campaigns };
+      sr[key] = { current, after, campaigns: handler.buildDetails(data, ctx) };
+    };
+    for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
+      runSource(key);
     }
 
     // AAV-1112: Derive currentIncentive from per-source sum (single code path).
