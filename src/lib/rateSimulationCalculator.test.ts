@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns, sumForecastBrevisIncentiveApr } from './rateSimulationCalculator';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import type { ReserveWithSpread } from '@/types/aave';
+import type { ReserveWithSpread, MerklOpportunityGroup, MerklCampaignBreakdown } from '@/types/aave';
 
 const BASE_RESERVE: ReserveWithSpread = {
   reserveId: '1:0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -536,6 +536,7 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
         campaignStartedAt: '2024-01-01',
         campaignEndedAt: '2030-12-31',
         campaignId: 'brevis-supply-1',
+        link: 'https://example.com/brevis',
         message: 'Brevis Supply',
       }],
     };
@@ -1334,6 +1335,7 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const brevis = [
       {
         campaignId: 'brevis-1',
+        link: 'https://example.com/brevis',
         campaignApr: 4,
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01',
@@ -1356,6 +1358,7 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     const brevis = [
       {
         campaignId: 'brevis-1',
+        link: 'https://example.com/brevis',
         campaignApr: 4,
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01',
@@ -1380,6 +1383,7 @@ describe('Brevis position cap — totalPositionUsd fallback (AAV-1060 #10)', () 
   const brevisWithCap = [
     {
       campaignId: 'brevis-cap-1',
+      link: 'https://example.com/brevis',
       campaignApr: 10,
       campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
       campaignStartedAt: '2025-01-01',
@@ -1459,6 +1463,7 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
       brevisSupplys: [{
         campaignApr: 4,
         campaignId: 'brevis-no-forecast',
+        link: 'https://example.com/brevis',
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01',
         campaignEndedAt: '2030-12-31',
@@ -2131,6 +2136,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
     ...BASE_RESERVE,
     brevisSupplys: [{
       campaignId: 'brevis-cap-test',
+      link: 'https://example.com/brevis',
       campaignApr: 10,
       campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
       campaignStartedAt: '2025-01-01T00:00:00.000Z',
@@ -2140,6 +2146,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       totalBudget: undefined,
       breakdowns: [{
         campaignId: 'brevis-cap-test',
+        link: 'https://example.com/brevis',
         campaignApr: 10,
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01T00:00:00.000Z',
