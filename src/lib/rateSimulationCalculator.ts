@@ -1529,11 +1529,13 @@ export function buildRateSimulationResult({
     tokenSymbol: string | undefined;
   }
 
-  const sourceDispatch: Record<SourceKey, {
-    sumCurrent: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => number;
-    sumAfter: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => number;
-    buildDetails: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => SimulationCampaignDetail[];
-  }> = {
+  const sourceDispatch: {
+    [K in SourceKey]: {
+      sumCurrent: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
+      sumAfter: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
+      buildDetails: (data: IncentiveSources[K], ctx: SideSourceContext) => SimulationCampaignDetail[];
+    }
+  } = {
     merit: {
       // AAV-979: sumCurrent must include position cap dilution for wallet positions
       // AAV-1101: sumCurrent uses wallet eligibility ratio (no delta)
