@@ -1099,7 +1099,7 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
         },
       ],
     },
-  ];
+  ] as unknown as MerklOpportunityGroup[];
 
   it('marks campaign as forecastUnavailable when forecastStates lacks the campaignId', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
@@ -1279,7 +1279,7 @@ describe('buildMerklCampaignDetails — positionCap', () => {
       {
         name: 'Merkl Net',
         link: 'https://example.com',
-        netPositionConstraint: { sourceSide: 'supply', offsetReserveIds: ['r1'] },
+        netPositionConstraint: { sourceSide: 'supply' as const, offsetReserveIds: ['r1'] },
         breakdowns: [
           {
             campaignId: 'net-camp',
@@ -1438,7 +1438,7 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
           campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
           campaignStartedAt: '2025-01-01',
           campaignEndedAt: '2030-12-31',
-        }],
+        }] as unknown as MerklCampaignBreakdown[],
       }],
     };
     const result = buildRateSimulationResult({

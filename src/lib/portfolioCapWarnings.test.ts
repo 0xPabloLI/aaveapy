@@ -5,6 +5,7 @@ import type { RateSimulationComputedResult, SimulationCampaignDetail } from './r
 
 const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateSimulationComputedResult => ({
   tokenPrice: 1,
+  scenarioUsdAccrual: null,
   supply: {
     hasInput: true,
     headlineIncentive: 0,
