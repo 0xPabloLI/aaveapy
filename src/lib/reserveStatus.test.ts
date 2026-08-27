@@ -26,7 +26,7 @@ describe('hasProtocolRestriction (internal via isSupplyDisabled)', () => {
   });
 
   it('inactive reserve (isActive=false) → supply/borrow disabled', () => {
-    const r = { ...BASE_RESERVE, isActive: false };
+    const r = { ...BASE_RESERVE, isActive: false as const };
     expect(isSupplyDisabled(r)).toBe(true);
     expect(isBorrowDisabled(r)).toBe(true);
   });
@@ -54,7 +54,7 @@ describe('hasProtocolRestriction (internal via isSupplyDisabled)', () => {
 
 describe('getPrimaryReserveStatus', () => {
   it('paused wins over everything', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isPaused: true, isFrozen: true, isActive: false } as ReserveWithSpread))
+    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isPaused: true, isFrozen: true, isActive: false as const } as ReserveWithSpread))
       .toBe('paused');
   });
 
@@ -89,7 +89,7 @@ describe('getReserveFlags', () => {
   });
 
   it('parses inactive (isActive=false)', () => {
-    const flags = getReserveFlags({ ...BASE_RESERVE, isActive: false } as ReserveWithSpread);
+    const flags = getReserveFlags({ ...BASE_RESERVE, isActive: false as const } as ReserveWithSpread);
     expect(flags).toEqual({ paused: false, inactive: true, frozen: false });
   });
 
@@ -112,7 +112,7 @@ describe('isRestrictedReserve', () => {
     expect(isRestrictedReserve({ ...BASE_RESERVE, isPaused: true } as ReserveWithSpread)).toBe(true);
   });
   it('true for inactive', () => {
-    expect(isRestrictedReserve({ ...BASE_RESERVE, isActive: false } as ReserveWithSpread)).toBe(true);
+    expect(isRestrictedReserve({ ...BASE_RESERVE, isActive: false as const } as ReserveWithSpread)).toBe(true);
   });
   it('false for normal', () => {
     expect(isRestrictedReserve({ ...BASE_RESERVE } as ReserveWithSpread)).toBe(false);

@@ -5,8 +5,12 @@ export { V3_POOL_ADDRESSES }
 export const MULTICALL3_ADDRESS = '0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3' as const
 
 export function getV3PoolAddress(chainId: number): `0x${string}` | undefined {
-  return V3_POOL_ADDRESSES[chainId]
+  return V3_POOL_ADDRESSES[chainId] as `0x${string}` | undefined
 }
+
+type CallResult<T> =
+  | { status: 'success'; result: T; error?: undefined }
+  | { status: 'failure'; result?: undefined; error: Error }
 
 export interface V3UserReserveData {
   currentATokenBalance: bigint
@@ -83,7 +87,6 @@ import {
   createPublicClient,
   http,
   type PublicClient,
-  type MulticallResponse,
 } from 'viem'
 import { createClientWithRpcRotation } from './rpcResilience'
 
@@ -131,14 +134,15 @@ export async function getV3UserPositionsOnChain(
 
   const allCalls = [...reserveCalls, accountCall]
 
-  const results = await publicClient.multicall({
+  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>
+  const results = await multicall({
     contracts: allCalls,
     multicallAddress: MULTICALL3_ADDRESS,
     allowFailure: true,
   })
 
-  const reserveResults = results.slice(0, reserveIds.length) as MulticallResponse<typeof POOL_ABI, 'getUserReserveData'>[]
-  const accountResult = results[reserveIds.length] as MulticallResponse<typeof POOL_ABI, 'getUserAccountData'>
+  const reserveResults = results.slice(0, reserveIds.length) as CallResult<{ currentATokenBalance: bigint; currentStableDebt: bigint; currentVariableDebt: bigint; usageAsCollateralEnabled: boolean }>[]
+  const accountResult = results[reserveIds.length] as CallResult<{ totalCollateralBase: bigint; totalDebtBase: bigint; availableBorrowsBase: bigint; currentLiquidationThreshold: bigint; ltv: bigint; healthFactor: bigint }>
 
   const positions: V3UserPosition[] = []
   for (let i = 0; i < reserveIds.length; i++) {

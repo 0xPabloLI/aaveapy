@@ -156,6 +156,7 @@ const makeBrevis = (overrides: Partial<BrevisIncentive> = {}): BrevisIncentive =
 
 const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
   [campaignId]: {
+    campaignId,
     distributedSoFar: 100,
     endTimestamp: Math.floor(new Date('2027-12-31').getTime() / 1000),
     requiredDaily: 5,
@@ -221,7 +222,7 @@ describe('sumBrevisIncentiveApr', () => {
 
   it('sums multiple groups with multiple breakdowns', () => {
     const brevis = [
-      makeBrevis({ campaignApr: 2.0, breakdowns: [{ campaignApr: 1.2, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }, { campaignApr: 0.8, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }] }),
+      makeBrevis({ campaignApr: 2.0, breakdowns: [{ campaignId: 'brevis-b1', campaignApr: 1.2, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }, { campaignId: 'brevis-b2', campaignApr: 0.8, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }] }),
       makeBrevis({ campaignApr: 1.5 }),
     ];
     expect(sumBrevisIncentiveApr(brevis)).toBeCloseTo(3.5, 6);

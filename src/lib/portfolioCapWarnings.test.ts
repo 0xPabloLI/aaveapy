@@ -5,8 +5,10 @@ import type { RateSimulationComputedResult, SimulationCampaignDetail } from './r
 
 const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateSimulationComputedResult => ({
   tokenPrice: 1,
+  scenarioUsdAccrual: null,
   supply: {
     hasInput: true,
+    headlineIncentive: 0,
     inputAmount: 1000,
     inputUsd: 1000,
     currentNative: 3,
@@ -23,6 +25,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
   },
   borrow: {
     hasInput: true,
+    headlineIncentive: 0,
     inputAmount: 500,
     inputUsd: 500,
     currentNative: 5,

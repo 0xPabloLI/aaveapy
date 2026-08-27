@@ -72,6 +72,8 @@ import {
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
 import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
+import type { IncentiveNote } from '@/lib/incentiveCaps';
+import type { IncentiveSources } from '@/lib/incentiveAggregation';
 
 
 export type BrevisCampaignRow = {
@@ -86,8 +88,8 @@ export const flattenBrevisCampaignRows = (values?: BrevisIncentive[]): BrevisCam
       breakdowns: getBrevisCampaignBreakdowns(source),
     }))
   ).map(({ group, breakdown }) => ({
-    source: group,
-    breakdown,
+    source: group as BrevisIncentive,
+    breakdown: breakdown as BrevisCampaignRow['breakdown'],
   }));
 };
 
@@ -1527,11 +1529,13 @@ export function buildRateSimulationResult({
     tokenSymbol: string | undefined;
   }
 
-  const sourceDispatch: Record<SourceKey, {
-    sumCurrent: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => number;
-    sumAfter: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => number;
-    buildDetails: (data: IncentiveSources[SourceKey], ctx: SideSourceContext) => SimulationCampaignDetail[];
-  }> = {
+  const sourceDispatch: {
+    [K in SourceKey]: {
+      sumCurrent: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
+      sumAfter: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
+      buildDetails: (data: IncentiveSources[K], ctx: SideSourceContext) => SimulationCampaignDetail[];
+    }
+  } = {
     merit: {
       // AAV-979: sumCurrent must include position cap dilution for wallet positions
       // AAV-1101: sumCurrent uses wallet eligibility ratio (no delta)
@@ -1664,12 +1668,16 @@ export function buildRateSimulationResult({
 
     // Merit/Merkl/Brevis (dispatch map) — single source of truth for per-source current
     const sr = {} as Record<SourceKey, { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }>;
-    for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
-      const current = sourceDispatch[key].sumCurrent(currentData[key], ctx);
-      const afterRaw = shouldComputeAfter ? sourceDispatch[key].sumAfter(currentData[key], ctx) : null;
+    const runSource = <K extends SourceKey>(key: K) => {
+      const handler = sourceDispatch[key];
+      const data = currentData[key];
+      const current = handler.sumCurrent(data, ctx);
+      const afterRaw = shouldComputeAfter ? handler.sumAfter(data, ctx) : null;
       const after = afterRaw !== null ? Math.min(afterRaw, current) : null;
-      const campaigns = sourceDispatch[key].buildDetails(currentData[key], ctx);
-      sr[key] = { current, after, campaigns };
+      sr[key] = { current, after, campaigns: handler.buildDetails(data, ctx) };
+    };
+    for (const key of Object.keys(sourceDispatch) as SourceKey[]) {
+      runSource(key);
     }
 
     // AAV-1112: Derive currentIncentive from per-source sum (single code path).

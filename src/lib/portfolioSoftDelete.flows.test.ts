@@ -11,6 +11,7 @@ const makeEntry = (o: Partial<PortfolioReserveEntry> & { reserveId: string }): P
   borrow: { amount: '', inputMode: 'usd', walletValue: null },
   hidden: false,
   isOrphan: false,
+  restrictedStatus: null,
   ...o,
 })
 
