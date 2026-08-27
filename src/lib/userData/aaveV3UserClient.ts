@@ -131,8 +131,9 @@ export async function getV3UserPositionsOnChain(
 
   const allCalls = [...reserveCalls, accountCall]
 
-  const results = await publicClient.multicall({
-    contracts: allCalls as never,
+  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>
+  const results = await multicall({
+    contracts: allCalls,
     multicallAddress: MULTICALL3_ADDRESS,
     allowFailure: true,
   })
