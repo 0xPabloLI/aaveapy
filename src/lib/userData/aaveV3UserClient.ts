@@ -5,7 +5,7 @@ export { V3_POOL_ADDRESSES }
 export const MULTICALL3_ADDRESS = '0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3' as const
 
 export function getV3PoolAddress(chainId: number): `0x${string}` | undefined {
-  return V3_POOL_ADDRESSES[chainId]
+  return V3_POOL_ADDRESSES[chainId] as `0x${string}` | undefined
 }
 
 export interface V3UserReserveData {
@@ -132,7 +132,7 @@ export async function getV3UserPositionsOnChain(
   const allCalls = [...reserveCalls, accountCall]
 
   const results = await publicClient.multicall({
-    contracts: allCalls,
+    contracts: allCalls as never,
     multicallAddress: MULTICALL3_ADDRESS,
     allowFailure: true,
   })

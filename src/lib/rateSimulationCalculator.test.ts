@@ -536,7 +536,6 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
         campaignStartedAt: '2024-01-01',
         campaignEndedAt: '2030-12-31',
         campaignId: 'brevis-supply-1',
-        link: 'https://example.com/brevis',
         message: 'Brevis Supply',
       }],
     };
@@ -2146,7 +2145,6 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
       totalBudget: undefined,
       breakdowns: [{
         campaignId: 'brevis-cap-test',
-        link: 'https://example.com/brevis',
         campaignApr: 10,
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01T00:00:00.000Z',
