@@ -253,7 +253,6 @@ describe('whitelist-only Merkl campaign handling', () => {
       {
         breakdowns: [
           {
-            campaignId: 'brevis-active',
             campaignApr: 3,
             campaignId: '',
             campaignStartedAt: daysFromNowIso(-1),

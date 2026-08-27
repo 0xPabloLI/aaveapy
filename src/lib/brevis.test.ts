@@ -152,6 +152,7 @@ describe('hasActiveBrevisBreakdown', () => {
 describe('Brevis via forecastMerklApr', () => {
   const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
     [campaignId]: {
+      campaignId,
       distributedSoFar: 100,
       endTimestamp: Math.floor(Date.now() / 1000) + 30 * 86400,
       requiredDaily: 5,

@@ -72,6 +72,8 @@ import {
   type ReservePositions,
 } from '@/lib/netLendingCrossReserve';
 import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
+import type { IncentiveNote } from '@/lib/incentiveCaps';
+import type { IncentiveSources } from '@/lib/incentiveAggregation';
 
 
 export type BrevisCampaignRow = {
@@ -86,8 +88,8 @@ export const flattenBrevisCampaignRows = (values?: BrevisIncentive[]): BrevisCam
       breakdowns: getBrevisCampaignBreakdowns(source),
     }))
   ).map(({ group, breakdown }) => ({
-    source: group,
-    breakdown,
+    source: group as BrevisIncentive,
+    breakdown: breakdown as BrevisCampaignRow['breakdown'],
   }));
 };
 
