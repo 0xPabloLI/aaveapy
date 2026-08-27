@@ -1,5 +1,10 @@
 import * as ab from '@aave-dao/aave-address-book'
 
+
+type CallResult<T> =
+  | { status: 'success'; result: T; error?: undefined }
+  | { status: 'failure'; result?: undefined; error: Error }
+
 export interface V4SpokeEntry {
   name: string
   address: `0x${string}`
@@ -161,7 +166,6 @@ import {
   createPublicClient,
   http,
   type PublicClient,
-  type MulticallResponse,
 } from 'viem'
 import { createClientWithRpcRotation } from './rpcResilience'
 
@@ -210,7 +214,8 @@ export async function getV4UserPositionsOnChain(
   }
 
   const allCalls = [...reserveCalls, accountCall]
-  const results = await publicClient.multicall({
+  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>
+  const results = await multicall({
     contracts: allCalls,
     multicallAddress: MULTICALL3_ADDRESS,
     allowFailure: true,
@@ -221,9 +226,9 @@ export async function getV4UserPositionsOnChain(
 
   for (let i = 0; i < reserves.length; i++) {
     const baseIdx = i * CALLS_PER_RESERVE
-    const suppliedResult = results[baseIdx] as MulticallResponse<typeof SPOKE_ABI, 'getUserSuppliedAssets'>
-    const debtResult = results[baseIdx + 1] as MulticallResponse<typeof SPOKE_ABI, 'getUserDebt'>
-    const statusResult = results[baseIdx + 2] as MulticallResponse<typeof SPOKE_ABI, 'getUserReserveStatus'>
+    const suppliedResult = results[baseIdx] as CallResult<bigint>
+    const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]>
+    const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]>
 
     if (
       suppliedResult.status === 'failure' ||
@@ -252,7 +257,7 @@ export async function getV4UserPositionsOnChain(
   }
 
   const accountSummaries: V4AccountSummary[] = []
-  const accountResult = results[reserveCalls.length] as MulticallResponse<typeof SPOKE_ABI, 'getUserAccountData'>
+  const accountResult = results[reserveCalls.length] as CallResult<{ healthFactor: bigint; totalCollateralValue: bigint; totalDebtValueRay: bigint }>
   if (accountResult.status === 'success' && accountResult.result) {
     const r = accountResult.result
     accountSummaries.push({
