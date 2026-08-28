@@ -66,4 +66,9 @@
   <url><loc>https://aaveapy.com/asset/wbtc</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/asset/dai</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/asset/gho</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url>
+    <loc>https://aaveapy.com/pt-br/taxas-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>

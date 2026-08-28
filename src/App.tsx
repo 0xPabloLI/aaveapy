@@ -25,6 +25,7 @@ const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ChainPage = lazy(() => import("./pages/ChainPage"));
 const LandingPT = lazy(() => import("./pages/LandingPT"));
+const AaveTaxasApyPT = lazy(() => import("./pages/AaveTaxasApyPT"));
 const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
 const AdminSeo = lazy(() => import("./pages/AdminSeo"));
@@ -79,6 +80,7 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/chain/:slug" element={<ChainPage />} />
                   <Route path="/pt-br" element={<LandingPT />} />
+                  <Route path="/pt-br/taxas-aave-apy" element={<AaveTaxasApyPT />} />
                   <Route path="/fr" element={<LandingFR />} />
                   <Route path="/tr" element={<LandingTR />} />
                   <Route path="/admin/seo" element={<AdminSeo />} />
