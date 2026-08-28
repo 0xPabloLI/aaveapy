@@ -410,3 +410,151 @@ describe('Architecture guard: test files must mock viem for value imports', () =
     });
   }
 });
+
+/**
+ * FCP optimization guards — ensure heavy SDK chunks are lazy-loaded and not
+ * synchronously imported from the app entry point.
+ *
+ * AaveProviders wraps @aave/react + @aave/react-v3 (~218 KB gzip).  When
+ * synchronously imported in App.tsx, Vite includes it in the initial chunk
+ * and modulepreloads it, blocking FCP.  These tests guard against regression.
+ */
+describe('FCP optimization: lazy-loaded AaveProviders', () => {
+  it('App.tsx uses lazy() for AaveProviders, not a static import', () => {
+    const appSrc = readFile('App.tsx');
+
+    // Must NOT contain a static import of AaveProviders
+    const hasStaticImport = /import\s+\{[^}]*AaveProviders[^}]*\}\s+from\s+['"]@\/providers\/AaveProviders['"]/.test(appSrc);
+    expect(
+      hasStaticImport,
+      'App.tsx must not statically import AaveProviders — use lazy(() => import(...)) instead.\n' +
+      'A static import pulls @aave/react + @aave-dao (~218 KB gzip) into the initial chunk, blocking FCP.',
+    ).toBe(false);
+
+    // Must contain a lazy import
+    const hasLazyImport = /lazy\s*\(\s*\(\s*\)\s*=>\s*import\s*\(\s*['"]@\/providers\/AaveProviders['"]/.test(appSrc);
+    expect(
+      hasLazyImport,
+      'App.tsx must use lazy(() => import("@/providers/AaveProviders")) for AaveProviders.',
+    ).toBe(true);
+  });
+
+  it('App.tsx does not statically import wagmi, rainbowkit, or wagmi config', () => {
+    const appSrc = readFile('App.tsx');
+
+    // viem/wagmi/ox live in vendor-blockchain (~420 KB gzip); rainbowkit adds
+    // ConnectButton + styles on top. Any static import in App.tsx puts them on
+    // the entry chunk's synchronous import graph, blocking FCP.
+    const forbidden = [
+      { pattern: /import\s+[^;]*\bfrom\s+['"]wagmi['"]/, label: 'wagmi' },
+      { pattern: /import\s+[^;]*\bfrom\s+['"]@rainbow-me\/rainbowkit['"]/, label: '@rainbow-me/rainbowkit' },
+      { pattern: /import\s+['"]@rainbow-me\/rainbowkit\/styles\.css['"]/, label: '@rainbow-me/rainbowkit/styles.css' },
+      // Named and side-effect forms: `import { wagmiConfig } from ...` and `import "@/lib/wagmi/config"`
+      { pattern: /import\s+[^;]*\bfrom\s+['"]@\/lib\/wagmi\/config['"]|import\s*['"]@\/lib\/wagmi\/config['"]/, label: '@/lib/wagmi/config' },
+    ];
+
+    for (const { pattern, label } of forbidden) {
+      expect(
+        pattern.test(appSrc),
+        `App.tsx must not statically import ${label} — move it behind the lazy WalletProviders wrapper.\n` +
+        'A static import pulls vendor-blockchain (~420 KB gzip) into the entry chunk, blocking FCP.',
+      ).toBe(false);
+    }
+  });
+
+  it('App.tsx uses lazy() for WalletProviders', () => {
+    const appSrc = readFile('App.tsx');
+
+    const hasStaticImport = /import\s+\{[^}]*WalletProviders[^}]*\}\s+from\s+['"]@\/providers\/WalletProviders['"]/.test(appSrc);
+    expect(
+      hasStaticImport,
+      'App.tsx must not statically import WalletProviders — use lazy(() => import(...)) instead.',
+    ).toBe(false);
+
+    const hasLazyImport = /lazy\s*\(\s*\(\s*\)\s*=>\s*import\s*\(\s*['"]@\/providers\/WalletProviders['"]/.test(appSrc);
+    expect(
+      hasLazyImport,
+      'App.tsx must use lazy(() => import("@/providers/WalletProviders")) for WalletProviders.',
+    ).toBe(true);
+  });
+
+  it('App.tsx does not statically import @aave/react or @aave/react-v3', () => {
+    const appSrc = readFile('App.tsx');
+
+    const hasAaveReactImport = /import\s+.*\bfrom\s+['"]@aave\/react['"]/.test(appSrc);
+    expect(
+      hasAaveReactImport,
+      'App.tsx must not import @aave/react directly — it should be behind the lazy AaveProviders wrapper.',
+    ).toBe(false);
+
+    const hasAaveReactV3Import = /import\s+.*\bfrom\s+['"]@aave\/react-v3['"]/.test(appSrc);
+    expect(
+      hasAaveReactV3Import,
+      'App.tsx must not import @aave/react-v3 directly — it should be behind the lazy AaveProviders wrapper.',
+    ).toBe(false);
+  });
+});
+
+/**
+ * FCP optimization: vite.config.ts must use selective modulePreload (not Vite's
+ * automatic injection) so that non-first-paint chunks (vendor-blockchain,
+ * vendor-aave, secp256k1) are not modulepreloaded.
+ */
+describe('FCP optimization: selective modulePreload in vite.config.ts', () => {
+  it('build.modulePreload is set to false', () => {
+    const viteConfig = readFileSync(resolve(ROOT_DIR, 'vite.config.ts'), 'utf-8');
+
+    // Must contain modulePreload: false
+    expect(
+      /modulePreload\s*:\s*false/.test(viteConfig),
+      'vite.config.ts must set build.modulePreload to false to disable automatic modulepreload injection.',
+    ).toBe(true);
+  });
+
+  it('selectiveModulePreloadPlugin is registered', () => {
+    const viteConfig = readFileSync(resolve(ROOT_DIR, 'vite.config.ts'), 'utf-8');
+
+    expect(
+      /selectiveModulePreloadPlugin/.test(viteConfig),
+      'vite.config.ts must register selectiveModulePreloadPlugin to inject only first-paint chunk preloads.',
+    ).toBe(true);
+  });
+
+  it('vendor-blockchain is a dedicated chunk (separate from first-paint chunks)', () => {
+    const viteConfig = readFileSync(resolve(ROOT_DIR, 'vite.config.ts'), 'utf-8');
+
+    expect(
+      /vendor-blockchain/.test(viteConfig),
+      'vite.config.ts must have an advancedChunks group that puts viem/wagmi/rainbowkit into vendor-blockchain.',
+    ).toBe(true);
+  });
+
+  it('MODULEPRELOAD_WHITELIST includes wallet chunks (download-early, execute-late)', () => {
+    const viteConfig = readFileSync(resolve(ROOT_DIR, 'vite.config.ts'), 'utf-8');
+
+    // Extract the whitelist array content
+    const whitelistMatch = viteConfig.match(/MODULEPRELOAD_WHITELIST\s*=\s*\[([\s\S]*?)\]/);
+    expect(whitelistMatch, 'MODULEPRELOAD_WHITELIST array not found in vite.config.ts').toBeTruthy();
+
+    const whitelistContent = whitelistMatch![1];
+    // The wallet/SDK chunks are dynamic-imported on every page load, so
+    // preloading them starts the download at t0 without executing them —
+    // FCP is unaffected, content arrives sooner.
+    for (const prefix of ['vendor-blockchain', 'vendor-aave', 'WalletProviders', 'AaveProviders']) {
+      expect(
+        whitelistContent.includes(prefix),
+        `${prefix} must be in MODULEPRELOAD_WHITELIST — it is dynamically imported on every page load, so preloading it (download-only, no execute) is strictly better.`,
+      ).toBe(true);
+    }
+  });
+
+  it('assertFirstPaintChunksPlugin is registered', () => {
+    const viteConfig = readFileSync(resolve(ROOT_DIR, 'vite.config.ts'), 'utf-8');
+
+    expect(
+      /assertFirstPaintChunksPlugin/.test(viteConfig),
+      'vite.config.ts must register assertFirstPaintChunksPlugin — it fails the build when the entry chunk can statically reach vendor-blockchain/vendor-aave.',
+    ).toBe(true);
+  });
+});
+

@@ -7,7 +7,7 @@
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | UI | React 19 + TypeScript 5 | 函数式组件 + hooks |
-| Build | Vite 6 + SWC | 15 个 vendor chunk，600 KB warning limit |
+| Build | Vite (rolldown-vite) 8 + SWC | `advancedChunks` 分组 vendor chunk + 600 KB warning limit；首屏路径由 build 守卫插件强制 |
 | State | TanStack React Query 5 | 预取 + instant hydration + 动态 staleTime |
 | Validation | Zod | 前端与脚本共享 schema |
 | Test | Vitest + Testing Library + Playwright | co-located 单测 + E2E |
@@ -173,7 +173,8 @@ useRateSimulation
 
 ## Build & CI
 
-- **Vite plugins**: React SWC、`generateOpenApiPlugin()`、`deployShaMetaPlugin()`、`componentTagger()`
+- **Vite plugins**: React SWC、`generateOpenApiPlugin()`、`deployShaMetaPlugin()`、`selectiveModulePreloadPlugin()`（首屏/内容分阶段 modulepreload 白名单）、`assertFirstPaintChunksPlugin()`（entry 静态闭包触达重型 chunk 时 fail build）、`componentTagger()`
+- **Chunk 策略**: `rollupOptions.output.advancedChunks` 正则分组（rolldown 原生 API，替代 manualChunks 模拟）；钱包/SDK 代码（vendor-blockchain/vendor-aave）只允许经 `WalletProviders`/`AaveProviders` lazy 边界到达，约束由 `assertFirstPaintChunksPlugin` 与 `src/test/architecture-guard.test.ts` 双层守卫
 - **Validation gate**: `npm run lint && npm test && npm run build && npx tsc --noEmit`
 - **Hardcode sync**: cron job 双轮 sync + verify，漂移自动创 issue/PR
 - **Architecture guard**: `src/test/architecture-guard.test.ts` 禁止 disableTooltip、重复 className、ring→Tooltip 导入

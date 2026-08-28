@@ -38,3 +38,9 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **Production 分支也需要 domain alias polling**：之前只有 staging/preview 分支在 SHA 不匹配时 polling 最多 300s，main 分支直接 fail。这导致 main 分支部署后如果 domain 切换慢于 CI 检查就会误报 smoke test failure。修复：所有分支统一 polling。
 - **Vercel rollback API 响应格式因版本而异**：`POST /v1/projects/{id}/rollback/{uid}` 返回 2xx 但响应体不一定含 `jobId`/`status` 字段。严格匹配这两个字段会导致有效 rollback 被误判失败。修复：2xx + 无 `.error` 字段 = 成功。
 - **Rollback 成功后 Vercel 可能禁用 domain auto-assign**：Vercel 文档提示 rollback 后 custom domain 不会自动指向新部署，需手动 `vercel promote` 或在项目设置中重新启用 auto-assign。
+
+## rolldown manualChunks 模拟会把共享模块拼接进错误 chunk（FCP 优化根因）
+- **现象**：manualChunks 模拟下，rolldown 把 `clsx`、`@tanstack/query-core`、react-dom 片段、react-remove-scroll 等共享模块拼接进与它们无关的 vendor-blockchain chunk（sourcemap 确认），使任何 `cn()` 调用点——即全部同步首屏 UI——静态可达重型 chunk，仅调整 App.tsx 的 import 无法修复。
+- **修法**：rolldown-vite 用原生 `output.advancedChunks` 正则分组替代 manualChunks 函数，分组语义确定、逐模块匹配 `test` 正则。红线保留：React + ReactDOM 必须在同一 chunk（vendor-react），拆开会 crash。
+- **结果级守卫优于配置级守卫**：断言配置形态（"规则存在"）挡不住 bundler 行为回归；必须断言产物本身——`assertFirstPaintChunksPlugin` 在 generateBundle 遍历 entry 的静态 import 闭包，触达重型 chunk 即 fail build 并打印 import 链，并对 `chunk.imports` 缺失 fail loud，防止守卫静默空转。
+- **共享 util 依赖第三方包时加纵深**：`cn()` 内联 clsx 运行时（type-only import 保持类型单一来源），即使拼接行为回归，首屏路径也到不了区块链库。

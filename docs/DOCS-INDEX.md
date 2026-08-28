@@ -128,6 +128,9 @@ _Last inventory pass: 2026-07-06._
 | `docs/pool-explorer-links.md` | Pool address explorer deep-link mapping | 2026-04-16 | Canonical | live validation in `e2e/explorer-links-*.spec.ts` | keep |
 | `docs/specs/reserve-table-market-hub-filtering.md` | Reserve table market/hub filtering behavior contract | 2026-04-22 | Canonical | `src/components/dashboard/ReservesTable.tsx` | keep |
 | `docs/specs/v4-reserveId-uniqueness.md` | V4 reserveId uniqueness contract | 2026-04-22 | Canonical | `src/lib/reserveKey.ts`, `src/lib/apiSchemas.ts` | keep |
+| `docs/specs/fcp-optimization.md` | FCP 优化 spec（钱包层 lazy 边界 + advancedChunks + 首屏守卫；含场景矩阵与验证证据） | 2026-08-29 | Canonical | `src/App.tsx`, `src/providers/WalletProviders.tsx`, `vite.config.ts`, `src/test/architecture-guard.test.ts` | keep |
+| `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
+| `docs/archive/2026-08-29-fcp-chunk-defer-tickets.md` | FCP Round 2 tickets（全部完成） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
 | `docs/archive/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation.md` | keep |
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-04-04 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |
