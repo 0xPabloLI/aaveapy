@@ -174,15 +174,7 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
 
-## Key References
-- `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
-- `docs/workflows/cross-branch-workflow.md` — 跨分支操作场景和命令
-- `docs/conventions/branch-protection.md` — main 分支 5 层防御
-- `docs/design/frontend-interaction-guardrails.md`
-- `docs/design/DESIGN-SYSTEM-REFERENCE.md`
-- `docs/rate-calculation.md`
-- `docs/PR_ANALYSIS.md`
-- `docs/conventions/merge-summary.md`
-- `docs/conventions/frontend-regression-checklist.md`
-- `docs/conventions/api-contract-checklist.md`
-- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`
+## On-Demand References
+- 交互守卫与边界定义：`docs/design/frontend-interaction-guardrails.md`（UI 交互改动时查阅）
+- PR 分析方法与审核框架：`docs/PR_ANALYSIS.md`（审查 PR / 分析变更范围时查阅）
+- Merge 后总结模板：`docs/conventions/merge-summary.md`（合并后写总结时查阅）

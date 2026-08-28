@@ -88,9 +88,8 @@
 当前后端 spec 无变更时，跳过 Phase 1-2 的 spec 同步，直接从 Phase 2 的 lovable → dev PR 开始，然后走 Phase 3（dev → main PR）。Phase 4-5 跳过。
 
 ## Agent 行为约束
-- dev → main PR 只创建，等用户明确说"合并"或"merge"后提示用户在 GitHub UI 操作。API squash merge 虽可绕过 required_signatures，但不得擅自使用。
-- 遇到 branch protection 阻塞时，报告给用户决定，自行解决路由问题。
-- 已在 AAV-556/562 两次违规合并，用户明确警告。
+
+Agent 行为安全规则（dev→main PR 只创建不合并、禁止绕过 branch protection 等）是 always-loaded 内容，定义在 `AGENTS.md` 的「标准上线流程」和「main Branch Protection」章节。本文件不重复。
 
 ## Spec 生成管道
 
