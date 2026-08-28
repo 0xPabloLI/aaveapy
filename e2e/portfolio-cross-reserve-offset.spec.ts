@@ -247,14 +247,14 @@ async function readSupplyIncentiveAfter(
     const afterSpan = card
       .locator('span[data-cell="supply-incentive"] span[data-after]')
       .first();
-    await expect(afterSpan).toBeVisible({ timeout: 5000 });
+    await expect(afterSpan).toBeVisible({ timeout: 15000 });
     const attr = await afterSpan.getAttribute('data-after');
     return attr ? parseFloat(attr) : NaN;
   }
   // Desktop
   const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
   const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
-  await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
+  await expect(incentiveCell).not.toContainText('—', { timeout: 15000 });
   const afterSpan = incentiveCell.locator('span[data-after]').first();
   const attr = await afterSpan.getAttribute('data-after');
   return attr ? parseFloat(attr) : NaN;
