@@ -837,6 +837,10 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                   <Link to="/usa-stablecoin-apy" className="text-secondary hover:underline">
                     USA Stablecoin APY
                   </Link>
+                  {' · '}
+                  <Link to="/pt-br/taxas-aave-apy" className="text-secondary hover:underline">
+                    Taxas e APY da Aave (PT-BR)
+                  </Link>
                 </p>
               </nav>
 
