@@ -2,6 +2,8 @@
 # npm security updates: 通过 Dependabot security updates（Repo → Settings → Code security）启用。
 #   target-branch: dev 确保 security PR 走 dev → main 标准流程，避免 branch-flow-guard 失败。
 #   open-pull-requests-limit: 5 允许少量 regular version update PR（可手动 close，regular 已由 hardcode-sync CI 管理），同时确保 security update PR 正常创建。
+# github-actions: 只配置 dev 单一入口。main 不单独开 dependabot PR——action 更新
+#   随 dev → main 发布流进入 main（main 的入口由 branch-flow-guard 收窄到 dev + bot sync 白名单）。
 version: 2
 updates:
   - package-ecosystem: npm
@@ -16,17 +18,6 @@ updates:
     schedule:
       interval: weekly
     target-branch: dev
-    open-pull-requests-limit: 5
-    groups:
-      codeql-action:
-        patterns:
-          - "github/codeql-action/*"
-
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
-    target-branch: main
     open-pull-requests-limit: 5
     groups:
       codeql-action:
