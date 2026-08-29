@@ -1,4 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
+import {
+  addReserveToPortfolio,
+  fillBorrowAmountDesktop,
+  fillBorrowAmountMobile,
+  fillSupplyAmount,
+  getMarketChipLabel,
+  readIncentiveAfter,
+  setupPortfolioMode,
+} from './test-reserves';
 
 /**
  * Cross-reserve Merkl offset — portfolio simulation E2E.
@@ -36,23 +45,6 @@ interface CrossOffsetScenario {
 // ─── API Discovery ─────────────────────────────────────────────────
 
 const STAGING_API = 'https://staging-api.aaveapy.com/api';
-
-const ETHEREUM_MARKET_NAMES: Record<string, string> = {
-  AaveV3Ethereum: 'Core',
-  AaveV3EthereumLido: 'Prime',
-  AaveV3EthereumHorizon: 'Horizon RWA',
-  AaveV3EthereumEtherFi: 'EtherFi',
-};
-
-/** Replicates src/lib/marketLabels.ts getMarketChipLabel for E2E use. */
-function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
-  if (ETHEREUM_MARKET_NAMES[marketName]) return ETHEREUM_MARKET_NAMES[marketName];
-  if (marketName.startsWith('AaveV4')) {
-    return marketName.replace(/^AaveV4/i, '').replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-  return marketName;
-}
 
 async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
   try {
@@ -149,117 +141,6 @@ const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reser
 const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
 
-// ─── UI Helpers ────────────────────────────────────────────────────
-
-async function setupPortfolioMode(page: Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.getByTestId('portfolio-mode-toggle').click();
-}
-
-async function addReserveToPortfolio(
-  page: Page,
-  symbol: string,
-  marketLabel: string,
-): Promise<boolean> {
-  // Open search if not already open
-  const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
-  if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
-    await page.getByRole('button', { name: 'Search tokens' }).click();
-  }
-  await searchInput.fill(symbol);
-  await page.waitForTimeout(500);
-
-  // Find the Add button matching the market label (handles same-symbol on multiple chains)
-  const addButtons = page.getByRole('button', {
-    name: `Add ${symbol} (supply and borrow)`,
-  });
-  const count = await addButtons.count();
-  if (count === 0) return false;
-  if (count === 1) {
-    await addButtons.first().click();
-    return true;
-  }
-  for (let i = 0; i < count; i++) {
-    const btn = addButtons.nth(i);
-    const text = await btn.textContent();
-    if (text && text.includes(marketLabel)) {
-      await btn.click();
-      return true;
-    }
-  }
-  // Fallback: first result
-  await addButtons.first().click();
-  return true;
-}
-
-async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountMobile(
-  page: Page,
-  reserveId: string,
-  symbol: string,
-  amount: string,
-) {
-  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  // Switch to borrow tab (exact match to avoid hitting "Clear X borrow" button)
-  await card.getByRole('button', { name: 'Borrow', exact: true }).click();
-  await page.waitForTimeout(300);
-  const input = card
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function readSupplyIncentiveAfter(
-  page: Page,
-  reserveId: string,
-  isMobile: boolean,
-): Promise<number> {
-  if (isMobile) {
-    const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-    // Ensure supply tab is active (exact match to avoid hitting "Clear X supply" button)
-    const supplyTab = card.getByRole('button', { name: 'Supply', exact: true });
-    if (await supplyTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await supplyTab.click();
-      await page.waitForTimeout(300);
-    }
-    const afterSpan = card
-      .locator('span[data-cell="supply-incentive"] span[data-after]')
-      .first();
-    await expect(afterSpan).toBeVisible({ timeout: 5000 });
-    const attr = await afterSpan.getAttribute('data-after');
-    return attr ? parseFloat(attr) : NaN;
-  }
-  // Desktop
-  const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
-  const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
-  await expect(incentiveCell).not.toContainText('—', { timeout: 5000 });
-  const afterSpan = incentiveCell.locator('span[data-after]').first();
-  const attr = await afterSpan.getAttribute('data-after');
-  return attr ? parseFloat(attr) : NaN;
-}
-
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
 async function runCrossReserveScenario(
@@ -274,7 +155,7 @@ async function runCrossReserveScenario(
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added, `Should find and add ${s.targetSymbol} (${s.targetMarketLabel})`).toBe(true);
   await fillSupplyAmount(page, s.targetSymbol, '100000');
-  const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
+  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   // Add offset reserve with supply to give it borrowing power (AAV-1250: LTV clamping)
@@ -295,9 +176,10 @@ async function runCrossReserveScenario(
     : (amount: string) => fillBorrowAmountDesktop(page, s.offsetSymbol!, amount);
 
   await fillOffsetBorrow('500');
-  const halfOffsetAfter = await readSupplyIncentiveAfter(
+  const halfOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
 
@@ -309,9 +191,10 @@ async function runCrossReserveScenario(
 
   // Full offset: borrow = $1000 (well within maxBorrow at $100000 supply)
   await fillOffsetBorrow('1000');
-  const fullOffsetAfter = await readSupplyIncentiveAfter(
+  const fullOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
 
@@ -327,9 +210,10 @@ async function runCrossReserveScenario(
 
   // Over-offset: borrow > target supply ($2000) — should clamp via offset logic
   await fillOffsetBorrow('2000');
-  const overOffsetAfter = await readSupplyIncentiveAfter(
+  const overOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
   expect(
@@ -349,7 +233,7 @@ async function runSelfLoopScenario(
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added).toBe(true);
   await fillSupplyAmount(page, s.targetSymbol, '100000');
-  const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
+  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   const fillOwnBorrow = isMobile
@@ -359,9 +243,10 @@ async function runSelfLoopScenario(
 
   // Half offset: borrow = $50000 (50% of supply, within LTV limit)
   await fillOwnBorrow('50000');
-  const halfOffsetAfter = await readSupplyIncentiveAfter(
+  const halfOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
   expect(
@@ -371,9 +256,10 @@ async function runSelfLoopScenario(
 
   // Full offset: borrow = $100000 (= supply, may be LTV-clamped to supply×ltv/100)
   await fillOwnBorrow('100000');
-  const fullOffsetAfter = await readSupplyIncentiveAfter(
+  const fullOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
   expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
@@ -386,9 +272,10 @@ async function runSelfLoopScenario(
 
   // Over-offset: borrow = $200000 (> supply, should be LTV-clamped)
   await fillOwnBorrow('200000');
-  const overOffsetAfter = await readSupplyIncentiveAfter(
+  const overOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
   expect(

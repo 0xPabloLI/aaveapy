@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { getMarketChipLabel } from './test-reserves';
+import {
+  addReserveToPortfolio,
+  fillBorrowAmountDesktop,
+  fillBorrowAmountMobile,
+  fillSupplyAmount,
+  getMarketChipLabel,
+  readIncentiveAfter,
+  setupPortfolioMode,
+} from './test-reserves';
 
 /**
  * Cross-asset pairing (min(1,2)) — E2E test for AAV-895.
@@ -136,124 +144,6 @@ const allScenarios = await discoverCrossAssetScenarios();
 // Limit to top 2 scenarios to keep CI runtime reasonable
 const scenarios = allScenarios.slice(0, 2);
 const hasScenarios = scenarios.length > 0;
-
-// ─── UI Helpers ────────────────────────────────────────────────────
-
-async function setupPortfolioMode(page: Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.getByTestId('portfolio-mode-toggle').click();
-}
-
-async function addReserveToPortfolio(
-  page: Page,
-  symbol: string,
-  marketLabel: string,
-): Promise<boolean> {
-  const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
-  if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
-    await page.getByRole('button', { name: 'Search tokens' }).click();
-  }
-  await searchInput.fill(symbol);
-  await page.waitForTimeout(500);
-
-  const addButtons = page.getByRole('button', {
-    name: `Add ${symbol} (supply and borrow)`,
-  });
-  const count = await addButtons.count();
-  if (count === 0) return false;
-  if (count === 1) {
-    await addButtons.first().click();
-    return true;
-  }
-  for (let i = 0; i < count; i++) {
-    const btn = addButtons.nth(i);
-    const text = await btn.textContent();
-    if (text && text.includes(marketLabel)) {
-      await btn.click();
-      return true;
-    }
-  }
-  await addButtons.first().click();
-  return true;
-}
-
-async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountMobile(
-  page: Page,
-  reserveId: string,
-  symbol: string,
-  amount: string,
-) {
-  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  await card.getByRole('button', { name: 'Borrow', exact: true }).click();
-  await page.waitForTimeout(300);
-  const input = card
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-/**
- * Read the incentive "after" value for a reserve.
- * Returns 0 if the cell shows "—" (no incentive).
- * Works for both supply and borrow incentive cells.
- */
-async function readIncentiveAfter(
-  page: Page,
-  reserveId: string,
-  side: 'supply' | 'borrow',
-  isMobile: boolean,
-): Promise<number> {
-  const cellName = side === 'supply' ? 'supply-incentive' : 'borrow-incentive';
-
-  if (isMobile) {
-    const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-    // Ensure correct tab is active
-    const tab = card.getByRole('button', { name: side === 'supply' ? 'Supply' : 'Borrow', exact: true });
-    if (await tab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await tab.click();
-      await page.waitForTimeout(300);
-    }
-    const afterSpan = card
-      .locator(`span[data-cell="${cellName}"] span[data-after]`)
-      .first();
-    const hasAfterSpan = await afterSpan.count() > 0;
-    if (!hasAfterSpan) return 0;
-    const attr = await afterSpan.getAttribute('data-after');
-    return attr ? parseFloat(attr) : 0;
-  }
-
-  // Desktop
-  const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
-  const incentiveCell = row.locator(`td[data-cell="${cellName}"]`);
-  const afterSpan = incentiveCell.locator('span[data-after]').first();
-  const hasAfterSpan = await afterSpan.count() > 0;
-  if (!hasAfterSpan) return 0;
-  const attr = await afterSpan.getAttribute('data-after');
-  return attr ? parseFloat(attr) : 0;
-}
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
