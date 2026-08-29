@@ -157,11 +157,12 @@ async function addReserveToPortfolio(
     await page.getByRole('button', { name: 'Search tokens' }).click();
   }
   await searchInput.fill(symbol);
-  await page.waitForTimeout(500);
-
+  // Search results load asynchronously — poll for the add button instead of
+  // racing a fixed wait
   const addButtons = page.getByRole('button', {
     name: `Add ${symbol} (supply and borrow)`,
   });
+  await expect(addButtons.first()).toBeVisible({ timeout: 10_000 }).catch(() => {});
   const count = await addButtons.count();
   if (count === 0) return false;
   if (count === 1) {
@@ -189,6 +190,23 @@ async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
   await page.waitForTimeout(800);
 }
 
+// Mobile: scope to the target card — the portfolio panel can hold multiple
+// same-symbol cards from different chains, so a global first() may fill a
+// different card than the one under test
+async function fillSupplyAmountMobile(
+  page: Page,
+  reserveId: string,
+  amount: string,
+) {
+  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
+  const input = card
+    .getByRole('textbox', { name: /Supply amount for/i })
+    .first();
+  await expect(input).toBeVisible({ timeout: 5000 });
+  await input.fill(amount);
+  await page.waitForTimeout(800);
+}
+
 async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
   const input = page
     .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
@@ -205,7 +223,8 @@ async function fillBorrowAmountMobile(
   amount: string,
 ) {
   const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  await card.getByRole('button', { name: 'Borrow', exact: true }).click();
+  // Pill tabs carry explicit role="tab" — getByRole('button') does not match
+  await card.getByRole('tab', { name: 'Borrow', exact: true }).click();
   await page.waitForTimeout(300);
   const input = card
     .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
@@ -273,7 +292,9 @@ async function runCrossAssetPairingScenario(
 
   // If source is borrow, we need to supply first to get borrowing power (LTV clamping)
   if (s.sourceSide === 'borrow') {
-    await fillSupplyAmount(page, s.sourceSymbol, '100000');
+    isMobile
+      ? await fillSupplyAmountMobile(page, s.sourceReserveId, '100000')
+      : await fillSupplyAmount(page, s.sourceSymbol, '100000');
   }
 
   // Set source position
@@ -281,7 +302,9 @@ async function runCrossAssetPairingScenario(
     ? (isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.sourceReserveId, s.sourceSymbol, amount)
         : (amount: string) => fillBorrowAmountDesktop(page, s.sourceSymbol, amount))
-    : (amount: string) => fillSupplyAmount(page, s.sourceSymbol, amount);
+    : (isMobile
+        ? (amount: string) => fillSupplyAmountMobile(page, s.sourceReserveId, amount)
+        : (amount: string) => fillSupplyAmount(page, s.sourceSymbol, amount));
 
   // Use $1000 as source position
   await fillSourcePosition('1000');
@@ -298,14 +321,18 @@ async function runCrossAssetPairingScenario(
 
   // If paired is borrow, need supply for LTV
   if (s.pairedSide === 'borrow') {
-    await fillSupplyAmount(page, s.pairedSymbol, '100000');
+    isMobile
+      ? await fillSupplyAmountMobile(page, s.pairedReserveId, '100000')
+      : await fillSupplyAmount(page, s.pairedSymbol, '100000');
   }
 
   const fillPairedPosition = s.pairedSide === 'borrow'
     ? (isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.pairedReserveId, s.pairedSymbol, amount)
         : (amount: string) => fillBorrowAmountDesktop(page, s.pairedSymbol, amount))
-    : (amount: string) => fillSupplyAmount(page, s.pairedSymbol, amount);
+    : (isMobile
+        ? (amount: string) => fillSupplyAmountMobile(page, s.pairedReserveId, amount)
+        : (amount: string) => fillSupplyAmount(page, s.pairedSymbol, amount));
 
   // Step 3: Add small paired position ($500)
   // effective = min(1000, 500 × discountFactor)
