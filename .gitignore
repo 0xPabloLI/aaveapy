@@ -71,6 +71,9 @@ scripts/verify-*
 scripts/verify_*
 src/pages/Debug*
 output/
+# Root-level debug screenshots and scripts
+/portfolio-*.png
+/debug-*.mjs
 
 # Local-only notes and drafts (not committed)
 /local/
