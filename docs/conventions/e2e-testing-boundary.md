@@ -32,6 +32,22 @@ third-party site state, pixel baselines, or live external services it cannot moc
 - **Anything a Vitest unit/integration test already covers deterministically**
   (pure functions, hook logic). e2e must not duplicate it.
 
+## Deterministic waiting (app-ready signal)
+
+- After `page.goto('/')`, wait for the canonical app-ready signal:
+  `page.getByTestId('portfolio-mode-toggle')`. It renders in both modes only
+  after `/markets` data has loaded and the app shell has committed — verified
+  as the reliable "data is on screen" gate.
+- Do not wait on layout/state-dependent elements (e.g. the "Borrow amount"
+  input): their presence varies with layout and app state, so they flap under
+  load.
+- For UI states that settle asynchronously (selection ranges, carousel snaps,
+  resorting), poll with `expect.poll` instead of `waitForTimeout` + one-shot
+  read; fixed-delay one-shot reads turn settle races into load flakes.
+- A `test.skip` conditioned on a page query ("no such reserve in staging")
+  must come after the ready wait — otherwise a slow load masquerades as
+  absence and the test silently false-skips.
+
 ## Acceptable skips
 
 - `test.skip(!!process.env.CI, …)` only for a **genuine environment dependency**

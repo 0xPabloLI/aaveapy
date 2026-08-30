@@ -146,11 +146,10 @@ export async function setupPortfolioWithReserve(
   reserve: TestReserve,
 ): Promise<Locator> {
   await page.goto('/');
-  // App-ready signal: the portfolio-mode toggle lives in the app shell and
-  // renders on initial load for both desktop and mobile projects. We no longer
-  // wait for the "Borrow amount" input — it only exists inside an expanded
-  // reserve row's ScenarioControls, so it is absent on the initial (collapsed)
-  // reserves table.
+  // App-ready signal: the portfolio-mode toggle renders in both modes (single
+  // mode: ScenarioControls header; portfolio mode: PortfolioPanel) only after
+  // market data loads. The previous signal — the "Borrow amount" input — is
+  // layout/state-dependent and flapped under parallel load.
   await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('portfolio-mode-toggle').click();
   await page.getByRole('button', { name: 'Search tokens' }).click();
@@ -198,11 +197,10 @@ export async function setupPortfolioWithReserve(
 /** Navigate to the app and enter portfolio simulation mode. */
 export async function setupPortfolioMode(page: Page) {
   await page.goto('/');
-  // App-ready signal: the portfolio-mode toggle lives in the app shell and
-  // renders on initial load for both desktop and mobile projects. We no longer
-  // wait for the "Borrow amount" input — it only exists inside an expanded
-  // reserve row's ScenarioControls, so it is absent on the initial (collapsed)
-  // reserves table.
+  // App-ready signal: the portfolio-mode toggle renders in both modes (single
+  // mode: ScenarioControls header; portfolio mode: PortfolioPanel) only after
+  // market data loads. The previous signal — the "Borrow amount" input — is
+  // layout/state-dependent and flapped under parallel load.
   await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({
     timeout: 120_000,
   });
