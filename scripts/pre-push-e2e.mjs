@@ -16,6 +16,7 @@
  *       • Visual regression → macOS screenshot baselines (slow, display-sensitive)
  *       • Wallet Sync → requires live Aave SDK GraphQL connections
  *       • Watch Mode  → requires live SDK + wallet extension
+ *       • Wallet reconnect → requires live wallet store/SDK state (AAV-562)
  *
  * Flaky tolerance:
  *   - Tests that pass on retry ("flaky") do NOT block the push — only tests
@@ -55,11 +56,12 @@ const GREP_INVERT = [
   'header visual',     // screenshot pixel-diff
   'Wallet Sync',       // requires live Aave SDK GraphQL
   'Watch Mode',        // requires live SDK + wallet
+  'Wallet reconnect',  // requires live wallet store/SDK state (AAV-562)
 ].join('|');
 
 console.log('');
 console.log('🧪 Running e2e tests (desktop chromium, 2 workers, staging API)...');
-console.log('   Excludes: explorer links, staging-smoke, visual, wallet-sync, watch-mode.');
+console.log('   Excludes: explorer links, staging-smoke, visual, wallet-sync, watch-mode, wallet-reconnect.');
 console.log('   This typically takes ~2-3 min.');
 console.log('');
 
