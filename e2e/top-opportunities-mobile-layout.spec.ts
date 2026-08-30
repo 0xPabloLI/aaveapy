@@ -67,16 +67,21 @@ test.describe('Top Opportunities mobile layout', () => {
       { timeout: 5_000, message: 'carousel second slide to snap into viewport' },
     ).toBeGreaterThanOrEqual(-2);
 
-    const box = await second.boundingBox();
     const viewport = page.viewportSize();
-    expect(box).not.toBeNull();
     expect(viewport).not.toBeNull();
-    if (!box || !viewport) return;
+    if (!viewport) return;
 
     // After snapping, the second slide must be horizontally inside the viewport
-    // (allow 2px tolerance for sub-pixel transforms).
-    expect(box.x).toBeGreaterThanOrEqual(-2);
-    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 2);
+    // (allow 2px tolerance for sub-pixel transforms). Poll because the snap
+    // animation may still be settling at the first measurement.
+    await expect.poll(
+      async () => {
+        const box = await second.boundingBox();
+        if (!box) return false;
+        return box.x >= -2 && box.x + box.width <= viewport.width + 2;
+      },
+      { timeout: 5_000, message: 'carousel second slide to settle within viewport' },
+    ).toBe(true);
   });
 
   test('mobile frozen / paused badge uses frozen/paused semantic color tokens', async ({ page }) => {

@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildPoolExplorerUrl,
+  buildTokenExplorerUrl,
   buildHubExplorerUrl,
   buildSpokeExplorerUrl,
+  getAllPoolExplorerUrls,
   getPoolAddress,
   getExplorerFamily,
   getExplorerMarketNames,
@@ -281,5 +283,85 @@ describe('buildSpokeExplorerUrl', () => {
     expect(
       buildSpokeExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9'),
     ).toBeNull();
+  });
+});
+
+describe('getAllPoolExplorerUrls', () => {
+  it('returns null for an unknown market', () => {
+    expect(getAllPoolExplorerUrls('AaveV3Nowhere')).toBeNull();
+  });
+
+  it('returns a non-empty list for every known market, first entry named "default"', () => {
+    for (const market of getExplorerMarketNames()) {
+      const urls = getAllPoolExplorerUrls(market);
+      expect(urls, `${market} should have explorer URLs`).not.toBeNull();
+      expect(urls!.length).toBeGreaterThanOrEqual(1);
+      expect(urls![0].name).toBe('default');
+
+      const pool = getPoolAddress(market)!;
+      for (const { url } of urls!) {
+        expect(url).toContain(pool);
+        expect(url.startsWith('https://')).toBe(true);
+      }
+    }
+  });
+
+  it('carries the family deep-link suffix on every entry', () => {
+    for (const market of getExplorerMarketNames()) {
+      const family = getExplorerFamily(market)!;
+      for (const { url } of getAllPoolExplorerUrls(market)!) {
+        switch (family) {
+          case 'etherscan':
+          case 'routescan':
+            expect(url).toContain('#F23');
+            break;
+          case 'blockscout':
+            expect(url).toContain('?tab=read_proxy');
+            expect(url).toContain('#0xc952485d');
+            break;
+          case 'oklink':
+            expect(url).toContain('#category=proxy-read');
+            break;
+          default:
+            throw new Error(`Unknown explorer family: ${family}`);
+        }
+      }
+    }
+  });
+});
+
+describe('buildTokenExplorerUrl', () => {
+  const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+
+  it('returns null for null/undefined token address', () => {
+    expect(buildTokenExplorerUrl('AaveV3Ethereum', null)).toBeNull();
+    expect(buildTokenExplorerUrl('AaveV3Ethereum', undefined)).toBeNull();
+    expect(buildTokenExplorerUrl('AaveV3Ethereum', '')).toBeNull();
+  });
+
+  it('uses the market primary explorer base with a plain address page (no deep link)', () => {
+    const url = buildTokenExplorerUrl('AaveV3Ethereum', USDC)!;
+    expect(url).toBe(`https://etherscan.io/address/${USDC}`);
+    expect(url).not.toContain('#');
+  });
+
+  it('applies routescan pathFormat for Metis token links', () => {
+    const url = buildTokenExplorerUrl('AaveV3Metis', USDC)!;
+    expect(url).toBe(
+      `https://metisscan.info/address/${USDC}/contract/1088/readProxyContract`,
+    );
+    expect(url).not.toContain('#F23');
+  });
+
+  it('falls back to CHAIN_EXPLORER_MAP via chainName for unmapped (V4) markets', () => {
+    const url = buildTokenExplorerUrl('AaveV4Nowhere', USDC, {
+      chainName: 'Ethereum',
+    })!;
+    expect(url).toBe(`https://etherscan.io/address/${USDC}`);
+  });
+
+  it('returns null for unmapped market without chainName', () => {
+    expect(buildTokenExplorerUrl('AaveV4Nowhere', USDC)).toBeNull();
+    expect(buildTokenExplorerUrl('AaveV4Nowhere', USDC, { chainName: 'UnknownChain' })).toBeNull();
   });
 });

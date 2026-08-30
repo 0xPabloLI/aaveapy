@@ -62,7 +62,7 @@ _Last inventory pass: 2026-07-06._
 - Canonical: `docs/TERMINOLOGY.md` (variable / field naming reference; full mapping chains + units)
 - Canonical: `aaveapy-doc/v3-v4-sdk-field-mapping.md` (Aave V3 vs V4 SDK field mapping)
 - Canonical: `docs/api-field-optimization.md` (API field-shape optimization analysis)
-- Canonical: `docs/pool-explorer-links.md` (pool address explorer deep-link mapping; e2e validation in `e2e/explorer-links-*.spec.ts`)
+- Canonical: `docs/pool-explorer-links.md` (pool address explorer deep-link mapping; validation now in `src/lib/poolExplorerLinks.test.ts` — the `e2e/explorer-links-*.spec.ts` files were retired, see `docs/conventions/e2e-testing-boundary.md`)
 - Implemented: Portfolio Simulation — 多 token 组合模拟（✅ 全部完成 2026-05-10）；5 Phase 实施完毕，文件：`src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/components/dashboard/Portfolio*.tsx`；三种添加入口：表格 checkbox / 展开面板按钮 / 搜索栏
 - Historical supporting note: `docs/archive/merit-base-anchor-vs-last-round-staging.md`
 - Historical execution archive: `docs/archive/frontend-redundancy-review-2026-04-06.md`
@@ -146,6 +146,7 @@ _Last inventory pass: 2026-07-06._
 | `docs/design/README.md` | Design docs entry/index page | 2026-04-16 | Entry stub | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
 | `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
 | `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-30 | Canonical set | small references in README/AGENTS | keep |
+| `docs/conventions/e2e-testing-boundary.md` | E2E boundary: what belongs in Playwright vs Vitest | 2026-08-30 | Canonical | `docs/specs/e2e-suite-boundary-cleanup.md`, `AGENTS.md` E2E skip rule | keep |
 
 ## Migration Fit (Transferability)
 

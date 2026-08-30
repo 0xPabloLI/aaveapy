@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Watch Mode re-submit triggers position refresh — regression for AAV-679 / AAV-699.
@@ -47,8 +47,55 @@ function extractOperationName(body: unknown): string | null {
   }
 }
 
+/**
+ * Intercept live Aave GraphQL so these tests no longer depend on api.aave.com
+ * availability. The request still fires (and is counted by page.on('request')
+ * below), but we fulfill it instantly so the SDK never hangs on a slow/blocked
+ * network — the original 180s-timeout flakiness. Watch-mode UI state
+ * ("Viewing 0x…") is address-driven and does not depend on the response body.
+ * See docs/specs/e2e-suite-boundary-cleanup.md (T5).
+ */
+async function mockAaveGraphql(page: Page) {
+  await page.route(
+    (url) =>
+      (url.hostname === AAVE_GRAPHQL_HOST || url.hostname === AAVE_GRAPHQL_HOST_STAGING) &&
+      url.pathname.endsWith('/graphql'),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: {} }),
+      });
+    },
+  );
+}
+
+/**
+ * Open the Watch-address input. On mobile the Connect / View-address
+ * affordances are compacted behind a "Wallet actions" icon Popover, so the
+ * "View address" button is not directly visible — fall back to the popover.
+ */
+async function openViewAddress(page: Page) {
+  const direct = page.getByRole('button', { name: /View address/i });
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.first().click();
+    return;
+  }
+  const viewing = page.getByRole('button', { name: /Viewing 0x/i });
+  if (await viewing.isVisible().catch(() => false)) {
+    await viewing.click();
+    await page.getByRole('button', { name: /View another address/i }).click();
+    return;
+  }
+  await page.getByRole('button', { name: /Wallet actions/i }).click();
+  await page.getByRole('button', { name: /View address/i }).first().click();
+}
+
 test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', () => {
   test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
+  test.beforeEach(async ({ page }) => {
+    await mockAaveGraphql(page);
+  });
 
   test('re-submitting the same watch address bumps UserSupplies/Borrows requests', async ({
     page,
@@ -72,7 +119,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     await page.goto('/');
 
     // Connect via watch mode.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput.fill(WATCH_ADDRESS!);
     await addrInput.press('Enter');
@@ -92,7 +139,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     const initialCount = userPositionRequests.length;
 
     // Open the watch input again and re-submit the same address.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput2 = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput2.fill(WATCH_ADDRESS!);
     await addrInput2.press('Enter');
@@ -150,7 +197,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     await page.goto('/');
 
     // Initial watch-mode connect.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput.fill(WATCH_ADDRESS!);
     await addrInput.press('Enter');
@@ -167,7 +214,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
 
     // Re-submit a *different* address — exercises the address-change path of
     // `useWatchModeConnect`, which still routes through `refetchEvent`.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput2 = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput2.fill(alternateAddress);
     await addrInput2.press('Enter');
