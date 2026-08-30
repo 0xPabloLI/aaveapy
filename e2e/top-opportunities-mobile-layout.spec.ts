@@ -46,6 +46,11 @@ test.describe('Top Opportunities mobile layout', () => {
     test.skip(!!process.env.CI, 'Carousel snap animation timing varies in CI — run locally');
     await page.goto('/');
 
+    // App-ready signal before the tight default expect timeout: the carousel
+    // renders only after market data loads, which can exceed 10s under
+    // full-suite load (observed flake). Same canonical signal as the helpers.
+    await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({ timeout: 30_000 });
+
     const slides = page.locator('[role="group"][aria-roledescription="slide"]');
     await expect(slides.first()).toBeVisible();
     const slideCount = await slides.count();
@@ -86,6 +91,10 @@ test.describe('Top Opportunities mobile layout', () => {
 
   test('mobile frozen / paused badge uses frozen/paused semantic color tokens', async ({ page }) => {
     await page.goto('/');
+
+    // Ready-wait so the count===0 skip below means "genuinely no frozen/paused
+    // reserves", not "data has not loaded yet" under full-suite load.
+    await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({ timeout: 30_000 });
 
     const badges = page.locator('[data-testid="mobile-reserve-status-badge"]');
     const total = await badges.count();

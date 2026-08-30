@@ -24,12 +24,13 @@ for (const bp of BREAKPOINTS) {
     await page.setViewportSize({ width: bp.width, height: bp.height });
     await page.goto('/');
 
-    await expect(
-      page.getByRole('textbox', { name: 'Borrow amount' }),
-    ).toBeVisible({ timeout: 30_000 });
-
+    // App-ready signal: the toggle lives in the app shell and renders on
+    // initial load for both layouts once market data arrives. We no longer
+    // wait for the "Borrow amount" input — it only exists inside
+    // ScenarioControls, so it is layout-dependent and not a reliable signal
+    // (same fix as the shared helpers in test-reserves.ts).
     const singleToggle = page.getByTestId('portfolio-mode-toggle');
-    await expect(singleToggle).toBeVisible();
+    await expect(singleToggle).toBeVisible({ timeout: 30_000 });
     const singleBox = await singleToggle.boundingBox();
     expect(singleBox, 'single-mode toggle must render').not.toBeNull();
     if (!singleBox) return;

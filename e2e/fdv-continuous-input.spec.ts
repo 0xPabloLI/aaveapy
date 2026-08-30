@@ -181,16 +181,23 @@ test.describe('FDV input — continuous typing', () => {
 
     // Click to focus — should select all
     await fdvInput!.click();
-    await page.waitForTimeout(100);
 
-    const selection = await fdvInput!.evaluate((el: HTMLInputElement) => ({
-      start: el.selectionStart,
-      end: el.selectionEnd,
-      value: el.value,
-    }));
-
-    expect(selection.start).toBe(0);
-    expect(selection.end).toBe(selection.value.length);
+    // Poll for the select-all state to settle: under full-suite load the
+    // select-all on focus can race the click's caret placement, and a
+    // fixed-delay one-shot read turns that race into a flake.
+    await expect
+      .poll(
+        async () => {
+          const selection = await fdvInput!.evaluate((el: HTMLInputElement) => ({
+            start: el.selectionStart,
+            end: el.selectionEnd,
+            length: el.value.length,
+          }));
+          return selection.start === 0 && selection.end === selection.length;
+        },
+        { timeout: 10_000, message: 'focus selects all text in the input' },
+      )
+      .toBe(true);
   });
 
   test('cursor stays after decimal point when typing 1.5', async ({ page }) => {
