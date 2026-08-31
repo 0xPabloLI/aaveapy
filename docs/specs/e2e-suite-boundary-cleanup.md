@@ -80,3 +80,19 @@ e2e 套件全量跑 12 分钟、30 个失败，且大部分失败**不可归因*
 
 - 被删文件在 CI 中本就 skip（explorer 因 Cloudflare、视觉因 darwin 基线、staging 因 Vercel 鉴权、watch 因实时依赖），删除不改变 CI 执行集，但让测试清单与真实防护一致。
 - AGENTS.md 的"E2E 禁止按 platform 互斥 skip"规则不受影响；本 spec 的 skip 均为环境依赖型（外部服务不可达），并保留于 API 冒烟中。
+
+## Resolution Record (2026-08-30)
+
+实施已完整收尾（commits `7c48ae01` / `e328ff7d` / `4bc5059d` / `007fa550` / `38ddf939`），本记录取代已删除的交接文档。
+
+**边界清理**：4 个 spec 删除 + 2 个确定性 functional spec 新增 + 2 个孤儿快照目录（14 PNG）清理，均按本 spec 完成，验证门禁全绿。
+
+**确定性化追加修复**（本地全量并行负载下发现，非应用缺陷）：
+
+- 过期 app-ready 信号 → 统一改等 `portfolio-mode-toggle` testid（约定见 `docs/conventions/e2e-testing-boundary.md` Deterministic waiting 章节）。
+- 冷启动模块请求拥塞 → `e2e/global-setup.ts` 串行预热 + 本地 `workers: 4`（CI 2），根因记录在 global-setup 文件头注释。
+- `fdv-continuous-input` 固定延迟单次读取竞态 → 改 `expect.poll`。
+
+**验证轨迹**（本地全量，同一环境）：91 passed / 17 failed / 77 skipped → 98/10/77 → **101 / 9 / 75**。
+
+**遗留失败（决策：保留，不做 SDK mock）**：终态 9 个失败全部为 live-dependent 钱包家族（`wallet-reconnect-after-refresh` ×4、`watch-resubmit-refresh` ×2、`portfolio-wallet-sync-precision` ×2），需真实钱包连接态与 watch SDK 流程，`page.route` 无法模拟。定位为本地手动 sanity 检查，CI 本就 skip，pre-push gate 已通过 `scripts/pre-push-e2e.mjs` 的 describe-title 排除（`Wallet Sync` / `Watch Mode` / `Wallet reconnect`）。若未来要求确定性，单独开 spec + ticket 建 SDK mock 基础设施。

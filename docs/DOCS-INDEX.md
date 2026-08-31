@@ -147,7 +147,6 @@ _Last inventory pass: 2026-07-06._
 | `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
 | `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-30 | Canonical set | small references in README/AGENTS | keep |
 | `docs/conventions/e2e-testing-boundary.md` | E2E boundary: what belongs in Playwright vs Vitest | 2026-08-30 | Canonical | `docs/specs/e2e-suite-boundary-cleanup.md`, `AGENTS.md` E2E skip rule | keep |
-| `docs/archive/2026-08-30-e2e-boundary-cleanup-handoff.md` | E2E 边界清理 session 交接（4 spec 删除 + 孤儿快照清理闭环） | 2026-08-30 | Historical archive | `docs/specs/e2e-suite-boundary-cleanup.md`, `docs/conventions/e2e-testing-boundary.md` | keep |
 
 ## Migration Fit (Transferability)
 
