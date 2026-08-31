@@ -55,10 +55,28 @@ third-party site state, pixel baselines, or live external services it cannot moc
   must come after the ready wait — otherwise a slow load masquerades as
   absence and the test silently false-skips.
 
+## Asserting on network requests
+
+- Cover **every** host the client talks to and **both** body shapes. The Aave SDK
+  posts V4 ops to `api.aave.com` and V3 ops to `api.v3.aave.com`, and its
+  batching exchange (`@aave/core`) collapses same-tick queries into one POST whose
+  body is an **array** of `{ query, variables, operationName }`. A top-level
+  `JSON.parse(body).operationName` read plus a single-host whitelist matched
+  *nothing* while three position requests were actually in flight — that is how
+  `watch-resubmit-refresh.spec.ts` asserted a refetch it could never observe.
+- `page.route` mocks must use the **same** host set as the counter, and answer a
+  batched POST with a same-length array (`body.map(() => ({ data: {} }))`) — an
+  object response leaves every batched op unresolved.
+
 ## Acceptable skips
 
 - `test.skip(!!process.env.CI, …)` only for a **genuine environment dependency**
-  (external service unreachable, real wallet required), documented per file.
+  (external service unreachable, live third-party API required), documented per file.
+- Tests that need the **real** Aave API from inside the browser (the live-SDK
+  wallet family — they use the built-in view-only watch address, not a real
+  wallet) depend on network egress, not on CI. Locally, run them with
+  `E2E_PROXY=http://127.0.0.1:<port>` so Chromium proxies the API hosts;
+  loopback is never proxied, so the dev server is unaffected.
 - A file that is `describe.skip` in CI is acceptable only as a **deliberate local
   operator check** (e.g. staging API smoke) with its rationale in the file header.
 - **Never** skip by platform to dodge work (`test.skip(mobile, 'Desktop-only')`).

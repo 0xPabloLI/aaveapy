@@ -15,7 +15,8 @@ import { expect, test, type Page } from '@playwright/test';
  *   E2E_WATCH_ADDRESS=0x...    (skips otherwise)
  */
 
-import { WATCH_ADDRESS } from './test-wallets';
+import { WATCH_ADDRESS, waitForWalletControls } from './test-wallets';
+import { setupPortfolioMode } from './test-reserves';
 
 /**
  * Open the Watch-address input. On mobile the Connect / View-address
@@ -23,6 +24,7 @@ import { WATCH_ADDRESS } from './test-wallets';
  * "View address" button is not directly visible — fall back to the popover.
  */
 async function openViewAddress(page: Page) {
+  await waitForWalletControls(page);
   const direct = page.getByRole('button', { name: /View address/i });
   if (await direct.isVisible().catch(() => false)) {
     await direct.first().click();
@@ -56,15 +58,17 @@ function significantDigits(raw: string): number {
 test.describe('Portfolio — Wallet Sync precision', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
-    test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
+    test.skip(
+      !!process.env.CI,
+      'Requires live Aave SDK GraphQL connections — run locally (set E2E_PROXY if your network needs a proxy)',
+    );
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
     test.setTimeout(180_000);
-    await page.goto('/');
 
-    // Enable portfolio mode.
-    await page.getByText('Portfolio', { exact: true }).first().click();
+    // Enable portfolio mode (also waits for the app-ready signal).
+    await setupPortfolioMode(page);
 
     // Open Watch Address input, submit the address.
     await openViewAddress(page);

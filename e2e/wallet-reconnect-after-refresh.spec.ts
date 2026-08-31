@@ -23,7 +23,7 @@ import { expect, test, type Page } from '@playwright/test';
  * (direct buttons) and mobile (popover) layouts.
  */
 
-import { WATCH_ADDRESS } from './test-wallets';
+import { WATCH_ADDRESS, waitForWalletControls } from './test-wallets';
 const WAGMI_STORE_KEY = 'wagmi.store';
 const WAGMI_WATCH_KEY = 'wagmi.watchAddress';
 
@@ -52,6 +52,7 @@ async function mockAaveGraphql(page: Page) {
 
 /** Assert that a Connect entry point is visible (direct button on desktop, "Wallet actions" trigger on mobile). */
 async function expectConnectAffordanceVisible(page: Page) {
+  await waitForWalletControls(page);
   const direct = page.getByRole('button', { name: /Connect wallet/i });
   if (await direct.isVisible().catch(() => false)) {
     await expect(direct).toBeVisible();
@@ -62,6 +63,7 @@ async function expectConnectAffordanceVisible(page: Page) {
 
 /** Open the RainbowKit connect modal from either layout. */
 async function openConnect(page: Page) {
+  await waitForWalletControls(page);
   const direct = page.getByRole('button', { name: /Connect wallet/i });
   if (await direct.isVisible().catch(() => false)) {
     await direct.click();
@@ -73,6 +75,7 @@ async function openConnect(page: Page) {
 
 /** Open the Watch-address input from either layout. */
 async function openViewAddress(page: Page) {
+  await waitForWalletControls(page);
   const direct = page.getByRole('button', { name: /View address/i });
   if (await direct.isVisible().catch(() => false)) {
     await direct.click();
@@ -90,7 +93,10 @@ async function openViewAddress(page: Page) {
 }
 
 test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
-  test.skip(!!process.env.CI, 'Wallet reconnect tests require live wallet/SDK state — run locally');
+  test.skip(
+    !!process.env.CI,
+    'Wallet reconnect tests require live Aave API access — run locally (set E2E_PROXY if your network needs a proxy)',
+  );
   test.beforeEach(async ({ page }) => {
     await mockAaveGraphql(page);
   });
