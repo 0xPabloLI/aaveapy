@@ -44,6 +44,13 @@ third-party site state, pixel baselines, or live external services it cannot moc
 - For UI states that settle asynchronously (selection ranges, carousel snaps,
   resorting), poll with `expect.poll` instead of `waitForTimeout` + one-shot
   read; fixed-delay one-shot reads turn settle races into load flakes.
+- When an assertion classifies what the app *did* during a window (e.g. "no
+  reorder ⇒ no forced pin scroll"), observe the window continuously — a
+  MutationObserver or in-page probe — not via before/after snapshots. The app
+  reacts per React commit; a transient intermediate state that restores before
+  the next snapshot is real behavior the snapshots can't see (seen in
+  `reserves-table-scenario-pin.spec.ts`: the pin fired on a debounce-window
+  intermediate sort while before == after).
 - A `test.skip` conditioned on a page query ("no such reserve in staging")
   must come after the ready wait — otherwise a slow load masquerades as
   absence and the test silently false-skips.
