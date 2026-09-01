@@ -80,8 +80,10 @@ const App = () => (
               <Suspense fallback={<LoadingState />}>
                 <AaveProviders>
                   <BrowserRouter>
+                    <AnalyticsRouteTracker />
                     <Suspense fallback={<LoadingState />}>
                       <Routes>
+
                         <Route path="/" element={<Index />} />
                         <Route path="/chain/:slug" element={<ChainPage />} />
                         <Route path="/pt-br" element={<LandingPT />} />
