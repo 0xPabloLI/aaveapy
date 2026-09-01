@@ -1,6 +1,11 @@
+import type { ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
+import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
+import { useTimeOnPage } from '@/hooks/useTimeOnPage';
+
+const ANALYTICS_PAGE = 'pt-br/taxas-aave-apy';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const CANONICAL = `${SITE_ORIGIN}/pt-br/taxas-aave-apy`;
