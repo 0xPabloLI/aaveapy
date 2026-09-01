@@ -23,6 +23,8 @@ import { clearLegacyCacheEntries } from "@/lib/cache";
 const WalletProviders = lazy(() => import("@/providers/WalletProviders").then(m => ({ default: m.WalletProviders })));
 const AaveProviders = lazy(() => import("@/providers/AaveProviders").then(m => ({ default: m.AaveProviders })));
 import { SdkErrorBoundary } from "@/providers/SdkErrorBoundary";
+import AnalyticsRouteTracker from "@/components/AnalyticsRouteTracker";
+
 import "@/i18n";
 
 // Lazy load route components
@@ -80,8 +82,10 @@ const App = () => (
               <Suspense fallback={<LoadingState />}>
                 <AaveProviders>
                   <BrowserRouter>
+                    <AnalyticsRouteTracker />
                     <Suspense fallback={<LoadingState />}>
                       <Routes>
+
                         <Route path="/" element={<Index />} />
                         <Route path="/chain/:slug" element={<ChainPage />} />
                         <Route path="/pt-br" element={<LandingPT />} />
