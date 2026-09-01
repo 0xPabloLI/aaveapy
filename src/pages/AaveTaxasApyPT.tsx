@@ -99,7 +99,22 @@ const pageJsonLd = {
   },
 };
 
-const AaveTaxasApyPT = () => (
+type TrackedLinkProps = ComponentProps<typeof Link> & { trackLabel: string };
+
+const TrackedLink = ({ trackLabel, onClick, ...props }: TrackedLinkProps) => (
+  <Link
+    {...props}
+    onClick={(e) => {
+      trackInternalLink(ANALYTICS_PAGE, trackLabel, String(props.to));
+      onClick?.(e);
+    }}
+  />
+);
+
+const AaveTaxasApyPT = () => {
+  useTimeOnPage(ANALYTICS_PAGE);
+
+  return (
   <>
     <Helmet>
       <html lang="pt-BR" />
