@@ -1,6 +1,11 @@
+import type { ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
+import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
+import { useTimeOnPage } from '@/hooks/useTimeOnPage';
+
+const ANALYTICS_PAGE = 'pt-br/taxas-aave-apy';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const CANONICAL = `${SITE_ORIGIN}/pt-br/taxas-aave-apy`;
@@ -94,7 +99,22 @@ const pageJsonLd = {
   },
 };
 
-const AaveTaxasApyPT = () => (
+type TrackedLinkProps = ComponentProps<typeof Link> & { trackLabel: string };
+
+const TrackedLink = ({ trackLabel, onClick, ...props }: TrackedLinkProps) => (
+  <Link
+    {...props}
+    onClick={(e) => {
+      trackInternalLink(ANALYTICS_PAGE, trackLabel, String(props.to));
+      onClick?.(e);
+    }}
+  />
+);
+
+const AaveTaxasApyPT = () => {
+  useTimeOnPage(ANALYTICS_PAGE);
+
+  return (
   <>
     <Helmet>
       <html lang="pt-BR" />
@@ -116,9 +136,9 @@ const AaveTaxasApyPT = () => (
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
         <nav className="mb-6 text-sm text-muted-foreground" aria-label="Trilha de navegação">
-          <Link to="/pt-br" className="hover:text-foreground transition-colors">
+          <TrackedLink trackLabel="breadcrumb_inicio" to="/pt-br" className="hover:text-foreground transition-colors">
             Início
-          </Link>
+          </TrackedLink>
           <span className="mx-2">/</span>
           <span className="text-foreground">Taxas e APY da Aave</span>
         </nav>
@@ -134,13 +154,14 @@ const AaveTaxasApyPT = () => (
           </p>
         </header>
 
-        <Link
+        <TrackedLink
+          trackLabel="cta_painel_ao_vivo"
           to="/"
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
         >
           Ver as taxas da Aave ao vivo
           <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
+        </TrackedLink>
 
         <section aria-labelledby="como-funciona" className="mt-10">
           <h2 id="como-funciona" className="text-xl font-semibold mb-3">
@@ -203,9 +224,9 @@ const AaveTaxasApyPT = () => (
           <ol className="list-decimal space-y-2 pl-5 text-muted-foreground leading-relaxed">
             <li>
               Abra o{' '}
-              <Link to="/" className="text-secondary hover:underline">
+              <TrackedLink trackLabel="inline_painel_ao_vivo" to="/" className="text-secondary hover:underline">
                 painel ao vivo
-              </Link>{' '}
+              </TrackedLink>{' '}
               e ordene pela coluna de APY de depósito ou de empréstimo.
             </li>
             <li>
@@ -214,13 +235,13 @@ const AaveTaxasApyPT = () => (
             </li>
             <li>
               Filtre por rede em{' '}
-              <Link to="/chain/ethereum" className="text-secondary hover:underline">
+              <TrackedLink trackLabel="paginas_de_rede" to="/chain/ethereum" className="text-secondary hover:underline">
                 páginas de rede
-              </Link>{' '}
+              </TrackedLink>{' '}
               ou por ativo em{' '}
-              <Link to="/asset/usdc" className="text-secondary hover:underline">
+              <TrackedLink trackLabel="paginas_de_ativo" to="/asset/usdc" className="text-secondary hover:underline">
                 páginas de ativo
-              </Link>
+              </TrackedLink>
               .
             </li>
             <li>
@@ -236,7 +257,11 @@ const AaveTaxasApyPT = () => (
           </h2>
           <div className="space-y-3">
             {FAQS.map((f) => (
-              <details key={f.q} className="group rounded-xl border border-border/60 bg-card p-5">
+              <details
+                key={f.q}
+                className="group rounded-xl border border-border/60 bg-card p-5"
+                onToggle={(e) => trackFaqToggle(ANALYTICS_PAGE, f.q, e.currentTarget.open)}
+              >
                 <summary className="cursor-pointer list-none flex items-start justify-between gap-4 text-base font-semibold text-foreground">
                   <span>{f.q}</span>
                   <span className="text-muted-foreground transition group-open:rotate-45 text-xl leading-none select-none">
@@ -250,21 +275,22 @@ const AaveTaxasApyPT = () => (
         </section>
 
         <nav aria-label="Páginas relacionadas" className="mt-12 text-sm text-muted-foreground">
-          <Link to="/pt-br" className="text-secondary hover:underline">
+          <TrackedLink trackLabel="related_aaveapy_brasil" to="/pt-br" className="text-secondary hover:underline">
             AaveAPY Brasil
-          </Link>
+          </TrackedLink>
           {' · '}
-          <Link to="/" className="text-secondary hover:underline">
+          <TrackedLink trackLabel="related_painel_ao_vivo" to="/" className="text-secondary hover:underline">
             Painel ao vivo
-          </Link>
+          </TrackedLink>
           {' · '}
-          <Link to="/defi-yield-tracker" className="text-secondary hover:underline">
+          <TrackedLink trackLabel="related_defi_yield_tracker" to="/defi-yield-tracker" className="text-secondary hover:underline">
             DeFi Yield Tracker
-          </Link>
+          </TrackedLink>
         </nav>
       </div>
     </main>
   </>
-);
+  );
+};
 
 export default AaveTaxasApyPT;

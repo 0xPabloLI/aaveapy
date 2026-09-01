@@ -79,7 +79,7 @@ const App = () => (
             <WalletProviders>
               <Suspense fallback={<LoadingState />}>
                 <AaveProviders>
-                  <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                  <BrowserRouter>
                     <Suspense fallback={<LoadingState />}>
                       <Routes>
                         <Route path="/" element={<Index />} />
