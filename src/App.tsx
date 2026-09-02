@@ -40,6 +40,10 @@ const AdminAaveNewsBacklinks = lazy(() => import("./pages/AdminAaveNewsBacklinks
 const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
 const AssetPage = lazy(() => import("./pages/AssetPage"));
 const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
+const AaveTauxApyFR = lazy(() => import("./pages/AaveTauxApyFR"));
+const AaveZinsenApyDE = lazy(() => import("./pages/AaveZinsenApyDE"));
+const AaveTasasApyES = lazy(() => import("./pages/AaveTasasApyES"));
+const AaveApyID = lazy(() => import("./pages/AaveApyID"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +101,10 @@ const App = () => (
                         <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
                         <Route path="/asset/:slug" element={<AssetPage />} />
                         <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
+                        <Route path="/fr/taux-aave-apy" element={<AaveTauxApyFR />} />
+                        <Route path="/de/aave-zinsen-apy" element={<AaveZinsenApyDE />} />
+                        <Route path="/es/tasas-aave-apy" element={<AaveTasasApyES />} />
+                        <Route path="/id/apy-aave" element={<AaveApyID />} />
 
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
