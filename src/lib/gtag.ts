@@ -6,9 +6,12 @@
  * tests, SSR) so analytics never breaks the app.
  */
 
-const MEASUREMENT_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as
-  | string
-  | undefined;
+/** Static fallback so the tag exists even when the connector env var is absent (e.g. Vercel builds). */
+const FALLBACK_MEASUREMENT_ID = 'G-8WRVJ711MH';
+
+const MEASUREMENT_ID =
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) ||
+  FALLBACK_MEASUREMENT_ID;
 
 let initialized = false;
 
@@ -18,6 +21,9 @@ export function initAnalytics(): void {
   if (!MEASUREMENT_ID) return;
 
   initialized = true;
+
+  // The static gtag.js snippet in index.html already loaded and configured GA4.
+  if (typeof window.gtag === 'function') return;
 
   const script = document.createElement('script');
   script.async = true;
