@@ -44,3 +44,9 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **修法**：rolldown-vite 用原生 `output.advancedChunks` 正则分组替代 manualChunks 函数，分组语义确定、逐模块匹配 `test` 正则。红线保留：React + ReactDOM 必须在同一 chunk（vendor-react），拆开会 crash。
 - **结果级守卫优于配置级守卫**：断言配置形态（"规则存在"）挡不住 bundler 行为回归；必须断言产物本身——`assertFirstPaintChunksPlugin` 在 generateBundle 遍历 entry 的静态 import 闭包，触达重型 chunk 即 fail build 并打印 import 链，并对 `chunk.imports` 缺失 fail loud，防止守卫静默空转。
 - **共享 util 依赖第三方包时加纵深**：`cn()` 内联 clsx 运行时（type-only import 保持类型单一来源），即使拼接行为回归，首屏路径也到不了区块链库。
+
+## FCP 优化的边际收益递减停止点（Round 3 审查结论）
+- **Desktop FCP 1.65s 达标后进一步优化 trade-off 不合理**：Round 1+2 把 Desktop FCP 从 3.3s 降到 1.65s（目标 2.5s），Round 3 潜在优化方向（lazy framer-motion、代码拆分 FaqSection、TS helpers 重构）总计收益 ~200-300ms，但每个方向都有 hydration mismatch、layout shift 或重构风险。
+- **Mobile FCP 的瓶颈是网络不是 JS**：Lighthouse Mobile 5.8s 是 Slow 4G + CPU 4x throttling 极端条件下的结果，真实网络下会好得多；优化 JS 体积对 Mobile FCP 改善有限。
+- **停止优化的决策框架**：(1) 目标是否已达成（Desktop 1.65s < 2.5s ✅）；(2) 进一步优化收益是否 > 风险（~200ms vs hydration 风险 ❌）；(3) 用户侧体验是否可接受（Mobile 真实网络待观测）。三条都满足时才值得继续。
+- **后续监控**：生产环境 CrUX real-world 数据 p75 FCP；如果 Mobile FCP 在真实网络仍 > 3s 再考虑优化。
