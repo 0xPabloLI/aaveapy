@@ -110,6 +110,22 @@ const content: RatesPageContent = {
         q: "Aave est-il disponible en France ?",
         a: "Aave est un protocole décentralisé accessible depuis n'importe quel portefeuille compatible EVM. Les taux affichés ici sont identiques pour tous les utilisateurs : ils dépendent du pool et du réseau, pas du pays. Vérifiez toujours votre cadre fiscal et réglementaire local avant d'investir.",
       },
+      {
+        q: 'Comment sont imposés les intérêts perçus sur Aave en France ?',
+        a: "Ceci n'est pas un conseil fiscal. En pratique, l'administration française taxe les plus-values de cession d'actifs numériques au prélèvement forfaitaire unique de 30 % pour les particuliers, avec option possible pour le barème progressif. Le traitement des intérêts de lending DeFi reste discuté selon qu'ils sont requalifiés en revenus ou intégrés au calcul de plus-value lors de la conversion en euros. Conservez l'historique de vos dépôts, retraits et récompenses, déclarez vos comptes d'actifs numériques détenus à l'étranger (formulaire 3916-bis) et faites valider votre situation par un professionnel.",
+      },
+      {
+        q: 'Aave est-il concerné par le règlement MiCA ?',
+        a: "MiCA encadre les émetteurs de stablecoins et les prestataires de services sur crypto-actifs (PSAN/CASP enregistrés auprès de l'AMF). Aave est un protocole décentralisé sans intermédiaire : ce sont surtout les stablecoins listés dans ses réserves et les plateformes par lesquelles vous achetez vos crypto-actifs qui relèvent directement du texte. Concrètement, cela influence surtout quels stablecoins restent facilement accessibles depuis l'Europe.",
+      },
+      {
+        q: 'Peut-on prêter des euros sur Aave plutôt que des dollars ?',
+        a: "Les réserves les plus liquides d'Aave sont libellées en stablecoins dollar (USDC, USDT, DAI). Des stablecoins euro comme EURC existent sur certaines réserves, mais avec beaucoup moins de liquidité, donc des taux plus volatils et des plafonds plus bas. Si vous raisonnez en euros, gardez à l'esprit qu'un dépôt en USDC ajoute un risque de change EUR/USD par-dessus l'APY affiché.",
+      },
+      {
+        q: 'Quel réseau choisir depuis la France pour de petits montants ?',
+        a: "Pour quelques milliers d'euros, les L2 (Base, Arbitrum, Optimism, Polygon) sont nettement plus adaptés : les frais de transaction s'y comptent en centimes, contre parfois plusieurs euros sur le mainnet Ethereum. Le mainnet garde l'avantage de la profondeur de liquidité, utile seulement pour des positions importantes.",
+      },
     ],
   },
   related: {
