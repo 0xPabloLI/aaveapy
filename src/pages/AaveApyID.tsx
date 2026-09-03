@@ -41,6 +41,15 @@ const content: RatesPageContent = {
         'V3 dirancang multichain: reserve yang sama hadir di banyak jaringan dengan pool dan bunga terpisah. V3 juga membawa E-Mode (daya pinjam lebih besar untuk aset berkorelasi seperti ETH dan LST), isolation mode (aset baru dengan batas utang sendiri), serta supply cap dan borrow cap per reserve. Jadi membandingkan "bunga Aave" secara umum sudah tidak relevan — bandingkan per reserve dan per jaringan.',
       ],
     },
+    {
+      id: 'contoh-hitung',
+      h2: 'Contoh hitungan: Rp 50 juta dalam USDC di Base',
+      paragraphs: [
+        'Misalnya Anda menaruh dana setara Rp 50 juta (sekitar 3.000 USDC) di jaringan Base. Bila APY deposit yang tampil 4,2 %, hasil kotor setahun sekitar Rp 2,1 juta atau kira-kira Rp 175 ribu per bulan — dengan asumsi bunganya diam di angka itu, yang pada praktiknya tidak pernah terjadi.',
+        'Tambahkan insentif Merit sebesar 1,8 % APR pada reserve yang sama, maka hasil efektifnya naik ke sekitar 6 %, atau kurang lebih Rp 3 juta setahun. Selisih inilah yang ditampilkan dasbor sebagai perbedaan antara bunga dasar dan APY efektif.',
+        'Di sisi pinjaman: jaminan ETH senilai Rp 50 juta dengan pinjaman USDC senilai Rp 20 juta pada APY pinjam 5,5 % berbiaya sekitar Rp 1,1 juta setahun. Health factor tetap aman selama harga ETH tidak anjlok tajam; di bawah 1, posisi bisa dilikuidasi. Biaya gas di L2 seperti Base hanya ratusan rupiah per transaksi sehingga tidak berpengaruh, berbeda dengan Ethereum mainnet yang bisa memakan puluhan hingga ratusan ribu rupiah untuk nominal kecil.',
+      ],
+    },
   ],
   drivers: {
     id: 'faktor',
