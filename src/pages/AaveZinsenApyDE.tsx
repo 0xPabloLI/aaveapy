@@ -33,6 +33,15 @@ const content: RatesPageContent = {
         'V3 ist von Grund auf multichain: dieselbe Reserve existiert auf mehreren Netzwerken mit unabhängigen Pools und Zinsen. Dazu kommen E-Mode (höhere Kreditkraft bei korrelierten Assets wie ETH und LSTs), Isolation Mode (neue Assets mit eigenem Schuldenlimit) sowie Supply- und Borrow-Caps je Reserve. In der Praxis lohnt sich nur noch der Vergleich Reserve für Reserve und Netzwerk für Netzwerk.',
       ],
     },
+    {
+      id: 'rechenbeispiel',
+      h2: 'Rechenbeispiel: 10.000 € in USDC auf Base',
+      paragraphs: [
+        'Angenommen, du legst 10.000 € als USDC auf Base ein. Bei einem angezeigten Einlage-APY von 4,2 % ergibt das rund 420 € Bruttoertrag im Jahr, also etwa 35 € pro Monat — vorausgesetzt, der Zins bliebe konstant, was in der Praxis nie der Fall ist.',
+        'Kommt auf dieselbe Reserve ein Merit-Anreiz von 1,8 % APR dazu, liegt die effektive Rendite bei etwa 6 %, also grob 600 € im Jahr. Genau diese Differenz zeigt das Dashboard als Unterschied zwischen Basiszins und effektivem APY.',
+        'Auf der Kreditseite: 10.000 € ETH als Sicherheit, davon 4.000 € USDC geliehen zu 5,5 % Kredit-APY, kostet rund 220 € im Jahr. Der Health Factor bleibt komfortabel, solange ETH nicht stark einbricht; unter 1 wird die Position liquidierbar. Die Transaktionsgebühren auf einem L2 wie Base liegen im Cent-Bereich und fallen gegenüber diesen Beträgen nicht ins Gewicht — auf dem Ethereum-Mainnet wäre das bei kleinen Summen anders.',
+      ],
+    },
   ],
   drivers: {
     id: 'faktoren',
