@@ -110,6 +110,22 @@ const content: RatesPageContent = {
         q: '¿Aave v3 es seguro?',
         a: 'Aave V3 es uno de los protocolos más auditados de DeFi, pero ningún contrato inteligente está libre de riesgo. Los riesgos reales incluyen fallos de contrato, oráculos de precio, liquidaciones en caídas rápidas y la calidad del colateral de cada reserva. Diversifica y vigila tu health factor.',
       },
+      {
+        q: '¿Cómo tributan en España los intereses obtenidos en Aave?',
+        a: 'Esto no es asesoramiento fiscal. En España las ganancias por transmisión de criptoactivos suelen integrarse en la base del ahorro del IRPF, mientras que ciertos rendimientos de lending pueden calificarse como rendimientos del capital mobiliario. Además existen obligaciones informativas específicas para criptomonedas en el extranjero (modelo 721) y para saldos en plataformas. Guarda el histórico de depósitos, retiradas y recompensas con fecha y valor en euros, y confirma la calificación con un asesor.',
+      },
+      {
+        q: '¿Aave está afectada por MiCA?',
+        a: 'MiCA regula a los emisores de stablecoins y a los proveedores de servicios de criptoactivos supervisados en España por la CNMV y el Banco de España. Aave es un protocolo descentralizado sin intermediario: lo que queda directamente bajo la norma son los stablecoins de sus reservas y los exchanges donde compras. En la práctica, eso condiciona sobre todo qué stablecoins siguen siendo cómodamente accesibles desde Europa.',
+      },
+      {
+        q: '¿Puedo prestar euros en lugar de dólares?',
+        a: 'Las reservas más líquidas de Aave están denominadas en stablecoins dólar (USDC, USDT, DAI). Existen stablecoins euro como EURC en algunas reservas, pero con mucha menos liquidez, tasas más volátiles y límites más bajos. Si razonas en euros, un depósito en USDC añade riesgo de tipo de cambio EUR/USD por encima del APY mostrado.',
+      },
+      {
+        q: '¿Qué red conviene desde España para importes pequeños?',
+        a: 'Para unos pocos miles de euros, las L2 (Base, Arbitrum, Optimism, Polygon) son claramente más adecuadas: las comisiones se cuentan en céntimos, frente a varios euros habituales en la red principal de Ethereum. La red principal solo compensa por profundidad de liquidez en posiciones grandes.',
+      },
     ],
   },
   related: {
