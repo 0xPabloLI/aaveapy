@@ -33,6 +33,15 @@ const content: RatesPageContent = {
         'La V3 es multichain por diseño: la misma reserva existe en varias redes con pools y tasas independientes. Además incorpora E-Mode (mayor poder de préstamo entre activos correlacionados como ETH y LSTs), isolation mode (activos nuevos con límite de deuda propio) y límites de suministro y préstamo por reserva. En la práctica, comparar "la tasa de Aave" en general ya no sirve: hay que comparar reserva por reserva y red por red.',
       ],
     },
+    {
+      id: 'ejemplo',
+      h2: 'Ejemplo con números: 10.000 € en USDC en Base',
+      paragraphs: [
+        'Supón un depósito de 10.000 € convertidos a USDC en Base. Con un APY de depósito del 4,2 %, el rendimiento bruto anual ronda los 420 €, unos 35 € al mes, siempre que la tasa se mantuviera estable — algo que en la práctica nunca ocurre.',
+        'Si a esa misma reserva se suma un incentivo Merit del 1,8 % de APR, el rendimiento efectivo sube a cerca del 6 %, aproximadamente 600 € al año. Esa es justo la diferencia que el panel muestra entre «tasa base» y «APY efectivo».',
+        'En el lado del préstamo: con 10.000 € de ETH como garantía y 4.000 € de USDC prestados al 5,5 % de APY, el coste anual es de unos 220 €. El health factor se mantiene holgado mientras el ETH no caiga con fuerza; por debajo de 1 la posición pasa a ser liquidable. Las comisiones en una L2 como Base son de céntimos por transacción y resultan irrelevantes frente a estas cifras, algo que no sucede en la red principal de Ethereum con importes pequeños.',
+      ],
+    },
   ],
   drivers: {
     id: 'factores',
