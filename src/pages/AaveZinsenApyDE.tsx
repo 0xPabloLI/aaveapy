@@ -110,6 +110,22 @@ const content: RatesPageContent = {
         q: 'Wie werden Aave-Erträge in Deutschland besteuert?',
         a: 'Das hängt von deiner persönlichen Situation ab und ist keine Steuerberatung. Erträge aus Lending werden in Deutschland üblicherweise als Kapital- oder sonstige Einkünfte behandelt; dokumentiere Ein- und Auszahlungen sowie Belohnungen und kläre die Einordnung mit einer Steuerberatung.',
       },
+      {
+        q: 'Fällt Aave unter MiCA und die BaFin-Aufsicht?',
+        a: 'MiCA reguliert Stablecoin-Emittenten und Krypto-Dienstleister (CASP), die in Deutschland von der BaFin beaufsichtigt werden. Aave selbst ist ein dezentrales Protokoll ohne Vermittler; direkt betroffen sind vor allem die Stablecoins in den Reserven und die Handelsplätze, über die du Krypto kaufst. Praktisch beeinflusst das vor allem, welche Stablecoins aus Europa heraus gut zugänglich bleiben.',
+      },
+      {
+        q: 'Gibt es Euro-Stablecoins auf Aave?',
+        a: 'Die liquidesten Aave-Reserven lauten auf Dollar-Stablecoins (USDC, USDT, DAI). Euro-Stablecoins wie EURC existieren auf einzelnen Reserven, aber mit deutlich geringerer Liquidität, volatileren Zinsen und niedrigeren Caps. Wer in Euro rechnet, trägt bei einer USDC-Einlage zusätzlich das EUR/USD-Wechselkursrisiko über dem angezeigten APY.',
+      },
+      {
+        q: 'Welches Netzwerk lohnt sich für kleinere Beträge aus Deutschland?',
+        a: 'Für einige tausend Euro sind L2-Netzwerke (Base, Arbitrum, Optimism, Polygon) klar geeigneter: Transaktionsgebühren liegen dort im Cent-Bereich, auf dem Ethereum-Mainnet dagegen häufig bei mehreren Euro. Das Mainnet punktet nur mit Liquiditätstiefe, was erst bei großen Positionen zählt.',
+      },
+      {
+        q: 'Gilt die einjährige Haltefrist für Aave-Einlagen?',
+        a: 'Das ist keine Steuerberatung. Für private Veräußerungsgeschäfte mit Kryptowerten gilt in Deutschland grundsätzlich eine einjährige Haltefrist; ob Lending-Erträge diese Einordnung verändern oder als sonstige Einkünfte zu behandeln sind, hängt vom Einzelfall und der aktuellen Verwaltungsauffassung ab. Dokumentiere Einzahlungen, Abhebungen und Rewards mit Zeitstempel und lass die Einordnung steuerlich prüfen.',
+      },
     ],
   },
   related: {
