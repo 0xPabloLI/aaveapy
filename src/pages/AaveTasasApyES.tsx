@@ -33,6 +33,15 @@ const content: RatesPageContent = {
         'La V3 es multichain por diseño: la misma reserva existe en varias redes con pools y tasas independientes. Además incorpora E-Mode (mayor poder de préstamo entre activos correlacionados como ETH y LSTs), isolation mode (activos nuevos con límite de deuda propio) y límites de suministro y préstamo por reserva. En la práctica, comparar "la tasa de Aave" en general ya no sirve: hay que comparar reserva por reserva y red por red.',
       ],
     },
+    {
+      id: 'ejemplo',
+      h2: 'Ejemplo con números: 10.000 € en USDC en Base',
+      paragraphs: [
+        'Supón un depósito de 10.000 € convertidos a USDC en Base. Con un APY de depósito del 4,2 %, el rendimiento bruto anual ronda los 420 €, unos 35 € al mes, siempre que la tasa se mantuviera estable — algo que en la práctica nunca ocurre.',
+        'Si a esa misma reserva se suma un incentivo Merit del 1,8 % de APR, el rendimiento efectivo sube a cerca del 6 %, aproximadamente 600 € al año. Esa es justo la diferencia que el panel muestra entre «tasa base» y «APY efectivo».',
+        'En el lado del préstamo: con 10.000 € de ETH como garantía y 4.000 € de USDC prestados al 5,5 % de APY, el coste anual es de unos 220 €. El health factor se mantiene holgado mientras el ETH no caiga con fuerza; por debajo de 1 la posición pasa a ser liquidable. Las comisiones en una L2 como Base son de céntimos por transacción y resultan irrelevantes frente a estas cifras, algo que no sucede en la red principal de Ethereum con importes pequeños.',
+      ],
+    },
   ],
   drivers: {
     id: 'factores',
@@ -100,6 +109,22 @@ const content: RatesPageContent = {
       {
         q: '¿Aave v3 es seguro?',
         a: 'Aave V3 es uno de los protocolos más auditados de DeFi, pero ningún contrato inteligente está libre de riesgo. Los riesgos reales incluyen fallos de contrato, oráculos de precio, liquidaciones en caídas rápidas y la calidad del colateral de cada reserva. Diversifica y vigila tu health factor.',
+      },
+      {
+        q: '¿Cómo tributan en España los intereses obtenidos en Aave?',
+        a: 'Esto no es asesoramiento fiscal. En España las ganancias por transmisión de criptoactivos suelen integrarse en la base del ahorro del IRPF, mientras que ciertos rendimientos de lending pueden calificarse como rendimientos del capital mobiliario. Además existen obligaciones informativas específicas para criptomonedas en el extranjero (modelo 721) y para saldos en plataformas. Guarda el histórico de depósitos, retiradas y recompensas con fecha y valor en euros, y confirma la calificación con un asesor.',
+      },
+      {
+        q: '¿Aave está afectada por MiCA?',
+        a: 'MiCA regula a los emisores de stablecoins y a los proveedores de servicios de criptoactivos supervisados en España por la CNMV y el Banco de España. Aave es un protocolo descentralizado sin intermediario: lo que queda directamente bajo la norma son los stablecoins de sus reservas y los exchanges donde compras. En la práctica, eso condiciona sobre todo qué stablecoins siguen siendo cómodamente accesibles desde Europa.',
+      },
+      {
+        q: '¿Puedo prestar euros en lugar de dólares?',
+        a: 'Las reservas más líquidas de Aave están denominadas en stablecoins dólar (USDC, USDT, DAI). Existen stablecoins euro como EURC en algunas reservas, pero con mucha menos liquidez, tasas más volátiles y límites más bajos. Si razonas en euros, un depósito en USDC añade riesgo de tipo de cambio EUR/USD por encima del APY mostrado.',
+      },
+      {
+        q: '¿Qué red conviene desde España para importes pequeños?',
+        a: 'Para unos pocos miles de euros, las L2 (Base, Arbitrum, Optimism, Polygon) son claramente más adecuadas: las comisiones se cuentan en céntimos, frente a varios euros habituales en la red principal de Ethereum. La red principal solo compensa por profundidad de liquidez en posiciones grandes.',
       },
     ],
   },

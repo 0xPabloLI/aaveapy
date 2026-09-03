@@ -41,6 +41,15 @@ const content: RatesPageContent = {
         'V3 dirancang multichain: reserve yang sama hadir di banyak jaringan dengan pool dan bunga terpisah. V3 juga membawa E-Mode (daya pinjam lebih besar untuk aset berkorelasi seperti ETH dan LST), isolation mode (aset baru dengan batas utang sendiri), serta supply cap dan borrow cap per reserve. Jadi membandingkan "bunga Aave" secara umum sudah tidak relevan — bandingkan per reserve dan per jaringan.',
       ],
     },
+    {
+      id: 'contoh-hitung',
+      h2: 'Contoh hitungan: Rp 50 juta dalam USDC di Base',
+      paragraphs: [
+        'Misalnya Anda menaruh dana setara Rp 50 juta (sekitar 3.000 USDC) di jaringan Base. Bila APY deposit yang tampil 4,2 %, hasil kotor setahun sekitar Rp 2,1 juta atau kira-kira Rp 175 ribu per bulan — dengan asumsi bunganya diam di angka itu, yang pada praktiknya tidak pernah terjadi.',
+        'Tambahkan insentif Merit sebesar 1,8 % APR pada reserve yang sama, maka hasil efektifnya naik ke sekitar 6 %, atau kurang lebih Rp 3 juta setahun. Selisih inilah yang ditampilkan dasbor sebagai perbedaan antara bunga dasar dan APY efektif.',
+        'Di sisi pinjaman: jaminan ETH senilai Rp 50 juta dengan pinjaman USDC senilai Rp 20 juta pada APY pinjam 5,5 % berbiaya sekitar Rp 1,1 juta setahun. Health factor tetap aman selama harga ETH tidak anjlok tajam; di bawah 1, posisi bisa dilikuidasi. Biaya gas di L2 seperti Base hanya ratusan rupiah per transaksi sehingga tidak berpengaruh, berbeda dengan Ethereum mainnet yang bisa memakan puluhan hingga ratusan ribu rupiah untuk nominal kecil.',
+      ],
+    },
   ],
   drivers: {
     id: 'faktor',
@@ -108,6 +117,22 @@ const content: RatesPageContent = {
       {
         q: 'Apakah Aave aman dipakai dari Indonesia?',
         a: 'Aave adalah protokol terdesentralisasi yang bisa diakses dari dompet EVM mana pun, dan bunganya sama untuk semua pengguna karena ditentukan pool dan jaringan, bukan negara. Tetap perhatikan risiko smart contract, volatilitas jaminan, serta aturan pajak dan regulasi aset kripto setempat.',
+      },
+      {
+        q: 'Bagaimana pajak hasil lending kripto di Indonesia?',
+        a: 'Ini bukan nasihat pajak. Di Indonesia transaksi aset kripto lewat pedagang fisik aset kripto terdaftar dikenai PPh final dan PPN dengan tarif kecil per transaksi, sedangkan perlakuan atas imbal hasil dari protokol DeFi seperti Aave belum diatur sedetail itu dan umumnya perlu dilaporkan sebagai penghasilan lain dalam SPT Tahunan. Simpan catatan deposit, penarikan, dan reward beserta nilai rupiahnya, lalu konsultasikan dengan konsultan pajak.',
+      },
+      {
+        q: 'Bisakah deposit langsung dari rupiah?',
+        a: 'Tidak langsung. Alurnya biasanya: beli USDC atau USDT di exchange lokal terdaftar Bappebti memakai rupiah, tarik ke wallet EVM pribadi di jaringan murah seperti Base atau Polygon, baru deposit ke Aave. Perhatikan biaya penarikan exchange dan pastikan jaringan penarikan sama dengan jaringan yang Anda pakai di Aave, karena salah jaringan berisiko kehilangan dana.',
+      },
+      {
+        q: 'Apakah ada stablecoin rupiah di Aave?',
+        a: 'Reserve Aave yang likuid hampir semuanya stablecoin dolar (USDC, USDT, DAI); stablecoin rupiah belum tersedia sebagai reserve. Artinya, saat Anda menghitung hasil dalam rupiah, ada risiko kurs USD/IDR di atas APY yang ditampilkan — kurs bisa menambah atau mengurangi hasil akhir.',
+      },
+      {
+        q: 'Berapa modal minimum yang masuk akal?',
+        a: 'Tidak ada minimum di protokol, tetapi biaya jaringan menentukan kelayakannya. Di L2 seperti Base atau Polygon, deposit beberapa juta rupiah sudah masuk akal karena gas hanya ratusan rupiah. Di Ethereum mainnet, biaya transaksi bisa menghabiskan hasil beberapa bulan untuk nominal kecil, jadi sebaiknya dipakai untuk posisi besar saja.',
       },
     ],
   },

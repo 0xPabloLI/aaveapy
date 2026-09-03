@@ -33,6 +33,15 @@ const content: RatesPageContent = {
         'V3 ist von Grund auf multichain: dieselbe Reserve existiert auf mehreren Netzwerken mit unabhängigen Pools und Zinsen. Dazu kommen E-Mode (höhere Kreditkraft bei korrelierten Assets wie ETH und LSTs), Isolation Mode (neue Assets mit eigenem Schuldenlimit) sowie Supply- und Borrow-Caps je Reserve. In der Praxis lohnt sich nur noch der Vergleich Reserve für Reserve und Netzwerk für Netzwerk.',
       ],
     },
+    {
+      id: 'rechenbeispiel',
+      h2: 'Rechenbeispiel: 10.000 € in USDC auf Base',
+      paragraphs: [
+        'Angenommen, du legst 10.000 € als USDC auf Base ein. Bei einem angezeigten Einlage-APY von 4,2 % ergibt das rund 420 € Bruttoertrag im Jahr, also etwa 35 € pro Monat — vorausgesetzt, der Zins bliebe konstant, was in der Praxis nie der Fall ist.',
+        'Kommt auf dieselbe Reserve ein Merit-Anreiz von 1,8 % APR dazu, liegt die effektive Rendite bei etwa 6 %, also grob 600 € im Jahr. Genau diese Differenz zeigt das Dashboard als Unterschied zwischen Basiszins und effektivem APY.',
+        'Auf der Kreditseite: 10.000 € ETH als Sicherheit, davon 4.000 € USDC geliehen zu 5,5 % Kredit-APY, kostet rund 220 € im Jahr. Der Health Factor bleibt komfortabel, solange ETH nicht stark einbricht; unter 1 wird die Position liquidierbar. Die Transaktionsgebühren auf einem L2 wie Base liegen im Cent-Bereich und fallen gegenüber diesen Beträgen nicht ins Gewicht — auf dem Ethereum-Mainnet wäre das bei kleinen Summen anders.',
+      ],
+    },
   ],
   drivers: {
     id: 'faktoren',
@@ -100,6 +109,22 @@ const content: RatesPageContent = {
       {
         q: 'Wie werden Aave-Erträge in Deutschland besteuert?',
         a: 'Das hängt von deiner persönlichen Situation ab und ist keine Steuerberatung. Erträge aus Lending werden in Deutschland üblicherweise als Kapital- oder sonstige Einkünfte behandelt; dokumentiere Ein- und Auszahlungen sowie Belohnungen und kläre die Einordnung mit einer Steuerberatung.',
+      },
+      {
+        q: 'Fällt Aave unter MiCA und die BaFin-Aufsicht?',
+        a: 'MiCA reguliert Stablecoin-Emittenten und Krypto-Dienstleister (CASP), die in Deutschland von der BaFin beaufsichtigt werden. Aave selbst ist ein dezentrales Protokoll ohne Vermittler; direkt betroffen sind vor allem die Stablecoins in den Reserven und die Handelsplätze, über die du Krypto kaufst. Praktisch beeinflusst das vor allem, welche Stablecoins aus Europa heraus gut zugänglich bleiben.',
+      },
+      {
+        q: 'Gibt es Euro-Stablecoins auf Aave?',
+        a: 'Die liquidesten Aave-Reserven lauten auf Dollar-Stablecoins (USDC, USDT, DAI). Euro-Stablecoins wie EURC existieren auf einzelnen Reserven, aber mit deutlich geringerer Liquidität, volatileren Zinsen und niedrigeren Caps. Wer in Euro rechnet, trägt bei einer USDC-Einlage zusätzlich das EUR/USD-Wechselkursrisiko über dem angezeigten APY.',
+      },
+      {
+        q: 'Welches Netzwerk lohnt sich für kleinere Beträge aus Deutschland?',
+        a: 'Für einige tausend Euro sind L2-Netzwerke (Base, Arbitrum, Optimism, Polygon) klar geeigneter: Transaktionsgebühren liegen dort im Cent-Bereich, auf dem Ethereum-Mainnet dagegen häufig bei mehreren Euro. Das Mainnet punktet nur mit Liquiditätstiefe, was erst bei großen Positionen zählt.',
+      },
+      {
+        q: 'Gilt die einjährige Haltefrist für Aave-Einlagen?',
+        a: 'Das ist keine Steuerberatung. Für private Veräußerungsgeschäfte mit Kryptowerten gilt in Deutschland grundsätzlich eine einjährige Haltefrist; ob Lending-Erträge diese Einordnung verändern oder als sonstige Einkünfte zu behandeln sind, hängt vom Einzelfall und der aktuellen Verwaltungsauffassung ab. Dokumentiere Einzahlungen, Abhebungen und Rewards mit Zeitstempel und lass die Einordnung steuerlich prüfen.',
       },
     ],
   },
