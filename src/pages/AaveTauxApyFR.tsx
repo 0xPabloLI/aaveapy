@@ -33,6 +33,15 @@ const content: RatesPageContent = {
         "La V3 est multichaîne par nature : la même réserve existe sur plusieurs réseaux avec des pools et des taux indépendants. Elle apporte aussi l'E-Mode (pouvoir d'emprunt renforcé entre actifs corrélés comme ETH et les LST), l'isolation mode (actifs récents avec plafond de dette dédié) et des plafonds de dépôt et d'emprunt par réserve. Comparer « le taux d'Aave » globalement n'a donc plus de sens : il faut comparer réserve par réserve et réseau par réseau.",
       ],
     },
+    {
+      id: 'exemple',
+      h2: 'Exemple chiffré : 10 000 € en USDC sur Base',
+      paragraphs: [
+        "Prenons un dépôt de 10 000 € convertis en USDC sur Base. Si l'APY de dépôt affiché est de 4,2 %, le rendement brut sur un an est d'environ 420 €, soit près de 35 € par mois — à condition que le taux reste stable, ce qui n'arrive jamais vraiment.",
+        "Ajoutez maintenant une incitation Merit de 1,8 % d'APR sur la même réserve : le rendement effectif passe à environ 6 %, soit à peu près 600 € sur l'année. C'est exactement l'écart que le tableau de bord affiche entre « taux de base » et « APY effectif ».",
+        "Côté emprunt, si vous déposez 10 000 € d'ETH en garantie et empruntez 4 000 € d'USDC à 5,5 % d'APY, le coût annuel est d'environ 220 €. Votre health factor reste confortable tant que l'ETH ne chute pas brutalement ; en dessous de 1, la position devient liquidable. Les frais de gaz sur un L2 comme Base restent de l'ordre de quelques centimes par transaction, donc négligeables face à ces montants — ce ne serait pas le cas sur le mainnet Ethereum pour un petit dépôt.",
+      ],
+    },
   ],
   drivers: {
     id: 'facteurs',
