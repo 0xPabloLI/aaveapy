@@ -118,6 +118,22 @@ const content: RatesPageContent = {
         q: 'Apakah Aave aman dipakai dari Indonesia?',
         a: 'Aave adalah protokol terdesentralisasi yang bisa diakses dari dompet EVM mana pun, dan bunganya sama untuk semua pengguna karena ditentukan pool dan jaringan, bukan negara. Tetap perhatikan risiko smart contract, volatilitas jaminan, serta aturan pajak dan regulasi aset kripto setempat.',
       },
+      {
+        q: 'Bagaimana pajak hasil lending kripto di Indonesia?',
+        a: 'Ini bukan nasihat pajak. Di Indonesia transaksi aset kripto lewat pedagang fisik aset kripto terdaftar dikenai PPh final dan PPN dengan tarif kecil per transaksi, sedangkan perlakuan atas imbal hasil dari protokol DeFi seperti Aave belum diatur sedetail itu dan umumnya perlu dilaporkan sebagai penghasilan lain dalam SPT Tahunan. Simpan catatan deposit, penarikan, dan reward beserta nilai rupiahnya, lalu konsultasikan dengan konsultan pajak.',
+      },
+      {
+        q: 'Bisakah deposit langsung dari rupiah?',
+        a: 'Tidak langsung. Alurnya biasanya: beli USDC atau USDT di exchange lokal terdaftar Bappebti memakai rupiah, tarik ke wallet EVM pribadi di jaringan murah seperti Base atau Polygon, baru deposit ke Aave. Perhatikan biaya penarikan exchange dan pastikan jaringan penarikan sama dengan jaringan yang Anda pakai di Aave, karena salah jaringan berisiko kehilangan dana.',
+      },
+      {
+        q: 'Apakah ada stablecoin rupiah di Aave?',
+        a: 'Reserve Aave yang likuid hampir semuanya stablecoin dolar (USDC, USDT, DAI); stablecoin rupiah belum tersedia sebagai reserve. Artinya, saat Anda menghitung hasil dalam rupiah, ada risiko kurs USD/IDR di atas APY yang ditampilkan — kurs bisa menambah atau mengurangi hasil akhir.',
+      },
+      {
+        q: 'Berapa modal minimum yang masuk akal?',
+        a: 'Tidak ada minimum di protokol, tetapi biaya jaringan menentukan kelayakannya. Di L2 seperti Base atau Polygon, deposit beberapa juta rupiah sudah masuk akal karena gas hanya ratusan rupiah. Di Ethereum mainnet, biaya transaksi bisa menghabiskan hasil beberapa bulan untuk nominal kecil, jadi sebaiknya dipakai untuk posisi besar saja.',
+      },
     ],
   },
   related: {
