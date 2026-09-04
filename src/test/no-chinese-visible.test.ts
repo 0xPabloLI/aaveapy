@@ -21,7 +21,8 @@ function globSourceFiles(dir: string): string[] {
       if (!EXCLUDE_DIRS.has(entry)) results.push(...globSourceFiles(rel));
     } else if (
       (extname(entry) === '.ts' || extname(entry) === '.tsx') &&
-      !EXCLUDE_SUFFIXES.some((s) => entry.endsWith(s))
+      !EXCLUDE_SUFFIXES.some((s) => entry.endsWith(s)) &&
+      !EXCLUDE_FILES.has(rel)
     ) {
       results.push(rel);
     }
