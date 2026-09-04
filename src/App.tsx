@@ -44,6 +44,10 @@ const AaveTauxApyFR = lazy(() => import("./pages/AaveTauxApyFR"));
 const AaveZinsenApyDE = lazy(() => import("./pages/AaveZinsenApyDE"));
 const AaveTasasApyES = lazy(() => import("./pages/AaveTasasApyES"));
 const AaveApyID = lazy(() => import("./pages/AaveApyID"));
+const AaveApyJA = lazy(() => import("./pages/AaveApyJA"));
+const AaveTassiApyIT = lazy(() => import("./pages/AaveTassiApyIT"));
+const AaveStavkiApyRU = lazy(() => import("./pages/AaveStavkiApyRU"));
+const AaveApyZH = lazy(() => import("./pages/AaveApyZH"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +109,10 @@ const App = () => (
                         <Route path="/de/aave-zinsen-apy" element={<AaveZinsenApyDE />} />
                         <Route path="/es/tasas-aave-apy" element={<AaveTasasApyES />} />
                         <Route path="/id/apy-aave" element={<AaveApyID />} />
+                        <Route path="/ja/aave-kinri-apy" element={<AaveApyJA />} />
+                        <Route path="/it/tassi-aave-apy" element={<AaveTassiApyIT />} />
+                        <Route path="/ru/stavki-aave-apy" element={<AaveStavkiApyRU />} />
+                        <Route path="/zh/aave-lilv-apy" element={<AaveApyZH />} />
 
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
