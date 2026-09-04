@@ -9,8 +9,8 @@ const STRING_LITERAL_RE = /['"`]([^'"`]*[\u4e00-\u9fff][^'"`]*)['"`]/g;
 
 const EXCLUDE_DIRS = new Set(['test', '__tests__']);
 const EXCLUDE_SUFFIXES = ['.test.ts', '.test.tsx', '.stories.tsx', '.d.ts'];
-// Localized landing pages whose Chinese content is intentional (target-market copy).
-const EXCLUDE_FILES = new Set(['./pages/AaveApyZH.tsx']);
+// Localized landing pages whose CJK content is intentional (target-market copy).
+const EXCLUDE_FILES = new Set(['./pages/AaveApyZH.tsx', './pages/AaveApyJA.tsx']);
 
 function globSourceFiles(dir: string): string[] {
   const results: string[] = [];
