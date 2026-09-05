@@ -48,6 +48,12 @@ export default defineConfig({
       testIgnore: [
         /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
         /reserves-table-simulation-nested-scroll\.spec\.ts/,
+        // RainbowKit's mobile modal only renders wallets passed via its
+        // `wallets` prop, which the app does not configure — the injected
+        // connect list is empty on mobile (existing product behavior, see
+        // docs/specs/e2e-wallet-connect-injected.md). Lifecycle assertions
+        // would fail against an empty modal, so this spec runs desktop-only.
+        /wallet-connect-injected\.spec\.ts/,
       ],
       use: {
         ...devices['Pixel 7'],
