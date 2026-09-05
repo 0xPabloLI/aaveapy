@@ -22,15 +22,15 @@ const content: RatesPageContent = {
       h2: 'Come funziona il protocollo Aave',
       paragraphs: [
         'Aave è un mercato di liquidità non custodiale: nessuno detiene i tuoi fondi, le regole vivono in smart contract pubblici. Chi deposita riceve aToken il cui saldo cresce automaticamente con gli interessi maturati.',
-        'Chi prende in prestito deve depositare un collaterale superiore al debito (overcollateralizzazione) e paga interessi alla pool. I tassi non sono decisi da nessuno: derivano da una curva legata all’utilizzo, cioè alla quota di liquidità effettivamente presa in prestito.',
-        'Se il valore del collaterale scende e l’health factor va sotto 1, la posizione può essere liquidata: un terzo ripaga parte del debito ricevendo collaterale con un bonus.',
+        'Chi prende in prestito deve depositare un collaterale superiore al debito (sovracollateralizzazione) e paga interessi alla pool. I tassi non li decide nessuno: derivano da una curva legata all’utilizzo, cioè alla quota di liquidità effettivamente presa in prestito.',
+        'Se il valore del collaterale scende e l’health factor va sotto 1, la posizione può essere liquidata: un liquidatore esterno ripaga parte del debito e riceve in cambio collaterale scontato.',
       ],
     },
     {
       id: 'v3',
       h2: 'Cosa cambia con Aave V3',
       paragraphs: [
-        'La V3 è nativamente multichain: la stessa riserva esiste su più reti con pool e tassi indipendenti. Parlare del “tasso Aave su USDC” non ha senso senza indicare la rete.',
+        'La V3 nasce multichain: la stessa riserva esiste su più reti, con pool e tassi del tutto indipendenti. Parlare del “tasso Aave su USDC” senza indicare la rete non significa nulla.',
         'Si aggiungono E-Mode (maggiore capacità di prestito tra asset correlati come ETH e LST), isolation mode (asset nuovi con tetto di debito dedicato) e supply/borrow cap per riserva. Vicino ai cap i tassi diventano molto più volatili.',
       ],
     },
@@ -39,16 +39,16 @@ const content: RatesPageContent = {
       h2: 'Di cosa è fatto l’APY che vedi',
       paragraphs: [
         'Ogni numero in dashboard si scompone in tasso base del protocollo e APR da incentivi. Il tasso base è calcolato dalla curva; gli incentivi arrivano da programmi come Merit, Merkl e Brevis.',
-        'Gli incentivi hanno budget e scadenza: non sono rendimento strutturale. Prima di scegliere una riserva conviene guardare il tasso base da solo e chiedersi se resta interessante quando la campagna finisce.',
+        'Gli incentivi hanno un budget e una scadenza: non sono rendimento strutturale. Prima di scegliere una riserva conviene guardare il tasso base da solo e chiedersi se resta interessante una volta chiusa la campagna.',
       ],
     },
     {
       id: 'esempio',
       h2: 'Esempio: 10.000 € in USDC su Base',
       paragraphs: [
-        'Con 10.000 € equivalenti in USDC depositati su Base e un APY di deposito del 4,2 %, il rendimento lordo annuo è di circa 420 €, poco più di 35 € al mese. È una proiezione a tasso fermo: nella realtà il tasso si muove ogni blocco.',
+        'Con 10.000 € equivalenti in USDC depositati su Base e un APY di deposito del 4,2 %, gli interessi annui sono circa 420 €, poco più di 35 € al mese. È una proiezione a tasso fermo: nella realtà il tasso si muove a ogni blocco.',
         'Se sulla stessa riserva è attivo un incentivo Merit dell’1,8 % APR, il rendimento effettivo sale intorno al 6 %, cioè circa 600 € l’anno. La differenza tra tasso base e APY effettivo è esattamente quella evidenziata in dashboard.',
-        'Lato prestito: 10.000 € di collaterale in ETH con 4.000 € presi in prestito in USDC a un APY del 5,5 % costano circa 220 € l’anno. Su Base le commissioni di rete sono di pochi centesimi, mentre su Ethereum mainnet possono erodere il rendimento di importi contenuti.',
+        'Lato prestito: con 10.000 € di collaterale in ETH e 4.000 € presi in prestito in USDC a un APY del 5,5 %, il costo è di circa 220 € l’anno. Su Base le commissioni di rete sono di pochi centesimi, mentre su Ethereum mainnet possono erodere il rendimento di importi contenuti.',
       ],
     },
   ],
@@ -97,11 +97,11 @@ const content: RatesPageContent = {
       },
       {
         q: 'Come vengono tassati in Italia i rendimenti da DeFi?',
-        a: 'I redditi da cripto-attività sono generalmente ricondotti alla disciplina dei redditi diversi, con obblighi di monitoraggio nel quadro RW e possibile imposta sul valore delle cripto-attività. Le interpretazioni su staking e lending variano: conviene rivolgersi a un commercialista.',
+        a: 'I redditi da cripto-attività rientrano di norma tra i redditi diversi, con obblighi di monitoraggio nel quadro RW e possibile imposta sul valore delle cripto-attività. Sulle rendite da staking e lending le interpretazioni variano: conviene farsi seguire da un commercialista.',
       },
       {
         q: 'Aave rientra nella normativa MiCA?',
-        a: 'MiCA regola principalmente emittenti e prestatori di servizi; un protocollo pienamente decentralizzato e non custodiale si trova in un’area ancora in via di definizione. Consob e le autorità europee stanno chiarendo progressivamente il perimetro.',
+        a: 'MiCA regola soprattutto emittenti e prestatori di servizi su cripto-attività; un protocollo pienamente decentralizzato e non custodiale resta in un’area ancora da definire. Consob e le autorità europee stanno chiarendo il perimetro progressivamente.',
       },
       {
         q: 'Esistono stablecoin in euro utilizzabili su Aave?',
@@ -117,7 +117,7 @@ const content: RatesPageContent = {
       },
       {
         q: 'Come si riduce il rischio di liquidazione?',
-        a: 'Mantenendo un health factor con margine ampio, evitando collaterali molto volatili rispetto al debito e tenendo liquidità pronta per rimborsare o aggiungere collaterale nei momenti di stress.',
+        a: 'Tenendo un health factor con ampio margine, evitando collaterali molto volatili rispetto al debito e conservando liquidità pronta per rimborsare o integrare il collaterale nei momenti di stress.',
       },
       {
         q: 'Da dove arrivano i dati mostrati?',
