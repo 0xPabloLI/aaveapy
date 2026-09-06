@@ -106,9 +106,16 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonical} />
         <meta property="og:locale" content={content.ogLocale} />
+        <meta property="og:site_name" content="AaveAPY" />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={ogImageAlt} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={content.title} />
         <meta name="twitter:description" content={content.description} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:image:alt" content={ogImageAlt} />
         <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
