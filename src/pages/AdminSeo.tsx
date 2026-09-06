@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
+import LocalizedPagesPanel from "@/components/admin/LocalizedPagesPanel";
 import { formatPercent, formatReserveSizeToken, formatUsd } from "@/lib/formatters";
 
 type RangePreset = "7d" | "28d" | "90d";
