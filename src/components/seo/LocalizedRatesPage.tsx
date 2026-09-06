@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
+import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
@@ -57,6 +58,7 @@ const TrackedLink = ({ trackLabel, page, onClick, ...props }: TrackedLinkProps) 
 export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
   const analyticsPage = content.path.replace(/^\//, '');
   useTimeOnPage(analyticsPage);
+  useStripStaticHeadTags();
 
   const canonical = `${SITE_ORIGIN}${content.path}`;
   const ogImage = content.ogImage ?? DEFAULT_OG_IMAGE;
