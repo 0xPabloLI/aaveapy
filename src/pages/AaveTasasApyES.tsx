@@ -4,7 +4,7 @@ const content: RatesPageContent = {
   path: '/es/tasas-aave-apy',
   lang: 'es',
   ogLocale: 'es_ES',
-  title: 'Tasas y APY de Aave V3 — lending en tiempo real',
+  title: 'Tasas Aave V3 y APY — lending cripto en tiempo real',
   description:
     'Compara las tasas (APY) de depósito y préstamo de Aave V3 en todas las redes, entiende cómo funciona el protocolo Aave y cómo los incentivos afectan al rendimiento real del lending.',
   h1: 'Tasas y APY de Aave V3: cómo se forma el rendimiento',

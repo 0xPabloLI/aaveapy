@@ -4,7 +4,7 @@ const content: RatesPageContent = {
   path: '/de/aave-zinsen-apy',
   lang: 'de',
   ogLocale: 'de_DE',
-  title: 'Aave Zinsen und APY V3 — Lending-Renditen in Echtzeit',
+  title: 'Aave Zinsen & APY — Lending-Rendite V3 in Echtzeit',
   description:
     'Vergleiche die Aave-V3-Zinsen (APY) für Einlagen und Kredite über alle Netzwerke, verstehe wie das Aave-Protokoll funktioniert und wie Anreizprogramme die reale Rendite verändern.',
   h1: 'Aave Zinsen und APY in V3: so entsteht die Rendite',
