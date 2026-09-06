@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
+import LocalizedPagesPanel from "@/components/admin/LocalizedPagesPanel";
 import { formatPercent, formatReserveSizeToken, formatUsd } from "@/lib/formatters";
 
 type RangePreset = "7d" | "28d" | "90d";
@@ -201,6 +202,13 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
               Refresh
             </Button>
           </div>
+
+          {/* Localized page scoreboard */}
+          {gscQuery.isLoading ? (
+            <Skeleton className="h-40 w-full mb-8" />
+          ) : (
+            <LocalizedPagesPanel rows={gscRows} />
+          )}
 
           {/* GSC section */}
           <section className="mb-8">
