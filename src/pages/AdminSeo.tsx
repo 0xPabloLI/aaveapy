@@ -203,6 +203,13 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
             </Button>
           </div>
 
+          {/* Localized page scoreboard */}
+          {gscQuery.isLoading ? (
+            <Skeleton className="h-40 w-full mb-8" />
+          ) : (
+            <LocalizedPagesPanel rows={gscRows} />
+          )}
+
           {/* GSC section */}
           <section className="mb-8">
             <div className="flex items-baseline justify-between mb-3">
