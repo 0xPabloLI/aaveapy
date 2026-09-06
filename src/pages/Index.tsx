@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
@@ -565,8 +565,33 @@ const onchainHfResult = useOnchainHealthFactor({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <Helmet>
+        <title>Aave APY — Live Aave V3 &amp; V4 Rates by Chain</title>
+        <meta
+          name="description"
+          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track Merit, Merkl and Brevis incentives, and simulate your portfolio yield."
+        />
         <link rel="canonical" href={`${SITE_ORIGIN}/`} />
+        <meta property="og:title" content="Aave APY — Live Aave V3 & V4 Rates by Chain" />
+        <meta
+          property="og:description"
+          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track incentives, and simulate your portfolio yield."
+        />
+        <meta property="og:url" content={`${SITE_ORIGIN}/`} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'AaveAPY',
+            url: `${SITE_ORIGIN}/`,
+            applicationCategory: 'FinanceApplication',
+            operatingSystem: 'Web',
+            description:
+              'Live Aave APY tracker for Aave V3 and V4 supply and borrow rates across all supported chains, including Merit, Merkl and Brevis incentives.',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          })}
+        </script>
       </Helmet>
+
       <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
@@ -802,6 +827,22 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                   Brevis
                 </a>
               </p>
+
+              <nav aria-label="More from AaveAPY">
+                <p className="text-center ds-text-14 text-muted-foreground leading-relaxed">
+                  <Link to="/defi-yield-tracker" className="text-secondary hover:underline">
+                    DeFi Yield Tracker
+                  </Link>
+                  {' · '}
+                  <Link to="/usa-stablecoin-apy" className="text-secondary hover:underline">
+                    USA Stablecoin APY
+                  </Link>
+                  {' · '}
+                  <Link to="/pt-br/taxas-aave-apy" className="text-secondary hover:underline">
+                    Taxas e APY da Aave (PT-BR)
+                  </Link>
+                </p>
+              </nav>
 
               <p className="text-xs sm:text-sm text-signature opacity-85">
                 Built with ❤️ by{' '}

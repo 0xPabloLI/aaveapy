@@ -71,7 +71,7 @@ function makeMockClient(multicallResult: unknown[]) {
   const mockMulticall = vi.fn().mockResolvedValue(multicallResult)
   const client = {
     multicall: mockMulticall,
-  } as unknown as ReturnType<typeof createPublicClient>
+  } as unknown as Parameters<typeof getV3UserPositionsOnChain>[4]
   return { client, mockMulticall }
 }
 

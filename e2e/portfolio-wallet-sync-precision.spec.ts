@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Wallet Sync precision regression.
@@ -15,7 +15,30 @@ import { expect, test } from '@playwright/test';
  *   E2E_WATCH_ADDRESS=0x...    (skips otherwise)
  */
 
-import { WATCH_ADDRESS } from './test-wallets';
+import { WATCH_ADDRESS, waitForWalletControls } from './test-wallets';
+import { setupPortfolioMode } from './test-reserves';
+
+/**
+ * Open the Watch-address input. On mobile the Connect / View-address
+ * affordances are compacted behind a "Wallet actions" icon Popover, so the
+ * "View address" button is not directly visible — fall back to the popover.
+ */
+async function openViewAddress(page: Page) {
+  await waitForWalletControls(page);
+  const direct = page.getByRole('button', { name: /View address/i });
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.first().click();
+    return;
+  }
+  const viewing = page.getByRole('button', { name: /Viewing 0x/i });
+  if (await viewing.isVisible().catch(() => false)) {
+    await viewing.click();
+    await page.getByRole('button', { name: /View another address/i }).click();
+    return;
+  }
+  await page.getByRole('button', { name: /Wallet actions/i }).click();
+  await page.getByRole('button', { name: /View address/i }).first().click();
+}
 
 /** Max significant digits emitted by `formatConvertedAmount`. */
 const MAX_SIG_DIGITS = 8;
@@ -35,18 +58,20 @@ function significantDigits(raw: string): number {
 test.describe('Portfolio — Wallet Sync precision', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
-    test.skip(!!process.env.CI, 'Requires live Aave SDK GraphQL connections — run locally');
+    test.skip(
+      !!process.env.CI,
+      'Requires live Aave SDK GraphQL connections — run locally (set E2E_PROXY if your network needs a proxy)',
+    );
   });
 
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
     test.setTimeout(180_000);
-    await page.goto('/');
 
-    // Enable portfolio mode.
-    await page.getByText('Portfolio', { exact: true }).first().click();
+    // Enable portfolio mode (also waits for the app-ready signal).
+    await setupPortfolioMode(page);
 
     // Open Watch Address input, submit the address.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput.fill(WATCH_ADDRESS!);
     await addrInput.press('Enter');
@@ -84,8 +109,12 @@ test.describe('Portfolio — Wallet Sync precision', () => {
 
     // And the populated value set should not regress to longer strings than
     // what we saw on the first render (the precision should be identical).
+    // Determinism guard: the same address re-synced produces identical values,
+    // so the max significant-digit count must match EXACTLY. A loose `≤` would
+    // mask a precision-loss regression (fewer digits after resync). See
+    // docs/specs/e2e-suite-boundary-cleanup.md (T6, S19).
     const maxBefore = Math.max(...initial.map(significantDigits));
     const maxAfter = Math.max(...after.map(significantDigits));
-    expect(maxAfter).toBeLessThanOrEqual(maxBefore);
+    expect(maxAfter, `precision after resync (${maxAfter}) must equal initial (${maxBefore})`).toBe(maxBefore);
   });
 });

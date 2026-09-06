@@ -110,7 +110,7 @@ describe('watchModeConnector', () => {
     it('exposes a read-only EIP-1193 provider for RainbowKit compatibility', async () => {
       const { connector, connectorFn } = createTestConfig()
       connectorFn.setWatchAddress(TEST_ADDRESS)
-      const provider = await connector.getProvider()
+      const provider = await connector.getProvider() as { request: (args: { method: string }) => Promise<unknown> }
 
       await expect(provider.request({ method: 'eth_accounts' })).resolves.toEqual([TEST_ADDRESS])
       await expect(provider.request({ method: 'eth_chainId' })).resolves.toBe('0x1')
@@ -124,7 +124,7 @@ describe('watchModeConnector', () => {
       connectorFn.setWatchAddress(TEST_ADDRESS)
       await connector.connect({ chainId: mainnet.id })
       await expect(
-        connector.signMessage({ message: 'test' })
+        (connector.signMessage as (a: { message: string }) => Promise<unknown>)({ message: 'test' })
       ).rejects.toThrow(READ_ONLY_ERROR)
     })
 
@@ -133,7 +133,7 @@ describe('watchModeConnector', () => {
       connectorFn.setWatchAddress(TEST_ADDRESS)
       await connector.connect({ chainId: mainnet.id })
       await expect(
-        connector.signTypedData({
+        (connector.signTypedData as (a: Record<string, unknown>) => Promise<unknown>)({
           domain: {},
           types: { EIP712Domain: [] },
           primaryType: 'Test',

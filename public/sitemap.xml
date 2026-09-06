@@ -66,4 +66,49 @@
   <url><loc>https://aaveapy.com/asset/wbtc</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/asset/dai</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/asset/gho</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url>
+    <loc>https://aaveapy.com/pt-br/taxas-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/fr/taux-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/de/aave-zinsen-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/es/tasas-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/id/apy-aave</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/ja/aave-kinri-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/it/tassi-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/ru/stavki-aave-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://aaveapy.com/zh/aave-lilv-apy</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>

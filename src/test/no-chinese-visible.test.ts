@@ -9,6 +9,8 @@ const STRING_LITERAL_RE = /['"`]([^'"`]*[\u4e00-\u9fff][^'"`]*)['"`]/g;
 
 const EXCLUDE_DIRS = new Set(['test', '__tests__']);
 const EXCLUDE_SUFFIXES = ['.test.ts', '.test.tsx', '.stories.tsx', '.d.ts'];
+// Localized landing pages whose CJK content is intentional (target-market copy).
+const EXCLUDE_FILES = new Set(['./pages/AaveApyZH.tsx', './pages/AaveApyJA.tsx']);
 
 function globSourceFiles(dir: string): string[] {
   const results: string[] = [];
@@ -19,7 +21,8 @@ function globSourceFiles(dir: string): string[] {
       if (!EXCLUDE_DIRS.has(entry)) results.push(...globSourceFiles(rel));
     } else if (
       (extname(entry) === '.ts' || extname(entry) === '.tsx') &&
-      !EXCLUDE_SUFFIXES.some((s) => entry.endsWith(s))
+      !EXCLUDE_SUFFIXES.some((s) => entry.endsWith(s)) &&
+      !EXCLUDE_FILES.has(rel)
     ) {
       results.push(rel);
     }

@@ -45,7 +45,7 @@ describe('discoverUnregisteredChains (bulk API)', () => {
       ]),
     ).mockResolvedValueOnce(
       mockBulkChainlistOrg([
-        { chainId: 4326, name: 'MegaETH', rpc: [{ url: 'https://megaeth.drpc.org', tracking: 'none' }] },
+        { chainId: 4326, name: 'MegaETH', rpc: [{ url: 'https://megaeth.drpc.org' }] },
       ]),
     )
 
@@ -168,7 +168,7 @@ describe('discoverUnregisteredChains (bulk API)', () => {
           chainId: 4326,
           name: 'MegaETH',
           rpc: [
-            { url: 'https://megaeth.drpc.org', tracking: 'none' },
+            { url: 'https://megaeth.drpc.org' },
             { url: 'https://mainnet.megaeth.com/rpc' },
             'https://rpc-megaeth-mainnet.globalstake.io',
           ],

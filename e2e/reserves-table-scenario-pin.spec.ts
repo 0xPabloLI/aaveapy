@@ -195,6 +195,50 @@ async function getScrollByProbeCount(page: Parameters<typeof test>[0]['page']): 
   });
 }
 
+// The pin controller reacts to sortedIds at per-commit granularity; a coarse
+// before/after DOM snapshot misses intermediate reorders that restore before
+// the next read (seen in a pre-push trace: schedule fired while the final DOM
+// order equalled the baseline). This observer closes that detection gap.
+async function armOrderProbe(page: Parameters<typeof test>[0]['page']) {
+  await page.evaluate(() => {
+    type OrderProbeWindow = Window & {
+      __e2eOrderBaseline?: string[];
+      __e2eOrderReordered?: boolean;
+      __e2eOrderObserver?: MutationObserver | null;
+    };
+    const win = window as OrderProbeWindow;
+    const readOrder = () =>
+      Array.from(document.querySelectorAll('tbody tr[data-reserve-id]')).map(
+        (row) => row.getAttribute('data-reserve-id') ?? '',
+      );
+    if (!win.__e2eOrderObserver) {
+      const observer = new MutationObserver(() => {
+        const baseline = win.__e2eOrderBaseline;
+        if (!baseline) return;
+        const order = readOrder();
+        if (
+          order.length !== baseline.length ||
+          order.some((id, idx) => id !== baseline[idx])
+        ) {
+          win.__e2eOrderReordered = true;
+        }
+      });
+      const tbody = document.querySelector('tbody');
+      if (tbody) observer.observe(tbody, { childList: true });
+      win.__e2eOrderObserver = observer;
+    }
+    win.__e2eOrderBaseline = readOrder();
+    win.__e2eOrderReordered = false;
+  });
+}
+
+async function getOrderProbeReordered(page: Parameters<typeof test>[0]['page']): Promise<boolean> {
+  return page.evaluate(() => {
+    type OrderProbeWindow = Window & { __e2eOrderReordered?: boolean };
+    return (window as OrderProbeWindow).__e2eOrderReordered ?? false;
+  });
+}
+
 test.describe('Scenario input pin scroll (desktop)', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
     test.skip(
@@ -285,6 +329,7 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       const beforeOrder = await getVisibleReserveOrder(page);
       await moveExpandedRowAwayFromPinBand(page, reserveId);
       await resetScrollByProbe(page);
+      await armOrderProbe(page);
       await setScenarioInputs(page, step);
       // Wait for the table sort to stabilize (two consecutive reads with same order).
       // Just checking order.length > 0 is insufficient — the sort may still be in progress.
@@ -298,8 +343,10 @@ test.describe('Scenario input pin scroll (desktop)', () => {
         { timeout: 15_000, message: `table sort to stabilize after scenario step ${i + 1}` },
       ).toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
+      const finalReorder = didReorder(beforeOrder, afterOrder, reserveId);
+      const transientReorder = !finalReorder && (await getOrderProbeReordered(page));
 
-      if (!didReorder(beforeOrder, afterOrder, reserveId)) {
+      if (!finalReorder && !transientReorder) {
         // Non-reorder: wait a bit to confirm no pin scroll fires.
         await page.waitForTimeout(500);
         const scrollByCalls = await getScrollByProbeCount(page);
@@ -311,6 +358,13 @@ test.describe('Scenario input pin scroll (desktop)', () => {
         // (without reorder) can still shift the row's absolute position via
         // virtual scroll / pagination adjustments — without calling window.scrollBy.
         // The scrollByCalls === 0 assertion above is the correct invariant.
+        continue;
+      }
+
+      if (transientReorder) {
+        // Debounce-window reorder that restored by the final snapshot: the
+        // app legitimately pinned to the intermediate order (or may have —
+        // pins are allowed, not required). Final geometry doesn't apply.
         continue;
       }
 

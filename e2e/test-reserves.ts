@@ -146,7 +146,11 @@ export async function setupPortfolioWithReserve(
   reserve: TestReserve,
 ): Promise<Locator> {
   await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
+  // App-ready signal: the portfolio-mode toggle renders in both modes (single
+  // mode: ScenarioControls header; portfolio mode: PortfolioPanel) only after
+  // market data loads. The previous signal — the "Borrow amount" input — is
+  // layout/state-dependent and flapped under parallel load.
+  await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('portfolio-mode-toggle').click();
   await page.getByRole('button', { name: 'Search tokens' }).click();
   await page.getByRole('textbox', { name: 'Search tokens to add' }).fill(reserve.symbol);
@@ -180,4 +184,152 @@ export async function setupPortfolioWithReserve(
     .first();
   await expect(supplyInput).toBeVisible();
   return supplyInput;
+}
+
+// ─── Portfolio simulation UI helpers ───────────────────────────────
+//
+// Shared by the portfolio cross-reserve / cross-asset E2E specs
+// (e.g. portfolio-cross-reserve-offset, portfolio-cross-asset-pairing).
+// They mirror the granular add/fill flow those specs use to add multiple
+// reserves in sequence — distinct from setupPortfolioWithReserve, which adds
+// a single reserve and returns the supply input.
+
+/** Navigate to the app and enter portfolio simulation mode. */
+export async function setupPortfolioMode(page: Page) {
+  await page.goto('/');
+  // App-ready signal: the portfolio-mode toggle renders in both modes (single
+  // mode: ScenarioControls header; portfolio mode: PortfolioPanel) only after
+  // market data loads. The previous signal — the "Borrow amount" input — is
+  // layout/state-dependent and flapped under parallel load.
+  await expect(page.getByTestId('portfolio-mode-toggle')).toBeVisible({
+    timeout: 120_000,
+  });
+  await page.getByTestId('portfolio-mode-toggle').click();
+}
+
+/**
+ * Open the token search (if needed) and add a reserve by symbol + market label.
+ * Returns false if no matching "Add" button is found (caller should skip).
+ */
+export async function addReserveToPortfolio(
+  page: Page,
+  symbol: string,
+  marketLabel: string,
+): Promise<boolean> {
+  const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
+  if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
+    await page.getByRole('button', { name: 'Search tokens' }).click();
+  }
+  await searchInput.fill(symbol);
+  await page.waitForTimeout(500);
+
+  const addButtons = page.getByRole('button', {
+    name: `Add ${symbol} (supply and borrow)`,
+  });
+  const count = await addButtons.count();
+  if (count === 0) return false;
+  if (count === 1) {
+    await addButtons.first().click();
+    return true;
+  }
+  for (let i = 0; i < count; i++) {
+    const btn = addButtons.nth(i);
+    const text = await btn.textContent();
+    if (text && text.includes(marketLabel)) {
+      await btn.click();
+      return true;
+    }
+  }
+  await addButtons.first().click();
+  return true;
+}
+
+export async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
+  const input = page
+    .getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') })
+    .first();
+  await input.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await expect(input).toBeVisible({ timeout: 5000 });
+  await input.fill(amount);
+  await page.waitForTimeout(800);
+}
+
+export async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
+  const input = page
+    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
+    .first();
+  await expect(input).toBeVisible({ timeout: 5000 });
+  await input.fill(amount);
+  await page.waitForTimeout(800);
+}
+
+export async function fillBorrowAmountMobile(
+  page: Page,
+  reserveId: string,
+  symbol: string,
+  amount: string,
+) {
+  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
+  await card.waitFor({ state: 'attached', timeout: 10000 });
+  // Ensure the card is in viewport (InkAprCalculator + TopOpportunities push cards down on mobile)
+  await card.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+  await page.waitForTimeout(500);
+  // Note: Borrow is a role="tab" element, not role="button"
+  const borrowTab = card.getByRole('tab', { name: 'Borrow', exact: true });
+  await borrowTab.waitFor({ state: 'visible', timeout: 10000 });
+  const tabState = await borrowTab.getAttribute('aria-selected');
+  if (tabState !== 'true') {
+    await borrowTab.click();
+    await page.waitForTimeout(300);
+  }
+  const input = card
+    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
+    .first();
+  await expect(input).toBeVisible({ timeout: 5000 });
+  await input.fill(amount);
+  await page.waitForTimeout(800);
+}
+
+/**
+ * Read the incentive "after" value for a reserve's supply or borrow side.
+ * Returns 0 if the cell has no data-after span (no incentive).
+ * Works for both desktop (table row) and mobile (card) layouts.
+ */
+export async function readIncentiveAfter(
+  page: Page,
+  reserveId: string,
+  side: 'supply' | 'borrow',
+  isMobile: boolean,
+): Promise<number> {
+  const cellName = side === 'supply' ? 'supply-incentive' : 'borrow-incentive';
+
+  if (isMobile) {
+    const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
+    await card.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(300);
+    // Note: Supply/Borrow are role="tab" elements, not role="button"
+    const tab = card.getByRole('tab', {
+      name: side === 'supply' ? 'Supply' : 'Borrow',
+      exact: true,
+    });
+    if (await tab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await tab.click();
+      await page.waitForTimeout(300);
+    }
+    const afterSpan = card
+      .locator(`span[data-cell="${cellName}"] span[data-after]`)
+      .first();
+    const hasAfterSpan = (await afterSpan.count()) > 0;
+    if (!hasAfterSpan) return 0;
+    const attr = await afterSpan.getAttribute('data-after');
+    return attr ? parseFloat(attr) : 0;
+  }
+
+  const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
+  const incentiveCell = row.locator(`td[data-cell="${cellName}"]`);
+  const afterSpan = incentiveCell.locator('span[data-after]').first();
+  const hasAfterSpan = (await afterSpan.count()) > 0;
+  if (!hasAfterSpan) return 0;
+  const attr = await afterSpan.getAttribute('data-after');
+  return attr ? parseFloat(attr) : 0;
 }

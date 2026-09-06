@@ -1,35 +1,24 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
- * Visual regression screenshot tests for SegmentedToggle (vertical & horizontal).
+ * Geometry / computed-style regression guards for SegmentedToggle
+ * (vertical & horizontal orientations, size variants, indicator slide).
  *
- * Uses `toHaveScreenshot()` for automatic pixel-diff snapshot comparison.
- * Captures the component in-situ within the live dashboard at both desktop and
- * mobile viewports, covering:
+ * These assertions catch layout-collapse and token-drift regressions WITHOUT
+ * pixel screenshot baselines. Pixel diffs are intentionally avoided: they are
+ * macOS-render-specific, skipped in CI, and cannot distinguish a real regression
+ * from a font/antialias drift. See docs/specs/e2e-suite-boundary-cleanup.md (T3).
+ *
+ * Covered:
  * - Track border-radius (rounded-2xl vertical / rounded-full horizontal)
  * - Indicator border-radius (rounded-xl vertical / rounded-full horizontal)
  * - Segment gap (--ds-seg-gap: 0.125rem)
- * - Active segment styling (bg-card indicator, font-semibold text)
+ * - Active segment styling (font-semibold text)
  * - Size variants (default vs chip)
- *
- * Bounding-box assertions guard against layout collapse regressions.
- * Screenshot baselines are platform-specific (darwin/linux). CI runs on Linux
- * but baselines were generated on macOS, so `toHaveScreenshot()` is skipped in
- * CI. Run `npx playwright test --update-snapshots` locally to regenerate.
+ * - Active indicator slides on click
  */
 
-/**
- * Skip `toHaveScreenshot()` in CI — baselines are macOS-specific and
- * Playwright reports "no baseline" as a FAILURE (not a pass) on first run.
- * Run `npx playwright test --update-snapshots` locally to generate baselines.
- */
-async function expectScreenshot(locator: Locator, _label: string) {
-  if (process.env.CI) return; // Skip screenshot comparison in CI
-  await expect(locator).toHaveScreenshot(undefined, { maxDiffPixelRatio: 0.01 });
-}
-
-test.describe('SegmentedToggle — visual regression', () => {
-  test.describe.configure({ mode: process.env.CI ? 'skip' as const : 'default' });
+test.describe('SegmentedToggle — geometry regression', () => {
   test.describe('vertical orientation (ScenarioControls mobile)', () => {
     test('vertical toggle renders with correct radii and spacing at mobile viewport', async ({ page }, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile-only check');
@@ -88,8 +77,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         indicatorRadius,
         'vertical indicator should use rounded-xl (not fully rounded)',
       ).not.toBe('9999px');
-
-      await expectScreenshot(verticalToggle, 'vertical toggle');
     });
   });
 
@@ -149,8 +136,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         trackRadius,
         'horizontal track should use rounded-full',
       ).toBe('9999px');
-
-      await expectScreenshot(horizontalToggle, 'horizontal toggle desktop');
     });
 
     test('AprApyToggle (chip size) renders at desktop viewport', async ({ page }, testInfo) => {
@@ -172,8 +157,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         trackBox.height,
         'chip toggle height should be ≤ 28px (smaller than default 2rem)',
       ).toBeLessThanOrEqual(28);
-
-      await expectScreenshot(aprApyGroup, 'AprApyToggle desktop');
     });
 
     test('AprApyToggle (chip size) renders at mobile viewport', async ({ page }, testInfo) => {
@@ -192,8 +175,6 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const trackBox = await aprApy.boundingBox();
       expect(trackBox, 'AprApyToggle mobile track must render').not.toBeNull();
-
-      await expectScreenshot(aprApy, 'AprApyToggle mobile');
     });
   });
 
@@ -212,7 +193,6 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      // Wait for indicator to slide to new position.
       await expect.poll(
         async () => {
           const box = await indicator.boundingBox();
@@ -231,8 +211,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         Math.abs(indicatorBoxAfter.x - indicatorBoxBefore.x) > 1 ||
         Math.abs(indicatorBoxAfter.y - indicatorBoxBefore.y) > 1;
       expect(moved, 'indicator should slide to the newly active segment').toBe(true);
-
-      await expectScreenshot(horizontalToggle, 'indicator desktop');
     });
 
     test('clicking a segment slides the indicator vertically (mobile)', async ({ page }, testInfo) => {
@@ -249,7 +227,6 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      // Wait for indicator to slide vertically to new position.
       await expect.poll(
         async () => {
           const box = await indicator.boundingBox();
@@ -268,8 +245,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         Math.abs(indicatorBoxAfter.y - indicatorBoxBefore.y) > 1 ||
         Math.abs(indicatorBoxAfter.x - indicatorBoxBefore.x) > 1;
       expect(moved, 'indicator should slide vertically to the newly active segment').toBe(true);
-
-      await expectScreenshot(verticalToggle, 'indicator mobile');
     });
   });
 });

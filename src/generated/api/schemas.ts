@@ -1,11 +1,7 @@
 import { makeApi, Zodios, type ZodiosOptions } from "@zodios/core";
 import { z } from "zod";
 
-type MarketsResponse = MarketsResponse;
-
-const MarketsResponse: z.ZodType<MarketsResponse> = z.lazy(
-  () => MarketsResponse
-);
+const MarketsResponse: z.ZodTypeAny = z.lazy(() => MarketsResponse);
 const MerklBorrowHookProtocol = z.object({
   protocol: z.number(),
   borrowBytesLike: z.array(z.string()),
@@ -59,6 +55,7 @@ const SideDataPayload = z.object({
   campaignAccess: z
     .object({
       campaigns: z.record(
+        z.string(),
         z.object({
           chainId: z.number(),
           whitelist: z.array(z.string()),

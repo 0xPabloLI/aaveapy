@@ -28,12 +28,17 @@ If `VERCEL_AUTOMATION_BYPASS_SECRET` is missing, curl requests to Vercel-served 
 
 ### How the bypass works
 
-Both `site_check` and `deploy_url_check` steps construct a `BYPASS_HEADER` from the secret:
+Both `site_check` and `deploy_url_check` steps build curl args as a bash array, conditionally appending the bypass header:
 ```bash
-BYPASS_HEADER="-H x-vercel-protection-bypass:${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
-curl -L $BYPASS_HEADER "$SITE_URL"
+CURL_ARGS=(-s -o /tmp/page.html -w "%{http_code}" --max-time 30 -L "$SITE_URL")
+if [ -n "$VERCEL_BYPASS_SECRET" ]; then
+  CURL_ARGS+=(-H "x-vercel-protection-bypass:$VERCEL_BYPASS_SECRET")
+fi
+curl "${CURL_ARGS[@]}"
 ```
 Vercel recognises the `x-vercel-protection-bypass` header and skips the Authentication interstitial, returning the actual SPA HTML. Setup steps: `docs/setup-vercel-auth-bypass.md`.
+
+> **Why array, not `$BYPASS_HEADER`?** When the secret is empty, the old `-L $BYPASS_HEADER "$URL"` pattern expands to `-L "" "$URL"`, and the empty string is silently dropped — but in some shell contexts it can cause `-s` to be interpreted as a flag, producing `command not found` errors. The array approach is robust regardless of secret state.
 
 ## Deploy SHA verification
 
@@ -66,6 +71,18 @@ Linear tickets with the same title are created separately (e.g. via integration)
 GitHub exposes `github.ref_name` as a **short** branch name (e.g. `main`). Vercel deployment metadata often stores `meta.githubCommitRef` as a **full** ref (e.g. `refs/heads/main`). The workflow **normalizes** both sides in `jq` (strip a leading `refs/heads/` before comparing) so candidate selection does not silently find zero matches.
 
 When editing rollback logic, **do not** compare these fields as raw strings without normalization.
+
+## Auto-close on success
+
+When smoke test passes, the `Auto-close stale smoke-test-failure issues on success` step automatically finds and closes any open issues labeled `smoke-test-failure` for the same environment (preview/staging/production). A comment with the successful run details is added before closing.
+
+## Known failure modes and mitigations
+
+| Failure type | Root cause | Mitigation |
+| --- | --- | --- |
+| **Deployment not found** (600s timeout) | Vercel cancels queued deployment when a newer push supersedes it (mirrors GitHub Actions concurrency cancel) | Timeout now exits 0 (non-fatal) — newer push's smoke test covers the deployment. Also increased API `limit` from 5 to 20 to avoid missing deployments during rapid push sequences. |
+| **Missing deploy-sha meta** | Vercel Authentication interstitial returns HTTP 200 without SPA content | Configure `VERCEL_AUTOMATION_BYPASS_SECRET` (see Secrets section above) |
+| **Shell syntax error** (`-s: command not found`) | Empty `BYPASS_HEADER` variable expands incorrectly in curl args | Replaced all `$BYPASS_HEADER` patterns with bash array approach (see How the bypass works) |
 
 ## Related docs
 

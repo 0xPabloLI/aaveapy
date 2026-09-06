@@ -59,6 +59,7 @@ describe('aggregatePortfolioSummary', () => {
       {
         reserveId: 'r1',
         side: 'supply',
+        walletUsd: null,
         amountUsd: 10000,
         nativePercent: 3,
         incentivePercent: 1,
@@ -68,6 +69,7 @@ describe('aggregatePortfolioSummary', () => {
       {
         reserveId: 'r2',
         side: 'borrow',
+        walletUsd: null,
         amountUsd: 5000,
         nativePercent: 6,
         incentivePercent: 2,
@@ -90,6 +92,7 @@ describe('aggregatePortfolioSummary', () => {
       {
         reserveId: 'r2',
         side: 'borrow',
+        walletUsd: null,
         amountUsd: 5000,
         nativePercent: 6,
         incentivePercent: 0,
@@ -110,11 +113,11 @@ describe('aggregatePortfolioSummary', () => {
 
   it('aggregates multiple supply and borrow positions', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
-      { reserveId: 'r2', side: 'supply', amountUsd: 20000, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
-      { reserveId: 'r3', side: 'supply', amountUsd: 5000, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
-      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, nativePercent: 4, incentivePercent: 1, totalPercent: 3, usdPerDay: -0.6575 },
-      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, nativePercent: 6, incentivePercent: 0, totalPercent: 6, usdPerDay: -0.4932 },
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
+      { reserveId: 'r2', side: 'supply', amountUsd: 20000, walletUsd: null, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
+      { reserveId: 'r3', side: 'supply', amountUsd: 5000, walletUsd: null, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
+      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, walletUsd: null, nativePercent: 4, incentivePercent: 1, totalPercent: 3, usdPerDay: -0.6575 },
+      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, walletUsd: null, nativePercent: 6, incentivePercent: 0, totalPercent: 6, usdPerDay: -0.4932 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.totalSupplyUsd).toBe(35000);
@@ -129,7 +132,7 @@ describe('aggregatePortfolioSummary', () => {
 
   it('weighted APY with single supply position returns that position totalPercent', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.supplyWeightedApy).toBe(4);
@@ -145,12 +148,12 @@ describe('aggregatePortfolioSummary', () => {
   it('computes delta summary metrics from position metrics', () => {
     const results: PortfolioPositionResult[] = [
       {
-        reserveId: 'r1', side: 'supply', amountUsd: 10000,
+        reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null,
         nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1,
         usdPerDayMetric: { current: 0.9, after: 1.1, delta: 0.2 },
       },
       {
-        reserveId: 'r2', side: 'borrow', amountUsd: 5000,
+        reserveId: 'r2', side: 'borrow', amountUsd: 5000, walletUsd: null,
         nativePercent: 5, incentivePercent: 0, totalPercent: 5, usdPerDay: -0.68,
         usdPerDayMetric: { current: -0.5, after: -0.68, delta: -0.18 },
       },
@@ -170,7 +173,7 @@ describe('aggregatePortfolioSummary', () => {
 
   it('omits summary metrics when no position has metrics', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.supplyUsdPerDayMetric).toBeUndefined();

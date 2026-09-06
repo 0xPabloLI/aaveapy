@@ -27,6 +27,130 @@ function deployShaMetaPlugin() {
   };
 }
 
+/**
+ * Selective module preload — replaces Vite's automatic modulePreload (which is
+ * disabled via `build.modulePreload: false`) with a curated whitelist of chunks
+ * that are needed before content renders.  First-paint-only chunks come first;
+ * the wallet/SDK chunks (WalletProviders/AaveProviders + their vendor deps) are
+ * dynamically imported on every page load, so preloading them starts the
+ * download at t0 while modulepreload's download-only semantics (no execute)
+ * keep them off the FCP path.
+ */
+const MODULEPRELOAD_WHITELIST = [
+  "vendor-react",
+  "vendor-react-libs",
+  "vendor-animation",
+  "vendor-radix",
+  "vendor-query",
+  "vendor-ui-utils",
+  "vendor-icons",
+  "vendor-theme",
+  "vendor-ui-libs",
+  "vendor-forms",
+  "index.esm",
+  "rolldown-runtime",
+  // Content-stage chunks: dynamically imported, but every page load needs them
+  "WalletProviders",
+  "vendor-blockchain",
+  "AaveProviders",
+  "vendor-aave",
+] as const;
+
+/** Chunk prefixes that must never be statically reachable from the entry chunk. */
+const NO_FIRST_PAINT_CHUNK_PATTERNS = [
+  /^assets\/vendor-blockchain-/,
+  /^assets\/vendor-aave-/,
+  /^assets\/secp256k1-/,
+] as const;
+
+/**
+ * Result-level guard for the FCP invariant: fail the build when the entry
+ * chunk's synchronous import closure can reach a heavy chunk (vendor-blockchain
+ * / vendor-aave / secp256k1).  Source-level guards (architecture-guard tests)
+ * verify import *shapes*; this verifies the actual bundler output, which also
+ * catches bundler-level surprises like a shared module being concatenated into
+ * a heavy chunk (e.g. clsx landing inside vendor-blockchain).
+ */
+function assertFirstPaintChunksPlugin() {
+  interface BundleChunk {
+    type: string;
+    fileName: string;
+    isEntry?: boolean;
+    imports?: string[];
+  }
+  return {
+    name: "assert-first-paint-chunks",
+    apply: "build" as const,
+    generateBundle(_options: unknown, bundle: Record<string, BundleChunk>) {
+      const chunks = Object.values(bundle).filter((chunk) => chunk.type === "chunk");
+      const byFileName = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+      const entries = chunks.filter((chunk) => chunk.isEntry).map((chunk) => chunk.fileName);
+      if (entries.length === 0) return;
+
+      // Fail loud instead of walking an empty graph: if the bundler stops
+      // reporting static imports, this guard would silently always-pass.
+      for (const chunk of chunks) {
+        if (!Array.isArray(chunk.imports)) {
+          throw new Error(
+            `[assert-first-paint-chunks] Chunk "${chunk.fileName}" reports no static import list — ` +
+            `cannot verify the entry closure. Fix the guard before trusting a green build.`,
+          );
+        }
+      }
+
+      const visited = new Set<string>();
+      const parent = new Map<string, string>();
+      const queue = [...entries];
+      while (queue.length > 0) {
+        const fileName = queue.pop()!;
+        if (visited.has(fileName)) continue;
+        visited.add(fileName);
+        for (const pattern of NO_FIRST_PAINT_CHUNK_PATTERNS) {
+          if (pattern.test(fileName)) {
+            const chain: string[] = [];
+            for (let cur: string | undefined = fileName; cur; cur = parent.get(cur)) chain.unshift(cur);
+            throw new Error(
+              `[assert-first-paint-chunks] Entry chunk statically reaches "${fileName}".\n` +
+              `Import chain: ${chain.join(" -> ")}\n` +
+              `This puts a heavy chunk (~400 KB gzip) back on the FCP path. Check for new ` +
+              `static imports of wagmi/rainbowkit/@aave modules (or shared modules like cn/clsx ` +
+              `concatenated into a heavy chunk) reachable from App.tsx without a lazy() boundary.`,
+            );
+          }
+        }
+        const chunk = byFileName.get(fileName);
+        for (const imp of chunk?.imports ?? []) {
+          if (!parent.has(imp)) parent.set(imp, fileName);
+          queue.push(imp);
+        }
+      }
+    },
+  };
+}
+
+function selectiveModulePreloadPlugin() {
+  let chunkPaths: string[] = [];
+  return {
+    name: "selective-module-preload",
+    apply: "build" as const,
+    generateBundle(_options: unknown, bundle: Record<string, { type: string; fileName: string }>) {
+      chunkPaths = Object.values(bundle)
+        .filter((chunk) => chunk.type === "chunk")
+        .map((chunk) => chunk.fileName)
+        .filter((fileName) =>
+          MODULEPRELOAD_WHITELIST.some((prefix) => fileName.startsWith(`assets/${prefix}-`)),
+        );
+    },
+    transformIndexHtml(html: string) {
+      if (chunkPaths.length === 0) return html;
+      const tags = chunkPaths
+        .map((p) => `    <link rel="modulepreload" crossorigin href="/${p}">`)
+        .join("\n");
+      return html.replace("</head>", `${tags}\n  </head>`);
+    },
+  };
+}
+
 /** Warn (don't fail) if VITE_API_BASE_URL is missing — falls back to staging via src/lib/apiBase.ts. */
 function validateEnvPlugin() {
   return {
@@ -62,6 +186,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     validateEnvPlugin(),
     deployShaMetaPlugin(),
+    selectiveModulePreloadPlugin(),
+    assertFirstPaintChunksPlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
@@ -105,70 +231,55 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks for large dependencies
-          if (id.includes('node_modules')) {
+        // Native rolldown advancedChunks instead of manualChunks: the
+        // manualChunks emulation was observed gluing shared modules
+        // (@tanstack/query-core, clsx, react-dom bits, …) into whatever chunk
+        // had related code (vendor-blockchain), which put heavy code back on
+        // the entry chunk's static graph. Explicit regex groups partition
+        // node_modules deterministically; app code and unmatched packages go
+        // through rolldown's default splitting.
+        advancedChunks: {
+          groups: [
             // Core React and its direct dependencies - MUST be together
-            if (
-              id.includes('/react/') || 
-              id.includes('/react-dom/') || 
-              id.includes('/scheduler/')
-            ) {
-              return 'vendor-react';
-            }
+            { name: "vendor-react", test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             // React ecosystem
-            if (id.includes('react-router') || id.includes('react-hook-form') || id.includes('react-day-picker')) {
-              return 'vendor-react-libs';
-            }
+            { name: "vendor-react-libs", test: /node_modules[\\/](react-router|react-hook-form|react-day-picker)[\\/]/ },
             // Animation libraries
-            if (id.includes('framer-motion') || id.includes('embla-carousel')) {
-              return 'vendor-animation';
-            }
+            { name: "vendor-animation", test: /node_modules[\\/](framer-motion|embla-carousel)[\\/]/ },
             // Radix UI components
-            if (id.includes('@radix-ui')) {
-              return 'vendor-radix';
-            }
+            { name: "vendor-radix", test: /node_modules[\\/]@radix-ui[\\/]/ },
             // Query & data fetching
-            if (id.includes('@tanstack')) {
-              return 'vendor-query';
-            }
+            { name: "vendor-query", test: /node_modules[\\/]@tanstack[\\/]/ },
             // Charts and visualization
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
-            }
+            { name: "vendor-charts", test: /node_modules[\\/]recharts[\\/]/ },
             // Icons
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
+            { name: "vendor-icons", test: /node_modules[\\/]lucide-react[\\/]/ },
             // Forms and validation
-            if (id.includes('zod') || id.includes('@hookform')) {
-              return 'vendor-forms';
-            }
+            { name: "vendor-forms", test: /node_modules[\\/](zod|@hookform)[\\/]/ },
             // UI utilities
-            if (id.includes('class-variance-authority') || id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'vendor-ui-utils';
-            }
+            { name: "vendor-ui-utils", test: /node_modules[\\/](class-variance-authority|clsx|tailwind-merge)[\\/]/ },
             // Date utilities
-            if (id.includes('date-fns')) {
-              return 'vendor-date';
-            }
+            { name: "vendor-date", test: /node_modules[\\/]date-fns[\\/]/ },
             // Aave protocol
-            if (id.includes('@aave-dao')) {
-              return 'vendor-aave';
-            }
+            { name: "vendor-aave", test: /node_modules[\\/]@aave-dao[\\/]/ },
+            // Blockchain stack (viem/wagmi/ox/rainbowkit + their transitive
+            // deps) — lazy, only reachable via the WalletProviders boundary
+            {
+              name: "vendor-blockchain",
+              test: /node_modules[\\/](viem|wagmi|@wagmi|@rainbow-me|ox|abitype|mipd|zustand|@noble|@adraffy|ua-parser-js|qr|cuer|@vanilla-extract)[\\/]/,
+            },
             // UI libraries
-            if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk')) {
-              return 'vendor-ui-libs';
-            }
+            { name: "vendor-ui-libs", test: /node_modules[\\/](sonner|vaul|cmdk)[\\/]/ },
             // Theme
-            if (id.includes('next-themes')) {
-              return 'vendor-theme';
-            }
-          }
+            { name: "vendor-theme", test: /node_modules[\\/]next-themes[\\/]/ },
+          ],
         },
       },
     },
     // Increase chunk size warning limit to 600 KB to reduce noise
     chunkSizeWarningLimit: 600,
+    // Disable Vite's automatic modulePreload — replaced by the
+    // selectiveModulePreloadPlugin which only injects first-paint chunks.
+    modulePreload: false,
   },
 }));

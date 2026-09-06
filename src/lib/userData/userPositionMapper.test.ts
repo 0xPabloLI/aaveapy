@@ -8,9 +8,8 @@ import {
   type WalletPosition,
   type WalletPositionSource,
   type PositionMeta,
-  type ReserveMap,
 } from './userPositionMapper'
-import { buildReserveLookupByChainAndToken, type ReserveChainTokenMap } from '@/lib/reserveKey'
+import { buildReserveLookupByChainAndToken, type ReserveChainTokenMap, type ReserveMap } from '@/lib/reserveKey'
 import type { V3UserPosition, V3AccountSummary } from './aaveV3UserClient'
 import type { V4UserPosition, V4AccountSummary } from './aaveV4UserClient'
 import type { ReserveWithSpread } from '@/types/aave'
@@ -41,6 +40,7 @@ describe('WalletPosition unified type', () => {
 describe('mapV3PositionToWalletPosition', () => {
   const v3Pos: V3UserPosition = {
     chainId: 1,
+    marketName: 'AaveV3Ethereum',
     asset: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`,
     supplyWad: 5000n * WAD,
     stableBorrowWad: 0n,

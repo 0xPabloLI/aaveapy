@@ -1,4 +1,13 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import {
+  addReserveToPortfolio,
+  fillBorrowAmountDesktop,
+  fillBorrowAmountMobile,
+  fillSupplyAmount,
+  getMarketChipLabel,
+  readIncentiveAfter,
+  setupPortfolioMode,
+} from './test-reserves';
 
 /**
  * Cross-reserve Merkl offset — portfolio simulation E2E.
@@ -36,23 +45,6 @@ interface CrossOffsetScenario {
 // ─── API Discovery ─────────────────────────────────────────────────
 
 const STAGING_API = 'https://staging-api.aaveapy.com/api';
-
-const ETHEREUM_MARKET_NAMES: Record<string, string> = {
-  AaveV3Ethereum: 'Core',
-  AaveV3EthereumLido: 'Prime',
-  AaveV3EthereumHorizon: 'Horizon RWA',
-  AaveV3EthereumEtherFi: 'EtherFi',
-};
-
-/** Replicates src/lib/marketLabels.ts getMarketChipLabel for E2E use. */
-function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
-  if (ETHEREUM_MARKET_NAMES[marketName]) return ETHEREUM_MARKET_NAMES[marketName];
-  if (marketName.startsWith('AaveV4')) {
-    return marketName.replace(/^AaveV4/i, '').replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-  return marketName;
-}
 
 async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
   try {
@@ -149,152 +141,6 @@ const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reser
 const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
 
-// ─── UI Helpers ────────────────────────────────────────────────────
-
-async function setupPortfolioMode(page: Page) {
-  await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.getByTestId('portfolio-mode-toggle').click();
-}
-
-async function addReserveToPortfolio(
-  page: Page,
-  symbol: string,
-  marketLabel: string,
-): Promise<boolean> {
-  // Open search if not already open
-  const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
-  if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
-    await page.getByRole('button', { name: 'Search tokens' }).click();
-  }
-  await searchInput.fill(symbol);
-  // Search results load asynchronously — a fixed 500ms wait races the render
-  // and intermittently returns 0 results; poll for the add button instead
-  const addButtons = page.getByRole('button', {
-    name: `Add ${symbol} (supply and borrow)`,
-  });
-  await expect(addButtons.first()).toBeVisible({ timeout: 10_000 }).catch(() => {});
-
-  // Find the Add button matching the market label (handles same-symbol on multiple chains)
-  const count = await addButtons.count();
-  if (count === 0) return false;
-  if (count === 1) {
-    await addButtons.first().click();
-    return true;
-  }
-  for (let i = 0; i < count; i++) {
-    const btn = addButtons.nth(i);
-    const text = await btn.textContent();
-    if (text && text.includes(marketLabel)) {
-      await btn.click();
-      return true;
-    }
-  }
-  // Fallback: first result
-  await addButtons.first().click();
-  return true;
-}
-
-async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-// Mobile: scope to the target card — the portfolio panel can hold multiple
-// USD₮/USDC variants from different chains, so a global first() may fill a
-// different card than the one under test
-async function fillSupplyAmountMobile(
-  page: Page,
-  reserveId: string,
-  amount: string,
-) {
-  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  const input = card
-    .getByRole('textbox', { name: /Supply amount for/i })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function fillBorrowAmountMobile(
-  page: Page,
-  reserveId: string,
-  symbol: string,
-  amount: string,
-) {
-  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  // Switch to borrow tab (pill tabs carry explicit role="tab" since the ARIA
-  // audit — getByRole('button') does not match them)
-  await card.getByRole('tab', { name: 'Borrow', exact: true }).click();
-  await page.waitForTimeout(300);
-  const input = card
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
-}
-
-async function readSupplyIncentiveAfter(
-  page: Page,
-  reserveId: string,
-  isMobile: boolean,
-): Promise<number> {
-  // Once own-borrow offset drives the supply incentive to zero, the cell
-  // renders a dash placeholder (en dash "–" in practice) — that is a valid
-  // simulation outcome (return 0), not missing data. NaN is reserved for the
-  // cell being absent entirely, which callers treat as "Merkl campaign
-  // unavailable" and skip.
-  const readCell = async (
-    cell: Locator,
-    afterSpan: Locator,
-  ): Promise<number> => {
-    const hasIncentive = await afterSpan.isVisible({ timeout: 15000 }).catch(() => false);
-    if (!hasIncentive) {
-      const cellExists = await cell.isVisible({ timeout: 1000 }).catch(() => false);
-      if (!cellExists) return NaN;
-      // The UI renders the empty state with an en dash (–), not an em dash
-      const text = await cell.textContent().catch(() => null);
-      return text && /[—–]/.test(text) ? 0 : NaN;
-    }
-    const attr = await afterSpan.getAttribute('data-after');
-    return attr ? parseFloat(attr) : NaN;
-  };
-
-  if (isMobile) {
-    const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-    // Ensure supply tab is active (pill tabs carry role="tab", not button)
-    const supplyTab = card.getByRole('tab', { name: 'Supply', exact: true });
-    if (await supplyTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await supplyTab.click();
-      await page.waitForTimeout(300);
-    }
-    const cell = card.locator('span[data-cell="supply-incentive"]').first();
-    const afterSpan = cell.locator('span[data-after]').first();
-    return readCell(cell, afterSpan);
-  }
-  // Desktop
-  const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
-  const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
-  return readCell(incentiveCell, incentiveCell.locator('span[data-after]').first());
-}
-
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
 async function runCrossReserveScenario(
@@ -309,8 +155,8 @@ async function runCrossReserveScenario(
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added, `Should find and add ${s.targetSymbol} (${s.targetMarketLabel})`).toBe(true);
   await fillSupplyAmount(page, s.targetSymbol, '100000');
-  const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
-  test.skip(!baselineAfter || baselineAfter <= 0, 'Baseline incentive unavailable — Merkl campaign data may be stale');
+  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   // Add offset reserve with supply to give it borrowing power (AAV-1250: LTV clamping)
   const offsetAdded = await addReserveToPortfolio(
@@ -330,9 +176,10 @@ async function runCrossReserveScenario(
     : (amount: string) => fillBorrowAmountDesktop(page, s.offsetSymbol!, amount);
 
   await fillOffsetBorrow('500');
-  const halfOffsetAfter = await readSupplyIncentiveAfter(
+  const halfOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
 
@@ -344,9 +191,10 @@ async function runCrossReserveScenario(
 
   // Full offset: borrow = $1000 (well within maxBorrow at $100000 supply)
   await fillOffsetBorrow('1000');
-  const fullOffsetAfter = await readSupplyIncentiveAfter(
+  const fullOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
 
@@ -362,9 +210,10 @@ async function runCrossReserveScenario(
 
   // Over-offset: borrow > target supply ($2000) — should clamp via offset logic
   await fillOffsetBorrow('2000');
-  const overOffsetAfter = await readSupplyIncentiveAfter(
+  const overOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
   expect(
@@ -383,12 +232,9 @@ async function runSelfLoopScenario(
 
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added).toBe(true);
-  const fillOwnSupply = isMobile
-    ? (amount: string) => fillSupplyAmountMobile(page, s.targetReserveId, amount)
-    : (amount: string) => fillSupplyAmount(page, s.targetSymbol, amount);
-  await fillOwnSupply('100000');
-  const baselineAfter = await readSupplyIncentiveAfter(page, s.targetReserveId, isMobile);
-  test.skip(!baselineAfter || baselineAfter <= 0, 'Baseline incentive unavailable — Merkl campaign data may be stale');
+  await fillSupplyAmount(page, s.targetSymbol, '100000');
+  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   const fillOwnBorrow = isMobile
     ? (amount: string) =>
@@ -397,13 +243,12 @@ async function runSelfLoopScenario(
 
   // Half offset: borrow = $50000 (50% of supply, within LTV limit)
   await fillOwnBorrow('50000');
-  const halfOffsetAfter = await readSupplyIncentiveAfter(
+  const halfOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
-  // Skip if incentive became unavailable after offset
-  if (isNaN(halfOffsetAfter)) { test.skip(true, 'Incentive unavailable after half offset — Merkl campaign data may be stale'); return; }
   expect(
     halfOffsetAfter,
     'Incentive should decrease when own borrow is added',
@@ -411,12 +256,12 @@ async function runSelfLoopScenario(
 
   // Full offset: borrow = $100000 (= supply, may be LTV-clamped to supply×ltv/100)
   await fillOwnBorrow('100000');
-  const fullOffsetAfter = await readSupplyIncentiveAfter(
+  const fullOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
-  if (isNaN(fullOffsetAfter)) { test.skip(true, 'Incentive unavailable after full offset — Merkl campaign data may be stale'); return; }
   expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
     halfOffsetAfter + 0.01,
   );
@@ -427,12 +272,12 @@ async function runSelfLoopScenario(
 
   // Over-offset: borrow = $200000 (> supply, should be LTV-clamped)
   await fillOwnBorrow('200000');
-  const overOffsetAfter = await readSupplyIncentiveAfter(
+  const overOffsetAfter = await readIncentiveAfter(
     page,
     s.targetReserveId,
+    'supply',
     isMobile,
   );
-  if (isNaN(overOffsetAfter)) { test.skip(true, 'Incentive unavailable after over offset — Merkl campaign data may be stale'); return; }
   expect(
     Math.abs(overOffsetAfter - fullOffsetAfter),
     'Over-offset should clamp',

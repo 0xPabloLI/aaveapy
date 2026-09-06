@@ -114,6 +114,9 @@ const DOMAIN_WHITELIST = new Set([
   // === Schema / metadata (not user-facing links) ===
   'github.com',
   'schema.org',
+
+  // === Analytics ===
+  'googletagmanager.com',  // covers www.googletagmanager.com (GA4 gtag.js)
 ]);
 
 /**

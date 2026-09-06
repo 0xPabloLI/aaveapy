@@ -401,12 +401,12 @@ describe('mergeForecastState — null return conditions', () => {
   const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
 
   it('returns null when campaignId is missing', () => {
-    const breakdown: MerklCampaignBreakdown = {
+    const breakdown = {
       campaignApr: 5,
       campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
       campaignStartedAt: '2025-01-01',
       campaignEndedAt: '2026-12-31',
-    };
+    } as unknown as MerklCampaignBreakdown;
     expect(mergeForecastState(breakdown, emptyForecastStates, 1)).toBeNull();
   });
 
@@ -436,12 +436,12 @@ describe('forecastMerklApr — fallback when mergeForecastState returns null', (
   const emptyForecastStates: Record<string, MerklForecastWireItem> = {};
 
   it('returns currentApr when mergeForecastState returns null (no campaignId)', () => {
-    const breakdown: MerklCampaignBreakdown = {
+    const breakdown = {
       campaignApr: 5,
       campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
       campaignStartedAt: '2025-01-01',
       campaignEndedAt: '2026-12-31',
-    };
+    } as unknown as MerklCampaignBreakdown;
     expect(forecastMerklApr(breakdown, 1000, emptyForecastStates, 1)).toBe(5);
   });
 

@@ -125,6 +125,7 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     const summary: V4AccountSummary = {
       chainId: 1,
       spokeName: 'MAIN_SPOKE',
+      spokeAddress: MAIN_SPOKE.address,
       healthFactor: 2000000000000000000n,
       totalCollateralValue: 1000000000000000000n,
       totalDebtValueRay: 500000000000000000n,
@@ -145,7 +146,7 @@ function makeMockClient(multicallResult: unknown[]) {
   const mockMulticall = vi.fn().mockResolvedValue(multicallResult)
   const client = {
     multicall: mockMulticall,
-  } as unknown as ReturnType<typeof createPublicClient>
+  } as unknown as Parameters<typeof getV4UserPositionsOnChain>[5]
   return { client, mockMulticall }
 }
 

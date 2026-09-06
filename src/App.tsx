@@ -7,17 +7,24 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
-import "@rainbow-me/rainbowkit/styles.css";
 import LoadingState from "@/components/dashboard/LoadingState";
 import { fetchMarkets } from "@/hooks/useAaveMarkets";
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 import { clearLegacyCacheEntries } from "@/lib/cache";
-import { wagmiConfig } from "@/lib/wagmi/config";
-import { AaveProviders } from "@/providers/AaveProviders";
+// The wallet layer (wagmi + RainbowKit → vendor-blockchain, ~420 KB gzip) and
+// the Aave SDK (@aave/react + @aave-dao → vendor-aave, ~218 KB gzip) must stay
+// off the entry chunk's synchronous import graph: first paint renders after
+// entry + first-paint whitelist chunks only, while these chunks stream in.
+// Both lazy boundaries fall back to LoadingState (not null) so the two-stage
+// load never flashes a blank screen.
+// SdkErrorBoundary (no viem/wagmi deps) wraps the lazy providers so a chunk
+// load failure degrades gracefully instead of white-screening.
+const WalletProviders = lazy(() => import("@/providers/WalletProviders").then(m => ({ default: m.WalletProviders })));
+const AaveProviders = lazy(() => import("@/providers/AaveProviders").then(m => ({ default: m.AaveProviders })));
 import { SdkErrorBoundary } from "@/providers/SdkErrorBoundary";
+import AnalyticsRouteTracker from "@/components/AnalyticsRouteTracker";
+
 import "@/i18n";
 
 // Lazy load route components
@@ -25,6 +32,7 @@ const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ChainPage = lazy(() => import("./pages/ChainPage"));
 const LandingPT = lazy(() => import("./pages/LandingPT"));
+const AaveTaxasApyPT = lazy(() => import("./pages/AaveTaxasApyPT"));
 const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
 const AdminSeo = lazy(() => import("./pages/AdminSeo"));
@@ -32,6 +40,14 @@ const AdminAaveNewsBacklinks = lazy(() => import("./pages/AdminAaveNewsBacklinks
 const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
 const AssetPage = lazy(() => import("./pages/AssetPage"));
 const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
+const AaveTauxApyFR = lazy(() => import("./pages/AaveTauxApyFR"));
+const AaveZinsenApyDE = lazy(() => import("./pages/AaveZinsenApyDE"));
+const AaveTasasApyES = lazy(() => import("./pages/AaveTasasApyES"));
+const AaveApyID = lazy(() => import("./pages/AaveApyID"));
+const AaveApyJA = lazy(() => import("./pages/AaveApyJA"));
+const AaveTassiApyIT = lazy(() => import("./pages/AaveTassiApyIT"));
+const AaveStavkiApyRU = lazy(() => import("./pages/AaveStavkiApyRU"));
+const AaveApyZH = lazy(() => import("./pages/AaveApyZH"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,44 +78,54 @@ queryClient.prefetchQuery({
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={{ lightMode: lightTheme(), darkMode: darkTheme() }}
-          modalSize="compact"
-        >
-          <SdkErrorBoundary>
-            <AaveProviders>
-            <TooltipProvider delayDuration={200}>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <Analytics debug={false} />
+    <SpeedInsights debug={false} />
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider delayDuration={200}>
+        <Toaster />
+        <Sonner />
+        <SdkErrorBoundary>
+          <Suspense fallback={<LoadingState />}>
+            <WalletProviders>
               <Suspense fallback={<LoadingState />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/chain/:slug" element={<ChainPage />} />
-                  <Route path="/pt-br" element={<LandingPT />} />
-                  <Route path="/fr" element={<LandingFR />} />
-                  <Route path="/tr" element={<LandingTR />} />
-                  <Route path="/admin/seo" element={<AdminSeo />} />
-                  <Route path="/admin/aave-news-backlinks" element={<AdminAaveNewsBacklinks />} />
-                  <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
-                  <Route path="/asset/:slug" element={<AssetPage />} />
-                  <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
+                <AaveProviders>
+                  <BrowserRouter>
+                    <AnalyticsRouteTracker />
+                    <Suspense fallback={<LoadingState />}>
+                      <Routes>
 
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/chain/:slug" element={<ChainPage />} />
+                        <Route path="/pt-br" element={<LandingPT />} />
+                        <Route path="/pt-br/taxas-aave-apy" element={<AaveTaxasApyPT />} />
+                        <Route path="/fr" element={<LandingFR />} />
+                        <Route path="/tr" element={<LandingTR />} />
+                        <Route path="/admin/seo" element={<AdminSeo />} />
+                        <Route path="/admin/aave-news-backlinks" element={<AdminAaveNewsBacklinks />} />
+                        <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
+                        <Route path="/asset/:slug" element={<AssetPage />} />
+                        <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
+                        <Route path="/fr/taux-aave-apy" element={<AaveTauxApyFR />} />
+                        <Route path="/de/aave-zinsen-apy" element={<AaveZinsenApyDE />} />
+                        <Route path="/es/tasas-aave-apy" element={<AaveTasasApyES />} />
+                        <Route path="/id/apy-aave" element={<AaveApyID />} />
+                        <Route path="/ja/aave-kinri-apy" element={<AaveApyJA />} />
+                        <Route path="/it/tassi-aave-apy" element={<AaveTassiApyIT />} />
+                        <Route path="/ru/stavki-aave-apy" element={<AaveStavkiApyRU />} />
+                        <Route path="/zh/aave-lilv-apy" element={<AaveApyZH />} />
+
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </BrowserRouter>
+                </AaveProviders>
               </Suspense>
-            </BrowserRouter>
-            <Analytics debug={false} />
-            <SpeedInsights debug={false} />
-          </TooltipProvider>
-            </AaveProviders>
-          </SdkErrorBoundary>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+            </WalletProviders>
+          </Suspense>
+        </SdkErrorBoundary>
+      </TooltipProvider>
+    </QueryClientProvider>
   </ThemeProvider>
 );
 
