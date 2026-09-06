@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
+import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
 
 const ANALYTICS_PAGE = 'pt-br/taxas-aave-apy';
 
