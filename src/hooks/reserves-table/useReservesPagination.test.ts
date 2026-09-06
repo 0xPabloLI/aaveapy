@@ -153,6 +153,73 @@ describe('useReservesPagination', () => {
     });
   });
 
+  describe('scenario-driven reorder keeps expanded row rendered', () => {
+    it('grows the window when a pure reorder (same id set) moves the expanded row past it', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      // Expanded at index 8 → needed 14 ≤ DEFAULT_VISIBLE_COUNT → default window.
+      expect(result.current.minVisibleCount).toBeNull();
+
+      // Simulate a live-rate re-sort: same id set, order changed, expanded row
+      // lands at index 30 — past the default 20-row window.
+      const reordered = [...initial];
+      const [moved] = reordered.splice(8, 1);
+      reordered.splice(30, 0, moved);
+      rerender({ data: reordered });
+
+      expect(result.current.minVisibleCount).toBe(36); // 30 + 6 buffer, clamped to list length
+      expect(
+        result.current.displayData.some((r) => r.reserveId === expandedSimId),
+        'expanded row must stay rendered after a scenario-driven reorder',
+      ).toBe(true);
+    });
+
+    it('does not churn the window when a pure reorder keeps the row inside it', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      expect(result.current.minVisibleCount).toBeNull();
+
+      const reordered = [...initial];
+      const [moved] = reordered.splice(8, 1);
+      reordered.splice(12, 0, moved); // index 12 → needed 18 ≤ 20 → still inside window
+      rerender({ data: reordered });
+
+      expect(result.current.minVisibleCount).toBeNull();
+      expect(
+        result.current.displayData.some((r) => r.reserveId === expandedSimId),
+      ).toBe(true);
+    });
+
+    it('does not grow the window when the id set changes (filter path, AAV-1107)', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      expect(result.current.minVisibleCount).toBeNull();
+
+      // Filtered dataset: same length but entirely different reserves — the
+      // expanded id no longer exists. Dataset membership changed, so the
+      // reorder-grow path must stay off (AAV-1107: stale spacer).
+      const filtered = Array.from({ length: 50 }, (_, i) => makeReserve(100 + i));
+      rerender({ data: filtered });
+
+      expect(result.current.minVisibleCount).toBeNull();
+    });
+  });
+
   describe('empty-list reset', () => {
     it('clears a stale minVisibleCount when sortedData drops to empty', () => {
       const sortedData = makeReserves(50);

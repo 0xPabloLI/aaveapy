@@ -129,6 +129,56 @@ export function useReservesPagination(
     }
   }, [expandedReserveId, sortedData, minVisibleCount]);
 
+  // Keep the expanded row rendered across scenario-driven re-sorts. Live rate
+  // refreshes and shared-scenario input changes re-order `sortedData` WITHOUT
+  // changing which reserves exist. If such a pure reorder moves the expanded
+  // row deeper, past the visible window, the row would unmount mid-session
+  // and the scenario-pin scroll could never fire — violating the normative
+  // contract (docs/design/frontend-interaction-guardrails.md § "Simulation
+  // pin scroll": scenario change + reorder + expanded row MUST pin).
+  // Dataset changes (id set differs) reset the baseline instead of growing:
+  // re-growing there resurrected the scroll spacer for a row the user no
+  // longer sees (AAV-1107) — the significant-data-change reset below applies.
+  const prevSortedIdSetKeyRef = useRef<string | null>(null);
+  const prevExpandedIdRef = useRef<string | null>(null);
+  const lastExpandedIndexRef = useRef<number | null>(null);
+  useEffect(() => {
+    const idSetKey = sortedData
+      .map((r) => getReserveSimulationId(r))
+      .sort()
+      .join('\0');
+    const prevKey = prevSortedIdSetKeyRef.current;
+    prevSortedIdSetKeyRef.current = idSetKey;
+    if (!expandedReserveId) {
+      lastExpandedIndexRef.current = null;
+      prevExpandedIdRef.current = null;
+      return;
+    }
+    const expandedIndex = sortedData.findIndex(
+      (r) => getReserveSimulationId(r) === expandedReserveId,
+    );
+    if (expandedIndex < 0) {
+      lastExpandedIndexRef.current = null;
+      prevExpandedIdRef.current = expandedReserveId;
+      return;
+    }
+    const membershipChanged = prevKey === null || prevKey !== idSetKey;
+    const expansionChanged = prevExpandedIdRef.current !== expandedReserveId;
+    prevExpandedIdRef.current = expandedReserveId;
+    if (membershipChanged || expansionChanged || lastExpandedIndexRef.current === null) {
+      // Baseline (re)seeding: first observation, a dataset change, or a new
+      // expansion. The click-grow effect owns those paths — record and wait.
+      lastExpandedIndexRef.current = expandedIndex;
+      return;
+    }
+    if (expandedIndex <= lastExpandedIndexRef.current) return; // moved shallower / unchanged
+    lastExpandedIndexRef.current = expandedIndex;
+    const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
+    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+    if (neededCount <= currentCount) return;
+    setMinVisibleCount(Math.min(neededCount, sortedData.length));
+  }, [sortedData, expandedReserveId, minVisibleCount]);
+
   const displayData = useMemo(() => {
     const baseCount = minVisibleCount != null && minVisibleCount > 0
       ? minVisibleCount
