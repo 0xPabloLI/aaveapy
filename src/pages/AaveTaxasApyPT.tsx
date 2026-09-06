@@ -126,9 +126,16 @@ const AaveTaxasApyPT = () => {
       <meta property="og:type" content="article" />
       <meta property="og:url" content={CANONICAL} />
       <meta property="og:locale" content="pt_BR" />
+      <meta property="og:site_name" content="AaveAPY" />
+      <meta property="og:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={TITLE} />
       <meta name="twitter:description" content={DESCRIPTION} />
+      <meta name="twitter:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
+      <meta name="twitter:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
       <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
       <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
     </Helmet>
