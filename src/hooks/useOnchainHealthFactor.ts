@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createPublicClient, http, type PublicClient, type MulticallResponse } from 'viem'
+import { createPublicClient, http, type PublicClient } from 'viem'
 import type { ReserveWithSpread } from '@/types/aave'
 import type { PortfolioReserveEntry } from '@/types/portfolio'
 import { getProtocolVersion } from '@/lib/protocolVersion'
@@ -76,7 +76,11 @@ export function extractPoolTargets(
       const poolAddress = V3_POOL_ADDRESSES[reserve.chainId]
       if (!poolAddress) continue
       v3Seen.add(poolKey)
-      v3Pools.push({ chainId: reserve.chainId, marketName: reserve.marketName, poolAddress })
+      v3Pools.push({
+        chainId: reserve.chainId,
+        marketName: reserve.marketName,
+        poolAddress: poolAddress as `0x${string}`,
+      })
     } else {
       // V4 — match by spokeAddress
       if (!reserve.spokeAddress) continue
@@ -93,6 +97,20 @@ export function extractPoolTargets(
   return { v3Pools, v4Spokes }
 }
 
+/** Minimal multicall result shape — viem returns positional tuples for multi-output calls. */
+type BigintTupleResult =
+  | { status: 'success'; result: readonly bigint[] }
+  | { status: 'failure'; result?: undefined }
+
+/** Call multicall without depending on viem's deeply-inferred parameter types. */
+async function multicallBigintTuples(
+  publicClient: PublicClient,
+  params: Record<string, unknown>,
+): Promise<BigintTupleResult[]> {
+  const run = publicClient.multicall as unknown as (p: Record<string, unknown>) => Promise<unknown>
+  return (await run(params)) as BigintTupleResult[]
+}
+
 /**
  * Fetch on-chain HF for a single V3 pool via getUserAccountData multicall.
  */
@@ -105,21 +123,23 @@ async function fetchV3PoolHf(
   if (!publicClient) return null
 
   try {
-    const results = await publicClient.multicall({
+    const results = await multicallBigintTuples(publicClient, {
       contracts: [{
         address: target.poolAddress,
         abi: POOL_ABI,
-        functionName: 'getUserAccountData' as const,
-        args: [userAddress] as const,
+        functionName: 'getUserAccountData',
+        args: [userAddress],
       }],
       multicallAddress: MULTICALL3_ADDRESS,
       allowFailure: true,
     })
 
-    const result = results[0] as MulticallResponse<typeof POOL_ABI, 'getUserAccountData'>
-    if (result.status !== 'success' || !result.result) return null
+    const result = results[0]
+    if (!result || result.status !== 'success' || !result.result) return null
 
-    const { healthFactor, totalCollateralBase, totalDebtBase } = result.result
+    // getUserAccountData outputs: [totalCollateralBase, totalDebtBase, availableBorrowsBase,
+    //                              currentLiquidationThreshold, ltv, healthFactor]
+    const [totalCollateralBase, totalDebtBase, , , , healthFactor] = result.result
     return {
       healthFactor: wadToHf(healthFactor),
       totalCollateralUsd: Number(totalCollateralBase) / 1e8, // base units are 8 decimals (USD)
@@ -143,21 +163,23 @@ async function fetchV4SpokeHf(
   if (!publicClient) return null
 
   try {
-    const results = await publicClient.multicall({
+    const results = await multicallBigintTuples(publicClient, {
       contracts: [{
         address: target.spokeAddress,
         abi: SPOKE_ABI,
-        functionName: 'getUserAccountData' as const,
-        args: [userAddress] as const,
+        functionName: 'getUserAccountData',
+        args: [userAddress],
       }],
       multicallAddress: V4_MULTICALL3_ADDRESS,
       allowFailure: true,
     })
 
-    const result = results[0] as MulticallResponse<typeof SPOKE_ABI, 'getUserAccountData'>
-    if (result.status !== 'success' || !result.result) return null
+    const result = results[0]
+    if (!result || result.status !== 'success' || !result.result) return null
 
-    const { healthFactor, totalCollateralValue, totalDebtValueRay } = result.result
+    // getUserAccountData outputs: [riskPremium, avgCollateralFactor, healthFactor,
+    //                              totalCollateralValue, totalDebtValueRay, ...]
+    const [, , healthFactor, totalCollateralValue, totalDebtValueRay] = result.result
     return {
       healthFactor: wadToHf(healthFactor),
       // V4 totalCollateralValue is in base units (8 decimals USD), totalDebtValueRay is in RAY

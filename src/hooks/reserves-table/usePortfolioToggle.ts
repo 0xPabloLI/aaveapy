@@ -133,7 +133,7 @@ export const usePortfolioToggle = ({
     [portfolioActions, effectiveEntries, portfolioReserveIds],
   );
 
-  const { portfolioResults, portfolioSummary, healthFactors: portfolioHealthFactors } = useMemo<{
+  const { portfolioResults, portfolioSummary, portfolioHealthFactors } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
     portfolioSummary: PortfolioSummary;
     portfolioHealthFactors?: PortfolioHealthFactor[];
@@ -152,7 +152,7 @@ export const usePortfolioToggle = ({
         lastModifiedReserveId,
         onchainHfMap,
       });
-      return { portfolioResults: results, portfolioSummary: summary, healthFactors };
+      return { portfolioResults: results, portfolioSummary: summary, portfolioHealthFactors: healthFactors };
     }
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
     const results: PortfolioPositionResult[] = effectiveEntries

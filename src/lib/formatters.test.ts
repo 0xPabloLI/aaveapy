@@ -88,6 +88,7 @@ describe('incentive calculations only include active campaigns', () => {
         campaignEndedAt: daysFromNowIso(1),
         breakdowns: [
           {
+            campaignId: 'brevis-active',
             campaignApr: 3,
             campaignStartedAt: daysFromNowIso(-1),
             campaignEndedAt: daysFromNowIso(1),
@@ -103,6 +104,7 @@ describe('incentive calculations only include active campaigns', () => {
         campaignEndedAt: daysFromNowIso(8),
         breakdowns: [
           {
+            campaignId: 'brevis-future',
             campaignApr: 8,
             campaignStartedAt: daysFromNowIso(4),
             campaignEndedAt: daysFromNowIso(8),

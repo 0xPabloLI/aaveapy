@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Wallet reconnect after page refresh — regression for AAV-562.
@@ -16,14 +16,90 @@ import { expect, test } from '@playwright/test';
  * 2. Connect button stays clickable after refresh (not stuck)
  * 3. Stale wagmi.store state doesn't block Connect button
  * 4. Clearing wagmi store + refresh yields clean disconnected state
+ *
+ * NOTE: On mobile the Connect / View-address affordances are compacted behind
+ * a "Wallet actions" icon Popover trigger (WalletButton renders an icon button +
+ * Popover). The helpers below make the flow resilient to both the desktop
+ * (direct buttons) and mobile (popover) layouts.
  */
 
-import { WATCH_ADDRESS } from './test-wallets';
+import { WATCH_ADDRESS, waitForWalletControls } from './test-wallets';
 const WAGMI_STORE_KEY = 'wagmi.store';
 const WAGMI_WATCH_KEY = 'wagmi.watchAddress';
 
+/**
+ * Intercept live Aave GraphQL so these tests no longer depend on api.aave.com
+ * availability or a real funded wallet. The request still fires (and is counted
+ * by page.on('request') in the watch-resubmit spec), but we fulfill it instantly
+ * so the SDK never hangs on a slow/blocked network. Watch-mode UI state
+ * ("Viewing 0x…") is address-driven and does not depend on the response body.
+ * See docs/specs/e2e-suite-boundary-cleanup.md (T5).
+ */
+async function mockAaveGraphql(page: Page) {
+  await page.route(
+    (url) =>
+      (url.hostname === 'api.aave.com' || url.hostname === 'api.staging.aave.com') &&
+      url.pathname.endsWith('/graphql'),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: {} }),
+      });
+    },
+  );
+}
+
+/** Assert that a Connect entry point is visible (direct button on desktop, "Wallet actions" trigger on mobile). */
+async function expectConnectAffordanceVisible(page: Page) {
+  await waitForWalletControls(page);
+  const direct = page.getByRole('button', { name: /Connect wallet/i });
+  if (await direct.isVisible().catch(() => false)) {
+    await expect(direct).toBeVisible();
+    return;
+  }
+  await expect(page.getByRole('button', { name: /Wallet actions/i })).toBeVisible();
+}
+
+/** Open the RainbowKit connect modal from either layout. */
+async function openConnect(page: Page) {
+  await waitForWalletControls(page);
+  const direct = page.getByRole('button', { name: /Connect wallet/i });
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click();
+    return;
+  }
+  await page.getByRole('button', { name: /Wallet actions/i }).click();
+  await page.getByRole('button', { name: /Connect wallet/i }).first().click();
+}
+
+/** Open the Watch-address input from either layout. */
+async function openViewAddress(page: Page) {
+  await waitForWalletControls(page);
+  const direct = page.getByRole('button', { name: /View address/i });
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click();
+    return;
+  }
+  // Connected (watch) state: trigger is "Viewing 0x…"; menu item is "View another address".
+  const viewing = page.getByRole('button', { name: /Viewing 0x/i });
+  if (await viewing.isVisible().catch(() => false)) {
+    await viewing.click();
+    await page.getByRole('button', { name: /View another address/i }).click();
+    return;
+  }
+  await page.getByRole('button', { name: /Wallet actions/i }).click();
+  await page.getByRole('button', { name: /View address/i }).first().click();
+}
+
 test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
-  test.skip(!!process.env.CI, 'Wallet reconnect tests require live wallet/SDK state — run locally');
+  test.skip(
+    !!process.env.CI,
+    'Wallet reconnect tests require live Aave API access — run locally (set E2E_PROXY if your network needs a proxy)',
+  );
+  test.beforeEach(async ({ page }) => {
+    await mockAaveGraphql(page);
+  });
   test('watch-mode reconnects correctly after page refresh', async ({ page }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
     test.setTimeout(180_000);
@@ -31,7 +107,7 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
     await page.goto('/');
 
     // Connect via watch mode.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput.fill(WATCH_ADDRESS!);
     await addrInput.press('Enter');
@@ -59,11 +135,10 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
     await page.goto('/');
 
     // No wallet extension → should show Connect button.
-    const connectBtn = page.getByRole('button', { name: /Connect wallet/i }).first();
-    await expect(connectBtn).toBeVisible({ timeout: 10_000 });
+    await expectConnectAffordanceVisible(page);
 
     // Click Connect — RainbowKit modal should open.
-    await connectBtn.click();
+    await openConnect(page);
     // Modal contains "Connect Wallet" heading from RainbowKit.
     const modalHeading = page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i });
     await expect(modalHeading).toBeVisible({ timeout: 5_000 });
@@ -76,11 +151,10 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
     await page.reload();
 
     // After refresh, Connect button should still be visible and clickable.
-    const connectBtnAfterRefresh = page.getByRole('button', { name: /Connect wallet/i }).first();
-    await expect(connectBtnAfterRefresh).toBeVisible({ timeout: 10_000 });
+    await expectConnectAffordanceVisible(page);
 
     // Click Connect again — modal should open (not stuck).
-    await connectBtnAfterRefresh.click();
+    await openConnect(page);
     const modalHeadingAfterRefresh = page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i });
     await expect(modalHeadingAfterRefresh).toBeVisible({ timeout: 5_000 });
   });
@@ -122,13 +196,10 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
 
     // wagmi should detect the injected connector is not actually available
     // and transition to disconnected. The Connect button should appear.
-    const connectBtn = page.getByRole('button', { name: /Connect wallet/i }).first();
-
-    // Give wagmi time to attempt reconnect and fail.
-    await expect(connectBtn).toBeVisible({ timeout: 15_000 });
+    await expectConnectAffordanceVisible(page);
 
     // Click Connect — modal should open, not stuck.
-    await connectBtn.click();
+    await openConnect(page);
     const modalHeading = page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i });
     await expect(modalHeading).toBeVisible({ timeout: 5_000 });
   });
@@ -156,15 +227,14 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
     await page.reload();
 
     // Should show Connect button (disconnected state).
-    const connectBtn = page.getByRole('button', { name: /Connect wallet/i }).first();
-    await expect(connectBtn).toBeVisible({ timeout: 10_000 });
+    await expectConnectAffordanceVisible(page);
 
     // Should NOT show any wallet address or "Viewing" label.
     await expect(page.getByRole('button', { name: /Viewing 0x/i })).not.toBeVisible();
     await expect(page.getByRole('button', { name: /Wallet 0x/i })).not.toBeVisible();
 
     // Connect button is functional.
-    await connectBtn.click();
+    await openConnect(page);
     const modalHeading = page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i });
     await expect(modalHeading).toBeVisible({ timeout: 5_000 });
   });
@@ -176,7 +246,7 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
     await page.goto('/');
 
     // Connect via watch mode.
-    await page.getByRole('button', { name: /View address/i }).first().click();
+    await openViewAddress(page);
     const addrInput = page.getByRole('textbox', { name: /address/i }).first();
     await addrInput.fill(WATCH_ADDRESS!);
     await addrInput.press('Enter');

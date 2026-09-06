@@ -23,9 +23,11 @@ interface LandingContent {
 interface LocalizedLandingProps {
   locale: Exclude<SupportedLocale, "en">;
   content: LandingContent;
+  /** Optional in-locale related pages rendered under the FAQ. */
+  relatedLinks?: Array<{ to: string; label: string }>;
 }
 
-export function LocalizedLanding({ locale, content }: LocalizedLandingProps) {
+export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLandingProps) {
   const path = `/${LOCALE_PATH_MAP[locale]}`;
 
   const faqJsonLd = {
@@ -117,6 +119,22 @@ export function LocalizedLanding({ locale, content }: LocalizedLandingProps) {
             ))}
           </div>
         </section>
+
+        {relatedLinks && relatedLinks.length > 0 && (
+          <nav
+            aria-label="Related pages"
+            className="container mx-auto px-4 pb-10 max-w-3xl text-sm text-muted-foreground"
+          >
+            {relatedLinks.map((l, i) => (
+              <span key={l.to}>
+                {i > 0 && " · "}
+                <Link to={l.to} className="text-secondary hover:underline">
+                  {l.label}
+                </Link>
+              </span>
+            ))}
+          </nav>
+        )}
 
         {/* FOOTER CTA */}
         <section className="container mx-auto px-4 pb-24 max-w-5xl">

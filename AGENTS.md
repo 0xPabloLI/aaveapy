@@ -67,7 +67,7 @@
 5. **Code Review** — 实施完成后用 `code-review` skill 做双轴审查（Standards + Spec）
 6. **Dev Server + Playwright 验证** — 涉及 UI 交互/布局/样式的改动，CI gate 后必须用 `webapp-testing` skill 在浏览器中验证
 7. **Commit** — 通过验证后 commit（遵循 Commit Cadence 规则）
-8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态
+8. **更新相关文档及 Issue** — 同步更新 docs、ADR、Linear issue 状态。**文档改动门槛**：创建或改动 `docs/` 内容前先加载 `writing-for-agents` skill。**实施期文档生命周期**：spec 完成后按 `docs/DOCS-INDEX.md` 清单表登记（Canonical 行为契约留 `docs/specs/`,实施记录/交接/tickets 归档到 `docs/archive/` 日期前缀文件）
 9. **Session 结束验证** — 在 session 结束前，逐条确认 Step 1-8 全部完成。**未完成的步骤必须当场补做或显式标注为"跳过 + 原因"**。确认清单：
    - [ ] Step 1 Grill 完成（有 spec 或对话记录佐证）
    - [ ] Step 2 Spec 完成（有 spec 文件，含 Scenario Matrix）
@@ -157,7 +157,7 @@ main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 au
 详细 lessons 已外迁到以下文件，按需查阅：
 - `docs/lessons/rate-simulation.md` — Rate Simulation Calculator/incentive 计算相关（AAV-739/745/761/771/978/980/1059/1060/1075/1086/1097 等）
 - `docs/lessons/portfolio-ui.md` — Portfolio 模式/表格布局/UI 组件相关（Delta Input/Option E/Unified Table/列宽/边框等）
-- `docs/lessons/infrastructure.md` — CI/CD/外部 API 集成相关（chainDiscovery 404/AAV-1034 等）
+- `docs/lessons/infrastructure.md` — CI/CD、构建 chunk 策略、外部 API 集成相关（chainDiscovery 404/AAV-1034/rolldown manualChunks 拼接等）
 - `docs/conventions/scripts-and-schema-lessons.md` — Scripts/token icons/共享 schema 相关
 
 ## Agent skills
@@ -174,15 +174,7 @@ Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
 
 Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
 
-## Key References
-- `docs/workflows/frontend-backend-coordinated-deployment.md` — 前后端协同部署工作流
-- `docs/workflows/cross-branch-workflow.md` — 跨分支操作场景和命令
-- `docs/conventions/branch-protection.md` — main 分支 5 层防御
-- `docs/design/frontend-interaction-guardrails.md`
-- `docs/design/DESIGN-SYSTEM-REFERENCE.md`
-- `docs/rate-calculation.md`
-- `docs/PR_ANALYSIS.md`
-- `docs/conventions/merge-summary.md`
-- `docs/conventions/frontend-regression-checklist.md`
-- `docs/conventions/api-contract-checklist.md`
-- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/lib/portfolioSimulator.ts`, `src/components/dashboard/Portfolio*.tsx`
+## On-Demand References
+- 交互守卫与边界定义：`docs/design/frontend-interaction-guardrails.md`（UI 交互改动时查阅）
+- PR 分析方法与审核框架：`docs/PR_ANALYSIS.md`（审查 PR / 分析变更范围时查阅）
+- Merge 后总结模板：`docs/conventions/merge-summary.md`（合并后写总结时查阅）
