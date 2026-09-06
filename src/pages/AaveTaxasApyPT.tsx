@@ -114,6 +114,7 @@ const TrackedLink = ({ trackLabel, onClick, ...props }: TrackedLinkProps) => (
 
 const AaveTaxasApyPT = () => {
   useTimeOnPage(ANALYTICS_PAGE);
+  useStripStaticHeadTags();
 
   return (
   <>
