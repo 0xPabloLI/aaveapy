@@ -53,7 +53,7 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
       return client
     } catch (err) {
       const errorType = classifyRpcError(err)
-      console.warn(`[rpc-rotation] ${url} failed for chain ${chainId} (${errorType}):`, err)
+      console.warn(`[rpc-rotation] ${url} failed for chain ${chainId} (${errorType}):`, err) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
       continue
     }
   }

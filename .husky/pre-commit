@@ -1,3 +1,20 @@
 npx tsc --noEmit --pretty
 npm run lint
 npm test
+
+# ── Large file guard: warn >=10MB, block >=100MB (git/GitHub hard limit) ──
+_SIZE_SCAN=$(git diff --cached --name-only --diff-filter=ACM | while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  bytes=$(wc -c < "$f" | tr -d ' ')
+  if [ "$bytes" -ge 104857600 ]; then
+    echo "BLOCK ${f} ($((bytes / 1048576))MB)"
+  elif [ "$bytes" -ge 10485760 ]; then
+    echo "WARN ${f} ($((bytes / 1048576))MB)"
+  fi
+done)
+if echo "$_SIZE_SCAN" | grep -q '^BLOCK'; then
+  echo "$_SIZE_SCAN" | grep '^BLOCK' | while IFS= read -r line; do echo "  $line"; done
+  echo "❌ [pre-commit] BLOCKED: files >= 100MB cannot be committed (git/GitHub limit)."
+  exit 1
+fi
+echo "$_SIZE_SCAN" | grep '^WARN' | while IFS= read -r line; do echo "⚠️  [pre-commit] large file: $line — confirm intentional"; done

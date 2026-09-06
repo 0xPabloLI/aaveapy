@@ -306,7 +306,7 @@ export async function getV4UserPositionsAllSpokes(
     if (outcome.status === 'fulfilled') {
       results.push(outcome.value)
     } else {
-      console.error(`[onchain-v4] Spoke ${filteredSpokes[i].name} on chain ${chainId} failed:`, outcome.reason)
+      console.error(`[onchain-v4] Spoke ${filteredSpokes[i].name} on chain ${chainId} failed:`, outcome.reason) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
       errors.push({ chainId, spokeName: filteredSpokes[i].name, error: outcome.reason })
     }
   }

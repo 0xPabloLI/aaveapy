@@ -15,11 +15,14 @@ fi
 npm run ci:remote && npm run test:e2e:pre-push
 
 # ── Security scan (#197 toolchain: osv-scanner + semgrep) ──
-# Advisory until triaged: 9 CVEs + 12 semgrep findings pending. Flip to
-# blocking (|| exit 1) after triage. Tools skip gracefully when missing.
+# semgrep: BLOCKING (triaged 2026-09-06, 0 known FPs). osv-scanner: advisory
+# until the 9 known CVEs are fixed — flip to blocking after remediation.
 if command -v osv-scanner >/dev/null 2>&1; then
   osv-scanner --lockfile package-lock.json || echo "⚠️  [pre-push] osv-scanner: known vulnerabilities (advisory — run 'npm run scan:deps')"
 fi
 if command -v semgrep >/dev/null 2>&1; then
-  semgrep scan --config p/default --metrics=off --quiet src/ >/dev/null 2>&1 || echo "⚠️  [pre-push] semgrep: findings in src/ (advisory — run 'npm run scan:code')"
+  semgrep scan --config p/default --metrics=off --quiet --error src/ || {
+    echo "❌ [pre-push] BLOCKED: semgrep findings in src/ — run 'npm run scan:code'"
+    exit 1
+  }
 fi

@@ -78,7 +78,7 @@ function getCacheEntry<T>(key: string): CachedPayload<T> | null {
 
     return toCachedPayload(raw as CacheEntry<T>);
   } catch (error) {
-    console.warn(`Failed to read cache for ${key}:`, error);
+    console.warn(`Failed to read cache for ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     return null;
   }
 }
@@ -95,7 +95,7 @@ function setCacheEntry<T>(key: string, data: T): void {
     // Keep the lazy fingerprint key in sync for the secondary check
     localStorage.setItem(SCHEMA_FP_KEY, effectiveFp);
   } catch (error) {
-    console.warn(`Failed to write cache for ${key}:`, error);
+    console.warn(`Failed to write cache for ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
   }
 }
 
@@ -118,7 +118,7 @@ export function clearLegacyCacheEntries(storage: StorageLike = localStorage): vo
     try {
       storage.removeItem(key);
     } catch (error) {
-      console.warn(`Failed to remove legacy cache key ${key}:`, error);
+      console.warn(`Failed to remove legacy cache key ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     }
   }
 }

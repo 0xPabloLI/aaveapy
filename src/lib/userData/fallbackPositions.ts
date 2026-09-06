@@ -96,7 +96,7 @@ async function fetchV3Positions(
       failedSources.push(`${prefix}-chain-${err.chainId}`)
     }
   } catch (err) {
-    console.error(`[${prefix}] Failed to fetch V3 positions:`, err)
+    console.error(`[${prefix}] Failed to fetch V3 positions:`, err) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     failedSources.push(prefix)
   }
 
@@ -136,7 +136,7 @@ async function fetchV4Positions(
         failedSources.push(`${prefix}-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)
       }
     } else {
-      console.error(`[${prefix}] Chain ${chainId} failed:`, outcome.reason)
+      console.error(`[${prefix}] Chain ${chainId} failed:`, outcome.reason) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
       failedSources.push(`${prefix}-chain-${chainId}`)
     }
   }

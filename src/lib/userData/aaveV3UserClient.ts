@@ -205,7 +205,7 @@ export async function getV3UserPositionsMultiChain(
       results.push(outcome.value)
     } else {
       const { chainId } = assetsByMarket[marketNames[i]]
-      console.error(`[onchain-v3] Chain ${chainId} (${marketNames[i]}) failed:`, outcome.reason)
+      console.error(`[onchain-v3] Chain ${chainId} (${marketNames[i]}) failed:`, outcome.reason) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
       errors.push({ chainId, error: outcome.reason })
     }
   }

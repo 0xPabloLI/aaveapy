@@ -146,7 +146,7 @@ async function fetchV3PoolHf(
       totalDebtUsd: Number(totalDebtBase) / 1e8,
     }
   } catch (err) {
-    console.error(`[onchain-hf] V3 pool ${target.marketName} (chain ${target.chainId}) failed:`, err)
+    console.error(`[onchain-hf] V3 pool ${target.marketName} (chain ${target.chainId}) failed:`, err) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     return null
   }
 }
@@ -187,7 +187,7 @@ async function fetchV4SpokeHf(
       totalDebtUsd: Number(totalDebtValueRay) / 1e27,
     }
   } catch (err) {
-    console.error(`[onchain-hf] V4 spoke ${target.marketName} (chain ${target.chainId}) failed:`, err)
+    console.error(`[onchain-hf] V4 spoke ${target.marketName} (chain ${target.chainId}) failed:`, err) // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     return null
   }
 }

@@ -33,7 +33,7 @@
     "build": "node scripts/generate-icon-manifests.mjs && vite build",
     "build:dev": "node scripts/generate-icon-manifests.mjs && vite build --mode development",
     "scan": "npm run scan:code && npm run scan:deps",
-    "scan:code": "semgrep scan --config p/default --metrics=off src/",
+    "scan:code": "semgrep scan --config p/default --metrics=off --error src/",
     "scan:deps": "osv-scanner --lockfile ./package-lock.json",
     "lint": "eslint .",
     "lint:colors": "node scripts/check-semantic-colors.mjs",
