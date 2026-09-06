@@ -6,6 +6,7 @@ import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
 
 export interface RatesPageSection {
   id: string;
@@ -22,6 +23,10 @@ export interface RatesPageContent {
   ogLocale: string;
   title: string;
   description: string;
+  /** Absolute https URL for og:image / twitter:image. Defaults to the shared 1200x630 share card. */
+  ogImage?: string;
+  /** Alt text for the share image, localized. */
+  ogImageAlt?: string;
   h1: string;
   intro: string;
   cta: { label: string; to: string };
