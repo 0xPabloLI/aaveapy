@@ -15,10 +15,12 @@ fi
 npm run ci:remote && npm run test:e2e:pre-push
 
 # ── Security scan (#197 toolchain: osv-scanner + semgrep) ──
-# semgrep: BLOCKING (triaged 2026-09-06, 0 known FPs). osv-scanner: advisory
-# until the 9 known CVEs are fixed — flip to blocking after remediation.
+# Both gates BLOCKING (triaged + CVE-clean as of 2026-09-06).
 if command -v osv-scanner >/dev/null 2>&1; then
-  osv-scanner --lockfile package-lock.json || echo "⚠️  [pre-push] osv-scanner: known vulnerabilities (advisory — run 'npm run scan:deps')"
+  osv-scanner --lockfile package-lock.json || {
+    echo "❌ [pre-push] BLOCKED: known vulnerabilities in package-lock.json — run 'npm audit fix', then 'npm run scan:deps'"
+    exit 1
+  }
 fi
 if command -v semgrep >/dev/null 2>&1; then
   semgrep scan --config p/default --metrics=off --quiet --error src/ || {
