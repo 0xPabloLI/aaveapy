@@ -6,6 +6,7 @@ import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
 
 export interface RatesPageSection {
   id: string;
@@ -22,6 +23,10 @@ export interface RatesPageContent {
   ogLocale: string;
   title: string;
   description: string;
+  /** Absolute https URL for og:image / twitter:image. Defaults to the shared 1200x630 share card. */
+  ogImage?: string;
+  /** Alt text for the share image, localized. */
+  ogImageAlt?: string;
   h1: string;
   intro: string;
   cta: { label: string; to: string };
@@ -54,6 +59,8 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
   useTimeOnPage(analyticsPage);
 
   const canonical = `${SITE_ORIGIN}${content.path}`;
+  const ogImage = content.ogImage ?? DEFAULT_OG_IMAGE;
+  const ogImageAlt = content.ogImageAlt ?? content.title;
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
@@ -99,9 +106,16 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonical} />
         <meta property="og:locale" content={content.ogLocale} />
+        <meta property="og:site_name" content="AaveAPY" />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={ogImageAlt} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={content.title} />
         <meta name="twitter:description" content={content.description} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:image:alt" content={ogImageAlt} />
         <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
