@@ -59,6 +59,8 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
   useTimeOnPage(analyticsPage);
 
   const canonical = `${SITE_ORIGIN}${content.path}`;
+  const ogImage = content.ogImage ?? DEFAULT_OG_IMAGE;
+  const ogImageAlt = content.ogImageAlt ?? content.title;
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
