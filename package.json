@@ -79,7 +79,7 @@
   },
   "dependencies": {
     "@aave-dao/aave-address-book": "^4.57.2",
-    "@aave/react": "^4.2.0",
+    "@aave/react": "^6.5.0",
     "@aave/react-v3": "npm:@aave/react@^0.9.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
