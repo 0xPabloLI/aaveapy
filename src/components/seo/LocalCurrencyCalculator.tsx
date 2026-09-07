@@ -54,7 +54,7 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
 
   const options = useMemo<StableOption[]>(() => {
     const reserves = data?.reserves ?? [];
-    return reserves
+    const shortlist = reserves
       .filter(
         (r) =>
           STABLE_SYMBOLS.has(r.tokenSymbol?.toUpperCase() ?? '') &&
@@ -65,12 +65,24 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
           !r.isPaused,
       )
       .sort((a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0))
-      .slice(0, 8)
-      .map((r) => ({
+      .slice(0, 8);
+
+    // The same symbol can exist on one chain across several markets (Core, Prime, V4);
+    // append the market name only where the short label would be ambiguous.
+    const seen = new Map<string, number>();
+    shortlist.forEach((r) => {
+      const short = `${r.tokenSymbol} · ${r.chainName}`;
+      seen.set(short, (seen.get(short) ?? 0) + 1);
+    });
+
+    return shortlist.map((r) => {
+      const short = `${r.tokenSymbol} · ${r.chainName}`;
+      return {
         key: r.reserveId,
-        label: `${r.tokenSymbol} · ${r.chainName}`,
+        label: (seen.get(short) ?? 0) > 1 ? `${short} (${r.marketName})` : short,
         apy: r.supplyApy as number,
-      }));
+      };
+    });
   }, [data]);
 
   const active = options.find((o) => o.key === selected) ?? options[0];
