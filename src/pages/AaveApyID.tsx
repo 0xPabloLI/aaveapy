@@ -50,6 +50,23 @@ const content: RatesPageContent = {
         'Di sisi pinjaman: jaminan ETH senilai Rp 50 juta dengan pinjaman USDC senilai Rp 20 juta pada APY pinjam 5,5 % berbiaya sekitar Rp 1,1 juta setahun. Health factor tetap aman selama harga ETH tidak anjlok tajam; di bawah 1, posisi bisa dilikuidasi. Biaya gas di L2 seperti Base hanya ratusan rupiah per transaksi sehingga tidak berpengaruh, berbeda dengan Ethereum mainnet yang bisa memakan puluhan hingga ratusan ribu rupiah untuk nominal kecil.',
       ],
     },
+    {
+      id: 'apy-adalah',
+      h2: 'APY adalah apa? Penjelasan singkat sebelum menghitung imbal hasil',
+      paragraphs: [
+        'APY adalah imbal hasil tahunan yang sudah memperhitungkan efek bunga berbunga (compounding). Kalau bunga yang Anda terima ikut menghasilkan bunga lagi, angka setahunnya menjadi sedikit lebih besar daripada penjumlahan bunga sederhana. Itulah bedanya dengan APR, yang tidak memasukkan efek tersebut.',
+        'Di Aave, saldo aToken Anda bertambah terus-menerus setiap blok, jadi compounding terjadi otomatis tanpa perlu klaim manual. Karena itu angka yang paling relevan untuk deposit adalah APY, sedangkan program insentif sering mengumumkan angkanya dalam APR — dan tombol APR/APY di dashboard dipakai untuk menyamakan dasar perbandingan.',
+        'Contoh sederhana: deposit setara Rp 30 juta dengan APY 4,5 % menghasilkan sekitar Rp 1,35 juta setahun, atau sekitar Rp 112 ribu per bulan, selama tarifnya tidak berubah — dan tarif di Aave memang selalu berubah.',
+      ],
+    },
+    {
+      id: 'aave-lending-id',
+      h2: 'Meminjamkan aset di Aave: cara kerja dan risikonya',
+      paragraphs: [
+        'Meminjamkan aset di Aave tidak sama dengan deposito berjangka. Tidak ada kunci waktu dan tidak ada satu pihak peminjam tertentu: Anda menyetor ke pool, dan penarikan bisa dilakukan kapan saja selama likuiditas pool masih tersedia.',
+        'Risiko utamanya ada tiga: risiko kontrak pintar, risiko stablecoin kehilangan patokan nilainya, dan risiko likuiditas ketika utilisasi pool mendekati 100 %. Dashboard menampilkan utilisasi tiap reserve supaya Anda bisa melihat kondisi ini sebelum menyetor.',
+      ],
+    },
   ],
   drivers: {
     id: 'faktor',
@@ -133,6 +150,18 @@ const content: RatesPageContent = {
       {
         q: 'Berapa modal minimum yang masuk akal?',
         a: 'Tidak ada minimum di protokol, tetapi biaya jaringan menentukan kelayakannya. Di L2 seperti Base atau Polygon, deposit beberapa juta rupiah sudah masuk akal karena gas hanya ratusan rupiah. Di Ethereum mainnet, biaya transaksi bisa menghabiskan hasil beberapa bulan untuk nominal kecil, jadi sebaiknya dipakai untuk posisi besar saja.',
+      },
+      {
+        q: 'APY adalah apa dan bedanya dengan APR?',
+        a: 'APY adalah imbal hasil tahunan yang sudah menghitung bunga berbunga, sedangkan APR adalah tarif sederhana tanpa compounding. Untuk tarif yang sama, APY selalu sedikit lebih besar daripada APR. Di Aave, bunga deposit ditambahkan terus-menerus ke saldo aToken, jadi compounding berjalan otomatis.',
+        },
+      {
+        q: 'Apakah APY di Aave dijamin tetap?',
+        a: 'Tidak. Tarif dihitung dari utilisasi pool dan berubah setiap saat, dan insentif tambahan bisa dikurangi atau dihentikan oleh program yang mendanainya. Angka yang Anda lihat adalah kondisi saat ini, bukan janji imbal hasil.',
+      },
+      {
+        q: 'Bagaimana cara membandingkan APY antar jaringan?',
+        a: 'Bandingkan reserve yang sama di beberapa jaringan, lalu perhatikan tiga hal: APY efektif (tarif dasar ditambah insentif), ukuran pool dibanding nominal Anda, dan tanggal berakhirnya kampanye insentif. Untuk nominal kecil, jaringan L2 biasanya lebih masuk akal karena biaya gasnya jauh lebih murah.',
       },
     ],
   },
