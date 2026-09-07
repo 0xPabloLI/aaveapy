@@ -5,6 +5,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/zh/aave-lilv-apy',
   lang: 'zh-Hant',
+  languageSwitcherLabel: '其他語言',
   ogLocale: 'zh_TW',
   title: 'Aave 利率與 APY 即時查詢 | Aave V3 存借利率',
   description:

@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/id/apy-aave',
   lang: 'id',
+  languageSwitcherLabel: 'Bahasa lain',
   ogLocale: 'id_ID',
   title: 'APY Adalah? Bunga dan APY Aave V3 secara real-time',
   description:

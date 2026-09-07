@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/es/tasas-aave-apy',
   lang: 'es',
+  languageSwitcherLabel: 'Otros idiomas',
   ogLocale: 'es_ES',
   title: 'Tasas Aave V3 y APY — lending cripto en tiempo real',
   description:

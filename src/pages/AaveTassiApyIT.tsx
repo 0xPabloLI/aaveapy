@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/it/tassi-aave-apy',
   lang: 'it',
+  languageSwitcherLabel: 'Altre lingue',
   ogLocale: 'it_IT',
   title: 'Tassi Aave e APY in tempo reale | Aave V3',
   description:

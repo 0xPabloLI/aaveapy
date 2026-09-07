@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/ru/stavki-aave-apy',
   lang: 'ru',
+  languageSwitcherLabel: 'Другие языки',
   ogLocale: 'ru_RU',
   title: 'Ставки Aave и APY в реальном времени | Aave V3',
   description:

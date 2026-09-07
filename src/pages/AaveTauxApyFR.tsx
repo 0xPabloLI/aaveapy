@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/fr/taux-aave-apy',
   lang: 'fr',
+  languageSwitcherLabel: 'Autres langues',
   ogLocale: 'fr_FR',
   title: 'Taux et APY Aave V3 — rendement DeFi en temps réel',
   description:

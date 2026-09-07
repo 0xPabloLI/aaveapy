@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/ja/aave-kinri-apy',
   lang: 'ja',
+  languageSwitcherLabel: '他の言語',
   ogLocale: 'ja_JP',
   title: 'Aave 金利・APY をリアルタイム比較 | Aave V3 レート',
   description:

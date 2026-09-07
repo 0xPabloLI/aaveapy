@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/de/aave-zinsen-apy',
   lang: 'de',
+  languageSwitcherLabel: 'Weitere Sprachen',
   ogLocale: 'de_DE',
   title: 'Aave Zinsen & APY — Lending-Rendite V3 in Echtzeit',
   description:
