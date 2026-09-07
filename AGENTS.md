@@ -7,6 +7,7 @@
 
 ## Project Snapshot
 
+- **Agent harness 总览**: `docs/agents/harness.md` — 本地改编登记（相对 agent-harness core 的偏离与刻意不搬项）。
 - Frontend app: React + TypeScript + Vite for Aave market analysis UI.
 - Main data sources: backend `GET /markets` and `GET /meta/side-data`.
 - Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
