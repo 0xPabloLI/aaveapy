@@ -331,6 +331,12 @@ const AaveTaxasApyPT = () => {
             DeFi Yield Tracker
           </TrackedLink>
         </nav>
+
+        <LanguageSwitcher
+          currentPath="/pt-br/taxas-aave-apy"
+          ariaLabel="Outros idiomas"
+          analyticsPage={ANALYTICS_PAGE}
+        />
       </div>
     </main>
   </>
