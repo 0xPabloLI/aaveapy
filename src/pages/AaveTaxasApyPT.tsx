@@ -52,7 +52,20 @@ const FAQS: Faq[] = [
     q: 'Preciso conectar carteira para consultar as taxas?',
     a: 'Não. A consulta é somente leitura e não exige carteira nem cadastro. Você só conecta carteira no app oficial da Aave na hora de depositar ou tomar emprestado.',
   },
+  {
+    q: 'Quanto rende 10 mil reais em stablecoin na Aave?',
+    a: 'Com um APY efetivo de 5%, R$ 10 mil convertidos em stablecoin rendem cerca de R$ 500 em um ano, ou aproximadamente R$ 41 por mês, se a taxa não mudar — e ela muda o tempo todo. Antes de comparar com o CDI, considere o risco de contrato inteligente, o risco de variação cambial do dólar e os custos de entrada e saída.',
+  },
+  {
+    q: 'Emprestar cripto na Aave é seguro?',
+    a: 'Não existe garantia. Os empréstimos são sobrecolateralizados e o protocolo é auditado e usado há anos, mas permanecem o risco de falha em contrato inteligente, o risco de a stablecoin perder a paridade e o risco de iliquidez temporária quando a utilização do pool chega perto de 100%. Nunca deposite valor que você não pode perder.',
+  },
+  {
+    q: 'Em qual rede vale mais a pena depositar a partir do Brasil?',
+    a: 'Para valores menores, redes L2 como Base, Arbitrum e Polygon costumam fazer mais sentido por causa do custo de transação. A Ethereum tem a liquidez mais profunda, mas as taxas de rede podem consumir boa parte do rendimento de depósitos pequenos.',
+  },
 ];
+
 
 const RATE_DRIVERS = [
   {
@@ -211,6 +224,26 @@ const AaveTaxasApyPT = () => {
             por rede.
           </p>
         </section>
+
+        <section aria-labelledby="rendimento-stablecoin" className="mt-10">
+          <h2 id="rendimento-stablecoin" className="text-xl font-semibold mb-3">
+            Rendimento com stablecoin: como comparar de verdade
+          </h2>
+          <p className="text-muted-foreground leading-relaxed">
+            Um rendimento anunciado só é comparável quando você separa três coisas: a taxa base paga
+            pelos tomadores, os incentivos distribuídos em token e o prazo em que esses incentivos
+            acabam. Um APY de 9% que termina em dez dias vale menos que 5% estáveis por seis meses.
+            Some ainda o tamanho do pool: se o seu depósito for grande em relação à liquidez
+            disponível, a utilização cai no mesmo instante e a taxa que você vai receber é menor que
+            a exibida antes do depósito.
+          </p>
+          <p className="mt-3 text-muted-foreground leading-relaxed">
+            Para quem está no Brasil, vale lembrar que o rendimento é em dólar. A variação do câmbio
+            pode ser maior que o próprio APY no período, tanto a favor quanto contra. Este site é
+            informativo e não substitui orientação profissional sobre tributação ou investimento.
+          </p>
+        </section>
+
 
         <section aria-labelledby="fatores" className="mt-10">
           <h2 id="fatores" className="text-xl font-semibold mb-4">
