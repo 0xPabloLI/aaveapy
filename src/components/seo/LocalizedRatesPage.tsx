@@ -6,6 +6,10 @@ import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
 import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
+import {
+  LocalCurrencyCalculator,
+  type CalculatorCopy,
+} from '@/components/seo/LocalCurrencyCalculator';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
@@ -40,6 +44,8 @@ export interface RatesPageContent {
   sections: RatesPageSection[];
   drivers: { h2: string; id: string; items: { title: string; body: string }[] };
   howTo: { h2: string; id: string; steps: string[] };
+  /** Live APY calculator expressed in the market's own currency. */
+  calculator?: CalculatorCopy;
   faq: { h2: string; items: { q: string; a: string }[] };
   related: { ariaLabel: string; links: { to: string; label: string }[] };
   /** Localized heading for the cross-language link list. */
@@ -184,6 +190,10 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
               ))}
             </ul>
           </section>
+
+          {content.calculator && <LocalCurrencyCalculator copy={content.calculator} />}
+
+
 
           <section aria-labelledby={content.howTo.id} className="mt-10">
             <h2 id={content.howTo.id} className="text-xl font-semibold mb-3">
