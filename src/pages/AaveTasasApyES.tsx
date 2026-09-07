@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/es/tasas-aave-apy',
   lang: 'es',
+  languageSwitcherLabel: 'Otros idiomas',
   ogLocale: 'es_ES',
   title: 'Tasas Aave V3 y APY — lending cripto en tiempo real',
   description:
@@ -40,6 +41,22 @@ const content: RatesPageContent = {
         'Supón un depósito de 10.000 € convertidos a USDC en Base. Con un APY de depósito del 4,2 %, el rendimiento bruto anual ronda los 420 €, unos 35 € al mes, siempre que la tasa se mantuviera estable — algo que en la práctica nunca ocurre.',
         'Si a esa misma reserva se suma un incentivo Merit del 1,8 % de APR, el rendimiento efectivo sube a cerca del 6 %, aproximadamente 600 € al año. Esa es justo la diferencia que el panel muestra entre «tasa base» y «APY efectivo».',
         'En el lado del préstamo: con 10.000 € de ETH como garantía y 4.000 € de USDC prestados al 5,5 % de APY, el coste anual es de unos 220 €. El health factor se mantiene holgado mientras el ETH no caiga con fuerza; por debajo de 1 la posición pasa a ser liquidable. Las comisiones en una L2 como Base son de céntimos por transacción y resultan irrelevantes frente a estas cifras, algo que no sucede en la red principal de Ethereum con importes pequeños.',
+      ],
+    },
+    {
+      id: 'aave-lending',
+      h2: 'Aave lending: prestar cripto sin intermediarios',
+      paragraphs: [
+        'Hacer lending en Aave significa depositar un activo en un pool común y recibir un aToken cuyo saldo crece solo, sin plazo fijo ni contraparte concreta. Puedes retirar en cualquier momento mientras el pool tenga liquidez disponible; esa disponibilidad, y no un contrato, es lo que determina el reintegro inmediato.',
+        'Los riesgos que conviene tener claros son tres: el riesgo de contrato inteligente, el riesgo de que el stablecoin depositado pierda su paridad y el riesgo de iliquidez temporal cuando la utilización se acerca al 100 %. Por eso el panel muestra la utilización de cada reserva junto a la tasa.',
+      ],
+    },
+    {
+      id: 'aave-v3-reservas',
+      h2: 'Aave V3: por qué la misma moneda rinde distinto en cada red',
+      paragraphs: [
+        'En Aave V3 cada red tiene su propio pool y sus propios parámetros, así que USDC en Base, en Arbitrum y en Ethereum son mercados independientes. Comparar "la tasa de Aave" en abstracto no sirve: hay que comparar reserva por reserva y red por red.',
+        'A eso se suman los límites de suministro y préstamo por reserva, el modo aislamiento para activos nuevos y el E-Mode para activos correlacionados. Un depósito grande en una red pequeña mueve la curva mucho más que el mismo importe en Ethereum, donde la profundidad de liquidez es mayor.',
       ],
     },
   ],
@@ -125,6 +142,18 @@ const content: RatesPageContent = {
       {
         q: '¿Qué red conviene desde España para importes pequeños?',
         a: 'Para unos pocos miles de euros, las L2 (Base, Arbitrum, Optimism, Polygon) son claramente más adecuadas: las comisiones se cuentan en céntimos, frente a varios euros habituales en la red principal de Ethereum. La red principal solo compensa por profundidad de liquidez en posiciones grandes.',
+      },
+      {
+        q: '¿Qué es exactamente el lending en Aave?',
+        a: 'Es depositar un activo en un pool para que otros lo tomen prestado con garantía sobrecolateralizada. A cambio recibes un aToken que acumula intereses en tu propio saldo, sin plazo de permanencia y sin necesidad de encontrar una contraparte.',
+      },
+      {
+        q: '¿Aave V3 da mejores tasas que versiones anteriores?',
+        a: 'No hay una tasa "de V3" mejor por definición. Lo que cambia es la estructura: mercados independientes por red, límites por reserva y modos como E-Mode e isolation. En la práctica eso genera diferencias grandes entre redes, y ahí está la oportunidad de encontrar mejor rentabilidad para el mismo activo.',
+      },
+      {
+        q: '¿Cuánto se puede ganar realmente con stablecoins?',
+        a: 'La tasa base de las reservas de stablecoins suele moverse en el rango de un dígito bajo, y los incentivos pueden elevarla de forma temporal. Cualquier cifra muy alta suele venir de una campaña con fecha de caducidad, así que revisa siempre cuándo termina antes de decidir.',
       },
     ],
   },

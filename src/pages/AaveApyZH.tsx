@@ -5,6 +5,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/zh/aave-lilv-apy',
   lang: 'zh-Hant',
+  languageSwitcherLabel: '其他語言',
   ogLocale: 'zh_TW',
   title: 'Aave 利率與 APY 即時查詢 | Aave V3 存借利率',
   description:
@@ -51,6 +52,23 @@ const content: RatesPageContent = {
         '假設在 Base 鏈存入 10,000 USDC，存款 APY 為 4.2%，一年的利息約 420 USDC，平均每月約 35 USDC。這是把利率固定住的推估，實際上利率每個區塊都可能變動。',
         '若同一個儲備池另有 1.8% APR 的 Merit 獎勵，實際年化收益會提高到約 6%，一年約 600 USDC。看板上基礎利率與有效 APY 之間的差距，指的就是這一段。',
         '借款端：以價值 10,000 USDC 的 ETH 作為抵押、借出 4,000 USDC，在借款 APY 5.5% 之下，一年利息成本約 220 USDC。Base 等 L2 一次操作的手續費只要幾美分，但在 Ethereum 主網，小額操作的手續費可能就吃掉大半收益。',
+      ],
+    },
+    {
+      id: 'apy-shi-shenme',
+      h2: 'APY 是什麼？和 APR 差在哪裡',
+      paragraphs: [
+        'APY 是把複利算進去之後的年化報酬率，APR 則是不計複利的單利年率。同樣的利率之下，APY 會略高於 APR。在 Aave 存入資產後，aToken 的餘額會隨區塊持續增加，等於複利自動發生，不需要手動領取。',
+        '獎勵計畫（Merit、Merkl、Brevis）多半以 APR 公布數字，所以看板上提供 APR/APY 切換，讓你在同一個基準上比較基礎利率與獎勵。',
+        '舉例來說，存入約 100 萬新台幣等值的 USDC，若存款 APY 為 4.5 %，在利率不變的前提下一年約有 4.5 萬元利息，換算每月約 3,700 元；但實際利率每分鐘都在變動，這只是估算。',
+      ],
+    },
+    {
+      id: 'wendingbi-celue',
+      h2: '穩定幣存款前該看的三個數字',
+      paragraphs: [
+        '第一是有效 APY（基礎利率加獎勵），第二是儲備池規模相對於你的金額，第三是獎勵計畫的結束日期。只看最高的那個數字，很容易被幾天後就結束的活動誤導。',
+        '若你的金額相對池子偏大，存入的當下利用率會下降，利率也會跟著往下走。建議先用看板的模擬器輸入金額，看看曲線會被推動多少再決定。',
       ],
     },
   ],
@@ -124,6 +142,18 @@ const content: RatesPageContent = {
       {
         q: '網站上的數據來自哪裡？',
         a: '資料來自 Aave V3 的鏈上狀態與各獎勵計畫的公開資訊，每幾分鐘更新一次。實際操作前，請再以官方前端顯示的數字為準。',
+      },
+      {
+        q: 'APY 是什麼？和 APR 有什麼不同？',
+        a: 'APY 是含複利的年化報酬率，APR 不含複利。Aave 的存款利息會連續累積在 aToken 餘額上，所以實際上是以複利成長；獎勵則常以 APR 公布，可用看板上的切換鈕統一比較基準。',
+      },
+      {
+        q: '看板上的利率有保證嗎？',
+        a: '沒有保證。利率由儲備池的利用率決定，隨時在變；獎勵也可能被出資方調降或停止。畫面上的數字是當下狀態，不是承諾的報酬。',
+      },
+      {
+        q: '小額資金適合在哪條鏈上操作？',
+        a: '以手續費來看，Base、Arbitrum、Optimism 等 L2 較適合小額；以太坊主網流動性最深，但手續費較高，小額存款的利息容易被交易成本吃掉。',
       },
     ],
   },

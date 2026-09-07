@@ -3,6 +3,7 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/de/aave-zinsen-apy',
   lang: 'de',
+  languageSwitcherLabel: 'Weitere Sprachen',
   ogLocale: 'de_DE',
   title: 'Aave Zinsen & APY — Lending-Rendite V3 in Echtzeit',
   description:
@@ -40,6 +41,22 @@ const content: RatesPageContent = {
         'Angenommen, du legst 10.000 € als USDC auf Base ein. Bei einem angezeigten Einlage-APY von 4,2 % ergibt das rund 420 € Bruttoertrag im Jahr, also etwa 35 € pro Monat — vorausgesetzt, der Zins bliebe konstant, was in der Praxis nie der Fall ist.',
         'Kommt auf dieselbe Reserve ein Merit-Anreiz von 1,8 % APR dazu, liegt die effektive Rendite bei etwa 6 %, also grob 600 € im Jahr. Genau diese Differenz zeigt das Dashboard als Unterschied zwischen Basiszins und effektivem APY.',
         'Auf der Kreditseite: 10.000 € ETH als Sicherheit, davon 4.000 € USDC geliehen zu 5,5 % Kredit-APY, kostet rund 220 € im Jahr. Der Health Factor bleibt komfortabel, solange ETH nicht stark einbricht; unter 1 wird die Position liquidierbar. Die Transaktionsgebühren auf einem L2 wie Base liegen im Cent-Bereich und fallen gegenüber diesen Beträgen nicht ins Gewicht — auf dem Ethereum-Mainnet wäre das bei kleinen Summen anders.',
+      ],
+    },
+    {
+      id: 'aave-kurs-und-zinsen',
+      h2: 'Aave Kurs und Aave Zinsen: was zusammenhängt und was nicht',
+      paragraphs: [
+        'Der Aave Kurs ist der Preis des AAVE-Tokens an den Börsen. Die Zinsen im Protokoll entstehen dagegen völlig unabhängig davon: Sie ergeben sich aus der Auslastung des jeweiligen Pools, also aus dem Verhältnis von geliehenem zu bereitgestelltem Kapital. Ein steigender Token-Kurs erhöht Ihre Einlagenzinsen nicht.',
+        'Indirekt gibt es trotzdem eine Verbindung. Steigt der Kurs von Anreiz-Token, die über Merit, Merkl oder Brevis ausgeschüttet werden, steigt auch der in Euro gemessene Wert dieser Belohnungen — und damit die effektive Rendite einer Reserve, obwohl der Basiszins gleich bleibt.',
+      ],
+    },
+    {
+      id: 'defi-rendite',
+      h2: 'DeFi Rendite mit Stablecoins realistisch einschätzen',
+      paragraphs: [
+        'Eine belastbare DeFi Rendite besteht aus drei Bausteinen: dem Basiszins der Reserve, den laufenden Anreizprogrammen und den Kosten (Gas, Wechselkurs, Steuern). Wer nur auf die größte APY-Zahl schaut, übersieht meist, dass Anreize ein Enddatum haben und die Zinskurve sich nach einer großen Einzahlung sofort verschiebt.',
+        'Praktisch heißt das: Vergleichen Sie dieselbe Reserve über mehrere Netzwerke, prüfen Sie die Poolgröße im Verhältnis zu Ihrem Betrag und rechnen Sie mit dem Simulator durch, wie stark Ihre eigene Position die Kurve bewegt. Bei kleinen Beträgen sind Layer-2-Netze wie Base oder Arbitrum wegen der Gaskosten fast immer die bessere Wahl.',
       ],
     },
   ],
@@ -125,6 +142,18 @@ const content: RatesPageContent = {
       {
         q: 'Gilt die einjährige Haltefrist für Aave-Einlagen?',
         a: 'Das ist keine Steuerberatung. Für private Veräußerungsgeschäfte mit Kryptowerten gilt in Deutschland grundsätzlich eine einjährige Haltefrist; ob Lending-Erträge diese Einordnung verändern oder als sonstige Einkünfte zu behandeln sind, hängt vom Einzelfall und der aktuellen Verwaltungsauffassung ab. Dokumentiere Einzahlungen, Abhebungen und Rewards mit Zeitstempel und lass die Einordnung steuerlich prüfen.',
+      },
+      {
+        q: 'Beeinflusst der Aave Kurs meine Zinsen?',
+        a: 'Nein, nicht direkt. Der Einlagen- und Kreditzins hängt allein von der Auslastung des jeweiligen Pools und den Kurvenparametern der Reserve ab. Der AAVE-Kurs wirkt sich nur dann aus, wenn Belohnungen in Token ausgezahlt werden — dann verändert sich der Euro-Gegenwert dieser Belohnungen.',
+      },
+      {
+        q: 'Was bedeutet Aave Lending konkret?',
+        a: 'Sie stellen einen Vermögenswert in einen Pool ein und erhalten dafür einen aToken, dessen Guthaben laufend wächst. Es gibt keine feste Laufzeit: Sie können jederzeit abziehen, solange im Pool freie Liquidität vorhanden ist. Bei sehr hoher Auslastung kann eine Auszahlung kurzzeitig warten müssen, bis Kredite zurückgezahlt werden.',
+      },
+      {
+        q: 'Welche DeFi Rendite ist bei Stablecoins realistisch?',
+        a: 'Historisch liegt der Basiszins für große Stablecoin-Reserven meist im niedrigen einstelligen Bereich, mit Anreizprogrammen zeitweise deutlich darüber. Zweistellige Dauerrenditen sind bei Aave die Ausnahme und fast immer an befristete Programme gebunden — prüfen Sie deshalb immer das Enddatum der Kampagne.',
       },
     ],
   },
