@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
 import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
@@ -154,6 +155,7 @@ const AaveTaxasApyPT = () => {
       <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
       <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
     </Helmet>
+    <LocaleAlternates />
 
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">

@@ -124,6 +124,7 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
         <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
+      <LocaleAlternates />
 
       <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
