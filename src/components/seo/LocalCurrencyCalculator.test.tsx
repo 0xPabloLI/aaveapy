@@ -50,6 +50,8 @@ describe('LocalCurrencyCalculator', () => {
     });
   });
 
+  afterEach(() => cleanup());
+
   it('computes yearly, monthly and daily earnings in the local currency', () => {
     render(<LocalCurrencyCalculator copy={copy} />);
     // 10.000 BRL at 5% => 500 / year, ~41,67 / month, ~1,37 / day
