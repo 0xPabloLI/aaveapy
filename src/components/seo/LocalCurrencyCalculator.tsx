@@ -67,8 +67,8 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
       .sort((a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0))
       .slice(0, 8);
 
-    // The same symbol can exist on one chain across several markets (Core, Prime, V4);
-    // append the market name only where the short label would be ambiguous.
+    // The same symbol can exist on one chain across several markets (Horizon, V4 Bluechip…);
+    // append a readable market suffix only where the short label would be ambiguous.
     const seen = new Map<string, number>();
     shortlist.forEach((r) => {
       const short = `${r.tokenSymbol} · ${r.chainName}`;
@@ -77,9 +77,13 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
 
     return shortlist.map((r) => {
       const short = `${r.tokenSymbol} · ${r.chainName}`;
+      const suffix = (r.marketName ?? '')
+        .replace(/^Aave/i, '')
+        .replace(new RegExp(r.chainName ?? '', 'i'), '')
+        .trim();
       return {
         key: r.reserveId,
-        label: (seen.get(short) ?? 0) > 1 ? `${short} (${r.marketName})` : short,
+        label: (seen.get(short) ?? 0) > 1 && suffix ? `${short} (${suffix})` : short,
         apy: r.supplyApy as number,
       };
     });
