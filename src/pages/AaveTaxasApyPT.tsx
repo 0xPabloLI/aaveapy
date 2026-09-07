@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
+import { LocalCurrencyCalculator } from '@/components/seo/LocalCurrencyCalculator';
 import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
@@ -260,6 +261,29 @@ const AaveTaxasApyPT = () => {
             ))}
           </ul>
         </section>
+
+        <LocalCurrencyCalculator
+          copy={{
+            id: 'calculadora',
+            h2: 'Calculadora de rendimento em reais',
+            intro:
+              'Informe um valor em reais e escolha uma reserva de stablecoin: a calculadora usa o APY de depósito ao vivo da Aave V3 e mostra o ganho bruto por ano, por mês e por dia.',
+            numberLocale: 'pt-BR',
+            currency: 'BRL',
+            defaultAmount: 10000,
+            amountLabel: 'Valor depositado (R$)',
+            reserveLabel: 'Reserva (taxa ao vivo)',
+            apyLabel: 'APY de depósito',
+            perYear: 'Por ano',
+            perMonth: 'Por mês',
+            perDay: 'Por dia',
+            usdEquivalentLabel: 'Equivale em dólares:',
+            loading: 'Carregando as taxas ao vivo…',
+            error: 'Taxas indisponíveis no momento. Tente de novo em alguns minutos.',
+            disclaimer:
+              'Estimativa com taxa constante — o APY da Aave muda o tempo todo. O rendimento é gerado em dólar, então variação cambial, taxas de rede e tributação não estão incluídas. Não é recomendação de investimento.',
+          }}
+        />
 
         <section aria-labelledby="como-usar" className="mt-10">
           <h2 id="como-usar" className="text-xl font-semibold mb-3">
