@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+// @vitest-environment happy-dom
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { LocalCurrencyCalculator, type CalculatorCopy } from './LocalCurrencyCalculator';
 
 const marketsMock = vi.fn();
