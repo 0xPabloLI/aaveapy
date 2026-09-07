@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
+import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
@@ -41,6 +42,8 @@ export interface RatesPageContent {
   howTo: { h2: string; id: string; steps: string[] };
   faq: { h2: string; items: { q: string; a: string }[] };
   related: { ariaLabel: string; links: { to: string; label: string }[] };
+  /** Localized heading for the cross-language link list. */
+  languageSwitcherLabel?: string;
 }
 
 type TrackedLinkProps = ComponentProps<typeof Link> & { trackLabel: string; page: string };
@@ -230,8 +233,15 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
               </span>
             ))}
           </nav>
+
+          <LanguageSwitcher
+            currentPath={content.path}
+            ariaLabel={content.languageSwitcherLabel ?? 'Other languages'}
+            analyticsPage={analyticsPage}
+          />
         </div>
       </main>
+
     </>
   );
 }
