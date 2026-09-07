@@ -42,7 +42,6 @@ const content: RatesPageContent = {
         "Côté emprunt, si vous déposez 10 000 € d'ETH en garantie et empruntez 4 000 € d'USDC à 5,5 % d'APY, le coût annuel est d'environ 220 €. Votre health factor reste confortable tant que l'ETH ne chute pas brutalement ; en dessous de 1, la position devient liquidable. Les frais de gaz sur un L2 comme Base restent de l'ordre de quelques centimes par transaction, donc négligeables face à ces montants — ce ne serait pas le cas sur le mainnet Ethereum pour un petit dépôt.",
       ],
     },
-  ],
     {
       id: 'rendement-defi',
       h2: 'DeFi rendement : où trouver le meilleur rendement stablecoin',
@@ -60,6 +59,7 @@ const content: RatesPageContent = {
         "Les risques à connaître restent le risque de contrat intelligent, le risque de dépeg du stablecoin déposé, et le risque d'illiquidité temporaire quand l'utilisation approche des 100 %. Le tableau de bord affiche justement l'utilisation de chaque réserve pour repérer ces situations avant de déposer.",
       ],
     },
+  ],
   drivers: {
     id: 'facteurs',
     h2: "Ce qui détermine l'APY de chaque réserve",
