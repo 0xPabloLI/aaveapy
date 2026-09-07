@@ -43,6 +43,23 @@ const content: RatesPageContent = {
       ],
     },
   ],
+    {
+      id: 'rendement-defi',
+      h2: 'DeFi rendement : où trouver le meilleur rendement stablecoin',
+      paragraphs: [
+        "Quand on parle de rendement DeFi, on compare en réalité trois choses différentes : le taux de base payé par les emprunteurs, les incitations distribuées en tokens, et le risque propre à chaque réserve. Sur Aave, seul le premier est garanti par la courbe du protocole ; les deux autres varient selon les programmes en cours et la qualité de l'actif déposé.",
+        "Pour un rendement stablecoin, la comparaison utile se fait réserve par réserve : USDC sur Base, USDT sur Arbitrum, USDC sur Ethereum n'ont ni la même utilisation, ni la même profondeur, ni les mêmes incitations. Un écart de 2 points d'APY entre deux réseaux est courant et se referme en quelques heures dès que la liquidité se déplace.",
+        "Notre règle de lecture : partez de l'APY effectif (base + incitations), vérifiez la taille du pool pour savoir si votre montant déplacera la courbe, puis regardez si l'incitation a une date de fin. Un rendement à 9 % qui s'arrête dans dix jours ne vaut pas un rendement à 5 % stable sur six mois.",
+      ],
+    },
+    {
+      id: 'aave-lending-v3',
+      h2: 'Aave lending et Aave V3 : prêter sans intermédiaire',
+      paragraphs: [
+        "Le lending sur Aave V3 ne ressemble pas à un compte à terme : il n'y a ni durée bloquée, ni contrepartie unique. Vous déposez, vous recevez un aToken, vous retirez quand vous voulez tant que le pool dispose de liquidité disponible. C'est cette liquidité disponible — et non un engagement contractuel — qui conditionne le retrait immédiat.",
+        "Les risques à connaître restent le risque de contrat intelligent, le risque de dépeg du stablecoin déposé, et le risque d'illiquidité temporaire quand l'utilisation approche des 100 %. Le tableau de bord affiche justement l'utilisation de chaque réserve pour repérer ces situations avant de déposer.",
+      ],
+    },
   drivers: {
     id: 'facteurs',
     h2: "Ce qui détermine l'APY de chaque réserve",
@@ -125,6 +142,18 @@ const content: RatesPageContent = {
       {
         q: 'Quel réseau choisir depuis la France pour de petits montants ?',
         a: "Pour quelques milliers d'euros, les L2 (Base, Arbitrum, Optimism, Polygon) sont nettement plus adaptés : les frais de transaction s'y comptent en centimes, contre parfois plusieurs euros sur le mainnet Ethereum. Le mainnet garde l'avantage de la profondeur de liquidité, utile seulement pour des positions importantes.",
+      },
+      {
+        q: 'Quel est le meilleur rendement stablecoin en DeFi aujourd’hui ?',
+        a: "Il n'y a pas de réponse figée : le classement change plusieurs fois par jour. En pratique, les réserves USDC et USDT sur les L2 offrent le meilleur compromis rendement / liquidité, et les incitations Merit ou Merkl font souvent la différence finale. Triez le tableau de bord par APY effectif et vérifiez la date de fin des programmes avant de vous décider.",
+      },
+      {
+        q: 'Le rendement DeFi affiché est-il garanti ?',
+        a: "Non. Le taux de base bouge à chaque bloc en fonction de l'utilisation du pool, et les incitations peuvent être réduites ou arrêtées par les programmes qui les financent. Les chiffres affichés sont une photo de l'instant, pas un rendement contractuel.",
+      },
+      {
+        q: 'Aave V3 est-il différent d’Aave V2 pour un prêteur ?',
+        a: "Oui, sur trois points concrets : la V3 sépare les marchés par réseau avec des paramètres propres, elle ajoute des plafonds de dépôt et d'emprunt par réserve, et elle introduit l'E-Mode et l'isolation mode. Pour un prêteur, cela signifie surtout que le même actif peut afficher des taux très différents selon le réseau choisi.",
       },
     ],
   },
