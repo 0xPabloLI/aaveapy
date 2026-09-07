@@ -1,14 +1,16 @@
 # Scenario Enumeration Checklist
 
-> 每次 `grill-with-docs` 阶段逐类检查。产出直接进入 spec 的 **Scenario & Risk Verification Matrix**，矩阵行成为 TDD 测试用例。
+> 在 R2/R3 的决策阶段逐类检查适用场景。S1 把结论记入当前 scope 与验证计划；S2/S3 固化到 spec 的 **Scenario & Risk Verification Matrix**。每行都必须有 evidence，但不一定各自对应一个自动化测试。
 >
 > 与 `scenario-matrix.md` 互补：本文档定义**查什么**，scenario-matrix 定义**怎么记**。
+>
+> 各类目中的示例混用了不同技术栈（React/缓存库/数据库/区块链等），按本 repo 的实际技术栈替换对应例子；**类目本身与「要问的问题」是通用的**。`[SLOT: 可追加本 repo 专属专项类目，如认证授权 / 内容发布 / 内存缓存]`
 
 ## 用法
 
-1. Grill 阶段：逐类过一遍"要问的问题"，确保每类都有明确答案。
-2. Spec 阶段：将确认的边界场景写入 Scenario & Risk Verification Matrix，每行标注风险维度。
-3. TDD 阶段：矩阵行 = 测试用例，先写测试（red）再实现（green）。
+1. 决策阶段：逐类过一遍「要问的问题」，只保留与本次改动相关的场景并给出明确答案。
+2. 记录阶段：S1 写入当前 scope/验证计划；S2/S3 写入 Scenario & Risk Verification Matrix（含 Modified Files Impact + Behavioral Scenarios）。
+3. 实施阶段：确定且可自动验证的行为走 TDD；其余场景使用静态检查、runtime/real-data smoke 或 human acceptance，并保留行到 evidence 的映射。
 
 ---
 
@@ -17,105 +19,108 @@
 **要问的问题**：
 
 - 所有 optional 字段为 `undefined` 时行为是否定义？
-- 空数组（`[]`）、空 Map（`new Map()`）、空字符串（`""`）是否独立测试？
+- 空数组（`[]`）、空字符串（`""`）、空对象（`{}`）是否独立测试？
 - `0` vs `null` vs `undefined` 的语义差异是否处理？
-- `?? null` 是否吞掉了 `0` / `false` / `""`？
+- 使用 `??` 还是 `||` 是否符合 `0`、`false`、`""`、`null`、`undefined` 的业务语义？
 
 **常见陷阱**：
 
-- `value ?? defaultValue` 在 `value = 0` 时也走 fallback——对数值字段是 bug。
-- API 字段 omit `undefined` / 空数组，消费方需处理字段缺失。
-- `null` 表示"明确无值"（如无债务时 HF = null），`undefined` 表示"未提供"——不可互换。
+- `value ?? defaultValue` **只在 `value` 为 `null` 或 `undefined` 时走 fallback**，会保留 `0`、`false` 和 `""`。
+- `value || defaultValue` 会把 `0`、`false` 和 `""` 也视为 falsy 并走 fallback；这些值有业务意义时常导致 bug。
+- API 返回字段为 `null` vs 字段不存在——消费方需统一处理。
+- `null` 表示「明确无值」（如文章无封面图），`undefined` 表示「未查询」——不可互换。
 
 ## 2. 数值精度
 
 **要问的问题**：
 
-- WAD / RAY 转换是否走 `@internal/aave-shared-contracts/units.ts` 统一入口？
+- 金额/链上数量计算是否用整数最小单位而非浮点？
 - 浮点比较是否用 `|delta| < epsilon` 而非 `===`？
-- `raw`（base units）vs `value`（human-readable）vs USD 是否区分清楚？
+- 百分比/比率计算是否明确单位（0-1 vs 0-100；raw vs human-readable）？
+- 数据库/API 返回 numeric 的字符串化，是否正确转换？
 
 **常见陷阱**：
 
-- `raw === "1"` 是 1 wei（10⁻¹⁸），不是 1 token。`value === 1` 才是 1 whole token。
-- `Number(wad) / 1e18` 在大数时丢精度——应拆为 `Number(wad / WAD) + Number(wad % WAD) / Number(WAD)`。
-- `max uint256`（无债务）→ `null`，不能当 `Infinity` 或超大数字处理。
+- `0.1 + 0.2 !== 0.3` — 金额计算用整数最小单位避免浮点误差。
+- `JSON.parse` 大整数丢精度 — 超过 `Number.MAX_SAFE_INTEGER` 用 `BigInt`。
+- 百分比单位不一致（前端 0-1，后端 0-100）→ 显示 100x 偏差。
+- 链上 raw（base units 含 decimals）与 value（human-readable）混用 → 千倍级错误。
 
 ## 3. 状态转换
 
 **要问的问题**：
 
-- 组件 mount / unmount 期间的异步操作是否处理（竞态 / 内存泄漏）？
-- wallet connect → disconnect → reconnect 的状态流转是否完整？
-- mode toggle（APY/APR、Portfolio/Shared、Single/Portfolio）期间的中间态是否有数据残留？
-- React Query stale / fetching / error 状态的组合是否覆盖？
+- 核心实体状态流转是否完整（draft → published → archived → deleted 等）？
+- 用户角色/权限切换时 UI 是否正确响应？
+- 数据获取层的 loading / error / success 状态组合是否覆盖？
+- 组件 mount / unmount 期间的异步操作是否处理？
 
 **常见陷阱**：
 
+- 状态转换的中间态未处理（如并发编辑期间的状态漂移）。
+- 角色变更后客户端缓存未清理 → 低权限用户看到高权限数据。
 - 异步操作完成后组件已 unmount → setState on unmounted component。
-- mode toggle 后旧 mode 的 React Query cache 未清理 → stale data 渲染。
-- wallet disconnect 后 on-chain data 未清空 → 残留 HF 显示。
 
 ## 4. 并发 / 竞态
 
 **要问的问题**：
 
-- React Query 的竞态是否自动处理（query key 变化时旧 query 自动 cancel）？
-- stale data 是否会覆盖 fresh data（staleTime 配置是否合理）？
-- 是否有 AbortController 在组件 unmount 时取消请求？
-- 多个 React Query 的依赖关系（useQueries / dependent queries）是否处理？
+- 数据获取/缓存层的竞态是否自动处理？
+- stale data 是否会覆盖 fresh data（staleTime/缓存配置是否合理）？
+- 多用户/多进程同时写同一资源时的冲突处理？
+- 实时订阅（WebSocket/Realtime）的消息顺序保证？
 
 **常见陷阱**：
 
-- Promise 无 AbortController → 组件 unmount 后请求仍在飞，完成后 setState on unmounted。
-- `Promise.all` 中一个 reject 导致整体 fail → 应用 `Promise.allSettled` 做部分降级。
-- 依赖 query 的 enabled 条件写错 → 不必要的前置 query 触发。
+- `Promise.all` 中一个 reject 导致整体 fail → 应用 `Promise.allSettled`。
+- 实时消息乱序到达 → 状态不一致。用乐观更新 + 冲突检测。
+- 多个 mutation 并发触发 → 后到的覆盖先到的（last-write-wins 是否可接受？）。
 
 ## 5. 失败 / 降级
 
 **要问的问题**：
 
-- 后端 API 失败时前端降级路径是否定义？
-- 部分失败（如 3 个 pool 中 1 个 RPC 失败）是否保持其余数据？
-- API 的超时 / 429 / 5xx / 网络断开是否分别处理？
-- 降级后返回的数据结构是否与非降级一致（消费方无需感知差异）？
+- 依赖服务连接失败时降级路径是否定义？
+- API 超时 / 5xx / 网络断开是否分别处理？
+- 认证过期时是否自动刷新 / 重定向登录？
+- 部分数据加载失败时是否保持其余数据？
 
 **常见陷阱**：
 
-- 降级返回 `undefined`，消费方未处理 → crash。应返回结构一致的数据（字段为 `null`）。
-- 部分失败时整体 throw → 应 try-catch per-item，保留成功的部分。
+- 降级返回 `undefined`，消费方未处理 → crash。应返回结构一致的数据。
+- 认证过期未处理 → API 返回 401 但前端无感知，用户看到空白。
 - Error boundary 未覆盖异步错误 → 白屏。
+- 权限层拒绝访问时返回空数组而非错误 → 前端误以为「无数据」。
 
 ## 6. 跨系统键匹配
 
 **要问的问题**：
 
-- 两个系统的 key 格式（分隔符、大小写、前缀）是否一致？
-- key 的大小写敏感性是否处理（`toLowerCase` vs `normalizeAddress`）？
-- 命名约定差异是否识别（address-book raw key `MAIN_SPOKE` vs SDK spoke name `Main`）？
-- 是否有 canonical key（如链上地址）可绕过命名差异？
-- key 构造逻辑是否集中在一处（共享函数），还是散落在多个模块各自实现？
+- 前端 ID 与后端主键格式是否一致（UUID vs string vs number）？
+- 路由参数与数据库查询的 ID 是否正确传递（编码 / 解码）？
+- 外键/关联键是否正确（包括 null 外键）？
+- Map key 或 channel name 等复合 key 的构造，生产方与消费方是否用同一个函数？
 
 **常见陷阱**：
 
-- Map key 的分隔符不一致（`-` vs `:`）→ 查找永远 miss。
-- address-book 导出名与 SDK 属性名不匹配——用 `spokeAddress` 作为 canonical key。
-- 两个模块各自实现"看起来一样"的 key 构造函数 → 隐式不一致。
+- UUID 大小写不一致（后端返回小写，前端比较时未标准化）。
+- 路由参数 `encodeURIComponent` 后的 ID 与数据库查询不匹配。
+- 跨模块各自实现「看起来一样」的 key 构造函数（分隔符不同）→ 查找永远 miss。
 
 ## 7. 多实体组合
 
 **要问的问题**：
 
-- 单个实体 vs 多个实体行为是否一致？
-- V3-only / V4-only / V3+V4 混合是否分别测试？
-- 同链多实体 vs 跨链多实体是否测试？
-- 多实体时 key 是否碰撞（两个实体生成相同 key）？
+- 单条记录 vs 多条记录行为是否一致？
+- 空列表 vs 有数据列表 vs 加载中列表的 UI 状态？
+- 分页边界（第一页 / 最后一页 / 超出范围）是否处理？
+- 批量操作是否处理部分失败？
 
 **常见陷阱**：
 
-- 单实体测试通过但多实体时 key 碰撞（如只用 chainId 做 key，同链多 pool 冲突）。
-- V3+V4 混合时类型判断遗漏（`if (v4Entry)` 但漏了 `else if (v3Entry)`）。
-- 多实体排序依赖（reduce 的初始值、reduce 顺序影响结果）。
+- 空列表未显示 empty state → 用户看到空白。
+- 分页 cursor 漏掉最后一条 / 重复某条。
+- 批量操作中部分失败时整体回滚 vs 部分成功——需明确定义。
 
 ## 8. 跨 Step 接口契约
 
@@ -124,56 +129,32 @@
 **要问的问题**：
 
 - 当前 step 产出的字段格式，下游 step 能否直接消费？
-- 当前 step 定义的 key / ID 构造方式，下游 step 是否用相同逻辑构造查找 key？
+- 当前 step 定义的 key / ID 构造方式，下游 step 是否用相同逻辑？
 - 下游 step 是否依赖当前 step 未显式声明的隐式约定？
 - 如果当前 step 的产出格式变化，哪些下游 step 会 break？
+- 「函数存在 + 有测试」≠「被消费方 import + 运行时可达」——链路是否接通？
 
 **验证方法**：
 
 1. 在 grill 阶段写出当前 step 的**接口契约**（产出字段名 + 格式 + 示例值）。
 2. 模拟下游 step 的消费场景：用当前 step 的产出作为输入，下游 step 能否正确匹配 / 解析？
-3. 如果下游 step 尚未设计，先检查 issue triage 中的依赖链，确认下游 step 存在且会消费当前产出。
+3. 如果下游 step 尚未设计，先检查依赖链，确认下游 step 存在且会消费当前产出。
 
 ## 9. CI/CD 交互
 
 **要问的问题**：
 
-- 本地开发环境 vs CI 环境差异是否考虑（node 版本、浏览器引擎）？
+- 本地开发环境 vs CI 环境差异是否考虑（node 版本、env 变量、globstar、容器差异）？
 - 环境变量存在 vs 缺失时的行为是否定义？
-- E2E 测试数据是否动态发现（不依赖固定 reserve）？
-- Playwright webServer 启动时序是否有竞态？
+- pre-commit / pre-push hook 的行为是否一致？
+- 部署时 migration / build 产物 / 生成文件的执行顺序与目录存在性是否正确？
 
 **常见陷阱**：
 
-- E2E 测试依赖特定 reserve 的 incentive 数据 → 数据变化时测试 fail。应用 `findIncentiveReserve()` 动态发现。
-- CI 的 `sh -c`（无 globstar）与本地 zsh 行为差异。
-- Vite dep cache 导致 React dual-instance → dev 启动时需自动清理。
-
----
-
-## DeFi 专项（按需检查）
-
-> 涉及 Aave 协议数据 / 链上交互时检查。
-
-### D1. 链上数值边界
-
-- `max uint256`（`2^256 - 1`）→ 表示"无限"（如无债务时 HF）→ 转为 `null`，不可当数值处理。
-- `0` 值的语义：`ltv = 0` 表示 frozen（V3 合约联动），不是"未设置"。
-- RAY（1e27）vs WAD（1e18）精度混用 → 转换必须走 `units.ts`。
-- `decimals` 差异（6 vs 18）：`raw` 值不可直接比较。
-
-### D2. V3 vs V4 语义差异
-
-- V3 `baseLTVasCollateral` ≠ `liquidationThreshold`（有安全缓冲），V4 `collateralFactor` = 两者同值（无缓冲）。
-- V3 Pool = 一个 market，V4 Spoke = 一个 market（但 Spoke 可连多个 Hub）。
-- V3 `healthFactorWad` vs V4 `healthFactor`——都是 WAD 精度但字段名不同。
-- V4 仓位隔离边界是 per-Spoke，V3 是 per-Pool——跨 Spoke/Pool 的 collateral 不可互相对冲。
-
-### D3. 合约状态联动
-
-- V3 frozen → `ltv = 0`（合约自动联动），`liquidationThreshold` 不变。
-- V4 paused → `isActive: false`（API 输出），但 on-chain 数据仍可读。
-- supplyCap disabled → 无上限，不是 cap = 0。
+- 本地 `.env` 有变量但 CI 没有 → 构建通过但运行时 crash。
+- Migration 顺序错误 → 外键约束失败。
+- 本地 CI 不跑 Docker build → 本地残留目录掩盖 ENOENT。
+- build script `writeFileSync` 的目标目录在 script 和 Dockerfile 两方都不保证存在。
 
 ---
 
@@ -181,15 +162,13 @@
 
 ```
 □ 1. Null / Undefined / Empty 边界
-□ 2. 数值精度（units.ts 统一入口）
-□ 3. 状态转换（mount/unmount/connect/disconnect/toggle）
-□ 4. 并发 / 竞态（React Query / AbortController）
-□ 5. 失败 / 降级（API fail / 部分失败 / 超时 / 429）
-□ 6. 跨系统键匹配（canonical key / 命名差异）
-□ 7. 多实体组合（V3/V4/混合 / key 碰撞）
-□ 8. 跨 Step 接口契约（产出格式 → 下游消费可行性）
-□ 9. CI/CD 交互（E2E 数据韧性 / env / globstar）
-□ D1. 链上数值边界（max uint256 / 0 语义 / RAY vs WAD）
-□ D2. V3 vs V4 语义差异（LTV vs collateralFactor / Pool vs Spoke）
-□ D3. 合约状态联动（frozen / paused / cap disabled）
+□ 2. 数值精度（整数 vs 浮点 / 单位与 raw-value 语义）
+□ 3. 状态转换（实体状态 / 角色 / 数据获取状态）
+□ 4. 并发 / 竞态（缓存 / 实时订阅 / 并发编辑）
+□ 5. 失败 / 降级（依赖失败 / 认证过期 / 权限拒绝）
+□ 6. 跨系统键匹配（ID 格式 / 路由参数 / 外键 / 复合 key）
+□ 7. 多实体组合（空列表 / 分页 / 批量操作部分失败）
+□ 8. 跨 Step 接口契约（产出格式 → 下游消费可行性 / 链路接通）
+□ 9. CI/CD 交互（env / migration / 环境差异）
+□ [SLOT: 本 repo 专属专项类目]
 ```
