@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { useUsdRate } from '@/lib/fxRates';
+import { parseLocaleNumber } from '@/lib/parseLocaleNumber';
 
 const STABLE_SYMBOLS = new Set([
   'USDC',
@@ -119,7 +120,7 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
     [copy.numberLocale],
   );
 
-  const parsedAmount = Number(amount.replace(/[^0-9.,]/g, '').replace(',', '.'));
+  const parsedAmount = parseLocaleNumber(amount, copy.numberLocale);
   const principal = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const apy = active?.apy ?? 0;
   const perYear = (principal * apy) / 100;
