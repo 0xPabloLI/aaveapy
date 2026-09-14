@@ -199,6 +199,37 @@ jobs:
           echo "❌ SITE_URL does not expose expected commit ${EXPECTED_SHA:0:7} — domain may still point at an older deployment"
           exit 1
 
+      - name: Check runtime health endpoint
+        id: health_check
+        if: env.SITE_URL != ''
+        run: |
+          # /health.json is the liveness endpoint uptime monitors poll (see
+          # scripts/generate-health-json.mjs). Verifies the deployment serves
+          # it and the build is a real one (status:ok + version + commit).
+          HEALTH_CURL_ARGS=(-s -o /tmp/health.json -w "%{http_code}"
+            --max-time 30 --retry 3 --retry-delay 10 --retry-all-errors
+            -L "${{ env.SITE_URL }}/health.json")
+          if [ -n "$VERCEL_BYPASS_SECRET" ]; then
+            HEALTH_CURL_ARGS+=(-H "x-vercel-protection-bypass:$VERCEL_BYPASS_SECRET")
+          fi
+
+          echo "🩺 Checking ${{ env.ENV_LABEL }} /health.json..."
+          HTTP_CODE=$(curl "${HEALTH_CURL_ARGS[@]}")
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ /health.json returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          if ! jq -e '.status == "ok"' /tmp/health.json > /dev/null 2>&1; then
+            echo "❌ /health.json payload invalid (status != ok):"
+            cat /tmp/health.json
+            exit 1
+          fi
+
+          echo "✅ /health.json liveness OK (v$(jq -r .version /tmp/health.json) @ $(jq -r .commit /tmp/health.json))"
+
       - name: Check API connectivity from frontend
         id: api_check
         run: |
@@ -288,6 +319,7 @@ jobs:
           echo "  Deploy URL:     ${{ env.DEPLOY_URL }}"
           echo "  Deploy ID:      ${{ env.DEPLOY_ID }}"
           echo "  Site Check:     ${{ steps.site_check.outcome }}"
+          echo "  Health Check:   ${{ steps.health_check.outcome }}"
           echo "  API Check:      ${{ steps.api_check.outcome }}"
           echo "  Deploy Check:   ${{ steps.deploy_url_check.outcome }}"
           echo "========================================"

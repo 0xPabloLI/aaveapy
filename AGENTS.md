@@ -88,6 +88,10 @@
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
+- **Logging**: 用 `src/lib/logger.ts`（自动脱敏，见 `src/lib/logRedaction.ts`），不写裸 `console.*`；错误边界/Sentry 走 `src/lib/sentry.ts`。API 请求用 `fetchWithTracing`（`src/lib/requestContext.ts`）携带 X-Request-ID。
+- **Feature flags**: 运行时开关 `isFeatureEnabled()`（`src/config/featureFlags.ts`，解析顺序 默认值 < VITE_FLAG_* < localStorage < `?ff=` URL 参数）；新增 flag 在 `src/config/features.ts` 登记默认值。
+- **Analytics**: GA4 走 Consent Mode v2（`src/lib/consent.ts`），gtag.js 仅在用户同意后加载；不要在启动路径直接调 `initAnalytics()`。
+- **TODO/FIXME**: 必须带 Linear 工单号（`TODO(AAV-123)`），CI `repo-policy` 棘轮强制（`.todo-baseline.json`）。
 - **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
 
 ## Validation Gate (修改后必跑 — 强制)
@@ -126,9 +130,9 @@ npm run lint && npm test && npm run build && npm run typecheck && npm run knip &
 
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
-- Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
+- Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioUnifiedTable.tsx`, `src/components/dashboard/PortfolioTablePrimitives.tsx`.
   - **Supply-Borrow 不可分**: 添加/移除 token 必须同时操作 supply+borrow 两个 side（见 `docs/conventions/design-principles.md` §7）。`PortfolioReserveEntry` 从类型层面保证不可分；`addReserve` 总是创建 supply+borrow 两侧。
-- Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
+- Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`（Brevis 激励状态随 merklForecast/simulation 类型一起流转）.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## main Branch Protection (5 层防御)

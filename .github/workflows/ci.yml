@@ -146,8 +146,14 @@ jobs:
           fi
       - name: Install dependencies
         run: npm run ci:lockcheck
-      - name: Run build
-        run: npm run build
+      - name: Run build with performance measurement
+        run: npm run build:metrics
+      - name: Archive build metrics
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-metrics
+          path: dist/build-metrics.json
+          retention-days: 90
       - name: Run unit tests
         run: npm test
 
@@ -338,6 +344,32 @@ jobs:
         run: npm run ci:lockcheck
       - name: Check external URL whitelist
         run: npx tsx scripts/check-external-urls.ts
+
+  repo-policy:
+    name: repo-policy (AGENTS.md / TODO markers / dep release age)
+    runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+      # PRs diff against the merge base; pushes have no lockfile delta to check.
+      BASE_REF: ${{ github.event.pull_request.base.sha || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+          fetch-depth: 0
+      # The three policy scripts are dependency-free node builtins — no npm ci.
+      - name: Validate AGENTS.md references (commands + doc paths)
+        run: npm run check:agents-md
+      - name: Technical-debt marker policy (ratchet)
+        run: npm run check:todos
+      - name: Dependency release-age gate (lockfile PRs only)
+        run: |
+          if git diff --name-only "${{ env.BASE_REF }}...${{ env.CI_REF }}" -- package-lock.json | grep -q .; then
+            npm run check:dep-age
+          else
+            echo "package-lock.json unchanged — skipping release-age gate"
+          fi
 
   openapi-check:
     name: openapi-check

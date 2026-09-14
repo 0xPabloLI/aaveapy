@@ -43,6 +43,8 @@ dist-ssr
 # Test artifacts
 playwright-report/
 test-results/
+coverage/
+public/health.json
 .playwright-mcp/
 .playwright-cli/
 
