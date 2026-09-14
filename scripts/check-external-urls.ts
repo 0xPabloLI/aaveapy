@@ -110,6 +110,7 @@ const DOMAIN_WHITELIST = new Set([
   // === Market data ===
   'coingecko.com',
   'coinmarketcap.com',
+  'er-api.com', // covers open.er-api.com (open FX rates, src/lib/fxRates.ts)
 
   // === Schema / metadata (not user-facing links) ===
   'github.com',
@@ -117,6 +118,7 @@ const DOMAIN_WHITELIST = new Set([
 
   // === Analytics ===
   'googletagmanager.com', // covers www.googletagmanager.com (GA4 gtag.js)
+  'search.google.com', // Search Console inspect deep links (src/lib/localizedPages.ts)
 ]);
 
 /**
