@@ -69,13 +69,15 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
           await link.click();
 
           // Wait for smooth scroll to settle by polling the element's position.
-          await expect.poll(
-            async () => {
-              const box = await page.locator(`#${slug}`).boundingBox();
-              return box?.y ?? -1;
-            },
-            { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
-          ).toBeGreaterThanOrEqual(0);
+          await expect
+            .poll(
+              async () => {
+                const box = await page.locator(`#${slug}`).boundingBox();
+                return box?.y ?? -1;
+              },
+              { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
+            )
+            .toBeGreaterThanOrEqual(0);
 
           await assertTargetWellPositioned(page, slug);
           await expect.poll(() => page.evaluate(() => location.hash)).toBe(`#${slug}`);
@@ -93,19 +95,20 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
         // completed hash scroll before the element was ready.
         await target.scrollIntoViewIfNeeded();
         // Wait for hash-effect smooth scroll to settle by polling position.
-        await expect.poll(
-          async () => {
-            const box = await target.boundingBox();
-            return box?.y ?? -1;
-          },
-          { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
-        ).toBeGreaterThanOrEqual(0);
+        await expect
+          .poll(
+            async () => {
+              const box = await target.boundingBox();
+              return box?.y ?? -1;
+            },
+            { timeout: 5_000, message: `smooth scroll to #${slug} to settle` },
+          )
+          .toBeGreaterThanOrEqual(0);
         await assertTargetWellPositioned(page, slug);
 
-        await expect.poll(
-          () => page.evaluate((id) => document.activeElement?.id ?? null, slug),
-          { timeout: 5_000 },
-        ).toBe(slug);
+        await expect
+          .poll(() => page.evaluate((id) => document.activeElement?.id ?? null, slug), { timeout: 5_000 })
+          .toBe(slug);
       });
 
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {
@@ -116,18 +119,19 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
         // Explicitly scroll into view — lazy-loaded page may not have
         // completed hash scroll before the element was ready.
         await heading.scrollIntoViewIfNeeded();
-        await expect.poll(
-          async () => {
-            const box = await heading.boundingBox();
-            return box?.y ?? -1;
-          },
-          { timeout: 5_000, message: 'smooth scroll to #faq to settle' },
-        ).toBeGreaterThanOrEqual(0);
+        await expect
+          .poll(
+            async () => {
+              const box = await heading.boundingBox();
+              return box?.y ?? -1;
+            },
+            { timeout: 5_000, message: 'smooth scroll to #faq to settle' },
+          )
+          .toBeGreaterThanOrEqual(0);
         await assertTargetWellPositioned(page, 'faq');
-        await expect.poll(
-          () => page.evaluate(() => document.activeElement?.id ?? null),
-          { timeout: 5_000 },
-        ).toBe('faq');
+        await expect
+          .poll(() => page.evaluate(() => document.activeElement?.id ?? null), { timeout: 5_000 })
+          .toBe('faq');
         // Sanity check the element type at this id is the FAQ heading.
         await expect(heading).toBeVisible();
       });

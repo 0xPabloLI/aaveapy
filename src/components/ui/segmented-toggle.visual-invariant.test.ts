@@ -24,15 +24,9 @@ import { resolve } from 'node:path';
  */
 
 describe('SegmentedToggle visual invariant regression guard', () => {
-  const src = readFileSync(
-    resolve(__dirname, 'segmented-toggle.tsx'),
-    'utf8',
-  );
+  const src = readFileSync(resolve(__dirname, 'segmented-toggle.tsx'), 'utf8');
 
-  const cssSrc = readFileSync(
-    resolve(__dirname, '../../index.css'),
-    'utf8',
-  );
+  const cssSrc = readFileSync(resolve(__dirname, '../../index.css'), 'utf8');
 
   // ─── Invariant 1: track border-radius ──────────────────────────
 
@@ -57,11 +51,11 @@ describe('SegmentedToggle visual invariant regression guard', () => {
   it('vertical button uses rounded-xl, horizontal uses rounded-full', () => {
     const buttonRadiusPattern = /isVertical\s*\?\s*['"]rounded-xl['"]\s*:\s*['"]rounded-full['"]/g;
     const matches = src.match(buttonRadiusPattern);
+    expect(matches, 'button element should have isVertical ? rounded-xl : rounded-full').not.toBeNull();
     expect(
-      matches,
-      'button element should have isVertical ? rounded-xl : rounded-full',
-    ).not.toBeNull();
-    expect(matches!.length, 'rounded-xl/rounded-full should appear at least twice (indicator + button)').toBeGreaterThanOrEqual(2);
+      matches!.length,
+      'rounded-xl/rounded-full should appear at least twice (indicator + button)',
+    ).toBeGreaterThanOrEqual(2);
   });
 
   // ─── Invariant 4: gap uses CSS variable ────────────────────────
@@ -123,10 +117,9 @@ describe('SegmentedToggle visual invariant regression guard', () => {
       '--ds-seg-gap',
     ];
     for (const varName of requiredVars) {
-      expect(
-        cssSrc,
-        `${varName} must be defined in index.css`,
-      ).toMatch(new RegExp(varName.replace(/([$.\\])/g, '\\$1') + '\\s*:'));
+      expect(cssSrc, `${varName} must be defined in index.css`).toMatch(
+        new RegExp(varName.replace(/([$.\\])/g, '\\$1') + '\\s*:'),
+      );
     }
   });
 

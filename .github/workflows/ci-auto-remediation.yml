@@ -2,7 +2,7 @@ name: CI Auto Remediation
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     types: [completed]
     branches:
       - main
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Branch to remediate (default: repository default branch)"
+        description: 'Branch to remediate (default: repository default branch)'
         required: false
         type: string
 
@@ -98,7 +98,7 @@ jobs:
         if: steps.skip-check.outputs.skip != 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
@@ -148,10 +148,10 @@ jobs:
         if: steps.skip-check.outputs.skip != 'true' && steps.verify.outputs.ok == 'true' && steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          commit-message: "chore: auto-remediate dependency issues after CI failure"
-          branch: "bot/ci-auto-remediation-${{ github.run_id }}"
+          commit-message: 'chore: auto-remediate dependency issues after CI failure'
+          branch: 'bot/ci-auto-remediation-${{ github.run_id }}'
           delete-branch: true
-          title: "chore: auto remediation for CI failure (${{ steps.branch.outputs.name }})"
+          title: 'chore: auto remediation for CI failure (${{ steps.branch.outputs.name }})'
           body: |
             Auto-generated remediation PR.
 

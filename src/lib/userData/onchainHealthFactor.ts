@@ -25,7 +25,7 @@ export type OnchainHfMap = Map<string, OnchainHfBaseline>;
  */
 export function wadToHf(wad: bigint): number | null {
   // type(uint256).max = 2^256 - 1 — contract returns this when user has no debt
-  const MAX_UINT256 = (2n ** 256n) - 1n;
+  const MAX_UINT256 = 2n ** 256n - 1n;
   if (wad === MAX_UINT256) return null;
 
   const WAD = 10n ** 18n;

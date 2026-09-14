@@ -38,7 +38,7 @@ export interface TopOpportunitiesMemoProps {
 
 export const shouldSkipTopOpportunitiesRender = (
   prevProps: TopOpportunitiesMemoProps,
-  nextProps: TopOpportunitiesMemoProps
+  nextProps: TopOpportunitiesMemoProps,
 ): boolean => {
   if (prevProps.isApy !== nextProps.isApy) return false;
   if (!pointRateMapsEqual(prevProps.pointRateMap, nextProps.pointRateMap)) return false;
@@ -46,8 +46,7 @@ export const shouldSkipTopOpportunitiesRender = (
   if (prevProps.onToggleWhitelistMerklCampaign !== nextProps.onToggleWhitelistMerklCampaign) return false;
   if (prevProps.onCardClick !== nextProps.onCardClick) return false;
   if (prevProps.categoryGroups !== nextProps.categoryGroups) return false;
-  if (!whitelistMerklSetsEqual(prevProps.whitelistMerklCampaignIds, nextProps.whitelistMerklCampaignIds))
-    return false;
+  if (!whitelistMerklSetsEqual(prevProps.whitelistMerklCampaignIds, nextProps.whitelistMerklCampaignIds)) return false;
 
   if (prevProps.reserves === nextProps.reserves) return true;
   if (prevProps.reserves.length !== nextProps.reserves.length) return false;

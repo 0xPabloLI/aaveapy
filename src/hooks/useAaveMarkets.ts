@@ -51,8 +51,7 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
 
 export const useAaveMarkets = () => {
   const cachedEntry = getCachedMarketsEntry();
-  const marketsStaleTime =
-    cachedEntry?.data?.snapshot?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
+  const marketsStaleTime = cachedEntry?.data?.snapshot?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,

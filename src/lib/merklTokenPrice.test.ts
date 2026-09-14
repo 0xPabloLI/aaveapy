@@ -91,7 +91,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xmissing',
       },
       fetchMock as unknown as typeof fetch,
-      { allowThirdPartyFetch: false }
+      { allowThirdPartyFetch: false },
     );
 
     expect(price).toBeUndefined();
@@ -107,7 +107,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xUnderlying',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(price).toBe(0.99);
@@ -115,16 +115,14 @@ describe('resolveForecastTokenPriceWithBackup', () => {
   });
 
   it('uses hardcoded platform mapping before asset_platforms lookup', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          '0xmissing': {
-            usd: 1.2345,
-          },
-        }),
-      });
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        '0xmissing': {
+          usd: 1.2345,
+        },
+      }),
+    });
 
     const price = await resolveForecastTokenPriceWithBackup(
       {
@@ -133,7 +131,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xmissing',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(price).toBe(1.2345);
@@ -160,7 +158,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xmissing',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(price).toBeUndefined();
@@ -196,7 +194,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xmissing',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(price).toBe(1.1111);
@@ -223,7 +221,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xmiss1',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
     const second = await resolveForecastTokenPriceWithBackup(
       {
@@ -232,7 +230,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         actionType: 'Supply',
         tokenAddress: '0xmiss2',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(first).toBeUndefined();
@@ -273,7 +271,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xstable',
         tokenSymbol: 'USDC',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
     expect(first).toBe(1);
 
@@ -287,7 +285,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xstable',
         tokenSymbol: 'USDC',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
     expect(second).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -323,7 +321,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xvolatile',
         tokenSymbol: 'WETH',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
     expect(first).toBe(2000);
 
@@ -337,7 +335,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xvolatile',
         tokenSymbol: 'WETH',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
     expect(second).toBe(2100);
 
@@ -370,7 +368,7 @@ describe('resolveForecastTokenPriceWithBackup', () => {
         tokenAddress: '0xmissing',
         tokenSymbol: 'aEthUSDT',
       },
-      fetchMock as unknown as typeof fetch
+      fetchMock as unknown as typeof fetch,
     );
 
     expect(price).toBe(1.001);

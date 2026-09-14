@@ -134,7 +134,7 @@ describe('CampaignGroup netPositionConstraint field-name canary', () => {
 
   it('group.netPositionConstraint.offsetReserveIds is string[]', () => {
     expect(Array.isArray(group.netPositionConstraint!.offsetReserveIds)).toBe(true);
-    group.netPositionConstraint!.offsetReserveIds.forEach(id => {
+    group.netPositionConstraint!.offsetReserveIds.forEach((id) => {
       expect(typeof id).toBe('string');
     });
   });

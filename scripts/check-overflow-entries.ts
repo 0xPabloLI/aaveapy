@@ -3,26 +3,46 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on('domcontentloaded', async () => {
-    await page.evaluate(() => { document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove()); });
+    await page.evaluate(() => {
+      document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
+    });
   });
-  await page.goto('http://localhost:8081/?watch=0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314', { waitUntil: 'domcontentloaded' });
+  await page.goto('http://localhost:8081/?watch=0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314', {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForTimeout(10000);
-  await page.evaluate(() => { document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove()); });
+  await page.evaluate(() => {
+    document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
+  });
   await page.keyboard.press('Escape');
 
   // Enable Portfolio mode
   const toggle = page.locator('[data-testid="portfolio-mode-toggle"]').first();
   if (await toggle.isVisible().catch(() => false)) {
-    const checked = await toggle.locator('button[role="switch"]').getAttribute('aria-checked').catch(() => null);
-    if (checked !== 'true') { await toggle.click(); await page.waitForTimeout(3000); }
+    const checked = await toggle
+      .locator('button[role="switch"]')
+      .getAttribute('aria-checked')
+      .catch(() => null);
+    if (checked !== 'true') {
+      await toggle.click();
+      await page.waitForTimeout(3000);
+    }
   }
 
   // Add tokens via popular token chips
-  const chips = page.locator('button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")');
+  const chips = page.locator(
+    'button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")',
+  );
   const chipCount = await chips.count();
   console.log(`Found ${chipCount} popular token chips`);
   for (let i = 0; i < Math.min(3, chipCount); i++) {
-    try { await chips.nth(i).click({ timeout: 2000 }); await page.waitForTimeout(1000); console.log(`Clicked chip ${i}`); } catch(e) { console.log(`Chip ${i} click failed`); }
+    try {
+      await chips.nth(i).click({ timeout: 2000 });
+      await page.waitForTimeout(1000);
+      console.log(`Clicked chip ${i}`);
+    } catch (e) {
+      console.log(`Chip ${i} click failed`);
+    }
   }
   await page.waitForTimeout(2000);
 
@@ -35,7 +55,10 @@ async function main() {
       const parent = panel.parentElement;
       if (!parent) break;
       const cls = typeof parent.className === 'string' ? parent.className : '';
-      if (cls.includes('rounded') && cls.includes('border')) { panel = parent; break; }
+      if (cls.includes('rounded') && cls.includes('border')) {
+        panel = parent;
+        break;
+      }
       panel = parent;
     }
     if (!panel) return ['Panel not found'];
@@ -47,8 +70,13 @@ async function main() {
       const r = el.getBoundingClientRect();
       if (r.height === 0) continue;
       const overflows = r.right > pr.right + 1;
-      const tag = el.tagName + '.' + (el.getAttribute('data-testid') || el.getAttribute('aria-label') || el.textContent?.slice(0, 15) || '');
-      results.push(`  ${tag}: x=${r.x.toFixed(1)} w=${r.width.toFixed(1)} right=${r.right.toFixed(1)} h=${r.height.toFixed(1)} OVERFLOW=${overflows}`);
+      const tag =
+        el.tagName +
+        '.' +
+        (el.getAttribute('data-testid') || el.getAttribute('aria-label') || el.textContent?.slice(0, 15) || '');
+      results.push(
+        `  ${tag}: x=${r.x.toFixed(1)} w=${r.width.toFixed(1)} right=${r.right.toFixed(1)} h=${r.height.toFixed(1)} OVERFLOW=${overflows}`,
+      );
     }
     return results;
   });

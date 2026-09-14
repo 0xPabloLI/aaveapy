@@ -6,10 +6,7 @@ import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
 import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
-import {
-  LocalCurrencyCalculator,
-  type CalculatorCopy,
-} from '@/components/seo/LocalCurrencyCalculator';
+import { LocalCurrencyCalculator, type CalculatorCopy } from '@/components/seo/LocalCurrencyCalculator';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
@@ -149,9 +146,7 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
 
           <header className="mb-6">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{content.h1}</h1>
-            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-              {content.intro}
-            </p>
+            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">{content.intro}</p>
           </header>
 
           <TrackedLink
@@ -192,8 +187,6 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
           </section>
 
           {content.calculator && <LocalCurrencyCalculator copy={content.calculator} />}
-
-
 
           <section aria-labelledby={content.howTo.id} className="mt-10">
             <h2 id={content.howTo.id} className="text-xl font-semibold mb-3">
@@ -252,7 +245,6 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
           />
         </div>
       </main>
-
     </>
   );
 }

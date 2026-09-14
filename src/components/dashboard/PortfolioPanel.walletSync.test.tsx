@@ -50,16 +50,27 @@ const makeReserve = (symbol: string): ReserveWithSpread => ({
   tokenAddress: '0x0000000000000000000000000000000000000001',
   tokenPrice: 1,
   decimals: 6,
-  supplied: '0', supplyCap: '0', borrowCap: '0',
-  utilizationPct: 0, optimalUtilization: 80,
-  slopeBelowOptimal: 4, slopeAboveOptimal: 60,
-  baseBorrowRate: 0, protocolFee: 10,
-  supplyApy: 0, borrowApy: 0,
-  supplyDisabled: false, borrowDisabled: false,
-  supplyIncentives: [], borrowIncentives: [],
-  meritSupplys: [], meritBorrows: [],
-  merklSupplys: [], merklBorrows: [],
-  brevisSupplys: [], brevisBorrows: [],
+  supplied: '0',
+  supplyCap: '0',
+  borrowCap: '0',
+  utilizationPct: 0,
+  optimalUtilization: 80,
+  slopeBelowOptimal: 4,
+  slopeAboveOptimal: 60,
+  baseBorrowRate: 0,
+  protocolFee: 10,
+  supplyApy: 0,
+  borrowApy: 0,
+  supplyDisabled: false,
+  borrowDisabled: false,
+  supplyIncentives: [],
+  borrowIncentives: [],
+  meritSupplys: [],
+  meritBorrows: [],
+  merklSupplys: [],
+  merklBorrows: [],
+  brevisSupplys: [],
+  brevisBorrows: [],
 });
 
 const actions: PortfolioSimulationActions = {
@@ -85,21 +96,21 @@ function renderPanel(props: {
 }) {
   return render(
     <MemoryRouter>
-    <WagmiProvider config={testWagmiConfig}>
-      <QueryClientProvider client={new QueryClient()}>
-        <RainbowKitProvider>
-          <TooltipProvider>
-            <PortfolioPanel
-              entries={[]}
-              actions={actions}
-              reserves={props.reserves}
-              walletLoadState={props.walletLoadState}
-              onWalletSync={props.onWalletSync}
-            />
-          </TooltipProvider>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <TooltipProvider>
+              <PortfolioPanel
+                entries={[]}
+                actions={actions}
+                reserves={props.reserves}
+                walletLoadState={props.walletLoadState}
+                onWalletSync={props.onWalletSync}
+              />
+            </TooltipProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
     </MemoryRouter>,
   );
 }
@@ -107,9 +118,11 @@ function renderPanel(props: {
 describe('PortfolioPanel — Wallet Sync button states', () => {
   beforeEach(() => {
     vi.mocked(useWatchModeConnect).mockReturnValue({ connectWatchAddress: vi.fn() });
-     
+
     vi.mocked(useWallet).mockReturnValue({
-      address: '0xabc', isConnected: true, isWatchMode: false,
+      address: '0xabc',
+      isConnected: true,
+      isWatchMode: false,
       disconnect: vi.fn(),
     } as unknown as ReturnType<typeof useWallet>);
   });

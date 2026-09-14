@@ -51,18 +51,10 @@ async function main() {
   const localExprKeys = extractExpressionKeys(localContent);
   const upstreamExprKeys = extractExpressionKeys(upstreamContent);
 
-  const missingFromLocal = toSortedArray(
-    new Set([...upstreamKeys].filter((key) => !localKeys.has(key)))
-  );
-  const localOnly = toSortedArray(
-    new Set([...localKeys].filter((key) => !upstreamKeys.has(key)))
-  );
-  const missingExprFromLocal = toSortedArray(
-    new Set([...upstreamExprKeys].filter((key) => !localExprKeys.has(key)))
-  );
-  const localOnlyExpr = toSortedArray(
-    new Set([...localExprKeys].filter((key) => !upstreamExprKeys.has(key)))
-  );
+  const missingFromLocal = toSortedArray(new Set([...upstreamKeys].filter((key) => !localKeys.has(key))));
+  const localOnly = toSortedArray(new Set([...localKeys].filter((key) => !upstreamKeys.has(key))));
+  const missingExprFromLocal = toSortedArray(new Set([...upstreamExprKeys].filter((key) => !localExprKeys.has(key))));
+  const localOnlyExpr = toSortedArray(new Set([...localExprKeys].filter((key) => !upstreamExprKeys.has(key))));
 
   if (localKeys.size === 0 && localExprKeys.size === 0) {
     console.error('Local parsing yielded 0 reserve keys — possible format change.');
@@ -134,9 +126,7 @@ async function main() {
       if (e.type === 'missing') {
         console.error(`- missing key ${e.key} (upstream maps to '${e.upstreamValue}')`);
       } else {
-        console.error(
-          `- key ${e.key}: local '${e.localValue}' ≠ upstream '${e.upstreamValue}'`
-        );
+        console.error(`- key ${e.key}: local '${e.localValue}' ≠ upstream '${e.upstreamValue}'`);
       }
     }
   }

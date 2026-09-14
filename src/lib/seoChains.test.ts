@@ -15,19 +15,13 @@ describe('SEO_CHAINS', () => {
   });
 
   describe('title constraints', () => {
-    it.each(SEO_CHAINS.map((c) => [c.slug, c.title]))(
-      '%s title is 60 chars or fewer',
-      (_slug, title) => {
-        expect(title.length).toBeLessThanOrEqual(60);
-      },
-    );
+    it.each(SEO_CHAINS.map((c) => [c.slug, c.title]))('%s title is 60 chars or fewer', (_slug, title) => {
+      expect(title.length).toBeLessThanOrEqual(60);
+    });
 
-    it.each(SEO_CHAINS.map((c) => [c.slug, c.title]))(
-      '%s title contains "AaveAPY"',
-      (_slug, title) => {
-        expect(title).toContain('AaveAPY');
-      },
-    );
+    it.each(SEO_CHAINS.map((c) => [c.slug, c.title]))('%s title contains "AaveAPY"', (_slug, title) => {
+      expect(title).toContain('AaveAPY');
+    });
   });
 
   describe('description constraints', () => {
@@ -92,10 +86,7 @@ describe('SEO_CHAINS', () => {
       it('lists all chain slugs correctly', () => {
         const sitemapPath = resolve(__dirname, '../../public/sitemap.xml');
         const xml = readFileSync(sitemapPath, 'utf-8');
-        const sitemapSlugs = Array.from(
-          xml.matchAll(/\/chain\/([^<]+)<\/loc>/g),
-          (m) => m[1],
-        );
+        const sitemapSlugs = Array.from(xml.matchAll(/\/chain\/([^<]+)<\/loc>/g), (m) => m[1]);
         expect(new Set(sitemapSlugs)).toEqual(canonicalSlugs);
       });
     });
@@ -104,10 +95,7 @@ describe('SEO_CHAINS', () => {
       it('lists all chain slugs correctly', () => {
         const llmsTxtPath = resolve(__dirname, '../../public/llms.txt');
         const txt = readFileSync(llmsTxtPath, 'utf-8');
-        const llmsSlugs = Array.from(
-          txt.matchAll(/\]\(\/chain\/([^)]+)\)/g),
-          (m) => m[1],
-        );
+        const llmsSlugs = Array.from(txt.matchAll(/\]\(\/chain\/([^)]+)\)/g), (m) => m[1]);
         expect(new Set(llmsSlugs)).toEqual(canonicalSlugs);
       });
     });

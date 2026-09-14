@@ -51,21 +51,20 @@ export function StatusContent({ reserve }: StatusBadgeProps) {
     <div className="space-y-1 ds-text-12 sm:max-w-[15rem]">
       {isPaused && (
         <p className="text-muted-foreground leading-relaxed">
-          <strong className="ds-text-paused">Paused:</strong> all reserve actions
-          (deposit, borrow, repay, withdraw, liquidations) are halted.
+          <strong className="ds-text-paused">Paused:</strong> all reserve actions (deposit, borrow, repay, withdraw,
+          liquidations) are halted.
         </p>
       )}
       {isActive === false && (
         <p className="text-muted-foreground leading-relaxed">
-          <strong className="ds-text-paused">Inactive:</strong> the reserve is not
-          active. Most protocol actions are unavailable.
+          <strong className="ds-text-paused">Inactive:</strong> the reserve is not active. Most protocol actions are
+          unavailable.
         </p>
       )}
       {isFrozen && (
         <p className="text-muted-foreground leading-relaxed">
-          <strong className="text-sky-500">Frozen:</strong> deposits and borrows are
-          temporarily disabled, but existing positions can still be repaid, withdrawn,
-          and liquidated.
+          <strong className="text-sky-500">Frozen:</strong> deposits and borrows are temporarily disabled, but existing
+          positions can still be repaid, withdrawn, and liquidated.
         </p>
       )}
     </div>

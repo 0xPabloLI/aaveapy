@@ -68,10 +68,7 @@ function eip1193MockScript(address: string) {
         case 'wallet_addEthereumChain':
           return null;
         default:
-          throw Object.assign(
-            new Error(`e2e mock provider does not support ${method}`),
-            { code: 4200 },
-          );
+          throw Object.assign(new Error(`e2e mock provider does not support ${method}`), { code: 4200 });
       }
     },
     on(event: string, cb: (...args: unknown[]) => void) {

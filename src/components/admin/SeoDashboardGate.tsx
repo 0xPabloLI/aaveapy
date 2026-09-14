@@ -1,12 +1,8 @@
-import { useState, type FormEvent, type ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  getDashboardPassword,
-  setDashboardPassword,
-  clearDashboardPassword,
-} from "@/lib/seoApi";
+import { useState, type FormEvent, type ReactNode } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { getDashboardPassword, setDashboardPassword, clearDashboardPassword } from '@/lib/seoApi';
 
 interface Props {
   children: (signOut: () => void) => ReactNode;
@@ -20,7 +16,7 @@ interface Props {
  */
 export default function SeoDashboardGate({ children }: Props) {
   const [authed, setAuthed] = useState(() => !!getDashboardPassword());
-  const [pw, setPw] = useState("");
+  const [pw, setPw] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,12 +34,12 @@ export default function SeoDashboardGate({ children }: Props) {
         headers: {
           apikey: anon,
           Authorization: `Bearer ${anon}`,
-          "X-Dashboard-Password": pw,
+          'X-Dashboard-Password': pw,
         },
       });
       if (res.status === 401) {
         clearDashboardPassword();
-        setError("Incorrect password");
+        setError('Incorrect password');
       } else if (!res.ok) {
         // Allow through on upstream errors — password itself was accepted.
         setAuthed(true);
@@ -51,7 +47,7 @@ export default function SeoDashboardGate({ children }: Props) {
         setAuthed(true);
       }
     } catch {
-      setError("Network error");
+      setError('Network error');
       clearDashboardPassword();
     } finally {
       setSubmitting(false);
@@ -61,7 +57,7 @@ export default function SeoDashboardGate({ children }: Props) {
   function signOut() {
     clearDashboardPassword();
     setAuthed(false);
-    setPw("");
+    setPw('');
   }
 
   if (authed) return <>{children(signOut)}</>;
@@ -79,9 +75,7 @@ export default function SeoDashboardGate({ children }: Props) {
         >
           <div>
             <h1 className="text-lg font-semibold">SEO Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Enter dashboard password to continue.
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Enter dashboard password to continue.</p>
           </div>
           <Input
             type="password"
@@ -93,7 +87,7 @@ export default function SeoDashboardGate({ children }: Props) {
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={submitting || !pw}>
-            {submitting ? "Checking…" : "Sign in"}
+            {submitting ? 'Checking…' : 'Sign in'}
           </Button>
         </form>
       </div>

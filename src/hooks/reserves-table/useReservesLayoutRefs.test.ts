@@ -54,8 +54,7 @@ beforeEach(() => {
   FakeResizeObserver.lastInstance = null;
   (globalThis as unknown as { IntersectionObserver: typeof FakeIntersectionObserver }).IntersectionObserver =
     FakeIntersectionObserver;
-  (globalThis as unknown as { ResizeObserver: typeof FakeResizeObserver }).ResizeObserver =
-    FakeResizeObserver;
+  (globalThis as unknown as { ResizeObserver: typeof FakeResizeObserver }).ResizeObserver = FakeResizeObserver;
 });
 
 afterEach(() => {
@@ -140,8 +139,7 @@ describe('useReservesLayoutRefs', () => {
     const card = document.createElement('div');
     const scenarioEl = document.createElement('div');
     // Stub getBoundingClientRect so heights are deterministic.
-    scenarioEl.getBoundingClientRect = () =>
-      ({ height: 40 }) as unknown as DOMRect;
+    scenarioEl.getBoundingClientRect = () => ({ height: 40 }) as unknown as DOMRect;
 
     const { unmount } = renderHook(() => {
       const r = useReservesLayoutRefs({ isMobile: false });

@@ -1,5 +1,5 @@
-import { Helmet } from "react-helmet-async";
-import { LOCALE_PATH_MAP, SITE_ORIGIN, type SupportedLocale } from "@/i18n";
+import { Helmet } from 'react-helmet-async';
+import { LOCALE_PATH_MAP, SITE_ORIGIN, type SupportedLocale } from '@/i18n';
 
 interface LocaleHeadProps {
   locale: SupportedLocale;
@@ -11,16 +11,16 @@ interface LocaleHeadProps {
 }
 
 const HREFLANG_ENTRIES: Array<{ hreflang: string; path: string }> = [
-  { hreflang: "en", path: "/" },
-  { hreflang: "pt-BR", path: `/${LOCALE_PATH_MAP["pt-BR"]}` },
-  { hreflang: "fr", path: `/${LOCALE_PATH_MAP.fr}` },
-  { hreflang: "tr", path: `/${LOCALE_PATH_MAP.tr}` },
-  { hreflang: "x-default", path: "/" },
+  { hreflang: 'en', path: '/' },
+  { hreflang: 'pt-BR', path: `/${LOCALE_PATH_MAP['pt-BR']}` },
+  { hreflang: 'fr', path: `/${LOCALE_PATH_MAP.fr}` },
+  { hreflang: 'tr', path: `/${LOCALE_PATH_MAP.tr}` },
+  { hreflang: 'x-default', path: '/' },
 ];
 
 export function LocaleHead({ locale, path, title, description, ogLocale, jsonLd }: LocaleHeadProps) {
-  const canonical = `${SITE_ORIGIN}${path === "/" ? "/" : path}`;
-  const htmlLang = locale === "en" ? "en" : locale;
+  const canonical = `${SITE_ORIGIN}${path === '/' ? '/' : path}`;
+  const htmlLang = locale === 'en' ? 'en' : locale;
   return (
     <Helmet>
       <html lang={htmlLang} />
@@ -42,16 +42,9 @@ export function LocaleHead({ locale, path, title, description, ogLocale, jsonLd 
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={`${SITE_ORIGIN}/og-image-1200x630.jpg`} />
       {HREFLANG_ENTRIES.map((e) => (
-        <link
-          key={e.hreflang}
-          rel="alternate"
-          hrefLang={e.hreflang}
-          href={`${SITE_ORIGIN}${e.path}`}
-        />
+        <link key={e.hreflang} rel="alternate" hrefLang={e.hreflang} href={`${SITE_ORIGIN}${e.path}`} />
       ))}
-      {jsonLd && (
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      )}
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
     </Helmet>
   );
 }

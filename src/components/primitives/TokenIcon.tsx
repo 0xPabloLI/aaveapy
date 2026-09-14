@@ -1,19 +1,7 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-  memo,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-} from 'react';
+import { useEffect, useMemo, useState, memo, useCallback, useRef, useLayoutEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
-import {
-  getPreloadedImageSource,
-  getTokenIconSources,
-  TOKEN_ICON_DEFAULT_SRC,
-} from '@/lib/preloadUtils';
+import { getPreloadedImageSource, getTokenIconSources, TOKEN_ICON_DEFAULT_SRC } from '@/lib/preloadUtils';
 
 interface TokenIconProps {
   symbol: string;
@@ -58,145 +46,145 @@ const resolveInitialState = (symbolKey: string, localSources: string[]) => {
   };
 };
 
-const TokenImage = memo(({
-  symbol,
-  className,
-  size,
-  loading = 'lazy',
-  logoURI,
-}: {
-  symbol: string;
-  className?: string;
-  size: number;
-  loading?: 'lazy' | 'eager';
-  logoURI?: string;
-}) => {
-  const symbolKey = symbol.toLowerCase();
-  const localSources = useMemo(() => getTokenIconSources(symbol), [symbol]);
-  const initial = useMemo(() => resolveInitialState(symbolKey, localSources), [symbolKey, localSources]);
-  const [src, setSrc] = useState(initial.src);
-  const [formatIndex, setFormatIndex] = useState(initial.formatIndex);
-  const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
+const TokenImage = memo(
+  ({
+    symbol,
+    className,
+    size,
+    loading = 'lazy',
+    logoURI,
+  }: {
+    symbol: string;
+    className?: string;
+    size: number;
+    loading?: 'lazy' | 'eager';
+    logoURI?: string;
+  }) => {
+    const symbolKey = symbol.toLowerCase();
+    const localSources = useMemo(() => getTokenIconSources(symbol), [symbol]);
+    const initial = useMemo(() => resolveInitialState(symbolKey, localSources), [symbolKey, localSources]);
+    const [src, setSrc] = useState(initial.src);
+    const [formatIndex, setFormatIndex] = useState(initial.formatIndex);
+    const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
 
-  // If src is already resolved via cache/preload, force eager loading.
-  const effectiveLoading = initial.isResolved ? 'eager' : loading;
+    // If src is already resolved via cache/preload, force eager loading.
+    const effectiveLoading = initial.isResolved ? 'eager' : loading;
 
-  const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
-    needCoingeckoFallback ? symbol : null
-  );
+    const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
+      needCoingeckoFallback ? symbol : null,
+    );
 
-  useEffect(() => {
-    const next = resolveInitialState(symbolKey, localSources);
-    setSrc(next.src);
-    setFormatIndex(next.formatIndex);
-    setNeedCoingeckoFallback(false);
-  }, [symbolKey, localSources]);
+    useEffect(() => {
+      const next = resolveInitialState(symbolKey, localSources);
+      setSrc(next.src);
+      setFormatIndex(next.formatIndex);
+      setNeedCoingeckoFallback(false);
+    }, [symbolKey, localSources]);
 
-  useEffect(() => {
-    if (!needCoingeckoFallback) return;
-    if (coingeckoImageUrl) {
-      setSrc(coingeckoImageUrl);
-    } else if (coingeckoFetched) {
-      setSrc(TOKEN_ICON_DEFAULT_SRC);
-    }
-  }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
-
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [foregroundLoaded, setForegroundLoaded] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = imgRef.current;
-    if (!el) {
-      setForegroundLoaded(false);
-      return;
-    }
-    if (el.complete && el.naturalWidth > 0) {
-      setForegroundLoaded(true);
-    } else {
-      setForegroundLoaded(false);
-    }
-  }, [src]);
-
-  const handleLoad = useCallback(() => {
-    setForegroundLoaded(true);
-    if (src && src !== TOKEN_ICON_DEFAULT_SRC) {
-      resolvedSrcCache.set(symbolKey, src);
-    }
-  }, [symbolKey, src]);
-
-  const handleError = useCallback(() => {
-    // 1. Try logoURI from API if available
-    if (logoURI && src !== logoURI) {
-      setSrc(logoURI);
-      return;
-    }
-
-    // 2. Try next local format (order from getTokenIconSources / manifest)
-    const nextIndex = formatIndex + 1;
-    if (nextIndex < localSources.length && src !== TOKEN_ICON_DEFAULT_SRC) {
-      setFormatIndex(nextIndex);
-      setSrc(localSources[nextIndex]);
-      return;
-    }
-
-    // 3. Try CoinGecko as last resort
-    if (src !== TOKEN_ICON_DEFAULT_SRC && !needCoingeckoFallback) {
-      setNeedCoingeckoFallback(true);
-      return;
-    }
-
-    // 4. Fall back to default icon — log once per symbol after all formats tried
-    if (src !== TOKEN_ICON_DEFAULT_SRC) {
-      if (!missingIconLogged.has(symbolKey)) {
-        missingIconLogged.add(symbolKey);
-        const tried = [...localSources];
-        if (needCoingeckoFallback) tried.push('CoinGecko');
-        console.warn(
-          `[TokenIcon] No icon found for "${symbol}" (tried: ${tried.join(', ')}; using default).`
-        );
+    useEffect(() => {
+      if (!needCoingeckoFallback) return;
+      if (coingeckoImageUrl) {
+        setSrc(coingeckoImageUrl);
+      } else if (coingeckoFetched) {
+        setSrc(TOKEN_ICON_DEFAULT_SRC);
       }
-      setSrc(TOKEN_ICON_DEFAULT_SRC);
-    }
-  }, [symbol, symbolKey, logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
+    }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
 
-  const showDefaultUnderlay = src !== TOKEN_ICON_DEFAULT_SRC;
+    const imgRef = useRef<HTMLImageElement>(null);
+    const [foregroundLoaded, setForegroundLoaded] = useState(false);
 
-  return (
-    <div
-      className={cn('relative inline-block shrink-0 rounded-full', className)}
-      style={{ width: size, height: size }}
-    >
-      {showDefaultUnderlay ? (
+    useLayoutEffect(() => {
+      const el = imgRef.current;
+      if (!el) {
+        setForegroundLoaded(false);
+        return;
+      }
+      if (el.complete && el.naturalWidth > 0) {
+        setForegroundLoaded(true);
+      } else {
+        setForegroundLoaded(false);
+      }
+    }, [src]);
+
+    const handleLoad = useCallback(() => {
+      setForegroundLoaded(true);
+      if (src && src !== TOKEN_ICON_DEFAULT_SRC) {
+        resolvedSrcCache.set(symbolKey, src);
+      }
+    }, [symbolKey, src]);
+
+    const handleError = useCallback(() => {
+      // 1. Try logoURI from API if available
+      if (logoURI && src !== logoURI) {
+        setSrc(logoURI);
+        return;
+      }
+
+      // 2. Try next local format (order from getTokenIconSources / manifest)
+      const nextIndex = formatIndex + 1;
+      if (nextIndex < localSources.length && src !== TOKEN_ICON_DEFAULT_SRC) {
+        setFormatIndex(nextIndex);
+        setSrc(localSources[nextIndex]);
+        return;
+      }
+
+      // 3. Try CoinGecko as last resort
+      if (src !== TOKEN_ICON_DEFAULT_SRC && !needCoingeckoFallback) {
+        setNeedCoingeckoFallback(true);
+        return;
+      }
+
+      // 4. Fall back to default icon — log once per symbol after all formats tried
+      if (src !== TOKEN_ICON_DEFAULT_SRC) {
+        if (!missingIconLogged.has(symbolKey)) {
+          missingIconLogged.add(symbolKey);
+          const tried = [...localSources];
+          if (needCoingeckoFallback) tried.push('CoinGecko');
+          console.warn(`[TokenIcon] No icon found for "${symbol}" (tried: ${tried.join(', ')}; using default).`);
+        }
+        setSrc(TOKEN_ICON_DEFAULT_SRC);
+      }
+    }, [symbol, symbolKey, logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
+
+    const showDefaultUnderlay = src !== TOKEN_ICON_DEFAULT_SRC;
+
+    return (
+      <div
+        className={cn('relative inline-block shrink-0 rounded-full', className)}
+        style={{ width: size, height: size }}
+      >
+        {showDefaultUnderlay ? (
+          <img
+            src={TOKEN_ICON_DEFAULT_SRC}
+            alt=""
+            aria-hidden
+            width={size}
+            height={size}
+            loading="eager"
+            decoding="async"
+            className="pointer-events-none absolute inset-0 size-full rounded-full object-contain opacity-25 saturate-0"
+          />
+        ) : null}
         <img
-          src={TOKEN_ICON_DEFAULT_SRC}
-          alt=""
-          aria-hidden
+          ref={imgRef}
+          src={src}
+          alt={`${symbol} icon`}
           width={size}
           height={size}
-          loading="eager"
+          loading={effectiveLoading}
           decoding="async"
-          className="pointer-events-none absolute inset-0 size-full rounded-full object-contain opacity-25 saturate-0"
+          onLoad={handleLoad}
+          onError={handleError}
+          className={cn(
+            'relative z-10 size-full rounded-full object-contain',
+            showDefaultUnderlay && 'transition-opacity duration-150 ease-out',
+            showDefaultUnderlay && !foregroundLoaded ? 'opacity-0' : 'opacity-100',
+          )}
         />
-      ) : null}
-      <img
-        ref={imgRef}
-        src={src}
-        alt={`${symbol} icon`}
-        width={size}
-        height={size}
-        loading={effectiveLoading}
-        decoding="async"
-        onLoad={handleLoad}
-        onError={handleError}
-        className={cn(
-          'relative z-10 size-full rounded-full object-contain',
-          showDefaultUnderlay && 'transition-opacity duration-150 ease-out',
-          showDefaultUnderlay && !foregroundLoaded ? 'opacity-0' : 'opacity-100',
-        )}
-      />
-    </div>
-  );
-});
+      </div>
+    );
+  },
+);
 
 TokenImage.displayName = 'TokenImage';
 
@@ -224,16 +212,14 @@ const MultiTokenIcon = ({
   </div>
 );
 
-export const TokenIcon = memo(({
-  symbol,
-  className,
-  size = 32,
-  loading = 'lazy',
-  logoURI,
-}: TokenIconProps) => {
+export const TokenIcon = memo(({ symbol, className, size = 32, loading = 'lazy', logoURI }: TokenIconProps) => {
   const symbols = useMemo(
-    () => symbol.split('_').map((part) => part.trim()).filter(Boolean),
-    [symbol]
+    () =>
+      symbol
+        .split('_')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    [symbol],
   );
 
   if (symbols.length > 1) {
@@ -241,13 +227,7 @@ export const TokenIcon = memo(({
   }
 
   return (
-    <TokenImage
-      symbol={symbols[0] ?? symbol}
-      size={size}
-      loading={loading}
-      className={className}
-      logoURI={logoURI}
-    />
+    <TokenImage symbol={symbols[0] ?? symbol} size={size} loading={loading} className={className} logoURI={logoURI} />
   );
 });
 

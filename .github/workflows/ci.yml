@@ -17,10 +17,10 @@ on:
   workflow_dispatch:
     inputs:
       target_ref:
-        description: "Ref (branch or SHA) to run CI against"
+        description: 'Ref (branch or SHA) to run CI against'
         required: false
   schedule:
-    - cron: '0 6 * * *'  # daily UTC 6:00 — detect backend spec drift
+    - cron: '0 6 * * *' # daily UTC 6:00 — detect backend spec drift
 
 permissions:
   contents: read
@@ -40,7 +40,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Setup Socket Firewall
         uses: socketdev/action@v1
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -136,7 +136,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -178,7 +178,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -223,7 +223,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -256,7 +256,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -285,14 +285,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Validate API schemas against live endpoints
         env:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
-          RUN_LIVE_TESTS: "true"
+          RUN_LIVE_TESTS: 'true'
         run: bash scripts/ci-live-schema-validate.sh
   live-simulation-validation:
     name: live-simulation-validation
@@ -309,14 +309,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Run simulation Golden Rule tests against live API
         env:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
-          RUN_LIVE_TESTS: "true"
+          RUN_LIVE_TESTS: 'true'
         run: npm run test:live:simulation:staging
 
   content-security-check:
@@ -332,7 +332,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -359,7 +359,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -399,7 +399,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -436,7 +436,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
@@ -465,10 +465,10 @@ jobs:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
           token: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' && secrets.TOKEN_ICON_SYNC_PAT || secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
-          commit-message: "chore(openapi): sync spec + generated schemas from backend"
-          branch: "bot/openapi-sync-${{ github.run_id }}"
+          commit-message: 'chore(openapi): sync spec + generated schemas from backend'
+          branch: 'bot/openapi-sync-${{ github.run_id }}'
           delete-branch: true
-          title: "chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})"
+          title: 'chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})'
           body: |
             Auto-generated OpenAPI spec + Zod schema sync.
 

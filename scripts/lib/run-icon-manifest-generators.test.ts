@@ -18,13 +18,13 @@ describe('runIconManifestGenerators', () => {
       1,
       '/custom/node',
       [path.join('/repo', 'scripts', 'generate-token-icon-manifest.mjs')],
-      { stdio: 'inherit' }
+      { stdio: 'inherit' },
     );
     expect(run).toHaveBeenNthCalledWith(
       2,
       '/custom/node',
       [path.join('/repo', 'scripts', 'generate-chain-icon-manifest.mjs')],
-      { stdio: 'inherit' }
+      { stdio: 'inherit' },
     );
     const calledPaths = (run as unknown as ReturnType<typeof vi.fn>).mock.calls
       .map(([, args]) => (args as string[])[0])

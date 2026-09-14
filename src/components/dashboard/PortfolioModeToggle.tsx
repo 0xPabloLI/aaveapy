@@ -64,9 +64,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         className={`${PORTFOLIO_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
         thumbContent={
           positionCount > 0 ? (
-            <span className="ds-text-9 font-bold leading-none tabular-nums text-foreground">
-              {positionCount}
-            </span>
+            <span className="ds-text-9 font-bold leading-none tabular-nums text-foreground">{positionCount}</span>
           ) : undefined
         }
       />

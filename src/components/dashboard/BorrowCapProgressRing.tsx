@@ -24,14 +24,21 @@ function SortArrowButton({
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className={`ml-1 inline-flex items-center transition-colors ${
         isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
       {isActive ? (
-        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+        sortOrder === 'desc' ? (
+          <ArrowDown className="w-3 h-3" />
+        ) : (
+          <ArrowUp className="w-3 h-3" />
+        )
       ) : (
         <ArrowDown className="w-3 h-3 opacity-50" />
       )}
@@ -131,33 +138,63 @@ export function BorrowCapProgressContent({
   const percentage = Math.min((borrowed / cap) * 100, 100);
   const availableToBorrow = disabled
     ? 0
-    : getAvailableToBorrowUsd({
+    : (getAvailableToBorrowUsd({
         borrowedUsd: borrowed,
         borrowCapUsd: cap,
         availableLiquidityUsd,
-      }) ?? 0;
+      }) ?? 0);
   const colorClass =
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
 
-  const sortArrow = onSortPercentage
-    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by borrow cap %" className={colorClass} />
-    : null;
+  const sortArrow = onSortPercentage ? (
+    <SortArrowButton
+      onClick={onSortPercentage}
+      isActive={!!isSortActive}
+      sortOrder={sortOrder}
+      ariaLabel="Sort by borrow cap %"
+      className={colorClass}
+    />
+  ) : null;
 
-  const borrowSizeArrow = onSortBorrowSize
-    ? <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" className="ds-text-brand-cyan" />
-    : null;
+  const borrowSizeArrow = onSortBorrowSize ? (
+    <SortArrowButton
+      onClick={onSortBorrowSize}
+      isActive={!!isSortBorrowSizeActive}
+      sortOrder={borrowSizeSortOrder}
+      ariaLabel="Sort by borrow size"
+      className="ds-text-brand-cyan"
+    />
+  ) : null;
 
-  const borrowableArrow = onSortBorrowable
-    ? <SortArrowButton onClick={onSortBorrowable} isActive={!!isSortBorrowableActive} sortOrder={borrowableSortOrder} ariaLabel="Sort by borrowable" className="ds-text-brand-cyan" />
-    : null;
+  const borrowableArrow = onSortBorrowable ? (
+    <SortArrowButton
+      onClick={onSortBorrowable}
+      isActive={!!isSortBorrowableActive}
+      sortOrder={borrowableSortOrder}
+      ariaLabel="Sort by borrowable"
+      className="ds-text-brand-cyan"
+    />
+  ) : null;
 
-  const borrowCapValueArrow = onSortBorrowCapValue
-    ? <SortArrowButton onClick={onSortBorrowCapValue} isActive={!!isSortBorrowCapValueActive} sortOrder={borrowCapValueSortOrder} ariaLabel="Sort by borrow cap value" className="ds-text-brand-cyan" />
-    : null;
+  const borrowCapValueArrow = onSortBorrowCapValue ? (
+    <SortArrowButton
+      onClick={onSortBorrowCapValue}
+      isActive={!!isSortBorrowCapValueActive}
+      sortOrder={borrowCapValueSortOrder}
+      ariaLabel="Sort by borrow cap value"
+      className="ds-text-brand-cyan"
+    />
+  ) : null;
 
-  const availableLiquidityArrow = onSortAvailableLiquidity
-    ? <SortArrowButton onClick={onSortAvailableLiquidity} isActive={!!isSortAvailableLiquidityActive} sortOrder={availableLiquiditySortOrder} ariaLabel="Sort by available liquidity" className={availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
-    : null;
+  const availableLiquidityArrow = onSortAvailableLiquidity ? (
+    <SortArrowButton
+      onClick={onSortAvailableLiquidity}
+      isActive={!!isSortAvailableLiquidityActive}
+      sortOrder={availableLiquiditySortOrder}
+      ariaLabel="Sort by available liquidity"
+      className={availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'}
+    />
+  ) : null;
 
   return (
     <div className="space-y-1 ds-text-12">
@@ -177,7 +214,9 @@ export function BorrowCapProgressContent({
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available liquidity</span>
-        <span className={`font-medium tabular-nums ${availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
+        <span
+          className={`font-medium tabular-nums ${availableLiquidityUsd < LOW_LIQUIDITY_THRESHOLD_USD ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}
+        >
           {formatScenarioSize(availableLiquidityUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })}
           {availableLiquidityArrow}
         </span>
@@ -200,172 +239,183 @@ export function BorrowCapProgressContent({
   );
 }
 
-const BorrowCapProgressRing = memo(({
-  borrowed,
-  cap,
-  availableLiquidityUsd,
-  disabled = false,
-  displayMode = 'usd',
-  tokenPrice,
-  tokenSymbol,
-  ringSize = 12,
-  strokeWidth = 1.5,
-  disableTooltip = false,
-  label,
-  triggerClassName,
-  triggerAriaLabel,
-  onSort,
-  onSortSize,
-  isSortActive,
-  sortOrder,
-  onSortBorrowSize,
-  isSortBorrowSizeActive,
-  borrowSizeSortOrder,
-  onSortBorrowable,
-  isSortBorrowableActive,
-  borrowableSortOrder,
-  onSortBorrowCapValue,
-  isSortBorrowCapValueActive,
-  borrowCapValueSortOrder,
-  onSortAvailableLiquidity,
-  isSortAvailableLiquidityActive,
-  availableLiquiditySortOrder,
-}: BorrowCapProgressRingProps) => {
-  if (cap == null || !Number.isFinite(cap) || cap <= 0) {
-    return null;
-  }
+const BorrowCapProgressRing = memo(
+  ({
+    borrowed,
+    cap,
+    availableLiquidityUsd,
+    disabled = false,
+    displayMode = 'usd',
+    tokenPrice,
+    tokenSymbol,
+    ringSize = 12,
+    strokeWidth = 1.5,
+    disableTooltip = false,
+    label,
+    triggerClassName,
+    triggerAriaLabel,
+    onSort,
+    onSortSize,
+    isSortActive,
+    sortOrder,
+    onSortBorrowSize,
+    isSortBorrowSizeActive,
+    borrowSizeSortOrder,
+    onSortBorrowable,
+    isSortBorrowableActive,
+    borrowableSortOrder,
+    onSortBorrowCapValue,
+    isSortBorrowCapValueActive,
+    borrowCapValueSortOrder,
+    onSortAvailableLiquidity,
+    isSortAvailableLiquidityActive,
+    availableLiquiditySortOrder,
+  }: BorrowCapProgressRingProps) => {
+    if (cap == null || !Number.isFinite(cap) || cap <= 0) {
+      return null;
+    }
 
-  const currentBorrowed = borrowed ?? 0;
-  const percentage = Math.min((currentBorrowed / cap) * 100, 100);
-  const radius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+    const currentBorrowed = borrowed ?? 0;
+    const percentage = Math.min((currentBorrowed / cap) * 100, 100);
+    const radius = (ringSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const liquidityRemaining = availableLiquidityUsd ?? 0;
+    const liquidityRemaining = availableLiquidityUsd ?? 0;
 
-  const getProgressColor = () => {
-    if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
-    return 'rgb(var(--ds-brand-cyan-rgb, 34 211 238))';
-  };
+    const getProgressColor = () => {
+      if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+      if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
+      return 'rgb(var(--ds-brand-cyan-rgb, 34 211 238))';
+    };
 
-  const tooltipContent = (
-    <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
-      <TooltipCalloutArrow />
-      <BorrowCapProgressContent
-        borrowed={currentBorrowed}
-        cap={cap}
-        availableLiquidityUsd={liquidityRemaining}
-        disabled={disabled}
-        displayMode={displayMode}
-        tokenPrice={tokenPrice}
-        tokenSymbol={tokenSymbol}
-        onSortPercentage={onSort}
-        isSortActive={isSortActive}
-        sortOrder={sortOrder}
-        onSortBorrowSize={onSortSize || onSortBorrowSize}
-        isSortBorrowSizeActive={isSortBorrowSizeActive}
-        borrowSizeSortOrder={borrowSizeSortOrder}
-        onSortBorrowable={onSortBorrowable}
-        isSortBorrowableActive={isSortBorrowableActive}
-        borrowableSortOrder={borrowableSortOrder}
-        onSortBorrowCapValue={onSortBorrowCapValue}
-        isSortBorrowCapValueActive={isSortBorrowCapValueActive}
-        borrowCapValueSortOrder={borrowCapValueSortOrder}
-        onSortAvailableLiquidity={onSortAvailableLiquidity}
-        isSortAvailableLiquidityActive={isSortAvailableLiquidityActive}
-        availableLiquiditySortOrder={availableLiquiditySortOrder}
-      />
-    </TooltipContent>
-  );
+    const tooltipContent = (
+      <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
+        <TooltipCalloutArrow />
+        <BorrowCapProgressContent
+          borrowed={currentBorrowed}
+          cap={cap}
+          availableLiquidityUsd={liquidityRemaining}
+          disabled={disabled}
+          displayMode={displayMode}
+          tokenPrice={tokenPrice}
+          tokenSymbol={tokenSymbol}
+          onSortPercentage={onSort}
+          isSortActive={isSortActive}
+          sortOrder={sortOrder}
+          onSortBorrowSize={onSortSize || onSortBorrowSize}
+          isSortBorrowSizeActive={isSortBorrowSizeActive}
+          borrowSizeSortOrder={borrowSizeSortOrder}
+          onSortBorrowable={onSortBorrowable}
+          isSortBorrowableActive={isSortBorrowableActive}
+          borrowableSortOrder={borrowableSortOrder}
+          onSortBorrowCapValue={onSortBorrowCapValue}
+          isSortBorrowCapValueActive={isSortBorrowCapValueActive}
+          borrowCapValueSortOrder={borrowCapValueSortOrder}
+          onSortAvailableLiquidity={onSortAvailableLiquidity}
+          isSortAvailableLiquidityActive={isSortAvailableLiquidityActive}
+          availableLiquiditySortOrder={availableLiquiditySortOrder}
+        />
+      </TooltipContent>
+    );
 
-  const ringNode = (
-    <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
-      <svg
-            width={ringSize}
-            height={ringSize}
-            viewBox={`0 0 ${ringSize} ${ringSize}`}
-            className="transform -rotate-90"
-          >
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={strokeWidth}
-              className="text-muted-foreground/15"
-            />
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke={getProgressColor()}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-300"
-            />
-          </svg>
-        </div>
-  );
+    const ringNode = (
+      <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
+        <svg
+          width={ringSize}
+          height={ringSize}
+          viewBox={`0 0 ${ringSize} ${ringSize}`}
+          className="transform -rotate-90"
+        >
+          <circle
+            cx={ringSize / 2}
+            cy={ringSize / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-muted-foreground/15"
+          />
+          <circle
+            cx={ringSize / 2}
+            cy={ringSize / 2}
+            r={radius}
+            fill="none"
+            stroke={getProgressColor()}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-300"
+          />
+        </svg>
+      </div>
+    );
 
-  if (disableTooltip) {
+    if (disableTooltip) {
+      if (label != null) {
+        return (
+          <span className={cn('inline-flex items-center justify-center gap-[var(--ds-space-1-5)]', triggerClassName)}>
+            {label}
+            {ringNode}
+          </span>
+        );
+      }
+      return ringNode;
+    }
+
     if (label != null) {
       return (
-        <span className={cn('inline-flex items-center justify-center gap-[var(--ds-space-1-5)]', triggerClassName)}>
-          {label}
-          {ringNode}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
+                'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
+                triggerClassName,
+              )}
+              aria-label={triggerAriaLabel}
+            >
+              {onSortSize ? (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onSortSize();
+                  }}
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation();
+                      onSortSize();
+                    }
+                  }}
+                  aria-label={`Sort by borrow size`}
+                >
+                  {label}
+                </span>
+              ) : (
+                label
+              )}
+              {ringNode}
+            </button>
+          </TooltipTrigger>
+          {tooltipContent}
+        </Tooltip>
       );
     }
-    return ringNode;
-  }
 
-  if (label != null) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
-              'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
-              triggerClassName,
-            )}
-            aria-label={triggerAriaLabel}
-          >
-            {onSortSize ? (
-              <span
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onSortSize(); }}
-                className="cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSortSize(); } }}
-                aria-label={`Sort by borrow size`}
-              >
-                {label}
-              </span>
-            ) : label}
-            {ringNode}
-          </button>
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{ringNode}</TooltipTrigger>
         {tooltipContent}
       </Tooltip>
     );
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {ringNode}
-      </TooltipTrigger>
-      {tooltipContent}
-    </Tooltip>
-  );
-});
+  },
+);
 
 BorrowCapProgressRing.displayName = 'BorrowCapProgressRing';
 

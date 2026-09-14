@@ -46,10 +46,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchWithRetry(
-  url: string,
-  maxRetries: number,
-): Promise<Response> {
+async function fetchWithRetry(url: string, maxRetries: number): Promise<Response> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -70,9 +67,7 @@ async function fetchWithRetry(
       }
 
       if (isRetryable(res.status) && attempt < maxRetries) {
-        console.warn(
-          `  ⚠️ HTTP ${res.status}: ${res.statusText} (attempt ${attempt + 1}/${maxRetries + 1})`,
-        );
+        console.warn(`  ⚠️ HTTP ${res.status}: ${res.statusText} (attempt ${attempt + 1}/${maxRetries + 1})`);
         lastError = new Error(`HTTP ${res.status}: ${res.statusText}`);
         continue;
       }

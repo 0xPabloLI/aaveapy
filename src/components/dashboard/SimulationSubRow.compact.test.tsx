@@ -25,10 +25,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const SOURCE = readFileSync(
-  resolve(__dirname, 'SimulationSubRow.tsx'),
-  'utf8',
-);
+const SOURCE = readFileSync(resolve(__dirname, 'SimulationSubRow.tsx'), 'utf8');
 
 const getCompactBlock = (): string => {
   const start = SOURCE.indexOf('const renderCompactLayout');
@@ -125,14 +122,10 @@ describe('SimulationSubRow compact (mobile) Grid layout', () => {
     // Pattern: <div role="cell" data-disabled=... className={`group ...`}>
     // Anti-pattern: <div role="row" className="contents" data-disabled=...>
     //              <div role="cell" className={`group ...`}>  (group without data-disabled)
-    const labelCellMatch = rowBlock.match(
-      /<div\s+role="cell"\s+data-disabled=\{[^}]*\}\s+className=\{`group\s/,
-    );
+    const labelCellMatch = rowBlock.match(/<div\s+role="cell"\s+data-disabled=\{[^}]*\}\s+className=\{`group\s/);
     expect(labelCellMatch).toBeTruthy();
     // The contents wrapper must NOT carry data-disabled
-    const contentsWithDataDisabled = rowBlock.match(
-      /<div\s+role="row"\s+className="contents"\s+data-disabled/,
-    );
+    const contentsWithDataDisabled = rowBlock.match(/<div\s+role="row"\s+className="contents"\s+data-disabled/);
     expect(contentsWithDataDisabled).toBeNull();
   });
 

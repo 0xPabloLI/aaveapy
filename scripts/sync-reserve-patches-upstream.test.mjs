@@ -9,15 +9,14 @@ import {
 
 function makeReservePatches(entries, existingImports) {
   const importBlock =
-    existingImports ??
-    `import {\n  AaveV3Ethereum,\n  AaveV3Polygon,\n} from '@aave-dao/aave-address-book';`;
+    existingImports ?? `import {\n  AaveV3Ethereum,\n  AaveV3Polygon,\n} from '@aave-dao/aave-address-book';`;
   return `${importBlock}\nimport tokenlist from '@aave-dao/aave-address-book/tokenlist';\n\nconst SYMBOL_NAME_MAP = {};\n\nconst underlyingAssetMap = {\n${entries}\n};\n\nexport { underlyingAssetMap };\n`;
 }
 
 describe('extractAddressBookReferences', () => {
   it('extracts AaveV3 references from underlyingAssetMap', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`,
     );
     const refs = extractAddressBookReferences(content);
     assert.ok(refs.has('AaveV3Ethereum'));
@@ -25,16 +24,14 @@ describe('extractAddressBookReferences', () => {
   });
 
   it('extracts AaveV4 references from underlyingAssetMap', () => {
-    const content = makeReservePatches(
-      `  [AaveV4Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`
-    );
+    const content = makeReservePatches(`  [AaveV4Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`);
     const refs = extractAddressBookReferences(content);
     assert.ok(refs.has('AaveV4Ethereum'));
   });
 
   it('extracts both V3 and V4 references', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`,
     );
     const refs = extractAddressBookReferences(content);
     assert.ok(refs.has('AaveV3Ethereum'));
@@ -61,7 +58,7 @@ describe('parseCurrentAddressBookImports', () => {
 describe('syncAddressBookImports', () => {
   it('adds missing AaveV3 import', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`,
     );
     const result = syncAddressBookImports(content);
     assert.equal(result.changed, true);
@@ -71,7 +68,7 @@ describe('syncAddressBookImports', () => {
 
   it('adds missing AaveV4 import', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`,
     );
     const result = syncAddressBookImports(content);
     assert.equal(result.changed, true);
@@ -81,7 +78,7 @@ describe('syncAddressBookImports', () => {
 
   it('returns unchanged when all imports are present', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},`,
     );
     const result = syncAddressBookImports(content);
     assert.equal(result.changed, false);
@@ -90,12 +87,10 @@ describe('syncAddressBookImports', () => {
 
   it('sorts all import names alphabetically', () => {
     const content = makeReservePatches(
-      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Ethereum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`,
     );
     const result = syncAddressBookImports(content);
-    const importMatch = result.content.match(
-      /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/
-    );
+    const importMatch = result.content.match(/import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/);
     assert.ok(importMatch);
     const names = importMatch[1]
       .split(',')
@@ -107,7 +102,7 @@ describe('syncAddressBookImports', () => {
 
   it('handles both V3 and V4 missing imports in one pass', () => {
     const content = makeReservePatches(
-      `  [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`
+      `  [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {},\n  [AaveV4Ethereum.ASSETS.GHO.UNDERLYING.toLowerCase()]: {},`,
     );
     const result = syncAddressBookImports(content);
     assert.equal(result.changed, true);

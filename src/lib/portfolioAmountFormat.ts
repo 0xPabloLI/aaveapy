@@ -19,10 +19,7 @@ export function formatPortfolioAmount(value: number): string {
   if (!Number.isFinite(value)) return '';
   if (value === 0) return '0';
   const abs = Math.abs(value);
-  const digits = Math.max(
-    0,
-    MAX_PORTFOLIO_AMOUNT_SIG_DIGITS - Math.ceil(Math.log10(abs + 1)),
-  );
+  const digits = Math.max(0, MAX_PORTFOLIO_AMOUNT_SIG_DIGITS - Math.ceil(Math.log10(abs + 1)));
   const fixed = value.toFixed(digits);
   return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
 }

@@ -41,14 +41,14 @@ const VALID_EXTENSIONS = new Set(['.ts', '.tsx']);
  */
 const DOMAIN_WHITELIST = new Set([
   // === AaveAPY (own infrastructure) ===
-  'aaveapy.com',          // covers api.aaveapy.com, staging-api.aaveapy.com
+  'aaveapy.com', // covers api.aaveapy.com, staging-api.aaveapy.com
 
   // === Aave protocol ===
-  'aave.com',             // covers app.aave.com, pro.aave.com
-  'aavechan.com',         // covers apps.aavechan.com
+  'aave.com', // covers app.aave.com, pro.aave.com
+  'aavechan.com', // covers apps.aavechan.com
 
   // === Block explorers ===
-  'etherscan.io',         // covers optimistic.etherscan.io, mega.etherscan.io
+  'etherscan.io', // covers optimistic.etherscan.io, mega.etherscan.io
   'arbiscan.io',
   'polygonscan.com',
   'basescan.org',
@@ -62,10 +62,10 @@ const DOMAIN_WHITELIST = new Set([
   'scrollscan.com',
   'metisscan.info',
   'mantlescan.xyz',
-  'blockscout.com',       // covers zksync.blockscout.com, soneium.blockscout.com
-  'oklink.com',           // covers www.oklink.com
-  'inkonchain.com',       // covers explorer.inkonchain.com
-  'zksync.io',            // covers explorer.zksync.io, mainnet.era.zksync.io
+  'blockscout.com', // covers zksync.blockscout.com, soneium.blockscout.com
+  'oklink.com', // covers www.oklink.com
+  'inkonchain.com', // covers explorer.inkonchain.com
+  'zksync.io', // covers explorer.zksync.io, mainnet.era.zksync.io
 
   // === RPC providers ===
   'drpc.org',
@@ -116,7 +116,7 @@ const DOMAIN_WHITELIST = new Set([
   'schema.org',
 
   // === Analytics ===
-  'googletagmanager.com',  // covers www.googletagmanager.com (GA4 gtag.js)
+  'googletagmanager.com', // covers www.googletagmanager.com (GA4 gtag.js)
 ]);
 
 /**
@@ -210,7 +210,7 @@ function walkDir(dir: string, results: string[] = []): string[] {
     if (stat.isDirectory()) {
       walkDir(fullPath, results);
     } else if (VALID_EXTENSIONS.has(extname(fullPath))) {
-      if (!EXCLUDE_PATTERNS.some(p => fullPath.includes(p)) && !fullPath.includes('check-external-urls')) {
+      if (!EXCLUDE_PATTERNS.some((p) => fullPath.includes(p)) && !fullPath.includes('check-external-urls')) {
         results.push(fullPath);
       }
     }

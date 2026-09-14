@@ -1,102 +1,105 @@
-import { useState, useCallback } from 'react'
-import { Check, Info, Loader2, RotateCcw, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { cnDsInputSurface } from '@/lib/dsInputSurface'
+import { useState, useCallback } from 'react';
+import { Check, Info, Loader2, RotateCcw, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_ERROR_CLASS,
   HEADER_CONTROL_ICON_BUTTON_CLASS,
   HEADER_CONTROL_STATUS_ACTION_CLASS,
-} from '@/lib/headerControlStyles'
-import { toast } from 'sonner'
+} from '@/lib/headerControlStyles';
+import { toast } from 'sonner';
 
-const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
+const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
 function formatShortAddress(addr: `0x${string}`) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
 interface WatchAddressInputProps {
-  onSubmit: (address: `0x${string}`) => void | Promise<void>
-  onCancel: () => void
-  autoFocus?: boolean
+  onSubmit: (address: `0x${string}`) => void | Promise<void>;
+  onCancel: () => void;
+  autoFocus?: boolean;
 }
 
-type WatchStatus = 'idle' | 'importing' | 'connected' | 'error'
+type WatchStatus = 'idle' | 'importing' | 'connected' | 'error';
 
 export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: WatchAddressInputProps) {
-  const [input, setInput] = useState('')
-  const [error, setError] = useState(false)
-  const [status, setStatus] = useState<WatchStatus>('idle')
-  const [statusMessage, setStatusMessage] = useState('')
-  const [lastSubmittedAddress, setLastSubmittedAddress] = useState<`0x${string}` | null>(null)
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<WatchStatus>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [lastSubmittedAddress, setLastSubmittedAddress] = useState<`0x${string}` | null>(null);
 
-  const hasValue = input.trim().length > 0
-  const isValidAddress = ETH_ADDRESS_RE.test(input)
-  const resolvedAddress = isValidAddress ? (input as `0x${string}`) : null
-  const canSubmit = !!resolvedAddress
+  const hasValue = input.trim().length > 0;
+  const isValidAddress = ETH_ADDRESS_RE.test(input);
+  const resolvedAddress = isValidAddress ? (input as `0x${string}`) : null;
+  const canSubmit = !!resolvedAddress;
 
-  const submitAddress = useCallback(async (address: `0x${string}`) => {
-    const shortAddress = formatShortAddress(address)
-    const toastId = toast.loading('Switching to Watch mode…')
+  const submitAddress = useCallback(
+    async (address: `0x${string}`) => {
+      const shortAddress = formatShortAddress(address);
+      const toastId = toast.loading('Switching to Watch mode…');
 
-    setError(false)
-    setStatus('importing')
-    setStatusMessage(`Switching to Watch mode for ${shortAddress}…`)
-    setLastSubmittedAddress(address)
+      setError(false);
+      setStatus('importing');
+      setStatusMessage(`Switching to Watch mode for ${shortAddress}…`);
+      setLastSubmittedAddress(address);
 
-    try {
-      await onSubmit(address)
-      setStatus('connected')
-      setStatusMessage(`Connected · viewing ${shortAddress}`)
-      toast.success('Watch mode active', { id: toastId })
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : 'Unable to switch to Watch mode'
-      setError(true)
-      setStatus('error')
-      setStatusMessage(reason)
-      toast.error('Failed to switch to Watch mode', { id: toastId, description: reason })
-    }
-  }, [onSubmit])
+      try {
+        await onSubmit(address);
+        setStatus('connected');
+        setStatusMessage(`Connected · viewing ${shortAddress}`);
+        toast.success('Watch mode active', { id: toastId });
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : 'Unable to switch to Watch mode';
+        setError(true);
+        setStatus('error');
+        setStatusMessage(reason);
+        toast.error('Failed to switch to Watch mode', { id: toastId, description: reason });
+      }
+    },
+    [onSubmit],
+  );
 
   const handleSubmit = useCallback(() => {
     if (canSubmit && resolvedAddress) {
-      void submitAddress(resolvedAddress)
+      void submitAddress(resolvedAddress);
     } else {
-      setError(true)
-      setStatus('error')
-      setStatusMessage('Enter a valid 0x address')
+      setError(true);
+      setStatus('error');
+      setStatusMessage('Enter a valid 0x address');
     }
-  }, [canSubmit, resolvedAddress, submitAddress])
+  }, [canSubmit, resolvedAddress, submitAddress]);
 
   const handleRetry = useCallback(() => {
-    const retryAddress = lastSubmittedAddress ?? resolvedAddress
+    const retryAddress = lastSubmittedAddress ?? resolvedAddress;
     if (!retryAddress) {
-      setError(true)
-      setStatus('error')
-      setStatusMessage('Enter a valid 0x address')
-      return
+      setError(true);
+      setStatus('error');
+      setStatusMessage('Enter a valid 0x address');
+      return;
     }
-    void submitAddress(retryAddress)
-  }, [lastSubmittedAddress, resolvedAddress, submitAddress])
+    void submitAddress(retryAddress);
+  }, [lastSubmittedAddress, resolvedAddress, submitAddress]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
-        e.preventDefault()
-        handleSubmit()
+        e.preventDefault();
+        handleSubmit();
       }
       if (e.key === 'Escape') {
-        e.preventDefault()
-        onCancel()
+        e.preventDefault();
+        onCancel();
       }
     },
     [handleSubmit, onCancel],
-  )
+  );
 
-  const isImporting = status === 'importing'
-  const showRetry = status === 'error'
-  const hasStatusMessage = status !== 'idle'
+  const isImporting = status === 'importing';
+  const showRetry = status === 'error';
+  const hasStatusMessage = status !== 'idle';
 
   return (
     <div className="relative flex items-center gap-[var(--ds-space-1)]" data-watch-status={status}>
@@ -104,10 +107,10 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
         type="text"
         value={input}
         onChange={(e) => {
-          setInput(e.target.value)
-          setError(false)
-          setStatus('idle')
-          setStatusMessage('')
+          setInput(e.target.value);
+          setError(false);
+          setStatus('idle');
+          setStatusMessage('');
         }}
         onKeyDown={handleKeyDown}
         placeholder="0x…"
@@ -146,10 +149,13 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
         <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
       </button>
       {hasStatusMessage && (
-        <span className={cn(
-          'absolute top-full left-0 mt-1 ds-text-11',
-          status === 'error' ? 'text-destructive' : status === 'connected' ? 'text-success' : 'text-muted-foreground',
-        )} role="status">
+        <span
+          className={cn(
+            'absolute top-full left-0 mt-1 ds-text-11',
+            status === 'error' ? 'text-destructive' : status === 'connected' ? 'text-success' : 'text-muted-foreground',
+          )}
+          role="status"
+        >
           {statusMessage}
           {showRetry && (
             <span className="inline-flex items-center gap-[var(--ds-space-1)] ml-1">
@@ -178,5 +184,5 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
         </span>
       )}
     </div>
-  )
+  );
 }

@@ -16,12 +16,12 @@ export interface SeoCountry {
 }
 
 export const SEO_COUNTRIES: readonly SeoCountry[] = [
-  { alpha3: "bra", semrush: "br", label: "Brazil", flag: "🇧🇷" },
-  { alpha3: "fra", semrush: "fr", label: "France", flag: "🇫🇷" },
-  { alpha3: "tur", semrush: "tr", label: "Türkiye", flag: "🇹🇷" },
-  { alpha3: "usa", semrush: "us", label: "United States", flag: "🇺🇸" },
-  { alpha3: "deu", semrush: "de", label: "Germany", flag: "🇩🇪" },
-  { alpha3: "ind", semrush: "in", label: "India", flag: "🇮🇳" },
+  { alpha3: 'bra', semrush: 'br', label: 'Brazil', flag: '🇧🇷' },
+  { alpha3: 'fra', semrush: 'fr', label: 'France', flag: '🇫🇷' },
+  { alpha3: 'tur', semrush: 'tr', label: 'Türkiye', flag: '🇹🇷' },
+  { alpha3: 'usa', semrush: 'us', label: 'United States', flag: '🇺🇸' },
+  { alpha3: 'deu', semrush: 'de', label: 'Germany', flag: '🇩🇪' },
+  { alpha3: 'ind', semrush: 'in', label: 'India', flag: '🇮🇳' },
 ] as const;
 
 const ALPHA3_TO_COUNTRY = new Map(SEO_COUNTRIES.map((c) => [c.alpha3, c]));

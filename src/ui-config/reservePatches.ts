@@ -64,8 +64,7 @@ export interface IconMapInterface {
 }
 
 const tokenLogoByAddress = new Map<string, string>();
-const tokenListTokens = (tokenlist as { tokens?: Array<{ address: string; logoURI?: string }> })
-  .tokens;
+const tokenListTokens = (tokenlist as { tokens?: Array<{ address: string; logoURI?: string }> }).tokens;
 if (Array.isArray(tokenListTokens)) {
   for (const token of tokenListTokens) {
     if (token.logoURI) {
@@ -236,7 +235,7 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
     '0x004375dff511095cc5a197a54140a24efef3a416': { iconSymbol: 'UNI_BTC_USDC' },
     '0xbb2b8038a1640196fbe3e38816f3e67cba72d940': { iconSymbol: 'UNI_WBTC_WETH' },
     '0x2fdbadf3c4d5a8666bc06645b8358ab803996e28': { iconSymbol: 'UNI_YFI_WETH' },
-      [AaveV3Plasma.ASSETS.WXPL.UNDERLYING.toLowerCase()]: {
+    [AaveV3Plasma.ASSETS.WXPL.UNDERLYING.toLowerCase()]: {
       symbol: 'WXLP',
       name: 'Wrapped XLP',
       iconSymbol: 'wxlp',
@@ -286,7 +285,7 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'PT sUSDe October 2026',
       iconSymbol: 'ptsusde',
     },
-};
+  };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
   const logoURI = lowerUnderlyingAsset ? tokenLogoByAddress.get(lowerUnderlyingAsset) : undefined;

@@ -1,11 +1,7 @@
 const TESTNET_KEYWORDS = ['Sepolia', 'Fuji', 'Testnet'];
 const BASE_MODULES = ['AaveV3', 'AaveV4'];
 const SKIPPED_CHAINS = ['AaveV3Fantom', 'AaveV3Harmony'];
-const ETHEREUM_SUB_POOLS = [
-  'AaveV3EthereumEtherFi',
-  'AaveV3EthereumHorizon',
-  'AaveV3EthereumLido',
-];
+const ETHEREUM_SUB_POOLS = ['AaveV3EthereumEtherFi', 'AaveV3EthereumHorizon', 'AaveV3EthereumLido'];
 
 export function shouldIncludeModule(name) {
   if (BASE_MODULES.includes(name)) return false;

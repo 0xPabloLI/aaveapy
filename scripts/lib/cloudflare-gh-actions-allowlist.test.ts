@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  GITHUB_ACTIONS_RULE_NOTE_PREFIX,
-  planGithubActionsAllowlistSync,
-} from './cloudflare-gh-actions-allowlist.mjs';
+import { GITHUB_ACTIONS_RULE_NOTE_PREFIX, planGithubActionsAllowlistSync } from './cloudflare-gh-actions-allowlist.mjs';
 
 describe('planGithubActionsAllowlistSync', () => {
   it('creates missing CIDRs and deletes stale managed rules', () => {

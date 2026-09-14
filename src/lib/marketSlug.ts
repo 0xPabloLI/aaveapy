@@ -14,9 +14,7 @@ import type { MarketListItem } from '@/types/aave';
  * slugifyMarketLabel('AaveV4EthereumLido')   → 'ethereum-lido'
  */
 export function slugifyMarketLabel(marketName: string): string {
-  return getSubMarketLabel(marketName)
-    .toLowerCase()
-    .replace(/\s+/g, '-');
+  return getSubMarketLabel(marketName).toLowerCase().replace(/\s+/g, '-');
 }
 
 /**
@@ -45,7 +43,7 @@ export function resolveMarketSlugs(
     if (slugToKey.has(slug)) {
       console.warn(
         `[marketSlug] Collision: slug "${slug}" maps to both "${slugToKey.get(slug)}" and "${marketKey(m.chainId, m.marketName)}" on chainId=${chainId}. ` +
-        `The last market will win in URL resolution.`,
+          `The last market will win in URL resolution.`,
       );
     }
     slugToKey.set(slug, marketKey(m.chainId, m.marketName));

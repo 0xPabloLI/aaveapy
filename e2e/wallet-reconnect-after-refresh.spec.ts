@@ -38,8 +38,7 @@ const WAGMI_WATCH_KEY = 'wagmi.watchAddress';
 async function mockAaveGraphql(page: Page) {
   await page.route(
     (url) =>
-      (url.hostname === 'api.aave.com' || url.hostname === 'api.staging.aave.com') &&
-      url.pathname.endsWith('/graphql'),
+      (url.hostname === 'api.aave.com' || url.hostname === 'api.staging.aave.com') && url.pathname.endsWith('/graphql'),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -70,7 +69,10 @@ async function openConnect(page: Page) {
     return;
   }
   await page.getByRole('button', { name: /Wallet actions/i }).click();
-  await page.getByRole('button', { name: /Connect wallet/i }).first().click();
+  await page
+    .getByRole('button', { name: /Connect wallet/i })
+    .first()
+    .click();
 }
 
 /** Open the Watch-address input from either layout. */
@@ -89,7 +91,10 @@ async function openViewAddress(page: Page) {
     return;
   }
   await page.getByRole('button', { name: /Wallet actions/i }).click();
-  await page.getByRole('button', { name: /View address/i }).first().click();
+  await page
+    .getByRole('button', { name: /View address/i })
+    .first()
+    .click();
 }
 
 test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
@@ -186,10 +191,10 @@ test.describe('Wallet reconnect after page refresh (AAV-562)', () => {
       version: 2,
     });
 
-    await page.evaluate(
-      ({ key, value }) => localStorage.setItem(key, value),
-      { key: WAGMI_STORE_KEY, value: staleStore },
-    );
+    await page.evaluate(({ key, value }) => localStorage.setItem(key, value), {
+      key: WAGMI_STORE_KEY,
+      value: staleStore,
+    });
 
     // Refresh to trigger wagmi hydration from stale store.
     await page.reload();

@@ -4,9 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // api.aave.com from inside the browser. On networks that require proxy
 // egress, run with `E2E_PROXY=http://127.0.0.1:<port>`; Chromium never
 // proxies loopback, so the local dev server is unaffected.
-const browserProxy = process.env.E2E_PROXY
-  ? { proxy: { server: process.env.E2E_PROXY } }
-  : {};
+const browserProxy = process.env.E2E_PROXY ? { proxy: { server: process.env.E2E_PROXY } } : {};
 
 export default defineConfig({
   testDir: './e2e',

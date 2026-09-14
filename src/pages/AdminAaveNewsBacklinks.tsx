@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
-import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, RefreshCw } from "lucide-react";
-import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { getDashboardPassword } from "@/lib/seoApi";
+import { useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useQuery } from '@tanstack/react-query';
+import { ExternalLink, RefreshCw } from 'lucide-react';
+import SeoDashboardGate from '@/components/admin/SeoDashboardGate';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getDashboardPassword } from '@/lib/seoApi';
 
 interface Page {
   domain: string;
@@ -35,12 +33,12 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 async function fetchBacklinks(domains: string, top: number): Promise<ApiResponse> {
   const params = new URLSearchParams({ top: String(top) });
-  if (domains.trim()) params.set("domains", domains.trim());
+  if (domains.trim()) params.set('domains', domains.trim());
   const res = await fetch(`${FN_URL}?${params}`, {
     headers: {
       apikey: ANON,
       Authorization: `Bearer ${ANON}`,
-      "X-Dashboard-Password": getDashboardPassword(),
+      'X-Dashboard-Password': getDashboardPassword(),
     },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
@@ -52,12 +50,12 @@ function fmtNum(n: number) {
 }
 
 function Dashboard() {
-  const [domainsInput, setDomainsInput] = useState("");
+  const [domainsInput, setDomainsInput] = useState('');
   const [top, setTop] = useState(50);
-  const [submitted, setSubmitted] = useState({ domains: "", top: 50 });
+  const [submitted, setSubmitted] = useState({ domains: '', top: 50 });
 
   const { data, isFetching, error, refetch } = useQuery({
-    queryKey: ["aave-news-backlinks", submitted],
+    queryKey: ['aave-news-backlinks', submitted],
     queryFn: () => fetchBacklinks(submitted.domains, submitted.top),
     staleTime: 10 * 60 * 1000,
   });
@@ -72,13 +70,10 @@ function Dashboard() {
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Aave news backlinks
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Aave news backlinks</h1>
           <p className="text-sm text-muted-foreground">
-            Ranks Aave-related URLs across curated crypto news domains by total
-            backlinks. Powered by the Semrush connector (backlinks_pages,
-            filtered to URLs containing &ldquo;aave&rdquo;).
+            Ranks Aave-related URLs across curated crypto news domains by total backlinks. Powered by the Semrush
+            connector (backlinks_pages, filtered to URLs containing &ldquo;aave&rdquo;).
           </p>
         </header>
 
@@ -113,27 +108,23 @@ function Dashboard() {
                 disabled={isFetching}
                 className="w-full md:w-auto"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
                 Run
               </Button>
             </div>
           </div>
-          {error && (
-            <p className="text-sm text-destructive">{(error as Error).message}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
           {data && (
             <p className="text-xs text-muted-foreground">
-              Generated {new Date(data.generatedAt).toLocaleString()} ·{" "}
-              {data.totalPagesFound} matching pages across {totalsByDomain.length} domains
+              Generated {new Date(data.generatedAt).toLocaleString()} · {data.totalPagesFound} matching pages across{' '}
+              {totalsByDomain.length} domains
             </p>
           )}
         </section>
 
         {totalsByDomain.length > 0 && (
           <section className="rounded-xl border border-border/60 bg-card overflow-hidden">
-            <h2 className="px-4 py-3 text-sm font-medium border-b border-border/60">
-              Per-domain summary
-            </h2>
+            <h2 className="px-4 py-3 text-sm font-medium border-b border-border/60">Per-domain summary</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -150,7 +141,7 @@ function Dashboard() {
                     <TableCell className="text-right tabular-nums">{fmtNum(d.pageCount)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtNum(d.totalBacklinks)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {d.error ? <span className="text-destructive">{d.error}</span> : "ok"}
+                      {d.error ? <span className="text-destructive">{d.error}</span> : 'ok'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -161,9 +152,7 @@ function Dashboard() {
 
         {data && data.pages.length > 0 && (
           <section className="rounded-xl border border-border/60 bg-card overflow-hidden">
-            <h2 className="px-4 py-3 text-sm font-medium border-b border-border/60">
-              Top Aave-linked pages
-            </h2>
+            <h2 className="px-4 py-3 text-sm font-medium border-b border-border/60">Top Aave-linked pages</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -194,7 +183,7 @@ function Dashboard() {
                     <TableCell className="text-muted-foreground">{p.domain}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtNum(p.backlinks)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtNum(p.refDomains)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{p.lastSeen ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.lastSeen ?? '—'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

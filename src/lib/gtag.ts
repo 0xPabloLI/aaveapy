@@ -10,8 +10,7 @@
 const FALLBACK_MEASUREMENT_ID = 'G-8WRVJ711MH';
 
 const MEASUREMENT_ID =
-  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) ||
-  FALLBACK_MEASUREMENT_ID;
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) || FALLBACK_MEASUREMENT_ID;
 
 let initialized = false;
 

@@ -2,7 +2,6 @@ import { memo, useId } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { formatPercent } from '@/lib/formatters';
 
-
 const formulaBoxClass = 'rounded-lg border border-border bg-muted/40 px-1.5 py-2';
 
 interface UtilizationFormulaProps {
@@ -75,14 +74,21 @@ function SortArrowButton({
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className={`ml-1 inline-flex items-center transition-colors ${
         isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
       {isActive ? (
-        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+        sortOrder === 'desc' ? (
+          <ArrowDown className="w-3 h-3" />
+        ) : (
+          <ArrowUp className="w-3 h-3" />
+        )
       ) : (
         <ArrowDown className="w-3 h-3 opacity-50" />
       )}
@@ -116,13 +122,25 @@ export function UtilizationContent({
 }) {
   const isOverOptimal = current > optimal;
 
-  const utilizationArrow = onSortUtilization
-    ? <SortArrowButton onClick={onSortUtilization} isActive={!!isSortUtilizationActive} sortOrder={utilizationSortOrder} ariaLabel="Sort by utilization" className={isOverOptimal ? 'ds-text-amber-600' : 'text-foreground'} />
-    : null;
+  const utilizationArrow = onSortUtilization ? (
+    <SortArrowButton
+      onClick={onSortUtilization}
+      isActive={!!isSortUtilizationActive}
+      sortOrder={utilizationSortOrder}
+      ariaLabel="Sort by utilization"
+      className={isOverOptimal ? 'ds-text-amber-600' : 'text-foreground'}
+    />
+  ) : null;
 
-  const optimalArrow = onSortOptimal
-    ? <SortArrowButton onClick={onSortOptimal} isActive={!!isSortOptimalActive} sortOrder={optimalSortOrder} ariaLabel="Sort by optimal utilization" className="text-foreground" />
-    : null;
+  const optimalArrow = onSortOptimal ? (
+    <SortArrowButton
+      onClick={onSortOptimal}
+      isActive={!!isSortOptimalActive}
+      sortOrder={optimalSortOrder}
+      ariaLabel="Sort by optimal utilization"
+      className="text-foreground"
+    />
+  ) : null;
 
   return (
     <div className="space-y-1 ds-text-12">
@@ -148,12 +166,7 @@ export function UtilizationContent({
 }
 
 /** Pure SVG utilization bar — callers wrap with Tooltip as needed. */
-const UtilizationIndicator = memo(({
-  current,
-  optimal,
-  width = 10,
-  height = 24,
-}: UtilizationIndicatorProps) => {
+const UtilizationIndicator = memo(({ current, optimal, width = 10, height = 24 }: UtilizationIndicatorProps) => {
   const clipId = useId();
 
   if (current === null || optimal === null || !Number.isFinite(current) || !Number.isFinite(optimal)) {
@@ -162,10 +175,10 @@ const UtilizationIndicator = memo(({
 
   const clampedCurrent = Math.max(0, Math.min(100, current));
   const clampedOptimal = Math.max(0, Math.min(100, optimal));
-  
+
   const optimalY = height - (clampedOptimal / 100) * height;
   const currentY = height - (clampedCurrent / 100) * height;
-  
+
   const isOverOptimal = current > optimal;
 
   const dotRadius = 2.5;
@@ -174,35 +187,14 @@ const UtilizationIndicator = memo(({
   const trackRadius = trackWidth / 2;
 
   return (
-    <div
-      className="inline-flex items-center cursor-default"
-      style={{ width, height }}
-    >
-      <svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        className="overflow-visible"
-      >
+    <div className="inline-flex items-center cursor-default" style={{ width, height }}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
         <defs>
           <clipPath id={clipId}>
-            <rect
-              x={trackX}
-              y={0}
-              width={trackWidth}
-              height={height}
-              rx={trackRadius}
-            />
+            <rect x={trackX} y={0} width={trackWidth} height={height} rx={trackRadius} />
           </clipPath>
         </defs>
-        <rect
-          x={trackX}
-          y={0}
-          width={trackWidth}
-          height={height}
-          rx={trackRadius}
-          className="fill-secondary/40"
-        />
+        <rect x={trackX} y={0} width={trackWidth} height={height} rx={trackRadius} className="fill-secondary/40" />
         <rect
           x={trackX}
           y={optimalY}

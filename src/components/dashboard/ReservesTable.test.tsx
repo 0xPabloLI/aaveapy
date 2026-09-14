@@ -111,28 +111,29 @@ vi.mock('./DesktopReserveRow', () => ({
   ),
 }));
 
-const reserveBase: Omit<ReserveWithSpread, 'reserveId' | 'marketName' | 'tokenSymbol' | 'tokenName' | 'tokenAddress'> = {
-  chainName: 'Ethereum',
-  chainId: 1,
-  tokenPrice: 1,
-  decimals: 6,
-  supplied: '1000000000000',
-  supplyCap: '2000000000000',
-  borrowCap: '1000000000000',
-  utilizationPct: 45,
-  supplyApy: 4.2,
-  borrowApy: 6.1,
-  supplyDisabled: false,
-  borrowDisabled: false,
-  supplyIncentives: [],
-  borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
-  merklSupplys: [],
-  merklBorrows: [],
-  brevisSupplys: [],
-  brevisBorrows: [],
-};
+const reserveBase: Omit<ReserveWithSpread, 'reserveId' | 'marketName' | 'tokenSymbol' | 'tokenName' | 'tokenAddress'> =
+  {
+    chainName: 'Ethereum',
+    chainId: 1,
+    tokenPrice: 1,
+    decimals: 6,
+    supplied: '1000000000000',
+    supplyCap: '2000000000000',
+    borrowCap: '1000000000000',
+    utilizationPct: 45,
+    supplyApy: 4.2,
+    borrowApy: 6.1,
+    supplyDisabled: false,
+    borrowDisabled: false,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+  };
 
 const reserves: ReserveWithSpread[] = [
   {
@@ -154,11 +155,7 @@ const reserves: ReserveWithSpread[] = [
 ];
 
 function renderWithQueryClient(ui: ReactNode) {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
-      {ui}
-    </QueryClientProvider>,
-  );
+  return render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 }
 
 function MarketFilteredTable() {

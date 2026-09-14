@@ -1,8 +1,8 @@
-import { useMemo } from "react";
-import { ExternalLink } from "lucide-react";
-import type { GscRow } from "@/lib/seoApi";
-import { LOCALIZED_PAGES, gscInspectUrl, toPath } from "@/lib/localizedPages";
-import { formatPercent } from "@/lib/formatters";
+import { useMemo } from 'react';
+import { ExternalLink } from 'lucide-react';
+import type { GscRow } from '@/lib/seoApi';
+import { LOCALIZED_PAGES, gscInspectUrl, toPath } from '@/lib/localizedPages';
+import { formatPercent } from '@/lib/formatters';
 
 export interface PageEngagement {
   /** Average visible seconds on the page (from the `time_on_page` analytics event). */
@@ -30,30 +30,37 @@ interface PageStat {
 }
 
 function fmtPos(n: number | null) {
-  return n == null ? "—" : n.toFixed(1);
+  return n == null ? '—' : n.toFixed(1);
 }
 
 function fmtSeconds(s: number | null) {
-  if (s == null) return "—";
+  if (s == null) return '—';
   if (s < 60) return `${Math.round(s)}s`;
   return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
 }
 
 function statusOf(stat: PageStat): { label: string; className: string } {
   if (stat.clicks > 0)
-    return { label: "Indexed · ranking", className: "text-emerald-600 ring-emerald-500/30 bg-emerald-500/10" };
+    return { label: 'Indexed · ranking', className: 'text-emerald-600 ring-emerald-500/30 bg-emerald-500/10' };
   if (stat.impressions > 0)
-    return { label: "Indexed · no clicks", className: "text-secondary ring-border bg-muted/40" };
-  return { label: "No data yet", className: "text-muted-foreground ring-border bg-muted/30" };
+    return { label: 'Indexed · no clicks', className: 'text-secondary ring-border bg-muted/40' };
+  return { label: 'No data yet', className: 'text-muted-foreground ring-border bg-muted/30' };
 }
 
 export default function LocalizedPagesPanel({ rows, engagement }: Props) {
   const stats = useMemo<PageStat[]>(() => {
-    const byPath = new Map<string, { clicks: number; impressions: number; positions: number[]; queries: Set<string> }>();
+    const byPath = new Map<
+      string,
+      { clicks: number; impressions: number; positions: number[]; queries: Set<string> }
+    >();
     for (const row of rows) {
       const path = toPath(row.page);
-      const agg =
-        byPath.get(path) ?? { clicks: 0, impressions: 0, positions: [] as number[], queries: new Set<string>() };
+      const agg = byPath.get(path) ?? {
+        clicks: 0,
+        impressions: 0,
+        positions: [] as number[],
+        queries: new Set<string>(),
+      };
       agg.clicks += row.clicks;
       agg.impressions += row.impressions;
       if (row.position > 0) agg.positions.push(row.position);
@@ -68,9 +75,7 @@ export default function LocalizedPagesPanel({ rows, engagement }: Props) {
         impressions: agg?.impressions ?? 0,
         ctr: agg && agg.impressions > 0 ? agg.clicks / agg.impressions : 0,
         avgPosition:
-          agg && agg.positions.length > 0
-            ? agg.positions.reduce((a, b) => a + b, 0) / agg.positions.length
-            : null,
+          agg && agg.positions.length > 0 ? agg.positions.reduce((a, b) => a + b, 0) / agg.positions.length : null,
         queries: agg?.queries.size ?? 0,
       };
     }).sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions);
@@ -94,7 +99,7 @@ export default function LocalizedPagesPanel({ rows, engagement }: Props) {
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="ds-text-16 font-semibold">Localized pages</h2>
         <span className="ds-text-11 text-muted-foreground tabular-nums">
-          {totals.indexed}/{stats.length} with impressions · {totals.clicks.toLocaleString()} clicks ·{" "}
+          {totals.indexed}/{stats.length} with impressions · {totals.clicks.toLocaleString()} clicks ·{' '}
           {totals.impressions.toLocaleString()} impr
         </span>
       </div>
@@ -144,9 +149,7 @@ export default function LocalizedPagesPanel({ rows, engagement }: Props) {
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {fmtSeconds(eng?.avgSeconds ?? null)}
-                      {eng?.samples ? (
-                        <span className="ds-text-11 text-muted-foreground"> ({eng.samples})</span>
-                      ) : null}
+                      {eng?.samples ? <span className="ds-text-11 text-muted-foreground"> ({eng.samples})</span> : null}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <a
@@ -167,9 +170,9 @@ export default function LocalizedPagesPanel({ rows, engagement }: Props) {
           </table>
         </div>
         <div className="ds-text-11 text-muted-foreground px-3 py-2 border-t border-border/40 bg-muted/20">
-          Coverage is inferred from Search Console impressions in the selected range. Average time comes
-          from the on-page <code className="bg-muted/40 px-1 rounded">time_on_page</code> analytics event and
-          shows “—” until that data is wired into the SEO backend.
+          Coverage is inferred from Search Console impressions in the selected range. Average time comes from the
+          on-page <code className="bg-muted/40 px-1 rounded">time_on_page</code> analytics event and shows “—” until
+          that data is wired into the SEO backend.
         </div>
       </div>
     </section>

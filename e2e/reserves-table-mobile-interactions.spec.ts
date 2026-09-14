@@ -7,10 +7,7 @@ async function waitForMobileReservesReady(page: Parameters<typeof test>[0]['page
 
 test.describe('Reserves mobile interaction matrix', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      !testInfo.project.name.includes('mobile'),
-      'Mobile matrix only',
-    );
+    test.skip(!testInfo.project.name.includes('mobile'), 'Mobile matrix only');
   });
 
   test('expand + scenario input keeps expanded card coherent on mobile', async ({ page }) => {

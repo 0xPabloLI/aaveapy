@@ -97,9 +97,7 @@ describe('Layout: <main> owns content section spacing', () => {
   });
 
   it('Index.tsx: parent wrapper does NOT use space-y (spacing delegated to <main>)', () => {
-    const parentDivMatch = indexSrc.match(
-      /relative z-10 w-full[^"]*py-\[var\(--ds-space-5\)\][^"]*"/,
-    );
+    const parentDivMatch = indexSrc.match(/relative z-10 w-full[^"]*py-\[var\(--ds-space-5\)\][^"]*"/);
     expect(parentDivMatch).toBeTruthy();
     expect(parentDivMatch![0]).not.toMatch(/space-y-3/);
   });

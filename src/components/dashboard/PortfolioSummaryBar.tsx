@@ -33,7 +33,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
   const minHf = getMinHf(hfs);
   const { direction: hfDirection } = getLowestHfDelta(hfs);
   const hasHealthFactors = hfs.length > 0;
-  const hasAnyValidHf = hfs.some(hf => hf.healthFactor != null && hf.healthFactor > 0);
+  const hasAnyValidHf = hfs.some((hf) => hf.healthFactor != null && hf.healthFactor > 0);
 
   // NE APY display
   const neApyValue = summary.totalSupplyUsd > 0 ? summary.netEffectiveApy : null;
@@ -53,22 +53,30 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
             {formatHfValue(minHf)}
           </span>
           {hfDirection === 'up' && (
-            <span data-testid="portfolio-hf-delta-arrow" className="text-emerald-600 dark:text-emerald-400 ds-text-10 font-bold">↑</span>
+            <span
+              data-testid="portfolio-hf-delta-arrow"
+              className="text-emerald-600 dark:text-emerald-400 ds-text-10 font-bold"
+            >
+              ↑
+            </span>
           )}
           {hfDirection === 'down' && (
-            <span data-testid="portfolio-hf-delta-arrow" className="text-red-500 dark:text-red-400 ds-text-10 font-bold">↓</span>
+            <span
+              data-testid="portfolio-hf-delta-arrow"
+              className="text-red-500 dark:text-red-400 ds-text-10 font-bold"
+            >
+              ↓
+            </span>
           )}
         </div>
         {hasHealthFactors && (
           <button
             data-testid="portfolio-advanced-toggle"
-            onClick={() => setIsAdvancedExpanded(prev => !prev)}
+            onClick={() => setIsAdvancedExpanded((prev) => !prev)}
             className="flex items-center gap-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Advanced
-            <ChevronDown
-              className={cn('size-3 transition-transform', isAdvancedExpanded && 'rotate-180')}
-            />
+            <ChevronDown className={cn('size-3 transition-transform', isAdvancedExpanded && 'rotate-180')} />
           </button>
         )}
       </div>
@@ -82,7 +90,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
               <div className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">
                 Health Factor {hfs.length > 1 ? `(${hfs.length} pools)` : ''}
               </div>
-              {hfs.map(hf => {
+              {hfs.map((hf) => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;
                 const hasCurrent = hf.currentHealthFactor != null;
@@ -123,7 +131,11 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
               data-testid="portfolio-ne-apy"
               className={cn(
                 'font-bold tabular-nums',
-                neApyValue == null ? 'text-muted-foreground' : neApyIsNegative ? 'text-red-500 dark:text-red-400' : 'text-foreground',
+                neApyValue == null
+                  ? 'text-muted-foreground'
+                  : neApyIsNegative
+                    ? 'text-red-500 dark:text-red-400'
+                    : 'text-foreground',
               )}
             >
               {neApyValue == null ? '—' : formatPercent(neApyValue)}
@@ -131,12 +143,12 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
           </div>
 
           {/* Borrow capacity per pool */}
-          {hfs.some(hf => hf.totalBorrowCapacityUsd > 0 || hf.totalDebtUsd > 0) && (
+          {hfs.some((hf) => hf.totalBorrowCapacityUsd > 0 || hf.totalDebtUsd > 0) && (
             <div className="space-y-0.5">
               <div className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">
                 Borrow capacity
               </div>
-              {hfs.map(hf => {
+              {hfs.map((hf) => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;
                 const isExhausted = remaining <= 0 && hf.totalBorrowCapacityUsd > 0;
@@ -149,10 +161,12 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
                     className="flex items-center justify-between gap-2 ds-text-11"
                   >
                     <span className="text-muted-foreground truncate">{poolName}</span>
-                    <span className={cn(
-                      'font-medium tabular-nums',
-                      isExhausted ? 'text-red-500 dark:text-red-400' : 'text-foreground',
-                    )}>
+                    <span
+                      className={cn(
+                        'font-medium tabular-nums',
+                        isExhausted ? 'text-red-500 dark:text-red-400' : 'text-foreground',
+                      )}
+                    >
                       {hasNoCapacity
                         ? 'No borrowing capacity'
                         : isExhausted

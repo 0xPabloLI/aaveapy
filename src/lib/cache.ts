@@ -126,7 +126,9 @@ export function clearLegacyCacheEntries(storage: StorageLike = localStorage): vo
 // Markets cache
 type DeficitFields = { deficit?: string | null; tokenPrice?: number | null };
 export const isDeficitWithoutPrice = (r: DeficitFields): boolean =>
-  !!r.deficit && r.deficit !== '0' && r.deficit !== '' &&
+  !!r.deficit &&
+  r.deficit !== '0' &&
+  r.deficit !== '' &&
   (r.tokenPrice == null || !Number.isFinite(r.tokenPrice) || r.tokenPrice <= 0);
 
 export function sanitizeDeficitWithoutPrice(data: MarketsResponse): void {

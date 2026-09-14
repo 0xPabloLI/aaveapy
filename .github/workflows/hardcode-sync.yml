@@ -6,7 +6,7 @@ on:
     types: [upstream-change]
   schedule:
     # Every day at 04:20 UTC (runs against dev and main — see matrix)
-    - cron: "20 4 * * *"
+    - cron: '20 4 * * *'
 
 permissions:
   actions: write
@@ -51,8 +51,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -134,8 +134,8 @@ jobs:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
           token: ${{ secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
-          commit-message: "chore(hardcode): sync hardcoded assets and mappings"
-          title: "chore(hardcode): sync hardcoded assets and mappings"
+          commit-message: 'chore(hardcode): sync hardcoded assets and mappings'
+          title: 'chore(hardcode): sync hardcoded assets and mappings'
           body: |
             Automated update from `npm run hardcode:sync`.
 

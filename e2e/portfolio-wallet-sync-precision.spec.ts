@@ -37,7 +37,10 @@ async function openViewAddress(page: Page) {
     return;
   }
   await page.getByRole('button', { name: /Wallet actions/i }).click();
-  await page.getByRole('button', { name: /View address/i }).first().click();
+  await page
+    .getByRole('button', { name: /View address/i })
+    .first()
+    .click();
 }
 
 /** Max significant digits emitted by `formatConvertedAmount`. */
@@ -86,25 +89,34 @@ test.describe('Portfolio — Wallet Sync precision', () => {
     const initial = (await snapshot()).filter((v) => v.trim() !== '');
     expect(initial.length, 'wallet sync produced at least one populated amount').toBeGreaterThan(0);
     for (const v of initial) {
-      expect(significantDigits(v), `initial value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(MAX_SIG_DIGITS);
+      expect(significantDigits(v), `initial value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(
+        MAX_SIG_DIGITS,
+      );
     }
 
     // Click Wallet Sync again (refresh) — find by accessible label.
-    await page.getByRole('button', { name: /Wallet sync|Sync wallet|Refresh wallet/i }).first().click();
+    await page
+      .getByRole('button', { name: /Wallet sync|Sync wallet|Refresh wallet/i })
+      .first()
+      .click();
 
     // Wait for the resync to land by polling for amount inputs to be populated.
-    await expect.poll(
-      async () => {
-        const vals = (await snapshot()).filter((v) => v.trim() !== '');
-        return vals.length;
-      },
-      { timeout: 15_000, message: 'wallet sync re-sync to populate amount inputs' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(
+        async () => {
+          const vals = (await snapshot()).filter((v) => v.trim() !== '');
+          return vals.length;
+        },
+        { timeout: 15_000, message: 'wallet sync re-sync to populate amount inputs' },
+      )
+      .toBeGreaterThan(0);
 
     const after = (await snapshot()).filter((v) => v.trim() !== '');
     expect(after.length).toBeGreaterThan(0);
     for (const v of after) {
-      expect(significantDigits(v), `post-sync value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(MAX_SIG_DIGITS);
+      expect(significantDigits(v), `post-sync value "${v}" within ${MAX_SIG_DIGITS} sig digits`).toBeLessThanOrEqual(
+        MAX_SIG_DIGITS,
+      );
     }
 
     // And the populated value set should not regress to longer strings than

@@ -3,12 +3,18 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on('domcontentloaded', async () => {
-    await page.evaluate(() => { document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove()); });
+    await page.evaluate(() => {
+      document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
+    });
   });
   // Navigate with watch address to trigger portfolio panel
-  await page.goto('http://localhost:8081/?watch=0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314', { waitUntil: 'domcontentloaded' });
+  await page.goto('http://localhost:8081/?watch=0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314', {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForTimeout(8000);
-  await page.evaluate(() => { document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove()); });
+  await page.evaluate(() => {
+    document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
+  });
   await page.keyboard.press('Escape');
 
   // Take full page screenshot
@@ -21,7 +27,10 @@ async function main() {
   console.log('Portfolio toggle visible:', toggleVisible);
 
   if (toggleVisible) {
-    const checked = await toggle.locator('button[role="switch"]').getAttribute('aria-checked').catch(() => null);
+    const checked = await toggle
+      .locator('button[role="switch"]')
+      .getAttribute('aria-checked')
+      .catch(() => null);
     console.log('Toggle checked:', checked);
     if (checked !== 'true') {
       await toggle.click();
@@ -37,12 +46,17 @@ async function main() {
         const parent = panel.parentElement;
         if (!parent) break;
         const rect = parent.getBoundingClientRect();
-        if (rect.height > 0 && (parent.className.includes('rounded') || parent.className.includes('border'))) { panel = parent; break; }
+        if (rect.height > 0 && (parent.className.includes('rounded') || parent.className.includes('border'))) {
+          panel = parent;
+          break;
+        }
         panel = parent;
       }
       if (!panel) return ['Panel not found'];
       const pr = panel.getBoundingClientRect();
-      const results: string[] = [`Panel: y=${pr.y.toFixed(0)} h=${pr.height.toFixed(0)} right=${pr.right.toFixed(0)} bottom=${pr.bottom.toFixed(0)} class=${(panel.className || '').slice(0, 80)}`];
+      const results: string[] = [
+        `Panel: y=${pr.y.toFixed(0)} h=${pr.height.toFixed(0)} right=${pr.right.toFixed(0)} bottom=${pr.bottom.toFixed(0)} class=${(panel.className || '').slice(0, 80)}`,
+      ];
       const children = panel.querySelectorAll('*');
       for (const el of children) {
         const r = el.getBoundingClientRect();
@@ -52,7 +66,9 @@ async function main() {
         const oL = r.left < pr.left - 2;
         if (oR || oB || oL) {
           const cls = typeof el.className === 'string' ? el.className.split(' ').slice(0, 4).join('.') : '';
-          results.push(`OVERFLOW ${el.tagName} .${cls} y=${r.y.toFixed(0)} h=${r.height.toFixed(0)} right=${r.right.toFixed(0)} bottom=${r.bottom.toFixed(0)} oR=${oR} oB=${oB} oL=${oL}`);
+          results.push(
+            `OVERFLOW ${el.tagName} .${cls} y=${r.y.toFixed(0)} h=${r.height.toFixed(0)} right=${r.right.toFixed(0)} bottom=${r.bottom.toFixed(0)} oR=${oR} oB=${oB} oL=${oL}`,
+          );
         }
       }
       return results;

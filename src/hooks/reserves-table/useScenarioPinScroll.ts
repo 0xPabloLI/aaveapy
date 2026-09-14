@@ -73,20 +73,18 @@ export interface UseScenarioPinScrollResult {
  * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin
  * scroll". Do not change semantics — only relocate code.
  */
-export function useScenarioPinScroll(
-  {
-    reserves,
-    sortedData,
-    isMobile,
-    expandedReserveId,
-    setExpandedReserveId,
-    minVisibleCount,
-    defaultVisibleCount,
-    hasScenarioInput,
-    expandScrollFollowsScenarioSort,
-    scenarioKey,
-  }: UseScenarioPinScrollOptions,
-): UseScenarioPinScrollResult {
+export function useScenarioPinScroll({
+  reserves,
+  sortedData,
+  isMobile,
+  expandedReserveId,
+  setExpandedReserveId,
+  minVisibleCount,
+  defaultVisibleCount,
+  hasScenarioInput,
+  expandScrollFollowsScenarioSort,
+  scenarioKey,
+}: UseScenarioPinScrollOptions): UseScenarioPinScrollResult {
   const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
   const scenarioPinScheduleTokenRef = useRef(0);
   const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
@@ -101,7 +99,6 @@ export function useScenarioPinScroll(
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     setScenarioPinDebugSink((trace) => {
-       
       console.debug('[scenarioPin]', {
         phase: trace.phase,
         scenarioChanged: trace.scenarioChanged,
@@ -116,7 +113,6 @@ export function useScenarioPinScroll(
     });
     return () => setScenarioPinDebugSink(null);
   }, []);
-
 
   const schedulePinScrollToReserve = useCallback(
     (reserveId: string, delayMs: number, opts?: SchedulePinScrollOpts) => {
@@ -193,23 +189,18 @@ export function useScenarioPinScroll(
       ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)
       : -1;
     const currentCount = minVisibleCount ?? defaultVisibleCount;
-    const requiredCount =
-      expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
-    const hasRequiredVisibleCount =
-      expandedIndex >= 0 ? currentCount >= requiredCount : false;
+    const requiredCount = expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
+    const hasRequiredVisibleCount = expandedIndex >= 0 ? currentCount >= requiredCount : false;
 
-    const controllerResult = transitionScenarioPinController(
-      scenarioPinControllerRef.current,
-      {
-        scenarioKey: composedKey,
-        sortedIds: ids,
-        expandedReserveId,
-        hasScenarioInput,
-        expandScrollFollowsScenarioSort,
-        hasRequiredVisibleCount,
-        isExpandedStillVisible: expandedIndex >= 0,
-      },
-    );
+    const controllerResult = transitionScenarioPinController(scenarioPinControllerRef.current, {
+      scenarioKey: composedKey,
+      sortedIds: ids,
+      expandedReserveId,
+      hasScenarioInput,
+      expandScrollFollowsScenarioSort,
+      hasRequiredVisibleCount,
+      isExpandedStillVisible: expandedIndex >= 0,
+    });
     scenarioPinControllerRef.current = controllerResult.nextState;
 
     if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
@@ -217,11 +208,9 @@ export function useScenarioPinScroll(
     if (import.meta.env.DEV) {
       const escape = (raw: string) =>
         typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw;
-      const targetRow = document.querySelector(
-        `tr[data-reserve-id="${escape(controllerResult.pinReserveId)}"]`,
-      );
+      const targetRow = document.querySelector(`tr[data-reserve-id="${escape(controllerResult.pinReserveId)}"]`);
       const topY = targetRow instanceof HTMLElement ? targetRow.getBoundingClientRect().top : null;
-       
+
       console.debug('[scenarioPin] schedule', {
         reserveId: controllerResult.pinReserveId,
         topY,
@@ -236,18 +225,15 @@ export function useScenarioPinScroll(
     cancelScenarioPinScrollRef.current?.();
     const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
     scenarioPinScheduleTokenRef.current = scheduleToken;
-    cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(
-      controllerResult.pinReserveId,
-      320,
-      {
+    cancelScenarioPinScrollRef.current =
+      schedulePinScrollToReserve(controllerResult.pinReserveId, 320, {
         // Keep first pass smooth; follow-up corrections (if any) remain instant.
         instant: false,
         onSettled: () => {
           if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
           cancelScenarioPinScrollRef.current = null;
         },
-      },
-    ) ?? null;
+      }) ?? null;
   }, [
     scenarioKey,
     sortedData,

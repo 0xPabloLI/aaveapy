@@ -60,14 +60,21 @@ function SortArrowButton({
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className={`ml-1 inline-flex items-center transition-colors ${
         isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
       {isActive ? (
-        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+        sortOrder === 'desc' ? (
+          <ArrowDown className="w-3 h-3" />
+        ) : (
+          <ArrowUp className="w-3 h-3" />
+        )
       ) : (
         <ArrowDown className="w-3 h-3 opacity-50" />
       )}
@@ -116,21 +123,45 @@ export function CapProgressContent({
   const colorClass =
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
 
-  const sortArrow = onSortPercentage
-    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by supply cap %" className={colorClass} />
-    : null;
+  const sortArrow = onSortPercentage ? (
+    <SortArrowButton
+      onClick={onSortPercentage}
+      isActive={!!isSortActive}
+      sortOrder={sortOrder}
+      ariaLabel="Sort by supply cap %"
+      className={colorClass}
+    />
+  ) : null;
 
-  const supplySizeArrow = onSortSupplySize
-    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
-    : null;
+  const supplySizeArrow = onSortSupplySize ? (
+    <SortArrowButton
+      onClick={onSortSupplySize}
+      isActive={!!isSortSupplySizeActive}
+      sortOrder={supplySizeSortOrder}
+      ariaLabel="Sort by supply size"
+      className="ds-text-emerald-500"
+    />
+  ) : null;
 
-  const suppliableArrow = onSortSuppliable
-    ? <SortArrowButton onClick={onSortSuppliable} isActive={!!isSortSuppliableActive} sortOrder={suppliableSortOrder} ariaLabel="Sort by suppliable" className="ds-text-emerald-500" />
-    : null;
+  const suppliableArrow = onSortSuppliable ? (
+    <SortArrowButton
+      onClick={onSortSuppliable}
+      isActive={!!isSortSuppliableActive}
+      sortOrder={suppliableSortOrder}
+      ariaLabel="Sort by suppliable"
+      className="ds-text-emerald-500"
+    />
+  ) : null;
 
-  const supplyCapValueArrow = onSortSupplyCapValue
-    ? <SortArrowButton onClick={onSortSupplyCapValue} isActive={!!isSortSupplyCapValueActive} sortOrder={supplyCapValueSortOrder} ariaLabel="Sort by supply cap value" className="ds-text-emerald-500" />
-    : null;
+  const supplyCapValueArrow = onSortSupplyCapValue ? (
+    <SortArrowButton
+      onClick={onSortSupplyCapValue}
+      isActive={!!isSortSupplyCapValueActive}
+      sortOrder={supplyCapValueSortOrder}
+      ariaLabel="Sort by supply cap value"
+      className="ds-text-emerald-500"
+    />
+  ) : null;
 
   return (
     <div className="space-y-1 ds-text-12">
@@ -166,160 +197,171 @@ export function CapProgressContent({
   );
 }
 
-const CapProgressRing = memo(({
-  size,
-  cap,
-  displayMode = 'usd',
-  tokenPrice,
-  tokenSymbol,
-  ringSize = 12,
-  strokeWidth = 1.5,
-  disableTooltip = false,
-  label,
-  triggerClassName,
-  triggerAriaLabel,
-  onSort,
-  onSortSize,
-  isSortActive,
-  sortOrder,
-  onSortSupplySize,
-  isSortSupplySizeActive,
-  supplySizeSortOrder,
-  onSortSuppliable,
-  isSortSuppliableActive,
-  suppliableSortOrder,
-  onSortSupplyCapValue,
-  isSortSupplyCapValueActive,
-  supplyCapValueSortOrder,
-}: CapProgressRingProps) => {
-  if (cap == null || !Number.isFinite(cap) || cap <= 0) {
-    return null;
-  }
+const CapProgressRing = memo(
+  ({
+    size,
+    cap,
+    displayMode = 'usd',
+    tokenPrice,
+    tokenSymbol,
+    ringSize = 12,
+    strokeWidth = 1.5,
+    disableTooltip = false,
+    label,
+    triggerClassName,
+    triggerAriaLabel,
+    onSort,
+    onSortSize,
+    isSortActive,
+    sortOrder,
+    onSortSupplySize,
+    isSortSupplySizeActive,
+    supplySizeSortOrder,
+    onSortSuppliable,
+    isSortSuppliableActive,
+    suppliableSortOrder,
+    onSortSupplyCapValue,
+    isSortSupplyCapValueActive,
+    supplyCapValueSortOrder,
+  }: CapProgressRingProps) => {
+    if (cap == null || !Number.isFinite(cap) || cap <= 0) {
+      return null;
+    }
 
-  const currentSize = size ?? 0;
-  const percentage = Math.min((currentSize / cap) * 100, 100);
-  const radius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+    const currentSize = size ?? 0;
+    const percentage = Math.min((currentSize / cap) * 100, 100);
+    const radius = (ringSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const getProgressColor = () => {
-    if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
-    return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
-  };
+    const getProgressColor = () => {
+      if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+      if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
+      return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
+    };
 
-  const tooltipContent = (
-    <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
-      <TooltipCalloutArrow />
-      <CapProgressContent
-        currentSize={currentSize}
-        cap={cap}
-        displayMode={displayMode}
-        tokenPrice={tokenPrice}
-        tokenSymbol={tokenSymbol}
-        onSortPercentage={onSort}
-        isSortActive={isSortActive}
-        sortOrder={sortOrder}
-        onSortSupplySize={onSortSize || onSortSupplySize}
-        isSortSupplySizeActive={isSortSupplySizeActive}
-        supplySizeSortOrder={supplySizeSortOrder}
-        onSortSuppliable={onSortSuppliable}
-        isSortSuppliableActive={isSortSuppliableActive}
-        suppliableSortOrder={suppliableSortOrder}
-        onSortSupplyCapValue={onSortSupplyCapValue}
-        isSortSupplyCapValueActive={isSortSupplyCapValueActive}
-        supplyCapValueSortOrder={supplyCapValueSortOrder}
-      />
-    </TooltipContent>
-  );
+    const tooltipContent = (
+      <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
+        <TooltipCalloutArrow />
+        <CapProgressContent
+          currentSize={currentSize}
+          cap={cap}
+          displayMode={displayMode}
+          tokenPrice={tokenPrice}
+          tokenSymbol={tokenSymbol}
+          onSortPercentage={onSort}
+          isSortActive={isSortActive}
+          sortOrder={sortOrder}
+          onSortSupplySize={onSortSize || onSortSupplySize}
+          isSortSupplySizeActive={isSortSupplySizeActive}
+          supplySizeSortOrder={supplySizeSortOrder}
+          onSortSuppliable={onSortSuppliable}
+          isSortSuppliableActive={isSortSuppliableActive}
+          suppliableSortOrder={suppliableSortOrder}
+          onSortSupplyCapValue={onSortSupplyCapValue}
+          isSortSupplyCapValueActive={isSortSupplyCapValueActive}
+          supplyCapValueSortOrder={supplyCapValueSortOrder}
+        />
+      </TooltipContent>
+    );
 
-  const ringNode = (
-    <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
-      <svg
-            width={ringSize}
-            height={ringSize}
-            viewBox={`0 0 ${ringSize} ${ringSize}`}
-            className="transform -rotate-90"
-          >
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={strokeWidth}
-              className="text-muted-foreground/15"
-            />
-            <circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              fill="none"
-              stroke={getProgressColor()}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-300"
-            />
-          </svg>
-        </div>
-  );
+    const ringNode = (
+      <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
+        <svg
+          width={ringSize}
+          height={ringSize}
+          viewBox={`0 0 ${ringSize} ${ringSize}`}
+          className="transform -rotate-90"
+        >
+          <circle
+            cx={ringSize / 2}
+            cy={ringSize / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-muted-foreground/15"
+          />
+          <circle
+            cx={ringSize / 2}
+            cy={ringSize / 2}
+            r={radius}
+            fill="none"
+            stroke={getProgressColor()}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-300"
+          />
+        </svg>
+      </div>
+    );
 
-  if (disableTooltip) {
+    if (disableTooltip) {
+      if (label != null) {
+        return (
+          <span className={cn('inline-flex items-center justify-center gap-[var(--ds-space-1-5)]', triggerClassName)}>
+            {label}
+            {ringNode}
+          </span>
+        );
+      }
+      return ringNode;
+    }
+
     if (label != null) {
       return (
-        <span className={cn('inline-flex items-center justify-center gap-[var(--ds-space-1-5)]', triggerClassName)}>
-          {label}
-          {ringNode}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
+                'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
+                triggerClassName,
+              )}
+              aria-label={triggerAriaLabel}
+            >
+              {onSortSize ? (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onSortSize();
+                  }}
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation();
+                      onSortSize();
+                    }
+                  }}
+                  aria-label={`Sort by supply size`}
+                >
+                  {label}
+                </span>
+              ) : (
+                label
+              )}
+              {ringNode}
+            </button>
+          </TooltipTrigger>
+          {tooltipContent}
+        </Tooltip>
       );
     }
-    return ringNode;
-  }
 
-  if (label != null) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
-              'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
-              triggerClassName,
-            )}
-            aria-label={triggerAriaLabel}
-          >
-            {onSortSize ? (
-              <span
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onSortSize(); }}
-                className="cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSortSize(); } }}
-                aria-label={`Sort by supply size`}
-              >
-                {label}
-              </span>
-            ) : label}
-            {ringNode}
-          </button>
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{ringNode}</TooltipTrigger>
         {tooltipContent}
       </Tooltip>
     );
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {ringNode}
-      </TooltipTrigger>
-      {tooltipContent}
-    </Tooltip>
-  );
-});
+  },
+);
 
 CapProgressRing.displayName = 'CapProgressRing';
 

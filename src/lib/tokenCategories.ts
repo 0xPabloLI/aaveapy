@@ -18,9 +18,7 @@ const normalizeBaseSymbol = (symbol: string): string => {
 };
 
 const normalizeStableSymbol = (symbol: string): string => {
-  const normalized = normalizeBaseSymbol(symbol)
-    .replace(/^W/, '')
-    .replace(/USD₮0/g, 'USDT0');
+  const normalized = normalizeBaseSymbol(symbol).replace(/^W/, '').replace(/USD₮0/g, 'USDT0');
   const aliased = normalizeTokenSymbolAliasesUpper(normalized);
   if (aliased === 'CEUR') return 'EURM';
   if (aliased === 'EURM') return 'CEUR';
@@ -35,11 +33,7 @@ const normalizeBtcSymbol = (symbol: string): string => {
   return normalizeBaseSymbol(symbol).replace(/^W/, '');
 };
 
-const matchesTokenGroup = (
-  symbol: string,
-  tokens: string[],
-  normalize: (value: string) => string
-): boolean => {
+const matchesTokenGroup = (symbol: string, tokens: string[], normalize: (value: string) => string): boolean => {
   const normalized = normalize(symbol);
   return tokens.some((token) => normalized.endsWith(token.toUpperCase()));
 };
@@ -52,9 +46,7 @@ const mergeTokenGroups = (baseTokens: string[], extraTokens?: string[]): string[
   return Array.from(merged);
 };
 
-export const buildTokenCategoryGroups = (
-  overrides?: TokenCategoryOverrides
-): TokenCategoryGroups => {
+export const buildTokenCategoryGroups = (overrides?: TokenCategoryOverrides): TokenCategoryGroups => {
   return {
     stablecoins: mergeTokenGroups(STABLECOINS, overrides?.stablecoins),
     ethRelated: mergeTokenGroups(ETH_RELATED, overrides?.ethRelated),
@@ -62,24 +54,15 @@ export const buildTokenCategoryGroups = (
   };
 };
 
-export const isStablecoinSymbol = (
-  symbol: string,
-  groups?: TokenCategoryGroups
-): boolean => {
+export const isStablecoinSymbol = (symbol: string, groups?: TokenCategoryGroups): boolean => {
   return matchesTokenGroup(symbol, groups?.stablecoins ?? STABLECOINS, normalizeStableSymbol);
 };
 
-export const isEthRelatedSymbol = (
-  symbol: string,
-  groups?: TokenCategoryGroups
-): boolean => {
+export const isEthRelatedSymbol = (symbol: string, groups?: TokenCategoryGroups): boolean => {
   return matchesTokenGroup(symbol, groups?.ethRelated ?? ETH_RELATED, normalizeEthSymbol);
 };
 
-export const isBtcRelatedSymbol = (
-  symbol: string,
-  groups?: TokenCategoryGroups
-): boolean => {
+export const isBtcRelatedSymbol = (symbol: string, groups?: TokenCategoryGroups): boolean => {
   return matchesTokenGroup(symbol, groups?.btcRelated ?? BTC_RELATED, normalizeBtcSymbol);
 };
 

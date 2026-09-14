@@ -72,7 +72,7 @@ describe('ReservesTableShowMore', () => {
     expect(onShowLess).toHaveBeenCalledOnce();
   });
 
-    it('renders a desktop spacer div when all reserves are shown and showAll is false (desktop)', () => {
+  it('renders a desktop spacer div when all reserves are shown and showAll is false (desktop)', () => {
     const { container } = render(
       <ReservesTableShowMore
         totalCount={20}
@@ -82,7 +82,8 @@ describe('ReservesTableShowMore', () => {
         variant="desktop"
         onShowAll={vi.fn()}
         onShowLess={vi.fn()}
-      />,    );
+      />,
+    );
     // Desktop renders a minimal spacer (not empty) to maintain visual rhythm
     // and prevent the "double border" effect between table and FAQ section.
     expect(container.innerHTML).not.toBe('');
@@ -101,7 +102,8 @@ describe('ReservesTableShowMore', () => {
         variant="mobile"
         onShowAll={vi.fn()}
         onShowLess={vi.fn()}
-      />,    );
+      />,
+    );
     expect(container.innerHTML).toBe('');
   });
 
@@ -172,12 +174,7 @@ describe('ReservesTableFloatingScroll', () => {
 
   it('renders scroll buttons when tableInView is true', () => {
     render(
-      <ReservesTableFloatingScroll
-        tableInView
-        variant="desktop"
-        onScrollToTop={vi.fn()}
-        onScrollToBottom={vi.fn()}
-      />,
+      <ReservesTableFloatingScroll tableInView variant="desktop" onScrollToTop={vi.fn()} onScrollToBottom={vi.fn()} />,
     );
     expect(screen.getByLabelText('Scroll to table top')).toBeInTheDocument();
     expect(screen.getByLabelText('Scroll to table bottom')).toBeInTheDocument();
@@ -198,12 +195,7 @@ describe('ReservesTableFloatingScroll', () => {
 
   it('still renders refresh button when onRefresh is not provided (but click is no-op)', () => {
     render(
-      <ReservesTableFloatingScroll
-        tableInView
-        variant="desktop"
-        onScrollToTop={vi.fn()}
-        onScrollToBottom={vi.fn()}
-      />,
+      <ReservesTableFloatingScroll tableInView variant="desktop" onScrollToTop={vi.fn()} onScrollToBottom={vi.fn()} />,
     );
     expect(screen.getByLabelText(/refresh data/i)).toBeInTheDocument();
   });

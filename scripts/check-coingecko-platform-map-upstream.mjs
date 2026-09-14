@@ -71,7 +71,7 @@ async function loadCoingeckoPlatformMap() {
 
 function parseLocalHardcodedMap(content) {
   const blockMatch = content.match(
-    /const HARDCODED_PLATFORM_BY_CHAIN_ID:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/
+    /const HARDCODED_PLATFORM_BY_CHAIN_ID:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/,
   );
   if (!blockMatch) {
     throw new Error('Failed to parse HARDCODED_PLATFORM_BY_CHAIN_ID in tokenPriceResolver.ts');
@@ -110,7 +110,7 @@ async function main() {
     if (!isCiMarketsRecoverableError(error)) throw error;
     marketChainIds = Array.from(local.keys()).sort((a, b) => a - b);
     console.warn(
-      `Warning: /markets returned ${error.status} in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.`
+      `Warning: /markets returned ${error.status} in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.`,
     );
   }
 
@@ -160,9 +160,7 @@ async function main() {
     if (mismatch.length > 0) {
       console.error('\nMismatched hardcoded platform entries:');
       for (const item of mismatch) {
-        console.error(
-          `- chainId ${item.chainId}: expected '${item.expectedPlatform}', actual '${item.localPlatform}'`
-        );
+        console.error(`- chainId ${item.chainId}: expected '${item.expectedPlatform}', actual '${item.localPlatform}'`);
       }
     }
     process.exit(1);

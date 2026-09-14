@@ -86,9 +86,7 @@ for (const rel of ALL_FILES) {
 describe('no-chinese-visible', () => {
   it('should have no user-visible Chinese characters in frontend source', () => {
     if (allHits.length > 0) {
-      const details = allHits
-        .map((h) => `  ${h.file}:${h.line} → "${h.text}"`)
-        .join('\n');
+      const details = allHits.map((h) => `  ${h.file}:${h.line} → "${h.text}"`).join('\n');
       expect.fail(
         `Found user-visible Chinese in frontend source:\n${details}\n\nReplace with English or add to exclusion list.`,
       );

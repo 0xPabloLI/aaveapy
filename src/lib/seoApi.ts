@@ -53,32 +53,29 @@ export interface SemrushBatchInput {
   notes?: string | null;
 }
 
-const DASHBOARD_PASSWORD_KEY = "seo-dashboard-password";
+const DASHBOARD_PASSWORD_KEY = 'seo-dashboard-password';
 
 export function setDashboardPassword(pw: string) {
   sessionStorage.setItem(DASHBOARD_PASSWORD_KEY, pw);
 }
 export function getDashboardPassword(): string {
-  return sessionStorage.getItem(DASHBOARD_PASSWORD_KEY) || "";
+  return sessionStorage.getItem(DASHBOARD_PASSWORD_KEY) || '';
 }
 export function clearDashboardPassword() {
   sessionStorage.removeItem(DASHBOARD_PASSWORD_KEY);
 }
 
-async function seoFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const url = `${FN_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+async function seoFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${FN_BASE}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       // Supabase functions gateway requires the anon key for routing even when
       // the function itself is configured with verify_jwt = false.
       apikey: ANON_KEY,
       Authorization: `Bearer ${ANON_KEY}`,
-      "X-Dashboard-Password": getDashboardPassword(),
+      'X-Dashboard-Password': getDashboardPassword(),
       ...(init?.headers || {}),
     },
   });
@@ -91,7 +88,7 @@ async function seoFetch<T>(
       /* keep raw */
     }
     const err = new Error(
-      typeof detail === "object" && detail !== null && "error" in detail
+      typeof detail === 'object' && detail !== null && 'error' in detail
         ? String((detail as { error: unknown }).error)
         : `SEO API request failed (${res.status})`,
     );
@@ -105,7 +102,7 @@ async function seoFetch<T>(
 // Backend may return either a bare array or { rows, total }. Normalize.
 function unwrapRows<T>(raw: unknown): { rows: T[]; total: number } {
   if (Array.isArray(raw)) return { rows: raw as T[], total: raw.length };
-  if (raw && typeof raw === "object" && "rows" in raw) {
+  if (raw && typeof raw === 'object' && 'rows' in raw) {
     const r = (raw as { rows: T[]; total?: number }).rows ?? [];
     return { rows: r, total: (raw as { total?: number }).total ?? r.length };
   }
@@ -113,8 +110,8 @@ function unwrapRows<T>(raw: unknown): { rows: T[]; total: number } {
 }
 
 const toNum = (v: unknown): number | null => {
-  if (v === null || v === undefined || v === "") return null;
-  const n = typeof v === "number" ? v : Number(v);
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
   return Number.isFinite(n) ? n : null;
 };
 
@@ -123,16 +120,16 @@ export interface FetchGscParams {
   to: string;
   country?: string[];
   page?: string;
-  groupBy?: Array<"date" | "country" | "page" | "query">;
+  groupBy?: Array<'date' | 'country' | 'page' | 'query'>;
 }
 
 export async function fetchGscRows(params: FetchGscParams): Promise<GscResponse> {
   const sp = new URLSearchParams();
-  sp.set("from", params.from);
-  sp.set("to", params.to);
-  if (params.country?.length) sp.set("country", params.country.join(","));
-  if (params.page) sp.set("page", params.page);
-  if (params.groupBy?.length) sp.set("groupBy", params.groupBy.join(","));
+  sp.set('from', params.from);
+  sp.set('to', params.to);
+  if (params.country?.length) sp.set('country', params.country.join(','));
+  if (params.page) sp.set('page', params.page);
+  if (params.groupBy?.length) sp.set('groupBy', params.groupBy.join(','));
   const raw = await seoFetch<unknown>(`/gsc?${sp.toString()}`);
   return unwrapRows<GscRow>(raw);
 }
@@ -144,16 +141,14 @@ export interface FetchSemrushParams {
   keyword?: string;
 }
 
-export async function fetchSemrushRows(
-  params: FetchSemrushParams = {},
-): Promise<SemrushResponse> {
+export async function fetchSemrushRows(params: FetchSemrushParams = {}): Promise<SemrushResponse> {
   const sp = new URLSearchParams();
-  if (params.country?.length) sp.set("country", params.country.join(","));
-  if (params.from) sp.set("from", params.from);
-  if (params.to) sp.set("to", params.to);
-  if (params.keyword) sp.set("keyword", params.keyword);
+  if (params.country?.length) sp.set('country', params.country.join(','));
+  if (params.from) sp.set('from', params.from);
+  if (params.to) sp.set('to', params.to);
+  if (params.keyword) sp.set('keyword', params.keyword);
   const qs = sp.toString();
-  const raw = await seoFetch<unknown>(`/semrush${qs ? `?${qs}` : ""}`);
+  const raw = await seoFetch<unknown>(`/semrush${qs ? `?${qs}` : ''}`);
   const { rows } = unwrapRows<Record<string, unknown>>(raw);
   // Postgres numeric/bigint columns serialize as strings — coerce to numbers.
   const normalized: SemrushRow[] = rows.map((r) => ({
@@ -173,13 +168,12 @@ export async function fetchSemrushRows(
 export function postSemrushBatch(
   snapshots: SemrushBatchInput[],
 ): Promise<{ upserted: number; total: number; errors?: unknown[] }> {
-  return seoFetch("/semrush/batch", {
-    method: "POST",
+  return seoFetch('/semrush/batch', {
+    method: 'POST',
     body: JSON.stringify({ snapshots }),
   });
 }
 
 export function deleteSemrush(id: number): Promise<{ deleted: true; id: number }> {
-  return seoFetch(`/semrush/${id}`, { method: "DELETE" });
+  return seoFetch(`/semrush/${id}`, { method: 'DELETE' });
 }
-

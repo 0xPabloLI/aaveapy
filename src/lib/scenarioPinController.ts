@@ -98,8 +98,7 @@ export function transitionScenarioPinController(
 
   if (scenarioChanged) {
     const shouldFollowScenarioPin =
-      input.expandScrollFollowsScenarioSort ||
-      (state.lastHasScenarioInput && !input.hasScenarioInput);
+      input.expandScrollFollowsScenarioSort || (state.lastHasScenarioInput && !input.hasScenarioInput);
     if (shouldFollowScenarioPin && input.expandedReserveId) {
       // Preserve baselineSortedIds across debounced scenarioKey changes when the
       // pin target is unchanged. Overwriting with state.lastSortedIds would
@@ -108,8 +107,7 @@ export function transitionScenarioPinController(
       // on the next transition and dropping the pin. The true baseline is the
       // sortedIds captured before the first input in this pin session.
       const preservedBaseline =
-        pendingScenarioPin &&
-        pendingScenarioPin.reserveId === input.expandedReserveId
+        pendingScenarioPin && pendingScenarioPin.reserveId === input.expandedReserveId
           ? pendingScenarioPin.baselineSortedIds
           : state.lastSortedIds;
       pendingScenarioPin = {
@@ -126,25 +124,22 @@ export function transitionScenarioPinController(
   let pinReserveId: string | null = null;
 
   if (pendingScenarioPin) {
+    const pin = pendingScenarioPin;
     const orderChangedForPending =
-      input.sortedIds.length !== pendingScenarioPin.baselineSortedIds.length ||
-      input.sortedIds.some((id, index) => id !== pendingScenarioPin.baselineSortedIds[index]);
-    const expandedMatches = input.expandedReserveId === pendingScenarioPin.reserveId;
+      input.sortedIds.length !== pin.baselineSortedIds.length ||
+      input.sortedIds.some((id, index) => id !== pin.baselineSortedIds[index]);
+    const expandedMatches = input.expandedReserveId === pin.reserveId;
     const canSchedule =
-      pendingScenarioPin.scenarioKey === input.scenarioKey &&
+      pin.scenarioKey === input.scenarioKey &&
       orderChangedForPending &&
       expandedMatches &&
       input.isExpandedStillVisible &&
       input.hasRequiredVisibleCount;
     if (canSchedule) {
       shouldSchedulePin = true;
-      pinReserveId = pendingScenarioPin.reserveId;
+      pinReserveId = pin.reserveId;
       pendingScenarioPin = null;
-    } else if (
-      pendingScenarioPin.scenarioKey !== input.scenarioKey ||
-      !expandedMatches ||
-      !input.isExpandedStillVisible
-    ) {
+    } else if (pin.scenarioKey !== input.scenarioKey || !expandedMatches || !input.isExpandedStillVisible) {
       pendingScenarioPin = null;
     }
   }

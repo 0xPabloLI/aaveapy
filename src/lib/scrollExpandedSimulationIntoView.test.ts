@@ -5,9 +5,7 @@ import { scrollExpandedSimulationIntoView } from './scrollExpandedSimulationInto
 class FakeElement {
   nextElementSibling: Element | null = null;
 
-  constructor(
-    private readonly rect: { top: number; bottom: number; height: number },
-  ) {}
+  constructor(private readonly rect: { top: number; bottom: number; height: number }) {}
 
   getBoundingClientRect() {
     return {

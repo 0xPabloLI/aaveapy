@@ -10,9 +10,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 
-const makeReserve = (
-  overrides: Partial<ReserveWithSpread & RateCalcInput> = {},
-): ReserveWithSpread & RateCalcInput =>
+const makeReserve = (overrides: Partial<ReserveWithSpread & RateCalcInput> = {}): ReserveWithSpread & RateCalcInput =>
   ({
     reserveId: 'r-usdc-v3',
     marketName: 'AaveV3Ethereum',
@@ -52,9 +50,7 @@ const makeReserve = (
     ...overrides,
   }) as ReserveWithSpread & RateCalcInput;
 
-const makeEntry = (
-  overrides: Partial<PortfolioReserveEntry> = {},
-): PortfolioReserveEntry => ({
+const makeEntry = (overrides: Partial<PortfolioReserveEntry> = {}): PortfolioReserveEntry => ({
   reserveId: 'r-usdc-v3',
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
@@ -197,10 +193,7 @@ describe('extractPoolTargets (AAV-1253)', () => {
   // Hidden/orphan entries are skipped
   it('skips hidden and orphan entries', () => {
     const reserve = makeReserve();
-    const entries = [
-      makeEntry({ hidden: true }),
-      makeEntry({ isOrphan: true }),
-    ];
+    const entries = [makeEntry({ hidden: true }), makeEntry({ isOrphan: true })];
     const targets = extractPoolTargets(entries, [reserve]);
     expect(targets.v3Pools).toHaveLength(0);
     expect(targets.v4Spokes).toHaveLength(0);

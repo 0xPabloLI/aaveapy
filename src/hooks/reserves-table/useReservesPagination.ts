@@ -58,17 +58,17 @@ export interface UseReservesPaginationResult {
  * Also resets `minVisibleCount` to `null` whenever `sortedData` empties
  * out, so a stale "Show less" state never survives a filter wipe.
  */
-export function useReservesPagination(
-  { sortedData, scrollToReserveId, expandedReserveId }: UseReservesPaginationOptions,
-): UseReservesPaginationResult {
+export function useReservesPagination({
+  sortedData,
+  scrollToReserveId,
+  expandedReserveId,
+}: UseReservesPaginationOptions): UseReservesPaginationResult {
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
 
   // Auto-expand to target reserve + 5 rows buffer when scrolling to a specific reserve.
   useEffect(() => {
     if (scrollToReserveId) {
-      const targetIndex = sortedData.findIndex(
-        (r) => getReserveKey(r) === scrollToReserveId,
-      );
+      const targetIndex = sortedData.findIndex((r) => getReserveKey(r) === scrollToReserveId);
       if (targetIndex >= 0) {
         const neededCount = targetIndex + 6; // target row + 5 buffer rows
         if (neededCount > DEFAULT_VISIBLE_COUNT) {
@@ -117,9 +117,7 @@ export function useReservesPagination(
     // Only auto-grow when expandedReserveId itself changed (user click),
     // not when sortedData changed under an existing expansion.
     if (expandedReserveId === prev || expandedReserveId === null) return;
-    const expandedIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId,
-    );
+    const expandedIndex = sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId);
     if (expandedIndex < 0) return;
     const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
     const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
@@ -154,9 +152,7 @@ export function useReservesPagination(
       prevExpandedIdRef.current = null;
       return;
     }
-    const expandedIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId,
-    );
+    const expandedIndex = sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId);
     if (expandedIndex < 0) {
       lastExpandedIndexRef.current = null;
       prevExpandedIdRef.current = expandedReserveId;
@@ -180,15 +176,12 @@ export function useReservesPagination(
   }, [sortedData, expandedReserveId, minVisibleCount]);
 
   const displayData = useMemo(() => {
-    const baseCount = minVisibleCount != null && minVisibleCount > 0
-      ? minVisibleCount
-      : DEFAULT_VISIBLE_COUNT;
+    const baseCount = minVisibleCount != null && minVisibleCount > 0 ? minVisibleCount : DEFAULT_VISIBLE_COUNT;
     if (baseCount >= sortedData.length) return sortedData;
     return sortedData.slice(0, baseCount);
   }, [sortedData, minVisibleCount]);
 
-  const showAll =
-    sortedData.length > 0 && minVisibleCount !== null && minVisibleCount >= sortedData.length;
+  const showAll = sortedData.length > 0 && minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
   const showAllRows = useCallback(() => {
     setMinVisibleCount(sortedData.length > 0 ? sortedData.length : null);

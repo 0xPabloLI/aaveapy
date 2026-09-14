@@ -63,20 +63,13 @@ const makeActions = (): PortfolioSimulationActions => ({
 describe('usePortfolioToggle', () => {
   describe('portfolioReserveIds', () => {
     it('is empty when there are no entries', () => {
-      const { result } = renderHook(() =>
-        usePortfolioToggle({ isPortfolioMode: false, reserves: [], entries: [] }),
-      );
+      const { result } = renderHook(() => usePortfolioToggle({ isPortfolioMode: false, reserves: [], entries: [] }));
       expect(result.current.portfolioReserveIds.size).toBe(0);
     });
 
     it('collects unique reserveIds from entries', () => {
-      const entries = [
-        makeEntry({ reserveId: 'r-1' }),
-        makeEntry({ reserveId: 'r-2' }),
-      ];
-      const { result } = renderHook(() =>
-        usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }),
-      );
+      const entries = [makeEntry({ reserveId: 'r-1' }), makeEntry({ reserveId: 'r-2' })];
+      const { result } = renderHook(() => usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }));
       expect(Array.from(result.current.portfolioReserveIds).sort()).toEqual(['r-1', 'r-2']);
     });
 
@@ -86,9 +79,7 @@ describe('usePortfolioToggle', () => {
         makeEntry({ reserveId: 'r-2', hidden: true }),
         makeEntry({ reserveId: 'r-3', hidden: true }),
       ];
-      const { result } = renderHook(() =>
-        usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }),
-      );
+      const { result } = renderHook(() => usePortfolioToggle({ isPortfolioMode: true, reserves: [], entries }));
       expect(Array.from(result.current.hiddenReserveIds).sort()).toEqual(['r-2', 'r-3']);
       expect(Array.from(result.current.portfolioReserveIds).sort()).toEqual(['r-1', 'r-2', 'r-3']);
     });
@@ -123,7 +114,11 @@ describe('usePortfolioToggle', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [
-        makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: null }, borrow: { amount: '', inputMode: 'usd', walletValue: null } }),
+        makeEntry({
+          reserveId: 'r-1',
+          supply: { amount: '100', inputMode: 'usd', walletValue: null },
+          borrow: { amount: '', inputMode: 'usd', walletValue: null },
+        }),
       ];
       const { result } = renderHook(() =>
         usePortfolioToggle({
@@ -143,7 +138,11 @@ describe('usePortfolioToggle', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [
-        makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '50', inputMode: 'usd', walletValue: 50 } }),
+        makeEntry({
+          reserveId: 'r-1',
+          supply: { amount: '100', inputMode: 'usd', walletValue: 100 },
+          borrow: { amount: '50', inputMode: 'usd', walletValue: 50 },
+        }),
       ];
       const { result } = renderHook(() =>
         usePortfolioToggle({
@@ -405,7 +404,11 @@ describe('usePortfolioToggle', () => {
       const actions = makeActions();
       const reserve = makeReserve({ isPaused: true });
       const entries = [
-        makeEntry({ reserveId: 'r-1', restrictedStatus: 'paused', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+        makeEntry({
+          reserveId: 'r-1',
+          restrictedStatus: 'paused',
+          supply: { amount: '100', inputMode: 'usd', walletValue: 100 },
+        }),
       ];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
@@ -418,7 +421,11 @@ describe('usePortfolioToggle', () => {
       const actions = makeActions();
       const reserve = makeReserve({ isFrozen: true });
       const entries = [
-        makeEntry({ reserveId: 'r-1', restrictedStatus: 'frozen', supply: { amount: '100', inputMode: 'usd', walletValue: null } }),
+        makeEntry({
+          reserveId: 'r-1',
+          restrictedStatus: 'frozen',
+          supply: { amount: '100', inputMode: 'usd', walletValue: null },
+        }),
       ];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
@@ -431,7 +438,11 @@ describe('usePortfolioToggle', () => {
       const actions = makeActions();
       const reserve = makeReserve({ isActive: false });
       const entries = [
-        makeEntry({ reserveId: 'r-1', restrictedStatus: 'inactive', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
+        makeEntry({
+          reserveId: 'r-1',
+          restrictedStatus: 'inactive',
+          supply: { amount: '100', inputMode: 'usd', walletValue: 100 },
+        }),
       ];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
@@ -443,9 +454,7 @@ describe('usePortfolioToggle', () => {
     it('allows removal of non-restricted reserve', () => {
       const actions = makeActions();
       const reserve = makeReserve();
-      const entries = [
-        makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
-      ];
+      const entries = [makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } })];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
       );
@@ -562,7 +571,9 @@ describe('usePortfolioToggle', () => {
     it('does NOT emit toast for restricted reserve', () => {
       const actions = makeActions();
       const reserve = makeReserve({ isPaused: true });
-      const entries = [makeEntry({ restrictedStatus: 'paused', supply: { amount: '100', inputMode: 'usd', walletValue: null } })];
+      const entries = [
+        makeEntry({ restrictedStatus: 'paused', supply: { amount: '100', inputMode: 'usd', walletValue: null } }),
+      ];
       const { result } = renderHook(() =>
         usePortfolioToggle({ isPortfolioMode: true, reserves: [reserve], entries, portfolioActions: actions }),
       );
@@ -572,9 +583,7 @@ describe('usePortfolioToggle', () => {
   });
 
   describe('simulationContext (Phase 2)', () => {
-    const makeRateCalcReserve = (
-      overrides: Partial<ReserveWithSpread> = {},
-    ): ReserveWithSpread & RateCalcInput =>
+    const makeRateCalcReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread & RateCalcInput =>
       ({
         reserveId: 'r-1',
         marketName: 'Core',
@@ -651,9 +660,7 @@ describe('usePortfolioToggle', () => {
 
     it('falls back to simplified calculation without simulationContext', () => {
       const reserve = makeRateCalcReserve({ supplyApy: 3.0, supplyIncentives: [0.5] });
-      const entries = [
-        makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null } }),
-      ];
+      const entries = [makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null } })];
       const { result } = renderHook(() =>
         usePortfolioToggle({
           isPortfolioMode: true,
@@ -668,9 +675,7 @@ describe('usePortfolioToggle', () => {
 
     it('with simulationContext but empty forecastStates, still produces results', () => {
       const reserve = makeRateCalcReserve();
-      const entries = [
-        makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null } }),
-      ];
+      const entries = [makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null } })];
       const ctx: PortfolioSimulationContext = {
         isApy: true,
         whitelistMerklCampaignIds: new Set(),

@@ -29,14 +29,14 @@ import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
 
 // --- 1. Determine Playwright browser cache path ---
-const browserCache = process.env.PLAYWRIGHT_BROWSERS_PATH
-  || (platform() === 'darwin'
+const browserCache =
+  process.env.PLAYWRIGHT_BROWSERS_PATH ||
+  (platform() === 'darwin'
     ? join(homedir(), 'Library', 'Caches', 'ms-playwright')
     : join(homedir(), '.cache', 'ms-playwright'));
 
 // --- 2. Check if chromium browser is installed ---
-const hasChromium = existsSync(browserCache)
-  && readdirSync(browserCache).some(dir => dir.startsWith('chromium'));
+const hasChromium = existsSync(browserCache) && readdirSync(browserCache).some((dir) => dir.startsWith('chromium'));
 
 if (!hasChromium) {
   console.log('');
@@ -50,13 +50,13 @@ if (!hasChromium) {
 // Exclude tests that depend on external services or local-only resources.
 // These are covered by manual testing or dedicated CI jobs.
 const GREP_INVERT = [
-  'Explorer',          // Cloudflare blocks headless browsers
-  'Staging smoke',     // staging.aaveapy.com behind Vercel Auth
+  'Explorer', // Cloudflare blocks headless browsers
+  'Staging smoke', // staging.aaveapy.com behind Vercel Auth
   'visual regression', // macOS screenshot baselines (slow, display-sensitive)
-  'header visual',     // screenshot pixel-diff
-  'Wallet Sync',       // requires live Aave SDK GraphQL
-  'Watch Mode',        // requires live SDK + wallet
-  'Wallet reconnect',  // requires live wallet store/SDK state (AAV-562)
+  'header visual', // screenshot pixel-diff
+  'Wallet Sync', // requires live Aave SDK GraphQL
+  'Watch Mode', // requires live SDK + wallet
+  'Wallet reconnect', // requires live wallet store/SDK state (AAV-562)
 ].join('|');
 
 console.log('');

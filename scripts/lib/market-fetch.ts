@@ -11,9 +11,7 @@ export async function fetchAndValidateMarkets(url: string) {
   const raw = await res.json();
   const parsed = MarketsResponseSchema.safeParse(raw);
   if (!parsed.success) {
-    const err = new Error(
-      `Markets schema validation failed: ${parsed.error.message}`
-    ) as Error & { url: string };
+    const err = new Error(`Markets schema validation failed: ${parsed.error.message}`) as Error & { url: string };
     err.url = url;
     throw err;
   }

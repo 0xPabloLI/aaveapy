@@ -27,7 +27,7 @@ interface TooltipPosition {
 function calculateTooltipPosition(
   triggerRect: DOMRect,
   alignLeft: boolean,
-  width: number = TOOLTIP_WIDTH
+  width: number = TOOLTIP_WIDTH,
 ): TooltipPosition {
   const top = triggerRect.bottom + 8;
 
@@ -197,11 +197,7 @@ export function MobileTooltip({
 
   return createPortal(
     <>
-      <div
-        className="fixed inset-0 bg-background/40 z-[9998] backdrop-blur-[2px]"
-        onClick={onClose}
-        aria-hidden
-      />
+      <div className="fixed inset-0 bg-background/40 z-[9998] backdrop-blur-[2px]" onClick={onClose} aria-hidden />
       <div
         className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-[360px] bottom-4 z-[9999] bg-card border border-border rounded-xl shadow-xl
           animate-in slide-in-from-bottom-4 fade-in-0 duration-200"
@@ -233,12 +229,14 @@ export function MobileTooltip({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-b-xl space-y-1 bg-card">{children}</div>
+            <div className="px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-b-xl space-y-1 bg-card">
+              {children}
+            </div>
           </>
         )}
       </div>
     </>,
-    document.body
+    document.body,
   );
 }
 
@@ -310,15 +308,15 @@ export function DesktopTooltip({
         </>
       )}
     </div>,
-    document.body
+    document.body,
   );
 }
 
 function EarnPerDayFootnote() {
   return (
     <div className="rounded-md border border-border/80 bg-muted/30 px-3 py-2 ds-text-11 text-muted-foreground leading-snug">
-      <span className="font-medium text-foreground">Earn /day</span> — same in APR and APY mode. Native uses
-      Aave&apos;s per-second rate; incentive uses APR ÷ 365.
+      <span className="font-medium text-foreground">Earn /day</span> — same in APR and APY mode. Native uses Aave&apos;s
+      per-second rate; incentive uses APR ÷ 365.
     </div>
   );
 }
@@ -388,11 +386,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
       >
         {(triggerRect) =>
           isMobile ? (
-            <MobileTooltip
-              isOpen={aprOpen}
-              onClose={() => setAprOpen(false)}
-              title="APR · linear incentives"
-            >
+            <MobileTooltip isOpen={aprOpen} onClose={() => setAprOpen(false)} title="APR · linear incentives">
               <AprTooltipContent />
             </MobileTooltip>
           ) : (
@@ -429,11 +423,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
       >
         {(triggerRect) =>
           isMobile ? (
-            <MobileTooltip
-              isOpen={apyOpen}
-              onClose={() => setApyOpen(false)}
-              title="APY · compounded incentives"
-            >
+            <MobileTooltip isOpen={apyOpen} onClose={() => setApyOpen(false)} title="APY · compounded incentives">
               <ApyTooltipContent />
             </MobileTooltip>
           ) : (

@@ -22,7 +22,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Real-time Aave lending and borrowing APYs for ETH, USDC, and all Ethereum V3 & V4 markets. All incentive programs included.',
     intro:
-      'Ethereum mainnet runs Aave\'s deepest liquidity pools: four V3 markets (Core, Prime, EtherFi, Horizon RWA) plus Aave V4 Hub & Spoke. Covers ETH, liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with all incentive programs factored into the effective yield.',
+      "Ethereum mainnet runs Aave's deepest liquidity pools: four V3 markets (Core, Prime, EtherFi, Horizon RWA) plus Aave V4 Hub & Spoke. Covers ETH, liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with all incentive programs factored into the effective yield.",
     highlights: [
       'Live rates across V3 markets (Core, Prime, EtherFi, Horizon RWA) and V4 Hub & Spoke',
       'All active incentive programs included in effective APY',
@@ -38,7 +38,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, ARB, WBTC and all Arbitrum One reserves. All active incentives factored into effective yield.',
     intro:
-      'Arbitrum One hosts one of Aave\'s most active deployments, with deep liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and ARB across a broad range of reserves. This page shows real-time supply and borrow APYs with all active rewards baked into the effective yield—no manual math needed to compare the real cost or return of any position.',
+      "Arbitrum One hosts one of Aave's most active deployments, with deep liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and ARB across a broad range of reserves. This page shows real-time supply and borrow APYs with all active rewards baked into the effective yield—no manual math needed to compare the real cost or return of any position.",
     highlights: [
       'Real-time supply and borrow APYs for every Arbitrum reserve',
       'All active incentives combined into effective yield',
@@ -54,7 +54,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Track live Aave lending and borrowing APYs for ETH, USDC, cbETH and all Base reserves. All active incentives included in effective yield.',
     intro:
-      'Base has become one of Aave\'s busiest deployments, fueled by native USDC liquidity and Coinbase\'s growing onchain user base. Key reserves include ETH, cbETH, USDC, USDT, DAI, and WBTC. See live supply and borrow APYs with all active incentives layered into the effective yield for every position.',
+      "Base has become one of Aave's busiest deployments, fueled by native USDC liquidity and Coinbase's growing onchain user base. Key reserves include ETH, cbETH, USDC, USDT, DAI, and WBTC. See live supply and borrow APYs with all active incentives layered into the effective yield for every position.",
     highlights: [
       'Live supply and borrow APYs for every Base reserve',
       'All active rewards baked into effective yield',
@@ -118,7 +118,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Compare live Aave lending and borrowing APYs on Gnosis Chain, covering sDAI, GNO, USDC and all reserves with incentives included.',
     intro:
-      'Gnosis Chain\'s Aave deployment focuses on a curated set of reserves, with sDAI and GNO pools offering unique yield opportunities alongside USDC and USDT. Live supply and borrow APYs for every reserve, with all active incentives folded into the effective yield.',
+      "Gnosis Chain's Aave deployment focuses on a curated set of reserves, with sDAI and GNO pools offering unique yield opportunities alongside USDC and USDT. Live supply and borrow APYs for every reserve, with all active incentives folded into the effective yield.",
     highlights: [
       'Live supply and borrow APYs for every Gnosis reserve',
       'sDAI and GNO pools with incentives included',
@@ -182,7 +182,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Linea zkEVM reserves. All active incentives factored into effective yield.',
     intro:
-      'Linea, Consensys\' zkEVM L2, hosts an active Aave deployment with growing liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow APYs with all active incentives folded into the effective yield for every position.',
+      "Linea, Consensys' zkEVM L2, hosts an active Aave deployment with growing liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow APYs with all active incentives folded into the effective yield for every position.",
     highlights: [
       'Live supply and borrow APYs for every Linea reserve',
       'All active incentives factored into effective yield',
@@ -246,7 +246,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Soneium reserves. All active incentives factored into effective yield.',
     intro:
-      'Soneium, Sony\'s Ethereum L2 built on the OP Stack, hosts a fresh Aave deployment with an emerging DeFi ecosystem covering ETH, stablecoins (USDC), WBTC, and more. Live supply and borrow APYs for every reserve, with any active incentives included in the effective yield.',
+      "Soneium, Sony's Ethereum L2 built on the OP Stack, hosts a fresh Aave deployment with an emerging DeFi ecosystem covering ETH, stablecoins (USDC), WBTC, and more. Live supply and borrow APYs for every reserve, with any active incentives included in the effective yield.",
     highlights: [
       'Live supply and borrow APYs for every Soneium reserve',
       'All active incentives included in effective yield',
@@ -287,5 +287,4 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   },
 ];
 
-export const getSeoChainBySlug = (slug: string | undefined) =>
-  SEO_CHAINS.find((c) => c.slug === slug?.toLowerCase());
+export const getSeoChainBySlug = (slug: string | undefined) => SEO_CHAINS.find((c) => c.slug === slug?.toLowerCase());

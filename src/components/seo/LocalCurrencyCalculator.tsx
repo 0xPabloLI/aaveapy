@@ -175,9 +175,7 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
               </div>
               <div className="rounded-lg border border-border/60 p-3">
                 <dt className="text-xs text-muted-foreground">{copy.perYear}</dt>
-                <dd className="mt-1 text-base font-semibold tabular-nums text-foreground">
-                  {money.format(perYear)}
-                </dd>
+                <dd className="mt-1 text-base font-semibold tabular-nums text-foreground">{money.format(perYear)}</dd>
               </div>
               <div className="rounded-lg border border-border/60 p-3">
                 <dt className="text-xs text-muted-foreground">{copy.perMonth}</dt>

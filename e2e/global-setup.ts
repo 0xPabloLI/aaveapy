@@ -27,9 +27,7 @@ export default async function globalSetup(config: FullConfig) {
       // App-ready signal (same canonical signal as the test helpers): the
       // toggle renders only after market data loads and the app shell
       // commits, i.e. the critical module graph is fully served.
-      await page
-        .getByTestId('portfolio-mode-toggle')
-        .waitFor({ state: 'visible', timeout: 120_000 });
+      await page.getByTestId('portfolio-mode-toggle').waitFor({ state: 'visible', timeout: 120_000 });
       await page.close();
     }
   } finally {

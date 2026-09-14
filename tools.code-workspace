@@ -1,7 +1,4 @@
 {
-  "folders": [
-    { "path": "." },
-    { "path": "../aaveapy-doc" }
-  ],
-  "settings": {}
+  "folders": [{ "path": "." }, { "path": "../aaveapy-doc" }],
+  "settings": {},
 }

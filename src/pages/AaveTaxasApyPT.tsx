@@ -68,7 +68,6 @@ const FAQS: Faq[] = [
   },
 ];
 
-
 const RATE_DRIVERS = [
   {
     title: 'Utilização do pool',
@@ -132,238 +131,240 @@ const AaveTaxasApyPT = () => {
   useStripStaticHeadTags();
 
   return (
-  <>
-    <Helmet>
-      <html lang="pt-BR" />
-      <title>{TITLE}</title>
-      <meta name="description" content={DESCRIPTION} />
-      <link rel="canonical" href={CANONICAL} />
-      <meta property="og:title" content={TITLE} />
-      <meta property="og:description" content={DESCRIPTION} />
-      <meta property="og:type" content="article" />
-      <meta property="og:url" content={CANONICAL} />
-      <meta property="og:locale" content="pt_BR" />
-      <meta property="og:site_name" content="AaveAPY" />
-      <meta property="og:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={TITLE} />
-      <meta name="twitter:description" content={DESCRIPTION} />
-      <meta name="twitter:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
-      <meta name="twitter:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
-      <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-    </Helmet>
-    <LocaleAlternates />
+    <>
+      <Helmet>
+        <html lang="pt-BR" />
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
+        <link rel="canonical" href={CANONICAL} />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={CANONICAL} />
+        <meta property="og:locale" content="pt_BR" />
+        <meta property="og:site_name" content="AaveAPY" />
+        <meta property="og:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={TITLE} />
+        <meta name="twitter:description" content={DESCRIPTION} />
+        <meta name="twitter:image" content="https://aaveapy.com/og-image-1200x630.jpg" />
+        <meta name="twitter:image:alt" content="Taxas e APY do Aave V3 em tempo real" />
+        <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
+      </Helmet>
+      <LocaleAlternates />
 
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
-        <nav className="mb-6 text-sm text-muted-foreground" aria-label="Trilha de navegação">
-          <TrackedLink trackLabel="breadcrumb_inicio" to="/pt-br" className="hover:text-foreground transition-colors">
-            Início
+      <main className="min-h-screen bg-background text-foreground">
+        <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
+          <nav className="mb-6 text-sm text-muted-foreground" aria-label="Trilha de navegação">
+            <TrackedLink trackLabel="breadcrumb_inicio" to="/pt-br" className="hover:text-foreground transition-colors">
+              Início
+            </TrackedLink>
+            <span className="mx-2">/</span>
+            <span className="text-foreground">Taxas e APY da Aave</span>
+          </nav>
+
+          <header className="mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Taxas e APY da Aave V3: como funciona o protocolo
+            </h1>
+            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
+              Guia direto sobre as taxas da Aave: o que é APY, como o protocolo Aave define os juros de depósito e de
+              empréstimo, o que muda na V3 e como os incentivos Merit, Merkl e Brevis entram no rendimento real. Os
+              números ao vivo estão no painel, atualizados a cada minuto.
+            </p>
+          </header>
+
+          <TrackedLink
+            trackLabel="cta_painel_ao_vivo"
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
+          >
+            Ver as taxas da Aave ao vivo
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </TrackedLink>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">Taxas e APY da Aave</span>
-        </nav>
 
-        <header className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Taxas e APY da Aave V3: como funciona o protocolo
-          </h1>
-          <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-            Guia direto sobre as taxas da Aave: o que é APY, como o protocolo Aave define os juros de
-            depósito e de empréstimo, o que muda na V3 e como os incentivos Merit, Merkl e Brevis
-            entram no rendimento real. Os números ao vivo estão no painel, atualizados a cada minuto.
-          </p>
-        </header>
+          <section aria-labelledby="como-funciona" className="mt-10">
+            <h2 id="como-funciona" className="text-xl font-semibold mb-3">
+              Como funciona o protocolo Aave
+            </h2>
+            <div className="space-y-3 text-muted-foreground leading-relaxed">
+              <p>
+                A Aave é um mercado de liquidez sem custódia: ninguém guarda seus fundos por você, e todas as regras
+                estão em contratos inteligentes públicos. Quem deposita um ativo recebe um aToken correspondente, que
+                acumula juros continuamente no próprio saldo. Quem toma emprestado precisa deixar garantia de valor
+                maior do que a dívida (posição sobrecolateralizada) e paga juros ao pool.
+              </p>
+              <p>
+                A taxa de juros não é fixada por ninguém — ela sai de uma curva que depende da{' '}
+                <strong className="text-foreground">utilização</strong> do pool, ou seja, quanto do total depositado
+                está emprestado. Perto do ponto ótimo da curva, as taxas sobem devagar. Acima dele, sobem rápido para
+                atrair novos depósitos e proteger a liquidez de saque.
+              </p>
+              <p>
+                Se a garantia de um tomador cair abaixo do limite (health factor menor que 1), a posição fica sujeita a
+                liquidação: parte da dívida é paga por terceiros em troca de um bônus sobre a garantia.
+              </p>
+            </div>
+          </section>
 
-        <TrackedLink
-          trackLabel="cta_painel_ao_vivo"
-          to="/"
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
-        >
-          Ver as taxas da Aave ao vivo
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </TrackedLink>
-
-        <section aria-labelledby="como-funciona" className="mt-10">
-          <h2 id="como-funciona" className="text-xl font-semibold mb-3">
-            Como funciona o protocolo Aave
-          </h2>
-          <div className="space-y-3 text-muted-foreground leading-relaxed">
-            <p>
-              A Aave é um mercado de liquidez sem custódia: ninguém guarda seus fundos por você, e
-              todas as regras estão em contratos inteligentes públicos. Quem deposita um ativo recebe
-              um aToken correspondente, que acumula juros continuamente no próprio saldo. Quem toma
-              emprestado precisa deixar garantia de valor maior do que a dívida (posição
-              sobrecolateralizada) e paga juros ao pool.
+          <section aria-labelledby="v3" className="mt-10">
+            <h2 id="v3" className="text-xl font-semibold mb-3">
+              O que muda nas taxas da Aave V3
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              A V3 é multichain por natureza: a mesma reserva existe em várias redes, com pools e taxas independentes.
+              Além disso trouxe E-Mode (mais poder de empréstimo entre ativos correlacionados, como ETH e LSTs),
+              isolation mode (ativos novos com limite de dívida próprio) e limites de fornecimento/empréstimo por
+              reserva. Na prática, comparar apenas "a taxa da Aave" deixou de fazer sentido — é preciso comparar reserva
+              por reserva, rede por rede.
             </p>
-            <p>
-              A taxa de juros não é fixada por ninguém — ela sai de uma curva que depende da{' '}
-              <strong className="text-foreground">utilização</strong> do pool, ou seja, quanto do
-              total depositado está emprestado. Perto do ponto ótimo da curva, as taxas sobem devagar.
-              Acima dele, sobem rápido para atrair novos depósitos e proteger a liquidez de saque.
+          </section>
+
+          <section aria-labelledby="rendimento-stablecoin" className="mt-10">
+            <h2 id="rendimento-stablecoin" className="text-xl font-semibold mb-3">
+              Rendimento com stablecoin: como comparar de verdade
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Um rendimento anunciado só é comparável quando você separa três coisas: a taxa base paga pelos tomadores,
+              os incentivos distribuídos em token e o prazo em que esses incentivos acabam. Um APY de 9% que termina em
+              dez dias vale menos que 5% estáveis por seis meses. Some ainda o tamanho do pool: se o seu depósito for
+              grande em relação à liquidez disponível, a utilização cai no mesmo instante e a taxa que você vai receber
+              é menor que a exibida antes do depósito.
             </p>
-            <p>
-              Se a garantia de um tomador cair abaixo do limite (health factor menor que 1), a posição
-              fica sujeita a liquidação: parte da dívida é paga por terceiros em troca de um bônus
-              sobre a garantia.
+            <p className="mt-3 text-muted-foreground leading-relaxed">
+              Para quem está no Brasil, vale lembrar que o rendimento é em dólar. A variação do câmbio pode ser maior
+              que o próprio APY no período, tanto a favor quanto contra. Este site é informativo e não substitui
+              orientação profissional sobre tributação ou investimento.
             </p>
-          </div>
-        </section>
+          </section>
 
-        <section aria-labelledby="v3" className="mt-10">
-          <h2 id="v3" className="text-xl font-semibold mb-3">
-            O que muda nas taxas da Aave V3
-          </h2>
-          <p className="text-muted-foreground leading-relaxed">
-            A V3 é multichain por natureza: a mesma reserva existe em várias redes, com pools e taxas
-            independentes. Além disso trouxe E-Mode (mais poder de empréstimo entre ativos
-            correlacionados, como ETH e LSTs), isolation mode (ativos novos com limite de dívida
-            próprio) e limites de fornecimento/empréstimo por reserva. Na prática, comparar apenas
-            "a taxa da Aave" deixou de fazer sentido — é preciso comparar reserva por reserva, rede
-            por rede.
-          </p>
-        </section>
+          <section aria-labelledby="fatores" className="mt-10">
+            <h2 id="fatores" className="text-xl font-semibold mb-4">
+              O que determina o APY de cada reserva
+            </h2>
+            <ul className="space-y-4">
+              {RATE_DRIVERS.map((d) => (
+                <li key={d.title} className="rounded-xl border border-border/60 bg-card p-4">
+                  <h3 className="text-base font-semibold">{d.title}</h3>
+                  <p className="mt-2 text-muted-foreground leading-relaxed">{d.body}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        <section aria-labelledby="rendimento-stablecoin" className="mt-10">
-          <h2 id="rendimento-stablecoin" className="text-xl font-semibold mb-3">
-            Rendimento com stablecoin: como comparar de verdade
-          </h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Um rendimento anunciado só é comparável quando você separa três coisas: a taxa base paga
-            pelos tomadores, os incentivos distribuídos em token e o prazo em que esses incentivos
-            acabam. Um APY de 9% que termina em dez dias vale menos que 5% estáveis por seis meses.
-            Some ainda o tamanho do pool: se o seu depósito for grande em relação à liquidez
-            disponível, a utilização cai no mesmo instante e a taxa que você vai receber é menor que
-            a exibida antes do depósito.
-          </p>
-          <p className="mt-3 text-muted-foreground leading-relaxed">
-            Para quem está no Brasil, vale lembrar que o rendimento é em dólar. A variação do câmbio
-            pode ser maior que o próprio APY no período, tanto a favor quanto contra. Este site é
-            informativo e não substitui orientação profissional sobre tributação ou investimento.
-          </p>
-        </section>
+          <LocalCurrencyCalculator
+            copy={{
+              id: 'calculadora',
+              h2: 'Calculadora de rendimento em reais',
+              intro:
+                'Informe um valor em reais e escolha uma reserva de stablecoin: a calculadora usa o APY de depósito ao vivo da Aave V3 e mostra o ganho bruto por ano, por mês e por dia.',
+              numberLocale: 'pt-BR',
+              currency: 'BRL',
+              defaultAmount: 10000,
+              amountLabel: 'Valor depositado (R$)',
+              reserveLabel: 'Reserva (taxa ao vivo)',
+              apyLabel: 'APY de depósito',
+              perYear: 'Por ano',
+              perMonth: 'Por mês',
+              perDay: 'Por dia',
+              usdEquivalentLabel: 'Equivale em dólares:',
+              loading: 'Carregando as taxas ao vivo…',
+              error: 'Taxas indisponíveis no momento. Tente de novo em alguns minutos.',
+              disclaimer:
+                'Estimativa com taxa constante — o APY da Aave muda o tempo todo. O rendimento é gerado em dólar, então variação cambial, taxas de rede e tributação não estão incluídas. Não é recomendação de investimento.',
+            }}
+          />
 
-
-        <section aria-labelledby="fatores" className="mt-10">
-          <h2 id="fatores" className="text-xl font-semibold mb-4">
-            O que determina o APY de cada reserva
-          </h2>
-          <ul className="space-y-4">
-            {RATE_DRIVERS.map((d) => (
-              <li key={d.title} className="rounded-xl border border-border/60 bg-card p-4">
-                <h3 className="text-base font-semibold">{d.title}</h3>
-                <p className="mt-2 text-muted-foreground leading-relaxed">{d.body}</p>
+          <section aria-labelledby="como-usar" className="mt-10">
+            <h2 id="como-usar" className="text-xl font-semibold mb-3">
+              Como comparar taxas no AaveAPY
+            </h2>
+            <ol className="list-decimal space-y-2 pl-5 text-muted-foreground leading-relaxed">
+              <li>
+                Abra o{' '}
+                <TrackedLink trackLabel="inline_painel_ao_vivo" to="/" className="text-secondary hover:underline">
+                  painel ao vivo
+                </TrackedLink>{' '}
+                e ordene pela coluna de APY de depósito ou de empréstimo.
               </li>
-            ))}
-          </ul>
-        </section>
+              <li>
+                Use o seletor APR/APY para alinhar a comparação com a forma como cada programa divulga suas recompensas.
+              </li>
+              <li>
+                Filtre por rede em{' '}
+                <TrackedLink
+                  trackLabel="paginas_de_rede"
+                  to="/chain/ethereum"
+                  className="text-secondary hover:underline"
+                >
+                  páginas de rede
+                </TrackedLink>{' '}
+                ou por ativo em{' '}
+                <TrackedLink trackLabel="paginas_de_ativo" to="/asset/usdc" className="text-secondary hover:underline">
+                  páginas de ativo
+                </TrackedLink>
+                .
+              </li>
+              <li>
+                Antes de confirmar, use o simulador: informe o valor que pretende depositar ou tomar emprestado e veja o
+                quanto a sua própria posição move a curva.
+              </li>
+            </ol>
+          </section>
 
-        <LocalCurrencyCalculator
-          copy={{
-            id: 'calculadora',
-            h2: 'Calculadora de rendimento em reais',
-            intro:
-              'Informe um valor em reais e escolha uma reserva de stablecoin: a calculadora usa o APY de depósito ao vivo da Aave V3 e mostra o ganho bruto por ano, por mês e por dia.',
-            numberLocale: 'pt-BR',
-            currency: 'BRL',
-            defaultAmount: 10000,
-            amountLabel: 'Valor depositado (R$)',
-            reserveLabel: 'Reserva (taxa ao vivo)',
-            apyLabel: 'APY de depósito',
-            perYear: 'Por ano',
-            perMonth: 'Por mês',
-            perDay: 'Por dia',
-            usdEquivalentLabel: 'Equivale em dólares:',
-            loading: 'Carregando as taxas ao vivo…',
-            error: 'Taxas indisponíveis no momento. Tente de novo em alguns minutos.',
-            disclaimer:
-              'Estimativa com taxa constante — o APY da Aave muda o tempo todo. O rendimento é gerado em dólar, então variação cambial, taxas de rede e tributação não estão incluídas. Não é recomendação de investimento.',
-          }}
-        />
+          <section aria-labelledby="faq" className="mt-12">
+            <h2 id="faq" className="text-2xl font-bold tracking-tight mb-4">
+              Perguntas frequentes
+            </h2>
+            <div className="space-y-3">
+              {FAQS.map((f) => (
+                <details
+                  key={f.q}
+                  className="group rounded-xl border border-border/60 bg-card p-5"
+                  onToggle={(e) => trackFaqToggle(ANALYTICS_PAGE, f.q, e.currentTarget.open)}
+                >
+                  <summary className="cursor-pointer list-none flex items-start justify-between gap-4 text-base font-semibold text-foreground">
+                    <span>{f.q}</span>
+                    <span className="text-muted-foreground transition group-open:rotate-45 text-xl leading-none select-none">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
 
-        <section aria-labelledby="como-usar" className="mt-10">
-          <h2 id="como-usar" className="text-xl font-semibold mb-3">
-            Como comparar taxas no AaveAPY
-          </h2>
-          <ol className="list-decimal space-y-2 pl-5 text-muted-foreground leading-relaxed">
-            <li>
-              Abra o{' '}
-              <TrackedLink trackLabel="inline_painel_ao_vivo" to="/" className="text-secondary hover:underline">
-                painel ao vivo
-              </TrackedLink>{' '}
-              e ordene pela coluna de APY de depósito ou de empréstimo.
-            </li>
-            <li>
-              Use o seletor APR/APY para alinhar a comparação com a forma como cada programa divulga
-              suas recompensas.
-            </li>
-            <li>
-              Filtre por rede em{' '}
-              <TrackedLink trackLabel="paginas_de_rede" to="/chain/ethereum" className="text-secondary hover:underline">
-                páginas de rede
-              </TrackedLink>{' '}
-              ou por ativo em{' '}
-              <TrackedLink trackLabel="paginas_de_ativo" to="/asset/usdc" className="text-secondary hover:underline">
-                páginas de ativo
-              </TrackedLink>
-              .
-            </li>
-            <li>
-              Antes de confirmar, use o simulador: informe o valor que pretende depositar ou tomar
-              emprestado e veja o quanto a sua própria posição move a curva.
-            </li>
-          </ol>
-        </section>
+          <nav aria-label="Páginas relacionadas" className="mt-12 text-sm text-muted-foreground">
+            <TrackedLink trackLabel="related_aaveapy_brasil" to="/pt-br" className="text-secondary hover:underline">
+              AaveAPY Brasil
+            </TrackedLink>
+            {' · '}
+            <TrackedLink trackLabel="related_painel_ao_vivo" to="/" className="text-secondary hover:underline">
+              Painel ao vivo
+            </TrackedLink>
+            {' · '}
+            <TrackedLink
+              trackLabel="related_defi_yield_tracker"
+              to="/defi-yield-tracker"
+              className="text-secondary hover:underline"
+            >
+              DeFi Yield Tracker
+            </TrackedLink>
+          </nav>
 
-        <section aria-labelledby="faq" className="mt-12">
-          <h2 id="faq" className="text-2xl font-bold tracking-tight mb-4">
-            Perguntas frequentes
-          </h2>
-          <div className="space-y-3">
-            {FAQS.map((f) => (
-              <details
-                key={f.q}
-                className="group rounded-xl border border-border/60 bg-card p-5"
-                onToggle={(e) => trackFaqToggle(ANALYTICS_PAGE, f.q, e.currentTarget.open)}
-              >
-                <summary className="cursor-pointer list-none flex items-start justify-between gap-4 text-base font-semibold text-foreground">
-                  <span>{f.q}</span>
-                  <span className="text-muted-foreground transition group-open:rotate-45 text-xl leading-none select-none">
-                    +
-                  </span>
-                </summary>
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <nav aria-label="Páginas relacionadas" className="mt-12 text-sm text-muted-foreground">
-          <TrackedLink trackLabel="related_aaveapy_brasil" to="/pt-br" className="text-secondary hover:underline">
-            AaveAPY Brasil
-          </TrackedLink>
-          {' · '}
-          <TrackedLink trackLabel="related_painel_ao_vivo" to="/" className="text-secondary hover:underline">
-            Painel ao vivo
-          </TrackedLink>
-          {' · '}
-          <TrackedLink trackLabel="related_defi_yield_tracker" to="/defi-yield-tracker" className="text-secondary hover:underline">
-            DeFi Yield Tracker
-          </TrackedLink>
-        </nav>
-
-        <LanguageSwitcher
-          currentPath="/pt-br/taxas-aave-apy"
-          ariaLabel="Outros idiomas"
-          analyticsPage={ANALYTICS_PAGE}
-        />
-      </div>
-    </main>
-  </>
+          <LanguageSwitcher
+            currentPath="/pt-br/taxas-aave-apy"
+            ariaLabel="Outros idiomas"
+            analyticsPage={ANALYTICS_PAGE}
+          />
+        </div>
+      </main>
+    </>
   );
 };
 

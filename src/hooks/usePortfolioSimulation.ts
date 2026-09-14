@@ -200,9 +200,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
         const existing = prev.find((e) => e.reserveId === params.reserveId);
         if (existing) {
           if (existing.hidden && canUnhide(existing)) {
-            return prev.map((e) =>
-              e.reserveId === params.reserveId ? { ...e, hidden: false } : e,
-            );
+            return prev.map((e) => (e.reserveId === params.reserveId ? { ...e, hidden: false } : e));
           }
           return prev;
         }
@@ -228,69 +226,58 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     [],
   );
 
-  const updateReserve = useCallback(
-    (reserveId: string, patch: ReservePatch, priceInUsd?: number) => {
-      setLastModifiedReserveId(reserveId);
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.reserveId !== reserveId) return e;
-          let supply = { ...e.supply };
-          let borrow = { ...e.borrow };
+  const updateReserve = useCallback((reserveId: string, patch: ReservePatch, priceInUsd?: number) => {
+    setLastModifiedReserveId(reserveId);
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.reserveId !== reserveId) return e;
+        let supply = { ...e.supply };
+        let borrow = { ...e.borrow };
 
-          if (patch.supplyAmount !== undefined) supply = { ...supply, amount: patch.supplyAmount };
-          if (patch.supplyInputMode !== undefined) {
-            const currentAmount = parseFloat(supply.amount);
-            let newAmount = supply.amount;
-            if (
-              priceInUsd !== undefined &&
-              supply.amount.trim() !== '' &&
-              Number.isFinite(currentAmount)
-            ) {
-              const converted = convertPortfolioInputAmount(
-                currentAmount,
-                supply.inputMode,
-                patch.supplyInputMode,
-                priceInUsd,
-              );
-              newAmount = converted !== null ? formatConvertedAmount(converted) : '';
-            }
-            supply = { ...supply, inputMode: patch.supplyInputMode, amount: newAmount };
+        if (patch.supplyAmount !== undefined) supply = { ...supply, amount: patch.supplyAmount };
+        if (patch.supplyInputMode !== undefined) {
+          const currentAmount = parseFloat(supply.amount);
+          let newAmount = supply.amount;
+          if (priceInUsd !== undefined && supply.amount.trim() !== '' && Number.isFinite(currentAmount)) {
+            const converted = convertPortfolioInputAmount(
+              currentAmount,
+              supply.inputMode,
+              patch.supplyInputMode,
+              priceInUsd,
+            );
+            newAmount = converted !== null ? formatConvertedAmount(converted) : '';
           }
-          if (patch.borrowAmount !== undefined) borrow = { ...borrow, amount: patch.borrowAmount };
-          if (patch.borrowInputMode !== undefined) {
-            const currentAmount = parseFloat(borrow.amount);
-            let newAmount = borrow.amount;
-            if (
-              priceInUsd !== undefined &&
-              borrow.amount.trim() !== '' &&
-              Number.isFinite(currentAmount)
-            ) {
-              const converted = convertPortfolioInputAmount(
-                currentAmount,
-                borrow.inputMode,
-                patch.borrowInputMode,
-                priceInUsd,
-              );
-              newAmount = converted !== null ? formatConvertedAmount(converted) : '';
-            }
-            borrow = { ...borrow, inputMode: patch.borrowInputMode, amount: newAmount };
+          supply = { ...supply, inputMode: patch.supplyInputMode, amount: newAmount };
+        }
+        if (patch.borrowAmount !== undefined) borrow = { ...borrow, amount: patch.borrowAmount };
+        if (patch.borrowInputMode !== undefined) {
+          const currentAmount = parseFloat(borrow.amount);
+          let newAmount = borrow.amount;
+          if (priceInUsd !== undefined && borrow.amount.trim() !== '' && Number.isFinite(currentAmount)) {
+            const converted = convertPortfolioInputAmount(
+              currentAmount,
+              borrow.inputMode,
+              patch.borrowInputMode,
+              priceInUsd,
+            );
+            newAmount = converted !== null ? formatConvertedAmount(converted) : '';
           }
-          if (patch.supplyDeltaSign !== undefined) supply = { ...supply, deltaSign: patch.supplyDeltaSign };
-          if (patch.borrowDeltaSign !== undefined) borrow = { ...borrow, deltaSign: patch.borrowDeltaSign };
-          if (patch.supplyDeltaRawUsd !== undefined) supply = { ...supply, deltaRawUsd: patch.supplyDeltaRawUsd === null ? undefined : patch.supplyDeltaRawUsd };
-          if (patch.borrowDeltaRawUsd !== undefined) borrow = { ...borrow, deltaRawUsd: patch.borrowDeltaRawUsd === null ? undefined : patch.borrowDeltaRawUsd };
+          borrow = { ...borrow, inputMode: patch.borrowInputMode, amount: newAmount };
+        }
+        if (patch.supplyDeltaSign !== undefined) supply = { ...supply, deltaSign: patch.supplyDeltaSign };
+        if (patch.borrowDeltaSign !== undefined) borrow = { ...borrow, deltaSign: patch.borrowDeltaSign };
+        if (patch.supplyDeltaRawUsd !== undefined)
+          supply = { ...supply, deltaRawUsd: patch.supplyDeltaRawUsd === null ? undefined : patch.supplyDeltaRawUsd };
+        if (patch.borrowDeltaRawUsd !== undefined)
+          borrow = { ...borrow, deltaRawUsd: patch.borrowDeltaRawUsd === null ? undefined : patch.borrowDeltaRawUsd };
 
-          return { ...e, supply, borrow };
-        }),
-      );
-    },
-    [],
-  );
+        return { ...e, supply, borrow };
+      }),
+    );
+  }, []);
 
   const hideReserve = useCallback((reserveId: string) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)),
-    );
+    setEntries((prev) => prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: true } : e)));
   }, []);
 
   const unhideReserve = useCallback((reserveId: string) => {
@@ -319,9 +306,7 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     setEntries((prev) => {
       const updated = prev.map((e) => {
         if (e.reserveId !== reserveId) return e;
-        const restoreSide = (
-          s: PortfolioReserveEntry['supply'],
-        ): PortfolioReserveEntry['supply'] => {
+        const restoreSide = (s: PortfolioReserveEntry['supply']): PortfolioReserveEntry['supply'] => {
           if (s.walletValue === null) return s;
           return { ...s, amount: '', inputMode: 'usd', deltaRawUsd: undefined };
         };
@@ -341,21 +326,19 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       (e) => e.supply.walletValue !== null || e.borrow.walletValue !== null,
     ).length;
     if (walletCount === 0) return 0;
-    setEntries((prev) =>
-      prev.filter(
-        (e) => e.supply.walletValue === null && e.borrow.walletValue === null,
-      ),
-    );
+    setEntries((prev) => prev.filter((e) => e.supply.walletValue === null && e.borrow.walletValue === null));
     return walletCount;
   }, []);
 
   const clearAll = useCallback(() => {
     setEntries((prev) =>
-      prev.map((e) => {
-        const hasWallet = e.supply.walletValue !== null || e.borrow.walletValue !== null;
-        if (hasWallet) return { ...e, hidden: true };
-        return e;
-      }).filter((e) => e.hidden || e.supply.walletValue !== null || e.borrow.walletValue !== null),
+      prev
+        .map((e) => {
+          const hasWallet = e.supply.walletValue !== null || e.borrow.walletValue !== null;
+          if (hasWallet) return { ...e, hidden: true };
+          return e;
+        })
+        .filter((e) => e.hidden || e.supply.walletValue !== null || e.borrow.walletValue !== null),
     );
   }, []);
 
@@ -395,8 +378,18 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       deleteSnapshot,
     }),
     [
-      addReserve, updateReserve, hideReserve, unhideReserve, removeReserve,
-      importReserves, forceSyncReserves, restoreToWallet, removeWalletEntries, clearAll, saveSnapshot, deleteSnapshot,
+      addReserve,
+      updateReserve,
+      hideReserve,
+      unhideReserve,
+      removeReserve,
+      importReserves,
+      forceSyncReserves,
+      restoreToWallet,
+      removeWalletEntries,
+      clearAll,
+      saveSnapshot,
+      deleteSnapshot,
     ],
   );
 

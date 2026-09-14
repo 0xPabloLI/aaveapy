@@ -12,24 +12,24 @@ export interface LocalizedPageEntry {
   label: string;
 }
 
-export const SITE_ORIGIN = "https://aaveapy.com";
+export const SITE_ORIGIN = 'https://aaveapy.com';
 
 export const LOCALIZED_PAGES: LocalizedPageEntry[] = [
-  { path: "/pt-br/taxas-aave-apy", locale: "pt-BR", flag: "🇧🇷", label: "Português" },
-  { path: "/fr/taux-aave-apy", locale: "fr", flag: "🇫🇷", label: "Français" },
-  { path: "/de/aave-zinsen-apy", locale: "de", flag: "🇩🇪", label: "Deutsch" },
-  { path: "/es/tasas-aave-apy", locale: "es", flag: "🇪🇸", label: "Español" },
-  { path: "/it/tassi-aave-apy", locale: "it", flag: "🇮🇹", label: "Italiano" },
-  { path: "/id/apy-aave", locale: "id", flag: "🇮🇩", label: "Bahasa" },
-  { path: "/ja/aave-kinri-apy", locale: "ja", flag: "🇯🇵", label: "日本語" },
-  { path: "/ru/stavki-aave-apy", locale: "ru", flag: "🇷🇺", label: "Русский" },
-  { path: "/zh/aave-lilv-apy", locale: "zh", flag: "🇹🇼", label: "中文" },
+  { path: '/pt-br/taxas-aave-apy', locale: 'pt-BR', flag: '🇧🇷', label: 'Português' },
+  { path: '/fr/taux-aave-apy', locale: 'fr', flag: '🇫🇷', label: 'Français' },
+  { path: '/de/aave-zinsen-apy', locale: 'de', flag: '🇩🇪', label: 'Deutsch' },
+  { path: '/es/tasas-aave-apy', locale: 'es', flag: '🇪🇸', label: 'Español' },
+  { path: '/it/tassi-aave-apy', locale: 'it', flag: '🇮🇹', label: 'Italiano' },
+  { path: '/id/apy-aave', locale: 'id', flag: '🇮🇩', label: 'Bahasa' },
+  { path: '/ja/aave-kinri-apy', locale: 'ja', flag: '🇯🇵', label: '日本語' },
+  { path: '/ru/stavki-aave-apy', locale: 'ru', flag: '🇷🇺', label: 'Русский' },
+  { path: '/zh/aave-lilv-apy', locale: 'zh', flag: '🇹🇼', label: '中文' },
 ];
 
 /** Normalize a GSC `page` value (absolute URL) to a path for matching. */
 export function toPath(pageUrl: string): string {
-  const path = pageUrl.replace(/^https?:\/\/[^/]+/, "");
-  return path.replace(/\/+$/, "") || "/";
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  return path.replace(/\/+$/, '') || '/';
 }
 
 /** Search Console URL Inspection deep link for a given page. */

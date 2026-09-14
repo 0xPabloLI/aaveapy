@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { getReserveIncentiveValues, getIncentiveSources, sumBrevisIncentiveApr, sumBrevisIncentiveApy, sumMerklIncentiveApr, sumMerklIncentiveApy } from './incentiveAggregation';
+import {
+  getReserveIncentiveValues,
+  getIncentiveSources,
+  sumBrevisIncentiveApr,
+  sumBrevisIncentiveApy,
+  sumMerklIncentiveApr,
+  sumMerklIncentiveApy,
+} from './incentiveAggregation';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import type { BrevisIncentive, MerklForecastWireItem, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
@@ -30,18 +37,22 @@ const merklPointsReserve = (rewardTokenSymbol?: string): ReserveWithSpread => ({
   borrowIncentives: [],
   meritSupplys: [],
   meritBorrows: [],
-  merklSupplys: [{
-    name: 'Merkl Test',
-    link: 'https://merkl.angle.money',
-    breakdowns: [{
-      campaignId: 'merkl-test-1',
-      campaignApr: 0,
-      campaignStartedAt: '2026-01-01',
-      campaignEndedAt: '2027-12-31',
-      pointsPerThousandUsd: 2,
-      rewardTokenSymbol,
-    }],
-  }],
+  merklSupplys: [
+    {
+      name: 'Merkl Test',
+      link: 'https://merkl.angle.money',
+      breakdowns: [
+        {
+          campaignId: 'merkl-test-1',
+          campaignApr: 0,
+          campaignStartedAt: '2026-01-01',
+          campaignEndedAt: '2027-12-31',
+          pointsPerThousandUsd: 2,
+          rewardTokenSymbol,
+        },
+      ],
+    },
+  ],
   merklBorrows: [],
   brevisSupplys: [],
   brevisBorrows: [],
@@ -154,7 +165,10 @@ const makeBrevis = (overrides: Partial<BrevisIncentive> = {}): BrevisIncentive =
   ...overrides,
 });
 
-const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
+const makeForecastStates = (
+  campaignId: string,
+  overrides: Partial<MerklForecastWireItem> = {},
+): Record<string, MerklForecastWireItem> => ({
   [campaignId]: {
     campaignId,
     distributedSoFar: 100,
@@ -174,16 +188,20 @@ describe('sumBrevisIncentiveApr', () => {
   });
 
   it('returns sum of active campaign APRs without forecastStates', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: 2.5 }),
-      makeBrevis({ campaignApr: 1.5 }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: 2.5 }), makeBrevis({ campaignApr: 1.5 })];
     expect(sumBrevisIncentiveApr(brevis)).toBeCloseTo(4.0, 6);
   });
 
   it('uses forecastMerklApr when forecastStates is provided', () => {
     const brevis = [
-      makeBrevis({ campaignId: 'brevis-1', campaignApr: 0, campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', aprCap: 5, latestTvl: 100_000, totalBudget: 500 }),
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignApr: 0,
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
     ];
     const forecastStates = makeForecastStates('brevis-1');
     const withForecast = sumBrevisIncentiveApr(brevis, forecastStates);
@@ -194,7 +212,11 @@ describe('sumBrevisIncentiveApr', () => {
 
   it('excludes inactive campaigns', () => {
     const brevis = [
-      makeBrevis({ campaignApr: 2.5, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2026-01-31T00:00:00.000Z' }),
+      makeBrevis({
+        campaignApr: 2.5,
+        campaignStartedAt: '2026-01-01T00:00:00.000Z',
+        campaignEndedAt: '2026-01-31T00:00:00.000Z',
+      }),
     ];
     expect(sumBrevisIncentiveApr(brevis)).toBe(0);
   });
@@ -207,31 +229,41 @@ describe('sumBrevisIncentiveApr', () => {
   });
 
   it('filters negative APR to 0', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: -1.5 }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: -1.5 })];
     expect(sumBrevisIncentiveApr(brevis)).toBe(0);
   });
 
   it('filters NaN APR to 0', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: NaN }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: NaN })];
     expect(sumBrevisIncentiveApr(brevis)).toBe(0);
   });
 
   it('sums multiple groups with multiple breakdowns', () => {
     const brevis = [
-      makeBrevis({ campaignApr: 2.0, breakdowns: [{ campaignId: 'brevis-b1', campaignApr: 1.2, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }, { campaignId: 'brevis-b2', campaignApr: 0.8, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2027-12-31T00:00:00.000Z' }] }),
+      makeBrevis({
+        campaignApr: 2.0,
+        breakdowns: [
+          {
+            campaignId: 'brevis-b1',
+            campaignApr: 1.2,
+            campaignStartedAt: '2026-01-01T00:00:00.000Z',
+            campaignEndedAt: '2027-12-31T00:00:00.000Z',
+          },
+          {
+            campaignId: 'brevis-b2',
+            campaignApr: 0.8,
+            campaignStartedAt: '2026-01-01T00:00:00.000Z',
+            campaignEndedAt: '2027-12-31T00:00:00.000Z',
+          },
+        ],
+      }),
       makeBrevis({ campaignApr: 1.5 }),
     ];
     expect(sumBrevisIncentiveApr(brevis)).toBeCloseTo(3.5, 6);
   });
 
   it('falls back to campaignApr when forecastStates has no matching campaignId', () => {
-    const brevis = [
-      makeBrevis({ campaignId: 'brevis-1', campaignApr: 2.5 }),
-    ];
+    const brevis = [makeBrevis({ campaignId: 'brevis-1', campaignApr: 2.5 })];
     const forecastStates = makeForecastStates('other-campaign');
     expect(sumBrevisIncentiveApr(brevis, forecastStates)).toBeCloseTo(2.5, 6);
   });
@@ -243,9 +275,7 @@ describe('sumBrevisIncentiveApy', () => {
   });
 
   it('converts each campaign APR to APY before summing', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: 2.5 }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: 2.5 })];
     const apr = sumBrevisIncentiveApr(brevis);
     const apy = sumBrevisIncentiveApy(brevis);
     expect(apy).toBeCloseTo(convertAprToApy(2.5), 6);
@@ -254,7 +284,11 @@ describe('sumBrevisIncentiveApy', () => {
 
   it('excludes inactive campaigns', () => {
     const brevis = [
-      makeBrevis({ campaignApr: 2.5, campaignStartedAt: '2026-01-01T00:00:00.000Z', campaignEndedAt: '2026-01-31T00:00:00.000Z' }),
+      makeBrevis({
+        campaignApr: 2.5,
+        campaignStartedAt: '2026-01-01T00:00:00.000Z',
+        campaignEndedAt: '2026-01-31T00:00:00.000Z',
+      }),
     ];
     expect(sumBrevisIncentiveApy(brevis)).toBe(0);
   });
@@ -267,22 +301,25 @@ describe('sumBrevisIncentiveApy', () => {
   });
 
   it('filters negative APR to 0', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: -1.5 }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: -1.5 })];
     expect(sumBrevisIncentiveApy(brevis)).toBe(0);
   });
 
   it('filters NaN APR to 0', () => {
-    const brevis = [
-      makeBrevis({ campaignApr: NaN }),
-    ];
+    const brevis = [makeBrevis({ campaignApr: NaN })];
     expect(sumBrevisIncentiveApy(brevis)).toBe(0);
   });
 
   it('uses forecastStates when provided', () => {
     const brevis = [
-      makeBrevis({ campaignId: 'brevis-1', campaignApr: 0, campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', aprCap: 5, latestTvl: 100_000, totalBudget: 500 }),
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignApr: 0,
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
     ];
     const forecastStates = makeForecastStates('brevis-1');
     const withForecast = sumBrevisIncentiveApy(brevis, forecastStates);
@@ -295,26 +332,30 @@ describe('sumBrevisIncentiveApy', () => {
 const makeMerklOpportunity = (overrides: Partial<MerklOpportunityGroup> = {}): MerklOpportunityGroup => ({
   name: 'Merkl Test',
   link: 'https://merkl.angle.money',
-  breakdowns: [{
-    campaignId: 'merkl-test-1',
-    campaignApr: 3.0,
-    campaignStartedAt: '2026-01-01',
-    campaignEndedAt: '2027-12-31',
-  }],
+  breakdowns: [
+    {
+      campaignId: 'merkl-test-1',
+      campaignApr: 3.0,
+      campaignStartedAt: '2026-01-01',
+      campaignEndedAt: '2027-12-31',
+    },
+  ],
   ...overrides,
 });
 
 const makeMerklPointsOpportunity = (rewardTokenSymbol?: string, pointsPerThousandUsd = 2): MerklOpportunityGroup => ({
   name: 'Merkl Points Test',
   link: 'https://merkl.angle.money',
-  breakdowns: [{
-    campaignId: 'merkl-pts-1',
-    campaignApr: 0,
-    campaignStartedAt: '2026-01-01',
-    campaignEndedAt: '2027-12-31',
-    pointsPerThousandUsd,
-    rewardTokenSymbol,
-  }],
+  breakdowns: [
+    {
+      campaignId: 'merkl-pts-1',
+      campaignApr: 0,
+      campaignStartedAt: '2026-01-01',
+      campaignEndedAt: '2027-12-31',
+      pointsPerThousandUsd,
+      rewardTokenSymbol,
+    },
+  ],
 });
 
 describe('sumMerklIncentiveApr', () => {
@@ -329,7 +370,16 @@ describe('sumMerklIncentiveApr', () => {
   it('sums active campaign APRs', () => {
     const opportunities = [
       makeMerklOpportunity(),
-      makeMerklOpportunity({ breakdowns: [{ campaignId: 'merkl-test-2', campaignApr: 1.5, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' }] }),
+      makeMerklOpportunity({
+        breakdowns: [
+          {
+            campaignId: 'merkl-test-2',
+            campaignApr: 1.5,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+          },
+        ],
+      }),
     ];
     expect(sumMerklIncentiveApr(opportunities)).toBeCloseTo(4.5, 6);
   });
@@ -343,10 +393,20 @@ describe('sumMerklIncentiveApr', () => {
   it('applies groupMultiplier per group', () => {
     const opportunities = [
       makeMerklOpportunity({ name: 'opp-1' }),
-      makeMerklOpportunity({ name: 'opp-2', breakdowns: [{ campaignId: 'merkl-test-2', campaignApr: 2.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' }] }),
+      makeMerklOpportunity({
+        name: 'opp-2',
+        breakdowns: [
+          {
+            campaignId: 'merkl-test-2',
+            campaignApr: 2.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2027-12-31',
+          },
+        ],
+      }),
     ];
     const result = sumMerklIncentiveApr(opportunities, 1, {
-      merklGroupMultiplier: (group) => group.name === 'opp-1' ? 2 : 1,
+      merklGroupMultiplier: (group) => (group.name === 'opp-1' ? 2 : 1),
     });
     expect(result).toBeCloseTo(3.0 * 2 + 2.0, 6);
   });
@@ -372,9 +432,18 @@ describe('sumMerklIncentiveApr', () => {
   });
 
   it('excludes inactive campaigns', () => {
-    const opportunities = [makeMerklOpportunity({
-      breakdowns: [{ campaignId: 'merkl-ended', campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-01-31' }],
-    })];
+    const opportunities = [
+      makeMerklOpportunity({
+        breakdowns: [
+          {
+            campaignId: 'merkl-ended',
+            campaignApr: 3.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2026-01-31',
+          },
+        ],
+      }),
+    ];
     expect(sumMerklIncentiveApr(opportunities)).toBe(0);
   });
 });
@@ -399,23 +468,35 @@ describe('sumMerklIncentiveApy', () => {
   });
 
   it('excludes inactive campaigns', () => {
-    const opportunities = [makeMerklOpportunity({
-      breakdowns: [{ campaignId: 'merkl-ended', campaignApr: 3.0, campaignStartedAt: '2026-01-01', campaignEndedAt: '2026-01-31' }],
-    })];
+    const opportunities = [
+      makeMerklOpportunity({
+        breakdowns: [
+          {
+            campaignId: 'merkl-ended',
+            campaignApr: 3.0,
+            campaignStartedAt: '2026-01-01',
+            campaignEndedAt: '2026-01-31',
+          },
+        ],
+      }),
+    ];
     expect(sumMerklIncentiveApy(opportunities)).toBe(0);
   });
 });
 
 describe('sumMerklIncentiveApr — positionCapUsd', () => {
-  const makeCappedMerklOpp = (positionCapUsd?: number) => makeMerklOpportunity({
-    breakdowns: [{
-      campaignId: 'capped-merkl',
-      campaignApr: 10,
-      campaignStartedAt: '2025-01-01',
-      campaignEndedAt: '2030-12-31',
-      ...(positionCapUsd != null ? { positionCapUsd } : {}),
-    }],
-  });
+  const makeCappedMerklOpp = (positionCapUsd?: number) =>
+    makeMerklOpportunity({
+      breakdowns: [
+        {
+          campaignId: 'capped-merkl',
+          campaignApr: 10,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+          ...(positionCapUsd != null ? { positionCapUsd } : {}),
+        },
+      ],
+    });
 
   it('applies position cap dilution when positionUsd > positionCapUsd', () => {
     const opportunities = [makeCappedMerklOpp(500)];
@@ -444,15 +525,18 @@ describe('sumMerklIncentiveApr — positionCapUsd', () => {
 });
 
 describe('sumMerklIncentiveApr — positionCapNative path', () => {
-  const makeNativeCappedMerklOpp = (positionCapNative: string) => makeMerklOpportunity({
-    breakdowns: [{
-      campaignId: 'capped-merkl-native',
-      campaignApr: 10,
-      campaignStartedAt: '2025-01-01',
-      campaignEndedAt: '2030-12-31',
-      positionCapNative,
-    }],
-  });
+  const makeNativeCappedMerklOpp = (positionCapNative: string) =>
+    makeMerklOpportunity({
+      breakdowns: [
+        {
+          campaignId: 'capped-merkl-native',
+          campaignApr: 10,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+          positionCapNative,
+        },
+      ],
+    });
 
   it('converts positionCapNative to USD and applies dilution', () => {
     const opportunities = [makeNativeCappedMerklOpp('500000000')];
@@ -474,16 +558,20 @@ describe('sumMerklIncentiveApr — positionCapNative path', () => {
   });
 
   it('prefers positionCapNative over positionCapUsd when both present', () => {
-    const opportunities = [makeMerklOpportunity({
-      breakdowns: [{
-        campaignId: 'capped-both',
-        campaignApr: 10,
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2030-12-31',
-        positionCapNative: '500000000',
-        positionCapUsd: 9999,
-      }],
-    })];
+    const opportunities = [
+      makeMerklOpportunity({
+        breakdowns: [
+          {
+            campaignId: 'capped-both',
+            campaignApr: 10,
+            campaignStartedAt: '2025-01-01',
+            campaignEndedAt: '2030-12-31',
+            positionCapNative: '500000000',
+            positionCapUsd: 9999,
+          },
+        ],
+      }),
+    ];
     const result = sumMerklIncentiveApr(opportunities, 1, {
       positionUsd: 1000,
       tokenPrice: 1,
@@ -503,15 +591,18 @@ describe('sumMerklIncentiveApr — positionCapNative path', () => {
 });
 
 describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition)', () => {
-  const makeCappedOpp = (capUsd?: number) => makeMerklOpportunity({
-    breakdowns: [{
-      campaignId: 'unified-elig-merkl',
-      campaignApr: 10,
-      campaignStartedAt: '2025-01-01',
-      campaignEndedAt: '2030-12-31',
-      ...(capUsd != null ? { positionCapUsd: capUsd } : {}),
-    }],
-  });
+  const makeCappedOpp = (capUsd?: number) =>
+    makeMerklOpportunity({
+      breakdowns: [
+        {
+          campaignId: 'unified-elig-merkl',
+          campaignApr: 10,
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+          ...(capUsd != null ? { positionCapUsd: capUsd } : {}),
+        },
+      ],
+    });
 
   it('composes position cap and cross-reserve offset as single eligible principal (no double-scaling)', () => {
     // grossPosition = 1500, cap = 1000, netEligible = 1000 (offset = 500)
@@ -522,7 +613,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       positionUsd: 1500,
       crossReserveNetEligibleUsd: () => 1000,
     });
-    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+    expect(result).toBeCloseTo((10 * 1000) / 1500, 6);
   });
 
   it('cap only (no offset) — identical to current behavior when crossReserveNetEligibleUsd not provided', () => {
@@ -533,7 +624,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       crossReserveNetEligibleUsd: () => 1000, // net = gross, no offset
     });
     expect(withUnifiedMatching).toBeCloseTo(withoutUnified, 6);
-    expect(withUnifiedMatching).toBeCloseTo(10 * 500 / 1000, 6);
+    expect(withUnifiedMatching).toBeCloseTo((10 * 500) / 1000, 6);
   });
 
   it('offset only (no cap) — applies offset as single ratio', () => {
@@ -544,7 +635,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       positionUsd: 1500,
       crossReserveNetEligibleUsd: () => 1000,
     });
-    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+    expect(result).toBeCloseTo((10 * 1000) / 1500, 6);
   });
 
   it('neither cap nor offset — no scaling', () => {
@@ -565,7 +656,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       positionUsd: 2000,
       crossReserveNetEligibleUsd: () => 1800,
     });
-    expect(result).toBeCloseTo(10 * 1500 / 2000, 6);
+    expect(result).toBeCloseTo((10 * 1500) / 2000, 6);
   });
 
   it('offset makes net eligible below cap — offset is binding', () => {
@@ -577,7 +668,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       positionUsd: 2000,
       crossReserveNetEligibleUsd: () => 1000,
     });
-    expect(result).toBeCloseTo(10 * 1000 / 2000, 6);
+    expect(result).toBeCloseTo((10 * 1000) / 2000, 6);
   });
 
   it('does not apply merklGroupMultiplier when crossReserveNetEligibleUsd is provided', () => {
@@ -588,7 +679,7 @@ describe('sumMerklIncentiveApr — unified eligibility (cap + offset composition
       crossReserveNetEligibleUsd: () => 1000,
       merklGroupMultiplier: () => 1000 / 1500, // should be ignored
     });
-    expect(result).toBeCloseTo(10 * 1000 / 1500, 6);
+    expect(result).toBeCloseTo((10 * 1000) / 1500, 6);
   });
 
   it('falls back to merklGroupMultiplier when positionUsd is null (Shared Scenario)', () => {
@@ -606,12 +697,14 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
   const makeBorrowBlOpportunity = (overrides: Partial<MerklOpportunityGroup> = {}): MerklOpportunityGroup => ({
     name: 'BORROW_BL Test',
     link: 'https://merkl.angle.money',
-    breakdowns: [{
-      campaignId: 'merkl-borrow-bl-1',
-      campaignApr: 5.0,
-      campaignStartedAt: '2026-01-01',
-      campaignEndedAt: '2027-12-31',
-    }],
+    breakdowns: [
+      {
+        campaignId: 'merkl-borrow-bl-1',
+        campaignApr: 5.0,
+        campaignStartedAt: '2026-01-01',
+        campaignEndedAt: '2027-12-31',
+      },
+    ],
     borrowBlacklist: true,
     ...overrides,
   });
@@ -619,7 +712,7 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
   it('sumMerklIncentiveApr returns 0 when merklGroupMultiplier returns 0 for BORROW_BL', () => {
     const opportunities = [makeBorrowBlOpportunity()];
     const result = sumMerklIncentiveApr(opportunities, 1, {
-      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+      merklGroupMultiplier: (group) => (group.borrowBlacklist ? 0 : 1),
     });
     expect(result).toBe(0);
   });
@@ -628,7 +721,7 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
     const opportunities = [makeBorrowBlOpportunity()];
     const result = sumMerklIncentiveApr(opportunities, 1, {
       positionUsd: 1000,
-      crossReserveNetEligibleUsd: (group) => group.borrowBlacklist ? 0 : 1000,
+      crossReserveNetEligibleUsd: (group) => (group.borrowBlacklist ? 0 : 1000),
     });
     expect(result).toBe(0);
   });
@@ -636,7 +729,7 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
   it('sumMerklIncentiveApy returns 0 when merklGroupMultiplier returns 0 for BORROW_BL', () => {
     const opportunities = [makeBorrowBlOpportunity()];
     const result = sumMerklIncentiveApy(opportunities, 1, {
-      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+      merklGroupMultiplier: (group) => (group.borrowBlacklist ? 0 : 1),
     });
     expect(result).toBe(0);
   });
@@ -647,7 +740,7 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
       makeMerklOpportunity({ name: 'normal-group' }),
     ];
     const result = sumMerklIncentiveApr(opportunities, 1, {
-      merklGroupMultiplier: (group) => group.borrowBlacklist ? 0 : 1,
+      merklGroupMultiplier: (group) => (group.borrowBlacklist ? 0 : 1),
     });
     // Only the normal group's 3% APR remains
     expect(result).toBeCloseTo(3.0, 6);
@@ -660,7 +753,7 @@ describe('AAV-962: BORROW_BL incentive zeroing', () => {
     ];
     const result = sumMerklIncentiveApr(opportunities, 1, {
       positionUsd: 1000,
-      crossReserveNetEligibleUsd: (group) => group.borrowBlacklist ? 0 : 1000,
+      crossReserveNetEligibleUsd: (group) => (group.borrowBlacklist ? 0 : 1000),
     });
     // Only the normal group's 3% APR remains
     expect(result).toBeCloseTo(3.0, 6);

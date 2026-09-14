@@ -1,21 +1,21 @@
-import { useCallback } from 'react'
-import { useAccount, useDisconnect, useConnect, useConnections, useConfig } from 'wagmi'
-import { disconnect } from '@wagmi/core'
+import { useCallback } from 'react';
+import { useAccount, useDisconnect, useConnect, useConnections, useConfig } from 'wagmi';
+import { disconnect } from '@wagmi/core';
 
 export function useWallet() {
-  const { address, chainId, isConnected, connector } = useAccount()
-  const { disconnect: disconnectCurrent, disconnectAsync: disconnectCurrentAsync } = useDisconnect()
-  const { connect } = useConnect()
-  const connections = useConnections()
-  const config = useConfig()
+  const { address, chainId, isConnected, connector } = useAccount();
+  const { disconnect: disconnectCurrent, disconnectAsync: disconnectCurrentAsync } = useDisconnect();
+  const { connect } = useConnect();
+  const connections = useConnections();
+  const config = useConfig();
 
-  const isWatchMode = connector?.id === 'watchMode'
+  const isWatchMode = connector?.id === 'watchMode';
 
   const disconnectAllAsync = useCallback(async () => {
     for (const connection of connections) {
-      await disconnect(config, { connector: connection.connector })
+      await disconnect(config, { connector: connection.connector });
     }
-  }, [connections, config])
+  }, [connections, config]);
 
   return {
     address,
@@ -26,5 +26,5 @@ export function useWallet() {
     disconnect: disconnectCurrent,
     disconnectAsync: disconnectCurrentAsync,
     disconnectAllAsync,
-  }
+  };
 }

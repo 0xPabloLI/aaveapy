@@ -3,10 +3,7 @@ import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { FormulaBlock, InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
-import {
-  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
-  HEADER_CONTROL_TRANSITION_DURATION,
-} from '@/lib/headerControlStyles';
+import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS, HEADER_CONTROL_TRANSITION_DURATION } from '@/lib/headerControlStyles';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -43,12 +40,60 @@ interface ReferencePoint {
 const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'zero', fdv: 0, position: 0 },
   { id: 'default', fdv: 1.0, position: 12, isDefault: true },
-  { id: 'gate', fdv: 1.13, position: 26.7, exchange: 'Gate', chain: 'Gate Layer', token: 'GT', link: 'https://coinmarketcap.com/currencies/gatetoken/' },
-  { id: 'okx', fdv: 2.1, position: 41.3, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://coinmarketcap.com/currencies/okb/' },
-  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://coinmarketcap.com/currencies/bitget-token-new/' },
-  { id: 'bybit', fdv: 5.0, position: 70.7, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://coinmarketcap.com/currencies/mantle/' },
-  { id: 'cryptocom', fdv: 8.5, position: 85.3, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://coinmarketcap.com/currencies/cronos/' },
-  { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://coinmarketcap.com/currencies/bnb/' },
+  {
+    id: 'gate',
+    fdv: 1.13,
+    position: 26.7,
+    exchange: 'Gate',
+    chain: 'Gate Layer',
+    token: 'GT',
+    link: 'https://coinmarketcap.com/currencies/gatetoken/',
+  },
+  {
+    id: 'okx',
+    fdv: 2.1,
+    position: 41.3,
+    exchange: 'OKX',
+    chain: 'X Layer',
+    token: 'OKB',
+    link: 'https://coinmarketcap.com/currencies/okb/',
+  },
+  {
+    id: 'bitget',
+    fdv: 3.2,
+    position: 56.0,
+    exchange: 'Bitget',
+    chain: 'Morph',
+    token: 'BGB',
+    link: 'https://coinmarketcap.com/currencies/bitget-token-new/',
+  },
+  {
+    id: 'bybit',
+    fdv: 5.0,
+    position: 70.7,
+    exchange: 'Bybit',
+    chain: 'Mantle',
+    token: 'MNT',
+    link: 'https://coinmarketcap.com/currencies/mantle/',
+  },
+  {
+    id: 'cryptocom',
+    fdv: 8.5,
+    position: 85.3,
+    exchange: 'Crypto.com',
+    chain: 'Cronos',
+    token: 'CRO',
+    link: 'https://coinmarketcap.com/currencies/cronos/',
+  },
+  {
+    id: 'binance',
+    fdv: 115.8,
+    position: 100,
+    exchange: 'Binance',
+    chain: 'BSC',
+    token: 'BNB',
+    link: 'https://coinmarketcap.com/currencies/bnb/',
+  },
 ];
 
 function computeAlignedPositions(points: ReferencePoint[]): Map<string, number> {
@@ -73,7 +118,7 @@ function computeAlignedPositions(points: ReferencePoint[]): Map<string, number> 
   const minGap = Math.min(avgGap * 0.72, avgGap - 0.2);
 
   const fdvDiffs = Array.from({ length: gapCount }, (_, i) =>
-    Math.max(0.000001, visiblePoints[i + 1].fdv - visiblePoints[i].fdv)
+    Math.max(0.000001, visiblePoints[i + 1].fdv - visiblePoints[i].fdv),
   );
   // Non-linear scale: larger FDV gaps still map to larger marker spacing.
   const diffWeights = fdvDiffs.map((diff) => Math.sqrt(diff));
@@ -166,11 +211,7 @@ function InkAprTooltipContent({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-12 text-muted-foreground leading-relaxed">
-        <img
-          src="/icons/partners/inktoken.svg"
-          alt="INK"
-          className="w-3.5 h-3.5 shrink-0 invert dark:invert-0"
-        />
+        <img src="/icons/partners/inktoken.svg" alt="INK" className="w-3.5 h-3.5 shrink-0 invert dark:invert-0" />
         <span>INK</span>
         <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
       </div>
@@ -179,12 +220,7 @@ function InkAprTooltipContent({
   );
 }
 
-const InkAprCalculator = ({
-  rateInput,
-  setRateInput,
-  onRateChange,
-  onDragStateChange,
-}: InkAprCalculatorProps) => {
+const InkAprCalculator = ({ rateInput, setRateInput, onRateChange, onDragStateChange }: InkAprCalculatorProps) => {
   const { data: fdvData } = useCoingeckoFdv();
   const isMobile = useIsMobile();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -204,7 +240,7 @@ const InkAprCalculator = ({
     return new Map(
       fdvData?.items
         .filter((item) => item.symbol)
-        .map((item) => [item.symbol!.toUpperCase(), item.fdvUsd ? item.fdvUsd / 1e9 : null]) ?? []
+        .map((item) => [item.symbol!.toUpperCase(), item.fdvUsd ? item.fdvUsd / 1e9 : null]) ?? [],
     );
   }, [fdvData]);
 
@@ -231,13 +267,10 @@ const InkAprCalculator = ({
   // MAX_FDV is the max live FDV across all reference points. Falls back to 200
   // when no live data is available. Input clamp and slider endpoint both use this.
   const MAX_FDV = useMemo(() => {
-    const maxLiveFdv = referencePointsWithLiveFdv.reduce(
-      (max, p) => Math.max(max, p.fdv),
-      0
-    );
+    const maxLiveFdv = referencePointsWithLiveFdv.reduce((max, p) => Math.max(max, p.fdv), 0);
     return maxLiveFdv > 0 ? maxLiveFdv : MAX_FDV_FALLBACK;
   }, [referencePointsWithLiveFdv]);
-  
+
   // Filter out the zero point for display but keep for calculation, always ascending by FDV.
   const displayPoints = useMemo(() => {
     return referencePointsWithLiveFdv
@@ -250,9 +283,7 @@ const InkAprCalculator = ({
 
   const parsedRate = parseFloat(rateInput);
   const isValidRate = !Number.isNaN(parsedRate) && parsedRate >= 0;
-  const currentFdvBillions = isValidRate 
-    ? (parsedRate * TOTAL_SUPPLY) / 1e9 
-    : DEFAULT_FDV;
+  const currentFdvBillions = isValidRate ? (parsedRate * TOTAL_SUPPLY) / 1e9 : DEFAULT_FDV;
   const sliderPosition = fdvToPosition(currentFdvBillions, referencePointsWithLiveFdv);
 
   // Sync slider/data → input is handled by useDebouncedInput's value prop.
@@ -269,7 +300,7 @@ const InkAprCalculator = ({
       return () => clearTimeout(t);
     }
   }, [currentFdvBillions, isFdvInputFocused]);
-  
+
   useEffect(() => {
     if (!rateInput) {
       const defaultPrice = (DEFAULT_FDV * 1e9) / TOTAL_SUPPLY;
@@ -277,12 +308,15 @@ const InkAprCalculator = ({
     }
   }, [rateInput, setRateInput]);
 
-  const updateFromFdv = useCallback((fdvBillions: number) => {
-    const clampedFdv = Math.max(MIN_FDV, Math.min(MAX_FDV, fdvBillions));
-    const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
-    setRateInput(price.toFixed(4));
-    onRateChange?.(price);
-  }, [setRateInput, onRateChange, MAX_FDV]);
+  const updateFromFdv = useCallback(
+    (fdvBillions: number) => {
+      const clampedFdv = Math.max(MIN_FDV, Math.min(MAX_FDV, fdvBillions));
+      const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
+      setRateInput(price.toFixed(4));
+      onRateChange?.(price);
+    },
+    [setRateInput, onRateChange, MAX_FDV],
+  );
 
   const fdvInput = useDebouncedInput({
     value: formatNumberInput(String(Number(currentFdvBillions.toFixed(2)))),
@@ -298,11 +332,16 @@ const InkAprCalculator = ({
 
   const fdvFieldHasValue = fdvInput.displayValue.trim() !== '';
 
-  const handlePointClick = useCallback((fdv: number) => {
-    sliderActiveRef.current = true;
-    updateFromFdv(fdv);
-    setTimeout(() => { sliderActiveRef.current = false; }, 0);
-  }, [updateFromFdv]);
+  const handlePointClick = useCallback(
+    (fdv: number) => {
+      sliderActiveRef.current = true;
+      updateFromFdv(fdv);
+      setTimeout(() => {
+        sliderActiveRef.current = false;
+      }, 0);
+    },
+    [updateFromFdv],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -315,36 +354,47 @@ const InkAprCalculator = ({
         updateFromFdv(Math.min(MAX_FDV, currentFdvBillions + step * 0.5));
       }
     },
-    [updateFromFdv, currentFdvBillions, MAX_FDV]
+    [updateFromFdv, currentFdvBillions, MAX_FDV],
   );
 
-  const handleTrackInteraction = useCallback((clientX: number) => {
-    if (!trackRef.current) return;
-    const rect = trackRef.current.getBoundingClientRect();
-    const position = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    const fdv = positionToFdv(position, referencePointsWithLiveFdv);
-    sliderActiveRef.current = true;
-    updateFromFdv(fdv);
-    setTimeout(() => { sliderActiveRef.current = false; }, 0);
-  }, [updateFromFdv, referencePointsWithLiveFdv]);
+  const handleTrackInteraction = useCallback(
+    (clientX: number) => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const position = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+      const fdv = positionToFdv(position, referencePointsWithLiveFdv);
+      sliderActiveRef.current = true;
+      updateFromFdv(fdv);
+      setTimeout(() => {
+        sliderActiveRef.current = false;
+      }, 0);
+    },
+    [updateFromFdv, referencePointsWithLiveFdv],
+  );
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    onDragStateChange?.(true);
-    setShowTooltip(true);
-    if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-    handleTrackInteraction(e.clientX);
-  }, [handleTrackInteraction, onDragStateChange]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      onDragStateChange?.(true);
+      setShowTooltip(true);
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+      handleTrackInteraction(e.clientX);
+    },
+    [handleTrackInteraction, onDragStateChange],
+  );
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    onDragStateChange?.(true);
-    setShowTooltip(true);
-    if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-    handleTrackInteraction(e.touches[0].clientX);
-  }, [handleTrackInteraction, onDragStateChange]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      onDragStateChange?.(true);
+      setShowTooltip(true);
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+      handleTrackInteraction(e.touches[0].clientX);
+    },
+    [handleTrackInteraction, onDragStateChange],
+  );
 
   useEffect(() => {
     if (!isDragging) return;
@@ -415,11 +465,7 @@ const InkAprCalculator = ({
         {/* Left: Logo + Title + Formula - relative z-10 so info icon receives hover above overlapping bottom row */}
         <div className="relative z-10 flex flex-col gap-1 shrink-0 lg:w-[240px]">
           <div className="flex items-center gap-[var(--ds-space-2)]">
-            <img
-              src="/icons/networks/ink.svg"
-              alt="INK"
-              className="w-5 h-5 shrink-0"
-            />
+            <img src="/icons/networks/ink.svg" alt="INK" className="w-5 h-5 shrink-0" />
             <div className="ds-info-inline">
               <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
                 Ink incentive APR calculator
@@ -459,14 +505,18 @@ const InkAprCalculator = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
-            <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
+            <span>
+              Enter your estimated <span className="font-semibold">$INK FDV</span>
+            </span>
             <span
               className={cn(
                 'inline-flex h-4 shrink-0 items-center rounded-md px-1.5 py-px [font-size:11px] transition-colors duration-200 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))]',
                 cnDsInputNeutralWell(fdvFieldHasValue),
               )}
             >
-              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">$</span>
+              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">
+                $
+              </span>
               <Input
                 ref={fdvInput.inputRef}
                 type="text"
@@ -487,7 +537,9 @@ const InkAprCalculator = ({
                 className={`w-8 min-w-0 px-0.5 ![font-size:var(--ds-text-11)] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
               />
-              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">B</span>
+              <span className="inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/80">
+                B
+              </span>
             </span>
             <span>to update the incentive APR</span>
           </div>
@@ -542,7 +594,8 @@ const InkAprCalculator = ({
               ref={trackRef}
               className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none touch-none"
               style={{
-                background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
+                background:
+                  'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
               }}
               onMouseDown={handleMouseDown}
               onTouchStart={handleTouchStart}
@@ -554,39 +607,38 @@ const InkAprCalculator = ({
               aria-label="FDV slider"
               tabIndex={0}
             >
-            {/* Reference point markers (skip zero) - high contrast on gradient */}
-            {displayPoints.map((point) => (
+              {/* Reference point markers (skip zero) - high contrast on gradient */}
+              {displayPoints.map((point) => (
+                <div
+                  key={`marker-${point.id}`}
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-card border-2 border-foreground/90 shadow-sm pointer-events-none"
+                  style={{ left: `${point.position}%` }}
+                />
+              ))}
+
+              {/* Current value thumb - color follows position on track gradient */}
               <div
-                key={`marker-${point.id}`}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-card border-2 border-foreground/90 shadow-sm pointer-events-none"
-                style={{ left: `${point.position}%` }}
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
+                  isDragging ? 'scale-[1.4] shadow-lg ring-2 ring-white/30' : ''
+                }`}
+                style={{
+                  left: `${sliderPosition}%`,
+                  background: positionToThumbColor(sliderPosition),
+                }}
               />
-            ))}
 
-            {/* Current value thumb - color follows position on track gradient */}
-            <div
-              className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
-                isDragging ? 'scale-[1.4] shadow-lg ring-2 ring-white/30' : ''
-              }`}
-              style={{
-                left: `${sliderPosition}%`,
-                background: positionToThumbColor(sliderPosition),
-              }}
-            />
-
-            {/* Tooltip: floating number only, no background box - positioned higher to avoid overlap with scaled thumb */}
-            {(showTooltip || isDragging) && (
-              <div
-                className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
-                style={{ left: `${sliderPosition}%` }}
-              >
-                ${formatFdv(currentFdvBillions)}
-              </div>
-            )}
+              {/* Tooltip: floating number only, no background box - positioned higher to avoid overlap with scaled thumb */}
+              {(showTooltip || isDragging) && (
+                <div
+                  className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
+                  style={{ left: `${sliderPosition}%` }}
+                >
+                  ${formatFdv(currentFdvBillions)}
+                </div>
+              )}
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Bottom Row: space above labels = space below tallest label to card bottom; keep a little gap between thumb bottom and shadow top. pointer-events-none so overlay does not block slider; auto on inputs/labels. */}
@@ -598,9 +650,17 @@ const InkAprCalculator = ({
             <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-[var(--ds-control-h)] pointer-events-auto">
               <div className="flex w-full flex-col items-center leading-none gap-[2px]">
                 <span className="h-[0.875rem] flex items-center justify-center ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
-                  = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
+                  = $
+                  <span
+                    className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}
+                  >
+                    {formatInkPrice(currentFdvBillions)}
+                  </span>
+                  /INK
                 </span>
-                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
+                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">
+                  Kraken
+                </span>
                 <a
                   href="https://coinmarketcap.com/currencies/ink-token/"
                   {...externalLinkTabProps(isMobile)}
@@ -613,89 +673,112 @@ const InkAprCalculator = ({
             </div>
             {/* Labels container same width as track (flex-1 after left anchor + gap-2) */}
             <div className="relative flex-1 min-w-0 h-[var(--ds-control-h)] pointer-events-none">
-           {/* FDV label at 0 */}
-          <div
-            className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
-            style={{ left: '0%', transform: 'translateX(-50%)' }}
-          />
-
-          {/* Reference point labels */}
-          {displayPoints.map((point) => {
-            const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
-            const pointRgb = isSelected ? positionToThumbRgb(point.position) : null;
-            return (
+              {/* FDV label at 0 */}
               <div
-                key={point.id}
-                onClick={() => handlePointClick(point.fdv)}
-                className="absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
-                role="button"
-                aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
-              >
-                <div className="flex w-full flex-col items-center leading-none gap-[2px]">
-                  {/* Pill: keep top compact but add a little bottom breathing room under exchange/Default text. */}
+                className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
+                style={{ left: '0%', transform: 'translateX(-50%)' }}
+              />
+
+              {/* Reference point labels */}
+              {displayPoints.map((point) => {
+                const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
+                const pointRgb = isSelected ? positionToThumbRgb(point.position) : null;
+                return (
                   <div
-                    onMouseEnter={() => setPillHoveredPointId(point.id)}
-                    onMouseLeave={() => setPillHoveredPointId(null)}
-                    className={`rounded-md py-0 flex flex-col items-center leading-none gap-[2px] transition-all duration-200 ${
-                      pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
-                    } ${
-                      !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
-                        ? 'shadow-md bg-muted/50'
-                        : ''
-                    }`}
-                    style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
+                    key={point.id}
+                    onClick={() => handlePointClick(point.fdv)}
+                    className="absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                    style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
+                    role="button"
+                    aria-label={
+                      point.isDefault
+                        ? `Set FDV to default (${point.fdv})`
+                        : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`
+                    }
                   >
-                    <span
-                      className={`h-[0.875rem] flex items-center justify-center ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
-                      style={pointRgb ? { color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})` } : undefined}
-                    >
-                      ${formatFdv(point.fdv)}
-                    </span>
-                    {point.isDefault ? (
-                      <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
-                        style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
+                    <div className="flex w-full flex-col items-center leading-none gap-[2px]">
+                      {/* Pill: keep top compact but add a little bottom breathing room under exchange/Default text. */}
+                      <div
+                        onMouseEnter={() => setPillHoveredPointId(point.id)}
+                        onMouseLeave={() => setPillHoveredPointId(null)}
+                        className={`rounded-md py-0 flex flex-col items-center leading-none gap-[2px] transition-all duration-200 ${
+                          pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
+                        } ${
+                          !isSelected && pillHoveredPointId === point.id && linkHoveredPointId !== point.id
+                            ? 'shadow-md bg-muted/50'
+                            : ''
+                        }`}
+                        style={
+                          pointRgb
+                            ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` }
+                            : undefined
+                        }
                       >
-                        Default
-                      </span>
-                    ) : (
-                      <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
-                        style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
-                      >
-                        {point.exchange}
-                      </span>
-                    )}
+                        <span
+                          className={`h-[0.875rem] flex items-center justify-center ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
+                          style={pointRgb ? { color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})` } : undefined}
+                        >
+                          ${formatFdv(point.fdv)}
+                        </span>
+                        {point.isDefault ? (
+                          <span
+                            className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
+                            style={
+                              pointRgb
+                                ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` }
+                                : undefined
+                            }
+                          >
+                            Default
+                          </span>
+                        ) : (
+                          <span
+                            className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
+                            style={
+                              pointRgb
+                                ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` }
+                                : undefined
+                            }
+                          >
+                            {point.exchange}
+                          </span>
+                        )}
+                      </div>
+                      {/* Third line: chain/token link, outside the pill — centered with pill */}
+                      {point.isDefault ? (
+                        <span className="h-[0.875rem]" aria-hidden />
+                      ) : (
+                        <a
+                          href={point.link}
+                          {...externalLinkTabProps(isMobile)}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseEnter={() => setLinkHoveredPointId(point.id)}
+                          onMouseLeave={() => setLinkHoveredPointId(null)}
+                          title="Open CoinGecko (new tab)"
+                          className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none transition-colors ${
+                            linkHoveredPointId === point.id
+                              ? 'text-foreground'
+                              : !pointRgb
+                                ? 'text-muted-foreground/50 hover:text-foreground'
+                                : 'hover:text-foreground'
+                          }`}
+                          style={
+                            pointRgb && linkHoveredPointId !== point.id
+                              ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` }
+                              : undefined
+                          }
+                        >
+                          {point.chain}/{point.token}
+                          <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  {/* Third line: chain/token link, outside the pill — centered with pill */}
-                  {point.isDefault ? (
-                    <span className="h-[0.875rem]" aria-hidden />
-                  ) : (
-                    <a
-                      href={point.link}
-                      {...externalLinkTabProps(isMobile)}
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseEnter={() => setLinkHoveredPointId(point.id)}
-                      onMouseLeave={() => setLinkHoveredPointId(null)}
-                      title="Open CoinGecko (new tab)"
-                      className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none transition-colors ${
-                        linkHoveredPointId === point.id ? 'text-foreground' : !pointRgb ? 'text-muted-foreground/50 hover:text-foreground' : 'hover:text-foreground'
-                      }`}
-                      style={pointRgb && linkHoveredPointId !== point.id ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` } : undefined}
-                    >
-                      {point.chain}/{point.token}
-                      <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -716,14 +799,18 @@ const InkAprCalculator = ({
   // Render compact layout directly as JSX (not as component call)
   const subtitleWithInput = (
     <div className="flex flex-nowrap items-center gap-x-1.5 ds-text-11 text-muted-foreground overflow-x-auto min-w-0">
-      <span className="shrink-0 whitespace-nowrap">Enter your estimated <span className="font-semibold">$INK FDV</span></span>
+      <span className="shrink-0 whitespace-nowrap">
+        Enter your estimated <span className="font-semibold">$INK FDV</span>
+      </span>
       <span
         className={cn(
           'inline-flex h-7 shrink-0 items-center rounded-md pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] [font-size:11px] [line-height:1.75rem] transition-colors focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0',
           cnDsInputNeutralWell(fdvFieldHasValue),
         )}
       >
-        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
+        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">
+          $
+        </span>
         <Input
           ref={fdvInput.inputRef}
           type="text"
@@ -744,7 +831,9 @@ const InkAprCalculator = ({
           className={`w-9 min-w-0 px-1 ![font-size:var(--ds-text-11)] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
           aria-label="Estimated $INK FDV in billions"
         />
-        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
+        <span className="h-7 inline-flex items-center justify-center ds-text-11 !leading-none text-muted-foreground/50 w-[1ch] shrink-0">
+          B
+        </span>
       </span>
       <div className="relative inline-flex shrink-0">
         <InfoIconButton
@@ -792,11 +881,7 @@ const InkAprCalculator = ({
       {/* Header: Logo + Title + Info; tablet (sm+): same row as subtitle with input */}
       <div className="flex flex-col gap-1 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-[var(--ds-space-2)]">
         <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
-          <img
-            src="/icons/networks/ink.svg"
-            alt="INK"
-            className="w-5 h-5 shrink-0"
-          />
+          <img src="/icons/networks/ink.svg" alt="INK" className="w-5 h-5 shrink-0" />
           <div className="ds-info-inline">
             <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
               Ink incentive APR calculator
@@ -845,7 +930,8 @@ const InkAprCalculator = ({
           ref={!isXl ? trackRef : undefined}
           className="relative h-2 rounded-full cursor-pointer select-none touch-none"
           style={{
-            background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
+            background:
+              'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
           }}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
@@ -896,13 +982,19 @@ const InkAprCalculator = ({
       {/* Collapsible Reference section - tighter spacing to slider */}
       <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-0-5)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
-          <ChevronDown 
-            className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform ${HEADER_CONTROL_TRANSITION_DURATION} ${isReferenceOpen ? 'rotate-180' : ''}`} 
+          <ChevronDown
+            className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform ${HEADER_CONTROL_TRANSITION_DURATION} ${isReferenceOpen ? 'rotate-180' : ''}`}
           />
           <span>Reference FDVs</span>
           <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>
           <span className="ds-text-11 tabular-nums ml-auto inline-flex items-center gap-0.5">
-            = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
+            = $
+            <span
+              className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}
+            >
+              {formatInkPrice(currentFdvBillions)}
+            </span>
+            /INK
             <a
               href="https://coinmarketcap.com/currencies/ink-token/"
               {...externalLinkTabProps(isMobile)}
@@ -924,14 +1016,16 @@ const InkAprCalculator = ({
                   key={point.id}
                   onClick={() => handlePointClick(point.fdv)}
                   className={`inline-flex w-full flex-col items-start gap-0.5 px-2 py-1.5 rounded-lg ds-text-11 transition-all duration-200 min-w-0 ${
-                    isSelected
-                      ? 'shadow-sm'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                    isSelected ? 'shadow-sm' : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
                   }`}
-                  style={pointRgb ? {
-                    backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)`,
-                    color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})`,
-                  } : undefined}
+                  style={
+                    pointRgb
+                      ? {
+                          backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)`,
+                          color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})`,
+                        }
+                      : undefined
+                  }
                 >
                   <span className="font-semibold tabular-nums">${formatFdv(point.fdv)}</span>
                   {point.isDefault ? (
@@ -945,7 +1039,9 @@ const InkAprCalculator = ({
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex w-full min-w-0 items-center gap-0.5 ds-text-9 opacity-60 hover:opacity-100 transition-opacity"
                       >
-                        <span className="truncate">{point.chain}/{point.token}</span>
+                        <span className="truncate">
+                          {point.chain}/{point.token}
+                        </span>
                         <ExternalLink className="w-2.5 h-2.5 shrink-0" aria-hidden />
                       </a>
                     </>

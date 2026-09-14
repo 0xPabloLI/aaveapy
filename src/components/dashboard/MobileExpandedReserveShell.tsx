@@ -15,12 +15,7 @@ type MobileExpandedReserveShellProps = {
   panel: ReactNode;
 };
 
-export default function MobileExpandedReserveShell({
-  side,
-  upper,
-  sibling,
-  panel,
-}: MobileExpandedReserveShellProps) {
+export default function MobileExpandedReserveShell({ side, upper, sibling, panel }: MobileExpandedReserveShellProps) {
   const connectorOnLeft = side === 'left';
   const filletPaths = getMobileSimulationJunctionFilletPaths(connectorOnLeft);
 
@@ -68,11 +63,7 @@ export default function MobileExpandedReserveShell({
           }}
         >
           <path d={filletPaths.fillPath} style={{ fill: 'hsl(var(--card))' }} />
-          <path
-            d={filletPaths.strokePath}
-            fill="none"
-            style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }}
-          />
+          <path d={filletPaths.strokePath} fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
         </svg>
 
         <div

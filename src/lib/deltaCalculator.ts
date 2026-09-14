@@ -14,11 +14,7 @@ export interface DeltaResult {
   isManualPosition: boolean;
 }
 
-function resolveAmountUsd(
-  amount: string,
-  inputMode: 'usd' | 'token',
-  tokenPrice?: number,
-): number {
+function resolveAmountUsd(amount: string, inputMode: 'usd' | 'token', tokenPrice?: number): number {
   const raw = parseNumberInput(amount);
   if (raw <= 0) return 0;
   if (inputMode === 'usd') return raw;
@@ -32,9 +28,7 @@ export function computeDelta(input: DeltaInput): DeltaResult {
   const effectiveAmountUsd = resolveAmountUsd(amount, inputMode, tokenPrice);
   const walletValueUsd = isManualPosition ? 0 : walletValue;
 
-  const deltaUsd = isManualPosition
-    ? effectiveAmountUsd
-    : effectiveAmountUsd - walletValueUsd;
+  const deltaUsd = isManualPosition ? effectiveAmountUsd : effectiveAmountUsd - walletValueUsd;
 
   return {
     deltaUsd,
@@ -44,18 +38,11 @@ export function computeDelta(input: DeltaInput): DeltaResult {
   };
 }
 
-export function computeEffectiveAmount(
-  walletValueUsd: number,
-  deltaUsd: number,
-): number {
+export function computeEffectiveAmount(walletValueUsd: number, deltaUsd: number): number {
   return Math.max(walletValueUsd + deltaUsd, 0);
 }
 
-export function clampDelta(
-  deltaUsd: number,
-  walletValueUsd: number,
-  side: 'supply' | 'borrow',
-): number {
+export function clampDelta(deltaUsd: number, walletValueUsd: number, side: 'supply' | 'borrow'): number {
   const clamped = Math.max(deltaUsd, -walletValueUsd);
   return clamped === 0 ? 0 : clamped;
 }

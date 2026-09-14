@@ -56,18 +56,16 @@ const AssetPage = () => {
       <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
           <nav className="mb-6 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+            <Link to="/" className="hover:text-foreground transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">Aave {asset.symbol} APY</span>
           </nav>
 
           <header className="mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Aave {asset.displayName} APY
-            </h1>
-            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-              {asset.intro}
-            </p>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Aave {asset.displayName} APY</h1>
+            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">{asset.intro}</p>
           </header>
 
           <Link
@@ -85,7 +83,9 @@ const AssetPage = () => {
             <ul className="space-y-2">
               {asset.highlights.map((h) => (
                 <li key={h} className="flex gap-2">
-                  <span aria-hidden className="text-primary">•</span>
+                  <span aria-hidden className="text-primary">
+                    •
+                  </span>
                   <span>{h}</span>
                 </li>
               ))}

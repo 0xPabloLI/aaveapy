@@ -120,9 +120,7 @@ describe('AssetActionMenu (desktop)', () => {
 
   it('returns null when tokenAddress is missing', () => {
     setup({ tokenAddress: null });
-    expect(
-      screen.queryByLabelText(`Asset actions for ${TOKEN_SYMBOL}`),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(`Asset actions for ${TOKEN_SYMBOL}`)).not.toBeInTheDocument();
   });
 
   it('copies the token address to the clipboard when "Copy address" is clicked', async () => {
@@ -136,9 +134,7 @@ describe('AssetActionMenu (desktop)', () => {
         value: { writeText },
       });
     }
-    const spy = vi
-      .spyOn(globalThis.navigator.clipboard, 'writeText')
-      .mockResolvedValue(undefined);
+    const spy = vi.spyOn(globalThis.navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
     try {
       const user = userEvent.setup();

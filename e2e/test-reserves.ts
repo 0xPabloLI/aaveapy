@@ -107,9 +107,7 @@ function toTestReserve(r: ReserveData): TestReserve {
  */
 export async function findIncentiveReserve(): Promise<TestReserve | null> {
   const reserves = await fetchReserves();
-  const candidates = reserves.filter(
-    (r) => isUsableReserve(r) && hasSupplyIncentive(r) && hasLtv(r),
-  );
+  const candidates = reserves.filter((r) => isUsableReserve(r) && hasSupplyIncentive(r) && hasLtv(r));
   if (candidates.length === 0) return null;
   // Sort by ltv descending — higher ltv = more borrowing headroom
   candidates.sort((a, b) => (b.ltv as number) - (a.ltv as number));
@@ -141,10 +139,7 @@ export async function findAnyActiveReserve(): Promise<TestReserve | null> {
  * Shared setup helper — adds a reserve to portfolio mode and returns the supply input.
  * Works for both dynamically discovered and hardcoded reserves.
  */
-export async function setupPortfolioWithReserve(
-  page: Page,
-  reserve: TestReserve,
-): Promise<Locator> {
+export async function setupPortfolioWithReserve(page: Page, reserve: TestReserve): Promise<Locator> {
   await page.goto('/');
   // App-ready signal: the portfolio-mode toggle renders in both modes (single
   // mode: ScenarioControls header; portfolio mode: PortfolioPanel) only after
@@ -211,11 +206,7 @@ export async function setupPortfolioMode(page: Page) {
  * Open the token search (if needed) and add a reserve by symbol + market label.
  * Returns false if no matching "Add" button is found (caller should skip).
  */
-export async function addReserveToPortfolio(
-  page: Page,
-  symbol: string,
-  marketLabel: string,
-): Promise<boolean> {
+export async function addReserveToPortfolio(page: Page, symbol: string, marketLabel: string): Promise<boolean> {
   const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
   if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
     await page.getByRole('button', { name: 'Search tokens' }).click();
@@ -245,9 +236,7 @@ export async function addReserveToPortfolio(
 }
 
 export async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') })
-    .first();
+  const input = page.getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') }).first();
   await input.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await expect(input).toBeVisible({ timeout: 5000 });
   await input.fill(amount);
@@ -255,20 +244,13 @@ export async function fillSupplyAmount(page: Page, symbol: string, amount: strin
 }
 
 export async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
-  const input = page
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
+  const input = page.getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') }).first();
   await expect(input).toBeVisible({ timeout: 5000 });
   await input.fill(amount);
   await page.waitForTimeout(800);
 }
 
-export async function fillBorrowAmountMobile(
-  page: Page,
-  reserveId: string,
-  symbol: string,
-  amount: string,
-) {
+export async function fillBorrowAmountMobile(page: Page, reserveId: string, symbol: string, amount: string) {
   const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
   await card.waitFor({ state: 'attached', timeout: 10000 });
   // Ensure the card is in viewport (InkAprCalculator + TopOpportunities push cards down on mobile)
@@ -282,9 +264,7 @@ export async function fillBorrowAmountMobile(
     await borrowTab.click();
     await page.waitForTimeout(300);
   }
-  const input = card
-    .getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') })
-    .first();
+  const input = card.getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') }).first();
   await expect(input).toBeVisible({ timeout: 5000 });
   await input.fill(amount);
   await page.waitForTimeout(800);
@@ -316,9 +296,7 @@ export async function readIncentiveAfter(
       await tab.click();
       await page.waitForTimeout(300);
     }
-    const afterSpan = card
-      .locator(`span[data-cell="${cellName}"] span[data-after]`)
-      .first();
+    const afterSpan = card.locator(`span[data-cell="${cellName}"] span[data-after]`).first();
     const hasAfterSpan = (await afterSpan.count()) > 0;
     if (!hasAfterSpan) return 0;
     const attr = await afterSpan.getAttribute('data-after');

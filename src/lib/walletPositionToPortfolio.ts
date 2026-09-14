@@ -1,28 +1,28 @@
-import type { WalletPosition, WalletPositionSource } from './userData/userPositionMapper'
-import type { ReserveWithSpread } from '@/types/aave'
-import type { PortfolioReserveEntry, PositionSource } from '@/types/portfolio'
-import { formatConvertedAmount } from './portfolioCalculator'
+import type { WalletPosition, WalletPositionSource } from './userData/userPositionMapper';
+import type { ReserveWithSpread } from '@/types/aave';
+import type { PortfolioReserveEntry, PositionSource } from '@/types/portfolio';
+import { formatConvertedAmount } from './portfolioCalculator';
 
 function walletSourceToPositionSource(src: WalletPositionSource): PositionSource {
-  return src
+  return src;
 }
 
-const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null }
+const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
 
 export function convertWalletPositionsToEntries(
   walletPositions: WalletPosition[],
   reserves: ReserveWithSpread[],
 ): PortfolioReserveEntry[] {
-  const reserveLookup = new Map<string, ReserveWithSpread>()
+  const reserveLookup = new Map<string, ReserveWithSpread>();
   for (const r of reserves) {
-    reserveLookup.set(r.reserveId, r)
+    reserveLookup.set(r.reserveId, r);
   }
 
-  const entryMap = new Map<string, PortfolioReserveEntry>()
+  const entryMap = new Map<string, PortfolioReserveEntry>();
 
   for (const wp of walletPositions) {
-    const reserve = reserveLookup.get(wp.reserveId)
-    let entry = entryMap.get(wp.reserveId)
+    const reserve = reserveLookup.get(wp.reserveId);
+    let entry = entryMap.get(wp.reserveId);
     if (!entry) {
       entry = {
         reserveId: wp.reserveId,
@@ -37,9 +37,9 @@ export function convertWalletPositionsToEntries(
         restrictedStatus: null,
         ...(reserve?.hubName != null && { hubName: reserve.hubName }),
         ...(reserve?.hubId != null && { hubId: reserve.hubId }),
-      }
+      };
     }
-    const source = walletSourceToPositionSource(wp.source)
+    const source = walletSourceToPositionSource(wp.source);
     entry = {
       ...entry,
       [wp.side]: {
@@ -48,9 +48,9 @@ export function convertWalletPositionsToEntries(
         walletValue: wp.amountUsd,
         source,
       },
-    }
-    entryMap.set(wp.reserveId, entry)
+    };
+    entryMap.set(wp.reserveId, entry);
   }
 
-  return Array.from(entryMap.values())
+  return Array.from(entryMap.values());
 }

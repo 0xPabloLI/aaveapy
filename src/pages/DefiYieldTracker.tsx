@@ -58,10 +58,9 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is there a DeFi portfolio tracker that does not need a wallet connection?',
-    a: 'Yes. AaveAPY\'s portfolio simulator lets you model any combination of Aave deposits and borrows across chains without connecting a wallet. DeBank and Zerion both require a wallet address to display positions. The simulator computes net effective APY, daily earnings, and per-incentive contribution for any scenario you enter.',
+    a: "Yes. AaveAPY's portfolio simulator lets you model any combination of Aave deposits and borrows across chains without connecting a wallet. DeBank and Zerion both require a wallet address to display positions. The simulator computes net effective APY, daily earnings, and per-incentive contribution for any scenario you enter.",
   },
 ];
-
 
 function faqSlug(q: string) {
   return q
@@ -157,10 +156,7 @@ const DefiYieldTracker = () => {
   useEffect(() => {
     const el = faqRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setFaqInView(entry.isIntersecting),
-      { threshold: 0.15 },
-    );
+    const observer = new IntersectionObserver(([entry]) => setFaqInView(entry.isIntersecting), { threshold: 0.15 });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -191,17 +187,18 @@ const DefiYieldTracker = () => {
       <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
           <nav className="mb-6 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+            <Link to="/" className="hover:text-foreground transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">DeFi Yield Tracker</span>
           </nav>
 
           <header className="mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              DeFi Yield Tracker for Aave
-            </h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">DeFi Yield Tracker for Aave</h1>
             <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-              A free DeFi APY tracker covering every Aave market on every supported chain. Live supply and borrow rates, with all active incentive programs included in the effective yield.
+              A free DeFi APY tracker covering every Aave market on every supported chain. Live supply and borrow rates,
+              with all active incentive programs included in the effective yield.
             </p>
           </header>
 
@@ -224,7 +221,6 @@ const DefiYieldTracker = () => {
             </a>
           </div>
 
-
           <section aria-labelledby="what" className="mt-12">
             <h2 id="what" className="text-xl font-semibold mb-3">
               What this Aave portfolio tracker shows
@@ -238,7 +234,9 @@ const DefiYieldTracker = () => {
                 'An Aave analytics dashboard with utilization, caps, and incentive breakdowns per reserve',
               ].map((h) => (
                 <li key={h} className="flex gap-2">
-                  <span aria-hidden className="text-primary">•</span>
+                  <span aria-hidden className="text-primary">
+                    •
+                  </span>
                   <span>{h}</span>
                 </li>
               ))}
@@ -250,8 +248,12 @@ const DefiYieldTracker = () => {
               Track DeFi yields across multiple blockchains
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Aave is deployed across multiple chains, each with different reserves, incentives, and utilization. A multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards. Browse a chain below or jump straight into the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">main dashboard</Link>{' '}
+              Aave is deployed across multiple chains, each with different reserves, incentives, and utilization. A
+              multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards.
+              Browse a chain below or jump straight into the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">
+                main dashboard
+              </Link>{' '}
               to compare them side by side.
             </p>
             <ul className="mt-4 flex flex-wrap gap-2">
@@ -273,12 +275,31 @@ const DefiYieldTracker = () => {
               DeFi portfolio tracker
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Unlike generic DeFi portfolio trackers that read your wallet, AaveAPY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
-              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">stablecoin comparison</Link>{' '}
+              Unlike generic DeFi portfolio trackers that read your wallet, AaveAPY is a focused tracker for Aave
+              positions. Model deposits and borrows across any chain, see the net effective APY after every incentive,
+              and save snapshots to compare over time. Open the{' '}
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">
+                stablecoin comparison
+              </Link>{' '}
               on the main dashboard to start tracking, or jump into per-chain breakdowns like{' '}
-              <Link to="/?chain=ethereum&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Ethereum stables</Link>,{' '}
-              <Link to="/?chain=arbitrum&category=eth-related" className="text-primary underline-offset-4 hover:underline">Arbitrum ETH</Link>, and{' '}
-              <Link to="/?chain=base&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Base stables</Link>.
+              <Link
+                to="/?chain=ethereum&category=stablecoin"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Ethereum stables
+              </Link>
+              ,{' '}
+              <Link
+                to="/?chain=arbitrum&category=eth-related"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Arbitrum ETH
+              </Link>
+              , and{' '}
+              <Link to="/?chain=base&category=stablecoin" className="text-primary underline-offset-4 hover:underline">
+                Base stables
+              </Link>
+              .
             </p>
           </section>
 
@@ -287,12 +308,34 @@ const DefiYieldTracker = () => {
               Aave portfolio
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Build an Aave portfolio across any combination of markets and chains. The portfolio panel aggregates supply and borrow positions, computes weighted APY, and highlights which reserves are pulling your yield up or down. Jump into the{' '}
-              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">dashboard with stablecoins preselected</Link>{' '}
+              Build an Aave portfolio across any combination of markets and chains. The portfolio panel aggregates
+              supply and borrow positions, computes weighted APY, and highlights which reserves are pulling your yield
+              up or down. Jump into the{' '}
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">
+                dashboard with stablecoins preselected
+              </Link>{' '}
               to add positions, or explore high-yield chains like{' '}
-              <Link to="/?chain=polygon&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Polygon stables</Link>,{' '}
-              <Link to="/?chain=avalanche&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Avalanche stables</Link>, and{' '}
-              <Link to="/?chain=optimism&category=eth-related" className="text-primary underline-offset-4 hover:underline">Optimism ETH</Link>.
+              <Link
+                to="/?chain=polygon&category=stablecoin"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Polygon stables
+              </Link>
+              ,{' '}
+              <Link
+                to="/?chain=avalanche&category=stablecoin"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Avalanche stables
+              </Link>
+              , and{' '}
+              <Link
+                to="/?chain=optimism&category=eth-related"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Optimism ETH
+              </Link>
+              .
             </p>
           </section>
 
@@ -301,10 +344,20 @@ const DefiYieldTracker = () => {
               AaveAPY tracker
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into the effective APY shown on every row. Try it on{' '}
-              <Link to="/?chain=ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
-              <Link to="/?chain=scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
-              <Link to="/?chain=linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
+              Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see
+              how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into
+              the effective APY shown on every row. Try it on{' '}
+              <Link to="/?chain=ethereum" className="text-primary underline-offset-4 hover:underline">
+                Ethereum
+              </Link>
+              ,{' '}
+              <Link to="/?chain=scroll" className="text-primary underline-offset-4 hover:underline">
+                Scroll
+              </Link>
+              , or{' '}
+              <Link to="/?chain=linea" className="text-primary underline-offset-4 hover:underline">
+                Linea
+              </Link>{' '}
               for chain-specific rate breakdowns.
             </p>
           </section>
@@ -314,12 +367,24 @@ const DefiYieldTracker = () => {
               Aave analytics
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Beyond rates, AaveAPY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, eligible deposit caps, and per-user reward caps. Use the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
+              Beyond rates, AaveAPY surfaces analytics that matter for capital deployment: utilization, supply and
+              borrow caps, eligible deposit caps, and per-user reward caps. Use the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">
+                main analytics dashboard
+              </Link>{' '}
               to filter and sort across every chain, or drill into deployments like{' '}
-              <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
-              <Link to="/?chain=ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
-              <Link to="/?chain=soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
+              <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">
+                Sonic
+              </Link>
+              ,{' '}
+              <Link to="/?chain=ink" className="text-primary underline-offset-4 hover:underline">
+                Ink
+              </Link>
+              , and{' '}
+              <Link to="/?chain=soneium" className="text-primary underline-offset-4 hover:underline">
+                Soneium
+              </Link>
+              .
             </p>
           </section>
 
@@ -328,7 +393,9 @@ const DefiYieldTracker = () => {
               AaveAPY vs DeBank vs Zerion
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              DeBank and Zerion are excellent multi-protocol portfolio trackers — they read your wallet across hundreds of dApps. AaveAPY is different: it's a focused Aave-only yield tracker built for capital allocation decisions. Use the comparison below to pick the right tool for the job.
+              DeBank and Zerion are excellent multi-protocol portfolio trackers — they read your wallet across hundreds
+              of dApps. AaveAPY is different: it's a focused Aave-only yield tracker built for capital allocation
+              decisions. Use the comparison below to pick the right tool for the job.
             </p>
 
             <div className="mt-5 overflow-x-auto rounded-xl border border-border/60 bg-card">
@@ -343,11 +410,21 @@ const DefiYieldTracker = () => {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {[
-                    ['Live AaveAPY across every supported chain', 'Yes — primary focus', 'Partial — current positions only', 'Partial — current positions only'],
+                    [
+                      'Live AaveAPY across every supported chain',
+                      'Yes — primary focus',
+                      'Partial — current positions only',
+                      'Partial — current positions only',
+                    ],
                     ['All incentives baked in (Merit, Merkl, Brevis)', 'Yes', 'No', 'No'],
                     ['Rate simulation before depositing', 'Yes — per reserve', 'No', 'No'],
                     ['Portfolio simulation without a wallet', 'Yes', 'No — wallet required', 'No — wallet required'],
-                    ['Multi-protocol wallet tracking', 'No — Aave only', 'Yes — hundreds of dApps', 'Yes — hundreds of dApps'],
+                    [
+                      'Multi-protocol wallet tracking',
+                      'No — Aave only',
+                      'Yes — hundreds of dApps',
+                      'Yes — hundreds of dApps',
+                    ],
                     ['Free, no signup', 'Yes', 'Yes', 'Yes'],
                   ].map(([cap, a, d, z]) => (
                     <tr key={cap}>
@@ -364,13 +441,31 @@ const DefiYieldTracker = () => {
             <h3 className="mt-6 text-base font-semibold">When to use which</h3>
             <ul className="mt-3 space-y-2">
               {[
-                <><strong className="text-foreground">AaveAPY</strong> — when you need to find the highest effective Aave yield across chains, simulate a deposit size before committing, or model a multi-position Aave portfolio without connecting a wallet.</>,
-                <><strong className="text-foreground">DeBank</strong> — when you want a unified view of every token and DeFi position across your wallet, including protocols outside Aave.</>,
-                <><strong className="text-foreground">Zerion</strong> — when you want a polished mobile-first wallet tracker with NFT support and basic swap functionality.</>,
-                <>Use them together: track your overall portfolio in DeBank or Zerion, then come back to <Link to="/" className="text-primary underline-offset-4 hover:underline">AaveAPY</Link> when you're deciding where to deposit next.</>,
+                <>
+                  <strong className="text-foreground">AaveAPY</strong> — when you need to find the highest effective
+                  Aave yield across chains, simulate a deposit size before committing, or model a multi-position Aave
+                  portfolio without connecting a wallet.
+                </>,
+                <>
+                  <strong className="text-foreground">DeBank</strong> — when you want a unified view of every token and
+                  DeFi position across your wallet, including protocols outside Aave.
+                </>,
+                <>
+                  <strong className="text-foreground">Zerion</strong> — when you want a polished mobile-first wallet
+                  tracker with NFT support and basic swap functionality.
+                </>,
+                <>
+                  Use them together: track your overall portfolio in DeBank or Zerion, then come back to{' '}
+                  <Link to="/" className="text-primary underline-offset-4 hover:underline">
+                    AaveAPY
+                  </Link>{' '}
+                  when you're deciding where to deposit next.
+                </>,
               ].map((item, i) => (
                 <li key={i} className="flex gap-2">
-                  <span aria-hidden className="text-primary">•</span>
+                  <span aria-hidden className="text-primary">
+                    •
+                  </span>
                   <span className="text-muted-foreground leading-relaxed">{item}</span>
                 </li>
               ))}
@@ -378,20 +473,33 @@ const DefiYieldTracker = () => {
 
             <p className="mt-5 text-sm text-muted-foreground">
               Related FAQs:{' '}
-              <a href={`#${faqSlug('AaveAPY vs DeBank: which should I use?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">AaveAPY vs DeBank</a>
+              <a
+                href={`#${faqSlug('AaveAPY vs DeBank: which should I use?')}`}
+                onClick={handleFaqAnchorClick}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                AaveAPY vs DeBank
+              </a>
               {' · '}
-              <a href={`#${faqSlug('AaveAPY vs Zerion: what is the difference?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">AaveAPY vs Zerion</a>
+              <a
+                href={`#${faqSlug('AaveAPY vs Zerion: what is the difference?')}`}
+                onClick={handleFaqAnchorClick}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                AaveAPY vs Zerion
+              </a>
               {' · '}
-              <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
+              <a
+                href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`}
+                onClick={handleFaqAnchorClick}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                No-wallet portfolio tracker
+              </a>
             </p>
           </section>
 
-
-          <section
-            ref={faqRef}
-            aria-labelledby="faq"
-            className="relative mt-12 scroll-mt-20 rounded-xl"
-          >
+          <section ref={faqRef} aria-labelledby="faq" className="relative mt-12 scroll-mt-20 rounded-xl">
             <div
               className={`pointer-events-none absolute inset-0 rounded-xl transition-all duration-700 ease-out ${
                 faqInView
@@ -401,7 +509,12 @@ const DefiYieldTracker = () => {
               aria-hidden="true"
             />
             <div className="relative p-4 -m-4">
-              <h2 id="faq" ref={faqHeadingRef} tabIndex={-1} className="text-xl font-semibold mb-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded">
+              <h2
+                id="faq"
+                ref={faqHeadingRef}
+                tabIndex={-1}
+                className="text-xl font-semibold mb-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+              >
                 Frequently asked questions
               </h2>
               <dl className="space-y-5">

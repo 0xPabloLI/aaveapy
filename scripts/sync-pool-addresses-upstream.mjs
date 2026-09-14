@@ -1,9 +1,9 @@
 /**
  * Sync Pool addresses from aave-dao/aave-address-book
- * 
+ *
  * This script fetches the latest Pool addresses from the official
  * aave-dao/aave-address-book repository and updates the local mapping.
- * 
+ *
  * Usage: node scripts/sync-pool-addresses-upstream.mjs
  */
 
@@ -19,7 +19,7 @@ const MARKET_CONFIG = {
   AaveV3EthereumLido: { explorerBase: 'https://etherscan.io', family: 'etherscan' },
   AaveV3EthereumEtherFi: { explorerBase: 'https://etherscan.io', family: 'etherscan' },
   AaveV3EthereumHorizon: { explorerBase: 'https://etherscan.io', family: 'etherscan' },
-  
+
   // L2 markets - Etherscan family
   AaveV3Arbitrum: { explorerBase: 'https://arbiscan.io', family: 'etherscan' },
   AaveV3Optimism: { explorerBase: 'https://optimistic.etherscan.io', family: 'etherscan' },
@@ -32,28 +32,28 @@ const MARKET_CONFIG = {
   AaveV3Celo: { explorerBase: 'https://celoscan.io', family: 'etherscan' },
   AaveV3MegaEth: { explorerBase: 'https://mega.etherscan.io', family: 'etherscan' },
   AaveV3Plasma: { explorerBase: 'https://plasmascan.to', family: 'etherscan' },
-  
+
   // L2 markets - Etherscan / Routescan family
   AaveV3Avalanche: { explorerBase: 'https://snowscan.xyz', family: 'etherscan' },
-  AaveV3Metis: { 
-    explorerBase: 'https://metisscan.info', 
+  AaveV3Metis: {
+    explorerBase: 'https://metisscan.info',
     family: 'routescan',
-    pathFormat: '/address/{pool}/contract/1088'
+    pathFormat: '/address/{pool}/contract/1088',
   },
   AaveV3Mantle: { explorerBase: 'https://mantlescan.xyz', family: 'etherscan' },
-  
+
   // L2 markets - Blockscout family
   AaveV3Scroll: { explorerBase: 'https://scrollscan.com', family: 'blockscout' },
   AaveV3ZkSync: { explorerBase: 'https://zksync.blockscout.com', family: 'blockscout' },
   AaveV3Soneium: { explorerBase: 'https://soneium.blockscout.com', family: 'blockscout' },
   AaveV3Ink: { explorerBase: 'https://explorer.inkonchain.com', family: 'blockscout' },
   AaveV3InkWhitelabel: { explorerBase: 'https://explorer.inkonchain.com', family: 'blockscout' },
-  
+
   // OKLink family
-  AaveV3XLayer: { 
-    explorerBase: 'https://www.oklink.com', 
+  AaveV3XLayer: {
+    explorerBase: 'https://www.oklink.com',
     family: 'oklink',
-    pathFormat: '/x-layer/address/{pool}/contract#category=proxy-read&id=22'
+    pathFormat: '/x-layer/address/{pool}/contract#category=proxy-read&id=22',
   },
 };
 
@@ -65,15 +65,15 @@ async function fetchPoolAddress(marketName) {
       console.warn(`⚠️ ${marketName}: Failed to fetch (${response.status})`);
       return null;
     }
-    
+
     const content = await response.text();
-    
+
     // Extract POOL address from Solidity file
     const poolMatch = content.match(/POOL\s*=\s*(?:address\()?0x([a-fA-F0-9]{40})\)?/);
     if (poolMatch) {
       return `0x${poolMatch[1]}`;
     }
-    
+
     console.warn(`⚠️ ${marketName}: Could not find POOL address in source`);
     return null;
   } catch (error) {
@@ -84,36 +84,36 @@ async function fetchPoolAddress(marketName) {
 
 async function syncPoolAddresses() {
   console.log('🔍 Fetching Pool addresses from aave-dao/aave-address-book...\n');
-  
+
   const results = {};
   const errors = [];
-  
+
   for (const [marketName, config] of Object.entries(MARKET_CONFIG)) {
     const pool = await fetchPoolAddress(marketName);
     if (pool) {
       results[marketName] = {
         pool,
-        ...config
+        ...config,
       };
       console.log(`✅ ${marketName}: ${pool}`);
     } else {
       errors.push(marketName);
     }
-    
-    await new Promise(r => setTimeout(r, 200));
+
+    await new Promise((r) => setTimeout(r, 200));
   }
-  
+
   console.log(`\n📊 Summary: ${Object.keys(results).length}/${Object.keys(MARKET_CONFIG).length} markets synced`);
-  
+
   if (errors.length > 0) {
     console.warn(`\n⚠️ Failed to sync: ${errors.join(', ')}`);
   }
-  
+
   return results;
 }
 
 // Run the sync
-syncPoolAddresses().catch(error => {
+syncPoolAddresses().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

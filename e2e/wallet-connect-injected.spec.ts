@@ -24,11 +24,7 @@ import { waitForWalletControls } from './test-wallets';
 const WAGMI_STORE_KEY = 'wagmi.store';
 
 /** Hosts the Aave SDK posts GraphQL to: V4 (+staging) and the V3 backend. */
-const AAVE_GRAPHQL_HOSTS = new Set([
-  'api.aave.com',
-  'api.staging.aave.com',
-  'api.v3.aave.com',
-]);
+const AAVE_GRAPHQL_HOSTS = new Set(['api.aave.com', 'api.staging.aave.com', 'api.v3.aave.com']);
 
 /**
  * Fulfill Aave GraphQL instantly so connect triggers no real network. The
@@ -38,8 +34,7 @@ const AAVE_GRAPHQL_HOSTS = new Set([
  */
 async function mockAaveGraphql(page: Page) {
   await page.route(
-    (url) =>
-      AAVE_GRAPHQL_HOSTS.has(url.hostname) && url.pathname.endsWith('/graphql'),
+    (url) => AAVE_GRAPHQL_HOSTS.has(url.hostname) && url.pathname.endsWith('/graphql'),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -73,7 +68,10 @@ async function openConnect(page: Page) {
     return;
   }
   await page.getByRole('button', { name: /Wallet actions/i }).click();
-  await page.getByRole('button', { name: /Connect wallet/i }).first().click();
+  await page
+    .getByRole('button', { name: /Connect wallet/i })
+    .first()
+    .click();
 }
 
 test.describe('Wallet connect via mock injected provider', () => {
@@ -106,15 +104,13 @@ test.describe('Wallet connect via mock injected provider', () => {
 
     await page.goto('/');
     await openConnect(page);
-    await expect(
-      page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i }),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /Connect Wallet|Connect a Wallet/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // The mock advertises isMetaMask, so RainbowKit lists the injected wallet
     // under a MetaMask/Browser-Wallet style label depending on its detection.
-    const injectedOption = page
-      .getByRole('button', { name: /MetaMask|Browser Wallet|Injected/i })
-      .first();
+    const injectedOption = page.getByRole('button', { name: /MetaMask|Browser Wallet|Injected/i }).first();
     await expect(injectedOption).toBeVisible({ timeout: 10_000 });
     await injectedOption.click();
 
@@ -137,7 +133,10 @@ test.describe('Wallet connect via mock injected provider', () => {
     await expect(page.getByRole('button', { name: /Connect wallet/i })).not.toBeVisible();
 
     // Disconnect from the wallet popover returns to a clean disconnected state.
-    await page.getByRole('button', { name: /Wallet 0x/i }).first().click();
+    await page
+      .getByRole('button', { name: /Wallet 0x/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: 'Disconnect' }).click();
     await expectConnectAffordanceVisible(page);
     await expect(page.getByRole('button', { name: /Wallet 0x/i })).not.toBeVisible();
