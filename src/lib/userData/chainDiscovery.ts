@@ -178,9 +178,10 @@ export async function discoverUnregisteredChains(chainIds: number[]): Promise<vo
   if (unregisteredChainIds.length === 0) return;
 
   console.log(
+    // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     `[chain-discovery] Found ${unregisteredChainIds.length} unregistered chain(s) in reserves:`,
     unregisteredChainIds,
-  ); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+  );
 
   try {
     await ensureBulkCache();

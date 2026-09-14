@@ -80,7 +80,10 @@ export function LocalCurrencyCalculator({ copy }: { copy: CalculatorCopy }) {
       const short = `${r.tokenSymbol} · ${r.chainName}`;
       const suffix = (r.marketName ?? '')
         .replace(/^Aave/i, '')
-        .replace(new RegExp(r.chainName ?? '', 'i'), '')
+        // String split/join instead of dynamic RegExp (ReDoS audit): marketName
+        // embeds chainName with identical casing, so literal match is equivalent.
+        .split(r.chainName ?? '')
+        .join('')
         .trim();
       return {
         key: r.reserveId,
