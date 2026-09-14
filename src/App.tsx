@@ -24,6 +24,7 @@ const WalletProviders = lazy(() => import('@/providers/WalletProviders').then((m
 const AaveProviders = lazy(() => import('@/providers/AaveProviders').then((m) => ({ default: m.AaveProviders })));
 import { SdkErrorBoundary } from '@/providers/SdkErrorBoundary';
 import AnalyticsRouteTracker from '@/components/AnalyticsRouteTracker';
+import ConsentBanner from '@/components/ConsentBanner';
 
 import '@/i18n';
 
@@ -78,6 +79,7 @@ queryClient.prefetchQuery({
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+    <ConsentBanner />
     <Analytics debug={false} />
     <SpeedInsights debug={false} />
     <QueryClientProvider client={queryClient}>

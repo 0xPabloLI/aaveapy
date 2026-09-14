@@ -1,5 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { captureError } from '@/lib/sentry';
+import { logger } from '@/lib/logger';
 
 interface SdkErrorBoundaryProps {
   children: ReactNode;
@@ -21,7 +23,11 @@ export class SdkErrorBoundary extends Component<SdkErrorBoundaryProps, SdkErrorB
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[SdkErrorBoundary] SDK rendering error:', error, errorInfo);
+    logger.error('SDK rendering error', {
+      error,
+      componentStack: errorInfo.componentStack ?? undefined,
+    });
+    captureError(error, { componentStack: errorInfo.componentStack ?? undefined });
   }
 
   handleReset = () => {

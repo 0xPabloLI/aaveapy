@@ -213,6 +213,28 @@ export default defineConfig(({ mode }) => ({
     // that need a DOM opt-in via the file-level pragma
     // `// @vitest-environment happy-dom`.
     setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      include: [
+        'src/lib/**',
+        'src/config/**',
+        'src/hooks/**',
+        'src/components/**',
+        'src/providers/**',
+        'src/shared/**',
+      ],
+      exclude: ['src/generated/**', 'src/integrations/supabase/**', '**/*.test.*', '**/*.d.ts'],
+      // Enforced floor (npm run test:coverage). Baseline 2026-09:
+      // stmts 72.9 / branches 66.7 / funcs 64.1 / lines 74.9 — thresholds sit
+      // just under so new untested code fails CI while debt gets paid down
+      // opportunistically. Ratchet up as coverage improves.
+      thresholds: {
+        statements: 72,
+        branches: 66,
+        functions: 63,
+        lines: 74,
+      },
+    },
   },
   build: {
     commonjsOptions: {
@@ -270,6 +292,9 @@ export default defineConfig(({ mode }) => ({
     },
     // Increase chunk size warning limit to 600 KB to reduce noise
     chunkSizeWarningLimit: 600,
+    // 'hidden': maps are generated for Sentry uploads (see src/lib/sentry.ts)
+    // but no map URL is referenced in the bundle, so the source stays private.
+    sourcemap: 'hidden',
     // Disable Vite's automatic modulePreload — replaced by the
     // selectiveModulePreloadPlugin which only injects first-paint chunks.
     modulePreload: false,

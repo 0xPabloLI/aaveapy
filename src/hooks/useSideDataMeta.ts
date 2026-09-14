@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_GC_TIMES } from '@/config/queryStaleTimes';
 import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
+import { fetchWithTracing } from '@/lib/requestContext';
 import {
   getCachedSideDataMetaEntry,
   setCachedCoingeckoFdv,
@@ -58,7 +59,7 @@ export interface SideDataMetaResponse {
 }
 
 export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
-  const response = await fetch(`${API_BASE}/meta/side-data`);
+  const response = await fetchWithTracing(`${API_BASE}/meta/side-data`);
   if (!response.ok) {
     throw new Error(`Failed to fetch side-data meta (${response.status})`);
   }

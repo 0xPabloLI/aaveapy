@@ -11,15 +11,21 @@
     <!-- Canonical and hreflang are emitted per-route via react-helmet-async -->
     <meta name="google-site-verification" content="gswvQOvEOojszhxjp18q4CyQeh06_VYnV2EIKrJG4LQ" />
 
-    <!-- Google tag (gtag.js) — GA4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8WRVJ711MH"></script>
+    <!-- GA4 via Google Consent Mode v2:
+         1. consent defaults to fully denied BEFORE any Google script exists
+         2. gtag.js is only injected after the visitor grants analytics consent
+            (see src/lib/consent.ts + ConsentBanner) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
-      gtag('js', new Date());
-      gtag('config', 'G-8WRVJ711MH');
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      });
     </script>
 
     <!-- Preconnect to Google Fonts for faster loading -->
