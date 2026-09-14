@@ -22,8 +22,8 @@ export const compareSizeToCapPct = (
   bCap: number | null,
   order: SortOrder,
 ): number => {
-  const aPct = (aSize != null && aCap != null && aCap > 0) ? (aSize / aCap) * 100 : null;
-  const bPct = (bSize != null && bCap != null && bCap > 0) ? (bSize / bCap) * 100 : null;
+  const aPct = aSize != null && aCap != null && aCap > 0 ? (aSize / aCap) * 100 : null;
+  const bPct = bSize != null && bCap != null && bCap > 0 ? (bSize / bCap) * 100 : null;
 
   if (aPct === null && bPct === null) return 0;
   if (aPct === null) return 1;
@@ -40,8 +40,8 @@ export const compareSizeToCapPct = (
 };
 
 export const compareIncentiveWithNative = (
-  aIncentive: number | null,
-  bIncentive: number | null,
+  aIncentive: number | null | undefined,
+  bIncentive: number | null | undefined,
   aNative: number | null,
   bNative: number | null,
   order: SortOrder,
@@ -58,8 +58,12 @@ export const compareIncentiveWithNative = (
     return aHasIncentiveSource ? -1 : 1;
   }
 
-  const normalizedAIncentive = isValidNumber(aIncentive ?? Number.NaN) ? aIncentive : null;
-  const normalizedBIncentive = isValidNumber(bIncentive ?? Number.NaN) ? bIncentive : null;
+  // undefined normalizes exactly like null (sorted last) — pinned by the
+  // "sorts undefined incentive as null" test.
+  const normalizeIncentive = (v: number | null | undefined): number | null =>
+    v != null && isValidNumber(v) ? v : null;
+  const normalizedAIncentive = normalizeIncentive(aIncentive);
+  const normalizedBIncentive = normalizeIncentive(bIncentive);
 
   if (normalizedAIncentive !== null && normalizedBIncentive !== null) {
     const incentiveComparison = compareNumbers(normalizedAIncentive, normalizedBIncentive, order);

@@ -28,3 +28,13 @@ if command -v semgrep >/dev/null 2>&1; then
     exit 1
   }
 fi
+
+# ── Dead code + duplication gates (Level-4 readiness toolchain) ──
+npm run knip || {
+  echo "❌ [pre-push] BLOCKED: knip found unused files — run 'npm run knip' to inspect"
+  exit 1
+}
+npm run dup:check || {
+  echo "❌ [pre-push] BLOCKED: jscpd duplication above 3% threshold — see clones above"
+  exit 1
+}

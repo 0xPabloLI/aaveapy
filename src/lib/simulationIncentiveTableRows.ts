@@ -72,8 +72,9 @@ export interface IncentiveSourceRow extends SimulationSourceDetail {
 
 /**
  * First per-campaign link, else source-level link (e.g. Merkl opportunity group), else fallback (usually Aave reserve).
+ * The fallback may be null (reserve URL unavailable) — the returned href flows into `href: string | null` rows.
  */
-export function resolveFirstIncentiveSourceHref(sources: IncentiveSourceRow[], fallback: string): string {
+export function resolveFirstIncentiveSourceHref(sources: IncentiveSourceRow[], fallback: string | null): string | null {
   for (const src of sources) {
     const campaigns = src.campaigns;
     if (campaigns?.length) {
@@ -134,22 +135,22 @@ export function incentiveSourceToTableRows(
   if (!campaigns?.length) return [main];
   if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
     const c = campaigns[0];
-      return [
-        {
-          rowKey: `${prefix}-merged`,
-          label: src.label,
-          current: src.current,
-          after: src.after,
-          delta: src.delta,
-          type: 'rate',
-          href: c.href ?? src.href,
-          isBreakdown: true,
-          isSubBreakdown: nestedUnderIncentive,
-          nestedUnderIncentive,
-          notes: c.notes,
-          offsetNotes,
-        },
-      ];
+    return [
+      {
+        rowKey: `${prefix}-merged`,
+        label: src.label,
+        current: src.current,
+        after: src.after,
+        delta: src.delta,
+        type: 'rate',
+        href: c.href ?? src.href,
+        isBreakdown: true,
+        isSubBreakdown: nestedUnderIncentive,
+        nestedUnderIncentive,
+        notes: c.notes,
+        offsetNotes,
+      },
+    ];
   }
   return campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
     rowKey: `${prefix}-c-${ci}-${c.id}`,

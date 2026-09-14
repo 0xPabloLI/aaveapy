@@ -1,4 +1,5 @@
-npx tsc --noEmit --pretty
+npx lint-staged
+npm run typecheck
 npm run lint
 npm test
 

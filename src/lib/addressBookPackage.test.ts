@@ -3,18 +3,13 @@ import { describe, expect, it } from 'vitest';
 describe('address-book package migration (@bgd-labs → @aave-dao)', () => {
   it('package.json uses @aave-dao/aave-address-book (not old bgd-labs)', async () => {
     const pkg = await import('../../package.json');
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    const deps: Record<string, string | undefined> = { ...pkg.dependencies, ...pkg.devDependencies };
     expect(deps['@bgd-labs/aave-address-book']).toBeUndefined();
     expect(deps['@aave-dao/aave-address-book']).toBeDefined();
   });
 
   it('can import named exports from @aave-dao/aave-address-book', async () => {
-    const {
-      AaveV3Ethereum,
-      AaveV3Arbitrum,
-      AaveV3Polygon,
-      AaveV3Base,
-    } = await import('@aave-dao/aave-address-book');
+    const { AaveV3Ethereum, AaveV3Arbitrum, AaveV3Polygon, AaveV3Base } = await import('@aave-dao/aave-address-book');
 
     expect(AaveV3Ethereum).toBeDefined();
     expect(AaveV3Ethereum.POOL).toBeTypeOf('string');

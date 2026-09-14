@@ -7,7 +7,14 @@ import {
   convertAprToApy,
   scaleAprThenConvert,
 } from '@/lib/rateCalculations';
-import { calculateTotalIncentiveApy, calculateTotalIncentiveApr, getIncentiveSources, resolveBrevisCurrentApr, sumMerklIncentiveApr, sumMerklIncentiveApy } from '@/lib/incentiveAggregation';
+import {
+  calculateTotalIncentiveApy,
+  calculateTotalIncentiveApr,
+  getIncentiveSources,
+  resolveBrevisCurrentApr,
+  sumMerklIncentiveApr,
+  sumMerklIncentiveApy,
+} from '@/lib/incentiveAggregation';
 import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -19,10 +26,7 @@ import {
   forecastWithTVL,
 } from '@/lib/merklForecast';
 import { getProtocolVersion, type ProtocolVersion } from '@/lib/protocolVersion';
-import {
-  forecastMeritAprPercent,
-  forecastMeritApr,
-} from '@/lib/meritForecast';
+import { forecastMeritAprPercent, forecastMeritApr } from '@/lib/meritForecast';
 import {
   buildFixRewardCapEffect,
   buildMaxRewardCapEffect,
@@ -37,11 +41,7 @@ import {
 } from '@/lib/incentiveCaps';
 import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 import { applyPositionCap } from '@/lib/incentiveMath';
-import {
-  getBrevisCampaignBreakdowns,
-  getBrevisCampaignId,
-  getBrevisResolvedBreakdown,
-} from '@/lib/brevis';
+import { getBrevisCampaignBreakdowns, getBrevisCampaignId, getBrevisResolvedBreakdown } from '@/lib/brevis';
 import { getReserveKey } from '@/lib/reserveKey';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import {
@@ -75,7 +75,6 @@ import { getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import type { IncentiveNote } from '@/lib/incentiveCaps';
 import type { IncentiveSources } from '@/lib/incentiveAggregation';
 
-
 export type BrevisCampaignRow = {
   source: BrevisIncentive;
   breakdown: NonNullable<BrevisIncentive['breakdowns']>[number];
@@ -86,7 +85,7 @@ export const flattenBrevisCampaignRows = (values?: BrevisIncentive[]): BrevisCam
     values?.map((source) => ({
       ...source,
       breakdowns: getBrevisCampaignBreakdowns(source),
-    }))
+    })),
   ).map(({ group, breakdown }) => ({
     source: group as BrevisIncentive,
     breakdown: breakdown as BrevisCampaignRow['breakdown'],
@@ -351,19 +350,35 @@ export const buildIncentiveCurrent = (
   // Always use sumForecastMeritIncentiveApr for Merit — consistent calculation path.
   // When walletPositionUsd is set, applies TVL-based forecast with position cap dilution.
   // When unset, uses static headline rates (no forecast, no dilution).
-  const anchorTvlUsd = getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed);
+  const anchorTvlUsd = getMeritAnchorTvlUsd(
+    reserve,
+    side,
+    getProtocolVersion(reserve.marketName),
+    hubSupplied,
+    hubBorrowed,
+  );
 
   // AAV-1107: Decompose aggregate current into per-source calls to match dispatch map sumCurrent.
   // Previously used calculateTotalIncentiveApy/Apr which didn't pass positionUsd/tokenPrice/decimals
   // for Merkl position cap dilution, causing aggregate current ≠ per-source sum.
-  const merklOptions = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses, merklGroupMultiplier, pointRateMap, positionUsd: walletPositionUsd, tokenPrice: reserve.tokenPrice, decimals: reserve.decimals };
+  const merklOptions = {
+    whitelistMerklCampaignIds,
+    forecastStates,
+    campaignAccessStatuses,
+    merklGroupMultiplier,
+    pointRateMap,
+    positionUsd: walletPositionUsd,
+    tokenPrice: reserve.tokenPrice,
+    decimals: reserve.decimals,
+  };
 
   if (walletPositionUsd != null && walletPositionUsd > 0 && merit && merit.length > 0) {
     // Wallet-based: apply position cap dilution using totalPositionUsd, but
     // inputUsd=0 because wallet is an existing position — not a new deposit
     // that would dilute TVL.
     // AAV-1102: Apply walletEligibilityRatio to Merit to match dispatch map sumCurrent.
-    const meritPercent = sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd) * walletEligibilityRatio;
+    const meritPercent =
+      sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, walletPositionUsd) * walletEligibilityRatio;
     const merklPercent = isApy
       ? sumMerklIncentiveApy(merkl, tydroPointToUsdRate, merklOptions)
       : sumMerklIncentiveApr(merkl, tydroPointToUsdRate, merklOptions);
@@ -374,7 +389,9 @@ export const buildIncentiveCurrent = (
 
   // Headline: static rates, no dilution
   // AAV-1102: Apply walletEligibilityRatio to Merit in headline path too.
-  const meritApr = merit?.length ? sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, undefined) * walletEligibilityRatio : 0;
+  const meritApr = merit?.length
+    ? sumForecastMeritIncentiveApr(merit, isApy, 0, anchorTvlUsd, undefined) * walletEligibilityRatio
+    : 0;
   const merklApr = isApy
     ? sumMerklIncentiveApy(merkl, tydroPointToUsdRate, merklOptions)
     : sumMerklIncentiveApr(merkl, tydroPointToUsdRate, merklOptions);
@@ -390,9 +407,6 @@ export const sumNumberArray = (values?: number[], isApy = false): number => {
     return sum + (isApy ? convertAprToApy(value) : value);
   }, 0);
 };
-
-
-
 
 /**
  * Supply: supplied (native b USD). Borrow: borrowed USD b supplied C utilization (Merit TVL proxy when no campaign TVL exists).
@@ -450,7 +464,7 @@ export const sumForecastMeritIncentiveApr = (
 export const areBrevisSharedSnapshotsEqual = (
   left: ReturnType<typeof getBrevisResolvedBreakdown>,
   right: ReturnType<typeof getBrevisResolvedBreakdown>,
-): boolean => (
+): boolean =>
   left.campaignApr === right.campaignApr &&
   left.campaignStartedAt === right.campaignStartedAt &&
   left.campaignEndedAt === right.campaignEndedAt &&
@@ -458,8 +472,7 @@ export const areBrevisSharedSnapshotsEqual = (
   left.totalBudget === right.totalBudget &&
   left.positionCapUsd === right.positionCapUsd &&
   left.message === right.message &&
-  left.link === right.link
-);
+  left.link === right.link;
 
 /**
  * Canonical shared-cap rule for Brevis:
@@ -475,8 +488,14 @@ export const computeBrevisSharedCampaignDeposits = (
   const supplyRows = flattenBrevisCampaignRows(reserve.brevisSupplys);
   const borrowRows = flattenBrevisCampaignRows(reserve.brevisBorrows);
 
-  const supplyByCampaignId = new Map<string, Array<{ source: BrevisIncentive; breakdown: NonNullable<BrevisIncentive['breakdowns']>[number] }>>();
-  const borrowByCampaignId = new Map<string, Array<{ source: BrevisIncentive; breakdown: NonNullable<BrevisIncentive['breakdowns']>[number] }>>();
+  const supplyByCampaignId = new Map<
+    string,
+    Array<{ source: BrevisIncentive; breakdown: NonNullable<BrevisIncentive['breakdowns']>[number] }>
+  >();
+  const borrowByCampaignId = new Map<
+    string,
+    Array<{ source: BrevisIncentive; breakdown: NonNullable<BrevisIncentive['breakdowns']>[number] }>
+  >();
   supplyRows.forEach((item) => {
     const campaignId = item.breakdown.campaignId ?? getBrevisCampaignId(item.source);
     if (!campaignId) return;
@@ -505,9 +524,11 @@ export const computeBrevisSharedCampaignDeposits = (
 
     const entries = [...supplyItems, ...borrowItems];
     const canonical = getBrevisResolvedBreakdown(entries[0].source, entries[0].breakdown);
-    const mismatch = entries.slice(1).some((entry) => (
-      !areBrevisSharedSnapshotsEqual(canonical, getBrevisResolvedBreakdown(entry.source, entry.breakdown))
-    ));
+    const mismatch = entries
+      .slice(1)
+      .some(
+        (entry) => !areBrevisSharedSnapshotsEqual(canonical, getBrevisResolvedBreakdown(entry.source, entry.breakdown)),
+      );
 
     if (mismatch) {
       console.warn(
@@ -582,20 +603,18 @@ export const shouldExposeCampaignRows = (rows: SimulationCampaignDetail[]): bool
 
 export type LabeledCampaignRow = Omit<SimulationCampaignDetail, 'label'> & { baseLabel: string };
 
-export const finalizeCampaignDetailRows = (
-  collected: LabeledCampaignRow[],
-): SimulationCampaignDetail[] => {
+export const finalizeCampaignDetailRows = (collected: LabeledCampaignRow[]): SimulationCampaignDetail[] => {
   if (collected.length === 0) return [];
   const rows = applyStableCampaignLabels(
     collected.map(({ baseLabel, ...rest }) => ({
       ...rest,
       label: baseLabel,
-    }))
+    })),
   );
   return shouldExposeCampaignRows(rows) ? rows : [];
 };
 
-export const extractActionLabelFromMeritMessage = (message: IncentiveMessage): string | null => {
+export const extractActionLabelFromMeritMessage = (message: IncentiveMessage | null | undefined): string | null => {
   if (!message) return null;
   if (Array.isArray(message)) {
     for (const item of message) {
@@ -648,16 +667,19 @@ export const buildMeritCampaignDetails = ({
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
 
-  const netNote = grossForEligibility != null && netForEligibility != null
-    ? buildNetEligibleNote(netForEligibility, grossForEligibility)
-    : (grossInputUsd !== undefined ? buildNetEligibleNote(inputUsd, grossInputUsd) : null);
+  const netNote =
+    grossForEligibility != null && netForEligibility != null
+      ? buildNetEligibleNote(netForEligibility, grossForEligibility)
+      : grossInputUsd !== undefined
+        ? buildNetEligibleNote(inputUsd, grossInputUsd)
+        : null;
 
   merits.forEach((group, groupIndex) => {
     const breakdowns = group.breakdowns ?? [];
     const activeBreakdowns = breakdowns.filter((b) => isCampaignActive(b.campaignStartedAt, b.campaignEndedAt));
     if (activeBreakdowns.length === 0) return;
 
-    const groupName = (group.name?.trim() || 'Merit');
+    const groupName = group.name?.trim() || 'Merit';
     const groupHref = typeof group.link === 'string' && group.link.trim() ? group.link.trim() : null;
     const groupMessage = group.message;
 
@@ -673,28 +695,36 @@ export const buildMeritCampaignDetails = ({
       // AAV-1102: per-campaign current must use wallet eligibility ratio to match aggregate sumCurrent
       const baseCurrent = scaleAprThenConvert(effectiveBaseApr, { ratio: walletEligibilityRatio, isApy });
       const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
-      const bdLabel = bdActionLabel ?? extractActionLabelFromMeritMessage(groupMessage) ?? (activeBreakdowns.length > 1 ? (positionCapUsd != null && positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
+      const bdLabel =
+        bdActionLabel ??
+        extractActionLabelFromMeritMessage(groupMessage) ??
+        (activeBreakdowns.length > 1
+          ? positionCapUsd != null && positionCapUsd > 0
+            ? `${groupName} (double yield)`
+            : `${groupName} (base)`
+          : groupName);
       let baseAfter: number | null = null;
       let capMetrics: import('./incentiveCaps').SimulationCapMetrics | undefined;
       let notes: import('./incentiveCaps').IncentiveNote[] | undefined;
 
       if (shouldComputeAfter) {
-        const fp = inputUsd > 0 ? forecastMeritApr({
-          depositUsd: inputUsd,
-          forecastAprPercent: baseAprPercent,
-          startDate: breakdown.campaignStartedAt,
-          endDate: breakdown.campaignEndedAt,
-          anchorTvlUsd: meritAnchorTvlUsd,
-        }) : null;
-        const fullAfterApr = fp
-          ? fp.apr * 100
-          : baseAprPercent;
+        const fp =
+          inputUsd > 0
+            ? forecastMeritApr({
+                depositUsd: inputUsd,
+                forecastAprPercent: baseAprPercent,
+                startDate: breakdown.campaignStartedAt,
+                endDate: breakdown.campaignEndedAt,
+                anchorTvlUsd: meritAnchorTvlUsd,
+              })
+            : null;
+        const fullAfterApr = fp ? fp.apr * 100 : baseAprPercent;
         if (positionCapUsd != null && positionCapUsd > 0) {
           const capResult = applyPositionCapToForecastResult(
             fullAfterApr,
             totalPositionUsd ?? inputUsd,
             positionCapUsd,
-            { },
+            {},
           );
           baseAfter = scaleAprThenConvert(capResult.aprPercent, { ratio: eligibilityRatio, isApy });
           capMetrics = capResult.capMetrics;
@@ -771,9 +801,12 @@ export const buildMerklCampaignDetails = ({
 }: MerklCampaignDetailsOptions): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
 
-  const netNote = grossForEligibility != null && netForEligibility != null
-    ? buildNetEligibleNote(netForEligibility, grossForEligibility)
-    : (grossInputUsd !== undefined ? buildNetEligibleNote(inputUsd, grossInputUsd) : null);
+  const netNote =
+    grossForEligibility != null && netForEligibility != null
+      ? buildNetEligibleNote(netForEligibility, grossForEligibility)
+      : grossInputUsd !== undefined
+        ? buildNetEligibleNote(inputUsd, grossInputUsd)
+        : null;
 
   // User-friendly labels; when the same opportunity name appears on multiple rows, add a stable "#n" suffix
   // (same rule with or without scenario input so the list does not change shape).
@@ -782,11 +815,10 @@ export const buildMerklCampaignDetails = ({
   opportunities.forEach((opportunity, oppIndex) => {
     (opportunity.breakdowns ?? []).forEach((bd, bdIndex) => {
       if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return;
-      if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds, campaignAccessStatuses?.[bd.campaignId])) return;
+      if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds, campaignAccessStatuses?.[bd.campaignId]))
+        return;
 
-      const effectiveRate = pointRateMap
-        ? getPointToUsdRate(bd.rewardTokenSymbol, pointRateMap)
-        : tydroPointToUsdRate;
+      const effectiveRate = pointRateMap ? getPointToUsdRate(bd.rewardTokenSymbol, pointRateMap) : tydroPointToUsdRate;
       // AAV-1102: per-campaign current must use wallet multiplier + eligibility to match aggregate sumCurrent
       const walletGroupMul = walletMerklGroupMultiplier ? walletMerklGroupMultiplier(opportunity) : 1;
       const currentApr = sanitizePercent(forecastMerklApr(bd, 0, forecastStates, effectiveRate, nativeApyPercent));
@@ -797,42 +829,41 @@ export const buildMerklCampaignDetails = ({
 
       const isForecastRequiring = !!bd.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(bd.campaignType);
       const merged = mergeForecastState(bd, forecastStates, effectiveRate, nativeApyPercent);
-      const forecastUnavailable = isForecastRequiring && checkForecastAvailability(bd.campaignType, bd.campaignId, merged, forecastStates);
+      const forecastUnavailable =
+        isForecastRequiring && checkForecastAvailability(bd.campaignType, bd.campaignId, merged, forecastStates);
 
       if (shouldComputeAfter) {
         const forecastApr = forecastMerklApr(bd, inputUsd, forecastStates, effectiveRate, nativeApyPercent);
         const forecastAprSan = sanitizePercent(forecastApr);
         const groupMul = merklGroupMultiplier ? merklGroupMultiplier(opportunity) : 1;
         const useUnifiedEligibility =
-          crossReserveNetEligibleUsd != null &&
-          grossForEligibility != null &&
-          grossForEligibility > 0;
-        const effectiveCapUsd = resolvePositionCapUsd(
-          bd.positionCapNative,
-          bd.positionCapUsd,
-          tokenPrice,
-          decimals,
-        );
-        const netEligibleUsd = useUnifiedEligibility
-          ? Math.max(crossReserveNetEligibleUsd(opportunity), 0)
-          : null;
-        const eligibleUsd = netEligibleUsd !== null && effectiveCapUsd != null && effectiveCapUsd > 0
-          ? Math.min(netEligibleUsd, effectiveCapUsd)
-          : netEligibleUsd;
+          crossReserveNetEligibleUsd != null && grossForEligibility != null && grossForEligibility > 0;
+        const effectiveCapUsd = resolvePositionCapUsd(bd.positionCapNative, bd.positionCapUsd, tokenPrice, decimals);
+        const netEligibleUsd = useUnifiedEligibility ? Math.max(crossReserveNetEligibleUsd(opportunity), 0) : null;
+        const eligibleUsd =
+          netEligibleUsd !== null && effectiveCapUsd != null && effectiveCapUsd > 0
+            ? Math.min(netEligibleUsd, effectiveCapUsd)
+            : netEligibleUsd;
         let afterApr = useUnifiedEligibility
-          ? forecastAprSan * eligibleUsd! / grossForEligibility
+          ? (forecastAprSan * eligibleUsd!) / grossForEligibility
           : forecastAprSan * eligibilityRatio * groupMul;
 
         const merklType = merged?.campaignType;
         const isTargetTotalApr = merklType === 'TARGET_TOTAL_APR';
         if (
           merged &&
-          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || isTargetTotalApr)
+          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+            merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+            isTargetTotalApr)
         ) {
           const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
           const forecast = forecastWithTVL(merged, hypotheticalTvl);
-          const isFixLike = merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode === 'FIX_APR');
-          const isMaxLike = merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || (isTargetTotalApr && merged.budgetBoundMode !== 'FIX_APR');
+          const isFixLike =
+            merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+            (isTargetTotalApr && merged.budgetBoundMode === 'FIX_APR');
+          const isMaxLike =
+            merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
+            (isTargetTotalApr && merged.budgetBoundMode !== 'FIX_APR');
           if (isFixLike && typeof forecast.fixRewardableDays === 'number') {
             const fixEffect = buildFixRewardCapEffect(forecast.fixRewardableDays);
             notes = [capEffectToNote(fixEffect)];
@@ -847,10 +878,7 @@ export const buildMerklCampaignDetails = ({
             ? netEligibleUsd!
             : (() => {
                 const constraint = opportunity.netPositionConstraint;
-                return constraint &&
-                  netForEligibility != null &&
-                  grossForEligibility != null &&
-                  grossForEligibility > 0
+                return constraint && netForEligibility != null && grossForEligibility != null && grossForEligibility > 0
                   ? netForEligibility
                   : (grossInputUsd ?? inputUsd);
               })();
@@ -892,7 +920,6 @@ export const buildMerklCampaignDetails = ({
   return finalizeCampaignDetailRows(collected);
 };
 
-
 export interface BrevisCampaignDetailsOptions {
   items: BrevisIncentive[] | undefined;
   isApy: boolean;
@@ -921,12 +948,17 @@ export const buildBrevisCampaignDetails = ({
   const nowMs = Date.now();
   flattened.forEach(({ source, breakdown }) => {
     const resolved = getBrevisResolvedBreakdown(source, breakdown);
-    const baseLabel = (resolved.name?.trim() || resolved.message?.trim() || 'Brevis');
+    const baseLabel = resolved.name?.trim() || resolved.message?.trim() || 'Brevis';
     if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, nowMs, true)) return;
     const nominal = resolveBrevisCurrentApr(resolved, forecastStates);
     // AAV-1102: per-campaign current must apply wallet position cap dilution to match aggregate sumCurrent
     let currentNominal = nominal;
-    if (resolved.positionCapUsd != null && resolved.positionCapUsd > 0 && walletPositionUsd != null && walletPositionUsd > 0) {
+    if (
+      resolved.positionCapUsd != null &&
+      resolved.positionCapUsd > 0 &&
+      walletPositionUsd != null &&
+      walletPositionUsd > 0
+    ) {
       const { aprPercent: cappedApr } = applyPositionCap(nominal, walletPositionUsd, resolved.positionCapUsd);
       currentNominal = cappedApr;
     }
@@ -939,7 +971,12 @@ export const buildBrevisCampaignDetails = ({
 
     const isForecastRequiring = !!resolved.campaignType && FORECAST_REQUIRING_CAMPAIGN_TYPES.has(resolved.campaignType);
     const forecastUnavailable = isForecastRequiring
-      ? checkForecastAvailability(resolved.campaignType, resolved.campaignId, forecastStates ? mergeForecastState(resolved, forecastStates, 0) : undefined, forecastStates)
+      ? checkForecastAvailability(
+          resolved.campaignType,
+          resolved.campaignId,
+          forecastStates ? mergeForecastState(resolved, forecastStates, 0) : undefined,
+          forecastStates,
+        )
       : false;
 
     if (shouldComputeAfter && positionUsd > 0) {
@@ -948,19 +985,15 @@ export const buildBrevisCampaignDetails = ({
         : nominal;
 
       const endMs = parseCampaignBoundaryMs(resolved.campaignEndedAt, 'end');
-      const capResult = applyPositionCapToForecastResult(
-        aprPercent,
-        positionUsd,
-        resolved.positionCapUsd,
-        {
-          isCombineCap: combined !== undefined,
-          remainingBudget: resolved.totalBudget != null && resolved.totalBudget > 0
+      const capResult = applyPositionCapToForecastResult(aprPercent, positionUsd, resolved.positionCapUsd, {
+        isCombineCap: combined !== undefined,
+        remainingBudget:
+          resolved.totalBudget != null && resolved.totalBudget > 0
             ? resolved.totalBudget - (resolved.positionCapUsd ?? 0)
             : null,
-          dailyRewardUsd: positionUsd * (aprPercent / 100) / 365,
-          remainingDays: endMs !== null && endMs > nowMs ? (endMs - nowMs) / 86_400_000 : null,
-        },
-      );
+        dailyRewardUsd: (positionUsd * (aprPercent / 100)) / 365,
+        remainingDays: endMs !== null && endMs > nowMs ? (endMs - nowMs) / 86_400_000 : null,
+      });
       aprPercent = capResult.aprPercent;
       after = isApy ? convertAprToApy(aprPercent) : aprPercent;
 
@@ -1008,10 +1041,13 @@ export const toDisplayNative = (rawApy: number | null | undefined): number | nul
   return rawApy;
 };
 
-export const getReserveSimulationId = (reserve: Pick<ReserveWithSpread, 'reserveId'>): string =>
-  getReserveKey(reserve);
+export const getReserveSimulationId = (reserve: Pick<ReserveWithSpread, 'reserveId'>): string => getReserveKey(reserve);
 
-export const buildPriceLookup = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesIndex, actionType: 'Supply' | 'Borrow' = 'Supply') => ({
+export const buildPriceLookup = (
+  reserve: ReserveWithSpread,
+  tokenPrices?: TokenPricesIndex,
+  actionType: 'Supply' | 'Borrow' = 'Supply',
+) => ({
   tokenPrices,
   chainId: reserve.chainId,
   actionType,
@@ -1033,7 +1069,7 @@ export function nativeAprPercentToApyPercent(aprPercent: number): number {
 export function buildSupplyUsdAccrualSide(
   principalUsd: number,
   nativeAprPercent: number | null,
-  incentiveAprPercent: number | null
+  incentiveAprPercent: number | null,
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
   const nativeUsd = (ratePercent: number) =>
@@ -1054,13 +1090,12 @@ export function buildSupplyUsdAccrualSide(
 export function buildBorrowUsdAccrualSide(
   principalUsd: number,
   nativeAprPercent: number | null,
-  incentiveAprPercent: number | null
+  incentiveAprPercent: number | null,
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
   const nativePay = (ratePercent: number) =>
     -principalUsd * annualPercentToDailyFraction(nativeAprPercentToApyPercent(ratePercent), true);
-  const incentiveRebate = (ratePercent: number) =>
-    principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const incentiveRebate = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
   const nativeUsdPerDay = nativeAprPercent !== null ? nativePay(nativeAprPercent) : null;
   const incentiveUsdPerDay = incentiveAprPercent !== null ? incentiveRebate(incentiveAprPercent) : null;
   return {
@@ -1073,7 +1108,10 @@ export function buildBorrowUsdAccrualSide(
   };
 }
 
-export const resolveLocalReserveTokenPrice = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesIndex): number | undefined => {
+export const resolveLocalReserveTokenPrice = (
+  reserve: ReserveWithSpread,
+  tokenPrices?: TokenPricesIndex,
+): number | undefined => {
   return (
     resolveForecastTokenPrice(buildPriceLookup(reserve, tokenPrices, 'Supply')) ??
     resolveForecastTokenPrice(buildPriceLookup(reserve, tokenPrices, 'Borrow'))
@@ -1122,14 +1160,14 @@ export function buildRateSimulationResult({
   const shouldComputeAfter = hasLocalInput || portfolioScenarioActive;
 
   // For incentive forecasts, we need USD values
-  const rawSupplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
-  const rawBorrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
+  const rawSupplyInputUsd = inputMode === 'usd' ? rawSupply : tokenPrice ? rawSupply * tokenPrice : 0;
+  const rawBorrowInputUsd = inputMode === 'usd' ? rawBorrow : tokenPrice ? rawBorrow * tokenPrice : 0;
 
   // Calculate cap constraints for capping inputs
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? null;
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? null;
   const currentReserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice) ?? null;
-  
+
   // Calculate available supply room (prefer API suppliable, fallback to cap-size)
   const availableSupplyRoomUsd = (() => {
     const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice) ?? null;
@@ -1140,14 +1178,16 @@ export function buildRateSimulationResult({
   })();
 
   // Cap supply input
-  const supplyInputUsd = 
+  const supplyInputUsd =
     availableSupplyRoomUsd !== null && rawSupplyInputUsd > availableSupplyRoomUsd
       ? availableSupplyRoomUsd
       : rawSupplyInputUsd;
   const liquiditySource = reserveRateInput ?? reserve;
-  const availableSupplyLiquidityUsd = tokenPrice && liquiditySource.liquidity
-    ? Number(liquiditySource.liquidity) / Math.pow(10, liquiditySource.decimals ?? DEFAULT_TOKEN_DECIMALS) * tokenPrice
-    : null;
+  const availableSupplyLiquidityUsd =
+    tokenPrice && liquiditySource.liquidity
+      ? (Number(liquiditySource.liquidity) / Math.pow(10, liquiditySource.decimals ?? DEFAULT_TOKEN_DECIMALS)) *
+        tokenPrice
+      : null;
 
   // Calculate current native simulation first to get totalBorrowedUsd for borrow cap
   const currentNativeSimulation = reserveRateInput
@@ -1159,17 +1199,19 @@ export function buildRateSimulationResult({
 
   // Calculate totalBorrowedUsd for borrow cap constraint
   // Must use per-Spoke borrowed (reserve.borrowed), not Hub-level (reserveRateInput.borrowed)
-  const currentTotalBorrowedUsd = tokenPrice && reserve.borrowed
-    ? (() => {
-        const decimals = reserve.decimals ?? DEFAULT_TOKEN_DECIMALS;
-        const scale = Math.pow(10, decimals);
-        const totalDebt = Number(reserve.borrowed) / scale;
-        return totalDebt * tokenPrice;
-      })()
-    : null;
+  const currentTotalBorrowedUsd =
+    tokenPrice && reserve.borrowed
+      ? (() => {
+          const decimals = reserve.decimals ?? DEFAULT_TOKEN_DECIMALS;
+          const scale = Math.pow(10, decimals);
+          const totalDebt = Number(reserve.borrowed) / scale;
+          return totalDebt * tokenPrice;
+        })()
+      : null;
 
   // Early exit: if borrow is disabled, skip borrow room calculation entirely.
-  const borrowCapRemainingUsd = borrowBlocked ? null
+  const borrowCapRemainingUsd = borrowBlocked
+    ? null
     : borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
       : null;
@@ -1180,13 +1222,14 @@ export function buildRateSimulationResult({
     : availableSupplyLiquidityUsd !== null
       ? Math.max(supplyInputUsd, -availableSupplyLiquidityUsd)
       : supplyInputUsd;
-  const availableLiquidityForBorrowUsd = borrowBlocked ? null
+  const availableLiquidityForBorrowUsd = borrowBlocked
+    ? null
     : liquiditySource.liquidity != null && tokenPrice
       ? (() => {
           const decimals = liquiditySource.decimals ?? DEFAULT_TOKEN_DECIMALS;
           const scale = Math.pow(10, decimals);
           const liquidityRaw = Number(liquiditySource.liquidity) / scale;
-            return liquidityRaw * tokenPrice + effectiveSupplyInputUsd;
+          return liquidityRaw * tokenPrice + effectiveSupplyInputUsd;
         })()
       : null;
 
@@ -1194,10 +1237,14 @@ export function buildRateSimulationResult({
   // Valid for both V3 and V4. If borrow is disabled, borrow room is 0 (skip all calculation).
   // A/B 混合类: borrowCapRemaining (A 类), 但 availableLiquidityForBorrow 含 effectiveSupplyInputUsd (B 类),
   // 故 supply input 会影响此值, borrow input 不会。
-  const availableBorrowRoomUsd = borrowBlocked ? 0
+  const availableBorrowRoomUsd = borrowBlocked
+    ? 0
     : borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null
       ? Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd)
-      : borrowCapRemainingUsd ?? availableLiquidityForBorrowUsd ?? (nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null);
+      : (borrowCapRemainingUsd ??
+        availableLiquidityForBorrowUsd ??
+        nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ??
+        null);
 
   // ─── B 类字段: borrowLimitedByLiquidity (随 simulation input 变化) ───
   // Track which constraint is binding (for UI messaging)
@@ -1212,19 +1259,16 @@ export function buildRateSimulationResult({
   }
 
   // Convert capped USD back to token amounts for native rate simulation
-  const cappedSupplyAmount = tokenPrice && tokenPrice > 0
-    ? effectiveSupplyInputUsd / tokenPrice
-    : supplyAmount;
-  const cappedBorrowAmount = tokenPrice && tokenPrice > 0
-    ? borrowInputUsd / tokenPrice
-    : borrowAmount;
+  const cappedSupplyAmount = tokenPrice && tokenPrice > 0 ? effectiveSupplyInputUsd / tokenPrice : supplyAmount;
+  const cappedBorrowAmount = tokenPrice && tokenPrice > 0 ? borrowInputUsd / tokenPrice : borrowAmount;
 
-  const combinedNativeSimulation = reserveRateInput && hasAnyInput
-    ? simulateNativeRatesAfterActions(reserveRateInput, {
-        supplyAmount: String(cappedSupplyAmount),
-        borrowAmount: String(cappedBorrowAmount),
-      })
-    : null;
+  const combinedNativeSimulation =
+    reserveRateInput && hasAnyInput
+      ? simulateNativeRatesAfterActions(reserveRateInput, {
+          supplyAmount: String(cappedSupplyAmount),
+          borrowAmount: String(cappedBorrowAmount),
+        })
+      : null;
 
   // ─── A 类字段: Current snapshot (不随 simulation input 变化) ───
 
@@ -1256,11 +1300,13 @@ export function buildRateSimulationResult({
   const supplyGrossForEligibility = totalSupplyUsd ?? supplyInputUsd;
   const supplyBorrowForEligibility = totalBorrowUsd ?? borrowInputUsd;
   const supplyNetForEligibility = Math.max(supplyGrossForEligibility - supplyBorrowForEligibility, 0);
-  const supplyEligibilityRatio = supplyGrossForEligibility > 0 ? supplyNetForEligibility / supplyGrossForEligibility : 1;
+  const supplyEligibilityRatio =
+    supplyGrossForEligibility > 0 ? supplyNetForEligibility / supplyGrossForEligibility : 1;
   const borrowGrossForEligibility = totalBorrowUsd ?? borrowInputUsd;
   const borrowSupplyForEligibility = totalSupplyUsd ?? supplyInputUsd;
   const borrowNetForEligibility = Math.max(borrowGrossForEligibility - borrowSupplyForEligibility, 0);
-  const borrowEligibilityRatio = borrowGrossForEligibility > 0 ? borrowNetForEligibility / borrowGrossForEligibility : 1;
+  const borrowEligibilityRatio =
+    borrowGrossForEligibility > 0 ? borrowNetForEligibility / borrowGrossForEligibility : 1;
 
   const supplyMeritMerklInputUsd = meritMerklNetPosition ? supplyNetInputUsd : supplyInputUsd;
   const borrowMeritMerklInputUsd = meritMerklNetPosition ? borrowNetInputUsd : borrowInputUsd;
@@ -1275,11 +1321,13 @@ export function buildRateSimulationResult({
   const walletSupplyGrossForEligibility = hasWallet ? (walletSupplyUsd ?? 0) : 0;
   const walletSupplyBorrowForEligibility = hasWallet ? (walletBorrowUsd ?? 0) : 0;
   const walletSupplyNetForEligibility = Math.max(walletSupplyGrossForEligibility - walletSupplyBorrowForEligibility, 0);
-  const walletSupplyEligibilityRatio = walletSupplyGrossForEligibility > 0 ? walletSupplyNetForEligibility / walletSupplyGrossForEligibility : 1;
+  const walletSupplyEligibilityRatio =
+    walletSupplyGrossForEligibility > 0 ? walletSupplyNetForEligibility / walletSupplyGrossForEligibility : 1;
   const walletBorrowGrossForEligibility = hasWallet ? (walletBorrowUsd ?? 0) : 0;
   const walletBorrowSupplyForEligibility = hasWallet ? (walletSupplyUsd ?? 0) : 0;
   const walletBorrowNetForEligibility = Math.max(walletBorrowGrossForEligibility - walletBorrowSupplyForEligibility, 0);
-  const walletBorrowEligibilityRatio = walletBorrowGrossForEligibility > 0 ? walletBorrowNetForEligibility / walletBorrowGrossForEligibility : 1;
+  const walletBorrowEligibilityRatio =
+    walletBorrowGrossForEligibility > 0 ? walletBorrowNetForEligibility / walletBorrowGrossForEligibility : 1;
 
   const walletSupplyMeritMerklEligibilityRatio = meritMerklNetPosition ? walletSupplyEligibilityRatio : 1;
   const walletBorrowMeritMerklEligibilityRatio = meritMerklNetPosition ? walletBorrowEligibilityRatio : 1;
@@ -1448,9 +1496,7 @@ export function buildRateSimulationResult({
         constraint,
         crossReservePositions,
       });
-      const offsetSymbols = constraint.offsetReserveIds
-        .map((id) => reserveSymbolById?.get(id) ?? id)
-        .filter(Boolean);
+      const offsetSymbols = constraint.offsetReserveIds.map((id) => reserveSymbolById?.get(id) ?? id).filter(Boolean);
       return buildCrossReserveNetEligibleNote({
         netUsd,
         grossUsd,
@@ -1464,11 +1510,39 @@ export function buildRateSimulationResult({
   // No forecast, no wallet position, no position cap, no cross-reserve offset.
   // Used as reference value (T4 will surface in expanded details).
   const supplyHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritSupplys, reserve.merklSupplys, reserve.brevisSupplys, reserve.supplyIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap });
+    ? calculateTotalIncentiveApy(
+        reserve.meritSupplys,
+        reserve.merklSupplys,
+        reserve.brevisSupplys,
+        reserve.supplyIncentives,
+        tydroPointToUsdRate,
+        { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap },
+      )
+    : calculateTotalIncentiveApr(
+        reserve.meritSupplys,
+        reserve.merklSupplys,
+        reserve.brevisSupplys,
+        reserve.supplyIncentives,
+        tydroPointToUsdRate,
+        { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap },
+      );
   const borrowHeadlineIncentive = isApy
-    ? calculateTotalIncentiveApy(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap })
-    : calculateTotalIncentiveApr(reserve.meritBorrows, reserve.merklBorrows, reserve.brevisBorrows, reserve.borrowIncentives, tydroPointToUsdRate, { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap });
+    ? calculateTotalIncentiveApy(
+        reserve.meritBorrows,
+        reserve.merklBorrows,
+        reserve.brevisBorrows,
+        reserve.borrowIncentives,
+        tydroPointToUsdRate,
+        { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap },
+      )
+    : calculateTotalIncentiveApr(
+        reserve.meritBorrows,
+        reserve.merklBorrows,
+        reserve.brevisBorrows,
+        reserve.borrowIncentives,
+        tydroPointToUsdRate,
+        { whitelistMerklCampaignIds, campaignAccessStatuses, pointRateMap },
+      );
   // AAV-1112: currentIncentive is derived from per-source sumCurrent (dispatch map),
   // not from a separate buildIncentiveCurrent call. This eliminates the dual-code-path
   // bug where aggregate and per-source values could diverge.
@@ -1484,10 +1558,14 @@ export function buildRateSimulationResult({
   // reflect user input — it's just a unit conversion artifact.
   const supplyAfterNative = combinedNativeSimulation
     ? combinedNativeSimulation.supplyApyPercent
-    : (portfolioScenarioActive ? supplyCurrentNative : null);
+    : portfolioScenarioActive
+      ? supplyCurrentNative
+      : null;
   const borrowAfterNative = combinedNativeSimulation
     ? combinedNativeSimulation.borrowApyPercent
-    : (portfolioScenarioActive ? borrowCurrentNative : null);
+    : portfolioScenarioActive
+      ? borrowCurrentNative
+      : null;
 
   const brevisSharedDepositsByCampaignId = hasAnyInput
     ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
@@ -1534,16 +1612,17 @@ export function buildRateSimulationResult({
       sumCurrent: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
       sumAfter: (data: IncentiveSources[K], ctx: SideSourceContext) => number;
       buildDetails: (data: IncentiveSources[K], ctx: SideSourceContext) => SimulationCampaignDetail[];
-    }
+    };
   } = {
     merit: {
       // AAV-979: sumCurrent must include position cap dilution for wallet positions
       // AAV-1101: sumCurrent uses wallet eligibility ratio (no delta)
       sumCurrent: (data, ctx) =>
-        sumForecastMeritIncentiveApr(data, ctx.isApy, 0, ctx.anchorTvlUsd, ctx.walletPositionUsd) * ctx.walletEligibilityRatio,
+        sumForecastMeritIncentiveApr(data, ctx.isApy, 0, ctx.anchorTvlUsd, ctx.walletPositionUsd) *
+        ctx.walletEligibilityRatio,
       sumAfter: (data, ctx) =>
-        sumForecastMeritIncentiveApr(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.anchorTvlUsd, ctx.totalPositionUsd)
-        * ctx.eligibilityRatio,
+        sumForecastMeritIncentiveApr(data, ctx.isApy, ctx.meritMerklInputUsd, ctx.anchorTvlUsd, ctx.totalPositionUsd) *
+        ctx.eligibilityRatio,
       buildDetails: (data, ctx) =>
         buildMeritCampaignDetails({
           merits: data,
@@ -1565,17 +1644,58 @@ export function buildRateSimulationResult({
       // merklGroupMultiplier kept as fallback when positionUsd is null (Shared Scenario).
       sumCurrent: (data, ctx) =>
         ctx.isApy
-          ? sumMerklIncentiveApy(data, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, forecastStates: ctx.forecastStates, campaignAccessStatuses: ctx.campaignAccessStatuses, crossReserveNetEligibleUsd: ctx.walletCrossReserveNetEligibleUsd, merklGroupMultiplier: ctx.walletMerklGroupMul, pointRateMap: ctx.pointRateMap, positionUsd: ctx.walletPositionUsd, tokenPrice: ctx.tokenPrice, decimals: ctx.decimals })
-          : sumMerklIncentiveApr(data, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, forecastStates: ctx.forecastStates, campaignAccessStatuses: ctx.campaignAccessStatuses, crossReserveNetEligibleUsd: ctx.walletCrossReserveNetEligibleUsd, merklGroupMultiplier: ctx.walletMerklGroupMul, pointRateMap: ctx.pointRateMap, positionUsd: ctx.walletPositionUsd, tokenPrice: ctx.tokenPrice, decimals: ctx.decimals }),
+          ? sumMerklIncentiveApy(data, ctx.tydroPointToUsdRate, {
+              whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
+              forecastStates: ctx.forecastStates,
+              campaignAccessStatuses: ctx.campaignAccessStatuses,
+              crossReserveNetEligibleUsd: ctx.walletCrossReserveNetEligibleUsd,
+              merklGroupMultiplier: ctx.walletMerklGroupMul,
+              pointRateMap: ctx.pointRateMap,
+              positionUsd: ctx.walletPositionUsd,
+              tokenPrice: ctx.tokenPrice,
+              decimals: ctx.decimals,
+            })
+          : sumMerklIncentiveApr(data, ctx.tydroPointToUsdRate, {
+              whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
+              forecastStates: ctx.forecastStates,
+              campaignAccessStatuses: ctx.campaignAccessStatuses,
+              crossReserveNetEligibleUsd: ctx.walletCrossReserveNetEligibleUsd,
+              merklGroupMultiplier: ctx.walletMerklGroupMul,
+              pointRateMap: ctx.pointRateMap,
+              positionUsd: ctx.walletPositionUsd,
+              tokenPrice: ctx.tokenPrice,
+              decimals: ctx.decimals,
+            }),
       sumAfter: (data, ctx) => {
         const forecasted = buildForecastMerklOpportunities({
-          opportunities: data, inputUsd: ctx.meritMerklInputUsd,
-          forecastStates: ctx.forecastStates, whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
-          tydroPointToUsdRate: ctx.tydroPointToUsdRate, pointRateMap: ctx.pointRateMap,
+          opportunities: data,
+          inputUsd: ctx.meritMerklInputUsd,
+          forecastStates: ctx.forecastStates ?? {},
+          whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
+          tydroPointToUsdRate: ctx.tydroPointToUsdRate,
+          pointRateMap: ctx.pointRateMap,
         });
         return ctx.isApy
-          ? sumMerklIncentiveApy(forecasted, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, campaignAccessStatuses: ctx.campaignAccessStatuses, crossReserveNetEligibleUsd: ctx.crossReserveNetEligibleUsd, merklGroupMultiplier: ctx.merklGroupMul, pointRateMap: ctx.pointRateMap, positionUsd: ctx.totalPositionUsd, tokenPrice: ctx.tokenPrice, decimals: ctx.decimals })
-          : sumMerklIncentiveApr(forecasted, ctx.tydroPointToUsdRate, { whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds, campaignAccessStatuses: ctx.campaignAccessStatuses, crossReserveNetEligibleUsd: ctx.crossReserveNetEligibleUsd, merklGroupMultiplier: ctx.merklGroupMul, pointRateMap: ctx.pointRateMap, positionUsd: ctx.totalPositionUsd, tokenPrice: ctx.tokenPrice, decimals: ctx.decimals });
+          ? sumMerklIncentiveApy(forecasted, ctx.tydroPointToUsdRate, {
+              whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
+              campaignAccessStatuses: ctx.campaignAccessStatuses,
+              crossReserveNetEligibleUsd: ctx.crossReserveNetEligibleUsd,
+              merklGroupMultiplier: ctx.merklGroupMul,
+              pointRateMap: ctx.pointRateMap,
+              positionUsd: ctx.totalPositionUsd,
+              tokenPrice: ctx.tokenPrice,
+              decimals: ctx.decimals,
+            })
+          : sumMerklIncentiveApr(forecasted, ctx.tydroPointToUsdRate, {
+              whitelistMerklCampaignIds: ctx.whitelistMerklCampaignIds,
+              campaignAccessStatuses: ctx.campaignAccessStatuses,
+              crossReserveNetEligibleUsd: ctx.crossReserveNetEligibleUsd,
+              merklGroupMultiplier: ctx.merklGroupMul,
+              pointRateMap: ctx.pointRateMap,
+              positionUsd: ctx.totalPositionUsd,
+              tokenPrice: ctx.tokenPrice,
+              decimals: ctx.decimals,
+            });
       },
       buildDetails: (data, ctx) =>
         buildMerklCampaignDetails({
@@ -1604,9 +1724,17 @@ export function buildRateSimulationResult({
     },
     brevis: {
       // AAV-1102: sumCurrent must apply wallet position cap dilution to match per-campaign current
-      sumCurrent: (data, ctx) => sumForecastBrevisIncentiveApr(data, ctx.isApy, 0, undefined, ctx.forecastStates, ctx.walletPositionUsd),
+      sumCurrent: (data, ctx) =>
+        sumForecastBrevisIncentiveApr(data, ctx.isApy, 0, undefined, ctx.forecastStates, ctx.walletPositionUsd),
       sumAfter: (data, ctx) =>
-        sumForecastBrevisIncentiveApr(data, ctx.isApy, ctx.grossInputUsd, ctx.brevisSharedDeposits, ctx.forecastStates, ctx.totalPositionUsd),
+        sumForecastBrevisIncentiveApr(
+          data,
+          ctx.isApy,
+          ctx.grossInputUsd,
+          ctx.brevisSharedDeposits,
+          ctx.forecastStates,
+          ctx.totalPositionUsd,
+        ),
       buildDetails: (data, ctx) =>
         buildBrevisCampaignDetails({
           items: data,
@@ -1640,11 +1768,19 @@ export function buildRateSimulationResult({
       meritMerklInputUsd: isSupply ? supplyMeritMerklInputUsd : borrowMeritMerklInputUsd,
       grossInputUsd: isSupply ? supplyInputUsd : borrowInputUsd,
       eligibilityRatio: isSupply ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio,
-      walletEligibilityRatio: isSupply ? walletSupplyMeritMerklEligibilityRatio : walletBorrowMeritMerklEligibilityRatio,
+      walletEligibilityRatio: isSupply
+        ? walletSupplyMeritMerklEligibilityRatio
+        : walletBorrowMeritMerklEligibilityRatio,
       grossForEligibility: isSupply ? supplyGrossForEligibility : borrowGrossForEligibility,
       netForEligibility: isSupply ? supplyNetForEligibility : borrowNetForEligibility,
       totalPositionUsd: isSupply ? totalSupplyUsd : totalBorrowUsd,
-      anchorTvlUsd: getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
+      anchorTvlUsd: getMeritAnchorTvlUsd(
+        reserve,
+        side,
+        getProtocolVersion(reserve.marketName),
+        hubSupplied ?? reserveRateInput?.hubSupplied,
+        hubBorrowed ?? reserveRateInput?.hubBorrowed,
+      ),
       forecastStates,
       whitelistMerklCampaignIds,
       tydroPointToUsdRate,
@@ -1667,7 +1803,10 @@ export function buildRateSimulationResult({
     const protocolDetail = attachCampaigns(buildMetric(protocolCurrent, protocolCurrent), []);
 
     // Merit/Merkl/Brevis (dispatch map) — single source of truth for per-source current
-    const sr = {} as Record<SourceKey, { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }>;
+    const sr = {} as Record<
+      SourceKey,
+      { current: number; after: number | null; campaigns: SimulationCampaignDetail[] }
+    >;
     const runSource = <K extends SourceKey>(key: K) => {
       const handler = sourceDispatch[key];
       const data = currentData[key];
@@ -1700,58 +1839,84 @@ export function buildRateSimulationResult({
     // Per-source after already has Math.min(afterRaw, current) applied in the dispatch map loop.
     // No aggregate Math.min needed — per-source cap is the correct semantics.
     // This eliminates the buildIncentiveAfter independent path that could diverge from per-source sum.
-    const afterIncentive = !blocked && shouldComputeAfter
-      ? protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after
-      : null;
+    const afterIncentive =
+      !blocked && shouldComputeAfter
+        ? protocolCurrent + (sr.merit.after ?? 0) + (sr.merkl.after ?? 0) + (sr.brevis.after ?? 0)
+        : null;
     // APR variant: when isApy=true, run a lightweight APR pass for afterIncentiveApr.
-    const afterIncentiveApr = !blocked && shouldComputeAfter
-      ? (isApy
-        ? (() => {
-            const aprCtx = { ...ctx, isApy: false };
-            const aprProtocol = sumNumberArray(currentData.protocol, false);
-            const aprMeritAfter = shouldComputeAfter ? sourceDispatch.merit.sumAfter(currentData.merit, aprCtx) : null;
-            const aprMerklAfter = shouldComputeAfter ? sourceDispatch.merkl.sumAfter(currentData.merkl, aprCtx) : null;
-            const aprBrevisAfter = shouldComputeAfter ? sourceDispatch.brevis.sumAfter(currentData.brevis, aprCtx) : null;
-            const aprMeritCurrent = sourceDispatch.merit.sumCurrent(currentData.merit, aprCtx);
-            const aprMerklCurrent = sourceDispatch.merkl.sumCurrent(currentData.merkl, aprCtx);
-            const aprBrevisCurrent = sourceDispatch.brevis.sumCurrent(currentData.brevis, aprCtx);
-            return aprProtocol
-              + (aprMeritAfter !== null ? Math.min(aprMeritAfter, aprMeritCurrent) : 0)
-              + (aprMerklAfter !== null ? Math.min(aprMerklAfter, aprMerklCurrent) : 0)
-              + (aprBrevisAfter !== null ? Math.min(aprBrevisAfter, aprBrevisCurrent) : 0);
-          })()
-        : afterIncentive)
-      : null;
+    const afterIncentiveApr =
+      !blocked && shouldComputeAfter
+        ? isApy
+          ? (() => {
+              const aprCtx = { ...ctx, isApy: false };
+              const aprProtocol = sumNumberArray(currentData.protocol, false);
+              const aprMeritAfter = shouldComputeAfter
+                ? sourceDispatch.merit.sumAfter(currentData.merit, aprCtx)
+                : null;
+              const aprMerklAfter = shouldComputeAfter
+                ? sourceDispatch.merkl.sumAfter(currentData.merkl, aprCtx)
+                : null;
+              const aprBrevisAfter = shouldComputeAfter
+                ? sourceDispatch.brevis.sumAfter(currentData.brevis, aprCtx)
+                : null;
+              const aprMeritCurrent = sourceDispatch.merit.sumCurrent(currentData.merit, aprCtx);
+              const aprMerklCurrent = sourceDispatch.merkl.sumCurrent(currentData.merkl, aprCtx);
+              const aprBrevisCurrent = sourceDispatch.brevis.sumCurrent(currentData.brevis, aprCtx);
+              return (
+                aprProtocol +
+                (aprMeritAfter !== null ? Math.min(aprMeritAfter, aprMeritCurrent) : 0) +
+                (aprMerklAfter !== null ? Math.min(aprMerklAfter, aprMerklCurrent) : 0) +
+                (aprBrevisAfter !== null ? Math.min(aprBrevisAfter, aprBrevisCurrent) : 0)
+              );
+            })()
+          : afterIncentive
+        : null;
     afterIncentiveAprBySide[side] = afterIncentiveApr;
 
-    const afterNative = blocked ? null : (isSupply ? supplyAfterNative : borrowAfterNative);
+    const afterNative = blocked ? null : isSupply ? supplyAfterNative : borrowAfterNative;
     const currentNative = isSupply ? supplyCurrentNative : borrowCurrentNative;
     const headlineIncentive = isSupply ? supplyHeadlineIncentive : borrowHeadlineIncentive;
     const currentTotal = isApy
-      ? (isSupply ? calculateTotalSupplyApy(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApy(currentNative ?? 0, currentIncentive))
-      : (isSupply ? calculateTotalSupplyApr(currentNative ?? 0, currentIncentive) : calculateTotalBorrowApr(currentNative ?? 0, currentIncentive));
+      ? isSupply
+        ? calculateTotalSupplyApy(currentNative ?? 0, currentIncentive)
+        : calculateTotalBorrowApy(currentNative ?? 0, currentIncentive)
+      : isSupply
+        ? calculateTotalSupplyApr(currentNative ?? 0, currentIncentive)
+        : calculateTotalBorrowApr(currentNative ?? 0, currentIncentive);
     currentTotalBySide[side] = currentTotal;
 
-    const afterTotal = blocked ? null : (shouldComputeAfter && afterNative !== null && afterIncentive !== null
-      ? (isApy
-        ? (isSupply ? calculateTotalSupplyApy(afterNative, afterIncentive) : calculateTotalBorrowApy(afterNative, afterIncentive))
-        : (isSupply ? calculateTotalSupplyApr(afterNative, afterIncentive) : calculateTotalBorrowApr(afterNative, afterIncentive)))
-      : null);
+    const afterTotal = blocked
+      ? null
+      : shouldComputeAfter && afterNative !== null && afterIncentive !== null
+        ? isApy
+          ? isSupply
+            ? calculateTotalSupplyApy(afterNative, afterIncentive)
+            : calculateTotalBorrowApy(afterNative, afterIncentive)
+          : isSupply
+            ? calculateTotalSupplyApr(afterNative, afterIncentive)
+            : calculateTotalBorrowApr(afterNative, afterIncentive)
+        : null;
 
-    const meritOffsetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
-      ? [netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)]
-      : undefined;
-    const merklNetNote = ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
-      ? netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)
-      : undefined;
+    const meritOffsetNote =
+      ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
+        ? [netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)]
+        : undefined;
+    const merklNetNote =
+      ctx.netForEligibility != null && ctx.grossForEligibility > 0 && ctx.netForEligibility < ctx.grossForEligibility
+        ? netEligibleToNote(buildNetEligibleNote(ctx.netForEligibility, ctx.grossForEligibility)!)
+        : undefined;
     const firstMerklOpp = (currentData.merkl as MerklOpportunityGroup[] | undefined)?.[0];
     const merklCrossNote = firstMerklOpp ? merklCrossReserveNote(side)(firstMerklOpp) : null;
-    const merklOffsetNote = merklCrossNote ? [netEligibleToNote(merklCrossNote)] : merklNetNote ? [merklNetNote] : undefined;
+    const merklOffsetNote = merklCrossNote
+      ? [netEligibleToNote(merklCrossNote)]
+      : merklNetNote
+        ? [merklNetNote]
+        : undefined;
 
     lanes[side] = {
       hasInput: blocked ? false : sideHasInput,
-      inputAmount: blocked ? 0 : (isSupply ? supplyAmount : borrowAmount),
-      inputUsd: blocked ? 0 : (isSupply ? supplyInputUsd : borrowInputUsd),
+      inputAmount: blocked ? 0 : isSupply ? supplyAmount : borrowAmount,
+      inputUsd: blocked ? 0 : isSupply ? supplyInputUsd : borrowInputUsd,
       currentNative,
       currentIncentive,
       currentTotal,
@@ -1759,9 +1924,13 @@ export function buildRateSimulationResult({
       afterNative,
       afterIncentive,
       afterTotal,
-      deltaNative: blocked ? null : (afterNative !== null && currentNative !== null ? afterNative - currentNative : null),
-      deltaIncentive: blocked ? null : (afterIncentive !== null && currentIncentive !== null ? afterIncentive - currentIncentive : null),
-      deltaTotal: blocked ? null : (afterTotal !== null && currentTotal !== null ? afterTotal - currentTotal : null),
+      deltaNative: blocked ? null : afterNative !== null && currentNative !== null ? afterNative - currentNative : null,
+      deltaIncentive: blocked
+        ? null
+        : afterIncentive !== null && currentIncentive !== null
+          ? afterIncentive - currentIncentive
+          : null,
+      deltaTotal: blocked ? null : afterTotal !== null && currentTotal !== null ? afterTotal - currentTotal : null,
       sources: {
         protocol: protocolDetail,
         merit: attachCampaigns(buildMetric(sr.merit.current, sr.merit.after), sr.merit.campaigns, meritOffsetNote),
@@ -1781,7 +1950,7 @@ export function buildRateSimulationResult({
       ? buildSupplyUsdAccrualSide(
           effectiveSupplyPrincipalUsd,
           combinedNativeSimulation?.supplyAprPercent ?? null,
-          afterIncentiveAprBySide.supply ?? null
+          afterIncentiveAprBySide.supply ?? null,
         )
       : null;
   const borrowUsdAccrualSide =
@@ -1789,17 +1958,13 @@ export function buildRateSimulationResult({
       ? buildBorrowUsdAccrualSide(
           effectiveBorrowPrincipalUsd,
           combinedNativeSimulation?.borrowAprPercent ?? null,
-          afterIncentiveAprBySide.borrow ?? null
+          afterIncentiveAprBySide.borrow ?? null,
         )
       : null;
 
   let scenarioNetUsdPerDay: number | null = null;
-  if (
-    supplyUsdAccrualSide?.totalUsdPerDay != null ||
-    borrowUsdAccrualSide?.totalUsdPerDay != null
-  ) {
-    scenarioNetUsdPerDay =
-      (supplyUsdAccrualSide?.totalUsdPerDay ?? 0) + (borrowUsdAccrualSide?.totalUsdPerDay ?? 0);
+  if (supplyUsdAccrualSide?.totalUsdPerDay != null || borrowUsdAccrualSide?.totalUsdPerDay != null) {
+    scenarioNetUsdPerDay = (supplyUsdAccrualSide?.totalUsdPerDay ?? 0) + (borrowUsdAccrualSide?.totalUsdPerDay ?? 0);
   }
 
   const scenarioUsdAccrual: ScenarioUsdAccrual | null =
@@ -1813,32 +1978,38 @@ export function buildRateSimulationResult({
 
   // ─── A 类字段: spread/utilization current (不随 simulation input 变化) ───
 
-const spreadCurrent =
-currentTotalBySide.supply != null && currentTotalBySide.borrow != null
-? currentTotalBySide.supply - currentTotalBySide.borrow
-: null;
+  const spreadCurrent =
+    currentTotalBySide.supply != null && currentTotalBySide.borrow != null
+      ? currentTotalBySide.supply - currentTotalBySide.borrow
+      : null;
   // ─── B 类字段: spread/utilization after/delta (随 simulation input 变化) ───
 
   const spreadAfter =
-    supplyLane.afterTotal !== null && borrowLane.afterTotal !== null ? supplyLane.afterTotal - borrowLane.afterTotal : null;
+    supplyLane.afterTotal !== null && borrowLane.afterTotal !== null
+      ? supplyLane.afterTotal - borrowLane.afterTotal
+      : null;
   const spreadDelta = spreadAfter !== null && spreadCurrent !== null ? spreadAfter - spreadCurrent : null;
 
   const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? reserve.utilizationPct ?? null;
   const utilizationAfter = combinedNativeSimulation?.utilizationRatePercent ?? null;
   const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? reserve.optimalUtilization ?? null;
-  const forecastUnavailableCampaignCount = countForecastUnavailable(supplyLane.sources.merkl.campaigns ?? [])
-    + countForecastUnavailable(supplyLane.sources.brevis.campaigns ?? [])
-    + countForecastUnavailable(borrowLane.sources.merkl.campaigns ?? [])
-    + countForecastUnavailable(borrowLane.sources.brevis.campaigns ?? []);
+  const forecastUnavailableCampaignCount =
+    countForecastUnavailable(supplyLane.sources.merkl.campaigns ?? []) +
+    countForecastUnavailable(supplyLane.sources.brevis.campaigns ?? []) +
+    countForecastUnavailable(borrowLane.sources.merkl.campaigns ?? []) +
+    countForecastUnavailable(borrowLane.sources.brevis.campaigns ?? []);
 
   const deriveTotalBorrowedUsd = (
     reserveSizeUsd: number | null | undefined,
     utilizationPct: number | null | undefined,
   ): number | null => {
     if (
-      reserveSizeUsd == null || utilizationPct == null ||
-      !Number.isFinite(reserveSizeUsd) || !Number.isFinite(utilizationPct)
-    ) return null;
+      reserveSizeUsd == null ||
+      utilizationPct == null ||
+      !Number.isFinite(reserveSizeUsd) ||
+      !Number.isFinite(utilizationPct)
+    )
+      return null;
     return reserveSizeUsd * (utilizationPct / 100);
   };
 
@@ -1847,9 +2018,12 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
     totalBorrowedUsd: number | null | undefined,
   ): number | null => {
     if (
-      reserveSizeUsd == null || totalBorrowedUsd == null ||
-      !Number.isFinite(reserveSizeUsd) || !Number.isFinite(totalBorrowedUsd)
-    ) return null;
+      reserveSizeUsd == null ||
+      totalBorrowedUsd == null ||
+      !Number.isFinite(reserveSizeUsd) ||
+      !Number.isFinite(totalBorrowedUsd)
+    )
+      return null;
     return reserveSizeUsd - totalBorrowedUsd;
   };
 
@@ -1869,12 +2043,8 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
       }
       // Use raw input to check if exceeded (only when user entered scenario supply).
       // On-chain reserve can already be above cap; without a scenario amount we do not warn.
-      const rawAfterSizeUsd =
-        currentReserveSizeUsd !== null ? currentReserveSizeUsd + rawSupplyInputUsd : null;
-      const exceeded =
-        rawSupplyInputUsd > 0 &&
-        rawAfterSizeUsd !== null &&
-        rawAfterSizeUsd > supplyCapUsd;
+      const rawAfterSizeUsd = currentReserveSizeUsd !== null ? currentReserveSizeUsd + rawSupplyInputUsd : null;
+      const exceeded = rawSupplyInputUsd > 0 && rawAfterSizeUsd !== null && rawAfterSizeUsd > supplyCapUsd;
       const exceededBy = exceeded ? rawAfterSizeUsd - supplyCapUsd : null;
       return {
         availableSupplyRoomUsd: availableSupplyRoomUsd,
@@ -1888,7 +2058,7 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
       // Check if user input exceeds available room
       const exceeded = availableBorrowRoomUsd !== null && rawBorrowInputUsd > availableBorrowRoomUsd;
       const exceededBy = exceeded ? rawBorrowInputUsd - availableBorrowRoomUsd : null;
-      
+
       return {
         availableBorrowRoomUsd,
         borrowCapExceeded: exceeded,
@@ -1958,22 +2128,22 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
           ? deriveAvailableLiquidityUsd(computedReserveSizeUsd2, totalBorrowedUsd)
           : null;
 
-    const protocolFee = Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee >= 0
-      ? reserveRateInput.protocolFee
-      : reserve.protocolFee ?? 0;
-    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization >= 0
-      ? reserveRateInput.optimalUtilization
-      : reserve.optimalUtilization ?? null;
+    const protocolFee =
+      Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee >= 0
+        ? reserveRateInput.protocolFee
+        : (reserve.protocolFee ?? 0);
+    const optimalUtilization =
+      Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization >= 0
+        ? reserveRateInput.optimalUtilization
+        : (reserve.optimalUtilization ?? null);
 
     // ─── B 类字段: After/Delta (随 simulation input 变化, 无模拟 → null) ───
 
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput
-      ? availableLiquidityUsd + effectiveSupplyInputUsd - borrowInputUsd
+      ? (availableLiquidityUsd ?? 0) + effectiveSupplyInputUsd - borrowInputUsd
       : null;
-    const totalBorrowedUsdAfter = (hasAnyInput && !borrowBlocked)
-      ? totalBorrowedUsd + borrowInputUsd
-      : null;
+    const totalBorrowedUsdAfter = hasAnyInput && !borrowBlocked ? (totalBorrowedUsd ?? 0) + borrowInputUsd : null;
 
     const supplyCapFields = computeSupplyCapFields();
     const borrowCapFields = computeBorrowCapFields(totalBorrowedUsd);
@@ -1988,13 +2158,10 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
       optimalUtilization,
       // ─── B 类字段: After/Delta (hasAnyInput → 有值, 否则 null) ───
       availableLiquidityUsdAfter,
-      availableLiquidityUsdDelta: availableLiquidityUsdAfter !== null
-        ? availableLiquidityUsdAfter - availableLiquidityUsd
-        : null,
+      availableLiquidityUsdDelta:
+        availableLiquidityUsdAfter !== null ? availableLiquidityUsdAfter - (availableLiquidityUsd ?? 0) : null,
       totalBorrowedUsdAfter,
-      totalBorrowedUsdDelta: totalBorrowedUsdAfter !== null
-        ? totalBorrowedUsdAfter - totalBorrowedUsd
-        : null,
+      totalBorrowedUsdDelta: totalBorrowedUsdAfter !== null ? totalBorrowedUsdAfter - (totalBorrowedUsd ?? 0) : null,
       ...supplyCapFields,
       ...borrowCapFields,
     };
@@ -2021,10 +2188,7 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
       optimal: utilizationOptimal,
       // ─── B 类: after/delta ───
       after: utilizationAfter,
-      delta:
-        utilizationCurrent !== null && utilizationAfter !== null
-          ? utilizationAfter - utilizationCurrent
-          : null,
+      delta: utilizationCurrent !== null && utilizationAfter !== null ? utilizationAfter - utilizationCurrent : null,
     },
     marketMetrics,
     // ─── B 类字段: Scenario-only (无模拟 → null) ───
@@ -2035,7 +2199,7 @@ currentTotalBySide.supply != null && currentTotalBySide.borrow != null
 
 export const buildEmptyRateSimulationResult = (
   reserve: ReserveWithSpread,
-  params: Omit<BuildRateSimulationResultParams, 'reserve'>
+  params: Omit<BuildRateSimulationResultParams, 'reserve'>,
 ): RateSimulationResult => ({
   ...buildRateSimulationResult({
     reserve,
@@ -2060,9 +2224,7 @@ export const EMPTY_PRICE_LOADING_LIST: readonly boolean[] = Object.freeze([]) as
  * Exported for unit tests; `priceDataKey` consumers should treat the result
  * as opaque.
  */
-export const buildPriceDataSignature = (
-  prices: ReadonlyArray<{ data?: number | null }>,
-): string =>
+export const buildPriceDataSignature = (prices: ReadonlyArray<{ data?: number | null }>): string =>
   JSON.stringify(prices.map((q) => (q.data == null ? null : q.data)));
 
 /**
@@ -2076,8 +2238,4 @@ export const buildPriceLoadingSignature = (
   prices: ReadonlyArray<{ isPending?: boolean; isFetching?: boolean }>,
   needsTokenPrice: boolean,
 ): string =>
-  JSON.stringify(
-    needsTokenPrice
-      ? prices.map((q) => Boolean(q.isPending || q.isFetching))
-      : EMPTY_PRICE_LOADING_LIST,
-  );
+  JSON.stringify(needsTokenPrice ? prices.map((q) => Boolean(q.isPending || q.isFetching)) : EMPTY_PRICE_LOADING_LIST);

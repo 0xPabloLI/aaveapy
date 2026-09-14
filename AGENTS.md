@@ -17,6 +17,7 @@
 
 - `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
 - `npm run lint` — ESLint
+- `npm run typecheck` — 严格 TS 检查（tsconfig.app + tsconfig.node 双配置）
 - `npm test` — Vitest
 - `npm run build` — production build
 - `npm run ci:remote` — full local gate (used by pre-push hook)
@@ -93,8 +94,10 @@
 每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
 
 ```bash
-npm run lint && npm test && npm run build && npx tsc --noEmit
+npm run lint && npm test && npm run build && npm run typecheck && npm run knip && npm run dup:check
 ```
+
+后两项为质量门禁（pre-push 强制）：`knip` 检测未使用文件（入口/白名单见 `knip.json`，勿把 generated/supabase 集成误报当死码）；`dup:check` 用 jscpd 检测复制粘贴（生产代码阈值 3%，测试文件不计入，配置见 `.jscpd.json`）。提交时 lint-staged 会先对暂存文件跑 Prettier + ESLint --fix。
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 

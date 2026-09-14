@@ -37,6 +37,11 @@
     "scan:deps": "osv-scanner --lockfile ./package-lock.json",
     "lint": "eslint .",
     "lint:colors": "node scripts/check-semantic-colors.mjs",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "knip": "knip",
+    "dup:check": "jscpd src",
     "lint:all": "npm run lint && npm run lint:colors",
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
@@ -79,6 +84,15 @@
     "ci:lockcheck": "npm ci",
     "check:react-singleton": "node scripts/check-react-singleton.mjs",
     "prepare": "npx husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,css,html}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@aave-dao/aave-address-book": "^4.57.2",
@@ -190,10 +204,14 @@
     "globals": "^17.4.0",
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
+    "jscpd": "^5.2.0",
+    "knip": "^6.35.1",
+    "lint-staged": "^17.5.1",
     "lovable-tagger": "^1.3.1",
     "openapi-zod-client": "^1.18.3",
     "picomatch": "^4.0.4",
     "postcss": "^8.5.26",
+    "prettier": "^3.9.6",
     "rollup": "^4.60.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

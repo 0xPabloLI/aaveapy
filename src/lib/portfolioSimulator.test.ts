@@ -5,14 +5,16 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
 import { getLowestHfDelta } from './portfolioCalculator';
-import { buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
+import {
+  buildPerReserveInputsFromEntries,
+  buildMetricsFromLane,
+  simulatePortfolioFromEntries,
+} from './portfolioSimulator';
 import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
 import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import { wadToHf } from '@/lib/userData/onchainHealthFactor';
 
-const makeRateCalcReserve = (
-  overrides: Partial<ReserveWithSpread> = {},
-): ReserveWithSpread & RateCalcInput =>
+const makeRateCalcReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread & RateCalcInput =>
   ({
     reserveId: 'r-usdc-v3',
     marketName: 'AaveV3Ethereum',
@@ -54,9 +56,7 @@ const makeRateCalcReserve = (
 
 const emptySide: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
 
-const makeEntry = (
-  overrides: Partial<PortfolioReserveEntry> = {},
-): PortfolioReserveEntry => ({
+const makeEntry = (overrides: Partial<PortfolioReserveEntry> = {}): PortfolioReserveEntry => ({
   reserveId: 'r-usdc-v3',
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
@@ -70,9 +70,7 @@ const makeEntry = (
   ...overrides,
 });
 
-const baseEntriesSimArgs = (
-  overrides: Partial<SimulatePortfolioEntriesArgs> = {},
-): SimulatePortfolioEntriesArgs => ({
+const baseEntriesSimArgs = (overrides: Partial<SimulatePortfolioEntriesArgs> = {}): SimulatePortfolioEntriesArgs => ({
   entries: [],
   reserves: [],
   isApy: true,
@@ -86,8 +84,18 @@ const baseEntriesSimArgs = (
 describe('buildPerReserveInputsFromEntries', () => {
   it('aggregates supply+borrow USD per reserveId', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { amount: '500', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '500', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-weth',
+        tokenSymbol: 'WETH',
+        supply: { amount: '2000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [
       makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
@@ -130,7 +138,11 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('skips entries with zero or invalid amount', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', supply: { amount: '0', inputMode: 'usd', walletValue: null }, borrow: { amount: 'abc', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        supply: { amount: '0', inputMode: 'usd', walletValue: null },
+        borrow: { amount: 'abc', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
@@ -139,7 +151,11 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('skips entries whose reserve is not found', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-missing', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-missing',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
@@ -148,34 +164,76 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('defaults borrowInput to "0" when only supply exists', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', supply: { amount: '3000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        supply: { amount: '3000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 3000, totalBorrowUsd: 0, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
+    expect(result.perReserveInputs.get('r-usdc')).toEqual({
+      supplyInput: '3000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      totalSupplyUsd: 3000,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
+    });
   });
 
   it('defaults supplyInput to "0" when only borrow exists', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        supply: { ...emptySide },
+        borrow: { amount: '2000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd', totalSupplyUsd: 0, totalBorrowUsd: 2000, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
+    expect(result.perReserveInputs.get('r-usdc')).toEqual({
+      supplyInput: '0',
+      borrowInput: '2000',
+      inputMode: 'usd',
+      totalSupplyUsd: 0,
+      totalBorrowUsd: 2000,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
+    });
   });
 
   it('resolves token amount to USD using tokenPrice', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2', inputMode: 'token', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-weth',
+        tokenSymbol: 'WETH',
+        supply: { amount: '2', inputMode: 'token', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
-    expect(result.perReserveInputs.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd', totalSupplyUsd: 6000, totalBorrowUsd: 0, walletSupplyUsd: undefined, walletBorrowUsd: undefined });
+    expect(result.perReserveInputs.get('r-weth')).toEqual({
+      supplyInput: '6000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      totalSupplyUsd: 6000,
+      totalBorrowUsd: 0,
+      walletSupplyUsd: undefined,
+      walletBorrowUsd: undefined,
+    });
   });
 
   it('ignores hidden entries', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', hidden: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        hidden: true,
+        supply: { amount: '1000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
@@ -184,7 +242,12 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('ignores orphan entries', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', isOrphan: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        isOrphan: true,
+        supply: { amount: '1000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
     const result = buildPerReserveInputsFromEntries(entries, reserves);
@@ -195,7 +258,11 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc-v3';
     const reserve = makeRateCalcReserve({ reserveId });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     expect(result.perReserveInputs.has(reserveId)).toBe(true);
@@ -211,7 +278,11 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc-v3';
     const reserve = makeRateCalcReserve({ reserveId });
     const entries = [
-      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId,
+        supply: { ...emptySide },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     expect(result.perReserveInputs.has(reserveId)).toBe(true);
@@ -227,7 +298,11 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc-v3';
     const reserve = makeRateCalcReserve({ reserveId });
     const entries = [
-      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -240,7 +315,11 @@ describe('buildPerReserveInputsFromEntries', () => {
   it('returns empty map when no entries match reserves', () => {
     const reserve = makeRateCalcReserve({ reserveId: 'r-usdc-v3' });
     const entries = [
-      makeEntry({ reserveId: 'r-dai-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-dai-v3',
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     expect(result.perReserveInputs.size).toBe(0);
@@ -252,8 +331,18 @@ describe('buildPerReserveInputsFromEntries', () => {
     const usdcReserve = makeRateCalcReserve({ reserveId: usdcId, tokenSymbol: 'USDC' });
     const usdtReserve = makeRateCalcReserve({ reserveId: usdtId, tokenSymbol: 'USDT' });
     const entries = [
-      makeEntry({ reserveId: usdcId, tokenSymbol: 'USDC', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: usdtId, tokenSymbol: 'USDT', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: usdcId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: usdtId,
+        tokenSymbol: 'USDT',
+        supply: { ...emptySide },
+        borrow: { amount: '2000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [usdcReserve, usdtReserve]);
     expect(result.perReserveInputs.get(usdcId)!.supplyInput).toBe('5000');
@@ -270,7 +359,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '', inputMode: 'usd', walletValue: 1042 },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -287,7 +381,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-weth';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'WETH', tokenPrice: 3000 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'WETH', supply: { amount: '', inputMode: 'usd', walletValue: 1042 }, borrow: { amount: '1', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'WETH',
+        supply: { amount: '', inputMode: 'usd', walletValue: 1042 },
+        borrow: { amount: '1', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -307,7 +406,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -324,7 +428,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -341,7 +450,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '500', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -376,9 +490,7 @@ describe('buildPerReserveInputsFromEntries', () => {
       }),
     ];
 
-    const { results } = simulatePortfolioFromEntries(
-      baseEntriesSimArgs({ entries, reserves }),
-    );
+    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves }));
 
     const unchangedSupply = results.find(
       (result) => result.reserveId === unchangedReserveId && result.side === 'supply',
@@ -392,7 +504,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '2000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -407,8 +524,18 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { amount: '500', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '500', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -423,7 +550,12 @@ describe('buildPerReserveInputsFromEntries', () => {
     const reserveId = 'r-usdc';
     const reserve = makeRateCalcReserve({ reserveId, tokenSymbol: 'USDC', tokenPrice: 1 });
     const entries = [
-      makeEntry({ reserveId, tokenSymbol: 'USDC', supply: { ...emptySide }, borrow: { amount: '800', inputMode: 'usd', walletValue: 500 } }),
+      makeEntry({
+        reserveId,
+        tokenSymbol: 'USDC',
+        supply: { ...emptySide },
+        borrow: { amount: '800', inputMode: 'usd', walletValue: 500 },
+      }),
     ];
     const result = buildPerReserveInputsFromEntries(entries, [reserve]);
     const input = result.perReserveInputs.get(reserveId)!;
@@ -436,7 +568,12 @@ describe('buildPerReserveInputsFromEntries', () => {
 
   it('reserveSymbolById includes symbols for all reserves, not just those with positions', () => {
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        supply: { amount: '1000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const reserves = [
       makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
@@ -458,7 +595,10 @@ describe('simulatePortfolioFromEntries', () => {
       makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const withBorrow = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const baseArgs = baseEntriesSimArgs({ entries: baseEntries, reserves: [reserve] });
     const coupledArgs = baseEntriesSimArgs({ entries: withBorrow, reserves: [reserve] });
@@ -481,9 +621,7 @@ describe('simulatePortfolioFromEntries', () => {
     const largeArgs = baseEntriesSimArgs({ entries: largeBorrow, reserves: [reserve] });
     const smallResult = simulatePortfolioFromEntries(smallArgs);
     const largeResult = simulatePortfolioFromEntries(largeArgs);
-    expect(largeResult.results[0].nativePercent).toBeGreaterThan(
-      smallResult.results[0].nativePercent,
-    );
+    expect(largeResult.results[0].nativePercent).toBeGreaterThan(smallResult.results[0].nativePercent);
   });
 
   it('v4 Hub: hubBorrowed + hubSupplied raise supply rate vs per-spoke baseline', () => {
@@ -502,7 +640,11 @@ describe('simulatePortfolioFromEntries', () => {
       hubSupplied: '60000000000000',
     });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc-v4', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc-v4',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [baseReserve] });
     const hubArgs = baseEntriesSimArgs({ entries, reserves: [hubReserve] });
@@ -524,7 +666,9 @@ describe('simulatePortfolioFromEntries', () => {
       supplyIncentives: [0.5],
       borrowIncentives: [],
       tokenPrice: 1,
-    } as ReserveWithSpread;
+      // Deliberately partial fixture: omits the rate-calc fields to exercise the
+      // baseline-APY fallback, hence the double cast.
+    } as unknown as ReserveWithSpread;
     const entries = [
       makeEntry({
         reserveId: 'r-no-calc',
@@ -617,7 +761,11 @@ describe('simulatePortfolioFromEntries', () => {
   it('skips entries whose reserve is not found', () => {
     const reserve = makeRateCalcReserve({ reserveId: 'r-exists' });
     const entries = [
-      makeEntry({ reserveId: 'r-missing', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-missing',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results } = simulatePortfolioFromEntries(args);
@@ -627,8 +775,16 @@ describe('simulatePortfolioFromEntries', () => {
   it('skips hidden entries from results and summary', () => {
     const reserve = makeRateCalcReserve();
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
-      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: true }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+        hidden: false,
+      }),
+      makeEntry({
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+        hidden: true,
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results, summary } = simulatePortfolioFromEntries(args);
@@ -639,8 +795,16 @@ describe('simulatePortfolioFromEntries', () => {
   it('mixed hidden + visible entries: summary excludes hidden contribution', () => {
     const reserve = makeRateCalcReserve();
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
-      makeEntry({ supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null }, hidden: true }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+        hidden: false,
+      }),
+      makeEntry({
+        supply: { ...emptySide },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+        hidden: true,
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results, summary } = simulatePortfolioFromEntries(args);
@@ -653,7 +817,10 @@ describe('simulatePortfolioFromEntries', () => {
   it('computes results from entries with supply and borrow', () => {
     const reserve = makeRateCalcReserve();
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results, summary } = simulatePortfolioFromEntries(args);
@@ -665,7 +832,11 @@ describe('simulatePortfolioFromEntries', () => {
   it('skips hidden entries', () => {
     const reserve = makeRateCalcReserve();
     const entries = [
-      makeEntry({ hidden: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        hidden: true,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results } = simulatePortfolioFromEntries(args);
@@ -675,7 +846,11 @@ describe('simulatePortfolioFromEntries', () => {
   it('skips orphan entries', () => {
     const reserve = makeRateCalcReserve();
     const entries = [
-      makeEntry({ isOrphan: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        isOrphan: true,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
     const { results } = simulatePortfolioFromEntries(args);
@@ -706,7 +881,14 @@ describe('simulatePortfolioFromEntries', () => {
         tokenSymbol: 'USDT',
         merklSupplys: [
           {
-            breakdowns: [{ campaignId: `${campaignId}-s`, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+            breakdowns: [
+              {
+                campaignId: `${campaignId}-s`,
+                campaignApr: 10,
+                campaignStartedAt: recentPast,
+                campaignEndedAt: farFuture,
+              },
+            ],
             netPositionConstraint: {
               sourceSide: 'supply',
               offsetReserveIds: [usdcReserveId],
@@ -790,7 +972,9 @@ describe('simulatePortfolioFromEntries', () => {
       const withBorrowResult = simulatePortfolioFromEntries(withBorrowArgs);
 
       const noBorrowSupply = noBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
-      const withBorrowSupply = withBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+      const withBorrowSupply = withBorrowResult.results.find(
+        (r) => r.reserveId === usdtReserveId && r.side === 'supply',
+      )!;
 
       expect(noBorrowSupply.incentivePercent).toBeGreaterThan(0);
       expect(withBorrowSupply.incentivePercent).toBeGreaterThan(0);
@@ -882,8 +1066,17 @@ describe('simulatePortfolioFromEntries', () => {
       expect(supplyResult!.incentivePercent).toBeGreaterThan(0);
 
       const expectedCurrent = buildIncentiveCurrent(
-        reserve, 'supply', true, 0, undefined, {}, undefined,
-        1042, undefined, undefined, undefined,
+        reserve,
+        'supply',
+        true,
+        0,
+        undefined,
+        {},
+        undefined,
+        1042,
+        undefined,
+        undefined,
+        undefined,
       );
       expect(supplyResult!.incentivePercent).toBeCloseTo(expectedCurrent, 2);
     });
@@ -928,8 +1121,17 @@ describe('simulatePortfolioFromEntries', () => {
       // hasInput = false b incentivePercent must equal currentIncentive from buildIncentiveCurrent
       // Note: exact value differs slightly due to anchor TVL from hub aggregation vs direct call
       const expectedCurrent = buildIncentiveCurrent(
-        reserve, 'supply', true, 0, undefined, {}, undefined,
-        5000, undefined, undefined, undefined,
+        reserve,
+        'supply',
+        true,
+        0,
+        undefined,
+        {},
+        undefined,
+        5000,
+        undefined,
+        undefined,
+        undefined,
       );
       expect(supplyResult.incentivePercent).toBeCloseTo(expectedCurrent, 2);
       expect(supplyResult.incentivePercent).toBeGreaterThan(0);
@@ -1033,16 +1235,10 @@ describe('buildMetricsFromLane', () => {
     const lane = makeLane();
     const metrics = buildMetricsFromLane(lane, 'supply', 10000);
     expect(metrics.usdPerDayMetric).toBeDefined();
-    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
-      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
-      6,
-    );
-    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      (10000 * 3.0 / 100 / 365) + (10000 * 1.0 / 100 / 365),
-      6,
-    );
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo((10000 * 2.8) / 100 / 365 + (10000 * 0.9) / 100 / 365, 6);
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo((10000 * 3.0) / 100 / 365 + (10000 * 1.0) / 100 / 365, 6);
     expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
-      metrics.usdPerDayMetric!.after - metrics.usdPerDayMetric!.current,
+      metrics.usdPerDayMetric!.after! - metrics.usdPerDayMetric!.current!,
       6,
     );
   });
@@ -1050,14 +1246,8 @@ describe('buildMetricsFromLane', () => {
   it('computes usdPerDayMetric current with walletUsd (stock-flow separation)', () => {
     const lane = makeLane();
     const metrics = buildMetricsFromLane(lane, 'supply', 15000, false, 10000);
-    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
-      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
-      6,
-    );
-    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      (15000 * 3.0 / 100 / 365) + (15000 * 1.0 / 100 / 365),
-      6,
-    );
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo((10000 * 2.8) / 100 / 365 + (10000 * 0.9) / 100 / 365, 6);
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo((15000 * 3.0) / 100 / 365 + (15000 * 1.0) / 100 / 365, 6);
     expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
       metrics.usdPerDayMetric!.after! - metrics.usdPerDayMetric!.current!,
       6,
@@ -1065,30 +1255,32 @@ describe('buildMetricsFromLane', () => {
   });
 
   it('computes usdPerDayMetric delta reflecting both rate and position change', () => {
-    const lane = makeLane({ afterNative: 2.8, afterIncentive: 0.9, afterTotal: 3.7, deltaNative: 0, deltaIncentive: 0, deltaTotal: 0 });
+    const lane = makeLane({
+      afterNative: 2.8,
+      afterIncentive: 0.9,
+      afterTotal: 3.7,
+      deltaNative: 0,
+      deltaIncentive: 0,
+      deltaTotal: 0,
+    });
     const metrics = buildMetricsFromLane(lane, 'supply', 15000, false, 10000);
-    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
-      (10000 * 2.8 / 100 / 365) + (10000 * 0.9 / 100 / 365),
-      6,
-    );
-    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      (15000 * 2.8 / 100 / 365) + (15000 * 0.9 / 100 / 365),
-      6,
-    );
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo((10000 * 2.8) / 100 / 365 + (10000 * 0.9) / 100 / 365, 6);
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo((15000 * 2.8) / 100 / 365 + (15000 * 0.9) / 100 / 365, 6);
     expect(metrics.usdPerDayMetric!.delta).toBeGreaterThan(0);
   });
 
   it('computes borrow usdPerDayMetric with walletUsd', () => {
-    const lane = makeLane({ currentNative: 5, afterNative: 6, deltaNative: 1, currentIncentive: 0.5, afterIncentive: 0.6, deltaIncentive: 0.1 });
+    const lane = makeLane({
+      currentNative: 5,
+      afterNative: 6,
+      deltaNative: 1,
+      currentIncentive: 0.5,
+      afterIncentive: 0.6,
+      deltaIncentive: 0.1,
+    });
     const metrics = buildMetricsFromLane(lane, 'borrow', 15000, false, 10000);
-    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(
-      -(10000 * 5 / 100 / 365) + (10000 * 0.5 / 100 / 365),
-      6,
-    );
-    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      -(15000 * 6 / 100 / 365) + (15000 * 0.6 / 100 / 365),
-      6,
-    );
+    expect(metrics.usdPerDayMetric!.current).toBeCloseTo(-((10000 * 5) / 100 / 365) + (10000 * 0.5) / 100 / 365, 6);
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(-((15000 * 6) / 100 / 365) + (15000 * 0.6) / 100 / 365, 6);
   });
 
   it('handles null native rates in usdPerDayMetric', () => {
@@ -1109,28 +1301,22 @@ describe('buildMetricsFromLane', () => {
       deltaTotal: -0.9,
     });
     const metrics = buildMetricsFromLane(lane, 'supply', 10000);
-    expect(metrics.incentiveMetric.current).toBe(0.9);
-    expect(metrics.incentiveMetric.after).toBe(0);
-    expect(metrics.incentiveMetric.delta).toBe(-0.3);
-    expect(metrics.totalMetric.current).toBe(3.7);
-    expect(metrics.totalMetric.after).toBe(2.8);
-    expect(metrics.totalMetric.delta).toBe(-0.9);
-    expect(metrics.usdPerDayMetric.after).not.toBeNull();
-    expect(metrics.usdPerDayMetric.delta).not.toBeNull();
+    expect(metrics.incentiveMetric!.current).toBe(0.9);
+    expect(metrics.incentiveMetric!.after).toBe(0);
+    expect(metrics.incentiveMetric!.delta).toBe(-0.3);
+    expect(metrics.totalMetric!.current).toBe(3.7);
+    expect(metrics.totalMetric!.after).toBe(2.8);
+    expect(metrics.totalMetric!.delta).toBe(-0.9);
+    expect(metrics.usdPerDayMetric!.after).not.toBeNull();
+    expect(metrics.usdPerDayMetric!.delta).not.toBeNull();
   });
 
   it('computes usdPerDayMetric with walletUsd=0 for manual entry (no wallet)', () => {
     const lane = makeLane();
     const metrics = buildMetricsFromLane(lane, 'supply', 10000, false, 0);
     expect(metrics.usdPerDayMetric!.current).toBe(0);
-    expect(metrics.usdPerDayMetric!.after).toBeCloseTo(
-      (10000 * 3.0 / 100 / 365) + (10000 * 1.0 / 100 / 365),
-      6,
-    );
-    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(
-      metrics.usdPerDayMetric!.after!,
-      6,
-    );
+    expect(metrics.usdPerDayMetric!.after).toBeCloseTo((10000 * 3.0) / 100 / 365 + (10000 * 1.0) / 100 / 365, 6);
+    expect(metrics.usdPerDayMetric!.delta).toBeCloseTo(metrics.usdPerDayMetric!.after!, 6);
   });
 });
 
@@ -1146,7 +1332,10 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S1: borrow within LTV limit → no clamp', () => {
     const reserve = makeRateCalcReserve({ ltv: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const borrow = findBorrow(results, 'r-usdc-v3');
@@ -1158,9 +1347,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S2: borrow exceeds LTV → clamped to maxBorrow', () => {
     const reserve = makeRateCalcReserve({ ltv: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     expect(borrow.amountUsd).toBe(8000);
     expect(borrow.ltvClampedUsd).toBe(8000);
@@ -1172,7 +1366,9 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
     const entries = [
       makeEntry({ supply: { ...emptySide }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     expect(borrow.amountUsd).toBe(0);
     expect(borrow.ltvClampedUsd).toBe(0);
@@ -1182,9 +1378,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S4: ltv=0 (frozen) → maxBorrow=0', () => {
     const reserve = makeRateCalcReserve({ ltv: 0 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '1000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     expect(borrow.amountUsd).toBe(0);
     expect(borrow.ltvClampedUsd).toBe(0);
@@ -1194,9 +1395,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S5: ltv=undefined → maxBorrow=0', () => {
     const reserve = makeRateCalcReserve({ ltv: undefined });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '1000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     expect(borrow.amountUsd).toBe(0);
     expect(borrow.ltvClampedUsd).toBe(0);
@@ -1204,13 +1410,44 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S6: Same pool two reserves, second exceeds remaining
   it('S6: same pool two reserves, borrow exceeds group maxBorrow', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1, tokenPrice: 3000 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-weth',
+      tokenSymbol: 'WETH',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+      tokenPrice: 3000,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '13000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-weth',
+        tokenSymbol: 'WETH',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '13000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-weth' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-weth' }),
+    );
     const borrow = findBorrow(results, 'r-weth');
     // group maxBorrow = 10k*0.8 + 5k*0.8 = 12k
     expect(borrow.amountUsd).toBe(12000);
@@ -1219,13 +1456,43 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S7: Different pool two reserves, independent
   it('S7: different pool → isolation, each independent', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }),
+    );
     const borrow = findBorrow(results, 'r-b');
     // pool B maxBorrow = 10k * 0.8 = 8k
     expect(borrow.amountUsd).toBe(8000);
@@ -1234,13 +1501,43 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S8: Same pool two borrow entries, lastModified gets remaining
   it('S8: lastModified entry gets remaining after non-last entries', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-usdt',
+      tokenSymbol: 'USDT',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-usdt',
+        tokenSymbol: 'USDT',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { ...emptySide },
+        borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-usdt' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-usdt' }),
+    );
     const borrowR1 = findBorrow(results, 'r-usdc');
     const borrowR2 = findBorrow(results, 'r-usdt');
     // group maxBorrow = 10k * 0.8 = 8k; r1 non-last gets full 3k; r2 gets 5k remaining
@@ -1260,9 +1557,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
       liquidity: '5000000000',
     });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '7000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '7000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // maxBorrow = 8k, borrowCapRoom = 5k, userInput = 7k → min = 5k (borrowCap binds)
     expect(borrow.amountUsd).toBe(5000);
@@ -1279,9 +1581,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
       liquidity: '15000000000',
     });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // maxBorrow = 8k, borrowCapRoom = 15k, userInput = 9k → min = 8k (LTV binds)
     expect(borrow.amountUsd).toBe(8000);
@@ -1298,9 +1605,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
       liquidity: '5000000000',
     });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '15000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '15000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // maxBorrow = 8k, borrowCapRoom = 5k, userInput = 15k → min = 5k (borrowCap binds)
     // LTV would clamp to 8k, so ltvClampedUsd = 8k
@@ -1310,13 +1622,43 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S12: V4 same chain different spoke → isolated
   it('S12: V4 same chain different spoke → isolation', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV4EthereumHub_usdt', chainId: 1 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-spoke-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV4EthereumHub_usdc',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-spoke-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV4EthereumHub_usdt',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdt', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-spoke-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdc',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-spoke-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdt',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-spoke-b' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-spoke-b' }),
+    );
     const borrow = findBorrow(results, 'r-spoke-b');
     // spoke B maxBorrow = 10k * 0.8 = 8k
     expect(borrow.amountUsd).toBe(8000);
@@ -1327,9 +1669,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S13: wallet + delta → total position basis for maxBorrow', () => {
     const reserve = makeRateCalcReserve({ ltv: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: 5000 }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: 5000 },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // total supply = 10k (wallet 5k + delta 5k), maxBorrow = 8k
     expect(borrow.amountUsd).toBe(8000);
@@ -1340,10 +1687,20 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S14: same reserve multiple entries → aggregated supply for maxBorrow', () => {
     const reserve = makeRateCalcReserve({ ltv: 80 });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-usdc-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc-v3',
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-usdc-v3',
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // aggregated supply = 10k, maxBorrow = 8k
     expect(borrow.amountUsd).toBe(8000);
@@ -1354,9 +1711,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S15: negative supply delta → reduced collateral for maxBorrow', () => {
     const reserve = makeRateCalcReserve({ ltv: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 10000 }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '5000', inputMode: 'usd', walletValue: 10000 },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     // effective supply = 5k (wallet 10k - delta 5k), maxBorrow = 4k
     expect(borrow.amountUsd).toBe(4000);
@@ -1365,11 +1727,39 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S16: lastModifiedReserveId empty → sequential fallback
   it('S16: no lastModifiedReserveId → sequential fallback (first gets full, second gets remaining)', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-usdt',
+      tokenSymbol: 'USDT',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-usdt',
+        tokenSymbol: 'USDT',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { ...emptySide },
+        borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2] }));
     const borrowR1 = findBorrow(results, 'r-usdc');
@@ -1383,14 +1773,44 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S17: lastModified not in current group → group-level fallback
   it('S17: lastModified in different pool → this pool uses sequential fallback', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { ...emptySide }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { ...emptySide },
+        borrow: { ...emptySide },
+      }),
     ];
     // lastModified is r-b (pool B), but pool A has the over-limit borrow
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }),
+    );
     const borrow = findBorrow(results, 'r-a');
     // pool A: only r-a, sequential → r-a gets min(9k, 8k) = 8k
     expect(borrow.amountUsd).toBe(8000);
@@ -1401,9 +1821,14 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
   it('S18: 100% LTV → maxBorrow = full supply, no clamp', () => {
     const reserve = makeRateCalcReserve({ ltv: 100 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const borrow = findBorrow(results, 'r-usdc-v3');
     expect(borrow.amountUsd).toBe(10000);
     expect(borrow.ltvClampedUsd).toBeUndefined();
@@ -1411,13 +1836,43 @@ describe('LTV maxBorrow constraint (AAV-1250)', () => {
 
   // S19: Multiple groups simultaneously over limit → parallel safety
   it('S19: multiple groups over limit → independent clamping', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { results } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-a' }));
+    const { results } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-a' }),
+    );
     const borrowA = findBorrow(results, 'r-a');
     const borrowB = findBorrow(results, 'r-b');
     // both pools: maxBorrow = 8k, borrow 9k → clamp to 8k each
@@ -1440,7 +1895,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
   it('H1: single reserve, normal HF', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1473,7 +1931,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
   it('H4: liquidationThreshold=undefined → HF = 0', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: undefined });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1486,9 +1947,14 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const reserve = makeRateCalcReserve({ ltv: 75, liquidationThreshold: 80 });
     const entries = [
       // maxBorrow = 10000 × 0.75 = 7500, borrow at maxBorrow
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '7500', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '7500', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     // HF = (10000 × 0.8) / 7500 = 1.0667
     expect(hf.healthFactor).toBeCloseTo(1.0667, 3);
@@ -1499,20 +1965,56 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
       // maxBorrow = 10000 × 0.8 = 8000, borrow at maxBorrow
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '8000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '8000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.healthFactor).toBeCloseTo(1.0, 10);
   });
 
   // H7: Same pool two reserves → aggregated HF
   it('H7: same pool two reserves → aggregated HF', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1, tokenPrice: 3000 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-weth',
+      tokenSymbol: 'WETH',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+      tokenPrice: 3000,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-weth',
+        tokenSymbol: 'WETH',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1524,13 +2026,45 @@ describe('Health Factor calculation (AAV-1251)', () => {
 
   // H8: Different pool → isolation, each independent
   it('H8: different pool → isolation', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '8000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '8000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-b' }),
+    );
     const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
     const hfB = findHF(healthFactors, '137:AaveV3Polygon');
     expect(hfA.healthFactor).toBeNull(); // no borrow
@@ -1539,13 +2073,45 @@ describe('Health Factor calculation (AAV-1251)', () => {
 
   // H9: V4 same chain different spoke → isolation
   it('H9: V4 same chain different spoke → isolation', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdt', chainId: 1 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-spoke-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV4EthereumHub_usdc',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-spoke-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV4EthereumHub_usdt',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdt', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '8000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-spoke-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdc',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-spoke-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdt',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '8000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-spoke-b' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], lastModifiedReserveId: 'r-spoke-b' }),
+    );
     const hfA = findHF(healthFactors, '1:AaveV4EthereumHub_usdc');
     const hfB = findHF(healthFactors, '1:AaveV4EthereumHub_usdt');
     expect(hfA.healthFactor).toBeNull();
@@ -1557,7 +2123,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
       // wallet supply 5000 + delta +5000 → total supply 10000
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: 5000 }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: 5000 },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1570,7 +2139,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
       // wallet supply 10000, delta -5000 → effective supply = 5000
-      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: 10000 }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '5000', inputMode: 'usd', walletValue: 10000 },
+        borrow: { amount: '3000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1583,9 +2155,14 @@ describe('Health Factor calculation (AAV-1251)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
       // supply 10000, borrow 9000 → LTV clamps to 8000
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     // HF = (10000×0.8)/8000 = 1.0 (borrow was clamped from 9k to 8k)
     expect(hf.healthFactor).toBeCloseTo(1.0, 10);
@@ -1593,11 +2170,41 @@ describe('Health Factor calculation (AAV-1251)', () => {
 
   // H13: Multiple groups with borrow → each independent
   it('H13: multiple groups with borrow → each independent', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB] }));
     const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1611,7 +2218,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
   it('H14: 100% LT asset → HF = 2.0', () => {
     const reserve = makeRateCalcReserve({ ltv: 100, liquidationThreshold: 100 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1622,17 +2232,23 @@ describe('Health Factor calculation (AAV-1251)', () => {
   // H15: borrow clamped by multiple constraints → HF uses final effective amount
   it('H15: borrow clamped by borrowCap < maxBorrow → HF uses effective', () => {
     const reserve = makeRateCalcReserve({
-      ltv: 80, liquidationThreshold: 80,
+      ltv: 80,
+      liquidationThreshold: 80,
       // borrowCap room = borrowCap - borrowed = 80000 - 75000 = 5000 (in native)
       // In USD: borrowCap = 80000 / 1e6 * 1 = 0.08 → but makeRateCalcReserve uses raw values
       // Let's use a very low borrowCap to make borrowCap bind
       borrowCap: '6000000', // 6 USDC in native (6 decimals) → but simulation uses USD
-      borrowed: '1000000',  // 1 USDC borrowed
+      borrowed: '1000000', // 1 USDC borrowed
     });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '9000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '9000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], lastModifiedReserveId: 'r-usdc-v3' }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     // LTV would clamp to 8000, but borrowCap is very small
     // Either way, HF = totalCollateral / effectiveBorrow
@@ -1647,13 +2263,45 @@ describe('Health Factor calculation (AAV-1251)', () => {
 
   // H16: Two supply one borrow same pool → aggregation correct
   it('H16: two supply one borrow same pool → aggregated HF', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-usdt',
+      tokenSymbol: 'USDT',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-usdt',
+        tokenSymbol: 'USDT',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-usdt' }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [r1, r2], lastModifiedReserveId: 'r-usdt' }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     // totalCollateral = (5000×0.8 + 5000×0.8) = 8000, totalDebt = 4000
     // HF = 8000/4000 = 2.0
@@ -1665,7 +2313,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
   it('BC1: totalBorrowCapacityUsd = Σ(supplyUsd × ltv / 100)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1676,7 +2327,10 @@ describe('Health Factor calculation (AAV-1251)', () => {
   it('BC2: ltv=undefined → totalBorrowCapacityUsd = 0', () => {
     const reserve = makeRateCalcReserve({ ltv: undefined, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1684,11 +2338,41 @@ describe('Health Factor calculation (AAV-1251)', () => {
   });
 
   it('BC3: multiple supply reserves → aggregated capacity', () => {
-    const r1 = makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const r2 = makeRateCalcReserve({ reserveId: 'r-usdt', tokenSymbol: 'USDT', ltv: 75, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
+    const r1 = makeRateCalcReserve({
+      reserveId: 'r-usdc',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const r2 = makeRateCalcReserve({
+      reserveId: 'r-usdt',
+      tokenSymbol: 'USDT',
+      ltv: 75,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-usdt', tokenSymbol: 'USDT', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-usdc',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-usdt',
+        tokenSymbol: 'USDT',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [r1, r2] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1697,11 +2381,41 @@ describe('Health Factor calculation (AAV-1251)', () => {
   });
 
   it('BC4: different pools → independent capacity', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB] }));
     const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1722,14 +2436,17 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C1: onchainHfMap provided → currentHealthFactor and deltaHealthFactor populated', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Simulated HF = (10000 × 0.8) / 5000 = 1.6
     // On-chain HF = 1.8
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 1.8 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 1.8 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.healthFactor).toBeCloseTo(1.6, 5);
     expect(hf.currentHealthFactor).toBeCloseTo(1.8, 5);
@@ -1743,10 +2460,10 @@ describe('On-chain HF baseline (AAV-1253)', () => {
       makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     // On-chain HF = null (no debt → max uint256 → null)
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: null }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: null }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.healthFactor).toBeNull();
     expect(hf.currentHealthFactor).toBeNull();
@@ -1757,7 +2474,10 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C3: onchainHfMap undefined → currentHealthFactor = null, healthFactor normal', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1770,7 +2490,10 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C4: no wallet → currentHealthFactor = null', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve] }));
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1782,13 +2505,16 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C6: poolKey not in onchainHfMap → currentHealthFactor = null', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Map has a different poolKey
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['999:UnknownMarket', { healthFactor: 1.5 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['999:UnknownMarket', { healthFactor: 1.5 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.healthFactor).toBeCloseTo(1.6, 5);
     expect(hf.currentHealthFactor).toBeNull();
@@ -1797,17 +2523,47 @@ describe('On-chain HF baseline (AAV-1253)', () => {
 
   // C8: multi-pool, partial on-chain data
   it('C8: multi-pool with partial on-chain data → mixed current/delta', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'USDC', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Only pool A has on-chain data, pool B's RPC failed
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 1.7 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }),
+    );
     const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
     const hfB = findHF(healthFactors, '137:AaveV3Polygon');
     // A: after=1.6, current=1.7, delta=-0.1
@@ -1824,13 +2580,16 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C9: delta = 0 when after === current', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Simulated HF = 1.6, on-chain HF = 1.6 → delta = 0
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 1.6 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 1.6 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.deltaHealthFactor).toBeCloseTo(0, 10);
   });
@@ -1839,13 +2598,16 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C11: delta > 0 when after > current', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Simulated HF = 1.6, on-chain HF = 1.2 → delta = 0.4 (improved)
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 1.2 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 1.2 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.deltaHealthFactor).toBeCloseTo(0.4, 5);
   });
@@ -1854,20 +2616,23 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   it('C12: delta < 0 when after < current', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Simulated HF = 1.6, on-chain HF = 2.0 → delta = -0.4 (worsened)
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 2.0 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 2.0 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.deltaHealthFactor).toBeCloseTo(-0.4, 5);
   });
 
   // C13/C14: wadToHf with max uint256 → null
   it('C13: wadToHf(max uint256) → null (no debt)', () => {
-    const MAX_UINT256 = (2n ** 256n) - 1n;
+    const MAX_UINT256 = 2n ** 256n - 1n;
     expect(wadToHf(MAX_UINT256)).toBeNull();
   });
 
@@ -1881,17 +2646,49 @@ describe('On-chain HF baseline (AAV-1253)', () => {
 
   // C18: two V4 spokes same chain → independent poolKeys, each with own current/delta
   it('C18: two V4 spokes same chain → independent current/delta', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdt', chainId: 1 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-spoke-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV4EthereumHub_usdc',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-spoke-b',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV4EthereumHub_usdt',
+      chainId: 1,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-spoke-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-spoke-b', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdt', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-spoke-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdc',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-spoke-b',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdt',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const onchainHfMap: OnchainHfMap = new Map([
       ['1:AaveV4EthereumHub_usdc', { healthFactor: 1.5 }],
       ['1:AaveV4EthereumHub_usdt', { healthFactor: 2.5 }],
     ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }),
+    );
     const hfA = findHF(healthFactors, '1:AaveV4EthereumHub_usdc');
     const hfB = findHF(healthFactors, '1:AaveV4EthereumHub_usdt');
     // A: after=1.6, current=1.5, delta=0.1
@@ -1907,13 +2704,16 @@ describe('On-chain HF baseline (AAV-1253)', () => {
     const reserve = makeRateCalcReserve({ ltv: 80, liquidationThreshold: 80 });
     // Simulated HF = (10000 × 0.8) / 5000 = 1.6
     const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // On-chain HF = 1.5999 → delta = 0.0001 (tiny)
-    const onchainHfMap: OnchainHfMap = new Map([
-      ['1:AaveV3Ethereum', { healthFactor: 1.5999 }],
-    ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }));
+    const onchainHfMap: OnchainHfMap = new Map([['1:AaveV3Ethereum', { healthFactor: 1.5999 }]]);
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [reserve], onchainHfMap }),
+    );
     const hf = findHF(healthFactors, '1:AaveV3Ethereum');
     expect(hf.deltaHealthFactor).toBeCloseTo(0.0001, 4);
     // Verify via getLowestHfDelta that direction is 'flat'
@@ -1923,20 +2723,52 @@ describe('On-chain HF baseline (AAV-1253)', () => {
 
   // C15: V3-only wallet positions — V3 pool has current/delta, no V4 pool appears
   it('C15: only V3 entries → only V3 pool has current/delta, no V4 pool', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-v3-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-v3-b', tokenSymbol: 'WETH', ltv: 82, liquidationThreshold: 82, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-v3-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-v3-b',
+      tokenSymbol: 'WETH',
+      ltv: 82,
+      liquidationThreshold: 82,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-v3-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-v3-b', tokenSymbol: 'WETH', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '8000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-v3-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-v3-b',
+        tokenSymbol: 'WETH',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '8000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const onchainHfMap: OnchainHfMap = new Map([
       ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
       ['137:AaveV3Polygon', { healthFactor: 2.1 }],
     ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }),
+    );
     // Only 2 V3 pools, no V4
     expect(healthFactors).toHaveLength(2);
-    const poolKeys = healthFactors!.map(h => h.poolKey).sort();
+    const poolKeys = healthFactors!.map((h) => h.poolKey).sort();
     expect(poolKeys).toEqual(['137:AaveV3Polygon', '1:AaveV3Ethereum']);
     // Both have current/delta
     const hfA = findHF(healthFactors, '1:AaveV3Ethereum');
@@ -1947,20 +2779,54 @@ describe('On-chain HF baseline (AAV-1253)', () => {
 
   // C16: V4-only wallet positions — V4 pools have current/delta, no V3 pool appears
   it('C16: only V4 entries → only V4 pools have current/delta, no V3 pool', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-v4-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV4EthereumHub_usdc', chainId: 1, spokeAddress: '0xabc0000000000000000000000000000000000001' });
-    const rB = makeRateCalcReserve({ reserveId: 'r-v4-b', tokenSymbol: 'WETH', ltv: 82, liquidationThreshold: 82, marketName: 'AaveV4EthereumHub_weth', chainId: 1, spokeAddress: '0xabc0000000000000000000000000000000000002' });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-v4-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV4EthereumHub_usdc',
+      chainId: 1,
+      spokeAddress: '0xabc0000000000000000000000000000000000001',
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-v4-b',
+      tokenSymbol: 'WETH',
+      ltv: 82,
+      liquidationThreshold: 82,
+      marketName: 'AaveV4EthereumHub_weth',
+      chainId: 1,
+      spokeAddress: '0xabc0000000000000000000000000000000000002',
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-v4-a', tokenSymbol: 'USDC', marketName: 'AaveV4EthereumHub_usdc', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-v4-b', tokenSymbol: 'WETH', marketName: 'AaveV4EthereumHub_weth', chainName: 'Ethereum', chainId: 1, supply: { amount: '8000', inputMode: 'usd', walletValue: null }, borrow: { amount: '4000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-v4-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV4EthereumHub_usdc',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-v4-b',
+        tokenSymbol: 'WETH',
+        marketName: 'AaveV4EthereumHub_weth',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '8000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '4000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     const onchainHfMap: OnchainHfMap = new Map([
       ['1:AaveV4EthereumHub_usdc', { healthFactor: 1.5 }],
       ['1:AaveV4EthereumHub_weth', { healthFactor: 2.5 }],
     ]);
-    const { healthFactors } = simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }));
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [rA, rB], onchainHfMap }),
+    );
     // Only 2 V4 pools, no V3
     expect(healthFactors).toHaveLength(2);
-    const poolKeys = healthFactors!.map(h => h.poolKey).sort();
+    const poolKeys = healthFactors!.map((h) => h.poolKey).sort();
     expect(poolKeys).toEqual(['1:AaveV4EthereumHub_usdc', '1:AaveV4EthereumHub_weth']);
     // Both have current/delta
     const hfA = findHF(healthFactors, '1:AaveV4EthereumHub_usdc');
@@ -1973,27 +2839,63 @@ describe('On-chain HF baseline (AAV-1253)', () => {
   // (Semantic: wallet was connected then disconnected. At simulator level, same as C4
   //  but tested with multi-pool to ensure ALL pools lose their baseline.)
   it('C19: wallet disconnect (onchainHfMap = undefined) → all pools lose current/delta', () => {
-    const rA = makeRateCalcReserve({ reserveId: 'r-a', tokenSymbol: 'USDC', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Ethereum', chainId: 1 });
-    const rB = makeRateCalcReserve({ reserveId: 'r-b', tokenSymbol: 'WETH', ltv: 80, liquidationThreshold: 80, marketName: 'AaveV3Polygon', chainId: 137 });
+    const rA = makeRateCalcReserve({
+      reserveId: 'r-a',
+      tokenSymbol: 'USDC',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+    });
+    const rB = makeRateCalcReserve({
+      reserveId: 'r-b',
+      tokenSymbol: 'WETH',
+      ltv: 80,
+      liquidationThreshold: 80,
+      marketName: 'AaveV3Polygon',
+      chainId: 137,
+    });
     const entries = [
-      makeEntry({ reserveId: 'r-a', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-      makeEntry({ reserveId: 'r-b', tokenSymbol: 'WETH', marketName: 'AaveV3Polygon', chainName: 'Polygon', chainId: 137, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+      makeEntry({
+        reserveId: 'r-a',
+        tokenSymbol: 'USDC',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: 'r-b',
+        tokenSymbol: 'WETH',
+        marketName: 'AaveV3Polygon',
+        chainName: 'Polygon',
+        chainId: 137,
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
+      }),
     ];
     // Before disconnect: had on-chain data
-    const withWallet = simulatePortfolioFromEntries(baseEntriesSimArgs({
-      entries, reserves: [rA, rB],
-      onchainHfMap: new Map([
-        ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
-        ['137:AaveV3Polygon', { healthFactor: 2.1 }],
-      ]),
-    }));
+    const withWallet = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({
+        entries,
+        reserves: [rA, rB],
+        onchainHfMap: new Map([
+          ['1:AaveV3Ethereum', { healthFactor: 1.7 }],
+          ['137:AaveV3Polygon', { healthFactor: 2.1 }],
+        ]),
+      }),
+    );
     expect(findHF(withWallet.healthFactors, '1:AaveV3Ethereum').currentHealthFactor).toBeCloseTo(1.7, 5);
 
     // After disconnect: onchainHfMap = undefined
-    const afterDisconnect = simulatePortfolioFromEntries(baseEntriesSimArgs({
-      entries, reserves: [rA, rB],
-      // onchainHfMap intentionally omitted — simulates wallet disconnect
-    }));
+    const afterDisconnect = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({
+        entries,
+        reserves: [rA, rB],
+        // onchainHfMap intentionally omitted — simulates wallet disconnect
+      }),
+    );
     const hfA = findHF(afterDisconnect.healthFactors, '1:AaveV3Ethereum');
     const hfB = findHF(afterDisconnect.healthFactors, '137:AaveV3Polygon');
     expect(hfA.currentHealthFactor).toBeNull();

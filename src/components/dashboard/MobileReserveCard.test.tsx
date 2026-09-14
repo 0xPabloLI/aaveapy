@@ -266,7 +266,7 @@ describe('MobileReserveCard', () => {
 
     const utilTrigger = getByLabelText('Show utilization details');
     const utilValue = utilTrigger.querySelector('.ds-text-11');
-    expect(utilValue).not.toBeNull();
+    if (!utilValue) throw new Error('Expected utilization trigger to contain a .ds-text-11 element');
     expect(utilValue.textContent).toContain('52');
     expect(utilValue.className).toContain('text-foreground');
     expect(utilValue.className).not.toContain('text-amber-600');
@@ -1337,10 +1337,7 @@ describe('MobileReserveCard', () => {
   });
 
   it('uses active: instead of hover: for all interactive elements (mobile no-hover rule)', () => {
-    const source = fs.readFileSync(
-      path.resolve(__dirname, 'MobileReserveCard.tsx'),
-      'utf8',
-    );
+    const source = fs.readFileSync(path.resolve(__dirname, 'MobileReserveCard.tsx'), 'utf8');
     const hoverMatches = source.match(/\bhover:[a-z]/g);
     expect(hoverMatches).toBeNull();
   });
