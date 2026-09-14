@@ -1,12 +1,18 @@
 /**
  * Outbound API tracing.
  *
- * The backend (and any intermediary) can correlate a failing request across
- * logs when the client sends `X-Request-ID`. Every API call through
- * `fetchWithTracing` gets a fresh UUID, and failures / slow responses are
- * logged through the structured logger (scrubbed) with the same ID — so a
- * user-visible error message can be traced to exact backend log lines by
- * sharing the request ID.
+ * Every call through `fetchWithTracing` gets a fresh request ID that is
+ * (a) structured-logged with the outcome (path, status, duration) so a
+ * user-visible error can be correlated client-side, and (b) optionally sent
+ * as an `X-Request-ID` header for server-side correlation.
+ *
+ * CORS constraint (why the header is gated): a custom header on a cross-origin
+ * request triggers a preflight OPTIONS. The staging/production APIs allow
+ * `Content-Type, Authorization, X-Admin-Token` only — adding `X-Request-ID`
+ * makes every data request fail ("Failed to fetch"). Header propagation is
+ * therefore enabled per deployment via `VITE_REQUEST_ID_HEADER=true` AFTER the
+ * backend adds the header to its CORS allow-list. Logging-based correlation
+ * works everywhere regardless of the flag.
  */
 import { logger } from '@/lib/logger';
 
@@ -22,8 +28,9 @@ export function newRequestId(): string {
 const SLOW_REQUEST_MS = 8_000;
 
 /**
- * fetch() wrapper that propagates X-Request-ID and structured-logs outcomes.
- * Response semantics are identical to fetch(); only headers/telemetry change.
+ * fetch() wrapper that traces request outcomes (and, when enabled, propagates
+ * X-Request-ID). Response semantics are identical to fetch(); only telemetry
+ * (and optionally headers) change.
  */
 export async function fetchWithTracing(url: string, init?: RequestInit): Promise<Response> {
   const requestId = newRequestId();
@@ -31,11 +38,16 @@ export async function fetchWithTracing(url: string, init?: RequestInit): Promise
   // Splitting URL from base keeps backend logs aligned with the path they see.
   const path = url.replace(/^https?:\/\/[^/]+/, '');
 
+  // Read per call so deployments/tests can toggle via env without remounting.
+  const sendHeader = (import.meta.env.VITE_REQUEST_ID_HEADER as string | undefined) === 'true';
+
+  const headers = new Headers(init?.headers);
+  if (sendHeader) {
+    headers.set('X-Request-ID', requestId);
+  }
+
   try {
-    const response = await fetch(url, {
-      ...init,
-      headers: { 'X-Request-ID': requestId, ...(init?.headers ?? {}) },
-    });
+    const response = await fetch(url, { ...init, headers });
     const durationMs = Date.now() - startedAt;
 
     if (!response.ok) {

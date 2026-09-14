@@ -5,6 +5,7 @@ import {
   fillBorrowAmountMobile,
   fillSupplyAmount,
   getMarketChipLabel,
+  getSupplyRoomUsd,
   readIncentiveAfter,
   setupPortfolioMode,
 } from './test-reserves';
@@ -75,6 +76,10 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
         // AAV-1250: LTV clamping prevents borrow when ltv=0 (frozen/non-collateral)
         // Filter out reserves with ltv=0 or undefined — they can't be borrowed against
         if (!r.ltv || r.ltv === 0) continue;
+        // Zero supply room (cap exhausted by current positions) clamps manual
+        // supply to 0 on commit — baseline-after-incentive would be 0. Skip
+        // when the room is known and exhausted; unknown room stays included.
+        if ((getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) <= 0) continue;
 
         const marketLabel = getMarketChipLabel(r.marketName as string, r.chainName as string);
         const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
@@ -90,6 +95,8 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
           if (offsetReserve.borrowDisabled === true) continue;
           // AAV-1250: offset reserve also needs ltv > 0 for borrow to not be clamped to 0
           if (!offsetReserve.ltv || offsetReserve.ltv === 0) continue;
+          // Offset reserve receives the collateral supply — same zero-room clamp applies
+          if ((getSupplyRoomUsd(offsetReserve) ?? Number.POSITIVE_INFINITY) <= 0) continue;
           scenarios.push({
             type,
             targetSymbol: r.tokenSymbol as string,

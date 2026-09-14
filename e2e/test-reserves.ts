@@ -85,6 +85,37 @@ function hasLtv(r: ReserveData): boolean {
   return typeof ltv === 'number' && ltv > 0;
 }
 
+/**
+ * USD supply room for a reserve — mirrors the app's marketMetrics fallback
+ * (`nativeToUsd(suppliable)` preferred, else `max(supplyCap − supplied, 0)`;
+ * see rateSimulationCalculator.ts availableSupplyRoomUsd).
+ *
+ * Reserves with zero supply room clamp manual positions to 0 on commit
+ * (CompactInput clampFn), which renders every portfolio cell as '—' and makes
+ * incentive assertions meaningless. Discovery helpers use this to prefer
+ * reserves where a manual position can actually be modeled.
+ *
+ * Returns null when the API data is insufficient to determine room, so
+ * callers can treat unknown as "don't exclude" (data-poor fallback).
+ */
+export function getSupplyRoomUsd(r: ReserveData): number | null {
+  const decimals = (r.decimals as number | undefined) ?? 18;
+  const price = r.tokenPrice as number | undefined;
+  if (price == null || !Number.isFinite(price) || price <= 0) return null;
+  const toUsd = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0) return null;
+    return (value / Math.pow(10, decimals)) * price;
+  };
+  const suppliableUsd = toUsd(r.suppliable);
+  if (suppliableUsd !== null) return suppliableUsd;
+  const capUsd = toUsd(r.supplyCap);
+  const suppliedUsd = toUsd(r.supplied);
+  if (capUsd !== null && suppliedUsd !== null) return Math.max(capUsd - suppliedUsd, 0);
+  return null;
+}
+
 function toTestReserve(r: ReserveData): TestReserve {
   return {
     symbol: r.tokenSymbol as string,
@@ -109,7 +140,14 @@ export async function findIncentiveReserve(): Promise<TestReserve | null> {
   const reserves = await fetchReserves();
   const candidates = reserves.filter((r) => isUsableReserve(r) && hasSupplyIncentive(r) && hasLtv(r));
   if (candidates.length === 0) return null;
+  // Prefer reserves with nonzero supply room: cap-exhausted markets clamp any
+  // manual supply to 0, so incentive/total cells render '—' and assertions on
+  // values are untestable. Falls back to all candidates when room is unknown
+  // for every reserve (data-poor API), preserving the old behavior.
+  const withRoom = candidates.filter((r) => (getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) > 0);
   // Sort by ltv descending — higher ltv = more borrowing headroom
+  withRoom.sort((a, b) => (b.ltv as number) - (a.ltv as number));
+  if (withRoom.length > 0) return toTestReserve(withRoom[0]);
   candidates.sort((a, b) => (b.ltv as number) - (a.ltv as number));
   return toTestReserve(candidates[0]);
 }

@@ -20,6 +20,23 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    // Pre-grant analytics consent so the ConsentBanner overlay never
+    // intercepts pointer events in e2e runs (banner behavior itself is
+    // covered by ConsentBanner.test.tsx unit tests + browser verification).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: 'http://127.0.0.1:4173',
+          localStorage: [
+            {
+              name: 'aaveapy:consent-v2',
+              value: JSON.stringify({ analytics: 'granted', respondedAt: '1970-01-01T00:00:00.000Z' }),
+            },
+          ],
+        },
+      ],
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

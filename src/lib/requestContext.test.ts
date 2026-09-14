@@ -17,19 +17,7 @@ describe('newRequestId', () => {
 });
 
 describe('fetchWithTracing', () => {
-  it('propagates X-Request-ID header and returns the response', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    const response = await fetchWithTracing('https://api.example.com/api/markets');
-
-    expect(response.status).toBe(200);
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const headers = init.headers as Record<string, string>;
-    expect(headers['X-Request-ID']).toBeTruthy();
-  });
-
-  it('merges caller headers without clobbering them', async () => {
+  it('does not add headers by default (CORS-safe), caller headers pass through', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -38,9 +26,26 @@ describe('fetchWithTracing', () => {
     });
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const headers = init.headers as Record<string, string>;
-    expect(headers['Accept']).toBe('application/json');
-    expect(headers['X-Request-ID']).toBeTruthy();
+    const headers = new Headers(init.headers);
+    // Custom header would trigger a CORS preflight the backend rejects.
+    expect(headers.has('X-Request-ID')).toBe(false);
+    expect(headers.get('Accept')).toBe('application/json');
+  });
+
+  it('propagates X-Request-ID when VITE_REQUEST_ID_HEADER is enabled', async () => {
+    (import.meta.env as Record<string, unknown>).VITE_REQUEST_ID_HEADER = 'true';
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await fetchWithTracing('https://api.example.com/api/markets', {
+      headers: { Accept: 'application/json' },
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = new Headers(init.headers);
+    expect(headers.get('X-Request-ID')).toBeTruthy();
+    expect(headers.get('Accept')).toBe('application/json');
+    delete (import.meta.env as Record<string, unknown>).VITE_REQUEST_ID_HEADER;
   });
 
   it('logs a warning with request id when the API returns an error status', async () => {
