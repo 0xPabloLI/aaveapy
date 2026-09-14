@@ -1,0 +1,78 @@
+name: 🐛 Bug report
+description: Report incorrect data, a broken interaction, or a rendering problem.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Triage happens in Linear (team **Aaveapy**); a maintainer
+        will sync this issue there. Please fill in every applicable field — agents working
+        on this repo rely on complete reproduction data.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Reserves table / simulation
+        - Portfolio mode
+        - Incentives (Merit / Merkl / Brevis)
+        - Wallet connection / positions
+        - Data (markets / side-data API)
+        - Mobile layout
+        - SEO / landing content
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Expected vs actual behavior. Hard-switch detail, not "it looks wrong".
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open …
+        2. Select chain …
+        3. Toggle …
+    validations:
+      required: true
+  - type: input
+    id: wallet
+    attributes:
+      label: Test wallet address (view-only)
+      description: If the bug involves positions, use a wallet you are comfortable exposing publicly, e.g. the documented test wallet 0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314.
+    validations:
+      required: false
+  - type: dropdown
+    id: chain
+    attributes:
+      label: Chain (if applicable)
+      options:
+        - '-'
+        - Ethereum
+        - Arbitrum
+        - Base
+        - Optimism
+        - Polygon
+        - Avalanche
+        - Other (specify in description)
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Device / browser / viewport (e.g. iPhone 15, Safari, 390px) and production or staging URL.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or console output
+      description: Drag images here. Console errors help agents diagnose data-layer bugs.
+    validations:
+      required: false

@@ -2,6 +2,7 @@
   "$schema": "./node_modules/knip/schema.json",
   "entry": ["src/**/*.test.{ts,tsx}", "e2e/**/*.spec.ts", "scripts/**/*.{ts,mjs}", "supabase/functions/**/index.ts"],
   "project": ["src/**/*.{ts,tsx}", "src/**/*.css", "scripts/**/*.{ts,mjs}"],
-  "include": ["files"],
+  "include": ["files", "dependencies"],
+  "ignoreDependencies": ["@supabase/supabase-js"],
   "ignore": ["src/generated/**", "src/integrations/supabase/**"]
 }

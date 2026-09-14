@@ -1,0 +1,23 @@
+# Release notes automation: keep a continuously updated draft release on main.
+# Every merge to main re-generates the draft with categorized PR notes; a
+# maintainer edits the draft and publishes when deploying to production.
+name: Release notes
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update release draft
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
