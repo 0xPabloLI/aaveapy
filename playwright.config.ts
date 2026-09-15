@@ -4,9 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // api.aave.com from inside the browser. On networks that require proxy
 // egress, run with `E2E_PROXY=http://127.0.0.1:<port>`; Chromium never
 // proxies loopback, so the local dev server is unaffected.
-const browserProxy = process.env.E2E_PROXY
-  ? { proxy: { server: process.env.E2E_PROXY } }
-  : {};
+const browserProxy = process.env.E2E_PROXY ? { proxy: { server: process.env.E2E_PROXY } } : {};
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,6 +20,23 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    // Pre-grant analytics consent so the ConsentBanner overlay never
+    // intercepts pointer events in e2e runs (banner behavior itself is
+    // covered by ConsentBanner.test.tsx unit tests + browser verification).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: 'http://127.0.0.1:4173',
+          localStorage: [
+            {
+              name: 'aaveapy:consent-v2',
+              value: JSON.stringify({ analytics: 'granted', respondedAt: '1970-01-01T00:00:00.000Z' }),
+            },
+          ],
+        },
+      ],
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -48,6 +63,12 @@ export default defineConfig({
       testIgnore: [
         /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
         /reserves-table-simulation-nested-scroll\.spec\.ts/,
+        // RainbowKit's mobile modal only renders wallets passed via its
+        // `wallets` prop, which the app does not configure — the injected
+        // connect list is empty on mobile (existing product behavior, see
+        // docs/specs/e2e-wallet-connect-injected.md). Lifecycle assertions
+        // would fail against an empty modal, so this spec runs desktop-only.
+        /wallet-connect-injected\.spec\.ts/,
       ],
       use: {
         ...devices['Pixel 7'],

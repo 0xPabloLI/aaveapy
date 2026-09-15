@@ -99,16 +99,13 @@ async function createZoneAccessRule({ token, zoneId, cidr }) {
 }
 
 async function deleteZoneAccessRule({ token, zoneId, ruleId }) {
-  return fetchCloudflareJson(
-    `${CLOUDFLARE_API_BASE}/zones/${zoneId}/firewall/access_rules/rules/${ruleId}`,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+  return fetchCloudflareJson(`${CLOUDFLARE_API_BASE}/zones/${zoneId}/firewall/access_rules/rules/${ruleId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-  );
+  });
 }
 
 async function main() {

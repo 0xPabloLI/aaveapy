@@ -16,7 +16,5 @@ export function externalLinkTabProps(isMobile: boolean): {
   target?: '_blank';
   rel: 'noopener noreferrer';
 } {
-  return isMobile
-    ? { rel: 'noopener noreferrer' }
-    : { target: '_blank', rel: 'noopener noreferrer' };
+  return isMobile ? { rel: 'noopener noreferrer' } : { target: '_blank', rel: 'noopener noreferrer' };
 }

@@ -36,10 +36,12 @@ const ReserveIdentity = memo(function ReserveIdentity({
       <div className={cn('flex items-center gap-1.5', className)}>
         <TokenIcon symbol={tokenSymbol} size={tokenIconSize} />
         <div className="flex flex-col min-w-0 leading-tight">
-          <span className={cn(
-            'ds-text-11 font-semibold truncate',
-            disabled ? 'text-muted-foreground line-through' : 'text-foreground',
-          )}>
+          <span
+            className={cn(
+              'ds-text-11 font-semibold truncate',
+              disabled ? 'text-muted-foreground line-through' : 'text-foreground',
+            )}
+          >
             {tokenSymbol}
           </span>
           <span className="ds-text-9 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
@@ -71,10 +73,7 @@ const ReserveIdentity = memo(function ReserveIdentity({
       {hubName != null && (
         <>
           <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
-          <span
-            className={cn('min-w-0 max-w-[40%] shrink', hubChipClass)}
-            title={`Hub: ${hubName}`}
-          >
+          <span className={cn('min-w-0 max-w-[40%] shrink', hubChipClass)} title={`Hub: ${hubName}`}>
             <span className="truncate">{hubName}</span>
           </span>
         </>

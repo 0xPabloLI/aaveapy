@@ -43,8 +43,13 @@ dist-ssr
 # Test artifacts
 playwright-report/
 test-results/
+coverage/
+public/health.json
 .playwright-mcp/
 .playwright-cli/
+
+# Mimosa security scanner local runtime state
+.mimosa/
 
 # Cursor local state
 .cursor/hooks/state/continual-learning.json

@@ -44,11 +44,7 @@ const normalizeDecimals = (value: number | null | undefined): number => {
   return Math.min(Math.max(normalized, 0), 36);
 };
 
-const unitsToDecimalString = (
-  rawAmount: bigint,
-  decimals: number,
-  maxFractionDigits?: number
-): string => {
+const unitsToDecimalString = (rawAmount: bigint, decimals: number, maxFractionDigits?: number): string => {
   if (decimals <= 0) return rawAmount.toString();
 
   const base = 10n ** BigInt(decimals);
@@ -74,7 +70,7 @@ export const hasReserveDeficit = (reserve: Pick<ReserveWithSpread, 'deficit'>): 
 
 export const formatReserveDeficitTokenExact = (
   reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>,
-  maxFractionDigits: number = TOKEN_DECIMAL_PREVIEW
+  maxFractionDigits: number = TOKEN_DECIMAL_PREVIEW,
 ): string => {
   const raw = parseNonNegativeBigInt(reserve.deficit);
   if (raw == null || raw <= 0n) return '-';
@@ -82,16 +78,14 @@ export const formatReserveDeficitTokenExact = (
   return unitsToDecimalString(raw, decimals, maxFractionDigits);
 };
 
-export const formatReserveDeficitTokenCompact = (
-  reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>
-): string => {
+export const formatReserveDeficitTokenCompact = (reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>): string => {
   const tokenAmount = getReserveDeficitTokenAmount(reserve);
   if (!isPositiveFinite(tokenAmount)) return '-';
   return formatReserveSizeToken(tokenAmount);
 };
 
 export const getReserveDeficitTokenAmount = (
-  reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>
+  reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>,
 ): number | null => {
   const raw = parseNonNegativeBigInt(reserve.deficit);
   if (raw == null || raw <= 0n) return null;
@@ -101,7 +95,7 @@ export const getReserveDeficitTokenAmount = (
 
 export const getReserveDeficitUsdAmount = (
   reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>,
-  tokenPrice: number | null | undefined
+  tokenPrice: number | null | undefined,
 ): number | null => {
   const tokenAmount = getReserveDeficitTokenAmount(reserve);
   if (!isPositiveFinite(tokenAmount) || !isPositiveFinite(tokenPrice)) return null;
@@ -121,9 +115,7 @@ export const calculateDeficitShareRatio = ({
   return deficitUsd / denominator;
 };
 
-export const getDeficitSeverity = (
-  ratio: number | null | undefined
-): DeficitSeverity => {
+export const getDeficitSeverity = (ratio: number | null | undefined): DeficitSeverity => {
   if (ratio == null || !Number.isFinite(ratio)) return 'neutral';
   if (ratio >= DEFICIT_CRITICAL_RATIO) return 'critical';
   if (ratio >= DEFICIT_WARNING_RATIO) return 'warning';
@@ -146,9 +138,12 @@ export function computeDeficitDisplay(
   const deficitUsd = getReserveDeficitUsdAmount(reserve, tokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
-  const deficitInlineValue = inputMode === 'usd'
-    ? (hasDeficit ? formatScenarioSize(deficitUsd!, { inputMode: 'usd' }) : '-')
-    : deficitTokenCompact;
+  const deficitInlineValue =
+    inputMode === 'usd'
+      ? hasDeficit
+        ? formatScenarioSize(deficitUsd!, { inputMode: 'usd' })
+        : '-'
+      : deficitTokenCompact;
   const deficitShareRatio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
   const deficitSeverity = getDeficitSeverity(deficitShareRatio);
   const isNeutralDeficit = deficitSeverity === 'neutral';
@@ -168,7 +163,7 @@ export function computeDeficitDisplay(
 export const formatReserveDeficitModeValue = (
   reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals' | 'tokenSymbol'>,
   mode: ScenarioMode,
-  tokenPrice: number | null | undefined
+  tokenPrice: number | null | undefined,
 ): string => {
   const tokenAmount = getReserveDeficitTokenAmount(reserve);
   if (!isPositiveFinite(tokenAmount)) return '-';

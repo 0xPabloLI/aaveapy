@@ -31,7 +31,11 @@ export function computeCursorAfterSanitize(
   wasNegative: boolean,
 ): number {
   if (wasNegative) return 1;
-  const prefixBeforeCursor = oldRaw.slice(0, cursorPos).replace(/,/g, '').replace(/[。．｡]/g, '.').replace(/[^\d.]/g, '');
+  const prefixBeforeCursor = oldRaw
+    .slice(0, cursorPos)
+    .replace(/,/g, '')
+    .replace(/[。．｡]/g, '.')
+    .replace(/[^\d.]/g, '');
   if (oldRaw.startsWith('.') && cursorPos <= 1) {
     return sanitized.startsWith('0.') ? Math.min(cursorPos + 1, sanitized.length) : cursorPos;
   }
@@ -42,18 +46,12 @@ export function computeCursorAfterSanitize(
   return Math.min(prefixBeforeCursor.length, sanitized.length);
 }
 
-export function computeCursorAfterFormat(
-  sanitized: string,
-  formatted: string,
-  cursorInSanitized: number,
-): number {
+export function computeCursorAfterFormat(sanitized: string, formatted: string, cursorInSanitized: number): number {
   if (cursorInSanitized === 0) return 0;
   cursorInSanitized = Math.min(cursorInSanitized, sanitized.length);
   const dotIndex = sanitized.indexOf('.');
   const hasDecimal = dotIndex !== -1;
-  const digitsBeforeCursorInInt = hasDecimal
-    ? Math.min(cursorInSanitized, dotIndex)
-    : cursorInSanitized;
+  const digitsBeforeCursorInInt = hasDecimal ? Math.min(cursorInSanitized, dotIndex) : cursorInSanitized;
   const formattedDotIndex = formatted.indexOf('.');
   const formattedIntPart = formattedDotIndex !== -1 ? formatted.slice(0, formattedDotIndex) : formatted;
   let posInFormattedInt = 0;
@@ -132,33 +130,36 @@ export function useDebouncedInput({
     [onCommit, clearTimer, clampFn],
   );
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const wasNegative = /^-/.test(e.target.value);
-    const raw = e.target.value.replace(/^-/, '');
-    const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw, maxDecimalPlaces);
-    const formatted = formatNumberInput(sanitized);
-    // Apply clampFn BEFORE display so the user never sees an unclamped value.
-    // This prevents the "flicker" where display shows unclamped → commit clamps →
-    // useEffect syncs back to clamped → next keystroke shows unclamped again.
-    const clamped = clampFn ? clampFn(formatted) : formatted;
-    const cursorPos = e.target.selectionStart ?? e.target.value.length;
-    const cursorInSanitized = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
-    // If clamping changed the value, cursor goes to end (content changed unexpectedly).
-    if (clamped !== formatted) {
-      pendingCursorRef.current = clamped.length;
-    } else {
-      pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
-    }
-    setDisplayValue(clamped);
-    clearTimer();
-    if (clamped !== lastCommittedRef.current) {
-      timerRef.current = setTimeout(() => {
-        const committed = commitFormatted(clamped.replace(/,/g, ''), onCommit);
-        lastCommittedRef.current = clampFn ? clampFn(committed) : committed;
-        timerRef.current = null;
-      }, debounceMs);
-    }
-  }, [onCommit, debounceMs, clearTimer, maxDecimalPlaces, clampFn]);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const wasNegative = /^-/.test(e.target.value);
+      const raw = e.target.value.replace(/^-/, '');
+      const sanitized = wasNegative ? '0' : sanitizeNumberInput(raw, maxDecimalPlaces);
+      const formatted = formatNumberInput(sanitized);
+      // Apply clampFn BEFORE display so the user never sees an unclamped value.
+      // This prevents the "flicker" where display shows unclamped → commit clamps →
+      // useEffect syncs back to clamped → next keystroke shows unclamped again.
+      const clamped = clampFn ? clampFn(formatted) : formatted;
+      const cursorPos = e.target.selectionStart ?? e.target.value.length;
+      const cursorInSanitized = computeCursorAfterSanitize(raw, sanitized, cursorPos, wasNegative);
+      // If clamping changed the value, cursor goes to end (content changed unexpectedly).
+      if (clamped !== formatted) {
+        pendingCursorRef.current = clamped.length;
+      } else {
+        pendingCursorRef.current = computeCursorAfterFormat(sanitized, formatted, cursorInSanitized);
+      }
+      setDisplayValue(clamped);
+      clearTimer();
+      if (clamped !== lastCommittedRef.current) {
+        timerRef.current = setTimeout(() => {
+          const committed = commitFormatted(clamped.replace(/,/g, ''), onCommit);
+          lastCommittedRef.current = clampFn ? clampFn(committed) : committed;
+          timerRef.current = null;
+        }, debounceMs);
+      }
+    },
+    [onCommit, debounceMs, clearTimer, maxDecimalPlaces, clampFn],
+  );
 
   // handleBlur commits the current displayValue (which is already truncated
   // by maxDecimalPlaces in handleChange). No need to re-apply maxDecimalPlaces here.
@@ -170,20 +171,23 @@ export function useDebouncedInput({
     [doCommit],
   );
 
-  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
-    clearTimer();
-    // Direct setSelectionRange is safe here because handleFocus does NOT change displayValue,
-    // so no re-render will override cursor position. Unlike handleChange (which updates
-    // displayValue and triggers re-render needing pendingCursorRef + useLayoutEffect),
-    // focus only sets isFocused flag — React won't reset cursor on a re-render with
-    // unchanged value. If a future change makes handleFocus modify displayValue, this
-    // must be migrated to pendingCursorRef pattern.
-    const len = e.target.value.length;
-    if (inputRef.current) {
-      inputRef.current.setSelectionRange(len, len);
-    }
-  }, [clearTimer]);
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
+      clearTimer();
+      // Direct setSelectionRange is safe here because handleFocus does NOT change displayValue,
+      // so no re-render will override cursor position. Unlike handleChange (which updates
+      // displayValue and triggers re-render needing pendingCursorRef + useLayoutEffect),
+      // focus only sets isFocused flag — React won't reset cursor on a re-render with
+      // unchanged value. If a future change makes handleFocus modify displayValue, this
+      // must be migrated to pendingCursorRef pattern.
+      const len = e.target.value.length;
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(len, len);
+      }
+    },
+    [clearTimer],
+  );
 
   // handleKeyDown (Enter) commits displayValue which is already truncated
   // by maxDecimalPlaces in handleChange. No need to re-apply here.

@@ -1,4 +1,8 @@
-import type { RateSimulationComputedResult, SimulationCampaignDetail, SimulationSourceDetail } from './rateSimulationCalculator';
+import type {
+  RateSimulationComputedResult,
+  SimulationCampaignDetail,
+  SimulationSourceDetail,
+} from './rateSimulationCalculator';
 
 export interface ProtocolCapWarning {
   kind: 'protocol_cap';
@@ -53,7 +57,13 @@ export function extractCapWarnings(
   const warnings: PortfolioCapWarning[] = [];
   const metrics = simResult.marketMetrics;
 
-  if (side === 'supply' && metrics.supplyCapExceeded && metrics.supplyCapExceededByUsd != null && metrics.availableSupplyRoomUsd != null && metrics.supplyCapUsd != null) {
+  if (
+    side === 'supply' &&
+    metrics.supplyCapExceeded &&
+    metrics.supplyCapExceededByUsd != null &&
+    metrics.availableSupplyRoomUsd != null &&
+    metrics.supplyCapUsd != null
+  ) {
     warnings.push({
       kind: 'protocol_cap',
       side: 'supply',
@@ -63,7 +73,13 @@ export function extractCapWarnings(
     });
   }
 
-  if (side === 'borrow' && metrics.borrowCapExceeded && metrics.borrowCapExceededByUsd != null && metrics.availableBorrowRoomUsd != null && metrics.borrowCapUsd != null) {
+  if (
+    side === 'borrow' &&
+    metrics.borrowCapExceeded &&
+    metrics.borrowCapExceededByUsd != null &&
+    metrics.availableBorrowRoomUsd != null &&
+    metrics.borrowCapUsd != null
+  ) {
     warnings.push({
       kind: 'protocol_cap',
       side: 'borrow',
@@ -76,12 +92,7 @@ export function extractCapWarnings(
 
   const lane = side === 'supply' ? simResult.supply : simResult.borrow;
 
-  const incentiveWarnings = extractIncentiveCapWarnings(
-    reserveId,
-    side,
-    lane.sources,
-    otherSideEntries,
-  );
+  const incentiveWarnings = extractIncentiveCapWarnings(reserveId, side, lane.sources, otherSideEntries);
   warnings.push(...incentiveWarnings);
 
   return warnings;
@@ -103,17 +114,25 @@ function extractIncentiveCapWarnings(
     // Cap warnings from campaign notes
     const campaigns = src.campaigns ?? [];
     for (const c of campaigns) {
-      const hasCapNote = c.notes?.some(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap');
+      const hasCapNote = c.notes?.some(
+        (n) => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap',
+      );
       if (hasCapNote && c.capMetrics?.positionCapUsd != null) {
         if (seenSourcesForCap.has(sourceKey)) continue;
         seenSourcesForCap.add(sourceKey);
-        const adjustToUsd = computeIncentiveAdjustToUsd(c.capMetrics.positionCapUsd, c.capMetrics.isCombineCap, side, reserveId, otherSideEntries);
+        const adjustToUsd = computeIncentiveAdjustToUsd(
+          c.capMetrics.positionCapUsd,
+          c.capMetrics.isCombineCap,
+          side,
+          reserveId,
+          otherSideEntries,
+        );
         warnings.push({
           kind: 'incentive_cap',
           side,
           source: sourceKey,
           capUsd: c.capMetrics.positionCapUsd,
-          isCapBinding: c.notes?.some(n => n.color === 'amber') ?? true,
+          isCapBinding: c.notes?.some((n) => n.color === 'amber') ?? true,
           adjustToUsd,
           isCombineCap: c.capMetrics.isCombineCap || undefined,
           notes: c.notes,
@@ -144,12 +163,10 @@ function computeIncentiveAdjustToUsd(
 ): number {
   if (!isCombineCap) return positionCapUsd;
 
-  const entry = otherSideEntries.find(e => e.reserveId === reserveId);
+  const entry = otherSideEntries.find((e) => e.reserveId === reserveId);
   if (!entry) return positionCapUsd;
 
-  const otherSideUsd = side === 'supply'
-    ? (entry.borrowAmountUsd ?? 0)
-    : (entry.supplyAmountUsd ?? 0);
+  const otherSideUsd = side === 'supply' ? (entry.borrowAmountUsd ?? 0) : (entry.supplyAmountUsd ?? 0);
 
   return Math.max(positionCapUsd - otherSideUsd, 0);
 }

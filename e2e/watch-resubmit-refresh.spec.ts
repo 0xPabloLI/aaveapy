@@ -23,11 +23,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { WATCH_ADDRESS, waitForWalletControls } from './test-wallets';
 
 /** Hosts the Aave SDK posts GraphQL to: V4 (+staging) and the V3 backend. */
-const AAVE_GRAPHQL_HOSTS = new Set([
-  'api.aave.com',
-  'api.staging.aave.com',
-  'api.v3.aave.com',
-]);
+const AAVE_GRAPHQL_HOSTS = new Set(['api.aave.com', 'api.staging.aave.com', 'api.v3.aave.com']);
 const USER_POSITION_OPS = ['UserSupplies', 'UserBorrows'];
 
 function isAaveGraphqlEndpoint(url: string): boolean {
@@ -67,23 +63,26 @@ function extractOperationNames(body: unknown): string[] {
  * response body. See docs/specs/e2e-suite-boundary-cleanup.md (T5).
  */
 async function mockAaveGraphql(page: Page) {
-  await page.route((url) => isAaveGraphqlEndpoint(url.href), async (route) => {
-    const request = route.request();
-    let body: unknown = { data: {} };
-    try {
-      const parsed = JSON.parse(request.postData() ?? '') as unknown;
-      // A batched POST must be answered with a same-length array: the batch
-      // exchange resolves `response[i]` against `operations[i]`.
-      if (Array.isArray(parsed)) body = parsed.map(() => ({ data: {} }));
-    } catch {
-      /* non-JSON body → single empty payload */
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(body),
-    });
-  });
+  await page.route(
+    (url) => isAaveGraphqlEndpoint(url.href),
+    async (route) => {
+      const request = route.request();
+      let body: unknown = { data: {} };
+      try {
+        const parsed = JSON.parse(request.postData() ?? '') as unknown;
+        // A batched POST must be answered with a same-length array: the batch
+        // exchange resolves `response[i]` against `operations[i]`.
+        if (Array.isArray(parsed)) body = parsed.map(() => ({ data: {} }));
+      } catch {
+        /* non-JSON body → single empty payload */
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
+    },
+  );
 }
 
 /**
@@ -105,7 +104,10 @@ async function openViewAddress(page: Page) {
     return;
   }
   await page.getByRole('button', { name: /Wallet actions/i }).click();
-  await page.getByRole('button', { name: /View address/i }).first().click();
+  await page
+    .getByRole('button', { name: /View address/i })
+    .first()
+    .click();
 }
 
 test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', () => {
@@ -117,9 +119,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     await mockAaveGraphql(page);
   });
 
-  test('re-submitting the same watch address bumps UserSupplies/Borrows requests', async ({
-    page,
-  }) => {
+  test('re-submitting the same watch address bumps UserSupplies/Borrows requests', async ({ page }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
     // Under mocked empty-data responses (`{data: {}}`) the Aave SDK never
     // establishes V3/V4 UserSupplies/UserBorrows subscriptions because it
@@ -146,9 +146,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     await expect(page.getByRole('button', { name: /Viewing 0x/i }).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('re-submitting a different watch address bumps UserSupplies/Borrows requests', async ({
-    page,
-  }) => {
+  test('re-submitting a different watch address bumps UserSupplies/Borrows requests', async ({ page }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
     test.setTimeout(120_000);
 
@@ -160,8 +158,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     // address via env var to exercise this path.
     const alternateAddress = process.env.E2E_WATCH_ADDRESS_ALT;
     test.skip(
-      !alternateAddress ||
-        alternateAddress.toLowerCase() === WATCH_ADDRESS!.toLowerCase(),
+      !alternateAddress || alternateAddress.toLowerCase() === WATCH_ADDRESS!.toLowerCase(),
       'E2E_WATCH_ADDRESS_ALT must be set and differ from E2E_WATCH_ADDRESS',
     );
 
@@ -194,10 +191,12 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     await page.getByTestId('portfolio-mode-toggle').click();
 
     // Wait for initial position fetch with polling — CI runners need more time.
-    await expect.poll(
-      () => userPositionRequests.length,
-      { timeout: 30_000, message: 'initial V3+V4 user-position GraphQL requests' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(() => userPositionRequests.length, {
+        timeout: 30_000,
+        message: 'initial V3+V4 user-position GraphQL requests',
+      })
+      .toBeGreaterThan(0);
     const initialCount = userPositionRequests.length;
 
     // Re-submit a *different* address — exercises the address-change path of
@@ -211,10 +210,12 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     });
 
     // Wait for the refetch to fire by polling for new requests.
-    await expect.poll(
-      () => userPositionRequests.length,
-      { timeout: 20_000, message: 'refired V3+V4 user-position GraphQL requests after re-submit (different address)' },
-    ).toBeGreaterThan(initialCount);
+    await expect
+      .poll(() => userPositionRequests.length, {
+        timeout: 20_000,
+        message: 'refired V3+V4 user-position GraphQL requests after re-submit (different address)',
+      })
+      .toBeGreaterThan(initialCount);
     const afterResubmitCount = userPositionRequests.length;
 
     expect(

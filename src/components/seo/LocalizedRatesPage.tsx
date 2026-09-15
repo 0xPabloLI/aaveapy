@@ -5,6 +5,8 @@ import { ArrowRight } from 'lucide-react';
 import { trackFaqToggle, trackInternalLink } from '@/lib/pageAnalytics';
 import { useTimeOnPage } from '@/hooks/useTimeOnPage';
 import { useStripStaticHeadTags } from '@/components/seo/useStripStaticHeadTags';
+import { LanguageSwitcher, LocaleAlternates } from '@/components/seo/LocaleAlternates';
+import { LocalCurrencyCalculator, type CalculatorCopy } from '@/components/seo/LocalCurrencyCalculator';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-image-1200x630.jpg`;
@@ -39,8 +41,12 @@ export interface RatesPageContent {
   sections: RatesPageSection[];
   drivers: { h2: string; id: string; items: { title: string; body: string }[] };
   howTo: { h2: string; id: string; steps: string[] };
+  /** Live APY calculator expressed in the market's own currency. */
+  calculator?: CalculatorCopy;
   faq: { h2: string; items: { q: string; a: string }[] };
   related: { ariaLabel: string; links: { to: string; label: string }[] };
+  /** Localized heading for the cross-language link list. */
+  languageSwitcherLabel?: string;
 }
 
 type TrackedLinkProps = ComponentProps<typeof Link> & { trackLabel: string; page: string };
@@ -121,6 +127,7 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
         <script type="application/ld+json">{JSON.stringify(pageJsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
+      <LocaleAlternates />
 
       <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
@@ -139,9 +146,7 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
 
           <header className="mb-6">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{content.h1}</h1>
-            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-              {content.intro}
-            </p>
+            <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">{content.intro}</p>
           </header>
 
           <TrackedLink
@@ -180,6 +185,8 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
               ))}
             </ul>
           </section>
+
+          {content.calculator && <LocalCurrencyCalculator copy={content.calculator} />}
 
           <section aria-labelledby={content.howTo.id} className="mt-10">
             <h2 id={content.howTo.id} className="text-xl font-semibold mb-3">
@@ -230,6 +237,12 @@ export function LocalizedRatesPage({ content }: { content: RatesPageContent }) {
               </span>
             ))}
           </nav>
+
+          <LanguageSwitcher
+            currentPath={content.path}
+            ariaLabel={content.languageSwitcherLabel ?? 'Other languages'}
+            analyticsPage={analyticsPage}
+          />
         </div>
       </main>
     </>

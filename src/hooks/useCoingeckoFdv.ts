@@ -20,12 +20,11 @@ export const useCoingeckoFdv = () => {
 
   return {
     ...query,
-    data:
-      query.data?.fdv
-        ? {
-            items: query.data.fdv.items,
-            fetchedAt: query.data.fdv.fetchedAt,
-          }
-        : (cachedEntry?.data ?? undefined),
+    data: query.data?.fdv
+      ? {
+          items: query.data.fdv.items,
+          fetchedAt: query.data.fdv.fetchedAt,
+        }
+      : (cachedEntry?.data ?? undefined),
   };
 };

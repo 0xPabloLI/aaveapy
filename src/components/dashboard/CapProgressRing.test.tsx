@@ -3,70 +3,44 @@ import { renderToString } from 'react-dom/server';
 import { CapProgressContent } from './CapProgressRing';
 
 describe('CapProgressContent sort arrows', () => {
-
   const baseProps = {
     currentSize: 500_000_000,
     cap: 1_000_000_000,
   };
 
   it('renders "Total supplied" sort arrow button when onSortSupplySize is provided', () => {
-    const html = renderToString(
-      <CapProgressContent
-        {...baseProps}
-        onSortSupplySize={() => {}}
-      />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} onSortSupplySize={() => {}} />);
     expect(html).toContain('aria-label="Sort by supply size"');
   });
 
   it('does not render "Total supplied" sort arrow when onSortSupplySize not provided', () => {
-    const html = renderToString(
-      <CapProgressContent {...baseProps} />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} />);
     expect(html).not.toContain('aria-label="Sort by supply size"');
   });
 
   it('renders "Suppliable" sort arrow button when onSortSuppliable is provided', () => {
-    const html = renderToString(
-      <CapProgressContent
-        {...baseProps}
-        onSortSuppliable={() => {}}
-      />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} onSortSuppliable={() => {}} />);
     expect(html).toContain('aria-label="Sort by suppliable"');
   });
 
   it('does not render "Suppliable" sort arrow when onSortSuppliable not provided', () => {
-    const html = renderToString(
-      <CapProgressContent {...baseProps} />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} />);
     expect(html).not.toContain('aria-label="Sort by suppliable"');
   });
 
   it('renders "Supply cap" sort arrow button when onSortSupplyCapValue is provided', () => {
-    const html = renderToString(
-      <CapProgressContent
-        {...baseProps}
-        onSortSupplyCapValue={() => {}}
-      />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} onSortSupplyCapValue={() => {}} />);
     expect(html).toContain('aria-label="Sort by supply cap value"');
   });
 
   it('does not render "Supply cap" sort arrow when onSortSupplyCapValue not provided', () => {
-    const html = renderToString(
-      <CapProgressContent {...baseProps} />,
-    );
+    const html = renderToString(<CapProgressContent {...baseProps} />);
     expect(html).not.toContain('aria-label="Sort by supply cap value"');
   });
 
   it('shows ArrowDown with opacity-50 when supply size sort is inactive', () => {
     const html = renderToString(
-      <CapProgressContent
-        {...baseProps}
-        onSortSupplySize={() => {}}
-        isSortSupplySizeActive={false}
-      />,
+      <CapProgressContent {...baseProps} onSortSupplySize={() => {}} isSortSupplySizeActive={false} />,
     );
     expect(html).toContain('opacity-50');
   });

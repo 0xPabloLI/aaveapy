@@ -2,7 +2,12 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useReservesTableSort, toggleSortOrder, toggleSortOrderAscFirst, selectSortOption } from './useReservesTableSort';
+import {
+  useReservesTableSort,
+  toggleSortOrder,
+  toggleSortOrderAscFirst,
+  selectSortOption,
+} from './useReservesTableSort';
 
 const collapseExpandedNoop = () => {};
 
@@ -26,9 +31,13 @@ describe('useReservesTableSort', () => {
       const setActiveSortColumn = vi.fn();
       selectSortOption({
         isAlreadySelected: true,
-        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-        setSortMode, targetMode: 'total',
-        setActiveSortColumn, targetColumn: 'supply',
+        setSortOrder,
+        toggleOrderFn: toggleSortOrder,
+        defaultOrder: 'desc',
+        setSortMode,
+        targetMode: 'total',
+        setActiveSortColumn,
+        targetColumn: 'supply',
       });
       expect(setSortOrder).toHaveBeenCalledWith(toggleSortOrder);
       expect(setSortMode).not.toHaveBeenCalled();
@@ -41,9 +50,13 @@ describe('useReservesTableSort', () => {
       const setActiveSortColumn = vi.fn();
       selectSortOption({
         isAlreadySelected: false,
-        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-        setSortMode, targetMode: 'native',
-        setActiveSortColumn, targetColumn: 'supply',
+        setSortOrder,
+        toggleOrderFn: toggleSortOrder,
+        defaultOrder: 'desc',
+        setSortMode,
+        targetMode: 'native',
+        setActiveSortColumn,
+        targetColumn: 'supply',
       });
       expect(setSortOrder).toHaveBeenCalledWith('desc');
       expect(setSortMode).toHaveBeenCalledWith('native');
@@ -55,8 +68,11 @@ describe('useReservesTableSort', () => {
       const setActiveSortColumn = vi.fn();
       selectSortOption({
         isAlreadySelected: true,
-        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-        setActiveSortColumn, targetColumn: 'spread',
+        setSortOrder,
+        toggleOrderFn: toggleSortOrder,
+        defaultOrder: 'desc',
+        setActiveSortColumn,
+        targetColumn: 'spread',
       });
       expect(setSortOrder).toHaveBeenCalledWith(toggleSortOrder);
     });
@@ -64,9 +80,7 @@ describe('useReservesTableSort', () => {
 
   describe('initial defaults', () => {
     it('starts with `supply` as the active column and per-column defaults matching the legacy inline state', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.activeSortColumn).toBe('supply');
       expect(result.current.tokenSortOrder).toBe('asc');
@@ -84,9 +98,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('starts with every mobile sort menu closed and all menu positions null', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.showUtilSortMenu).toBe(false);
       expect(result.current.showSizeSortMenu).toBe(false);
@@ -116,9 +128,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('handleSortMarket toggles the market order', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.handleSortMarket());
       expect(result.current.activeSortColumn).toBe('market');
@@ -129,9 +139,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('handleSortPrice toggles desc⇄asc starting from desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.handleSortPrice());
       expect(result.current.activeSortColumn).toBe('price');
@@ -142,9 +150,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('handleSortSize toggles desc⇄asc starting from desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.handleSortSize());
       expect(result.current.activeSortColumn).toBe('size');
@@ -155,9 +161,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('handleSortUtil also force-closes the util sort menu', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.setShowUtilSortMenu(true));
       expect(result.current.showUtilSortMenu).toBe(true);
@@ -167,14 +171,11 @@ describe('useReservesTableSort', () => {
       expect(result.current.utilSortOrder).toBe('asc');
       expect(result.current.showUtilSortMenu).toBe(false);
     });
-
   });
 
   describe('bidirectional sort-order toggle (regression: asc→desc must work)', () => {
     it('setSizeSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.sizeSortOrder).toBe('desc');
       act(() => result.current.setSizeSortOrder(toggleSortOrder));
@@ -184,9 +185,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setUtilSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.utilSortOrder).toBe('desc');
       act(() => result.current.setUtilSortOrder(toggleSortOrder));
@@ -196,9 +195,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setSupplySortOrder with toggleSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.setSupplySortOrder(toggleSortOrder));
       expect(result.current.supplySortOrder).toBe('asc');
@@ -207,9 +204,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setBorrowSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.setBorrowSortOrder(toggleSortOrder));
       expect(result.current.borrowSortOrder).toBe('asc');
@@ -218,9 +213,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setTokenSortOrder with toggleSortOrderAscFirst toggles asc→desc→asc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.tokenSortOrder).toBe('asc');
       act(() => result.current.setTokenSortOrder(toggleSortOrderAscFirst));
@@ -230,9 +223,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setMarketSortOrder with toggleSortOrderAscFirst toggles asc→desc→asc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.marketSortOrder).toBe('asc');
       act(() => result.current.setMarketSortOrder(toggleSortOrderAscFirst));
@@ -242,9 +233,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('setPriceSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       expect(result.current.priceSortOrder).toBe('desc');
       act(() => result.current.setPriceSortOrder(toggleSortOrder));
@@ -256,9 +245,7 @@ describe('useReservesTableSort', () => {
 
   describe('mobile sort menu controls', () => {
     it('toggleMobileSortMenu opens the requested menu and closes others', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.toggleMobileSortMenu('size'));
       expect(result.current.showSizeSortMenu).toBe(true);
@@ -273,9 +260,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('toggleMobileSortMenu called twice on the same key closes that menu', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => result.current.toggleMobileSortMenu('supply'));
       expect(result.current.showSupplySortMenu).toBe(true);
@@ -285,9 +270,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('closeAllMobileSortMenus closes every menu when called with no exception', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => {
         result.current.setShowSizeSortMenu(true);
@@ -306,9 +289,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('closeAllMobileSortMenus(except) preserves the named menu but always closes util', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       act(() => {
         result.current.setShowSizeSortMenu(true);
@@ -325,9 +306,7 @@ describe('useReservesTableSort', () => {
 
   describe('menu position recompute effects', () => {
     it('recomputes utilMenuPos from utilSortButtonRef.getBoundingClientRect when the menu opens', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       const fakeButton = {
         getBoundingClientRect: () => ({ bottom: 100, right: 220 }),
@@ -340,9 +319,7 @@ describe('useReservesTableSort', () => {
     });
 
     it('recomputes supplyMenuPos using a 140px left offset', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
+      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded: collapseExpandedNoop }));
 
       const fakeButton = {
         getBoundingClientRect: () => ({ bottom: 50, right: 200 }),

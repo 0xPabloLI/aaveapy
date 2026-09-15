@@ -24,12 +24,14 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-function renderCalculator(props: Partial<{
-  rateInput: string;
-  setRateInput: (v: string) => void;
-  onRateChange: (rate: number) => void;
-  onDragStateChange: (isDragging: boolean) => void;
-}> = {}) {
+function renderCalculator(
+  props: Partial<{
+    rateInput: string;
+    setRateInput: (v: string) => void;
+    onRateChange: (rate: number) => void;
+    onDragStateChange: (isDragging: boolean) => void;
+  }> = {},
+) {
   const defaultProps = {
     rateInput: '1.0000',
     setRateInput: vi.fn(),
@@ -58,9 +60,7 @@ describe('InkAprCalculator', () => {
     });
 
     it('updates input value when slider changes (slider → input sync)', () => {
-      const { rerender } = render(
-        <InkAprCalculator rateInput="1.0000" setRateInput={vi.fn()} />,
-      );
+      const { rerender } = render(<InkAprCalculator rateInput="1.0000" setRateInput={vi.fn()} />);
 
       const fdvInput = screen.getByLabelText('Estimated $INK FDV in billions');
       expect(fdvInput).toHaveValue('1');
@@ -90,9 +90,7 @@ describe('InkAprCalculator', () => {
     });
 
     it('prevents slider from overwriting input while focused (focus guard)', async () => {
-      const { rerender } = render(
-        <InkAprCalculator rateInput="1.0000" setRateInput={vi.fn()} />,
-      );
+      const { rerender } = render(<InkAprCalculator rateInput="1.0000" setRateInput={vi.fn()} />);
 
       const fdvInput = screen.getByLabelText('Estimated $INK FDV in billions');
 
@@ -148,9 +146,7 @@ describe('InkAprCalculator', () => {
       };
 
       const setRateInput = vi.fn();
-      render(
-        <InkAprCalculator rateInput="1.0000" setRateInput={setRateInput} />,
-      );
+      render(<InkAprCalculator rateInput="1.0000" setRateInput={setRateInput} />);
 
       const fdvInput = screen.getByLabelText('Estimated $INK FDV in billions');
       fireEvent.focus(fdvInput);

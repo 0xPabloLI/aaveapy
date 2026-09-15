@@ -5,10 +5,7 @@ import {
   type ScenarioPinControllerState,
 } from './scenarioPinController';
 
-function step(
-  state: ScenarioPinControllerState,
-  input: Parameters<typeof transitionScenarioPinController>[1],
-) {
+function step(state: ScenarioPinControllerState, input: Parameters<typeof transitionScenarioPinController>[1]) {
   return transitionScenarioPinController(state, input);
 }
 
@@ -226,65 +223,62 @@ describe('scenario pin controller', () => {
    * 只打一次时正常。语义上 b 相对于「用户上次看到的顺序 [a,b,c]」已经上移。
    * 修复后（保留 baselineSortedIds 跨 scenarioKey），t3 会 schedule pin。
    */
-  it(
-    'preserves pin across rapid scenario inputs when reorder is buffered by visible-count window',
-    () => {
-      let state = createScenarioPinControllerState();
+  it('preserves pin across rapid scenario inputs when reorder is buffered by visible-count window', () => {
+    let state = createScenarioPinControllerState();
 
-      // t0: baseline
-      state = step(state, {
-        scenarioKey: '100\0',
-        sortedIds: ['a', 'b', 'c'],
-        expandedReserveId: 'b',
-        hasScenarioInput: true,
-        expandScrollFollowsScenarioSort: true,
-        hasRequiredVisibleCount: true,
-        isExpandedStillVisible: true,
-      }).nextState;
+    // t0: baseline
+    state = step(state, {
+      scenarioKey: '100\0',
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    }).nextState;
 
-      // t1: 第一次输入 commit，列表重排但 visible-count buffer 未满
-      const firstInput = step(state, {
-        scenarioKey: '200\0',
-        sortedIds: ['b', 'a', 'c'],
-        expandedReserveId: 'b',
-        hasScenarioInput: true,
-        expandScrollFollowsScenarioSort: true,
-        hasRequiredVisibleCount: false,
-        isExpandedStillVisible: true,
-      });
-      state = firstInput.nextState;
-      expect(firstInput.shouldSchedulePin).toBe(false);
+    // t1: 第一次输入 commit，列表重排但 visible-count buffer 未满
+    const firstInput = step(state, {
+      scenarioKey: '200\0',
+      sortedIds: ['b', 'a', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: false,
+      isExpandedStillVisible: true,
+    });
+    state = firstInput.nextState;
+    expect(firstInput.shouldSchedulePin).toBe(false);
 
-      // t2: 用户在 buffer 未解之前再次改输入 —— 列表快照已是 t1 的重排结果
-      const secondInput = step(state, {
-        scenarioKey: '300\0',
-        sortedIds: ['b', 'a', 'c'],
-        expandedReserveId: 'b',
-        hasScenarioInput: true,
-        expandScrollFollowsScenarioSort: true,
-        hasRequiredVisibleCount: false,
-        isExpandedStillVisible: true,
-      });
-      state = secondInput.nextState;
-      expect(secondInput.shouldSchedulePin).toBe(false);
+    // t2: 用户在 buffer 未解之前再次改输入 —— 列表快照已是 t1 的重排结果
+    const secondInput = step(state, {
+      scenarioKey: '300\0',
+      sortedIds: ['b', 'a', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: false,
+      isExpandedStillVisible: true,
+    });
+    state = secondInput.nextState;
+    expect(secondInput.shouldSchedulePin).toBe(false);
 
-      // t3: visible-count buffer 解开，scenarioKey 稳定，顺序未再变。
-      // 期望：pin 依然 schedule（跨输入的累积重排 [a,b,c] → [b,a,c]）。
-      // 现状：pending baseline 已被 t2 覆盖为 [b,a,c]，orderChangedForPending=false，
-      // 因此本断言当前失败——这正是 root cause #2 的物理复现。
-      const bufferResolved = step(state, {
-        scenarioKey: '300\0',
-        sortedIds: ['b', 'a', 'c'],
-        expandedReserveId: 'b',
-        hasScenarioInput: true,
-        expandScrollFollowsScenarioSort: true,
-        hasRequiredVisibleCount: true,
-        isExpandedStillVisible: true,
-      });
-      expect(bufferResolved.shouldSchedulePin).toBe(true);
-      expect(bufferResolved.pinReserveId).toBe('b');
-    },
-  );
+    // t3: visible-count buffer 解开，scenarioKey 稳定，顺序未再变。
+    // 期望：pin 依然 schedule（跨输入的累积重排 [a,b,c] → [b,a,c]）。
+    // 现状：pending baseline 已被 t2 覆盖为 [b,a,c]，orderChangedForPending=false，
+    // 因此本断言当前失败——这正是 root cause #2 的物理复现。
+    const bufferResolved = step(state, {
+      scenarioKey: '300\0',
+      sortedIds: ['b', 'a', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    expect(bufferResolved.shouldSchedulePin).toBe(true);
+    expect(bufferResolved.pinReserveId).toBe('b');
+  });
 
   /**
    * Pagination-window edge case: 展开行落在 visible-count buffer 的边界
@@ -334,4 +328,3 @@ describe('scenario pin controller', () => {
     expect(edgeHit.pinReserveId).toBe('c');
   });
 });
-

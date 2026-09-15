@@ -21,15 +21,17 @@ import { cn } from '@/lib/utils';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { formatConvertedAmount } from '@/lib/portfolioCalculator';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
-import { formatPercent, formatUsd, formatSpread, formatReserveSizeUsd, formatSignedReserveSizeUsd } from '@/lib/formatters';
+import {
+  formatPercent,
+  formatUsd,
+  formatSpread,
+  formatReserveSizeUsd,
+  formatSignedReserveSizeUsd,
+} from '@/lib/formatters';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { PORTFOLIO_THEME } from './portfolioTheme';
-import type {
-  PortfolioSideData,
-  PortfolioInputMode,
-  DeltaSign,
-} from '@/types/portfolio';
+import type { PortfolioSideData, PortfolioInputMode, DeltaSign } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import {
   formatProtocolCapText,
@@ -73,21 +75,28 @@ export function MetricValue({
   /** Skip tooltip wrapper (mobile). When true, renders plain span without dotted underline. */
   skipTooltip?: boolean;
 }) {
-  const hasChange = metric?.current != null && metric.after != null
-    && Math.abs(metric.current - metric.after) >= 0.005;
+  const hasChange = metric?.current != null && metric.after != null && Math.abs(metric.current - metric.after) >= 0.005;
 
   if (!hasChange || skipTooltip) {
-    return <span data-current={metric?.current?.toFixed(4)} data-after={afterValue.toFixed(4)}>{formatFn(afterValue)}</span>;
+    return (
+      <span data-current={metric?.current?.toFixed(4)} data-after={afterValue.toFixed(4)}>
+        {formatFn(afterValue)}
+      </span>
+    );
   }
 
-  const delta = metric!.delta ?? (metric!.after! - metric!.current!);
+  const delta = metric!.delta ?? metric!.after! - metric!.current!;
   const deltaStr = formatSpread(delta);
   const deltaColor = delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400';
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="underline decoration-dotted underline-offset-2 cursor-auto" data-current={metric!.current!.toFixed(4)} data-after={metric!.after!.toFixed(4)}>
+        <span
+          className="underline decoration-dotted underline-offset-2 cursor-auto"
+          data-current={metric!.current!.toFixed(4)}
+          data-after={metric!.after!.toFixed(4)}
+        >
           {formatFn(afterValue)}
         </span>
       </TooltipTrigger>
@@ -114,10 +123,10 @@ export function MetricValue({
 export function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] }) {
   if (warnings.length === 0) return null;
 
-  const hasAmber = warnings.some(w => {
+  const hasAmber = warnings.some((w) => {
     if (w.kind === 'protocol_cap' || w.kind === 'ltv_cap') return true;
     const notes = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).notes : (w as IncentiveOffsetWarning).notes;
-    return notes?.some(n => n.color === 'amber');
+    return notes?.some((n) => n.color === 'amber');
   });
 
   return (
@@ -160,15 +169,18 @@ export function WarningMarker({ warnings }: { warnings: PortfolioCapWarning[] })
                 </div>
               );
             }
-            const notes = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).notes : (w as IncentiveOffsetWarning).notes;
-            const source = w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).source : (w as IncentiveOffsetWarning).source;
+            const notes =
+              w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).notes : (w as IncentiveOffsetWarning).notes;
+            const source =
+              w.kind === 'incentive_cap' ? (w as IncentiveCapWarning).source : (w as IncentiveOffsetWarning).source;
             return (
               <div key={i} className="flex flex-col gap-0.5">
-                <span className="font-semibold capitalize text-muted-foreground">
-                  {source}
-                </span>
+                <span className="font-semibold capitalize text-muted-foreground">{source}</span>
                 {notes?.map((note, ni) => (
-                  <span key={ni} className={note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}>
+                  <span
+                    key={ni}
+                    className={note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}
+                  >
                     {note.text}
                   </span>
                 ))}
@@ -207,7 +219,7 @@ export function CompactInput({
   capLimitUsd,
 }: CompactInputProps) {
   const isBorrow = side === 'borrow';
-  const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
+  const inputVariant = isBorrow ? ('borrow' as const) : ('supply' as const);
   const hasWallet = sideData.walletValue !== null;
 
   // Option E: input always shows the full effective value (not delta).
@@ -217,9 +229,10 @@ export function CompactInput({
   const hasValue = Boolean(effectiveDisplay.trim());
 
   // Derive effective USD to determine arrow color.
-  const effectiveUsd = sideData.inputMode === 'usd'
-    ? parseNumberInput(sideData.amount)
-    : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
+  const effectiveUsd =
+    sideData.inputMode === 'usd'
+      ? parseNumberInput(sideData.amount)
+      : parseNumberInput(sideData.amount) * (tokenPriceInUsd ?? 0);
   const walletUsd = sideData.walletValue ?? 0;
   const isEffectiveAbove = hasWallet && effectiveUsd > walletUsd + DELTA_EPSILON;
   const isEffectiveBelow = hasWallet && effectiveUsd < walletUsd - DELTA_EPSILON;
@@ -231,65 +244,76 @@ export function CompactInput({
 
   // Option E: handleDeltaCommit receives the full effective value (not delta).
   // For wallet positions, delta is derived as effective - wallet.
-  const handleDeltaCommit = useCallback((formattedValue: string) => {
-    if (!formattedValue.trim()) {
-      if (!deltaCommitRef.current.initialHasValue) return;
-      if (!hasWallet) {
-        actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
+  const handleDeltaCommit = useCallback(
+    (formattedValue: string) => {
+      if (!formattedValue.trim()) {
+        if (!deltaCommitRef.current.initialHasValue) return;
+        if (!hasWallet) {
+          actions.updateReserve(reserveId, side === 'supply' ? { supplyAmount: '' } : { borrowAmount: '' });
+          return;
+        }
+        // Clear = empty input, delta = 0 (simulator uses walletValue as total).
+        const clearPatch =
+          side === 'supply'
+            ? { supplyAmount: '' as const, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
+            : { borrowAmount: '' as const, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
+        actions.updateReserve(reserveId, clearPatch);
         return;
       }
-      // Clear = empty input, delta = 0 (simulator uses walletValue as total).
-      const clearPatch = side === 'supply'
-        ? { supplyAmount: '' as const, supplyDeltaSign: 1 as DeltaSign, supplyDeltaRawUsd: null as number | null }
-        : { borrowAmount: '' as const, borrowDeltaSign: 1 as DeltaSign, borrowDeltaRawUsd: null as number | null };
-      actions.updateReserve(reserveId, clearPatch);
-      return;
-    }
-    // Parse the effective value the user typed.
-    const inputUsd = sideData.inputMode === 'token'
-      ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
-      : parseNumberInput(formattedValue);
-    // Clamp to cap if present.
-    const clampedUsd = capLimitUsd != null ? Math.min(inputUsd, capLimitUsd) : inputUsd;
-    const wasClamped = capLimitUsd != null && inputUsd > capLimitUsd;
-    // Format the (possibly clamped) amount for the store.
-    const amountValue = wasClamped
-      ? (sideData.inputMode === 'usd'
+      // Parse the effective value the user typed.
+      const inputUsd =
+        sideData.inputMode === 'token'
+          ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
+          : parseNumberInput(formattedValue);
+      // Clamp to cap if present.
+      const clampedUsd = capLimitUsd != null ? Math.min(inputUsd, capLimitUsd) : inputUsd;
+      const wasClamped = capLimitUsd != null && inputUsd > capLimitUsd;
+      // Format the (possibly clamped) amount for the store.
+      const amountValue = wasClamped
+        ? sideData.inputMode === 'usd'
           ? formatNumberInput(formatConvertedAmount(clampedUsd))
-          : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(clampedUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(clampedUsd))))
-      : formattedValue;
-    const amountPatch = side === 'supply'
-      ? { supplyAmount: amountValue }
-      : { borrowAmount: amountValue };
-    if (!hasWallet) {
-      actions.updateReserve(reserveId, amountPatch);
-      return;
-    }
-    // Derive sign and delta from effective vs wallet.
-    const deltaUsd = clampedUsd - sideData.walletValue!;
-    const sign: DeltaSign = deltaUsd >= 0 ? 1 : -1;
-    const signPatch = side === 'supply'
-      ? { supplyDeltaSign: sign }
-      : { borrowDeltaSign: sign };
-    const deltaRawUsdPatch = side === 'supply'
-      ? { supplyDeltaRawUsd: deltaUsd as number | null }
-      : { borrowDeltaRawUsd: deltaUsd as number | null };
-    actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
-  }, [hasWallet, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd]);
+          : tokenPriceInUsd != null
+            ? formatNumberInput(formatConvertedAmount(clampedUsd / tokenPriceInUsd))
+            : formatNumberInput(formatConvertedAmount(clampedUsd))
+        : formattedValue;
+      const amountPatch = side === 'supply' ? { supplyAmount: amountValue } : { borrowAmount: amountValue };
+      if (!hasWallet) {
+        actions.updateReserve(reserveId, amountPatch);
+        return;
+      }
+      // Derive sign and delta from effective vs wallet.
+      const deltaUsd = clampedUsd - sideData.walletValue!;
+      const sign: DeltaSign = deltaUsd >= 0 ? 1 : -1;
+      const signPatch = side === 'supply' ? { supplyDeltaSign: sign } : { borrowDeltaSign: sign };
+      const deltaRawUsdPatch =
+        side === 'supply'
+          ? { supplyDeltaRawUsd: deltaUsd as number | null }
+          : { borrowDeltaRawUsd: deltaUsd as number | null };
+      actions.updateReserve(reserveId, { ...signPatch, ...amountPatch, ...deltaRawUsdPatch });
+    },
+    [hasWallet, actions, reserveId, side, sideData.walletValue, sideData.inputMode, tokenPriceInUsd, capLimitUsd],
+  );
 
   // ClampFn: real-time cap clamping during input to prevent flicker.
   // Converts input to USD, clamps to capLimitUsd, converts back to input mode.
-  const clampFn = useCallback((formattedValue: string): string => {
-    if (capLimitUsd == null) return formattedValue;
-    const numUsd = sideData.inputMode === 'token'
-      ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
-      : parseNumberInput(formattedValue);
-    if (numUsd <= capLimitUsd) return formattedValue;
-    const clampedAmount = sideData.inputMode === 'usd'
-      ? formatNumberInput(formatConvertedAmount(capLimitUsd))
-      : (tokenPriceInUsd != null ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd)) : formatNumberInput(formatConvertedAmount(capLimitUsd)));
-    return clampedAmount;
-  }, [capLimitUsd, sideData.inputMode, tokenPriceInUsd]);
+  const clampFn = useCallback(
+    (formattedValue: string): string => {
+      if (capLimitUsd == null) return formattedValue;
+      const numUsd =
+        sideData.inputMode === 'token'
+          ? parseNumberInput(formattedValue) * (tokenPriceInUsd ?? 0)
+          : parseNumberInput(formattedValue);
+      if (numUsd <= capLimitUsd) return formattedValue;
+      const clampedAmount =
+        sideData.inputMode === 'usd'
+          ? formatNumberInput(formatConvertedAmount(capLimitUsd))
+          : tokenPriceInUsd != null
+            ? formatNumberInput(formatConvertedAmount(capLimitUsd / tokenPriceInUsd))
+            : formatNumberInput(formatConvertedAmount(capLimitUsd));
+      return clampedAmount;
+    },
+    [capLimitUsd, sideData.inputMode, tokenPriceInUsd],
+  );
 
   const numberInput = useDebouncedInput({
     value: effectiveDisplay,
@@ -300,9 +324,7 @@ export function CompactInput({
 
   const handleToggleInputMode = useCallback(() => {
     const newMode: PortfolioInputMode = sideData.inputMode === 'usd' ? 'token' : 'usd';
-    const patch = side === 'supply'
-      ? { supplyInputMode: newMode }
-      : { borrowInputMode: newMode };
+    const patch = side === 'supply' ? { supplyInputMode: newMode } : { borrowInputMode: newMode };
     actions.updateReserve(reserveId, patch, tokenPriceInUsd);
   }, [sideData.inputMode, actions, reserveId, side, tokenPriceInUsd]);
 
@@ -312,11 +334,11 @@ export function CompactInput({
   // for the input value itself — the wallet label is display-only, not for
   // editing, so standard financial precision (2 decimals) is correct.
   const walletDisplay = hasWallet
-    ? (sideData.inputMode === 'usd'
-        ? formatNumberInput(sideData.walletValue!.toFixed(2))
-        : (tokenPriceInUsd != null && tokenPriceInUsd > 0
-            ? formatNumberInput((sideData.walletValue! / tokenPriceInUsd).toFixed(4))
-            : formatNumberInput(sideData.walletValue!.toFixed(2))))
+    ? sideData.inputMode === 'usd'
+      ? formatNumberInput(sideData.walletValue!.toFixed(2))
+      : tokenPriceInUsd != null && tokenPriceInUsd > 0
+        ? formatNumberInput((sideData.walletValue! / tokenPriceInUsd).toFixed(4))
+        : formatNumberInput(sideData.walletValue!.toFixed(2))
     : '';
 
   if (disabled) {
@@ -334,7 +356,9 @@ export function CompactInput({
           </div>
         </TooltipTrigger>
         {disabledNotice && (
-          <TooltipContent side="top" className="ds-text-11">{disabledNotice}</TooltipContent>
+          <TooltipContent side="top" className="ds-text-11">
+            {disabledNotice}
+          </TooltipContent>
         )}
       </Tooltip>
     );
@@ -342,9 +366,7 @@ export function CompactInput({
 
   // Full wallet value for input placeholder (when input is empty).
   // Same format as walletDisplay — consistent precision.
-  const placeholder = hasWallet
-    ? walletDisplay
-    : (sideData.inputMode === 'usd' ? '10K' : '100');
+  const placeholder = hasWallet ? walletDisplay : sideData.inputMode === 'usd' ? '10K' : '100';
 
   return (
     <div className="flex items-center gap-1 md:gap-0.5 py-1 md:py-0">
@@ -365,19 +387,27 @@ export function CompactInput({
           </button>
         </TooltipTrigger>
         {tokenPriceInUsd === undefined && (
-          <TooltipContent side="top" className="ds-text-11">Price unavailable</TooltipContent>
+          <TooltipContent side="top" className="ds-text-11">
+            Price unavailable
+          </TooltipContent>
         )}
       </Tooltip>
 
       {hasWallet && (
         <span className="shrink-0 ds-text-9 tabular-nums leading-none whitespace-nowrap">
           <span className="text-muted-foreground">{walletDisplay}</span>
-          <span className={cn(
-            'ml-0.5',
-            isEffectiveAbove ? 'text-emerald-600 dark:text-emerald-400'
-              : isEffectiveBelow ? 'text-red-500 dark:text-red-400'
-              : 'text-muted-foreground',
-          )}>→</span>
+          <span
+            className={cn(
+              'ml-0.5',
+              isEffectiveAbove
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : isEffectiveBelow
+                  ? 'text-red-500 dark:text-red-400'
+                  : 'text-muted-foreground',
+            )}
+          >
+            →
+          </span>
         </span>
       )}
 

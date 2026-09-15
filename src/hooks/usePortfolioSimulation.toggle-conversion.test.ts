@@ -184,7 +184,12 @@ describe('updateReserve — amount conversion', () => {
     });
 
     act(() => {
-      result.current.actions.updateReserve('res-1', { supplyAmount: '5000', supplyInputMode: 'usd', borrowAmount: '3000', borrowInputMode: 'usd' });
+      result.current.actions.updateReserve('res-1', {
+        supplyAmount: '5000',
+        supplyInputMode: 'usd',
+        borrowAmount: '3000',
+        borrowInputMode: 'usd',
+      });
     });
 
     act(() => {
@@ -200,7 +205,9 @@ describe('updateReserve — amount conversion', () => {
 describe('importReserves — auto-complete missing sides', () => {
   it('creates entry with both supply and borrow sides when wallet only has supply', () => {
     const { result } = renderHook(() => usePortfolioSimulation());
-    act(() => { result.current.actions.setActive(true); });
+    act(() => {
+      result.current.actions.setActive(true);
+    });
 
     act(() => {
       result.current.actions.importReserves([
@@ -219,7 +226,7 @@ describe('importReserves — auto-complete missing sides', () => {
       ]);
     });
 
-    const wethEntry = result.current.entries.find(e => e.reserveId === 'r-weth');
+    const wethEntry = result.current.entries.find((e) => e.reserveId === 'r-weth');
     expect(wethEntry).toBeDefined();
     expect(wethEntry!.supply.walletValue).toBe(1737);
     expect(wethEntry!.borrow.walletValue).toBeNull();
@@ -228,7 +235,9 @@ describe('importReserves — auto-complete missing sides', () => {
 
   it('creates entry with both supply and borrow sides when wallet only has borrow', () => {
     const { result } = renderHook(() => usePortfolioSimulation());
-    act(() => { result.current.actions.setActive(true); });
+    act(() => {
+      result.current.actions.setActive(true);
+    });
 
     act(() => {
       result.current.actions.importReserves([
@@ -247,7 +256,7 @@ describe('importReserves — auto-complete missing sides', () => {
       ]);
     });
 
-    const ghoEntry = result.current.entries.find(e => e.reserveId === 'r-gho');
+    const ghoEntry = result.current.entries.find((e) => e.reserveId === 'r-gho');
     expect(ghoEntry).toBeDefined();
     expect(ghoEntry!.borrow.walletValue).toBe(9674);
     expect(ghoEntry!.supply.walletValue).toBeNull();
@@ -255,7 +264,9 @@ describe('importReserves — auto-complete missing sides', () => {
 
   it('keeps both sides when wallet already has both', () => {
     const { result } = renderHook(() => usePortfolioSimulation());
-    act(() => { result.current.actions.setActive(true); });
+    act(() => {
+      result.current.actions.setActive(true);
+    });
 
     act(() => {
       result.current.actions.importReserves([
@@ -274,7 +285,7 @@ describe('importReserves — auto-complete missing sides', () => {
       ]);
     });
 
-    const usdt0Entry = result.current.entries.find(e => e.reserveId === 'r-usdt0');
+    const usdt0Entry = result.current.entries.find((e) => e.reserveId === 'r-usdt0');
     expect(usdt0Entry).toBeDefined();
     expect(usdt0Entry!.supply.walletValue).toBe(10000);
     expect(usdt0Entry!.borrow.walletValue).toBe(5000);
@@ -282,7 +293,9 @@ describe('importReserves — auto-complete missing sides', () => {
 
   it('handles multiple reserves with different side combinations', () => {
     const { result } = renderHook(() => usePortfolioSimulation());
-    act(() => { result.current.actions.setActive(true); });
+    act(() => {
+      result.current.actions.setActive(true);
+    });
 
     act(() => {
       result.current.actions.importReserves([
@@ -314,8 +327,8 @@ describe('importReserves — auto-complete missing sides', () => {
     });
 
     expect(result.current.entries).toHaveLength(2);
-    const wethEntry = result.current.entries.find(e => e.reserveId === 'r-weth')!;
-    const ghoEntry = result.current.entries.find(e => e.reserveId === 'r-gho')!;
+    const wethEntry = result.current.entries.find((e) => e.reserveId === 'r-weth')!;
+    const ghoEntry = result.current.entries.find((e) => e.reserveId === 'r-gho')!;
     expect(wethEntry.supply.walletValue).toBe(1000);
     expect(wethEntry.borrow.walletValue).toBeNull();
     expect(ghoEntry.borrow.walletValue).toBe(2000);

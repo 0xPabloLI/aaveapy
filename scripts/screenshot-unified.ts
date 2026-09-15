@@ -7,7 +7,7 @@ async function main() {
   // Remove Vite error overlay if present
   page.on('domcontentloaded', async () => {
     await page.evaluate(() => {
-      document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+      document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
     });
   });
 
@@ -17,13 +17,17 @@ async function main() {
 
   // Remove any error overlays
   await page.evaluate(() => {
-    document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+    document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
   });
   await page.keyboard.press('Escape');
 
   // Click the Portfolio toggle to enable portfolio mode
   // Look for the switch/toggle that says "Portfolio"
-  const portfolioToggle = page.locator('label:has-text("Portfolio") button[role="switch"], [data-testid="portfolio-toggle"], button:has-text("Portfolio")').first();
+  const portfolioToggle = page
+    .locator(
+      'label:has-text("Portfolio") button[role="switch"], [data-testid="portfolio-toggle"], button:has-text("Portfolio")',
+    )
+    .first();
   if (await portfolioToggle.isVisible().catch(() => false)) {
     // Check if it's already checked
     const isChecked = await portfolioToggle.getAttribute('aria-checked');
@@ -41,11 +45,16 @@ async function main() {
   }
 
   // Try to add tokens via popular token chips
-  const chips = page.locator('button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")');
+  const chips = page.locator(
+    'button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")',
+  );
   const chipCount = await chips.count().catch(() => 0);
   if (chipCount > 0) {
     for (let i = 0; i < Math.min(4, chipCount); i++) {
-      await chips.nth(i).click({ timeout: 3000 }).catch(() => {});
+      await chips
+        .nth(i)
+        .click({ timeout: 3000 })
+        .catch(() => {});
       await page.waitForTimeout(500);
     }
   }

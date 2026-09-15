@@ -49,7 +49,7 @@ export { getMerklBreakdownApr } from './merklForecast';
 
 export const getMerklForecastUsdMultiplier = (
   breakdown: ForecastableBreakdown,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
 ): number => {
   if (!hasPointsField(breakdown)) {
     return 1;
@@ -63,7 +63,7 @@ export const getMerklForecastUsdMultiplier = (
  * - pointsPerThousandUsd is present and positive
  */
 export const isMerklPointsCampaign = (
-  breakdown: Pick<ForecastableBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
+  breakdown: Pick<ForecastableBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>,
 ): boolean => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
   const hasPoints = hasPointsField(breakdown);
@@ -73,7 +73,7 @@ export const isMerklPointsCampaign = (
 
 export const convertMerklPointsAmountToUsd = (
   amount: number | null | undefined,
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
 ): number | undefined => {
   if (amount === null || amount === undefined || !Number.isFinite(amount)) return undefined;
   return amount * safePointToUsdRate(pointToUsdRate);

@@ -25,10 +25,7 @@ function marketChipForReserve(page: Parameters<typeof test>[0]['page'], reserveI
   return page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`);
 }
 
-async function getRowTopY(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-): Promise<number> {
+async function getRowTopY(page: Parameters<typeof test>[0]['page'], reserveId: string): Promise<number> {
   const row = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   const box = await row.boundingBox();
   return box?.y ?? -1;
@@ -57,9 +54,7 @@ async function scrollExpandedRowOffPinAnchor(
   const pinned = await getPinnedTopY(page);
   const y = await getRowTopY(page, reserveId);
   if (Math.abs(y - pinned) <= minAbsDeltaPx) {
-    throw new Error(
-      `Could not scroll expanded row off pin anchor (y=${y}, pinned=${pinned})`,
-    );
+    throw new Error(`Could not scroll expanded row off pin anchor (y=${y}, pinned=${pinned})`);
   }
 }
 
@@ -90,10 +85,13 @@ async function assertExpandedRowPinnedToAnchor(
   await expect(targetRow).toBeVisible();
   const pinnedTopY = await getPinnedTopY(page);
   await expect
-    .poll(async () => {
-      const box = await targetRow.boundingBox();
-      return box ? box.y : Number.POSITIVE_INFINITY;
-    }, { timeout: 4500 })
+    .poll(
+      async () => {
+        const box = await targetRow.boundingBox();
+        return box ? box.y : Number.POSITIVE_INFINITY;
+      },
+      { timeout: 4500 },
+    )
     .toBeLessThanOrEqual(pinnedTopY + 12);
   const finalBox = await targetRow.boundingBox();
   if (!finalBox) throw new Error('Cannot read expanded row position after pin assert');
@@ -102,10 +100,7 @@ async function assertExpandedRowPinnedToAnchor(
 
 test.describe('Market filter pin scroll (desktop)', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Pin scroll is desktop-specific',
-    );
+    test.skip(testInfo.project.name.includes('mobile'), 'Pin scroll is desktop-specific');
   });
 
   test('(1) not at anchor → apply market filter → pins to top anchor', async ({ page }) => {

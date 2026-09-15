@@ -113,15 +113,10 @@ export function buildMetricsFromLane(
     lane.currentIncentive,
     isApy,
   );
-  const afterUsdPerDay = lane.afterIncentive != null
-    ? computePositionUsdPerDay(
-        side,
-        amountUsd,
-        lane.afterNative ?? 0,
-        lane.afterIncentive ?? 0,
-        isApy,
-      )
-    : null;
+  const afterUsdPerDay =
+    lane.afterIncentive != null
+      ? computePositionUsdPerDay(side, amountUsd, lane.afterNative ?? 0, lane.afterIncentive ?? 0, isApy)
+      : null;
   const usdPerDayMetric: PortfolioSimulationMetric = {
     current: currentUsdPerDay,
     after: afterUsdPerDay,
@@ -150,10 +145,8 @@ function buildGroupMapFromSlots(
     // Skip only when there's truly no position (no user input AND no wallet value)
     if (!hasUserInput && !hasWalletPosition) continue;
 
-    const effectiveAmountUsd = hasUserInput
-      ? resolvePositionAmountUsd(s, reserve)
-      : (s.walletValue ?? 0);
-    const deltaUsd = hasUserInput ? (effectiveAmountUsd - (s.walletValue ?? 0)) : 0;
+    const effectiveAmountUsd = hasUserInput ? resolvePositionAmountUsd(s, reserve) : (s.walletValue ?? 0);
+    const deltaUsd = hasUserInput ? effectiveAmountUsd - (s.walletValue ?? 0) : 0;
 
     const existing = groupMap.get(key) ?? {
       supplySlots: [],
@@ -207,10 +200,13 @@ function computeLtvClamping(
     amountUsd: number;
     isLastModified: boolean;
   }
-  const poolGroups = new Map<string, {
-    totalBorrowCapacity: number;
-    borrowEntries: PoolBorrowEntry[];
-  }>();
+  const poolGroups = new Map<
+    string,
+    {
+      totalBorrowCapacity: number;
+      borrowEntries: PoolBorrowEntry[];
+    }
+  >();
 
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
@@ -218,7 +214,7 @@ function computeLtvClamping(
 
     const poolKey = `${reserve.chainId}:${reserve.marketName}`;
     const ltv = reserve.ltv ?? 0;
-    const collateralContribution = group.supplyUsd * ltv / 100;
+    const collateralContribution = (group.supplyUsd * ltv) / 100;
 
     const poolGroup = poolGroups.get(poolKey) ?? {
       totalBorrowCapacity: 0,
@@ -312,9 +308,7 @@ function computeResultsFromGroups(
     const reserve = reserveMap.get(key);
     if (!reserve) continue;
 
-    const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve)
-      ? { ...reserve }
-      : null;
+    const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
 
     const hubBorrowed = reserve.hubBorrowed;
     const hubSupplied = reserve.hubSupplied;
@@ -367,14 +361,24 @@ function computeResultsFromGroups(
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableSupplyRoomUsd;
-        const cappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
-        const nativePercent = simResult.supply.afterNative
-          ?? simResult.supply.currentNative ?? reserve.supplyApy ?? 0;
-        const incentivePercent = simResult.supply.afterIncentive
-          ?? simResult.supply.currentIncentive ?? 0;
+        const cappedUsd =
+          availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        const nativePercent = simResult.supply.afterNative ?? simResult.supply.currentNative ?? reserve.supplyApy ?? 0;
+        const incentivePercent = simResult.supply.afterIncentive ?? simResult.supply.currentIncentive ?? 0;
         const metrics = buildMetricsFromLane(simResult.supply, 'supply', cappedUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics, isApy, supplyForecastUnavailable, slot.sideData.walletValue, cappedUsd),
+          buildPortfolioPositionResult(
+            slot.reserveId,
+            'supply',
+            amountUsd,
+            nativePercent,
+            incentivePercent,
+            metrics,
+            isApy,
+            supplyForecastUnavailable,
+            slot.sideData.walletValue,
+            cappedUsd,
+          ),
         );
       }
 
@@ -383,21 +387,30 @@ function computeResultsFromGroups(
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue ?? 0;
         const availableRoomUsd = simResult.marketMetrics?.availableBorrowRoomUsd;
-        const borrowCapCappedUsd = availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
+        const borrowCapCappedUsd =
+          availableRoomUsd != null && availableRoomUsd > 0 ? Math.min(amountUsd, availableRoomUsd) : amountUsd;
         // LTV clamping: min(userInput, maxBorrowRemaining)
         const ltvCappedUsd = ltvClampBySlot.get(slot);
-        const effectiveUsd = ltvCappedUsd != null
-          ? Math.min(borrowCapCappedUsd, ltvCappedUsd)
-          : borrowCapCappedUsd;
+        const effectiveUsd = ltvCappedUsd != null ? Math.min(borrowCapCappedUsd, ltvCappedUsd) : borrowCapCappedUsd;
         // ltvClampedUsd on result: only when LTV actually reduced the amount
         const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
-        const nativePercent = simResult.borrow.afterNative
-          ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
-        const incentivePercent = simResult.borrow.afterIncentive
-          ?? simResult.borrow.currentIncentive ?? 0;
+        const nativePercent = simResult.borrow.afterNative ?? simResult.borrow.currentNative ?? reserve.borrowApy ?? 0;
+        const incentivePercent = simResult.borrow.afterIncentive ?? simResult.borrow.currentIncentive ?? 0;
         const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', effectiveUsd, isApy, walletUsd);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, metrics, isApy, borrowForecastUnavailable, slot.sideData.walletValue, effectiveUsd, ltvClampedResult),
+          buildPortfolioPositionResult(
+            slot.reserveId,
+            'borrow',
+            effectiveUsd,
+            nativePercent,
+            incentivePercent,
+            metrics,
+            isApy,
+            borrowForecastUnavailable,
+            slot.sideData.walletValue,
+            effectiveUsd,
+            ltvClampedResult,
+          ),
         );
       }
     } else {
@@ -409,7 +422,17 @@ function computeResultsFromGroups(
         const incentiveArr = reserve.supplyIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd),
+          buildPortfolioPositionResult(
+            slot.reserveId,
+            'supply',
+            amountUsd,
+            nativePercent,
+            incentivePercent,
+            undefined,
+            isApy,
+            undefined,
+            walletUsd,
+          ),
         );
       }
 
@@ -425,7 +448,19 @@ function computeResultsFromGroups(
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(slot.reserveId, 'borrow', effectiveUsd, nativePercent, incentivePercent, undefined, isApy, undefined, walletUsd, effectiveUsd, ltvClampedResult),
+          buildPortfolioPositionResult(
+            slot.reserveId,
+            'borrow',
+            effectiveUsd,
+            nativePercent,
+            incentivePercent,
+            undefined,
+            isApy,
+            undefined,
+            walletUsd,
+            effectiveUsd,
+            ltvClampedResult,
+          ),
         );
       }
     }
@@ -452,11 +487,14 @@ function computeHealthFactors(
 ): PortfolioHealthFactor[] {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
-  const poolGroups = new Map<string, {
-    totalCollateralUsd: number;
-    totalDebtUsd: number;
-    totalBorrowCapacityUsd: number;
-  }>();
+  const poolGroups = new Map<
+    string,
+    {
+      totalCollateralUsd: number;
+      totalDebtUsd: number;
+      totalBorrowCapacityUsd: number;
+    }
+  >();
 
   for (const result of results) {
     const key = getReserveKey({ reserveId: result.reserveId });
@@ -470,8 +508,8 @@ function computeHealthFactors(
     const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0, totalBorrowCapacityUsd: 0 };
 
     if (result.side === 'supply') {
-      poolGroup.totalCollateralUsd += result.amountUsd * lt / 100;
-      poolGroup.totalBorrowCapacityUsd += result.amountUsd * ltv / 100;
+      poolGroup.totalCollateralUsd += (result.amountUsd * lt) / 100;
+      poolGroup.totalBorrowCapacityUsd += (result.amountUsd * ltv) / 100;
     } else {
       poolGroup.totalDebtUsd += result.amountUsd;
     }
@@ -485,26 +523,24 @@ function computeHealthFactors(
     // AAV-1253 (P7): merge on-chain baseline
     const onchain = onchainHfMap?.get(poolKey);
     const currentHealthFactor = onchain?.healthFactor ?? null;
-    const deltaHealthFactor = (healthFactor != null && currentHealthFactor != null)
-      ? healthFactor - currentHealthFactor
-      : null;
+    const deltaHealthFactor =
+      healthFactor != null && currentHealthFactor != null ? healthFactor - currentHealthFactor : null;
 
-    healthFactors.push({ poolKey, healthFactor, currentHealthFactor, deltaHealthFactor, totalCollateralUsd, totalDebtUsd, totalBorrowCapacityUsd });
+    healthFactors.push({
+      poolKey,
+      healthFactor,
+      currentHealthFactor,
+      deltaHealthFactor,
+      totalCollateralUsd,
+      totalDebtUsd,
+      totalBorrowCapacityUsd,
+    });
   }
   return healthFactors;
 }
 
-export function simulatePortfolioFromEntries(
-  args: SimulatePortfolioEntriesArgs,
-): SimulatePortfolioResult {
-  const {
-    entries,
-    reserves,
-    isApy,
-    whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
-    forecastStates,
-  } = args;
+export function simulatePortfolioFromEntries(args: SimulatePortfolioEntriesArgs): SimulatePortfolioResult {
+  const { entries, reserves, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates } = args;
 
   const visibleEntries = entries.filter((e) => !e.hidden && !e.isOrphan);
   if (visibleEntries.length === 0) {
@@ -539,7 +575,12 @@ export function simulatePortfolioFromEntries(
   const ltvClampBySlot = computeLtvClamping(groupMap, reserveMap, args.lastModifiedReserveId);
 
   const results = computeResultsFromGroups(
-    groupMap, reserveMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+    groupMap,
+    reserveMap,
+    isApy,
+    whitelistMerklCampaignIds,
+    tydroPointToUsdRate,
+    forecastStates,
     ltvClampBySlot,
   );
 
@@ -590,10 +631,8 @@ export function buildPerReserveInputsFromEntries(
 
       if (!hasUserInput && !hasWalletPosition) continue;
 
-      const effectiveAmountUsd = hasUserInput
-        ? resolvePositionAmountUsd(s, reserve)
-        : (s.walletValue ?? 0);
-      const deltaUsd = hasUserInput ? (effectiveAmountUsd - (s.walletValue ?? 0)) : 0;
+      const effectiveAmountUsd = hasUserInput ? resolvePositionAmountUsd(s, reserve) : (s.walletValue ?? 0);
+      const deltaUsd = hasUserInput ? effectiveAmountUsd - (s.walletValue ?? 0) : 0;
 
       const existing = grouped.get(entry.reserveId) ?? {
         supplyUsd: 0,

@@ -16,8 +16,7 @@ import { fetchWithTimeout } from './lib/fetch-utils.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
-const UPSTREAM_PUBLIC_ROOT =
-  'https://raw.githubusercontent.com/aave/interface/main/public';
+const UPSTREAM_PUBLIC_ROOT = 'https://raw.githubusercontent.com/aave/interface/main/public';
 
 /**
  * Slice the `prodNetworkConfig` object literal (balanced braces) from the full file.
@@ -113,7 +112,7 @@ async function main() {
   }
 
   console.log(
-    `chain network icons: ${iconPaths.length} upstream path(s), ${downloaded} downloaded, ${skipped} skipped (exists)`
+    `chain network icons: ${iconPaths.length} upstream path(s), ${downloaded} downloaded, ${skipped} skipped (exists)`,
   );
 
   if (failures.length > 0) {

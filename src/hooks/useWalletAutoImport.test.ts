@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
 
 vi.mock('sonner', () => ({
   toast: {
@@ -9,23 +9,23 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
     warning: vi.fn(),
   },
-}))
+}));
 
-const mockConvert = vi.fn()
+const mockConvert = vi.fn();
 vi.mock('@/lib/walletPositionToPortfolio', () => ({
   convertWalletPositionsToEntries: (...args: unknown[]) => mockConvert(...args),
-}))
+}));
 
-import { toast } from 'sonner'
-import { useWalletAutoImport } from '@/hooks/useWalletAutoImport'
-import type { DegradedResult, WalletLoadState } from '@/hooks/useUserPositionsSdk'
-import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
-import type { PortfolioReserveEntry } from '@/types/portfolio'
-import type { WalletPosition } from '@/lib/userData/userPositionMapper'
-import type { ReserveWithSpread } from '@/types/aave'
+import { toast } from 'sonner';
+import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
+import type { DegradedResult, WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
+import type { WalletPosition } from '@/lib/userData/userPositionMapper';
+import type { ReserveWithSpread } from '@/types/aave';
 
-const mockImportReserves = vi.fn()
-const mockRemoveWalletEntries = vi.fn(() => 0)
+const mockImportReserves = vi.fn();
+const mockRemoveWalletEntries = vi.fn(() => 0);
 const mockPortfolioActions: PortfolioSimulationActions = {
   setActive: vi.fn(),
   addReserve: vi.fn(),
@@ -40,13 +40,13 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
-}
+};
 
 function makeSuccessResult(positions: WalletPosition[] = []): DegradedResult {
   return {
     status: 'success',
     data: { positions, failedSources: [] },
-  }
+  };
 }
 
 function makePartialResult(positions: WalletPosition[] = []): DegradedResult {
@@ -54,7 +54,7 @@ function makePartialResult(positions: WalletPosition[] = []): DegradedResult {
     status: 'partial',
     data: { positions, failedSources: ['sdk-v3'] },
     retry: vi.fn(),
-  }
+  };
 }
 
 function makeErrorResult(): DegradedResult {
@@ -62,23 +62,47 @@ function makeErrorResult(): DegradedResult {
     status: 'error',
     error: new Error('fail'),
     retry: vi.fn(),
-  }
+  };
 }
 
-const address = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`
-const emptyReserves: ReserveWithSpread[] = []
+const address = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`;
+const emptyReserves: ReserveWithSpread[] = [];
 const convertedEntries: PortfolioReserveEntry[] = [
-  { reserveId: 'r1', marketName: '', chainName: '', chainId: -1, tokenSymbol: 'USDC', supply: { amount: '100', inputMode: 'usd', walletValue: 100 }, borrow: { amount: '', inputMode: 'usd', walletValue: null }, hidden: false, isOrphan: false, restrictedStatus: null },
-]
+  {
+    reserveId: 'r1',
+    marketName: '',
+    chainName: '',
+    chainId: -1,
+    tokenSymbol: 'USDC',
+    supply: { amount: '100', inputMode: 'usd', walletValue: 100 },
+    borrow: { amount: '', inputMode: 'usd', walletValue: null },
+    hidden: false,
+    isOrphan: false,
+    restrictedStatus: null,
+  },
+];
 
 describe('useWalletAutoImport', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockConvert.mockReturnValue(convertedEntries)
-  })
+    vi.clearAllMocks();
+    mockConvert.mockReturnValue(convertedEntries);
+  });
 
   it('auto-imports entries on wallet connect', () => {
-    const walletPositions: WalletPosition[] = [{ reserveId: 'r1', side: 'supply', chainId: 1, asset: '0x1234567890123456789012345678901234567890' as `0x${string}`, tokenSymbol: 'USDC', amountWad: 0n, amountUsd: 100, isCollateral: false, source: 'sdk', isOrphan: false }]
+    const walletPositions: WalletPosition[] = [
+      {
+        reserveId: 'r1',
+        side: 'supply',
+        chainId: 1,
+        asset: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        tokenSymbol: 'USDC',
+        amountWad: 0n,
+        amountUsd: 100,
+        isCollateral: false,
+        source: 'sdk',
+        isOrphan: false,
+      },
+    ];
     const { rerender } = renderHook(
       (props: { isConnected: boolean; walletResult: DegradedResult; walletLoadState: WalletLoadState }) =>
         useWalletAutoImport({
@@ -95,20 +119,20 @@ describe('useWalletAutoImport', () => {
         initialProps: {
           isConnected: false,
           walletResult: makeSuccessResult(),
-          walletLoadState: 'idle' as const,
-        },
+          walletLoadState: 'idle',
+        } as { isConnected: boolean; walletResult: DegradedResult; walletLoadState: WalletLoadState },
       },
-    )
+    );
 
-    rerender({ isConnected: true, walletResult: makeSuccessResult(walletPositions), walletLoadState: 'success' })
+    rerender({ isConnected: true, walletResult: makeSuccessResult(walletPositions), walletLoadState: 'success' });
 
-    expect(mockConvert).toHaveBeenCalledWith(walletPositions, emptyReserves)
-    expect(mockImportReserves).toHaveBeenCalledWith(convertedEntries)
-    expect(toast.success).toHaveBeenCalled()
-  })
+    expect(mockConvert).toHaveBeenCalledWith(walletPositions, emptyReserves);
+    expect(mockImportReserves).toHaveBeenCalledWith(convertedEntries);
+    expect(toast.success).toHaveBeenCalled();
+  });
 
   it('shows toast when wallet has no positions', () => {
-    mockConvert.mockReturnValue([])
+    mockConvert.mockReturnValue([]);
 
     renderHook(() =>
       useWalletAutoImport({
@@ -121,11 +145,11 @@ describe('useWalletAutoImport', () => {
         reserves: emptyReserves,
         portfolioActions: mockPortfolioActions,
       }),
-    )
+    );
 
-    expect(mockImportReserves).toHaveBeenCalledWith([])
-    expect(toast.info).toHaveBeenCalledWith('Wallet has no positions')
-  })
+    expect(mockImportReserves).toHaveBeenCalledWith([]);
+    expect(toast.info).toHaveBeenCalledWith('Wallet has no positions');
+  });
 
   it('shows error toast on wallet result error', () => {
     renderHook(() =>
@@ -139,10 +163,10 @@ describe('useWalletAutoImport', () => {
         reserves: emptyReserves,
         portfolioActions: mockPortfolioActions,
       }),
-    )
+    );
 
-    expect(toast.error).toHaveBeenCalledWith('Failed to load wallet positions')
-  })
+    expect(toast.error).toHaveBeenCalledWith('Failed to load wallet positions');
+  });
 
   it('shows SDK degradation toast when SDK fails', () => {
     renderHook(() =>
@@ -156,16 +180,13 @@ describe('useWalletAutoImport', () => {
         reserves: emptyReserves,
         portfolioActions: mockPortfolioActions,
       }),
-    )
+    );
 
-    expect(toast.warning).toHaveBeenCalledWith(
-      'V3 SDK unavailable — using on-chain fallback',
-      { duration: 5000 },
-    )
-  })
+    expect(toast.warning).toHaveBeenCalledWith('V3 SDK unavailable — using on-chain fallback', { duration: 5000 });
+  });
 
   it('does not re-import for same address', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
 
     const { rerender } = renderHook(
       (props: { walletResult: DegradedResult }) =>
@@ -180,17 +201,17 @@ describe('useWalletAutoImport', () => {
           portfolioActions: mockPortfolioActions,
         }),
       { initialProps: { walletResult: makeSuccessResult(walletPositions) } },
-    )
+    );
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
 
-    rerender({ walletResult: makeSuccessResult(walletPositions) })
+    rerender({ walletResult: makeSuccessResult(walletPositions) });
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
-  })
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
+  });
 
   it('resets state when wallet disconnects', () => {
-    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+    const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
 
     const { rerender } = renderHook(
       (props: { isConnected: boolean }) =>
@@ -205,21 +226,21 @@ describe('useWalletAutoImport', () => {
           portfolioActions: mockPortfolioActions,
         }),
       { initialProps: { isConnected: true } },
-    )
+    );
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
 
-    rerender({ isConnected: false })
-    rerender({ isConnected: true })
+    rerender({ isConnected: false });
+    rerender({ isConnected: true });
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(2)
-  })
+    expect(mockImportReserves).toHaveBeenCalledTimes(2);
+  });
 
   it('re-imports when wallet switches to a different address', () => {
-    const addressA = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
-    const addressB = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`
-    const positionsA = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
-    const positionsB = [{ reserveId: 'r2', side: 'borrow' }] as unknown as WalletPosition[]
+    const addressA = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`;
+    const addressB = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`;
+    const positionsA = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
+    const positionsB = [{ reserveId: 'r2', side: 'borrow' }] as unknown as WalletPosition[];
 
     const { rerender } = renderHook(
       (props: { address: `0x${string}`; positions: WalletPosition[] }) =>
@@ -234,20 +255,20 @@ describe('useWalletAutoImport', () => {
           portfolioActions: mockPortfolioActions,
         }),
       { initialProps: { address: addressA, positions: positionsA } },
-    )
+    );
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
 
-    rerender({ address: addressB, positions: positionsB })
+    rerender({ address: addressB, positions: positionsB });
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(2)
-    expect(mockConvert).toHaveBeenLastCalledWith(positionsB, emptyReserves)
-  })
+    expect(mockImportReserves).toHaveBeenCalledTimes(2);
+    expect(mockConvert).toHaveBeenLastCalledWith(positionsB, emptyReserves);
+  });
 
   it('does not re-import when same address with different checksum casing', () => {
-    const addressLower = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
-    const addressUpper = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as `0x${string}`
-    const positions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+    const addressLower = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`;
+    const addressUpper = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as `0x${string}`;
+    const positions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
 
     const { rerender } = renderHook(
       (props: { address: `0x${string}` }) =>
@@ -262,14 +283,14 @@ describe('useWalletAutoImport', () => {
           portfolioActions: mockPortfolioActions,
         }),
       { initialProps: { address: addressLower } },
-    )
+    );
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
 
-    rerender({ address: addressUpper })
+    rerender({ address: addressUpper });
 
-    expect(mockImportReserves).toHaveBeenCalledTimes(1)
-  })
+    expect(mockImportReserves).toHaveBeenCalledTimes(1);
+  });
 
   describe('disconnect cleanup', () => {
     it('calls removeWalletEntries when wallet disconnects', () => {
@@ -286,17 +307,17 @@ describe('useWalletAutoImport', () => {
             portfolioActions: mockPortfolioActions,
           }),
         { initialProps: { isConnected: true } },
-      )
+      );
 
-      mockRemoveWalletEntries.mockClear()
+      mockRemoveWalletEntries.mockClear();
 
-      rerender({ isConnected: false })
+      rerender({ isConnected: false });
 
-      expect(mockRemoveWalletEntries).toHaveBeenCalledTimes(1)
-    })
+      expect(mockRemoveWalletEntries).toHaveBeenCalledTimes(1);
+    });
 
     it('shows toast when wallet entries are removed', () => {
-      mockRemoveWalletEntries.mockReturnValue(2)
+      mockRemoveWalletEntries.mockReturnValue(2);
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -311,15 +332,15 @@ describe('useWalletAutoImport', () => {
             portfolioActions: mockPortfolioActions,
           }),
         { initialProps: { isConnected: true } },
-      )
+      );
 
-      rerender({ isConnected: false })
+      rerender({ isConnected: false });
 
-      expect(toast.info).toHaveBeenCalledWith('Removed 2 wallet positions')
-    })
+      expect(toast.info).toHaveBeenCalledWith('Removed 2 wallet positions');
+    });
 
     it('does not show toast when zero wallet entries removed', () => {
-      mockRemoveWalletEntries.mockReturnValue(0)
+      mockRemoveWalletEntries.mockReturnValue(0);
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -334,15 +355,15 @@ describe('useWalletAutoImport', () => {
             portfolioActions: mockPortfolioActions,
           }),
         { initialProps: { isConnected: true } },
-      )
+      );
 
-      rerender({ isConnected: false })
+      rerender({ isConnected: false });
 
-      expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('wallet position'))
-    })
+      expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('wallet position'));
+    });
 
     it('calls onDisconnect callback when wallet disconnects', () => {
-      const onDisconnect = vi.fn()
+      const onDisconnect = vi.fn();
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -358,17 +379,17 @@ describe('useWalletAutoImport', () => {
             onDisconnect,
           }),
         { initialProps: { isConnected: true } },
-      )
+      );
 
-      expect(onDisconnect).not.toHaveBeenCalled()
+      expect(onDisconnect).not.toHaveBeenCalled();
 
-      rerender({ isConnected: false })
+      rerender({ isConnected: false });
 
-      expect(onDisconnect).toHaveBeenCalledTimes(1)
-    })
+      expect(onDisconnect).toHaveBeenCalledTimes(1);
+    });
 
     it('does not call onDisconnect when wallet is already disconnected', () => {
-      const onDisconnect = vi.fn()
+      const onDisconnect = vi.fn();
 
       renderHook(() =>
         useWalletAutoImport({
@@ -382,15 +403,15 @@ describe('useWalletAutoImport', () => {
           portfolioActions: mockPortfolioActions,
           onDisconnect,
         }),
-      )
+      );
 
-      expect(onDisconnect).not.toHaveBeenCalled()
-    })
+      expect(onDisconnect).not.toHaveBeenCalled();
+    });
 
     it('calls onDisconnect before re-import on reconnect', () => {
-      const onDisconnect = vi.fn()
-      const onImport = vi.fn()
-      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+      const onDisconnect = vi.fn();
+      const onImport = vi.fn();
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -407,23 +428,23 @@ describe('useWalletAutoImport', () => {
             onDisconnect,
           }),
         { initialProps: { isConnected: true } },
-      )
+      );
 
-      expect(onImport).toHaveBeenCalledTimes(1)
-      expect(onDisconnect).not.toHaveBeenCalled()
+      expect(onImport).toHaveBeenCalledTimes(1);
+      expect(onDisconnect).not.toHaveBeenCalled();
 
-      rerender({ isConnected: false })
+      rerender({ isConnected: false });
 
-      expect(onDisconnect).toHaveBeenCalledTimes(1)
+      expect(onDisconnect).toHaveBeenCalledTimes(1);
 
-      rerender({ isConnected: true })
+      rerender({ isConnected: true });
 
-      expect(onImport).toHaveBeenCalledTimes(2)
-    })
+      expect(onImport).toHaveBeenCalledTimes(2);
+    });
 
     it('calls onDisconnect on multiple connect/disconnect cycles', () => {
-      const onDisconnect = vi.fn()
-      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[]
+      const onDisconnect = vi.fn();
+      const walletPositions = [{ reserveId: 'r1', side: 'supply' }] as unknown as WalletPosition[];
 
       const { rerender } = renderHook(
         (props: { isConnected: boolean }) =>
@@ -439,17 +460,17 @@ describe('useWalletAutoImport', () => {
             onDisconnect,
           }),
         { initialProps: { isConnected: false } },
-      )
+      );
 
-      expect(onDisconnect).toHaveBeenCalledTimes(0)
+      expect(onDisconnect).toHaveBeenCalledTimes(0);
 
-      rerender({ isConnected: true })
-      rerender({ isConnected: false })
-      expect(onDisconnect).toHaveBeenCalledTimes(1)
+      rerender({ isConnected: true });
+      rerender({ isConnected: false });
+      expect(onDisconnect).toHaveBeenCalledTimes(1);
 
-      rerender({ isConnected: true })
-      rerender({ isConnected: false })
-      expect(onDisconnect).toHaveBeenCalledTimes(2)
-    })
-  })
-})
+      rerender({ isConnected: true });
+      rerender({ isConnected: false });
+      expect(onDisconnect).toHaveBeenCalledTimes(2);
+    });
+  });
+});

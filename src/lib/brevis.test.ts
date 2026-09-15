@@ -86,45 +86,58 @@ describe('getBrevisResolvedBreakdown', () => {
   it('prefers breakdown values over top-level when provided', () => {
     const brevis = makeBrevis({
       campaignApr: 1.5,
-      breakdowns: [{ campaignId: 'brevis-b1', campaignApr: 2.25, campaignStartedAt: '2026-04-01T00:00:00.000Z', campaignEndedAt: '2026-05-01T00:00:00.000Z' }],
+      breakdowns: [
+        {
+          campaignId: 'brevis-b1',
+          campaignApr: 2.25,
+          campaignStartedAt: '2026-04-01T00:00:00.000Z',
+          campaignEndedAt: '2026-05-01T00:00:00.000Z',
+        },
+      ],
     });
     const resolved = getBrevisResolvedBreakdown(brevis, brevis.breakdowns?.[0]);
     expect(resolved.campaignApr).toBe(2.25);
   });
 
   it('falls back aprCap to campaignApr for FIX type when aprCap is null', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-fix',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: null,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-fix',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: null,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+      }),
+    );
     expect(resolved.aprCap).toBe(3.2);
   });
 
   it('falls back aprCap to campaignApr for FIX type when aprCap is undefined', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-fix',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: undefined,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-fix',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: undefined,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+      }),
+    );
     expect(resolved.aprCap).toBe(3.2);
   });
 
   it('preserves null aprCap for non-FIX type', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-max',
-      campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: null,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-max',
+        campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: null,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+      }),
+    );
     expect(resolved.aprCap).toBeNull();
   });
 });
@@ -150,7 +163,10 @@ describe('hasActiveBrevisBreakdown', () => {
 });
 
 describe('Brevis via forecastMerklApr', () => {
-  const makeForecastStates = (campaignId: string, overrides: Partial<MerklForecastWireItem> = {}): Record<string, MerklForecastWireItem> => ({
+  const makeForecastStates = (
+    campaignId: string,
+    overrides: Partial<MerklForecastWireItem> = {},
+  ): Record<string, MerklForecastWireItem> => ({
     [campaignId]: {
       campaignId,
       distributedSoFar: 100,
@@ -161,88 +177,100 @@ describe('Brevis via forecastMerklApr', () => {
   });
 
   it('returns campaignApr when inputUsd=0 and campaignApr>0 (current path)', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-1',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: 5,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-      latestTvl: 100_000,
-      totalBudget: 500,
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
+    );
     const apr = forecastMerklApr(resolved, 0, makeForecastStates('brevis-1'), 0);
     expect(apr).toBe(3.2);
   });
 
   it('returns forecast APR when inputUsd>0 (after path)', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-1',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: 5,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-      latestTvl: 100_000,
-      totalBudget: 500,
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
+    );
     const apr = forecastMerklApr(resolved, 50_000, makeForecastStates('brevis-1'), 0);
     expect(apr).toBeGreaterThan(0);
     expect(apr).toBe(5);
   });
 
   it('uses aprCap fallback when FIX type has no aprCap', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-fix',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: null,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-      latestTvl: 100_000,
-      totalBudget: 500,
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-fix',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: null,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
+    );
     const apr = forecastMerklApr(resolved, 50_000, makeForecastStates('brevis-fix'), 0);
     expect(apr).toBeGreaterThan(0);
   });
 
   it('returns campaignApr when no forecast states available', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-1',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: 5,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+      }),
+    );
     const apr = forecastMerklApr(resolved, 0, {}, 0);
     expect(apr).toBe(3.2);
   });
 
   it('returns 0 when campaignApr is 0 and no forecast states', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-1',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: 5,
-      campaignApr: 0,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        campaignApr: 0,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+      }),
+    );
     const apr = forecastMerklApr(resolved, 0, {}, 0);
     expect(apr).toBe(0);
   });
 
   it('passes tydroPointToUsdRate=0 to forecastMerklApr (Brevis is not points)', () => {
-    const resolved = getBrevisResolvedBreakdown(makeBrevis({
-      campaignId: 'brevis-1',
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      aprCap: 5,
-      campaignApr: 3.2,
-      campaignStartedAt: '2026-03-01T00:00:00.000Z',
-      campaignEndedAt: '2026-03-31T00:00:00.000Z',
-      latestTvl: 100_000,
-      totalBudget: 500,
-    }));
+    const resolved = getBrevisResolvedBreakdown(
+      makeBrevis({
+        campaignId: 'brevis-1',
+        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+        aprCap: 5,
+        campaignApr: 3.2,
+        campaignStartedAt: '2026-03-01T00:00:00.000Z',
+        campaignEndedAt: '2026-03-31T00:00:00.000Z',
+        latestTvl: 100_000,
+        totalBudget: 500,
+      }),
+    );
     const apr = forecastMerklApr(resolved, 50_000, makeForecastStates('brevis-1'), 0);
     expect(apr).toBeGreaterThan(0);
     expect(Number.isFinite(apr)).toBe(true);

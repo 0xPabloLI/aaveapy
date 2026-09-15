@@ -3,6 +3,27 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/it/tassi-aave-apy',
   lang: 'it',
+  languageSwitcherLabel: 'Altre lingue',
+  calculator: {
+    id: 'calcolatore',
+    h2: 'Calcolatore di rendimento in euro',
+    intro:
+      'Inserisci un importo in euro e scegli una riserva in stablecoin: il calcolatore applica il tasso di deposito live di Aave V3 e mostra il guadagno lordo all’anno, al mese e al giorno.',
+    numberLocale: 'it-IT',
+    currency: 'EUR',
+    defaultAmount: 10000,
+    amountLabel: 'Importo depositato (€)',
+    reserveLabel: 'Riserva (tasso live)',
+    apyLabel: 'APY di deposito',
+    perYear: 'All’anno',
+    perMonth: 'Al mese',
+    perDay: 'Al giorno',
+    usdEquivalentLabel: 'Equivalente in dollari:',
+    loading: 'Caricamento dei tassi live…',
+    error: 'Tassi non disponibili al momento. Riprova tra qualche minuto.',
+    disclaimer:
+      'Stima a tasso costante: l’APY di Aave cambia in continuazione. Il rendimento matura in dollari, quindi cambio, commissioni di rete e fiscalità non sono inclusi. Non è consulenza finanziaria.',
+  },
   ogLocale: 'it_IT',
   title: 'Tassi Aave e APY in tempo reale | Aave V3',
   description:
@@ -49,6 +70,22 @@ const content: RatesPageContent = {
         'Con 10.000 € equivalenti in USDC depositati su Base e un APY di deposito del 4,2 %, gli interessi annui sono circa 420 €, poco più di 35 € al mese. È una proiezione a tasso fermo: nella realtà il tasso si muove a ogni blocco.',
         'Se sulla stessa riserva è attivo un incentivo Merit dell’1,8 % APR, il rendimento effettivo sale intorno al 6 %, cioè circa 600 € l’anno. La differenza tra tasso base e APY effettivo è esattamente quella evidenziata in dashboard.',
         'Lato prestito: con 10.000 € di collaterale in ETH e 4.000 € presi in prestito in USDC a un APY del 5,5 %, il costo è di circa 220 € l’anno. Su Base le commissioni di rete sono di pochi centesimi, mentre su Ethereum mainnet possono erodere il rendimento di importi contenuti.',
+      ],
+    },
+    {
+      id: 'rendimento-defi',
+      h2: 'Rendimento DeFi: quali numeri contano davvero',
+      paragraphs: [
+        'Il rendimento di una riserva Aave nasce da tre componenti: il tasso base pagato da chi prende in prestito, gli incentivi distribuiti in token e i costi che sostieni tu (gas, cambio, fiscalità). Solo il primo è determinato dalla curva del protocollo; gli altri due cambiano con i programmi attivi e con il mercato.',
+        'Per confrontare in modo sensato conviene guardare sempre lo stesso asset su reti diverse: USDC su Base, su Arbitrum e su Ethereum sono mercati separati, con liquidità e incentivi propri. Differenze di due punti di APY tra reti sono normali e si richiudono in poche ore quando la liquidità si sposta.',
+      ],
+    },
+    {
+      id: 'aave-lending',
+      h2: 'Aave lending: prestare senza intermediari',
+      paragraphs: [
+        'Prestare su Aave significa depositare in un pool e ricevere un aToken il cui saldo cresce da solo, senza vincoli di durata e senza una controparte specifica. Il prelievo è immediato finché il pool ha liquidità disponibile: è quella disponibilità, non un contratto, a determinare i tempi.',
+        'I rischi da tenere presenti sono il rischio di smart contract, il rischio che lo stablecoin depositato perda l’ancoraggio e il rischio di illiquidità temporanea quando l’utilizzo si avvicina al 100 %. Per questo la dashboard mostra l’utilizzo accanto al tasso di ogni riserva.',
       ],
     },
   ],
@@ -122,6 +159,18 @@ const content: RatesPageContent = {
       {
         q: 'Da dove arrivano i dati mostrati?',
         a: 'Dallo stato on-chain di Aave V3 e dai dati pubblici dei programmi di incentivo, aggregati e aggiornati ogni pochi minuti. Verifica sempre i valori nell’app ufficiale prima di operare.',
+      },
+      {
+        q: 'Che rendimento DeFi è realistico sugli stablecoin?',
+        a: 'Il tasso base delle grandi riserve in stablecoin si muove di solito su valori a una cifra bassa; gli incentivi possono alzarlo temporaneamente. Rendimenti a due cifre stabili sono l’eccezione e quasi sempre legati a campagne con una scadenza, quindi verifica sempre la data di fine.',
+      },
+      {
+        q: 'Cosa significa fare lending su Aave?',
+        a: 'Significa depositare un asset in un pool comune, ricevendo un aToken che accumula interessi nel saldo. Non c’è durata minima e non devi trovare una controparte: chi prende in prestito lo fa contro garanzie sovracollateralizzate gestite dal protocollo.',
+      },
+      {
+        q: 'Perché lo stesso asset rende in modo diverso su reti diverse?',
+        a: 'Perché in Aave V3 ogni rete ha un pool indipendente, con utilizzo, profondità e incentivi propri. Su una rete piccola un deposito importante sposta la curva molto più che su Ethereum, dove la liquidità è più profonda.',
       },
     ],
   },

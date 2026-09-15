@@ -58,59 +58,42 @@ describe('UtilizationContent sort arrows', () => {
   };
 
   it('renders "Current utilization" sort arrow button when onSortUtilization is provided', () => {
-    const html = renderToString(
-      <UtilizationContent
-        {...baseProps}
-        onSortUtilization={() => {}}
-      />,
-    );
+    const html = renderToString(<UtilizationContent {...baseProps} onSortUtilization={() => {}} />);
     expect(html).toContain('aria-label="Sort by utilization"');
   });
 
   it('does not render "Current utilization" sort arrow when onSortUtilization not provided', () => {
-    const html = renderToString(
-      <UtilizationContent {...baseProps} />,
-    );
+    const html = renderToString(<UtilizationContent {...baseProps} />);
     expect(html).not.toContain('aria-label="Sort by utilization"');
   });
 });
 
 describe('UtilizationContent formula layout', () => {
   it('renders CSS fraction formula with =, borrowed and liquidity terms', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} />,
-    );
+    const html = renderToString(<UtilizationContent current={50} optimal={80} />);
     expect(html).toContain('=');
     expect(html).toContain('borrowed');
     expect(html).toContain('liquidity');
   });
 
   it('does not render Available liquidity row', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} />,
-    );
+    const html = renderToString(<UtilizationContent current={50} optimal={80} />);
     expect(html).not.toContain('Available liquidity');
   });
 
   it('passes formulaVariant="inline" to UtilizationFormula', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} formulaVariant="inline" />,
-    );
+    const html = renderToString(<UtilizationContent current={50} optimal={80} formulaVariant="inline" />);
     expect(html).toMatch(/>\/</);
     expect(html).toMatch(/>\(</);
   });
 
   it('passes formulaLabel to UtilizationFormula', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} formulaLabel="U" />,
-    );
+    const html = renderToString(<UtilizationContent current={50} optimal={80} formulaLabel="U" />);
     expect(html).toMatch(/>U</);
   });
 
   it('defaults to fraction layout when no formulaVariant provided', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} />,
-    );
+    const html = renderToString(<UtilizationContent current={50} optimal={80} />);
     expect(html).not.toMatch(/>\/</);
   });
 });

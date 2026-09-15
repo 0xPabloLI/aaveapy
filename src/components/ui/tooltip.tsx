@@ -1,8 +1,8 @@
-import * as React from "react";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as React from 'react';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
@@ -17,21 +17,21 @@ const TooltipContent = React.forwardRef<
   const isMobile = useIsMobile();
 
   const mobileAnimationClasses =
-    "animate-in fade-in-0 slide-in-from-bottom-4 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-4";
+    'animate-in fade-in-0 slide-in-from-bottom-4 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom-4';
 
   const desktopAnimationClasses =
-    "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
+    'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2';
 
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
-        side={isMobile ? "bottom" : side}
+        side={isMobile ? 'bottom' : side}
         className={cn(
           // group/tt lets <TooltipCalloutArrow /> auto-detect the actual rendered side
           // via group-data-[side=...]/tt variants, so it follows Radix collision flips.
-          "group/tt z-50 max-w-[18rem] overflow-visible rounded-md border border-border/60 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
+          'group/tt z-50 max-w-[18rem] overflow-visible rounded-md border border-border/60 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200',
           isMobile ? mobileAnimationClasses : desktopAnimationClasses,
           className,
         )}
@@ -46,11 +46,7 @@ const TooltipArrow = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Arrow>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Arrow>
 >(({ className, ...props }, ref) => (
-  <TooltipPrimitive.Arrow
-    ref={ref}
-    className={cn("fill-card", className)}
-    {...props}
-  />
+  <TooltipPrimitive.Arrow ref={ref} className={cn('fill-card', className)} {...props} />
 ));
 TooltipArrow.displayName = TooltipPrimitive.Arrow.displayName;
 

@@ -13,9 +13,7 @@ const ETH_MARKETS: MarketListItem[] = [
   { marketName: 'AaveV4EthereumLido', chainName: 'Ethereum', chainId: 1 },
 ];
 
-const BASE_MARKETS: MarketListItem[] = [
-  { marketName: 'AaveV3Base', chainName: 'Base', chainId: 8453 },
-];
+const BASE_MARKETS: MarketListItem[] = [{ marketName: 'AaveV3Base', chainName: 'Base', chainId: 8453 }];
 
 const ALL_MARKETS = [...ETH_MARKETS, ...BASE_MARKETS];
 
@@ -125,9 +123,7 @@ describe('resolveMarketSlugs — risk scenarios', () => {
     expect(result.resolved).toEqual(['999:AaveV4Test']);
     expect(result.invalid).toEqual([]);
     // Collision warning was emitted
-    expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining('[marketSlug] Collision'),
-    );
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('[marketSlug] Collision'));
     spy.mockRestore();
   });
 

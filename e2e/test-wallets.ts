@@ -15,8 +15,7 @@ import { expect, type Page } from '@playwright/test';
 export const DEFAULT_WATCH_ADDRESS = '0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314';
 
 /** Convenience: read from env or fall back to the default. */
-export const WATCH_ADDRESS: string | undefined =
-  process.env.E2E_WATCH_ADDRESS ?? DEFAULT_WATCH_ADDRESS;
+export const WATCH_ADDRESS: string | undefined = process.env.E2E_WATCH_ADDRESS ?? DEFAULT_WATCH_ADDRESS;
 
 /**
  * Wait until the header renders *some* wallet affordance.

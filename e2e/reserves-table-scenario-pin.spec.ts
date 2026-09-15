@@ -61,22 +61,13 @@ async function expectPinnedWithExpandedBlockVisible(
     throw new Error(`failed to read geometry for ${label}`);
   }
 
-  expect(
-    main.y,
-    `main row should stay pinned just below sticky stack (${label})`,
-  ).toBeLessThanOrEqual(pinnedTopY + 16);
-  expect(
-    main.y,
-    `main row should not drift above sticky stack (${label})`,
-  ).toBeGreaterThanOrEqual(pinnedTopY - 4);
+  expect(main.y, `main row should stay pinned just below sticky stack (${label})`).toBeLessThanOrEqual(pinnedTopY + 16);
+  expect(main.y, `main row should not drift above sticky stack (${label})`).toBeGreaterThanOrEqual(pinnedTopY - 4);
   expect(
     simulation.y + simulation.height,
     `expanded simulation block should be fully visible in viewport (${label})`,
   ).toBeLessThanOrEqual(viewportHeight + 2);
-  expect(
-    next.y,
-    `next row top should remain visible after pin (${label})`,
-  ).toBeLessThanOrEqual(viewportHeight - 1);
+  expect(next.y, `next row top should remain visible after pin (${label})`).toBeLessThanOrEqual(viewportHeight - 1);
 }
 
 async function getMainRowOffsetFromPinBand(
@@ -101,9 +92,12 @@ async function moveExpandedRowAwayFromPinBand(
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const delta = await getMainRowOffsetFromPinBand(page, reserveId);
     if (Math.abs(delta) >= minDeltaPx) return;
-    await page.evaluate((step) => {
-      window.scrollBy({ top: step, behavior: 'auto' });
-    }, Math.max(220, minDeltaPx));
+    await page.evaluate(
+      (step) => {
+        window.scrollBy({ top: step, behavior: 'auto' });
+      },
+      Math.max(220, minDeltaPx),
+    );
     await page.waitForTimeout(120);
   }
 
@@ -115,9 +109,9 @@ async function moveExpandedRowAwayFromPinBand(
 }
 
 async function getVisibleReserveOrder(page: Parameters<typeof test>[0]['page']): Promise<string[]> {
-  return page.locator('tbody tr[data-reserve-id]').evaluateAll((rows) =>
-    rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0),
-  );
+  return page
+    .locator('tbody tr[data-reserve-id]')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0));
 }
 
 function didReorder(beforeOrder: string[], afterOrder: string[], reserveId: string): boolean {
@@ -128,10 +122,7 @@ function didReorder(beforeOrder: string[], afterOrder: string[], reserveId: stri
   return beforeOrder.some((id, idx) => id !== afterOrder[idx]);
 }
 
-async function setScenarioInputs(
-  page: Parameters<typeof test>[0]['page'],
-  values: { supply: string; borrow: string },
-) {
+async function setScenarioInputs(page: Parameters<typeof test>[0]['page'], values: { supply: string; borrow: string }) {
   await page.evaluate(({ supply, borrow }) => {
     const supplyInput = document.querySelector<HTMLInputElement>(
       '[data-reserves-sticky-scenario] input[aria-label="Supply amount"]',
@@ -216,10 +207,7 @@ async function armOrderProbe(page: Parameters<typeof test>[0]['page']) {
         const baseline = win.__e2eOrderBaseline;
         if (!baseline) return;
         const order = readOrder();
-        if (
-          order.length !== baseline.length ||
-          order.some((id, idx) => id !== baseline[idx])
-        ) {
+        if (order.length !== baseline.length || order.some((id, idx) => id !== baseline[idx])) {
           win.__e2eOrderReordered = true;
         }
       });
@@ -241,10 +229,7 @@ async function getOrderProbeReordered(page: Parameters<typeof test>[0]['page']):
 
 test.describe('Scenario input pin scroll (desktop)', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Pin scroll is desktop-specific',
-    );
+    test.skip(testInfo.project.name.includes('mobile'), 'Pin scroll is desktop-specific');
   });
 
   test('expanded row stays pinned after second scenario input reorders list', async ({ page }) => {
@@ -255,10 +240,12 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
     await supplyInput.fill('100');
     // Wait for scenario input to take effect (table re-sort).
-    await expect.poll(
-      async () => page.locator('tbody tr[data-reserve-id]').count(),
-      { timeout: 10_000, message: 'table to re-sort after scenario input' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(async () => page.locator('tbody tr[data-reserve-id]').count(), {
+        timeout: 10_000,
+        message: 'table to re-sort after scenario input',
+      })
+      .toBeGreaterThan(0);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
@@ -293,10 +280,12 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
     await setScenarioInputs(page, { supply: '100', borrow: '0' });
     // Wait for scenario input to take effect.
-    await expect.poll(
-      async () => page.locator('tbody tr[data-reserve-id]').count(),
-      { timeout: 10_000, message: 'table to re-sort after scenario input' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(async () => page.locator('tbody tr[data-reserve-id]').count(), {
+        timeout: 10_000,
+        message: 'table to re-sort after scenario input',
+      })
+      .toBeGreaterThan(0);
     await maybeExpandDesktopRowsToFullList(page);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
@@ -333,15 +322,17 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       await setScenarioInputs(page, step);
       // Wait for the table sort to stabilize (two consecutive reads with same order).
       // Just checking order.length > 0 is insufficient — the sort may still be in progress.
-      await expect.poll(
-        async () => {
-          const order1 = await getVisibleReserveOrder(page);
-          await page.waitForTimeout(100);
-          const order2 = await getVisibleReserveOrder(page);
-          return order1.join(',') === order2.join(',') ? order1.length : 0;
-        },
-        { timeout: 15_000, message: `table sort to stabilize after scenario step ${i + 1}` },
-      ).toBeGreaterThan(0);
+      await expect
+        .poll(
+          async () => {
+            const order1 = await getVisibleReserveOrder(page);
+            await page.waitForTimeout(100);
+            const order2 = await getVisibleReserveOrder(page);
+            return order1.join(',') === order2.join(',') ? order1.length : 0;
+          },
+          { timeout: 15_000, message: `table sort to stabilize after scenario step ${i + 1}` },
+        )
+        .toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
       const finalReorder = didReorder(beforeOrder, afterOrder, reserveId);
       const transientReorder = !finalReorder && (await getOrderProbeReordered(page));
@@ -350,10 +341,7 @@ test.describe('Scenario input pin scroll (desktop)', () => {
         // Non-reorder: wait a bit to confirm no pin scroll fires.
         await page.waitForTimeout(500);
         const scrollByCalls = await getScrollByProbeCount(page);
-        expect(
-          scrollByCalls,
-          `non-reorder edit #${i + 1} should not force pin scroll`,
-        ).toBe(0);
+        expect(scrollByCalls, `non-reorder edit #${i + 1} should not force pin scroll`).toBe(0);
         // Note: we do NOT assert the row offset here because a re-render
         // (without reorder) can still shift the row's absolute position via
         // virtual scroll / pagination adjustments — without calling window.scrollBy.
@@ -370,31 +358,34 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
       reorderAssertCount += 1;
       // Pin scroll is scheduled with a 320ms delay + rAF. Wait for it to fire.
-      await expect.poll(
-        () => getScrollByProbeCount(page),
-        { timeout: 10_000, message: `reorder edit #${i + 1} pin scroll to fire` },
-      ).toBeGreaterThan(0);
+      await expect
+        .poll(() => getScrollByProbeCount(page), {
+          timeout: 10_000,
+          message: `reorder edit #${i + 1} pin scroll to fire`,
+        })
+        .toBeGreaterThan(0);
       const scrollByCalls = await getScrollByProbeCount(page);
-      expect(
-        scrollByCalls,
-        `reorder edit #${i + 1} must trigger pin scroll`,
-      ).toBeGreaterThan(0);
+      expect(scrollByCalls, `reorder edit #${i + 1} must trigger pin scroll`).toBeGreaterThan(0);
       await expectPinnedWithExpandedBlockVisible(
         page,
         reserveId,
         `expanded row should pin with full simulation visible on reorder edit #${i + 1}`,
       );
       // Wait for pin scroll to settle.
-      await expect.poll(
-        async () => {
-          const b = await page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).boundingBox();
-          return b ? b.y : Number.POSITIVE_INFINITY;
-        },
-        { timeout: 5_000, message: `pin scroll to settle after reorder edit #${i + 1}` },
-      ).toBeLessThanOrEqual(await getPinnedTopY(page) + 24);
+      await expect
+        .poll(
+          async () => {
+            const b = await page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).boundingBox();
+            return b ? b.y : Number.POSITIVE_INFINITY;
+          },
+          { timeout: 5_000, message: `pin scroll to settle after reorder edit #${i + 1}` },
+        )
+        .toBeLessThanOrEqual((await getPinnedTopY(page)) + 24);
     }
 
-    expect(reorderAssertCount, 'expected multiple scenario edits to reorder visible reserves').toBeGreaterThanOrEqual(2);
+    expect(reorderAssertCount, 'expected multiple scenario edits to reorder visible reserves').toBeGreaterThanOrEqual(
+      2,
+    );
 
     // Deterministic non-reorder assertion: reapply same scenario inputs.
     const stableStep = steps[steps.length - 1];
@@ -402,13 +393,15 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await resetScrollByProbe(page);
     await setScenarioInputs(page, stableStep);
     // Wait briefly for any potential scroll to fire.
-    await expect.poll(
-      () => getScrollByProbeCount(page),
-      { timeout: 3_000, message: 'stable scenario input — no scroll expected' },
-    ).toBe(0);
-const stableScrollByCalls = await getScrollByProbeCount(page);
-expect(stableScrollByCalls, 'same scenario inputs should not force pin scroll').toBe(0);
-// Note: not asserting row offset — re-render can shift position without window.scrollBy.
+    await expect
+      .poll(() => getScrollByProbeCount(page), {
+        timeout: 3_000,
+        message: 'stable scenario input — no scroll expected',
+      })
+      .toBe(0);
+    const stableScrollByCalls = await getScrollByProbeCount(page);
+    expect(stableScrollByCalls, 'same scenario inputs should not force pin scroll').toBe(0);
+    // Note: not asserting row offset — re-render can shift position without window.scrollBy.
   });
 
   test('clearing scenario input keeps expanded reserve pinned', async ({ page }) => {
@@ -422,10 +415,12 @@ expect(stableScrollByCalls, 'same scenario inputs should not force pin scroll').
     // Start from non-empty scenario so clearing path (has input -> empty) is exercised.
     await setScenarioInputs(page, { supply: '1200', borrow: '' });
     // Wait for scenario input to take effect.
-    await expect.poll(
-      async () => page.locator('tbody tr[data-reserve-id]').count(),
-      { timeout: 10_000, message: 'table to re-sort after scenario input' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(async () => page.locator('tbody tr[data-reserve-id]').count(), {
+        timeout: 10_000,
+        message: 'table to re-sort after scenario input',
+      })
+      .toBeGreaterThan(0);
     await maybeExpandDesktopRowsToFullList(page);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
@@ -463,18 +458,20 @@ expect(stableScrollByCalls, 'same scenario inputs should not force pin scroll').
     // Restore a non-empty scenario, then verify Clear button path.
     await setScenarioInputs(page, { supply: '900', borrow: '' });
     // Wait for scenario input to take effect.
-    await expect.poll(
-      async () => page.locator('tbody tr[data-reserve-id]').count(),
-      { timeout: 10_000, message: 'table to re-sort after restoring scenario' },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(async () => page.locator('tbody tr[data-reserve-id]').count(), {
+        timeout: 10_000,
+        message: 'table to re-sort after restoring scenario',
+      })
+      .toBeGreaterThan(0);
     await moveExpandedRowAwayFromPinBand(page, reserveId);
     await resetScrollByProbe(page);
 
     const clearButton = page
       .locator('[data-reserves-sticky-scenario] button[aria-label="Clear supply amount"]')
       .first();
-await expect(clearButton).toBeVisible({ timeout: 30_000 });
-await clearButton.click();
+    await expect(clearButton).toBeVisible({ timeout: 30_000 });
+    await clearButton.click();
 
     await expectRowPinnedNearStickyBand(
       page,

@@ -2,11 +2,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const ThemeToggle = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -39,9 +35,7 @@ const ThemeToggle = () => {
   };
 
   if (!mounted) {
-    return (
-      <div className="h-[var(--ds-button-sm-h)] w-[var(--ds-button-sm-h)] rounded-full bg-muted animate-pulse" />
-    );
+    return <div className="h-[var(--ds-button-sm-h)] w-[var(--ds-button-sm-h)] rounded-full bg-muted animate-pulse" />;
   }
 
   const isDark = resolvedTheme === 'dark';
@@ -57,11 +51,7 @@ const ThemeToggle = () => {
           className="relative h-[var(--ds-button-sm-h)] w-[var(--ds-button-sm-h)] rounded-full bg-muted/60 text-interactive transition-colors duration-200 hover:bg-muted/80
             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          {isDark ? (
-            <Moon className="h-4 w-4 text-success" />
-          ) : (
-            <Sun className="h-4 w-4 text-success" />
-          )}
+          {isDark ? <Moon className="h-4 w-4 text-success" /> : <Sun className="h-4 w-4 text-success" />}
           <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
         </Button>
       </TooltipTrigger>

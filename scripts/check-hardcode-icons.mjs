@@ -57,7 +57,7 @@ async function main() {
   const iconBaseNameSet = await buildIconBaseNameSet(TOKEN_ICONS_DIR);
 
   const missing = iconSymbols.filter(
-    (symbol) => !iconBaseNameSet.has(symbol) && !KNOWN_MISSING_ICON_SYMBOLS.has(symbol)
+    (symbol) => !iconBaseNameSet.has(symbol) && !KNOWN_MISSING_ICON_SYMBOLS.has(symbol),
   );
   console.log(`Found ${iconSymbols.length} iconSymbol entries in reservePatches.`);
   console.log(`Found ${iconBaseNameSet.size} local token icon base names.`);

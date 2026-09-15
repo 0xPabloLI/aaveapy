@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Clock, HelpCircle } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
@@ -61,7 +57,7 @@ const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
             Find the best lending & leverage opportunities across {chainCount ?? 17} chains
           </p>
         </div>
-        
+
         {/* Mobile: Updated clock + Wallet + FAQ + Theme toggle */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
           {lastUpdated && (
@@ -81,11 +77,7 @@ const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
             </Popover>
           )}
           <WalletButton mobile onWatchSubmit={connectWatchAddress} />
-          <a
-            href="#faq"
-            className={cn(HEADER_CONTROL_MOBILE_CLASS, 'hover-gradient-text')}
-            aria-label="FAQ"
-          >
+          <a href="#faq" className={cn(HEADER_CONTROL_MOBILE_CLASS, 'hover-gradient-text')} aria-label="FAQ">
             <HelpCircle className={HEADER_CONTROL_ICON_CLASS} />
           </a>
           <ThemeToggle />
@@ -96,17 +88,16 @@ const Header = ({ lastUpdated, chainCount }: HeaderProps) => {
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
         <WalletButton onWatchSubmit={connectWatchAddress} />
         {/* Desktop: FAQ link with gradient hover */}
-        <a
-          href="#faq"
-          className={cn(HEADER_CONTROL_DESKTOP_CLASS, 'group shrink-0')}
-          aria-label="FAQ"
-        >
+        <a href="#faq" className={cn(HEADER_CONTROL_DESKTOP_CLASS, 'group shrink-0')} aria-label="FAQ">
           <HelpCircle
-            className={cn(HEADER_CONTROL_ICON_CLASS, 'transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]')}
+            className={cn(
+              HEADER_CONTROL_ICON_CLASS,
+              'transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]',
+            )}
           />
           <span className="group-hover-gradient-text">FAQ</span>
         </a>
-        
+
         {/* Desktop: Theme Toggle */}
         <ThemeToggle />
       </div>

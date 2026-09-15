@@ -15,12 +15,7 @@ export function resolveLiveApiBase(env: LiveEnv = process.env): string {
   return env.LIVE_TEST_API_BASE || DEFAULT_LIVE_API_BASE;
 }
 
-const CLOUDFLARE_CHALLENGE_MARKERS = [
-  'just a moment',
-  'cf-mitigated',
-  'cloudflare',
-  '/cdn-cgi/challenge-platform',
-];
+const CLOUDFLARE_CHALLENGE_MARKERS = ['just a moment', 'cf-mitigated', 'cloudflare', '/cdn-cgi/challenge-platform'];
 
 export function isLikelyCloudflareChallenge(status: number, bodySnippet: string): boolean {
   if (status !== 403) return false;
@@ -33,13 +28,7 @@ export function shouldSoftFailLiveSchema(env: NodeJS.ProcessEnv = process.env): 
   return env.LIVE_TEST_STRICT !== 'true';
 }
 
-export function formatLiveHttpError({
-  bodySnippet,
-  endpoint,
-  status,
-  statusText,
-  url,
-}: LiveHttpErrorInput): string {
+export function formatLiveHttpError({ bodySnippet, endpoint, status, statusText, url }: LiveHttpErrorInput): string {
   const trimmedBody = bodySnippet.trim();
 
   return [

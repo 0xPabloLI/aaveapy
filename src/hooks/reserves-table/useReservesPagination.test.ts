@@ -27,15 +27,11 @@ describe('useReservesPagination', () => {
   describe('default windowing', () => {
     it('caps displayData to DEFAULT_VISIBLE_COUNT and reports showAll=false when more rows exist', () => {
       const sortedData = makeReserves(50);
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData, expandedReserveId: null }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData, expandedReserveId: null }));
 
       expect(result.current.displayData).toHaveLength(DEFAULT_VISIBLE_COUNT);
       expect(result.current.displayData[0]).toBe(sortedData[0]);
-      expect(result.current.displayData[DEFAULT_VISIBLE_COUNT - 1]).toBe(
-        sortedData[DEFAULT_VISIBLE_COUNT - 1],
-      );
+      expect(result.current.displayData[DEFAULT_VISIBLE_COUNT - 1]).toBe(sortedData[DEFAULT_VISIBLE_COUNT - 1]);
       expect(result.current.showAll).toBe(false);
       expect(result.current.minVisibleCount).toBeNull();
       expect(result.current.defaultVisibleCount).toBe(DEFAULT_VISIBLE_COUNT);
@@ -43,9 +39,7 @@ describe('useReservesPagination', () => {
 
     it('returns the raw list reference (no slice) when sortedData is already smaller than the default window', () => {
       const sortedData = makeReserves(5);
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData, expandedReserveId: null }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData, expandedReserveId: null }));
 
       expect(result.current.displayData).toBe(sortedData);
       expect(result.current.showAll).toBe(false); // showAll requires explicit "Show all" click
@@ -55,9 +49,7 @@ describe('useReservesPagination', () => {
   describe('showAllRows / resetVisibleCount', () => {
     it('showAllRows reveals every row and flips showAll to true', () => {
       const sortedData = makeReserves(50);
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData, expandedReserveId: null }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData, expandedReserveId: null }));
 
       act(() => result.current.showAllRows());
 
@@ -68,9 +60,7 @@ describe('useReservesPagination', () => {
 
     it('resetVisibleCount returns to the default window', () => {
       const sortedData = makeReserves(50);
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData, expandedReserveId: null }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData, expandedReserveId: null }));
 
       act(() => result.current.showAllRows());
       expect(result.current.minVisibleCount).toBe(50);
@@ -82,9 +72,7 @@ describe('useReservesPagination', () => {
     });
 
     it('showAllRows on an empty list is a no-op (minVisibleCount stays null)', () => {
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData: [], expandedReserveId: null }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData: [], expandedReserveId: null }));
 
       act(() => result.current.showAllRows());
       expect(result.current.minVisibleCount).toBeNull();
@@ -131,9 +119,7 @@ describe('useReservesPagination', () => {
       const sortedData = makeReserves(50);
       // Use the simulation id of the row at index 25 → needs at least 31 visible.
       const expandedSimId = sortedData[25].reserveId;
-      const { result } = renderHook(() =>
-        useReservesPagination({ sortedData, expandedReserveId: expandedSimId }),
-      );
+      const { result } = renderHook(() => useReservesPagination({ sortedData, expandedReserveId: expandedSimId }));
 
       expect(result.current.minVisibleCount).toBe(31);
     });
@@ -144,12 +130,77 @@ describe('useReservesPagination', () => {
       const { result, rerender } = renderHook(
         ({ expandedReserveId }: { expandedReserveId: string | null }) =>
           useReservesPagination({ sortedData, expandedReserveId }),
-        { initialProps: { expandedReserveId: expandedSimId } },
+        { initialProps: { expandedReserveId: expandedSimId } as { expandedReserveId: string | null } },
       );
 
       expect(result.current.minVisibleCount).toBe(31);
       rerender({ expandedReserveId: null });
       expect(result.current.minVisibleCount).toBe(31); // persisted
+    });
+  });
+
+  describe('scenario-driven reorder keeps expanded row rendered', () => {
+    it('grows the window when a pure reorder (same id set) moves the expanded row past it', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      // Expanded at index 8 → needed 14 ≤ DEFAULT_VISIBLE_COUNT → default window.
+      expect(result.current.minVisibleCount).toBeNull();
+
+      // Simulate a live-rate re-sort: same id set, order changed, expanded row
+      // lands at index 30 — past the default 20-row window.
+      const reordered = [...initial];
+      const [moved] = reordered.splice(8, 1);
+      reordered.splice(30, 0, moved);
+      rerender({ data: reordered });
+
+      expect(result.current.minVisibleCount).toBe(36); // 30 + 6 buffer, clamped to list length
+      expect(
+        result.current.displayData.some((r) => r.reserveId === expandedSimId),
+        'expanded row must stay rendered after a scenario-driven reorder',
+      ).toBe(true);
+    });
+
+    it('does not churn the window when a pure reorder keeps the row inside it', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      expect(result.current.minVisibleCount).toBeNull();
+
+      const reordered = [...initial];
+      const [moved] = reordered.splice(8, 1);
+      reordered.splice(12, 0, moved); // index 12 → needed 18 ≤ 20 → still inside window
+      rerender({ data: reordered });
+
+      expect(result.current.minVisibleCount).toBeNull();
+      expect(result.current.displayData.some((r) => r.reserveId === expandedSimId)).toBe(true);
+    });
+
+    it('does not grow the window when the id set changes (filter path, AAV-1107)', () => {
+      const initial = makeReserves(50);
+      const expandedSimId = initial[8].reserveId;
+      const { result, rerender } = renderHook(
+        ({ data }: { data: ReserveWithSpread[] }) =>
+          useReservesPagination({ sortedData: data, expandedReserveId: expandedSimId }),
+        { initialProps: { data: initial } },
+      );
+      expect(result.current.minVisibleCount).toBeNull();
+
+      // Filtered dataset: same length but entirely different reserves — the
+      // expanded id no longer exists. Dataset membership changed, so the
+      // reorder-grow path must stay off (AAV-1107: stale spacer).
+      const filtered = Array.from({ length: 50 }, (_, i) => makeReserve(100 + i));
+      rerender({ data: filtered });
+
+      expect(result.current.minVisibleCount).toBeNull();
     });
   });
 
@@ -182,7 +233,12 @@ describe('useReservesPagination', () => {
       const { result, rerender } = renderHook(
         ({ data, expandedId }: { data: ReserveWithSpread[]; expandedId: string | null }) =>
           useReservesPagination({ sortedData: data, expandedReserveId: expandedId }),
-        { initialProps: { data: smallData, expandedId: null } },
+        {
+          initialProps: { data: smallData, expandedId: null } as {
+            data: ReserveWithSpread[];
+            expandedId: string | null;
+          },
+        },
       );
 
       // Expand row 25 → auto-grow fires (25+6=31 > DEFAULT_VISIBLE_COUNT=20)
@@ -221,8 +277,7 @@ describe('useReservesPagination', () => {
     it('does NOT reset minVisibleCount on small data changes (data refresh)', () => {
       const data = makeReserves(50);
       const { result, rerender } = renderHook(
-        ({ d }: { d: ReserveWithSpread[] }) =>
-          useReservesPagination({ sortedData: d, expandedReserveId: null }),
+        ({ d }: { d: ReserveWithSpread[] }) => useReservesPagination({ sortedData: d, expandedReserveId: null }),
         { initialProps: { d: data } },
       );
 
@@ -245,7 +300,12 @@ describe('useReservesPagination', () => {
       const { result, rerender } = renderHook(
         ({ data, expandedId }: { data: ReserveWithSpread[]; expandedId: string | null }) =>
           useReservesPagination({ sortedData: data, expandedReserveId: expandedId }),
-        { initialProps: { data: smallData, expandedId: null } },
+        {
+          initialProps: { data: smallData, expandedId: null } as {
+            data: ReserveWithSpread[];
+            expandedId: string | null;
+          },
+        },
       );
 
       // Expand row 25 → auto-grow fires (25+6=31 > 20)

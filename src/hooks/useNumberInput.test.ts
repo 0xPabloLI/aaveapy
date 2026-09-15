@@ -51,7 +51,9 @@ describe('useNumberInput', () => {
       });
       expect(result.current.displayValue).toBe('10,000');
       act(() => {
-        result.current.handleFocus({ target: { value: '10,000', select: vi.fn(), setSelectionRange: vi.fn() } } as unknown as React.FocusEvent<HTMLInputElement>);
+        result.current.handleFocus({
+          target: { value: '10,000', select: vi.fn(), setSelectionRange: vi.fn() },
+        } as unknown as React.FocusEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('10,000');
     });

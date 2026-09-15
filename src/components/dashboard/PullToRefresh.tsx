@@ -18,36 +18,42 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (disabled || isRefreshing) return;
-    if (window.scrollY <= 0) {
-      startY.current = e.touches[0].clientY;
-      setIsPulling(true);
-    }
-  }, [disabled, isRefreshing]);
+  const handleTouchStart = useCallback(
+    (e: TouchEvent) => {
+      if (disabled || isRefreshing) return;
+      if (window.scrollY <= 0) {
+        startY.current = e.touches[0].clientY;
+        setIsPulling(true);
+      }
+    },
+    [disabled, isRefreshing],
+  );
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPulling || disabled || isRefreshing) return;
-    
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - startY.current;
-    
-    if (diff > 0 && window.scrollY <= 0) {
-      e.preventDefault();
-      const distance = Math.min(diff * RESISTANCE_FACTOR, PULL_THRESHOLD * 1.5);
-      setPullDistance(distance);
-    }
-  }, [isPulling, disabled, isRefreshing]);
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isPulling || disabled || isRefreshing) return;
+
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - startY.current;
+
+      if (diff > 0 && window.scrollY <= 0) {
+        e.preventDefault();
+        const distance = Math.min(diff * RESISTANCE_FACTOR, PULL_THRESHOLD * 1.5);
+        setPullDistance(distance);
+      }
+    },
+    [isPulling, disabled, isRefreshing],
+  );
 
   const handleTouchEnd = useCallback(async () => {
     if (!isPulling) return;
-    
+
     setIsPulling(false);
-    
+
     if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
       setIsRefreshing(true);
       setPullDistance(PULL_THRESHOLD * 0.6);
-      
+
       try {
         await onRefresh();
       } finally {
@@ -101,7 +107,7 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
                 rotate: isRefreshing ? 360 : progress * 360,
               }}
               transition={
-                isRefreshing 
+                isRefreshing
                   ? { rotate: { repeat: Infinity, duration: 0.8, ease: 'linear' } }
                   : { type: 'spring', stiffness: 200, damping: 15 }
               }
@@ -110,7 +116,7 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
             </motion.div>
             {/* Progress indicator text */}
             {isRefreshing && (
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -123,10 +129,14 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
         )}
       </AnimatePresence>
       <div
-        style={pullDistance > 0 ? {
-          transform: `translateY(${pullDistance * 0.3}px)`,
-          transition: 'transform 0.15s ease-out',
-        } : undefined}
+        style={
+          pullDistance > 0
+            ? {
+                transform: `translateY(${pullDistance * 0.3}px)`,
+                transition: 'transform 0.15s ease-out',
+              }
+            : undefined
+        }
       >
         {children}
       </div>

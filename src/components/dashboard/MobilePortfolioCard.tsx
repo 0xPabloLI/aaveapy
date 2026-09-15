@@ -18,25 +18,26 @@ import { memo, useState } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { formatPercent, formatUsd , formatReserveSizeUsd, formatSignedReserveSizeUsd, formatSpread } from '@/lib/formatters';
+import {
+  formatPercent,
+  formatUsd,
+  formatReserveSizeUsd,
+  formatSignedReserveSizeUsd,
+  formatSpread,
+} from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import type {
-PortfolioReserveEntry,
-PortfolioPositionResult,
-PortfolioSummary,
-PortfolioHealthFactor,
+  PortfolioReserveEntry,
+  PortfolioPositionResult,
+  PortfolioSummary,
+  PortfolioHealthFactor,
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
-import {
-CompactInput,
-MetricValue,
-WarningMarker,
-type MetricShape,
-} from './PortfolioTablePrimitives';
+import { CompactInput, MetricValue, WarningMarker, type MetricShape } from './PortfolioTablePrimitives';
 import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 import {
   formatProtocolCapText,
@@ -49,8 +50,7 @@ import {
 
 /** Check if a metric has a meaningful current→after change (≥0.005 pp). */
 function hasMetricDelta(metric?: MetricShape): boolean {
-  return metric?.current != null && metric.after != null
-    && Math.abs(metric.current - metric.after) >= 0.005;
+  return metric?.current != null && metric.after != null && Math.abs(metric.current - metric.after) >= 0.005;
 }
 
 /**
@@ -71,35 +71,41 @@ function DeltaRow({
 }) {
   if (!hasMetricDelta(metric)) return null;
 
-  const delta = metric!.delta ?? (metric!.after! - metric!.current!);
-  const deltaStr = isCurrency
-    ? formatSignedReserveSizeUsd(delta)
-    : formatSpread(delta);
-  const deltaColor = delta >= 0
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-red-500 dark:text-red-400';
+  const delta = metric!.delta ?? metric!.after! - metric!.current!;
+  const deltaStr = isCurrency ? formatSignedReserveSizeUsd(delta) : formatSpread(delta);
+  const deltaColor = delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400';
 
   return (
     <div className="flex items-center justify-between ds-text-11 py-0.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-1 tabular-nums">
-        <span data-testid="delta-current" data-current={metric!.current?.toFixed(4)} className="text-muted-foreground/70">{formatFn(metric!.current!)}</span>
+        <span
+          data-testid="delta-current"
+          data-current={metric!.current?.toFixed(4)}
+          className="text-muted-foreground/70"
+        >
+          {formatFn(metric!.current!)}
+        </span>
         <span className="text-muted-foreground/40">→</span>
-        <span data-testid="delta-after" className="font-medium text-foreground">{formatFn(metric!.after!)}</span>
-        <span data-testid="delta-value" className={cn('font-medium', deltaColor)}>{deltaStr}</span>
+        <span data-testid="delta-after" className="font-medium text-foreground">
+          {formatFn(metric!.after!)}
+        </span>
+        <span data-testid="delta-value" className={cn('font-medium', deltaColor)}>
+          {deltaStr}
+        </span>
       </span>
     </div>
   );
 }
 
 interface MobilePortfolioCardProps {
-entries: PortfolioReserveEntry[];
-actions: PortfolioSimulationActions;
-reserves: ReserveWithSpread[];
-positionResults?: PortfolioPositionResult[];
-summary?: PortfolioSummary;
-capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
-healthFactors?: PortfolioHealthFactor[];
+  entries: PortfolioReserveEntry[];
+  actions: PortfolioSimulationActions;
+  reserves: ReserveWithSpread[];
+  positionResults?: PortfolioPositionResult[];
+  summary?: PortfolioSummary;
+  capWarningsMap?: Map<string, { supply?: PortfolioCapWarning[]; borrow?: PortfolioCapWarning[] }>;
+  healthFactors?: PortfolioHealthFactor[];
 }
 
 /* ── Single card ────────────────────────────────────────────────── */
@@ -141,20 +147,23 @@ function MobileCard({
   const chainSrc = getChainIconSrc(entry.chainId);
   const marketLabel = getMarketChipLabel(entry.marketName, entry.chainName);
 
-  const disabledNotice = reserve ? {
-    supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
-    borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
-  } : { supply: 'Reserve unavailable', borrow: 'Reserve unavailable' };
+  const disabledNotice = reserve
+    ? {
+        supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
+        borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
+      }
+    : { supply: 'Reserve unavailable', borrow: 'Reserve unavailable' };
 
-  const supplyInputWarns = supplyWarnings.filter(w => w.kind === 'protocol_cap');
-  const supplyIncentWarns = supplyWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
-  const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
-  const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
+  const supplyInputWarns = supplyWarnings.filter((w) => w.kind === 'protocol_cap');
+  const supplyIncentWarns = supplyWarnings.filter((w) => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
+  const borrowInputWarns = borrowWarnings.filter((w) => w.kind === 'protocol_cap');
+  const borrowIncentWarns = borrowWarnings.filter((w) => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
 
   // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
-  const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
-    ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
-    : [];
+  const ltvWarning =
+    borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+      ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+      : [];
   const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
 
   const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
@@ -167,10 +176,14 @@ function MobileCard({
 
   const restrictedIcon = (() => {
     switch (entry.restrictedStatus) {
-      case 'frozen': return <Snowflake className="size-3 text-sky-500" aria-hidden />;
-      case 'paused': return <PauseCircle className="size-3 ds-text-paused" aria-hidden />;
-      case 'inactive': return <Ban className="size-3 ds-text-paused" aria-hidden />;
-      default: return null;
+      case 'frozen':
+        return <Snowflake className="size-3 text-sky-500" aria-hidden />;
+      case 'paused':
+        return <PauseCircle className="size-3 ds-text-paused" aria-hidden />;
+      case 'inactive':
+        return <Ban className="size-3 ds-text-paused" aria-hidden />;
+      default:
+        return null;
     }
   })();
 
@@ -196,15 +209,20 @@ function MobileCard({
   const activeColorSecondary = activeTab === 'supply' ? 'ds-text-emerald-600-70' : 'ds-text-brand-cyan-70';
 
   // Expand content flags — only show sections with meaningful data
-  const hasDelta = !!activeResult && [
-    activeResult.totalMetric, activeResult.nativeMetric,
-    activeResult.incentiveMetric, activeResult.usdPerDayMetric,
-  ].some(hasMetricDelta);
+  const hasDelta =
+    !!activeResult &&
+    [
+      activeResult.totalMetric,
+      activeResult.nativeMetric,
+      activeResult.incentiveMetric,
+      activeResult.usdPerDayMetric,
+    ].some(hasMetricDelta);
   const hasCapDetails = activeInputWarns.length > 0 || activeIncentWarns.length > 0;
   const hasWalletDiff = !!activeResult?.walletUsd && activeResult.amountUsd !== activeResult.walletUsd;
   const hasExpandContent = hasDelta || hasCapDetails || hasWalletDiff;
 
-  const incentiveHasValue = activeResult != null && activeResult.incentivePercent != null && activeResult.incentivePercent !== 0;
+  const incentiveHasValue =
+    activeResult != null && activeResult.incentivePercent != null && activeResult.incentivePercent !== 0;
 
   return (
     <div
@@ -218,18 +236,38 @@ function MobileCard({
       <div className="flex items-center gap-2 px-2.5 pt-1.5 pb-1">
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isRestricted) handleMinusClick();
+          }}
           className={cn(
             'shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]',
             !isRestricted && trashHoverBgMobile,
             !isRestricted && trashHoverTextMobile,
           )}
-          aria-label={isRestricted ? `${entry.tokenSymbol} is restricted` : isHidden ? `Restore ${entry.tokenSymbol}` : `Remove ${entry.tokenSymbol}`}
+          aria-label={
+            isRestricted
+              ? `${entry.tokenSymbol} is restricted`
+              : isHidden
+                ? `Restore ${entry.tokenSymbol}`
+                : `Remove ${entry.tokenSymbol}`
+          }
         >
-          {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />}
+          {isRestricted ? (
+            restrictedIcon
+          ) : isHidden ? (
+            <EyeOff className="size-3.5" strokeWidth={2.5} aria-hidden />
+          ) : (
+            <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
+          )}
         </button>
         <TokenIcon symbol={entry.tokenSymbol} size={22} />
-        <span className={cn('ds-text-16 font-semibold tracking-tight break-words min-w-0', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
+        <span
+          className={cn(
+            'ds-text-16 font-semibold tracking-tight break-words min-w-0',
+            isHidden ? 'text-muted-foreground line-through' : 'text-foreground',
+          )}
+        >
           {entry.tokenSymbol}
         </span>
         <span className="ds-text-10 text-muted-foreground/80 inline-flex items-center gap-1 min-w-0 ml-auto rounded-full border border-border/50 bg-muted/40 px-2 py-0.5">
@@ -238,7 +276,10 @@ function MobileCard({
           {entry.hubName != null && (
             <>
               <span aria-hidden className="h-2.5 w-px bg-border/60 shrink-0" />
-              <span className={cn('shrink-0 truncate', getHubChipClass(isV4Market(entry.marketName)))} title={`Hub: ${entry.hubName}`}>
+              <span
+                className={cn('shrink-0 truncate', getHubChipClass(isV4Market(entry.marketName)))}
+                title={`Hub: ${entry.hubName}`}
+              >
                 {entry.hubName}
               </span>
             </>
@@ -247,7 +288,11 @@ function MobileCard({
       </div>
 
       {/* Pill tabs — segmented control */}
-      <div role="tablist" aria-label="Supply or Borrow" className="mx-2.5 mb-1.5 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30">
+      <div
+        role="tablist"
+        aria-label="Supply or Borrow"
+        className="mx-2.5 mb-1.5 flex gap-1 rounded-lg bg-muted/60 p-0.5 ring-1 ring-border/30"
+      >
         <button
           type="button"
           role="tab"
@@ -280,185 +325,253 @@ function MobileCard({
 
       {/* Content area — role=tabpanel for tablist semantics */}
       <div role="tabpanel" aria-label="Portfolio simulation" className="contents">
-      {/* CompactInput */}
-      <div className="px-2.5 pb-1.5">
-        <div className="flex items-center gap-1">
-          <div className="flex-1 min-w-0">
-            <CompactInput
-              sideData={activeTab === 'supply' ? entry.supply : entry.borrow}
-              side={activeTab}
-              tokenSymbol={entry.tokenSymbol}
-              tokenPriceInUsd={tokenPriceInUsd}
-              reserveId={entry.reserveId}
-              actions={actions}
-              disabled={activeDisabled}
-              disabledNotice={activeDisabledNotice}
-              capLimitUsd={activeCapLimit}
-            />
+        {/* CompactInput */}
+        <div className="px-2.5 pb-1.5">
+          <div className="flex items-center gap-1">
+            <div className="flex-1 min-w-0">
+              <CompactInput
+                sideData={activeTab === 'supply' ? entry.supply : entry.borrow}
+                side={activeTab}
+                tokenSymbol={entry.tokenSymbol}
+                tokenPriceInUsd={tokenPriceInUsd}
+                reserveId={entry.reserveId}
+                actions={actions}
+                disabled={activeDisabled}
+                disabledNotice={activeDisabledNotice}
+                capLimitUsd={activeCapLimit}
+              />
+            </div>
+            {activeInputWarns.length > 0 && <WarningMarker warnings={activeInputWarns} />}
           </div>
-          {activeInputWarns.length > 0 && <WarningMarker warnings={activeInputWarns} />}
         </div>
-      </div>
 
-      {/* Metrics strip — 3-col grid; Total gets accent surface */}
-      <div className="mx-2.5 mb-1 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
-        <div className={cn(
-          'px-2 py-1 flex flex-col items-start border-r border-border/30',
-          activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
-        )}>
-          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
-          <span data-cell={`${activeTab}-total`} className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}>
-            {activeResult ? <MetricValue afterValue={activeResult.totalPercent} metric={activeResult.totalMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
-          </span>
-        </div>
-        <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
-          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Native</span>
-          <span data-cell={`${activeTab}-native`} className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}>
-            {activeResult ? <MetricValue afterValue={activeResult.nativePercent} metric={activeResult.nativeMetric} formatFn={formatPercent} skipTooltip /> : <span className="text-muted-foreground/40">–</span>}
-          </span>
-        </div>
-        <div className="px-2 py-1 flex flex-col items-start">
-          <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">Incentive</span>
-          <span
-            data-cell={`${activeTab}-incentive`}
+        {/* Metrics strip — 3-col grid; Total gets accent surface */}
+        <div className="mx-2.5 mb-1 grid grid-cols-3 rounded-xl overflow-hidden ring-1 ring-border/50 bg-muted/20">
+          <div
             className={cn(
-              'ds-text-13 font-semibold tabular-nums leading-none mt-0.5 inline-flex items-center gap-0.5',
-              incentiveHasValue
-                ? activeColorSecondary
-                : 'text-foreground/50',
+              'px-2 py-1 flex flex-col items-start border-r border-border/30',
+              activeTab === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10',
             )}
           >
-            {activeResult && incentiveHasValue ? (
-              <>
-                <MetricValue afterValue={activeResult.incentivePercent} metric={activeResult.incentiveMetric} formatFn={formatPercent} skipTooltip />
-                {activeResult.forecastUnavailableCampaignCount != null && activeResult.forecastUnavailableCampaignCount > 0 && (
-                  <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
-                )}
-              </>
-            ) : <span className="text-muted-foreground/40">–</span>}
-            {activeIncentWarns.length > 0 && <WarningMarker warnings={activeIncentWarns} />}
-          </span>
-        </div>
-      </div>
-
-      {/* Daily earnings row — doubles as expand toggle */}
-      <div className="px-2.5 pb-1.5">
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? 'Hide details' : 'Show details'}
-          className={cn(
-            'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border min-h-[44px]',
-            isExpanded
-              ? 'bg-muted/60 border-border/50'
-              : 'bg-muted/25 border-border/30 active:bg-muted/50',
-          )}
-        >
-          <span className="ds-text-11 text-muted-foreground font-medium uppercase tracking-wider">Daily earnings</span>
-          <span className="inline-flex items-baseline gap-1">
-            <span data-cell={`${activeTab}-usd-per-day`} className={cn('ds-text-14 font-bold tabular-nums', activeColor)}>
-              {activeResult ? (activeResult.usdPerDay === 0 ? '$0.00' : formatSignedReserveSizeUsd(activeResult.usdPerDay)) : '–'}
-            </span>
-            <span className="ds-text-10 text-muted-foreground/60">/day</span>
-            <ChevronDown className={cn('h-3 w-3 ml-1.5 shrink-0 self-center text-muted-foreground/70 transition-transform duration-300 ease-out', isExpanded && 'rotate-180')} />
-          </span>
-        </button>
-      </div>
-
-
-      {/* Detail expand section — simulation delta, cap details, wallet vs effective */}
-      <MotionConfig reducedMotion="user">
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="overflow-hidden border-t border-border/40"
-          >
-            <div className="px-3 py-2 space-y-2">
-              {activeResult && hasExpandContent ? (<>
-                {/* Rate Impact — explicit current→after+delta (replaces hidden tooltip) */}
-                {hasDelta && (
-                  <div className="space-y-0.5">
-                    <div className={cn('ds-text-10 font-medium mb-0.5', activeColor)}>Rate Impact</div>
-                    <DeltaRow label="Total" metric={activeResult.totalMetric} formatFn={formatPercent} />
-                    <DeltaRow label="Native" metric={activeResult.nativeMetric} formatFn={formatPercent} />
-                    <DeltaRow label="Incentive" metric={activeResult.incentiveMetric} formatFn={formatPercent} />
-                    <DeltaRow label="$/day" metric={activeResult.usdPerDayMetric} formatFn={(v) => v === 0 ? '—' : formatSignedReserveSizeUsd(v)} isCurrency />
-                  </div>
-                )}
-
-                {/* Cap Details — full text (replaces dot-only indicator) */}
-                {hasCapDetails && (
-                  <div className="space-y-1 border-t border-border/30 pt-2">
-                    <div className="ds-text-10 font-medium text-amber-500">Cap Details</div>
-                    {activeInputWarns.map((w, i) => {
-                      if (w.kind === 'protocol_cap') {
-                        return (
-                          <div key={`pc-${i}`} className="ds-text-11 text-amber-600 dark:text-amber-400">
-                            {formatProtocolCapText({
-                              side: w.side,
-                              availableFormatted: formatUsd(w.adjustToUsd),
-                              limitedByLiquidity: w.limitedByLiquidity,
-                            })}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                    {activeIncentWarns.flatMap((w, i) => {
-                      const notes = w.kind === 'incentive_cap'
-                        ? (w as IncentiveCapWarning).notes
-                        : (w as IncentiveOffsetWarning).notes;
-                      const source = w.kind === 'incentive_cap'
-                        ? (w as IncentiveCapWarning).source
-                        : (w as IncentiveOffsetWarning).source;
-                      return [
-                        <div key={`ic-src-${i}`} className="ds-text-10 font-medium capitalize text-muted-foreground">
-                          {source}
-                        </div>,
-                        ...(notes?.map((note, ni) => (
-                          <div key={`ic-${i}-${ni}`} className={cn(
-                            'ds-text-11',
-                            note.color === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
-                          )}>
-                            {note.text}
-                          </div>
-                        )) ?? []),
-                      ];
-                    })}
-                  </div>
-                )}
-
-                {/* Wallet vs Effective — when position differs from on-chain wallet */}
-                {hasWalletDiff && (
-                  <div className="space-y-1 border-t border-border/30 pt-2">
-                    <div className="flex justify-between ds-text-11">
-                      <span className="text-muted-foreground">Wallet</span>
-                      <span className="tabular-nums text-muted-foreground">{formatReserveSizeUsd(activeResult.walletUsd!)}</span>
-                    </div>
-                    <div className="flex justify-between ds-text-11">
-                      <span className="text-muted-foreground">Effective</span>
-                      <span className={cn('tabular-nums font-medium', activeColor)}>
-                        {formatReserveSizeUsd(activeResult.amountUsd)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </>) : (
-                /* Fallback: no meaningful changes to show */
-                <div className="ds-text-11 text-muted-foreground/60 text-center py-1">
-                  {activeResult ? 'No simulation changes' : 'No simulation data'}
-                </div>
+            <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/80 font-semibold">Total</span>
+            <span
+              data-cell={`${activeTab}-total`}
+              className={cn('ds-text-16 font-bold tabular-nums leading-none mt-0.5', activeColor)}
+            >
+              {activeResult ? (
+                <MetricValue
+                  afterValue={activeResult.totalPercent}
+                  metric={activeResult.totalMetric}
+                  formatFn={formatPercent}
+                  skipTooltip
+                />
+              ) : (
+                <span className="text-muted-foreground/40">–</span>
               )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      </MotionConfig>
+            </span>
+          </div>
+          <div className="px-2 py-1 flex flex-col items-start border-r border-border/30">
+            <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">
+              Native
+            </span>
+            <span
+              data-cell={`${activeTab}-native`}
+              className={cn('ds-text-13 font-medium tabular-nums leading-none mt-0.5', activeColorSecondary)}
+            >
+              {activeResult ? (
+                <MetricValue
+                  afterValue={activeResult.nativePercent}
+                  metric={activeResult.nativeMetric}
+                  formatFn={formatPercent}
+                  skipTooltip
+                />
+              ) : (
+                <span className="text-muted-foreground/40">–</span>
+              )}
+            </span>
+          </div>
+          <div className="px-2 py-1 flex flex-col items-start">
+            <span className="ds-text-11 uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold">
+              Incentive
+            </span>
+            <span
+              data-cell={`${activeTab}-incentive`}
+              className={cn(
+                'ds-text-13 font-semibold tabular-nums leading-none mt-0.5 inline-flex items-center gap-0.5',
+                incentiveHasValue ? activeColorSecondary : 'text-foreground/50',
+              )}
+            >
+              {activeResult && incentiveHasValue ? (
+                <>
+                  <MetricValue
+                    afterValue={activeResult.incentivePercent}
+                    metric={activeResult.incentiveMetric}
+                    formatFn={formatPercent}
+                    skipTooltip
+                  />
+                  {activeResult.forecastUnavailableCampaignCount != null &&
+                    activeResult.forecastUnavailableCampaignCount > 0 && (
+                      <span className="ds-text-9 text-muted-foreground" title="No forecast">
+                        *
+                      </span>
+                    )}
+                </>
+              ) : (
+                <span className="text-muted-foreground/40">–</span>
+              )}
+              {activeIncentWarns.length > 0 && <WarningMarker warnings={activeIncentWarns} />}
+            </span>
+          </div>
+        </div>
+
+        {/* Daily earnings row — doubles as expand toggle */}
+        <div className="px-2.5 pb-1.5">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? 'Hide details' : 'Show details'}
+            className={cn(
+              'flex w-full items-center justify-between rounded-lg px-2.5 transition-all border min-h-[44px]',
+              isExpanded ? 'bg-muted/60 border-border/50' : 'bg-muted/25 border-border/30 active:bg-muted/50',
+            )}
+          >
+            <span className="ds-text-11 text-muted-foreground font-medium uppercase tracking-wider">
+              Daily earnings
+            </span>
+            <span className="inline-flex items-baseline gap-1">
+              <span
+                data-cell={`${activeTab}-usd-per-day`}
+                className={cn('ds-text-14 font-bold tabular-nums', activeColor)}
+              >
+                {activeResult
+                  ? activeResult.usdPerDay === 0
+                    ? '$0.00'
+                    : formatSignedReserveSizeUsd(activeResult.usdPerDay)
+                  : '–'}
+              </span>
+              <span className="ds-text-10 text-muted-foreground/60">/day</span>
+              <ChevronDown
+                className={cn(
+                  'h-3 w-3 ml-1.5 shrink-0 self-center text-muted-foreground/70 transition-transform duration-300 ease-out',
+                  isExpanded && 'rotate-180',
+                )}
+              />
+            </span>
+          </button>
+        </div>
+
+        {/* Detail expand section — simulation delta, cap details, wallet vs effective */}
+        <MotionConfig reducedMotion="user">
+          <AnimatePresence initial={false}>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                className="overflow-hidden border-t border-border/40"
+              >
+                <div className="px-3 py-2 space-y-2">
+                  {activeResult && hasExpandContent ? (
+                    <>
+                      {/* Rate Impact — explicit current→after+delta (replaces hidden tooltip) */}
+                      {hasDelta && (
+                        <div className="space-y-0.5">
+                          <div className={cn('ds-text-10 font-medium mb-0.5', activeColor)}>Rate Impact</div>
+                          <DeltaRow label="Total" metric={activeResult.totalMetric} formatFn={formatPercent} />
+                          <DeltaRow label="Native" metric={activeResult.nativeMetric} formatFn={formatPercent} />
+                          <DeltaRow label="Incentive" metric={activeResult.incentiveMetric} formatFn={formatPercent} />
+                          <DeltaRow
+                            label="$/day"
+                            metric={activeResult.usdPerDayMetric}
+                            formatFn={(v) => (v === 0 ? '—' : formatSignedReserveSizeUsd(v))}
+                            isCurrency
+                          />
+                        </div>
+                      )}
+
+                      {/* Cap Details — full text (replaces dot-only indicator) */}
+                      {hasCapDetails && (
+                        <div className="space-y-1 border-t border-border/30 pt-2">
+                          <div className="ds-text-10 font-medium text-amber-500">Cap Details</div>
+                          {activeInputWarns.map((w, i) => {
+                            if (w.kind === 'protocol_cap') {
+                              return (
+                                <div key={`pc-${i}`} className="ds-text-11 text-amber-600 dark:text-amber-400">
+                                  {formatProtocolCapText({
+                                    side: w.side,
+                                    availableFormatted: formatUsd(w.adjustToUsd),
+                                    limitedByLiquidity: w.limitedByLiquidity,
+                                  })}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
+                          {activeIncentWarns.flatMap((w, i) => {
+                            const notes =
+                              w.kind === 'incentive_cap'
+                                ? (w as IncentiveCapWarning).notes
+                                : (w as IncentiveOffsetWarning).notes;
+                            const source =
+                              w.kind === 'incentive_cap'
+                                ? (w as IncentiveCapWarning).source
+                                : (w as IncentiveOffsetWarning).source;
+                            return [
+                              <div
+                                key={`ic-src-${i}`}
+                                className="ds-text-10 font-medium capitalize text-muted-foreground"
+                              >
+                                {source}
+                              </div>,
+                              ...(notes?.map((note, ni) => (
+                                <div
+                                  key={`ic-${i}-${ni}`}
+                                  className={cn(
+                                    'ds-text-11',
+                                    note.color === 'amber'
+                                      ? 'text-amber-600 dark:text-amber-400'
+                                      : 'text-muted-foreground',
+                                  )}
+                                >
+                                  {note.text}
+                                </div>
+                              )) ?? []),
+                            ];
+                          })}
+                        </div>
+                      )}
+
+                      {/* Wallet vs Effective — when position differs from on-chain wallet */}
+                      {hasWalletDiff && (
+                        <div className="space-y-1 border-t border-border/30 pt-2">
+                          <div className="flex justify-between ds-text-11">
+                            <span className="text-muted-foreground">Wallet</span>
+                            <span className="tabular-nums text-muted-foreground">
+                              {formatReserveSizeUsd(activeResult.walletUsd!)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between ds-text-11">
+                            <span className="text-muted-foreground">Effective</span>
+                            <span className={cn('tabular-nums font-medium', activeColor)}>
+                              {formatReserveSizeUsd(activeResult.amountUsd)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Fallback: no meaningful changes to show */
+                    <div className="ds-text-11 text-muted-foreground/60 text-center py-1">
+                      {activeResult ? 'No simulation changes' : 'No simulation data'}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </MotionConfig>
       </div>
     </div>
   );
@@ -467,17 +580,17 @@ function MobileCard({
 /* ── Main component ─────────────────────────────────────────────── */
 
 const MobilePortfolioCard = memo(function MobilePortfolioCard({
-entries,
-actions,
-reserves,
-positionResults,
-summary,
-capWarningsMap,
-healthFactors,
+  entries,
+  actions,
+  reserves,
+  positionResults,
+  summary,
+  capWarningsMap,
+  healthFactors,
 }: MobilePortfolioCardProps) {
   if (entries.length === 0) return null;
 
-  const reserveIdToReserve = new Map(reserves.map(r => [r.reserveId, r]));
+  const reserveIdToReserve = new Map(reserves.map((r) => [r.reserveId, r]));
 
   const resultMap = new Map<string, { supply?: PortfolioPositionResult; borrow?: PortfolioPositionResult }>();
   if (positionResults) {
@@ -501,8 +614,12 @@ healthFactors,
 
         const supplyWarnings = capWarningsMap?.get(entry.reserveId)?.supply ?? [];
         const borrowWarnings = capWarningsMap?.get(entry.reserveId)?.borrow ?? [];
-        const supplyCapLimitUsd = capWarningsMap?.get(entry.reserveId)?.supply?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
-        const borrowCapLimitUsd = capWarningsMap?.get(entry.reserveId)?.borrow?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
+        const supplyCapLimitUsd = capWarningsMap
+          ?.get(entry.reserveId)
+          ?.supply?.find((w) => w.kind === 'protocol_cap')?.adjustToUsd;
+        const borrowCapLimitUsd = capWarningsMap
+          ?.get(entry.reserveId)
+          ?.borrow?.find((w) => w.kind === 'protocol_cap')?.adjustToUsd;
 
         return (
           <MobileCard
@@ -530,40 +647,56 @@ healthFactors,
             <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-emerald-500-10 px-2 py-1.5 ring-1 ds-ring-emerald-500-15">
               <div className="flex items-baseline justify-between gap-1">
                 <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', SUPPLY_COLOR)}>Supply</span>
-                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', SUPPLY_COLOR)} title="Weighted average">
+                <span
+                  className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', SUPPLY_COLOR)}
+                  title="Weighted average"
+                >
                   {formatPercent(summary.supplyWeightedApy)}
                 </span>
               </div>
               <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', SUPPLY_COLOR)}>
                 {formatReserveSizeUsd(summary.totalSupplyUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', SUPPLY_COLOR)} title="Earn per day">
+              <div
+                className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', SUPPLY_COLOR)}
+                title="Earn per day"
+              >
                 {summary.supplyUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}/d`}
               </div>
             </div>
             <div className="flex-1 min-w-[8.5rem] max-w-[10rem] rounded-lg ds-bg-brand-cyan-10 px-2 py-1.5 ring-1 ds-ring-brand-cyan-15">
               <div className="flex items-baseline justify-between gap-1">
                 <span className={cn('ds-text-11 font-semibold uppercase tracking-[0.06em]', BORROW_COLOR)}>Borrow</span>
-                <span className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', BORROW_COLOR)} title="Weighted average">
+                <span
+                  className={cn('ds-text-10 tabular-nums font-medium opacity-90 text-right', BORROW_COLOR)}
+                  title="Weighted average"
+                >
                   {formatPercent(summary.borrowWeightedApy)}
                 </span>
               </div>
               <div className={cn('ds-text-13 font-bold tabular-nums leading-tight mt-0.5 text-right', BORROW_COLOR)}>
                 {formatReserveSizeUsd(summary.totalBorrowUsd)}
               </div>
-              <div className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', BORROW_COLOR)} title="Cost per day">
+              <div
+                className={cn('ds-text-10 tabular-nums opacity-75 leading-tight text-right', BORROW_COLOR)}
+                title="Cost per day"
+              >
                 {summary.borrowUsdPerDay === 0 ? '—' : `${formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}/d`}
               </div>
             </div>
           </div>
           <div className="flex items-center justify-between rounded-lg bg-card/70 border border-border/50 px-2.5 py-1.5">
             <span className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">Net / day</span>
-            <span className={cn(
-              'ds-text-13 font-bold tabular-nums',
-              summary.netUsdPerDay > 0 ? 'text-emerald-600 dark:text-emerald-400'
-                : summary.netUsdPerDay < 0 ? 'text-red-500 dark:text-red-400'
-                : 'text-foreground',
-            )}>
+            <span
+              className={cn(
+                'ds-text-13 font-bold tabular-nums',
+                summary.netUsdPerDay > 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : summary.netUsdPerDay < 0
+                    ? 'text-red-500 dark:text-red-400'
+                    : 'text-foreground',
+              )}
+            >
               {summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}
             </span>
           </div>

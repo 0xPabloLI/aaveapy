@@ -113,16 +113,64 @@ describe('aggregatePortfolioSummary', () => {
 
   it('aggregates multiple supply and borrow positions', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
-      { reserveId: 'r2', side: 'supply', amountUsd: 20000, walletUsd: null, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
-      { reserveId: 'r3', side: 'supply', amountUsd: 5000, walletUsd: null, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
-      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, walletUsd: null, nativePercent: 4, incentivePercent: 1, totalPercent: 3, usdPerDay: -0.6575 },
-      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, walletUsd: null, nativePercent: 6, incentivePercent: 0, totalPercent: 6, usdPerDay: -0.4932 },
+      {
+        reserveId: 'r1',
+        side: 'supply',
+        amountUsd: 10000,
+        walletUsd: null,
+        nativePercent: 3,
+        incentivePercent: 1,
+        totalPercent: 4,
+        usdPerDay: 1.0959,
+      },
+      {
+        reserveId: 'r2',
+        side: 'supply',
+        amountUsd: 20000,
+        walletUsd: null,
+        nativePercent: 2,
+        incentivePercent: 0.5,
+        totalPercent: 2.5,
+        usdPerDay: 1.3699,
+      },
+      {
+        reserveId: 'r3',
+        side: 'supply',
+        amountUsd: 5000,
+        walletUsd: null,
+        nativePercent: 5,
+        incentivePercent: 2,
+        totalPercent: 7,
+        usdPerDay: 0.9589,
+      },
+      {
+        reserveId: 'r4',
+        side: 'borrow',
+        amountUsd: 8000,
+        walletUsd: null,
+        nativePercent: 4,
+        incentivePercent: 1,
+        totalPercent: 3,
+        usdPerDay: -0.6575,
+      },
+      {
+        reserveId: 'r5',
+        side: 'borrow',
+        amountUsd: 3000,
+        walletUsd: null,
+        nativePercent: 6,
+        incentivePercent: 0,
+        totalPercent: 6,
+        usdPerDay: -0.4932,
+      },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.totalSupplyUsd).toBe(35000);
     expect(summary.totalBorrowUsd).toBe(11000);
-    expect(summary.netUsdPerDay).toBeCloseTo(results.reduce((s, r) => s + r.usdPerDay, 0), 2);
+    expect(summary.netUsdPerDay).toBeCloseTo(
+      results.reduce((s, r) => s + r.usdPerDay, 0),
+      2,
+    );
     expect(summary.netEffectiveApy).toBeGreaterThan(0);
     // Weighted supply APY: (10000*4 + 20000*2.5 + 5000*7) / 35000 = (40000+50000+35000)/35000 = 3.5714
     expect(summary.supplyWeightedApy).toBeCloseTo(3.5714, 2);
@@ -132,7 +180,16 @@ describe('aggregatePortfolioSummary', () => {
 
   it('weighted APY with single supply position returns that position totalPercent', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+      {
+        reserveId: 'r1',
+        side: 'supply',
+        amountUsd: 10000,
+        walletUsd: null,
+        nativePercent: 3,
+        incentivePercent: 1,
+        totalPercent: 4,
+        usdPerDay: 1.1,
+      },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.supplyWeightedApy).toBe(4);
@@ -148,13 +205,25 @@ describe('aggregatePortfolioSummary', () => {
   it('computes delta summary metrics from position metrics', () => {
     const results: PortfolioPositionResult[] = [
       {
-        reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null,
-        nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1,
+        reserveId: 'r1',
+        side: 'supply',
+        amountUsd: 10000,
+        walletUsd: null,
+        nativePercent: 3,
+        incentivePercent: 1,
+        totalPercent: 4,
+        usdPerDay: 1.1,
         usdPerDayMetric: { current: 0.9, after: 1.1, delta: 0.2 },
       },
       {
-        reserveId: 'r2', side: 'borrow', amountUsd: 5000, walletUsd: null,
-        nativePercent: 5, incentivePercent: 0, totalPercent: 5, usdPerDay: -0.68,
+        reserveId: 'r2',
+        side: 'borrow',
+        amountUsd: 5000,
+        walletUsd: null,
+        nativePercent: 5,
+        incentivePercent: 0,
+        totalPercent: 5,
+        usdPerDay: -0.68,
         usdPerDayMetric: { current: -0.5, after: -0.68, delta: -0.18 },
       },
     ];
@@ -173,7 +242,16 @@ describe('aggregatePortfolioSummary', () => {
 
   it('omits summary metrics when no position has metrics', () => {
     const results: PortfolioPositionResult[] = [
-      { reserveId: 'r1', side: 'supply', amountUsd: 10000, walletUsd: null, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+      {
+        reserveId: 'r1',
+        side: 'supply',
+        amountUsd: 10000,
+        walletUsd: null,
+        nativePercent: 3,
+        incentivePercent: 1,
+        totalPercent: 4,
+        usdPerDay: 1.1,
+      },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.supplyUsdPerDayMetric).toBeUndefined();
@@ -326,7 +404,7 @@ describe('delta model: effective amount as principal for accrual', () => {
     const delta = 0;
     const afterRate = 3.65;
     const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
-    expect(accrual).toBeCloseTo(1000 * 3.65 / 100 / 365, 6);
+    expect(accrual).toBeCloseTo((1000 * 3.65) / 100 / 365, 6);
     expect(delta).toBe(0);
   });
 
@@ -336,7 +414,7 @@ describe('delta model: effective amount as principal for accrual', () => {
     const effectiveAmount = walletValue + extraDeposit;
     const afterRate = 3.65;
     const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
-    expect(accrual).toBeCloseTo(1500 * 3.65 / 100 / 365, 6);
+    expect(accrual).toBeCloseTo((1500 * 3.65) / 100 / 365, 6);
   });
 
   it('wallet position partially withdrawn: effective amount < walletValue', () => {
@@ -345,14 +423,14 @@ describe('delta model: effective amount as principal for accrual', () => {
     const effectiveAmount = walletValue - withdrawal;
     const afterRate = 3.65;
     const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
-    expect(accrual).toBeCloseTo(500 * 3.65 / 100 / 365, 6);
+    expect(accrual).toBeCloseTo((500 * 3.65) / 100 / 365, 6);
   });
 
   it('manual position (no wallet): effective amount = amount, delta = amount', () => {
     const effectiveAmount = 2000;
     const afterRate = 3.65;
     const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
-    expect(accrual).toBeCloseTo(2000 * 3.65 / 100 / 365, 6);
+    expect(accrual).toBeCloseTo((2000 * 3.65) / 100 / 365, 6);
   });
 
   it('delta does NOT leak into principal calculation', () => {
@@ -363,7 +441,7 @@ describe('delta model: effective amount as principal for accrual', () => {
     const accrualWithEffective = computePositionUsdPerDay('supply', effectiveAmount, 3.65, 0);
     const accrualWithDelta = computePositionUsdPerDay('supply', delta, 3.65, 0);
     expect(accrualWithEffective).toBeGreaterThan(accrualWithDelta);
-    expect(accrualWithEffective).toBeCloseTo(1500 * 3.65 / 100 / 365, 6);
+    expect(accrualWithEffective).toBeCloseTo((1500 * 3.65) / 100 / 365, 6);
   });
 
   it('borrow: effective amount as principal for borrow cost calculation', () => {
@@ -373,10 +451,7 @@ describe('delta model: effective amount as principal for accrual', () => {
     const borrowRate = 5;
     const incentiveRate = 2;
     const accrual = computePositionUsdPerDay('borrow', effectiveAmount, borrowRate, incentiveRate);
-    expect(accrual).toBeCloseTo(
-      (-800 * 5 / 100 / 365) + (800 * 2 / 100 / 365),
-      6,
-    );
+    expect(accrual).toBeCloseTo((-800 * 5) / 100 / 365 + (800 * 2) / 100 / 365, 6);
   });
 });
 
@@ -474,35 +549,22 @@ describe('getHfColorName', () => {
 
 describe('getMinHf', () => {
   it('returns min of valid HFs', () => {
-    const hfs = [
-      { healthFactor: 2.5 },
-      { healthFactor: 1.6 },
-      { healthFactor: 0.9 },
-    ];
+    const hfs = [{ healthFactor: 2.5 }, { healthFactor: 1.6 }, { healthFactor: 0.9 }];
     expect(getMinHf(hfs)).toBeCloseTo(0.9, 5);
   });
 
   it('skips null HFs', () => {
-    const hfs = [
-      { healthFactor: null },
-      { healthFactor: 1.6 },
-    ];
+    const hfs = [{ healthFactor: null }, { healthFactor: 1.6 }];
     expect(getMinHf(hfs)).toBeCloseTo(1.6, 5);
   });
 
   it('skips zero HFs', () => {
-    const hfs = [
-      { healthFactor: 0 },
-      { healthFactor: 1.6 },
-    ];
+    const hfs = [{ healthFactor: 0 }, { healthFactor: 1.6 }];
     expect(getMinHf(hfs)).toBeCloseTo(1.6, 5);
   });
 
   it('returns null when all HFs are null', () => {
-    const hfs = [
-      { healthFactor: null },
-      { healthFactor: null },
-    ];
+    const hfs = [{ healthFactor: null }, { healthFactor: null }];
     expect(getMinHf(hfs)).toBeNull();
   });
 
@@ -533,26 +595,20 @@ describe('getLowestHfDelta', () => {
   });
 
   it('returns flat direction when |delta| < 0.01', () => {
-    const hfs = [
-      { healthFactor: 1.6, deltaHealthFactor: 0.005 },
-    ];
+    const hfs = [{ healthFactor: 1.6, deltaHealthFactor: 0.005 }];
     const result = getLowestHfDelta(hfs);
     expect(result.direction).toBe('flat');
   });
 
   it('returns null direction when deltaHealthFactor is null', () => {
-    const hfs = [
-      { healthFactor: 1.6, deltaHealthFactor: null },
-    ];
+    const hfs = [{ healthFactor: 1.6, deltaHealthFactor: null }];
     const result = getLowestHfDelta(hfs);
     expect(result.delta).toBeNull();
     expect(result.direction).toBeNull();
   });
 
   it('returns null direction when no valid HFs', () => {
-    const hfs = [
-      { healthFactor: null, deltaHealthFactor: null },
-    ];
+    const hfs = [{ healthFactor: null, deltaHealthFactor: null }];
     const result = getLowestHfDelta(hfs);
     expect(result.delta).toBeNull();
     expect(result.direction).toBeNull();
@@ -564,8 +620,8 @@ describe('getLowestHfDelta', () => {
 
   it('finds the lowest after HF pool, not the lowest delta', () => {
     const hfs = [
-      { healthFactor: 1.2, deltaHealthFactor: 0.1 },  // lowest after
-      { healthFactor: 2.0, deltaHealthFactor: -0.5 },   // larger delta but higher after
+      { healthFactor: 1.2, deltaHealthFactor: 0.1 }, // lowest after
+      { healthFactor: 2.0, deltaHealthFactor: -0.5 }, // larger delta but higher after
     ];
     const result = getLowestHfDelta(hfs);
     expect(result.delta).toBeCloseTo(0.1, 5);

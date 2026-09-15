@@ -54,10 +54,7 @@ interface DiffEntry {
   pctDiff: number;
 }
 
-function comparePositions(
-  sdkPositions: WalletPosition[],
-  abiPositions: WalletPosition[],
-): DiffEntry[] {
+function comparePositions(sdkPositions: WalletPosition[], abiPositions: WalletPosition[]): DiffEntry[] {
   const diffs: DiffEntry[] = [];
   const sdkMap = new Map<string, WalletPosition>();
   const abiMap = new Map<string, WalletPosition>();
@@ -83,11 +80,25 @@ function comparePositions(
 
     const amountPct = pctDiff(sdk!.amountUsd, abi!.amountUsd);
     if (amountPct > TOLERANCE_PCT) {
-      diffs.push({ reserveId, side, field: 'amountUsd', sdkValue: sdk!.amountUsd, abiValue: abi!.amountUsd, pctDiff: amountPct });
+      diffs.push({
+        reserveId,
+        side,
+        field: 'amountUsd',
+        sdkValue: sdk!.amountUsd,
+        abiValue: abi!.amountUsd,
+        pctDiff: amountPct,
+      });
     }
 
     if (sdk!.isCollateral !== abi!.isCollateral) {
-      diffs.push({ reserveId, side, field: 'isCollateral', sdkValue: sdk!.isCollateral ? 1 : 0, abiValue: abi!.isCollateral ? 1 : 0, pctDiff: 1 });
+      diffs.push({
+        reserveId,
+        side,
+        field: 'isCollateral',
+        sdkValue: sdk!.isCollateral ? 1 : 0,
+        abiValue: abi!.isCollateral ? 1 : 0,
+        pctDiff: 1,
+      });
     }
   }
 
@@ -186,20 +197,24 @@ describe('SDK vs ABI Consistency (HITL)', () => {
     const v3MarketNames = Object.keys(v3AssetsByMarket);
     if (v3MarketNames.length > 0) {
       const v3Response = await getV3UserPositionsMultiChain(WALLET!, v3AssetsByMarket);
-      allPositions.push(...convertV3PositionsToWalletPositions(
-        v3Response.results.flatMap((r) => r.positions),
-        lookupMap,
-        'onchain-v3',
-      ));
+      allPositions.push(
+        ...convertV3PositionsToWalletPositions(
+          v3Response.results.flatMap((r) => r.positions),
+          lookupMap,
+          'onchain-v3',
+        ),
+      );
     }
 
     if (Object.keys(v4BySpoke).length > 0) {
       const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
-      allPositions.push(...convertV4PositionsToWalletPositions(
-        v4Response.results.flatMap((r) => r.positions),
-        lookupMap,
-        'onchain-v4',
-      ));
+      allPositions.push(
+        ...convertV4PositionsToWalletPositions(
+          v4Response.results.flatMap((r) => r.positions),
+          lookupMap,
+          'onchain-v4',
+        ),
+      );
     }
 
     const portfolio = convertWalletPositionsToEntries(allPositions, reserves);

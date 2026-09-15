@@ -16,14 +16,7 @@ export function IncentiveIcon({ width = 12, height = 12, className = '' }: Incen
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <circle
-        cx="7.2"
-        cy="7.2"
-        r="7.2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        transform="matrix(1 0 0 -1 .8 15.2)"
-      />
+      <circle cx="7.2" cy="7.2" r="7.2" stroke="currentColor" strokeWidth="1.5" transform="matrix(1 0 0 -1 .8 15.2)" />
       <path
         stroke="currentColor"
         strokeLinecap="round"

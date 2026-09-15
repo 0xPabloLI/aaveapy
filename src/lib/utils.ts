@@ -1,5 +1,5 @@
-import { extendTailwindMerge } from "tailwind-merge";
-import type { ClassValue } from "clsx";
+import { extendTailwindMerge } from 'tailwind-merge';
+import type { ClassValue } from 'clsx';
 
 // clsx's runtime is inlined below rather than imported: rolldown's module
 // concatenation has been observed gluing the clsx package into the
@@ -17,7 +17,7 @@ function classNames(...inputs: ClassValue[]): string {
     } else if (Array.isArray(input)) {
       const nested = classNames(...input);
       if (nested) out = out ? `${out} ${nested}` : nested;
-    } else {
+    } else if (typeof input === 'object') {
       for (const key of Object.keys(input)) {
         if (input[key]) out = out ? `${out} ${key}` : key;
       }
@@ -29,9 +29,7 @@ function classNames(...inputs: ClassValue[]): string {
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
-      'font-size': [
-        { 'ds-text': ['8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24', '36'] }
-      ],
+      'font-size': [{ 'ds-text': ['8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24', '36'] }],
     },
   },
 });

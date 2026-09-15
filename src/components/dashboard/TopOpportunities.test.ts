@@ -14,7 +14,10 @@ describe('Top opportunities tooltip ownership', () => {
   });
 
   it('keeps the incentive tooltip state inside TopOpportunities', () => {
-    const topOpportunitiesSource = readFileSync(resolve(repoRoot, 'src/components/dashboard/TopOpportunities.tsx'), 'utf8');
+    const topOpportunitiesSource = readFileSync(
+      resolve(repoRoot, 'src/components/dashboard/TopOpportunities.tsx'),
+      'utf8',
+    );
 
     expect(topOpportunitiesSource).toContain('setTooltipState(');
     expect(topOpportunitiesSource).toContain('useState<TopOpportunitiesTooltipState | null>');
@@ -27,6 +30,6 @@ describe('Top opportunities tooltip ownership', () => {
 
   it('MiniReserveApyRow shows Base APY/APR placeholder when no incentive', () => {
     const source = readFileSync(resolve(repoRoot, 'src/components/dashboard/TopOpportunities.tsx'), 'utf8');
-    expect(source).toContain('Base {isApy ? \'APY\' : \'APR\'} only');
+    expect(source).toContain("Base {isApy ? 'APY' : 'APR'} only");
   });
 });

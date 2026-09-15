@@ -1,0 +1,16 @@
+dist/
+node_modules/
+coverage/
+package-lock.json
+bun.lock
+bun.lockb
+src/generated/
+src/locales/
+public/
+playwright-report/
+test-results/
+.worktrees/
+.codeartsdoer/
+.arts/
+*.md
+*.tsbuildinfo

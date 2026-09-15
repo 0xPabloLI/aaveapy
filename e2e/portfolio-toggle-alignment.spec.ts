@@ -18,9 +18,7 @@ const BREAKPOINTS = [
 ] as const;
 
 for (const bp of BREAKPOINTS) {
-  test(`PortfolioModeToggle right-edge alignment @ ${bp.name}`, async ({
-    page,
-  }) => {
+  test(`PortfolioModeToggle right-edge alignment @ ${bp.name}`, async ({ page }) => {
     await page.setViewportSize({ width: bp.width, height: bp.height });
     await page.goto('/');
 

@@ -5,9 +5,7 @@ function sortStrings(values) {
 }
 
 export function normalizeCidrs(cidrs) {
-  return sortStrings(
-    [...new Set(cidrs.map((cidr) => cidr.trim()).filter(Boolean))],
-  );
+  return sortStrings([...new Set(cidrs.map((cidr) => cidr.trim()).filter(Boolean))]);
 }
 
 function isManagedAllowlistRule(rule) {
@@ -23,9 +21,7 @@ function isManagedAllowlistRule(rule) {
 export function planGithubActionsAllowlistSync({ desiredCidrs, existingRules }) {
   const normalizedDesired = normalizeCidrs(desiredCidrs);
   const managedRules = existingRules.filter(isManagedAllowlistRule);
-  const existingManagedCidrs = new Set(
-    managedRules.map((rule) => rule.configuration.value),
-  );
+  const existingManagedCidrs = new Set(managedRules.map((rule) => rule.configuration.value));
   const desiredCidrsSet = new Set(normalizedDesired);
 
   const toCreate = normalizedDesired.filter((cidr) => !existingManagedCidrs.has(cidr));
@@ -38,8 +34,6 @@ export function planGithubActionsAllowlistSync({ desiredCidrs, existingRules }) 
 
   return {
     toCreate,
-    toDelete: sortStrings(toDelete.map((rule) => JSON.stringify(rule))).map((rule) =>
-      JSON.parse(rule),
-    ),
+    toDelete: sortStrings(toDelete.map((rule) => JSON.stringify(rule))).map((rule) => JSON.parse(rule)),
   };
 }

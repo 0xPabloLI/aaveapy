@@ -12,16 +12,18 @@ import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { MarketsResponseSchema } from '@/lib/apiSchemas';
 import { enrichReservesFromId } from '@/lib/reserveIdParser';
+import { fetchWithTracing } from '@/lib/requestContext';
+import { logger } from '@/lib/logger';
 
 // Fetch all market data — validated against MarketsResponseSchema (single source of truth)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
   try {
-    const response = await fetch(`${API_BASE}/markets`);
+    const response = await fetchWithTracing(`${API_BASE}/markets`);
     if (!response.ok) throw new Error('Failed to fetch markets');
     const raw = await response.json();
     const parsed = MarketsResponseSchema.safeParse(raw);
     if (!parsed.success) {
-      console.error('Markets API schema validation failed:', parsed.error.message);
+      logger.error('Markets API schema validation failed', { error: parsed.error.message });
       throw new Error(`Invalid markets response: ${parsed.error.message}`);
     }
     const data = parsed.data as MarketsResponse;
@@ -41,7 +43,9 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     // Try to get from cache on failure
     const cached = getCachedMarkets();
     if (cached) {
-      console.warn('Using cached markets data due to fetch error:', error);
+      logger.warn('Using cached markets data due to fetch error', {
+        error: error instanceof Error ? error : String(error),
+      });
       return cached;
     }
     // Re-throw if no cache available
@@ -51,8 +55,7 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
 
 export const useAaveMarkets = () => {
   const cachedEntry = getCachedMarketsEntry();
-  const marketsStaleTime =
-    cachedEntry?.data?.snapshot?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
+  const marketsStaleTime = cachedEntry?.data?.snapshot?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,

@@ -6,12 +6,12 @@ const buildMarketsPayload = (message: unknown) => ({
     lastUpdated: '2026-03-09T00:00:00.000Z',
     version: '1.0.0',
   },
-    reserves: [
-      {
-        reserveId: '42220:0xpool:0x1234',
-        marketName: 'AaveV3Celo',
-        chainName: 'Celo',
-        chainId: 42220,
+  reserves: [
+    {
+      reserveId: '42220:0xpool:0x1234',
+      marketName: 'AaveV3Celo',
+      chainName: 'Celo',
+      chainId: 42220,
       tokenName: 'Tether USD',
       tokenSymbol: 'USDT',
       tokenAddress: '0x1234',
@@ -56,7 +56,7 @@ describe('apiSchemas', () => {
           description:
             'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
         },
-      ])
+      ]),
     );
 
     expect(result.success).toBe(true);
@@ -83,18 +83,18 @@ describe('apiSchemas', () => {
             {
               name: 'Lend USDG on Tydro',
               breakdowns: [
-            {
-              campaignApr: 0,
-              campaignStartedAt: '2026-03-24T14:00:00.000Z',
-              campaignEndedAt: '2026-03-31T14:00:00.000Z',
-              campaignId: '16403393592832236981',
-              campaignType: 'DUTCH_AUCTION',
-              plannedDaily: 11312,
-              // DUTCH_AUCTION no longer includes aprCap in Merkl campaign fields.
-              totalBudget: 79184,
-              latestTvl: 23586552.55647095,
-              pointsPerThousandUsd: 0.4795953106295122,
-            },
+                {
+                  campaignApr: 0,
+                  campaignStartedAt: '2026-03-24T14:00:00.000Z',
+                  campaignEndedAt: '2026-03-31T14:00:00.000Z',
+                  campaignId: '16403393592832236981',
+                  campaignType: 'DUTCH_AUCTION',
+                  plannedDaily: 11312,
+                  // DUTCH_AUCTION no longer includes aprCap in Merkl campaign fields.
+                  totalBudget: 79184,
+                  latestTvl: 23586552.55647095,
+                  pointsPerThousandUsd: 0.4795953106295122,
+                },
               ],
             },
           ],

@@ -1,28 +1,21 @@
-import { defineConfig, loadEnv } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { fileURLToPath } from "node:url";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
+import { fileURLToPath } from 'node:url';
+import { componentTagger } from 'lovable-tagger';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const reactRoot = path.resolve(__dirname, "node_modules/react");
-const reactDomRoot = path.resolve(__dirname, "node_modules/react-dom");
+const reactRoot = path.resolve(__dirname, 'node_modules/react');
+const reactDomRoot = path.resolve(__dirname, 'node_modules/react-dom');
 
 /** Embed git SHA in index.html for deploy smoke tests (Vercel / GitHub Actions). */
 function deployShaMetaPlugin() {
-  const sha =
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    process.env.GITHUB_SHA ||
-    process.env.CF_PAGES_COMMIT_SHA ||
-    "";
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || process.env.CF_PAGES_COMMIT_SHA || '';
   return {
-    name: "deploy-sha-meta",
+    name: 'deploy-sha-meta',
     transformIndexHtml(html: string) {
       if (!sha) return html;
-      return html.replace(
-        "</head>",
-        `    <meta name="aaveapy-deploy-sha" content="${sha}" />\n  </head>`,
-      );
+      return html.replace('</head>', `    <meta name="aaveapy-deploy-sha" content="${sha}" />\n  </head>`);
     },
   };
 }
@@ -37,23 +30,23 @@ function deployShaMetaPlugin() {
  * keep them off the FCP path.
  */
 const MODULEPRELOAD_WHITELIST = [
-  "vendor-react",
-  "vendor-react-libs",
-  "vendor-animation",
-  "vendor-radix",
-  "vendor-query",
-  "vendor-ui-utils",
-  "vendor-icons",
-  "vendor-theme",
-  "vendor-ui-libs",
-  "vendor-forms",
-  "index.esm",
-  "rolldown-runtime",
+  'vendor-react',
+  'vendor-react-libs',
+  'vendor-animation',
+  'vendor-radix',
+  'vendor-query',
+  'vendor-ui-utils',
+  'vendor-icons',
+  'vendor-theme',
+  'vendor-ui-libs',
+  'vendor-forms',
+  'index.esm',
+  'rolldown-runtime',
   // Content-stage chunks: dynamically imported, but every page load needs them
-  "WalletProviders",
-  "vendor-blockchain",
-  "AaveProviders",
-  "vendor-aave",
+  'WalletProviders',
+  'vendor-blockchain',
+  'AaveProviders',
+  'vendor-aave',
 ] as const;
 
 /** Chunk prefixes that must never be statically reachable from the entry chunk. */
@@ -79,10 +72,10 @@ function assertFirstPaintChunksPlugin() {
     imports?: string[];
   }
   return {
-    name: "assert-first-paint-chunks",
-    apply: "build" as const,
+    name: 'assert-first-paint-chunks',
+    apply: 'build' as const,
     generateBundle(_options: unknown, bundle: Record<string, BundleChunk>) {
-      const chunks = Object.values(bundle).filter((chunk) => chunk.type === "chunk");
+      const chunks = Object.values(bundle).filter((chunk) => chunk.type === 'chunk');
       const byFileName = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
       const entries = chunks.filter((chunk) => chunk.isEntry).map((chunk) => chunk.fileName);
       if (entries.length === 0) return;
@@ -93,7 +86,7 @@ function assertFirstPaintChunksPlugin() {
         if (!Array.isArray(chunk.imports)) {
           throw new Error(
             `[assert-first-paint-chunks] Chunk "${chunk.fileName}" reports no static import list — ` +
-            `cannot verify the entry closure. Fix the guard before trusting a green build.`,
+              `cannot verify the entry closure. Fix the guard before trusting a green build.`,
           );
         }
       }
@@ -111,10 +104,10 @@ function assertFirstPaintChunksPlugin() {
             for (let cur: string | undefined = fileName; cur; cur = parent.get(cur)) chain.unshift(cur);
             throw new Error(
               `[assert-first-paint-chunks] Entry chunk statically reaches "${fileName}".\n` +
-              `Import chain: ${chain.join(" -> ")}\n` +
-              `This puts a heavy chunk (~400 KB gzip) back on the FCP path. Check for new ` +
-              `static imports of wagmi/rainbowkit/@aave modules (or shared modules like cn/clsx ` +
-              `concatenated into a heavy chunk) reachable from App.tsx without a lazy() boundary.`,
+                `Import chain: ${chain.join(' -> ')}\n` +
+                `This puts a heavy chunk (~400 KB gzip) back on the FCP path. Check for new ` +
+                `static imports of wagmi/rainbowkit/@aave modules (or shared modules like cn/clsx ` +
+                `concatenated into a heavy chunk) reachable from App.tsx without a lazy() boundary.`,
             );
           }
         }
@@ -131,22 +124,18 @@ function assertFirstPaintChunksPlugin() {
 function selectiveModulePreloadPlugin() {
   let chunkPaths: string[] = [];
   return {
-    name: "selective-module-preload",
-    apply: "build" as const,
+    name: 'selective-module-preload',
+    apply: 'build' as const,
     generateBundle(_options: unknown, bundle: Record<string, { type: string; fileName: string }>) {
       chunkPaths = Object.values(bundle)
-        .filter((chunk) => chunk.type === "chunk")
+        .filter((chunk) => chunk.type === 'chunk')
         .map((chunk) => chunk.fileName)
-        .filter((fileName) =>
-          MODULEPRELOAD_WHITELIST.some((prefix) => fileName.startsWith(`assets/${prefix}-`)),
-        );
+        .filter((fileName) => MODULEPRELOAD_WHITELIST.some((prefix) => fileName.startsWith(`assets/${prefix}-`)));
     },
     transformIndexHtml(html: string) {
       if (chunkPaths.length === 0) return html;
-      const tags = chunkPaths
-        .map((p) => `    <link rel="modulepreload" crossorigin href="/${p}">`)
-        .join("\n");
-      return html.replace("</head>", `${tags}\n  </head>`);
+      const tags = chunkPaths.map((p) => `    <link rel="modulepreload" crossorigin href="/${p}">`).join('\n');
+      return html.replace('</head>', `${tags}\n  </head>`);
     },
   };
 }
@@ -154,14 +143,14 @@ function selectiveModulePreloadPlugin() {
 /** Warn (don't fail) if VITE_API_BASE_URL is missing — falls back to staging via src/lib/apiBase.ts. */
 function validateEnvPlugin() {
   return {
-    name: "validate-env",
-    apply: "build" as const,
+    name: 'validate-env',
+    apply: 'build' as const,
     config(_config: unknown, { mode }: { mode: string }) {
-      const env = loadEnv(mode, process.cwd(), "");
+      const env = loadEnv(mode, process.cwd(), '');
       // Must stay in sync with isMissingApiBase() in src/lib/apiBase.ts
       if (env.VITE_API_BASE_URL == null || env.VITE_API_BASE_URL.trim() === '') {
         console.warn(
-          "[validate-env] VITE_API_BASE_URL not set — falling back to staging API (https://staging-api.aaveapy.com/api).",
+          '[validate-env] VITE_API_BASE_URL not set — falling back to staging API (https://staging-api.aaveapy.com/api).',
         );
       }
     },
@@ -175,7 +164,7 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: Number(process.env.PORT) || 8080,
     watch: {
-      ignored: ["**/.codeartsdoer/**"],
+      ignored: ['**/.codeartsdoer/**'],
     },
   },
   preview: {
@@ -188,21 +177,21 @@ export default defineConfig(({ mode }) => ({
     deployShaMetaPlugin(),
     selectiveModulePreloadPlugin(),
     assertFirstPaintChunksPlugin(),
-    mode === "development" && componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+    include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
   },
   resolve: {
     // Fixes "Cannot read properties of null (reading 'useMemo')" crashes
     // caused by duplicated React instances in Vite optimized deps.
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
       react: reactRoot,
-      "react-dom": reactDomRoot,
-      "react/jsx-runtime": path.join(reactRoot, "jsx-runtime.js"),
-      "react/jsx-dev-runtime": path.join(reactRoot, "jsx-dev-runtime.js"),
+      'react-dom': reactDomRoot,
+      'react/jsx-runtime': path.join(reactRoot, 'jsx-runtime.js'),
+      'react/jsx-dev-runtime': path.join(reactRoot, 'jsx-dev-runtime.js'),
       // `@aave/react-v3` ships its own bundled copy of `@aave/graphql` (V3
       // schema) under `node_modules/@aave/react-v3/node_modules/@aave/graphql`.
       // Vite refuses to resolve through `node_modules/*` because the
@@ -212,18 +201,40 @@ export default defineConfig(({ mode }) => ({
       // (the V4 documents from the top-level `@aave/graphql` would not
       // match `r.query === document` inside `refreshQueryWhere`).
       // See ADR-0015 §S4.
-      "@aave/react-v3/graphql-queries": path.resolve(
+      '@aave/react-v3/graphql-queries': path.resolve(
         __dirname,
-        "node_modules/@aave/react-v3/node_modules/@aave/graphql/dist/index.js",
+        'node_modules/@aave/react-v3/node_modules/@aave/graphql/dist/index.js',
       ),
     },
   },
   test: {
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.worktrees/**", "**/e2e/**", "scripts/**"],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**', '**/e2e/**', 'scripts/**'],
     // Default environment stays `node` for fast/pure tests. Component tests
     // that need a DOM opt-in via the file-level pragma
     // `// @vitest-environment happy-dom`.
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      include: [
+        'src/lib/**',
+        'src/config/**',
+        'src/hooks/**',
+        'src/components/**',
+        'src/providers/**',
+        'src/shared/**',
+      ],
+      exclude: ['src/generated/**', 'src/integrations/supabase/**', '**/*.test.*', '**/*.d.ts'],
+      // Enforced floor (npm run test:coverage). Baseline 2026-09:
+      // stmts 72.9 / branches 66.7 / funcs 64.1 / lines 74.9 — thresholds sit
+      // just under so new untested code fails CI while debt gets paid down
+      // opportunistically. Ratchet up as coverage improves.
+      thresholds: {
+        statements: 72,
+        branches: 66,
+        functions: 63,
+        lines: 74,
+      },
+    },
   },
   build: {
     commonjsOptions: {
@@ -241,43 +252,49 @@ export default defineConfig(({ mode }) => ({
         advancedChunks: {
           groups: [
             // Core React and its direct dependencies - MUST be together
-            { name: "vendor-react", test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             // React ecosystem
-            { name: "vendor-react-libs", test: /node_modules[\\/](react-router|react-hook-form|react-day-picker)[\\/]/ },
+            {
+              name: 'vendor-react-libs',
+              test: /node_modules[\\/](react-router|react-hook-form|react-day-picker)[\\/]/,
+            },
             // Animation libraries
-            { name: "vendor-animation", test: /node_modules[\\/](framer-motion|embla-carousel)[\\/]/ },
+            { name: 'vendor-animation', test: /node_modules[\\/](framer-motion|embla-carousel)[\\/]/ },
             // Radix UI components
-            { name: "vendor-radix", test: /node_modules[\\/]@radix-ui[\\/]/ },
+            { name: 'vendor-radix', test: /node_modules[\\/]@radix-ui[\\/]/ },
             // Query & data fetching
-            { name: "vendor-query", test: /node_modules[\\/]@tanstack[\\/]/ },
+            { name: 'vendor-query', test: /node_modules[\\/]@tanstack[\\/]/ },
             // Charts and visualization
-            { name: "vendor-charts", test: /node_modules[\\/]recharts[\\/]/ },
+            { name: 'vendor-charts', test: /node_modules[\\/]recharts[\\/]/ },
             // Icons
-            { name: "vendor-icons", test: /node_modules[\\/]lucide-react[\\/]/ },
+            { name: 'vendor-icons', test: /node_modules[\\/]lucide-react[\\/]/ },
             // Forms and validation
-            { name: "vendor-forms", test: /node_modules[\\/](zod|@hookform)[\\/]/ },
+            { name: 'vendor-forms', test: /node_modules[\\/](zod|@hookform)[\\/]/ },
             // UI utilities
-            { name: "vendor-ui-utils", test: /node_modules[\\/](class-variance-authority|clsx|tailwind-merge)[\\/]/ },
+            { name: 'vendor-ui-utils', test: /node_modules[\\/](class-variance-authority|clsx|tailwind-merge)[\\/]/ },
             // Date utilities
-            { name: "vendor-date", test: /node_modules[\\/]date-fns[\\/]/ },
+            { name: 'vendor-date', test: /node_modules[\\/]date-fns[\\/]/ },
             // Aave protocol
-            { name: "vendor-aave", test: /node_modules[\\/]@aave-dao[\\/]/ },
+            { name: 'vendor-aave', test: /node_modules[\\/]@aave-dao[\\/]/ },
             // Blockchain stack (viem/wagmi/ox/rainbowkit + their transitive
             // deps) — lazy, only reachable via the WalletProviders boundary
             {
-              name: "vendor-blockchain",
+              name: 'vendor-blockchain',
               test: /node_modules[\\/](viem|wagmi|@wagmi|@rainbow-me|ox|abitype|mipd|zustand|@noble|@adraffy|ua-parser-js|qr|cuer|@vanilla-extract)[\\/]/,
             },
             // UI libraries
-            { name: "vendor-ui-libs", test: /node_modules[\\/](sonner|vaul|cmdk)[\\/]/ },
+            { name: 'vendor-ui-libs', test: /node_modules[\\/](sonner|vaul|cmdk)[\\/]/ },
             // Theme
-            { name: "vendor-theme", test: /node_modules[\\/]next-themes[\\/]/ },
+            { name: 'vendor-theme', test: /node_modules[\\/]next-themes[\\/]/ },
           ],
         },
       },
     },
     // Increase chunk size warning limit to 600 KB to reduce noise
     chunkSizeWarningLimit: 600,
+    // 'hidden': maps are generated for Sentry uploads (see src/lib/sentry.ts)
+    // but no map URL is referenced in the bundle, so the source stays private.
+    sourcemap: 'hidden',
     // Disable Vite's automatic modulePreload — replaced by the
     // selectiveModulePreloadPlugin which only injects first-paint chunks.
     modulePreload: false,

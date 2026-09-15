@@ -11,12 +11,7 @@ const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
 const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIconMap.ts');
 const NETWORKS_ICONS_DIR = path.join(ROOT, 'public', 'icons', 'networks');
-const PENDING_CHAIN_ICON_BASES_PATH = path.join(
-  ROOT,
-  'scripts',
-  'data',
-  'pending-chain-icon-bases.json'
-);
+const PENDING_CHAIN_ICON_BASES_PATH = path.join(ROOT, 'scripts', 'data', 'pending-chain-icon-bases.json');
 
 async function loadUpstreamNetworksConfig() {
   return await fetchWithTimeout(REMOTE_NETWORKS_CONFIG_URL);
@@ -24,7 +19,7 @@ async function loadUpstreamNetworksConfig() {
 
 function parseLocalChainIconMap(chainIconsContent) {
   const objectMatch = chainIconsContent.match(
-    /(?:export\s+)?const chainIconMap:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/
+    /(?:export\s+)?const chainIconMap:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/,
   );
   if (!objectMatch) {
     throw new Error('Failed to parse chainIconMap from src/lib/chainIconMap.ts');
@@ -136,8 +131,6 @@ async function loadPendingIconBases() {
   return new Set(data.map((x) => String(x).toLowerCase()));
 }
 
-
-
 async function main() {
   const [upstreamContent, localContent, pendingBases] = await Promise.all([
     loadUpstreamNetworksConfig(),
@@ -190,7 +183,7 @@ async function main() {
 
   if (assetErrors.length > 0) {
     console.error(
-      '\nMissing on-disk network icon (add public/icons/networks/<base>.* or list base in scripts/data/pending-chain-icon-bases.json):'
+      '\nMissing on-disk network icon (add public/icons/networks/<base>.* or list base in scripts/data/pending-chain-icon-bases.json):',
     );
     for (const item of assetErrors) {
       console.error(`- ${item.name}: expected file for base '${item.iconBase}'`);
@@ -204,8 +197,8 @@ async function main() {
   // Cross-check: chainRegistry chainIds ↔ chainIconMap chainIds
   const registryIds = await discoverMainnetChainIds();
   const iconMapIds = new Set(localMap.keys());
-  const inRegistryNotIcon = [...registryIds].filter(id => !iconMapIds.has(id));
-  const inIconNotRegistry = [...iconMapIds].filter(id => !registryIds.has(id));
+  const inRegistryNotIcon = [...registryIds].filter((id) => !iconMapIds.has(id));
+  const inIconNotRegistry = [...iconMapIds].filter((id) => !registryIds.has(id));
   if (inRegistryNotIcon.length > 0 || inIconNotRegistry.length > 0) {
     console.error('\nchainRegistry ↔ chainIconMap chainId mismatch:');
     for (const id of inRegistryNotIcon) {

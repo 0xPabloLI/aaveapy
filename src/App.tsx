@@ -1,17 +1,17 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
-import { ThemeProvider } from "next-themes";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
-import LoadingState from "@/components/dashboard/LoadingState";
-import { fetchMarkets } from "@/hooks/useAaveMarkets";
-import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
-import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
-import { clearLegacyCacheEntries } from "@/lib/cache";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { ThemeProvider } from 'next-themes';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import LoadingState from '@/components/dashboard/LoadingState';
+import { fetchMarkets } from '@/hooks/useAaveMarkets';
+import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import { clearLegacyCacheEntries } from '@/lib/cache';
 // The wallet layer (wagmi + RainbowKit → vendor-blockchain, ~420 KB gzip) and
 // the Aave SDK (@aave/react + @aave-dao → vendor-aave, ~218 KB gzip) must stay
 // off the entry chunk's synchronous import graph: first paint renders after
@@ -20,34 +20,35 @@ import { clearLegacyCacheEntries } from "@/lib/cache";
 // load never flashes a blank screen.
 // SdkErrorBoundary (no viem/wagmi deps) wraps the lazy providers so a chunk
 // load failure degrades gracefully instead of white-screening.
-const WalletProviders = lazy(() => import("@/providers/WalletProviders").then(m => ({ default: m.WalletProviders })));
-const AaveProviders = lazy(() => import("@/providers/AaveProviders").then(m => ({ default: m.AaveProviders })));
-import { SdkErrorBoundary } from "@/providers/SdkErrorBoundary";
-import AnalyticsRouteTracker from "@/components/AnalyticsRouteTracker";
+const WalletProviders = lazy(() => import('@/providers/WalletProviders').then((m) => ({ default: m.WalletProviders })));
+const AaveProviders = lazy(() => import('@/providers/AaveProviders').then((m) => ({ default: m.AaveProviders })));
+import { SdkErrorBoundary } from '@/providers/SdkErrorBoundary';
+import AnalyticsRouteTracker from '@/components/AnalyticsRouteTracker';
+import ConsentBanner from '@/components/ConsentBanner';
 
-import "@/i18n";
+import '@/i18n';
 
 // Lazy load route components
-const Index = lazy(() => import("./pages/Index"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ChainPage = lazy(() => import("./pages/ChainPage"));
-const LandingPT = lazy(() => import("./pages/LandingPT"));
-const AaveTaxasApyPT = lazy(() => import("./pages/AaveTaxasApyPT"));
-const LandingFR = lazy(() => import("./pages/LandingFR"));
-const LandingTR = lazy(() => import("./pages/LandingTR"));
-const AdminSeo = lazy(() => import("./pages/AdminSeo"));
-const AdminAaveNewsBacklinks = lazy(() => import("./pages/AdminAaveNewsBacklinks"));
-const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
-const AssetPage = lazy(() => import("./pages/AssetPage"));
-const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
-const AaveTauxApyFR = lazy(() => import("./pages/AaveTauxApyFR"));
-const AaveZinsenApyDE = lazy(() => import("./pages/AaveZinsenApyDE"));
-const AaveTasasApyES = lazy(() => import("./pages/AaveTasasApyES"));
-const AaveApyID = lazy(() => import("./pages/AaveApyID"));
-const AaveApyJA = lazy(() => import("./pages/AaveApyJA"));
-const AaveTassiApyIT = lazy(() => import("./pages/AaveTassiApyIT"));
-const AaveStavkiApyRU = lazy(() => import("./pages/AaveStavkiApyRU"));
-const AaveApyZH = lazy(() => import("./pages/AaveApyZH"));
+const Index = lazy(() => import('./pages/Index'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const ChainPage = lazy(() => import('./pages/ChainPage'));
+const LandingPT = lazy(() => import('./pages/LandingPT'));
+const AaveTaxasApyPT = lazy(() => import('./pages/AaveTaxasApyPT'));
+const LandingFR = lazy(() => import('./pages/LandingFR'));
+const LandingTR = lazy(() => import('./pages/LandingTR'));
+const AdminSeo = lazy(() => import('./pages/AdminSeo'));
+const AdminAaveNewsBacklinks = lazy(() => import('./pages/AdminAaveNewsBacklinks'));
+const DefiYieldTracker = lazy(() => import('./pages/DefiYieldTracker'));
+const AssetPage = lazy(() => import('./pages/AssetPage'));
+const UsaStablecoinApy = lazy(() => import('./pages/UsaStablecoinApy'));
+const AaveTauxApyFR = lazy(() => import('./pages/AaveTauxApyFR'));
+const AaveZinsenApyDE = lazy(() => import('./pages/AaveZinsenApyDE'));
+const AaveTasasApyES = lazy(() => import('./pages/AaveTasasApyES'));
+const AaveApyID = lazy(() => import('./pages/AaveApyID'));
+const AaveApyJA = lazy(() => import('./pages/AaveApyJA'));
+const AaveTassiApyIT = lazy(() => import('./pages/AaveTassiApyIT'));
+const AaveStavkiApyRU = lazy(() => import('./pages/AaveStavkiApyRU'));
+const AaveApyZH = lazy(() => import('./pages/AaveApyZH'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +79,7 @@ queryClient.prefetchQuery({
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+    <ConsentBanner />
     <Analytics debug={false} />
     <SpeedInsights debug={false} />
     <QueryClientProvider client={queryClient}>
@@ -93,7 +95,6 @@ const App = () => (
                     <AnalyticsRouteTracker />
                     <Suspense fallback={<LoadingState />}>
                       <Routes>
-
                         <Route path="/" element={<Index />} />
                         <Route path="/chain/:slug" element={<ChainPage />} />
                         <Route path="/pt-br" element={<LandingPT />} />

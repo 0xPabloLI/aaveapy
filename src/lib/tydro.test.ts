@@ -16,7 +16,7 @@ const baseBreakdown: MerklCampaignBreakdown = {
   campaignStartedAt: '2026-01-01T00:00:00.000Z',
   campaignEndedAt: '2026-02-01T00:00:00.000Z',
   campaignId: '1',
-}; 
+};
 
 const pointsAwareCampaign = (overrides: Partial<MerklCampaignBreakdown>): MerklCampaignBreakdown => ({
   ...baseBreakdown,
@@ -30,7 +30,7 @@ describe('getMerklForecastUsdMultiplier', () => {
         ...baseBreakdown,
         pointsPerThousandUsd: 2,
       },
-      1.8
+      1.8,
     );
 
     expect(multiplier).toBeCloseTo(1.8, 10);
@@ -47,7 +47,7 @@ describe('getMerklForecastUsdMultiplier', () => {
         ...baseBreakdown,
         pointsPerThousandUsd: 2,
       },
-      0
+      0,
     );
     expect(multiplier).toBe(0);
   });
@@ -55,20 +55,26 @@ describe('getMerklForecastUsdMultiplier', () => {
 
 describe('getMerklBreakdownApr', () => {
   it('prefers campaignApr over Tydro points when campaignApr is positive', () => {
-    const apr = getMerklBreakdownApr({
-      ...baseBreakdown,
-      campaignApr: 2.5,
-      pointsPerThousandUsd: 2,
-    }, 1);
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: 2.5,
+        pointsPerThousandUsd: 2,
+      },
+      1,
+    );
     expect(apr).toBe(2.5);
   });
 
   it('uses Tydro points when campaignApr is zero', () => {
-    const apr = getMerklBreakdownApr({
-      ...baseBreakdown,
-      campaignApr: 0,
-      pointsPerThousandUsd: 2,
-    }, 1);
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: 0,
+        pointsPerThousandUsd: 2,
+      },
+      1,
+    );
     // 2 points × $1/point × 36.5 (see calculatePointsApr in tydro.ts)
     expect(apr).toBe(73);
   });
@@ -80,16 +86,19 @@ describe('getMerklBreakdownApr', () => {
         campaignApr: 0,
         pointsPerThousandUsd: 2,
       },
-      0
+      0,
     );
     expect(apr).toBe(0);
   });
 
   it('coerces numeric string campaignApr when points are absent', () => {
-    const apr = getMerklBreakdownApr({
-      ...baseBreakdown,
-      campaignApr: '4.2' as unknown as number,
-    }, 1);
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: '4.2' as unknown as number,
+      },
+      1,
+    );
     expect(apr).toBe(4.2);
   });
 
@@ -102,7 +111,7 @@ describe('getMerklBreakdownApr', () => {
         plannedDaily: 1,
         latestTvl: 100_000,
       }),
-      1
+      1,
     );
     expect(apr).toBe(0);
   });
@@ -114,7 +123,7 @@ describe('getMerklBreakdownApr', () => {
         campaignApr: 0,
         pointsPerThousandUsd: 2,
       },
-      -1
+      -1,
     );
     expect(apr).toBe(0);
   });
@@ -144,34 +153,22 @@ describe('safePointToUsdRate', () => {
 
 describe('safePointToUsdRate (via public API)', () => {
   it('passes through zero rate — multiplier is 0', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      0
-    );
+    const multiplier = getMerklForecastUsdMultiplier({ ...baseBreakdown, pointsPerThousandUsd: 2 }, 0);
     expect(multiplier).toBe(0);
   });
 
   it('passes through positive rate — multiplier equals rate', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      1.5
-    );
+    const multiplier = getMerklForecastUsdMultiplier({ ...baseBreakdown, pointsPerThousandUsd: 2 }, 1.5);
     expect(multiplier).toBeCloseTo(1.5, 10);
   });
 
   it('falls back to 0 for NaN — multiplier is 0', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      NaN
-    );
+    const multiplier = getMerklForecastUsdMultiplier({ ...baseBreakdown, pointsPerThousandUsd: 2 }, NaN);
     expect(multiplier).toBe(0);
   });
 
   it('falls back to 0 for negative — multiplier is 0', () => {
-    const multiplier = getMerklForecastUsdMultiplier(
-      { ...baseBreakdown, pointsPerThousandUsd: 2 },
-      -5
-    );
+    const multiplier = getMerklForecastUsdMultiplier({ ...baseBreakdown, pointsPerThousandUsd: 2 }, -5);
     expect(multiplier).toBe(0);
   });
 });

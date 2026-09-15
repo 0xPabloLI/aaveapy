@@ -115,12 +115,7 @@ describe('incentive calculations only include active campaigns', () => {
 
     const protocolIncentives = [1, 0, -2];
 
-    const apr = calculateTotalIncentiveApr(
-      meritIncentives,
-      merklOpportunities,
-      brevisIncentives,
-      protocolIncentives
-    );
+    const apr = calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives);
 
     // active: merit (2 + 1) + merkl (4) + brevis (3) + protocol (1 + 0)
     expect(apr).toBe(11);
@@ -196,12 +191,7 @@ describe('incentive calculations only include active campaigns', () => {
 
     const protocolIncentives = [1, 0, -2];
 
-    const apy = calculateTotalIncentiveApy(
-      meritIncentives,
-      merklOpportunities,
-      brevisIncentives,
-      protocolIncentives
-    );
+    const apy = calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives);
 
     const expected =
       convertAprToApy(2) +
@@ -317,43 +307,47 @@ describe('Brevis open-ended campaign handling', () => {
 
 describe('scenario size formatting', () => {
   it('formats displayed size values in token units when scenario mode is token', () => {
-    const result = (formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string })
-      .formatScenarioSize?.(12_000, {
-        inputMode: 'token',
-        tokenPrice: 2_000,
-        tokenSymbol: 'WETH',
-      });
+    const result = (
+      formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string }
+    ).formatScenarioSize?.(12_000, {
+      inputMode: 'token',
+      tokenPrice: 2_000,
+      tokenSymbol: 'WETH',
+    });
 
     expect(result).toBe('6.00');
   });
 
   it('formats cap-related size values in token units when scenario mode is token', () => {
-    const result = (formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string })
-      .formatScenarioSize?.(2_500, {
-        inputMode: 'token',
-        tokenPrice: 2_000,
-        tokenSymbol: 'WETH',
-      });
+    const result = (
+      formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string }
+    ).formatScenarioSize?.(2_500, {
+      inputMode: 'token',
+      tokenPrice: 2_000,
+      tokenSymbol: 'WETH',
+    });
 
     expect(result).toBe('1.25');
   });
 
   it('formats simulation deltas in token units when scenario mode is token', () => {
-    const result = (formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string })
-      .formatScenarioSizeDelta?.(4_000, {
-        inputMode: 'token',
-        tokenPrice: 2_000,
-      });
+    const result = (
+      formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string }
+    ).formatScenarioSizeDelta?.(4_000, {
+      inputMode: 'token',
+      tokenPrice: 2_000,
+    });
 
     expect(result).toBe('+2.00');
   });
 
   it('formats simulation negative deltas in token units when scenario mode is token', () => {
-    const result = (formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string })
-      .formatScenarioSizeDelta?.(-2_500, {
-        inputMode: 'token',
-        tokenPrice: 2_000,
-      });
+    const result = (
+      formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string }
+    ).formatScenarioSizeDelta?.(-2_500, {
+      inputMode: 'token',
+      tokenPrice: 2_000,
+    });
 
     expect(result).toBe('-1.25');
   });

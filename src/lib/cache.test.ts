@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { clearLegacyCacheEntries, isDeficitWithoutPrice, sanitizeDeficitWithoutPrice, updateSchemaFingerprintFromApi } from './cache';
+import {
+  clearLegacyCacheEntries,
+  isDeficitWithoutPrice,
+  sanitizeDeficitWithoutPrice,
+  updateSchemaFingerprintFromApi,
+} from './cache';
 import type { MarketsResponse } from '@/types/aave';
 
 class MemoryStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {

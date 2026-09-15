@@ -49,8 +49,7 @@ function getDesktopPinnedRowTopY(): number {
 
 function getScrollBehavior(): ScrollBehavior {
   const prefersReduced =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   return prefersReduced ? 'auto' : 'smooth';
 }
 
@@ -118,9 +117,8 @@ export function scrollExpandedSimulationIntoView(
   if (typeof document === 'undefined') return;
 
   const escaped = escapeReserveId(reserveId);
-  const behavior = options.instant ? 'auto' as ScrollBehavior : getScrollBehavior();
-  const pinnedTopY =
-    options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
+  const behavior = options.instant ? ('auto' as ScrollBehavior) : getScrollBehavior();
+  const pinnedTopY = options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
   const vBottom = window.innerHeight - VIEW_MARGIN_PX;
 
   const mobileAnchor = document.querySelector(`[data-reserve-expanded-anchor="${escaped}"]`);
@@ -193,8 +191,7 @@ export function shouldScrollExpandedSimulationIntoView(
   if (typeof document === 'undefined') return false;
 
   const escaped = escapeReserveId(reserveId);
-  const pinnedTopY =
-    options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
+  const pinnedTopY = options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
   const vBottom = window.innerHeight - VIEW_MARGIN_PX;
   const mobileAnchor = document.querySelector(`[data-reserve-expanded-anchor="${escaped}"]`);
 

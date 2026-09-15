@@ -28,12 +28,7 @@ export const useReservesTooltip = (): UseReservesTooltipResult => {
   const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
   const handleIncentiveClick = useCallback(
-    (
-      e: React.MouseEvent,
-      reserve: ReserveWithSpread,
-      type: 'supply' | 'borrow',
-      apy: number | null,
-    ) => {
+    (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => {
       e.stopPropagation();
       if (apy === null || isNaN(apy)) return;
       const rect = e.currentTarget.getBoundingClientRect();

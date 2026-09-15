@@ -25,13 +25,13 @@ export function toggleSortOrderAscFirst(order: SortOrder): SortOrder {
  * pattern — 22+ call sites that all had to stay in sync. A missing toggle
  * in any one of them caused the "can only sort one direction" regression.
  */
-export function selectSortOption<M extends string>(params: {
+export function selectSortOption<M extends string, T extends M = M>(params: {
   isAlreadySelected: boolean;
   setSortOrder: Dispatch<SetStateAction<SortOrder>>;
   toggleOrderFn: (o: SortOrder) => SortOrder;
   defaultOrder: SortOrder;
   setSortMode?: Dispatch<SetStateAction<M>>;
-  targetMode?: M;
+  targetMode?: T;
   setActiveSortColumn: Dispatch<SetStateAction<SortableColumn | null>>;
   targetColumn: SortableColumn;
 }): void {
@@ -144,9 +144,7 @@ export interface UseReservesTableSortResult {
  * git history of `src/components/dashboard/ReservesTable.tsx` prior to the
  * extraction for context.
  */
-export function useReservesTableSort(
-  { collapseExpanded }: UseReservesTableSortOptions,
-): UseReservesTableSortResult {
+export function useReservesTableSort({ collapseExpanded }: UseReservesTableSortOptions): UseReservesTableSortResult {
   // Active column + per-column orders / modes
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<SortOrder>('asc');
@@ -253,26 +251,29 @@ export function useReservesTableSort(
     setShowUtilSortMenu(false);
   }, []);
 
-  const toggleMobileSortMenu = useCallback((menu: MobileSortMenuKey) => {
-    closeAllMobileSortMenus(menu);
-    switch (menu) {
-      case 'size':
-        setShowSizeSortMenu((prev) => !prev);
-        break;
-      case 'util':
-        setShowUtilSortMenu((prev) => !prev);
-        break;
-      case 'supply':
-        setShowSupplySortMenu((prev) => !prev);
-        break;
-      case 'borrow':
-        setShowBorrowSortMenu((prev) => !prev);
-        break;
-      case 'extra':
-        setShowExtraSortMenu((prev) => !prev);
-        break;
-    }
-  }, [closeAllMobileSortMenus]);
+  const toggleMobileSortMenu = useCallback(
+    (menu: MobileSortMenuKey) => {
+      closeAllMobileSortMenus(menu);
+      switch (menu) {
+        case 'size':
+          setShowSizeSortMenu((prev) => !prev);
+          break;
+        case 'util':
+          setShowUtilSortMenu((prev) => !prev);
+          break;
+        case 'supply':
+          setShowSupplySortMenu((prev) => !prev);
+          break;
+        case 'borrow':
+          setShowBorrowSortMenu((prev) => !prev);
+          break;
+        case 'extra':
+          setShowExtraSortMenu((prev) => !prev);
+          break;
+      }
+    },
+    [closeAllMobileSortMenus],
+  );
 
   return {
     activeSortColumn,

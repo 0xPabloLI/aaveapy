@@ -203,16 +203,14 @@ export function extractAddressBookReferences(content) {
 }
 
 export function parseCurrentAddressBookImports(content) {
-  const importMatch = content.match(
-    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/
-  );
+  const importMatch = content.match(/import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/);
   if (!importMatch) return { names: new Set(), fullMatchStart: -1, fullMatchEnd: -1 };
   const names = new Set(
     importMatch[1]
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-      .map((item) => item.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim())
+      .map((item) => item.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim()),
   );
   return {
     names,
@@ -232,8 +230,7 @@ export function syncAddressBookImports(content) {
 
   const allNames = [...imported, ...missing].sort();
   const newImportStatement = `import {\n${allNames.map((n) => `  ${n},`).join('\n')},\n} from '@aave-dao/aave-address-book';`;
-  const newContent =
-    content.slice(0, fullMatchStart) + newImportStatement + content.slice(fullMatchEnd);
+  const newContent = content.slice(0, fullMatchStart) + newImportStatement + content.slice(fullMatchEnd);
   return { content: newContent, changed: true, addedImports: missing };
 }
 

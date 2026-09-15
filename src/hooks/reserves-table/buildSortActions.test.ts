@@ -20,9 +20,17 @@ function makeInput(overrides: Partial<BuildSortActionsInput> = {}): BuildSortAct
 }
 
 const ALL_SIZE_KEYS: SizeSortMode[] = [
-  'supply', 'borrow', 'borrowAvailability', 'supplyAvailability',
-  'deficitRatio', 'deficitAmount', 'supplyCapPct', 'borrowCapPct',
-  'supplyCapValue', 'borrowCapValue', 'availableLiquidity',
+  'supply',
+  'borrow',
+  'borrowAvailability',
+  'supplyAvailability',
+  'deficitRatio',
+  'deficitAmount',
+  'supplyCapPct',
+  'borrowCapPct',
+  'supplyCapValue',
+  'borrowCapValue',
+  'availableLiquidity',
 ];
 
 const ALL_UTIL_KEYS: UtilSortMode[] = ['util', 'liquidity', 'optimal'];

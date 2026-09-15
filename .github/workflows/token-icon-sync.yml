@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: "Target base branch for the sync PR (default: dev). Scheduled runs use dev and main."
+        description: 'Target base branch for the sync PR (default: dev). Scheduled runs use dev and main.'
         required: false
-        default: "dev"
+        default: 'dev'
         type: string
   repository_dispatch:
     types: [upstream-change]
   schedule:
     # Every day at 04:20 UTC — runs against dev and main (matrix).
-    - cron: "20 4 * * *"
+    - cron: '20 4 * * *'
 
 permissions:
   actions: write
@@ -42,8 +42,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -60,11 +60,11 @@ jobs:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
           token: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' && secrets.TOKEN_ICON_SYNC_PAT || secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
-          commit-message: "chore(icons): sync token icons"
-          title: "chore(icons): sync token icons"
+          commit-message: 'chore(icons): sync token icons'
+          title: 'chore(icons): sync token icons'
           body: |
             Automated update from `npm run sync-token-icons`.
-          branch: "bot/token-icon-sync-${{ matrix.target_branch }}-${{ github.run_id }}"
+          branch: 'bot/token-icon-sync-${{ matrix.target_branch }}-${{ github.run_id }}'
           base: ${{ matrix.target_branch }}
           delete-branch: true
           labels: |

@@ -110,10 +110,7 @@ async function assertStrictStickAfterReorder(
 
 test.describe('Reserves table stick behavior', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Stick top pin is desktop-specific',
-    );
+    test.skip(testInfo.project.name.includes('mobile'), 'Stick top pin is desktop-specific');
   });
 
   test('expanded row is pulled toward top after market filter reorder', async ({ page }) => {

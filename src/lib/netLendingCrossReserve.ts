@@ -65,9 +65,7 @@ export interface CrossAssetNetInput {
 export function computeCrossAssetNetEligible(input: CrossAssetNetInput): number {
   const { sourceGrossUsd, pairing, crossReservePositions } = input;
   const pairedPos = crossReservePositions.get(pairing.pairedReserveId);
-  const pairedUsd = pairing.pairedSide === 'supply'
-    ? (pairedPos?.supplyUsd ?? 0)
-    : (pairedPos?.borrowUsd ?? 0);
+  const pairedUsd = pairing.pairedSide === 'supply' ? (pairedPos?.supplyUsd ?? 0) : (pairedPos?.borrowUsd ?? 0);
   return Math.min(sourceGrossUsd, pairedUsd * pairing.discountFactor);
 }
 

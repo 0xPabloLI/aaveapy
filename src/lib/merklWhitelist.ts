@@ -24,7 +24,7 @@ export const MERKL_WHITELIST_TOGGLE_ARIA =
 export function isMerklWhitelistBreakdownIncluded(
   breakdown: { whitelistOnly?: boolean; campaignId: string },
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  campaignAccessStatus?: 'allowed' | 'whitelist-blocked' | 'blacklisted'
+  campaignAccessStatus?: 'allowed' | 'whitelist-blocked' | 'blacklisted',
 ): boolean {
   if (campaignAccessStatus === 'blacklisted' || campaignAccessStatus === 'whitelist-blocked') return false;
   if (!breakdown.whitelistOnly) return true;

@@ -16,9 +16,7 @@ export const getReserveKey = (reserve: ReserveKeySource): string => {
  * Builds a Map<reserveId, ReserveWithSpread> for O(1) lookup.
  * Key is `reserveId.trim()` to match `getReserveKey` semantics.
  */
-export const buildReserveMap = (
-  reserves: ReserveWithSpread[],
-): Map<string, ReserveWithSpread> => {
+export const buildReserveMap = (reserves: ReserveWithSpread[]): Map<string, ReserveWithSpread> => {
   const map = new Map<string, ReserveWithSpread>();
   for (const r of reserves) {
     const key = r.reserveId.trim();
@@ -41,7 +39,7 @@ function toChainTokenKey(chainId: number, tokenAddress: string): ChainTokenKey {
   return `${chainId}:${tokenAddress.toLowerCase()}`;
 }
 
-export const AMBIGUOUS_FALLBACK = Symbol('ambiguousFallback')
+export const AMBIGUOUS_FALLBACK = Symbol('ambiguousFallback');
 
 /**
  * Builds a Map<(chainId,tokenAddress), ReserveWithSpread> for O(1) lookup.
@@ -55,11 +53,11 @@ export const buildReserveLookupByChainAndToken = (
   reserves: ReserveWithSpread[],
 ): Map<string, ReserveWithSpread & { _ambiguousFallback?: boolean }> => {
   const map = new Map<string, ReserveWithSpread & { _ambiguousFallback?: boolean }>();
-  const keyCounts = new Map<string, number>()
+  const keyCounts = new Map<string, number>();
   for (const r of reserves) {
     if (r.chainId != null && r.tokenAddress) {
       const key = toChainTokenKey(r.chainId, r.tokenAddress);
-      keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1)
+      keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1);
       if (!map.has(key)) {
         map.set(key, r);
       }
@@ -67,8 +65,8 @@ export const buildReserveLookupByChainAndToken = (
   }
   for (const [key, count] of keyCounts) {
     if (count > 1) {
-      const existing = map.get(key)
-      if (existing) map.set(key, { ...existing, _ambiguousFallback: true })
+      const existing = map.get(key);
+      if (existing) map.set(key, { ...existing, _ambiguousFallback: true });
     }
   }
   return map;
@@ -93,7 +91,7 @@ export function composeReserveId(
   tokenAddress: string,
   hubAddress?: string,
 ): string | undefined {
-  if (chainId <= 0 || !poolAddress || !tokenAddress) return undefined
-  const base = `${chainId}:${poolAddress.toLowerCase()}:${tokenAddress.toLowerCase()}`
-  return hubAddress ? `${base}:${hubAddress.toLowerCase()}` : base
+  if (chainId <= 0 || !poolAddress || !tokenAddress) return undefined;
+  const base = `${chainId}:${poolAddress.toLowerCase()}:${tokenAddress.toLowerCase()}`;
+  return hubAddress ? `${base}:${hubAddress.toLowerCase()}` : base;
 }

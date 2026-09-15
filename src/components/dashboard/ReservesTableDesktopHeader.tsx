@@ -5,7 +5,18 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitAmount' | 'supplyCapPct' | 'borrowCapPct' | 'deficitRatio' | 'supplyCapValue' | 'borrowCapValue' | 'availableLiquidity';
+type SizeSortMode =
+  | 'supply'
+  | 'borrow'
+  | 'borrowAvailability'
+  | 'supplyAvailability'
+  | 'deficitAmount'
+  | 'supplyCapPct'
+  | 'borrowCapPct'
+  | 'deficitRatio'
+  | 'supplyCapValue'
+  | 'borrowCapValue'
+  | 'availableLiquidity';
 type UtilSortMode = 'util' | 'liquidity' | 'optimal';
 
 interface MenuPos {
@@ -38,10 +49,7 @@ const DesktopSortMenuPortal = ({
 
   return createPortal(
     <>
-      <div
-        className="fixed inset-0 z-[9999]"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-[9999]" onClick={onClose} />
       <div
         className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] w-max max-w-[min(18rem,calc(100vw-2rem))]"
         style={{ top: menuPos.top, left: menuPos.left }}
@@ -221,11 +229,7 @@ export default function ReservesTableDesktopHeader({
   ];
 
   return (
-    <TableHeader
-      ref={tableHeaderRef}
-      data-reserves-sticky-thead
-      className={tableHeaderClassName}
-    >
+    <TableHeader ref={tableHeaderRef} data-reserves-sticky-thead className={tableHeaderClassName}>
       <TableRow className="border-b border-border/50 hover:bg-transparent">
         <TableHead className="ds-reserves-cell-th-edge-l py-[var(--ds-space-3)] text-left ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
           <button
@@ -300,7 +304,9 @@ export default function ReservesTableDesktopHeader({
             type="button"
             onClick={onSortSizeDefault}
             className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
-              activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground hover:text-foreground/80'
+              activeSortColumn === 'size'
+                ? sizeSortActiveHeadingClass
+                : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {activeSortColumn === 'size' ? (
@@ -320,7 +326,9 @@ export default function ReservesTableDesktopHeader({
             type="button"
             onClick={onSortUtil}
             className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
-              activeSortColumn === 'util' ? 'ds-text-purple-600 font-bold scale-105' : 'text-muted-foreground hover:text-foreground/80'
+              activeSortColumn === 'util'
+                ? 'ds-text-purple-600 font-bold scale-105'
+                : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {activeSortColumn === 'util' ? (

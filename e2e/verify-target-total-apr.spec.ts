@@ -24,18 +24,18 @@ test.describe('TARGET_TOTAL_APR UI verification', () => {
 
     // Capture console errors
     const consoleErrors: string[] = [];
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
 
     // Wait for the reserves table to render
-    await expect(page.locator('tbody tr[data-reserve-id]').first())
-      .toBeVisible({ timeout: 120_000 });
+    await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 120_000 });
 
     // Find any reserve row that has a supply incentive value (percentage)
-    const incentiveCell = page.locator('td[data-cell="supply-incentive"]')
+    const incentiveCell = page
+      .locator('td[data-cell="supply-incentive"]')
       .filter({ hasText: /\d+\.\d+%/ })
       .first();
 
@@ -62,6 +62,6 @@ test.describe('TARGET_TOTAL_APR UI verification', () => {
     }
 
     // No console errors (excluding favicon noise)
-    expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0);
+    expect(consoleErrors.filter((e) => !e.includes('favicon'))).toHaveLength(0);
   });
 });

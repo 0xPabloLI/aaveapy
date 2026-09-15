@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isSupplyDisabled, isBorrowDisabled, getPrimaryReserveStatus, isRestrictedReserve, getReserveFlags } from './reserveStatus';
+import {
+  isSupplyDisabled,
+  isBorrowDisabled,
+  getPrimaryReserveStatus,
+  isRestrictedReserve,
+  getReserveFlags,
+} from './reserveStatus';
 import type { ReserveWithSpread } from '@/types/aave';
 
 const BASE_RESERVE: ReserveWithSpread = {
@@ -54,18 +60,24 @@ describe('hasProtocolRestriction (internal via isSupplyDisabled)', () => {
 
 describe('getPrimaryReserveStatus', () => {
   it('paused wins over everything', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isPaused: true, isFrozen: true, isActive: false as const } as ReserveWithSpread))
-      .toBe('paused');
+    expect(
+      getPrimaryReserveStatus({
+        ...BASE_RESERVE,
+        isPaused: true,
+        isFrozen: true,
+        isActive: false as const,
+      } as ReserveWithSpread),
+    ).toBe('paused');
   });
 
   it('inactive wins over frozen', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isActive: false, isFrozen: true } as ReserveWithSpread))
-      .toBe('inactive');
+    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isActive: false, isFrozen: true } as ReserveWithSpread)).toBe(
+      'inactive',
+    );
   });
 
   it('frozen → frozen', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isFrozen: true } as ReserveWithSpread))
-      .toBe('frozen');
+    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isFrozen: true } as ReserveWithSpread)).toBe('frozen');
   });
 
   it('normal → null', () => {
