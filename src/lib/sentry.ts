@@ -4,8 +4,10 @@
  * Setup (owner step, one time):
  *   1. Create the project at sentry.io (or self-hosted GlitchTip) → copy DSN
  *   2. Add VITE_SENTRY_DSN=<dsn> to the Vercel project env vars (Production +
- *      Preview); redeploy
- *   3. Optional (source maps): SENTRY_AUTH_TOKEN + SENTRY_ORG/PROJECT as CI
+ *      dev-branch preview for staging); redeploy
+ *   3. Staging separation: set VITE_SENTRY_ENVIRONMENT=staging on the
+ *      dev-branch deployment so its errors are filterable from production
+ *   4. Optional (source maps): SENTRY_AUTH_TOKEN + SENTRY_ORG/PROJECT as CI
  *      secrets enable map uploads — see vite.config.ts build.sourcemap:'hidden'
  *
  * Design constraints honored:
@@ -42,7 +44,11 @@ export async function initSentry(): Promise<void> {
     const Sentry = await import('@sentry/react');
     Sentry.init({
       dsn,
-      environment: import.meta.env.MODE,
+      // Deployment-level override (e.g. VITE_SENTRY_ENVIRONMENT=staging on the
+      // dev branch) so staging errors are filterable apart from production.
+      // import.meta.env.MODE is 'production' for every Vite build, so without
+      // the override all deploys would report under the same name.
+      environment: (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) ?? import.meta.env.MODE,
       // SPA with few high-value errors: generous session sampling, modest
       // performance tracing until backend correlation is wired up.
       sampleRate: 1.0,

@@ -1,6 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { captureError } from '@/lib/sentry';
 import { logger } from '@/lib/logger';
 
 interface SdkErrorBoundaryProps {
@@ -27,7 +26,16 @@ export class SdkErrorBoundary extends Component<SdkErrorBoundaryProps, SdkErrorB
       error,
       componentStack: errorInfo.componentStack ?? undefined,
     });
-    captureError(error, { componentStack: errorInfo.componentStack ?? undefined });
+    // Dynamic import keeps @sentry/react out of the main chunk (it must only
+    // be statically imported from main.tsx's post-FCP init); errors are still
+    // forwarded once the chunk loads. No-op when Sentry is disabled.
+    void import('@/lib/sentry')
+      .then(({ captureError }) => {
+        captureError(error, { componentStack: errorInfo.componentStack ?? undefined });
+      })
+      .catch(() => {
+        // Never let telemetry loading break the error UI.
+      });
   }
 
   handleReset = () => {
