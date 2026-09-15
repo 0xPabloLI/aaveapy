@@ -7,11 +7,7 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { parseSignedNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import type {
-  MerklForecastWireItem,
-  ReserveWithSpread,
-  TokenPricesIndex,
-} from '@/types/aave';
+import type { MerklForecastWireItem, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import type { PerReserveInput } from '@/lib/portfolioSimulator';
 import { buildPointRateMap, type PointRateMap } from '@/lib/tydro';
@@ -104,17 +100,12 @@ export const useSharedRateSimulations = ({
     () =>
       perReserveInputs != null &&
       Array.from(perReserveInputs.values()).some(
-        (v) =>
-          parseSignedNumberInput(v.supplyInput) !== 0 ||
-          parseSignedNumberInput(v.borrowInput) !== 0,
+        (v) => parseSignedNumberInput(v.supplyInput) !== 0 || parseSignedNumberInput(v.borrowInput) !== 0,
       ),
     [perReserveInputs],
   );
   const hasAnyInput = useMemo(
-    () =>
-      parseSignedNumberInput(supplyInput) !== 0 ||
-      parseSignedNumberInput(borrowInput) !== 0 ||
-      hasPerReserveInput,
+    () => parseSignedNumberInput(supplyInput) !== 0 || parseSignedNumberInput(borrowInput) !== 0 || hasPerReserveInput,
     [borrowInput, supplyInput, hasPerReserveInput],
   );
   const needsTokenPrice = inputMode === 'token';
@@ -171,14 +162,8 @@ export const useSharedRateSimulations = ({
           // so buildPriceLookup produces the same result regardless of which reserve.
           queryFn: async () => {
             return (
-              (await resolveForecastTokenPriceWithBackup(
-                buildPriceLookup(reserve, tokenPrices, 'Supply'),
-                fetch
-              )) ??
-              (await resolveForecastTokenPriceWithBackup(
-                buildPriceLookup(reserve, tokenPrices, 'Borrow'),
-                fetch
-              )) ??
+              (await resolveForecastTokenPriceWithBackup(buildPriceLookup(reserve, tokenPrices, 'Supply'), fetch)) ??
+              (await resolveForecastTokenPriceWithBackup(buildPriceLookup(reserve, tokenPrices, 'Borrow'), fetch)) ??
               null
             );
           },
@@ -213,10 +198,7 @@ export const useSharedRateSimulations = ({
   // a major source of ReservesTable re-render churn.
   // See `buildPriceDataSignature` / `buildPriceLoadingSignature` for the
   // collision-resistant signature contract (covered by unit tests).
-  const priceDataKey = useMemo(
-    () => buildPriceDataSignature(priceQueries),
-    [priceQueries],
-  );
+  const priceDataKey = useMemo(() => buildPriceDataSignature(priceQueries), [priceQueries]);
   const priceLoadingKey = useMemo(
     () => buildPriceLoadingSignature(priceQueries, needsTokenPrice),
     [needsTokenPrice, priceQueries],
@@ -291,16 +273,13 @@ export const useSharedRateSimulations = ({
         }
       }
       const hasEffectiveInput =
-        parseSignedNumberInput(effectiveSupplyInput) !== 0 ||
-        parseSignedNumberInput(effectiveBorrowInput) !== 0;
+        parseSignedNumberInput(effectiveSupplyInput) !== 0 || parseSignedNumberInput(effectiveBorrowInput) !== 0;
       // AAV-1166: Portfolio Scenario active when any perReserve entry has a delta
       // and the current reserve is a portfolio member.
       const portfolioScenarioActive =
         perReserveInputs != null &&
         Array.from(perReserveInputs.values()).some(
-          (v) =>
-            parseSignedNumberInput(v.supplyInput) !== 0 ||
-            parseSignedNumberInput(v.borrowInput) !== 0,
+          (v) => parseSignedNumberInput(v.supplyInput) !== 0 || parseSignedNumberInput(v.borrowInput) !== 0,
         ) &&
         perReserveInputs.has(reserveId);
 
@@ -386,10 +365,10 @@ export const useRateSimulation = ({
   borrowInput,
   inputMode = 'token',
   meritMerklNetPosition = true,
-    crossReservePositions,
-    walletCrossReservePositions,
-    reserveSymbolById,
-  }: UseRateSimulationParams): RateSimulationResult => {
+  crossReservePositions,
+  walletCrossReservePositions,
+  reserveSymbolById,
+}: UseRateSimulationParams): RateSimulationResult => {
   const reserveId = getReserveSimulationId(reserve);
   const { simulationsById } = useSharedRateSimulations({
     reserves: [reserve],

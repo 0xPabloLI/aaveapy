@@ -1,0 +1,44 @@
+# DAST (Dynamic Application Security Testing) — OWASP ZAP baseline scan.
+#
+# Passive-scans the deployed production site weekly and on demand. Distinct
+# from the SAST already in place (semgrep pre-push + CodeQL + secret scanning):
+# ZAP exercises the RUNNING app (headers, cookies, CSP, TLS config, client-side
+# content injection).
+#
+# Intentionally report-only at rollout (`fail_action: false`) — a first
+# baseline on a public SPA always raises tuning noise (404s from scanners,
+# missing security headers on static assets). Triage the report, add
+# false-positive rules to .zap/rules.tsv, then flip fail_action to true.
+name: DAST Scan (OWASP ZAP)
+
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Mondays 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap-baseline:
+    name: zap-baseline (aaveapy.com)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (scan rules + report path)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@b2b27be233fcb2675a10ef67c1fc082a830695f2 # v0.12.0
+        with:
+          target: 'https://aaveapy.com'
+          allow_invite_world: false
+          fail_action: false
+          rules_file_name: '.zap/rules.tsv'
+          artifact_name: 'zap-baseline-report'
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "ZAP baseline scan finished — report attached as artifact."
+          echo "Triage WARN/FAIL lines, silence confirmed false positives in .zap/rules.tsv,"
+          echo "then set fail_action: true to make DAST blocking."

@@ -61,10 +61,7 @@ describe('getFirstActiveMerklLink', () => {
     const items = [
       group({
         link: 'https://mixed.com',
-        breakdowns: [
-          breakdown({ campaignEndedAt: msFromNow(-5) }),
-          breakdown(),
-        ],
+        breakdowns: [breakdown({ campaignEndedAt: msFromNow(-5) }), breakdown()],
       }),
     ];
     expect(getFirstActiveMerklLink(items, NOW_MS)).toBe('https://mixed.com');
@@ -77,28 +74,36 @@ describe('getFirstActiveMerklLink', () => {
 
   it('uses Date.now() as default for nowMs', () => {
     const now = Date.now();
-    const items = [group({
-      link: 'https://live.com',
-      breakdowns: [breakdown({
-        campaignStartedAt: new Date(now - 86400000).toISOString(),
-        campaignEndedAt: new Date(now + 86400000).toISOString(),
-      })],
-    })];
+    const items = [
+      group({
+        link: 'https://live.com',
+        breakdowns: [
+          breakdown({
+            campaignStartedAt: new Date(now - 86400000).toISOString(),
+            campaignEndedAt: new Date(now + 86400000).toISOString(),
+          }),
+        ],
+      }),
+    ];
     expect(getFirstActiveMerklLink(items)).toBe('https://live.com');
   });
 
   it('allows open-ended breakdowns (allowOpenEnd=true) when endDate is missing', () => {
-    const items = [group({
-      link: 'https://open.com',
-      breakdowns: [breakdown({ campaignEndedAt: undefined as unknown as string })],
-    })];
+    const items = [
+      group({
+        link: 'https://open.com',
+        breakdowns: [breakdown({ campaignEndedAt: undefined as unknown as string })],
+      }),
+    ];
     expect(getFirstActiveMerklLink(items, NOW_MS)).toBe('https://open.com');
   });
 
   it('supports date-only format for campaign dates', () => {
-    const items = [group({
-      breakdowns: [breakdown({ campaignStartedAt: '2026-05-01', campaignEndedAt: '2026-06-01' })],
-    })];
+    const items = [
+      group({
+        breakdowns: [breakdown({ campaignStartedAt: '2026-05-01', campaignEndedAt: '2026-06-01' })],
+      }),
+    ];
     expect(getFirstActiveMerklLink(items, NOW_MS)).toBe('https://merkl.example/opp');
   });
 });

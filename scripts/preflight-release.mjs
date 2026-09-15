@@ -77,7 +77,7 @@ addCheck('Secret keyword scan (heuristic)', () => {
     '(AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z\\-_]{35}|ghp_[A-Za-z0-9]{36,}|gho_[A-Za-z0-9]{36,}|BEGIN RSA PRIVATE KEY|BEGIN OPENSSH PRIVATE KEY|SENTRY_DSN\\s*=|VITE_[A-Z0-9_]*KEY\\s*=)';
   const output = run(
     `rg -n -i "${pattern}" src scripts .github README.md package.json .env.example -g'!scripts/preflight-release.mjs' || true`,
-    { shell: '/bin/zsh' }
+    { shell: '/bin/zsh' },
   );
 
   const filtered = output.split('\n').filter(Boolean);
@@ -111,8 +111,9 @@ addCheck('Sensitive env files are ignored', () => {
 if (isFull) {
   addCheck('Lint passes', () => run('npm run lint', { stdio: 'pipe' }) || 'OK');
   addCheck('Build passes', () => run('npm run build', { stdio: 'pipe' }) || 'OK');
-  addCheckWithNetworkFallback('Production dependency audit', () =>
-    run('npm audit --omit=dev', { stdio: 'pipe' }) || 'OK'
+  addCheckWithNetworkFallback(
+    'Production dependency audit',
+    () => run('npm audit --omit=dev', { stdio: 'pipe' }) || 'OK',
   );
 }
 
@@ -142,5 +143,5 @@ if (warnings.length > 0) {
   }
 }
 console.log(
-  `${colors.yellow}Tip:${colors.reset} use \`npm run preflight:release -- --full\` before merging to \`main\`.`
+  `${colors.yellow}Tip:${colors.reset} use \`npm run preflight:release -- --full\` before merging to \`main\`.`,
 );

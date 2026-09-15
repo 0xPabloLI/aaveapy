@@ -7,6 +7,7 @@
 
 ## Project Snapshot
 
+- **Agent harness 总览**: `docs/agents/harness.md` — 本地改编登记（相对 agent-harness core 的偏离与刻意不搬项）。
 - Frontend app: React + TypeScript + Vite for Aave market analysis UI.
 - Main data sources: backend `GET /markets` and `GET /meta/side-data`.
 - Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
@@ -16,6 +17,7 @@
 
 - `npm run dev` — local development (auto-clears Vite dep cache to prevent React dual-instance crashes)
 - `npm run lint` — ESLint
+- `npm run typecheck` — 严格 TS 检查（tsconfig.app + tsconfig.node 双配置）
 - `npm test` — Vitest
 - `npm run build` — production build
 - `npm run ci:remote` — full local gate (used by pre-push hook)
@@ -86,14 +88,20 @@
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
+- **Logging**: 用 `src/lib/logger.ts`（自动脱敏，见 `src/lib/logRedaction.ts`），不写裸 `console.*`；错误边界/Sentry 走 `src/lib/sentry.ts`。API 请求用 `fetchWithTracing`（`src/lib/requestContext.ts`）携带 X-Request-ID。
+- **Feature flags**: 运行时开关 `isFeatureEnabled()`（`src/config/featureFlags.ts`，解析顺序 默认值 < VITE_FLAG_* < localStorage < `?ff=` URL 参数）；新增 flag 在 `src/config/features.ts` 登记默认值。
+- **Analytics**: GA4 走 Consent Mode v2（`src/lib/consent.ts`），gtag.js 仅在用户同意后加载；不要在启动路径直接调 `initAnalytics()`。
+- **TODO/FIXME**: 必须带 Linear 工单号（`TODO(AAV-123)`），CI `repo-policy` 棘轮强制（`.todo-baseline.json`）。
 - **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
 
 ## Validation Gate (修改后必跑 — 强制)
 每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
 
 ```bash
-npm run lint && npm test && npm run build && npx tsc --noEmit
+npm run lint && npm test && npm run build && npm run typecheck && npm run knip && npm run dup:check
 ```
+
+后两项为质量门禁（pre-push 强制）：`knip` 检测未使用文件（入口/白名单见 `knip.json`，勿把 generated/supabase 集成误报当死码）；`dup:check` 用 jscpd 检测复制粘贴（生产代码阈值 3%，测试文件不计入，配置见 `.jscpd.json`）。提交时 lint-staged 会先对暂存文件跑 Prettier + ESLint --fix。
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
@@ -122,9 +130,9 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
-- Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioTokenRow.tsx`.
+- Batch panel / portfolio: `src/components/dashboard/PortfolioPanel.tsx`, `src/components/dashboard/PortfolioUnifiedTable.tsx`, `src/components/dashboard/PortfolioTablePrimitives.tsx`.
   - **Supply-Borrow 不可分**: 添加/移除 token 必须同时操作 supply+borrow 两个 side（见 `docs/conventions/design-principles.md` §7）。`PortfolioReserveEntry` 从类型层面保证不可分；`addReserve` 总是创建 supply+borrow 两侧。
-- Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`, `src/lib/brevisForecast.ts`.
+- Forecast/incentives: `src/lib/meritForecast.ts`, `src/lib/merklForecast.ts`（Brevis 激励状态随 merklForecast/simulation 类型一起流转）.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## main Branch Protection (5 层防御)

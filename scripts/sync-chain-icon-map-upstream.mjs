@@ -101,9 +101,7 @@ function iconBaseFromPath(iconPath) {
 }
 
 function parseChainIconMapEntries(fileContent) {
-  const match = fileContent.match(
-    /export const chainIconMap:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/
-  );
+  const match = fileContent.match(/export const chainIconMap:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/);
   if (!match || match.index == null) {
     throw new Error('Failed to parse chainIconMap in src/lib/chainIconMap.ts');
   }
@@ -148,7 +146,7 @@ async function main() {
 
   const localEntries = parseChainIconMapEntries(localContent);
 
-  const wagmiChainNames = [...new Set(upstreamNetworks.map(n => n.wagmiChain))];
+  const wagmiChainNames = [...new Set(upstreamNetworks.map((n) => n.wagmiChain))];
   const chainIdMap = await resolveChainIds(wagmiChainNames);
 
   const gaps = [];
@@ -175,7 +173,7 @@ async function main() {
   }
 
   if (shouldWrite) {
-    const newEntries = gaps.map(g => `  ${g.chainId}: '${g.iconBase}',`);
+    const newEntries = gaps.map((g) => `  ${g.chainId}: '${g.iconBase}',`);
     const insertPoint = localContent.lastIndexOf('};');
     const nextContent = `${localContent.slice(0, insertPoint)}${newEntries.join('\n')}\n${localContent.slice(insertPoint)}`;
     await writeFile(LOCAL_CHAIN_ICONS_PATH, nextContent, 'utf8');

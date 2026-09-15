@@ -44,15 +44,16 @@ export interface MerklForecastProgressFlags {
   isUnderDistributed: boolean;
 }
 
-const safe = (value: number): number => (Number.isFinite(value) ? Math.max(value, 0) : 0);
+// Accepts null/undefined: both fall through to 0, matching Number.isFinite's runtime
+// treatment of non-finite inputs (Number.isFinite(null/undefined) === false).
+const safe = (value: number | null | undefined): number =>
+  value != null && Number.isFinite(value) ? Math.max(value, 0) : 0;
 
 /**
  * `aprCap` on Merkl breakdowns from `GET /api/markets` is **percent points** (same unit as `campaignApr`).
  * `forecastWithTVL` expects an annual rate **decimal** (e.g. 0.032 for 3.2%).
  */
-export function merklAprCapPercentToForecastDecimal(
-  aprCap: number | null | undefined
-): number | null | undefined {
+export function merklAprCapPercentToForecastDecimal(aprCap: number | null | undefined): number | null | undefined {
   if (aprCap === null || aprCap === undefined) return aprCap;
   if (!Number.isFinite(aprCap)) return undefined;
   return aprCap / 100;
@@ -62,7 +63,7 @@ export const forecastWithTVL = (
   forecastState: MerklForecastState,
   tvl: number,
   nowTs = Math.floor(Date.now() / 1000),
-  options?: { ignoreCap?: boolean }
+  options?: { ignoreCap?: boolean },
 ): MerklForecastResult => {
   const safeTvl = safe(tvl);
   const ignoreCap = options?.ignoreCap ?? false;
@@ -77,7 +78,10 @@ export const forecastWithTVL = (
     return {
       dailyRewards: 0,
       apr: 0,
-      regime: isMaxRewardCampaign || (isTargetTotalAprCampaign && forecastState.budgetBoundMode === 'MAX_APR') ? 'APR_CAPPED' : 'PLANNED',
+      regime:
+        isMaxRewardCampaign || (isTargetTotalAprCampaign && forecastState.budgetBoundMode === 'MAX_APR')
+          ? 'APR_CAPPED'
+          : 'PLANNED',
     };
   }
 
@@ -107,10 +111,7 @@ export const forecastWithTVL = (
       const apr = effectiveAprCap;
       const fixRewardableDays = computeBudgetRemainingDays(remainingBudget, dailyRewards, remainingDays);
       const fixRewardableUntilTs = Math.floor(
-        Math.min(
-          safe(forecastState.endTimestamp),
-          safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY
-        )
+        Math.min(safe(forecastState.endTimestamp), safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY),
       );
 
       return {
@@ -155,10 +156,7 @@ export const forecastWithTVL = (
     const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
     const fixRewardableDays = computeBudgetRemainingDays(remainingBudget, aprBasedDaily, remainingDays);
     const fixRewardableUntilTs = Math.floor(
-      Math.min(
-        safe(forecastState.endTimestamp),
-        safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY
-      )
+      Math.min(safe(forecastState.endTimestamp), safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY),
     );
 
     return {
@@ -197,7 +195,7 @@ export const forecastWithTVL = (
 
 export const deriveForecastProgressFlags = (
   forecastState: MerklForecastProgressState,
-  nowTs = Math.floor(Date.now() / 1000)
+  nowTs = Math.floor(Date.now() / 1000),
 ): MerklForecastProgressFlags => {
   const distributedSoFar = safe(forecastState.distributedSoFar);
   const totalBudget = safe(forecastState.totalBudget);
@@ -214,8 +212,7 @@ export const deriveForecastProgressFlags = (
   };
 };
 
-export const sanitizePercent = (value: number): number =>
-  Number.isFinite(value) && value >= 0 ? value : 0;
+export const sanitizePercent = (value: number): number => (Number.isFinite(value) && value >= 0 ? value : 0);
 
 /**
  * Display APR for a Merkl breakdown. `campaignApr` from `GET /api/markets` is already **percent points**
@@ -226,10 +223,7 @@ export const sanitizePercent = (value: number): number =>
  * 2. `pointsPerThousandUsd` present and positive → Tydro points formula
  * 3. Return 0 (MAX/FIX capped fallbacks are handled by `forecastWithTVL`, not here)
  */
-export const getMerklBreakdownApr = (
-  breakdown: ForecastableBreakdown,
-  pointToUsdRate: number,
-): number => {
+export const getMerklBreakdownApr = (breakdown: ForecastableBreakdown, pointToUsdRate: number): number => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
   if (campaignApr !== undefined && campaignApr > 0) {
     return campaignApr;

@@ -13,7 +13,7 @@ describe('resolveLiveApiBase', () => {
     expect(
       resolveLiveApiBase({
         VITE_API_BASE_URL: 'http://localhost:3001/api',
-      })
+      }),
     ).toBe(DEFAULT_LIVE_API_BASE);
   });
 
@@ -22,7 +22,7 @@ describe('resolveLiveApiBase', () => {
       resolveLiveApiBase({
         LIVE_TEST_API_BASE: 'https://api.aaveapy.com/api',
         VITE_API_BASE_URL: 'http://localhost:3001/api',
-      })
+      }),
     ).toBe('https://api.aaveapy.com/api');
   });
 });
@@ -66,8 +66,6 @@ describe('shouldSoftFailLiveSchema', () => {
   });
 
   it('disables soft-fail mode when LIVE_TEST_STRICT=true', () => {
-    expect(
-      shouldSoftFailLiveSchema({ LIVE_TEST_STRICT: 'true' } as NodeJS.ProcessEnv),
-    ).toBe(false);
+    expect(shouldSoftFailLiveSchema({ LIVE_TEST_STRICT: 'true' } as NodeJS.ProcessEnv)).toBe(false);
   });
 });

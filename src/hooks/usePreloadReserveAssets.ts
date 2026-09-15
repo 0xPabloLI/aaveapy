@@ -20,7 +20,7 @@ export function usePreloadReserveAssets(
     isSuccess?: boolean;
     /** adaptive: network-aware cap, full: eventually preload all reserves */
     preloadMode?: PreloadMode;
-  } = {}
+  } = {},
 ): void {
   const { limit, enabled = true, isSuccess = true, preloadMode = 'adaptive' } = options;
   const hasPreloaded = useRef(false);
@@ -30,11 +30,11 @@ export function usePreloadReserveAssets(
       return;
     }
 
-    const resolvedLimit = limit
-      ?? (preloadMode === 'full' ? reserves.length : getRecommendedPreloadLimit(reserves.length));
+    const resolvedLimit =
+      limit ?? (preloadMode === 'full' ? reserves.length : getRecommendedPreloadLimit(reserves.length));
     const reservesToPreload = reserves.slice(0, resolvedLimit);
 
-    const tokenSymbols = reservesToPreload.map(reserve => {
+    const tokenSymbols = reservesToPreload.map((reserve) => {
       const { iconSymbol } = fetchIconSymbolAndName({
         underlyingAsset: reserve.tokenAddress,
         symbol: reserve.tokenSymbol,
@@ -43,7 +43,7 @@ export function usePreloadReserveAssets(
       return iconSymbol;
     });
 
-    const chainIds = [...new Set(reservesToPreload.map(reserve => reserve.chainId))];
+    const chainIds = [...new Set(reservesToPreload.map((reserve) => reserve.chainId))];
 
     preloadTokenIcons(tokenSymbols);
     preloadChainIcons(chainIds);
@@ -56,10 +56,7 @@ export function usePreloadReserveAssets(
  * Hook to preload icons for reserves that will be visible after user interaction
  * e.g., when user is about to scroll or expand a section
  */
-export function usePreloadOnHover(
-  reserves: ReserveWithSpread[] | undefined,
-  isHovering: boolean
-): void {
+export function usePreloadOnHover(reserves: ReserveWithSpread[] | undefined, isHovering: boolean): void {
   const hasPreloaded = useRef(false);
 
   useEffect(() => {
@@ -67,7 +64,7 @@ export function usePreloadOnHover(
       return;
     }
 
-    const tokenSymbols = reserves.map(reserve => {
+    const tokenSymbols = reserves.map((reserve) => {
       const { iconSymbol } = fetchIconSymbolAndName({
         underlyingAsset: reserve.tokenAddress,
         symbol: reserve.tokenSymbol,
@@ -76,7 +73,7 @@ export function usePreloadOnHover(
       return iconSymbol;
     });
 
-    const chainIds = [...new Set(reserves.map(reserve => reserve.chainId))];
+    const chainIds = [...new Set(reserves.map((reserve) => reserve.chainId))];
 
     preloadTokenIcons(tokenSymbols);
     preloadChainIcons(chainIds);

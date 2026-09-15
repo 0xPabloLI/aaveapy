@@ -8,10 +8,7 @@ import type { ReserveWithSpread } from '@/types/aave';
  * Single canonical BigInt parsing entry point for all positionCapNative consumers.
  * Returns null if parsing fails or amount is non-positive.
  */
-function parseNativeTokenAmount(
-  raw: string,
-  decimals: number = DEFAULT_TOKEN_DECIMALS,
-): number | null {
+function parseNativeTokenAmount(raw: string, decimals: number = DEFAULT_TOKEN_DECIMALS): number | null {
   try {
     const rawBigInt = BigInt(raw);
     const divisor = BigInt(10) ** BigInt(decimals);
@@ -64,10 +61,7 @@ export interface IncentiveNote {
  * Domain-layer model for incentive constraints that surface as `IncentiveNote[]` on campaigns/sources.
  * API field names: `positionCapNative` (raw amount) / `positionCapUsd` (USD).
  */
-export type IncentiveCapKind =
-  | 'position_cap'
-  | 'pool_budget'
-  | 'apr_cap';
+export type IncentiveCapKind = 'position_cap' | 'pool_budget' | 'apr_cap';
 
 export type IncentiveCapScope = 'per_user' | 'pool' | 'unspecified';
 
@@ -115,16 +109,13 @@ export function netEligibleToNote(text: string): IncentiveNote {
  * Uses `parseNativeTokenAmount` for BigInt parsing, then formats with locale grouping.
  * Shared by `formatPositionCapAmount` (with USD fallback) and `formatPositionCapNativeDisplay` (without).
  */
-function formatNativeTokenAmount(
-  positionCapNative: string,
-  tokenSymbol: string,
-  decimals?: number,
-): string | null {
+function formatNativeTokenAmount(positionCapNative: string, tokenSymbol: string, decimals?: number): string | null {
   const tokenAmount = parseNativeTokenAmount(positionCapNative, decimals ?? DEFAULT_TOKEN_DECIMALS);
   if (tokenAmount == null) return null;
-  const amountStr = tokenAmount >= 1000
-    ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : tokenAmount.toFixed(2);
+  const amountStr =
+    tokenAmount >= 1000
+      ? tokenAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : tokenAmount.toFixed(2);
   return `${amountStr} ${tokenSymbol}`;
 }
 
@@ -173,11 +164,7 @@ export function buildPositionCapEffect(input: {
   const parts: string[] = [];
   const capAmountText = formatPositionCapAmount(input);
   const capPrefix = `Incentive limited to first ${capAmountText}`;
-  parts.push(
-    input.isCombineCap
-      ? `${capPrefix} · combined supply + borrow`
-      : capPrefix,
-  );
+  parts.push(input.isCombineCap ? `${capPrefix} · combined supply + borrow` : capPrefix);
   if (input.remainingBudget != null && input.dailyRewardUsd != null && input.remainingDays != null) {
     const earnDays = computeBudgetRemainingDays(input.remainingBudget, input.dailyRewardUsd, input.remainingDays);
     if (earnDays > 0) {
@@ -298,7 +285,10 @@ export function buildCrossReserveNetEligibleNote(input: CrossReserveNetNoteInput
   const { netUsd, grossUsd, sourceSide, offsetSymbols } = input;
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
   const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
-  const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
+  const offsets =
+    offsetSymbols.length > 0
+      ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}`
+      : '';
   return `${formatUsd(netUsd)} of ${formatUsd(grossUsd)} net eligible (${sideLabel}${offsets})`;
 }
 
@@ -342,24 +332,37 @@ export function hasPositionCap(reserve: ReserveWithSpread, side: 'supply' | 'bor
 
   // Merkl
   const merklGroups = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-  if (merklGroups?.some(g => g.breakdowns?.some(b =>
-    resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
-  ))) return true;
+  if (
+    merklGroups?.some((g) =>
+      g.breakdowns?.some(
+        (b) => resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null,
+      ),
+    )
+  )
+    return true;
 
   // Merit
   const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-  if (meritGroups?.some(g => g.breakdowns?.some(b =>
-    resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
-  ))) return true;
+  if (
+    meritGroups?.some((g) =>
+      g.breakdowns?.some(
+        (b) => resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null,
+      ),
+    )
+  )
+    return true;
 
   // Brevis — positionCapUsd can be at top level or in breakdowns
   const brevisGroups = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
-  if (brevisGroups?.some(g => {
-    if (g.positionCapUsd != null && g.positionCapUsd > 0) return true;
-    return g.breakdowns?.some(b =>
-      resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null
-    );
-  })) return true;
+  if (
+    brevisGroups?.some((g) => {
+      if (g.positionCapUsd != null && g.positionCapUsd > 0) return true;
+      return g.breakdowns?.some(
+        (b) => resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null,
+      );
+    })
+  )
+    return true;
 
   return false;
 }

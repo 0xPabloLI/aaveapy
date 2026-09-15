@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
+import {
+  convertUsdToInputValue,
+  getReserveAvailableLiquidityUsd,
+  getReserveTotalBorrowedUsd,
+  getScenarioSupplySizeUsd,
+  nativeToUsd,
+  getSuppliableUsd,
+  getBorrowableUsd,
+} from './scenarioSize';
 
 describe('nativeToUsd', () => {
   it('converts raw token units to USD', () => {
@@ -115,9 +123,7 @@ describe('getReserveAvailableLiquidityUsd', () => {
   });
 
   it('returns null when liquidity is not numeric', () => {
-    expect(
-      getReserveAvailableLiquidityUsd({ liquidity: 'not-a-number', decimals: 6, tokenPrice: 1 }),
-    ).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: 'not-a-number', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 });
 
@@ -160,16 +166,22 @@ describe('getReserveTotalBorrowedUsd', () => {
   });
 
   it('returns null when borrowed is not numeric', () => {
-    expect(
-      getReserveTotalBorrowedUsd({ borrowed: 'not-a-number', decimals: 6, tokenPrice: 1 }),
-    ).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: 'not-a-number', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 });
 
 describe('getScenarioSupplySizeUsd (reserve size context)', () => {
   it('returns nativeToUsd when no scenario input (via getScenarioSupplySizeUsd with zero input)', () => {
     const reserveSizeUsd = nativeToUsd('1000000000000000000000', 18, 1);
-    expect(getScenarioSupplySizeUsd({ reserveSizeUsd, supplyCapUsd: null, rawSupplyInput: '', inputMode: 'usd', tokenPrice: 1 })).toBe(1000);
+    expect(
+      getScenarioSupplySizeUsd({
+        reserveSizeUsd,
+        supplyCapUsd: null,
+        rawSupplyInput: '',
+        inputMode: 'usd',
+        tokenPrice: 1,
+      }),
+    ).toBe(1000);
   });
 
   it('returns null when reserveSizeUsd is null', () => {
@@ -209,9 +221,7 @@ describe('getScenarioSupplySizeUsd (reserve size context)', () => {
 
 describe('getSuppliableUsd', () => {
   it('uses API suppliable when available', () => {
-    expect(
-      getSuppliableUsd({ suppliable: '500000000000000000000', decimals: 18, tokenPrice: 2 }),
-    ).toBe(1000);
+    expect(getSuppliableUsd({ suppliable: '500000000000000000000', decimals: 18, tokenPrice: 2 })).toBe(1000);
   });
 
   it('falls back to supplyCap - supplied when suppliable is missing', () => {
@@ -226,17 +236,13 @@ describe('getSuppliableUsd', () => {
   });
 
   it('returns null when suppliable missing and supplyCap missing', () => {
-    expect(
-      getSuppliableUsd({ supplied: '1000', decimals: 18, tokenPrice: 1 }),
-    ).toBeNull();
+    expect(getSuppliableUsd({ supplied: '1000', decimals: 18, tokenPrice: 1 })).toBeNull();
   });
 });
 
 describe('getBorrowableUsd', () => {
   it('uses API borrowable when available', () => {
-    expect(
-      getBorrowableUsd({ borrowable: '300000000000000000000', decimals: 18, tokenPrice: 2 }),
-    ).toBe(600);
+    expect(getBorrowableUsd({ borrowable: '300000000000000000000', decimals: 18, tokenPrice: 2 })).toBe(600);
   });
 
   it('falls back to getAvailableToBorrowUsd when borrowable is missing', () => {
@@ -252,8 +258,6 @@ describe('getBorrowableUsd', () => {
   });
 
   it('returns null when borrowable missing and no fallback data', () => {
-    expect(
-      getBorrowableUsd({ decimals: 18, tokenPrice: 1 }),
-    ).toBeNull();
+    expect(getBorrowableUsd({ decimals: 18, tokenPrice: 1 })).toBeNull();
   });
 });

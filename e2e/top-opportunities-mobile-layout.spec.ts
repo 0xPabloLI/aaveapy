@@ -11,7 +11,8 @@ test.describe('Top Opportunities mobile layout', () => {
     // Mini cards live inside the mobile carousel. They use a flex column layout
     // with a token identity row + an APY row; the right-aligned total APY value
     // sits in `div.shrink-0.tabular-nums.text-right`.
-    const cards = page.locator('[data-embla-slide], .embla__slide, [role="group"][aria-roledescription="slide"]')
+    const cards = page
+      .locator('[data-embla-slide], .embla__slide, [role="group"][aria-roledescription="slide"]')
       .first()
       .locator('div.rounded-xl.border.cursor-pointer');
     await expect(cards.first()).toBeVisible({ timeout: 30_000 });
@@ -35,10 +36,9 @@ test.describe('Top Opportunities mobile layout', () => {
 
       if (!leftBox || !rightBox) continue;
 
-      expect(
-        leftBox.x + leftBox.width,
-        `card ${i} left content overlaps right value`
-      ).toBeLessThanOrEqual(rightBox.x + 0.5);
+      expect(leftBox.x + leftBox.width, `card ${i} left content overlaps right value`).toBeLessThanOrEqual(
+        rightBox.x + 0.5,
+      );
     }
   });
 
@@ -64,13 +64,15 @@ test.describe('Top Opportunities mobile layout', () => {
 
     // Wait for the second slide to snap into the viewport by polling its position.
     const second = slides.nth(1);
-    await expect.poll(
-      async () => {
-        const box = await second.boundingBox();
-        return box?.x ?? Number.POSITIVE_INFINITY;
-      },
-      { timeout: 5_000, message: 'carousel second slide to snap into viewport' },
-    ).toBeGreaterThanOrEqual(-2);
+    await expect
+      .poll(
+        async () => {
+          const box = await second.boundingBox();
+          return box?.x ?? Number.POSITIVE_INFINITY;
+        },
+        { timeout: 5_000, message: 'carousel second slide to snap into viewport' },
+      )
+      .toBeGreaterThanOrEqual(-2);
 
     const viewport = page.viewportSize();
     expect(viewport).not.toBeNull();
@@ -79,14 +81,16 @@ test.describe('Top Opportunities mobile layout', () => {
     // After snapping, the second slide must be horizontally inside the viewport
     // (allow 2px tolerance for sub-pixel transforms). Poll because the snap
     // animation may still be settling at the first measurement.
-    await expect.poll(
-      async () => {
-        const box = await second.boundingBox();
-        if (!box) return false;
-        return box.x >= -2 && box.x + box.width <= viewport.width + 2;
-      },
-      { timeout: 5_000, message: 'carousel second slide to settle within viewport' },
-    ).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const box = await second.boundingBox();
+          if (!box) return false;
+          return box.x >= -2 && box.x + box.width <= viewport.width + 2;
+        },
+        { timeout: 5_000, message: 'carousel second slide to settle within viewport' },
+      )
+      .toBe(true);
   });
 
   test('mobile frozen / paused badge uses frozen/paused semantic color tokens', async ({ page }) => {

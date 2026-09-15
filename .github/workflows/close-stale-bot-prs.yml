@@ -9,7 +9,7 @@ name: Close Stale Bot PRs
 
 on:
   schedule:
-    - cron: "10 4 * * *"  # 04:10 UTC — 10 min before sync workflows
+    - cron: '10 4 * * *' # 04:10 UTC — 10 min before sync workflows
   workflow_dispatch:
 
 permissions:

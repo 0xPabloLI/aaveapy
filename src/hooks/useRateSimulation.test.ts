@@ -6,7 +6,12 @@ import type {
   ReserveWithSpread,
 } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildForecastMerklOpportunities, buildRateSimulationResult, buildPriceDataSignature, buildPriceLoadingSignature } from '@/lib/rateSimulationCalculator';
+import {
+  buildForecastMerklOpportunities,
+  buildRateSimulationResult,
+  buildPriceDataSignature,
+  buildPriceLoadingSignature,
+} from '@/lib/rateSimulationCalculator';
 
 const baseReserve: ReserveWithSpread & RateCalcInput = {
   reserveId: 'Core-0x0000000000000000000000000000000000000001',
@@ -286,7 +291,7 @@ describe('buildRateSimulationResult', () => {
     // underlying APR regardless of display mode.
     expect(aprAcc.netUsdPerDay).toBeCloseTo(
       (aprAcc.supply!.totalUsdPerDay ?? 0) + (aprAcc.borrow!.totalUsdPerDay ?? 0),
-      5
+      5,
     );
   });
 
@@ -958,10 +963,10 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'Incentive limited to first $5,000.00',
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'combine',
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain('combine');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(
+      result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text,
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text);
   });
 
   it('shows shared cap note on both sides when only one side has scenario input', () => {
@@ -1016,16 +1021,14 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'Incentive limited to first $5,000.00',
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'combine',
-    );
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain('combine');
     expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
       'Incentive limited to first $5,000.00',
     );
-    expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain(
-      'combine',
+    expect(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toContain('combine');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(
+      result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text,
     );
-    expect(result.supply.sources.brevis.campaigns?.[0]?.notes?.[0]?.text).toBe(result.borrow.sources.brevis.campaigns?.[0]?.notes?.[0]?.text);
     expect(result.supply.sources.brevis.after).not.toBeNull();
     expect(result.borrow.sources.brevis.after).toBeCloseTo(1, 0);
   });
@@ -1557,7 +1560,9 @@ describe('buildRateSimulationResult', () => {
       tokenPrice: 1,
       supplyInput: '1000',
       borrowInput: '0',
-      forecastStates: { fix1: { campaignId: 'fix1', distributedSoFar: 0, endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30 } },
+      forecastStates: {
+        fix1: { campaignId: 'fix1', distributedSoFar: 0, endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30 },
+      },
     });
 
     // dutch1 excluded, fix1 has forecast, fix2 missing forecast
@@ -1624,14 +1629,8 @@ describe('buildPriceDataSignature', () => {
 
 describe('buildPriceLoadingSignature', () => {
   it('collapses to a stable empty signature when needsTokenPrice is false', () => {
-    const a = buildPriceLoadingSignature(
-      [{ isPending: true }, { isFetching: true }, {}],
-      false,
-    );
-    const b = buildPriceLoadingSignature(
-      [{}, {}, {}],
-      false,
-    );
+    const a = buildPriceLoadingSignature([{ isPending: true }, { isFetching: true }, {}], false);
+    const b = buildPriceLoadingSignature([{}, {}, {}], false);
     // Loading state is irrelevant to consumers when not in token-price mode,
     // so the signature should not change with it.
     expect(a).toBe(b);
@@ -1639,10 +1638,7 @@ describe('buildPriceLoadingSignature', () => {
 
   it('reflects loading flags when needsTokenPrice is true', () => {
     const idle = buildPriceLoadingSignature([{}, {}], true);
-    const someLoading = buildPriceLoadingSignature(
-      [{ isPending: true }, {}],
-      true,
-    );
+    const someLoading = buildPriceLoadingSignature([{ isPending: true }, {}], true);
     expect(idle).not.toBe(someLoading);
   });
 
@@ -1653,14 +1649,8 @@ describe('buildPriceLoadingSignature', () => {
   });
 
   it('produces stable signatures across calls with identical input', () => {
-    const a = buildPriceLoadingSignature(
-      [{ isPending: true }, { isFetching: false }, {}],
-      true,
-    );
-    const b = buildPriceLoadingSignature(
-      [{ isPending: true }, { isFetching: false }, {}],
-      true,
-    );
+    const a = buildPriceLoadingSignature([{ isPending: true }, { isFetching: false }, {}], true);
+    const b = buildPriceLoadingSignature([{ isPending: true }, { isFetching: false }, {}], true);
     expect(a).toBe(b);
   });
 });
@@ -1728,9 +1718,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1753,9 +1741,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 500, borrowUsd: 0 }],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 500, borrowUsd: 0 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1778,9 +1764,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 1200 }],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 1200 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1814,9 +1798,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint, unconstrainedGroup],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 500 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1861,12 +1843,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
-    const reserveSymbolById = new Map([
-      [usdeReserveId, 'USDe'],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }]]);
+    const reserveSymbolById = new Map([[usdeReserveId, 'USDe']]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1885,8 +1863,12 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     const merklCampaigns = result.supply.sources.merkl.campaigns;
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
-    expect(merklCampaigns![0].notes?.find(n => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap')).toBeUndefined();
-    expect(result.supply.sources.merkl.offsetNotes?.find(n => n.type === 'net_eligible')?.text).toContain('USDe');
+    expect(
+      merklCampaigns![0].notes?.find(
+        (n) => n.type === 'position_cap' || n.type === 'pool_budget' || n.type === 'apr_cap',
+      ),
+    ).toBeUndefined();
+    expect(result.supply.sources.merkl.offsetNotes?.find((n) => n.type === 'net_eligible')?.text).toContain('USDe');
   });
 
   it('no cross-reserve note when no reserveSymbolById', () => {
@@ -1894,9 +1876,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [merklGroupWithConstraint],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1915,7 +1895,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
     expect(merklCampaigns![0].notes?.[0]?.text ?? '').not.toContain('cross-reserve');
-    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text ?? '').not.toContain('USDe');
+    expect(result.supply.sources.merkl.notes?.find((n) => n.type === 'net_eligible')?.text ?? '').not.toContain('USDe');
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 
@@ -1935,12 +1915,8 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       ...noIncentiveReserve,
       merklSupplys: [unconstrainedGroup],
     };
-    const crossReservePositions = new Map([
-      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
-    const reserveSymbolById = new Map([
-      [usdeReserveId, 'USDe'],
-    ]);
+    const crossReservePositions = new Map([[usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }]]);
+    const reserveSymbolById = new Map([[usdeReserveId, 'USDe']]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -1960,7 +1936,9 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns).toBeDefined();
     expect(merklCampaigns!.length).toBeGreaterThan(0);
     expect(merklCampaigns![0].notes?.[0]?.text ?? '').not.toContain('cross-reserve');
-    expect(result.supply.sources.merkl.notes?.find(n => n.type === 'net_eligible')?.text ?? '').not.toContain('cross-reserve');
+    expect(result.supply.sources.merkl.notes?.find((n) => n.type === 'net_eligible')?.text ?? '').not.toContain(
+      'cross-reserve',
+    );
     expect(merklCampaigns![0].forecastUnavailable).toBeFalsy();
   });
 });
@@ -2007,9 +1985,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     };
     // supply=1000, borrow=600 → eligibilityRatio = 400/1000 = 0.4
     // crossReservePositions includes self → crossReserveRatio = 0.4
-    const crossReservePositions = new Map([
-      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2033,9 +2009,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       ...noIncentiveReserve,
       merklSupplys: [constrainedGroup],
     };
-    const crossReservePositions = new Map([
-      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2059,9 +2033,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       ...noIncentiveReserve,
       merklSupplys: [unconstrainedGroup],
     };
-    const crossReservePositions = new Map([
-      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 600 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2108,9 +2080,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       merklSupplys: [constrainedGroup, unconstrainedGroup],
     };
     // supply=1000, borrow=1000 → eligibilityRatio = 0
-    const crossReservePositions = new Map([
-      [SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 1000 }],
-    ]);
+    const crossReservePositions = new Map([[SELF_RESERVE_ID, { supplyUsd: 1000, borrowUsd: 1000 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2162,9 +2132,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       merklBorrows: [borrowConstrainedGroup, borrowUnconstrainedGroup],
     };
     // borrow=1000, supply=400 → borrowEligibilityRatio = 600/1000 = 0.6
-    const crossReservePositions = new Map([
-      [SELF_RESERVE_ID, { supplyUsd: 400, borrowUsd: 1000 }],
-    ]);
+    const crossReservePositions = new Map([[SELF_RESERVE_ID, { supplyUsd: 400, borrowUsd: 1000 }]]);
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2567,8 +2535,8 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
 
     const campaign = result.supply.sources.merkl.campaigns?.[0];
     expect(campaign).toBeDefined();
-    expect(campaign!.after).toBeLessThan(campaign!.current);
-    const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
+    expect(campaign!.after).toBeLessThan(campaign!.current!);
+    const aprCapNote = campaign!.notes?.find((n) => n.type === 'apr_cap');
     expect(aprCapNote).toBeDefined();
     expect(aprCapNote!.text).toBe('APR capped for low TVL');
   });
@@ -2619,7 +2587,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     const campaign = result.supply.sources.merkl.campaigns?.[0];
     expect(campaign).toBeDefined();
     expect(campaign!.after).toBe(campaign!.current);
-    const aprCapNote = campaign!.notes?.find(n => n.type === 'apr_cap');
+    const aprCapNote = campaign!.notes?.find((n) => n.type === 'apr_cap');
     expect(aprCapNote).toBeUndefined();
   });
 });

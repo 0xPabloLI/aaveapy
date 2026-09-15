@@ -65,33 +65,42 @@ const SideDataSubSourceErrorsSchema = z.object({
 //   - generatedAt: optional (generated has required)
 //   - errors: use explicit optional-fields schema for clarity
 //   - sub-source schemas: use frontend-specific versions where they differ
-export const SideDataMetaResponseSchema = generated.SideDataPayload
-  .extend({
-    generatedAt: z.string().optional(),
-    errors: SideDataSubSourceErrorsSchema.optional(),
-    categories: z.object({
+export const SideDataMetaResponseSchema = generated.SideDataPayload.extend({
+  generatedAt: z.string().optional(),
+  errors: SideDataSubSourceErrorsSchema.optional(),
+  categories: z
+    .object({
       uniqueSymbolsStablecoins: z.array(z.string()),
       uniqueSymbolsEth: z.array(z.string()),
       fetchedAt: z.string(),
       staleTimeMs: z.number(),
-    }).optional(),
-    fdv: z.object({
+    })
+    .optional(),
+  fdv: z
+    .object({
       items: z.array(CoingeckoFdvItemSchema),
       fetchedAt: z.string(),
       staleTimeMs: z.number(),
-    }).optional(),
-    forecast: z.object({
+    })
+    .optional(),
+  forecast: z
+    .object({
       items: z.array(MerklForecastItemSchema),
       errors: z.array(MerklForecastErrorSchema),
       staleTimeMs: z.number(),
-    }).optional(),
-    campaignAccess: z.object({
-      campaigns: z.record(z.string(), z.object({
-        chainId: z.number(),
-        whitelist: z.array(z.string()),
-        blacklist: z.array(z.string()),
-      })),
+    })
+    .optional(),
+  campaignAccess: z
+    .object({
+      campaigns: z.record(
+        z.string(),
+        z.object({
+          chainId: z.number(),
+          whitelist: z.array(z.string()),
+          blacklist: z.array(z.string()),
+        }),
+      ),
       updatedAt: z.string(),
-    }).optional(),
-  })
-  .strip();
+    })
+    .optional(),
+}).strip();

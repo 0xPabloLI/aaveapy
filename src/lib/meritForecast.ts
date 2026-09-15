@@ -111,7 +111,7 @@ export function forecastMeritApr({
           unavailable: false,
           hypotheticalTvl,
           dailyRewards: baseEstimate.estimatedDailyRewardUsd,
-          apr: baseEstimate.estimatedDailyRewardUsd * 365 / hypotheticalTvl,
+          apr: (baseEstimate.estimatedDailyRewardUsd * 365) / hypotheticalTvl,
           regime: 'PLANNED',
           isUnderDistributed: false,
           estimateKind: 'TVL_DILUTION',
@@ -136,7 +136,7 @@ export function forecastMeritApr({
           unavailable: false,
           hypotheticalTvl,
           dailyRewards: baseEstimate.estimatedDailyRewardUsd,
-          apr: baseEstimate.estimatedDailyRewardUsd * 365 / hypotheticalTvl,
+          apr: (baseEstimate.estimatedDailyRewardUsd * 365) / hypotheticalTvl,
           regime: 'PLANNED',
           isUnderDistributed: false,
           estimateKind: 'TVL_DILUTION',
@@ -167,45 +167,53 @@ export function forecastMeritAprPercent(
   if (!groups?.length) return 0;
 
   return groups.reduce((sum, group) => {
-    const activeBreakdowns = (group.breakdowns ?? []).filter(
-      (bd) => isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)
+    const activeBreakdowns = (group.breakdowns ?? []).filter((bd) =>
+      isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt),
     );
-    return sum + activeBreakdowns.reduce((bdSum, breakdown) => {
-      const aprPercent = sanitizePercent(breakdown.campaignApr);
-      const positionCapUsd = breakdown.positionCapUsd;
+    return (
+      sum +
+      activeBreakdowns.reduce((bdSum, breakdown) => {
+        const aprPercent = sanitizePercent(breakdown.campaignApr);
+        const positionCapUsd = breakdown.positionCapUsd;
 
-      if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
+        if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
+          if (positionCapUsd != null && positionCapUsd > 0) {
+            const positionForCap = totalPositionUsd ?? 0;
+            if (positionForCap > 0) {
+              const { aprPercent: effectiveAprPercent } = applyPositionCap(aprPercent, positionForCap, positionCapUsd);
+              return bdSum + effectiveAprPercent;
+            }
+          }
+          return bdSum + aprPercent;
+        }
+
+        const baseForecast =
+          aprPercent > 0
+            ? forecastMeritApr({
+                depositUsd,
+                forecastAprPercent: aprPercent,
+                startDate: breakdown.campaignStartedAt,
+                endDate: breakdown.campaignEndedAt,
+                anchorTvlUsd,
+              })
+            : null;
+
+        const fullAfterPercent = baseForecast ? baseForecast.apr * 100 : aprPercent;
+
         if (positionCapUsd != null && positionCapUsd > 0) {
-          const positionForCap = totalPositionUsd ?? 0;
+          const positionForCap = totalPositionUsd ?? depositUsd;
           if (positionForCap > 0) {
-            const { aprPercent: effectiveAprPercent } = applyPositionCap(aprPercent, positionForCap, positionCapUsd);
+            const { aprPercent: effectiveAprPercent } = applyPositionCap(
+              fullAfterPercent,
+              positionForCap,
+              positionCapUsd,
+            );
             return bdSum + effectiveAprPercent;
           }
         }
-        return bdSum + aprPercent;
-      }
 
-      const baseForecast = aprPercent > 0
-        ? forecastMeritApr({
-            depositUsd,
-            forecastAprPercent: aprPercent,
-            startDate: breakdown.campaignStartedAt,
-            endDate: breakdown.campaignEndedAt,
-            anchorTvlUsd,
-          })
-        : null;
-
-      const fullAfterPercent = baseForecast ? baseForecast.apr * 100 : aprPercent;
-
-      if (positionCapUsd != null && positionCapUsd > 0) {
-        const positionForCap = totalPositionUsd ?? depositUsd;
-        if (positionForCap > 0) {
-          const { aprPercent: effectiveAprPercent } = applyPositionCap(fullAfterPercent, positionForCap, positionCapUsd);
-          return bdSum + effectiveAprPercent;
-        }
-      }
-
-      return bdSum + fullAfterPercent;
-    }, 0);
+        return bdSum + fullAfterPercent;
+      }, 0)
+    );
   }, 0);
 }

@@ -58,7 +58,7 @@ function classifyRow(row, tolerance) {
     const aprCapDecimal = row.aprCapPercent / 100;
     const aprBasedDaily = (row.latestTvl * aprCapDecimal) / 365;
     const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
-    const projectedAprPercent = (dailyRewards * 365) / row.latestTvl * 100;
+    const projectedAprPercent = ((dailyRewards * 365) / row.latestTvl) * 100;
     const diff = Math.abs(projectedAprPercent - row.campaignApr);
     return {
       category: 'capped-required',
@@ -81,7 +81,7 @@ function classifyRow(row, tolerance) {
     const aprCapDecimal = row.aprCapPercent / 100;
     const aprBasedDaily = (row.latestTvl * aprCapDecimal) / 365;
     const dailyRewards = Math.min(aprBasedDaily, row.remainingBudget);
-    const projectedAprPercent = (dailyRewards * 365) / row.latestTvl * 100;
+    const projectedAprPercent = ((dailyRewards * 365) / row.latestTvl) * 100;
     const diff = Math.abs(projectedAprPercent - row.campaignApr);
     return {
       category: 'capped-required',
@@ -134,9 +134,7 @@ async function main() {
     fetchJsonWithCurlFallback(`${base}/markets`),
     fetchJsonWithCurlFallback(`${base}/meta/side-data`),
   ]);
-  const forecastMap = new Map(
-    (((sideData.forecast || {}).items) || []).map((x) => [String(x.campaignId), x]),
-  );
+  const forecastMap = new Map(((sideData.forecast || {}).items || []).map((x) => [String(x.campaignId), x]));
 
   const rows = [];
   const keys = ['merklSupplys', 'merklBorrows', 'merklHolds'];
@@ -167,12 +165,9 @@ async function main() {
           if (latestTvl !== null && latestTvl <= 0) missing.push('latestTvl<=0');
           const hasBasicInputs = missing.length === 0;
 
-          const impliedAprPercent =
-            hasBasicInputs ? (plannedDaily * 365) / latestTvl * 100 : Number.NaN;
+          const impliedAprPercent = hasBasicInputs ? ((plannedDaily * 365) / latestTvl) * 100 : Number.NaN;
           const remainingBudget =
-            totalBudget !== null && distributedSoFar !== null
-              ? Math.max(totalBudget - distributedSoFar, 0)
-              : null;
+            totalBudget !== null && distributedSoFar !== null ? Math.max(totalBudget - distributedSoFar, 0) : null;
 
           const row = {
             campaignId,

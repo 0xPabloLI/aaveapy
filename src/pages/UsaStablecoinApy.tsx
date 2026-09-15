@@ -70,17 +70,19 @@ const UsaStablecoinApy = () => (
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
         <nav className="mb-6 text-sm text-muted-foreground" aria-label="Breadcrumb">
-          <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+          <Link to="/" className="hover:text-foreground transition-colors">
+            Home
+          </Link>
           <span className="mx-2">/</span>
           <span className="text-foreground">USA Stablecoin APY</span>
         </nav>
 
         <header className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-            USA Stablecoin APY on Aave
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">USA Stablecoin APY on Aave</h1>
           <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-            Compare live supply and borrow APYs for US-friendly stablecoins — USDC, USDT, DAI, and GHO — across every Aave market on every chain. All Merit, Merkl, and Brevis incentives are baked into the effective yield, so the numbers you see are what you'd actually earn.
+            Compare live supply and borrow APYs for US-friendly stablecoins — USDC, USDT, DAI, and GHO — across every
+            Aave market on every chain. All Merit, Merkl, and Brevis incentives are baked into the effective yield, so
+            the numbers you see are what you'd actually earn.
           </p>
         </header>
 
@@ -119,7 +121,11 @@ const UsaStablecoinApy = () => (
             How stablecoin APY works on Aave
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            Aave sets supply and borrow rates algorithmically based on pool utilization — the ratio of borrowed to supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike to attract deposits. On top of the base rate, active incentive programs (Merit from Aave, Merkl from third parties, Brevis on select chains) add token rewards that lift the effective APY beyond what the curve alone would pay.
+            Aave sets supply and borrow rates algorithmically based on pool utilization — the ratio of borrowed to
+            supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike to
+            attract deposits. On top of the base rate, active incentive programs (Merit from Aave, Merkl from third
+            parties, Brevis on select chains) add token rewards that lift the effective APY beyond what the curve alone
+            would pay.
           </p>
         </section>
 
@@ -128,12 +134,25 @@ const UsaStablecoinApy = () => (
             Why compare across chains
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            The same stablecoin can pay very different effective yields depending on the chain. USDC on Base might earn more than USDC on Ethereum on any given day, simply because incentive campaigns and utilization differ. Use the{' '}
-            <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">stablecoin dashboard</Link>{' '}
+            The same stablecoin can pay very different effective yields depending on the chain. USDC on Base might earn
+            more than USDC on Ethereum on any given day, simply because incentive campaigns and utilization differ. Use
+            the{' '}
+            <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">
+              stablecoin dashboard
+            </Link>{' '}
             to see all markets at once, or drill into per-chain breakdowns like{' '}
-            <Link to="/chain/base" className="text-primary underline-offset-4 hover:underline">Base</Link>,{' '}
-            <Link to="/chain/arbitrum" className="text-primary underline-offset-4 hover:underline">Arbitrum</Link>, and{' '}
-            <Link to="/chain/polygon" className="text-primary underline-offset-4 hover:underline">Polygon</Link>.
+            <Link to="/chain/base" className="text-primary underline-offset-4 hover:underline">
+              Base
+            </Link>
+            ,{' '}
+            <Link to="/chain/arbitrum" className="text-primary underline-offset-4 hover:underline">
+              Arbitrum
+            </Link>
+            , and{' '}
+            <Link to="/chain/polygon" className="text-primary underline-offset-4 hover:underline">
+              Polygon
+            </Link>
+            .
           </p>
         </section>
       </div>

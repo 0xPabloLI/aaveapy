@@ -10,33 +10,35 @@
 const FALLBACK_MEASUREMENT_ID = 'G-8WRVJ711MH';
 
 const MEASUREMENT_ID =
-  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) ||
-  FALLBACK_MEASUREMENT_ID;
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) || FALLBACK_MEASUREMENT_ID;
 
-let initialized = false;
+let scriptInjected = false;
 
 export function initAnalytics(): void {
-  if (initialized) return;
+  if (scriptInjected) return;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   if (!MEASUREMENT_ID) return;
 
-  initialized = true;
+  scriptInjected = true;
 
-  // The static gtag.js snippet in index.html already loaded and configured GA4.
-  if (typeof window.gtag === 'function') return;
+  window.dataLayer = window.dataLayer || [];
+  // index.html defines a gtag stub for Consent Mode before any script loads;
+  // reuse it instead of replacing (the consent default call already queued).
+  if (typeof window.gtag !== 'function') {
+    window.gtag = function gtag(...args: unknown[]) {
+      window.dataLayer!.push(args);
+    };
+  }
 
+  // Inject gtag.js on first grant (see src/lib/consent.ts).
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
   document.head.appendChild(script);
 
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer!.push(args);
-  };
   window.gtag('js', new Date());
   // SPA: we send page_view manually on route change.
-  window.gtag('config', MEASUREMENT_ID, { send_page_view: true });
+  window.gtag('config', MEASUREMENT_ID);
 }
 
 /** Send a GA4 page_view for a client-side route change. */

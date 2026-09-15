@@ -42,11 +42,7 @@ export function ReservesTableShowMore({
   const mobileMargin = isDesktop ? '' : ' mt-[var(--ds-space-4)]';
 
   const wrapDesktop = (children: React.ReactNode) =>
-    isDesktop ? (
-      <div className="p-[var(--ds-space-4)] border-t border-border">{children}</div>
-    ) : (
-      children
-    );
+    isDesktop ? <div className="p-[var(--ds-space-4)] border-t border-border">{children}</div> : children;
 
   return (
     <>

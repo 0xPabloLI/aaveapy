@@ -40,7 +40,12 @@ const CompareMetric = memo(function CompareMetric({
       <span className="ds-text-11 text-muted-foreground font-medium">{label}</span>
       <span className="ds-text-12 font-bold tabular-nums text-foreground text-right">{valueA}</span>
       <span className="ds-text-12 font-bold tabular-nums text-foreground text-right">{valueB}</span>
-      <span className={cn('ds-text-11 font-semibold tabular-nums text-right min-w-[60px]', deltaClass ?? 'text-muted-foreground')}>
+      <span
+        className={cn(
+          'ds-text-11 font-semibold tabular-nums text-right min-w-[60px]',
+          deltaClass ?? 'text-muted-foreground',
+        )}
+      >
         {delta}
       </span>
     </div>
@@ -79,15 +84,17 @@ const TokenCompareRow = memo(function TokenCompareRow({
       <span className="ds-text-11 tabular-nums text-foreground text-right">
         {aprB !== null ? formatPercent(aprB) : '—'}
       </span>
-      <span className={cn(
-        'ds-text-10 tabular-nums font-medium text-right',
-        usdDayA !== null && usdDayB !== null
-          ? (usdDayB - (usdDayA ?? 0)) >= 0 ? 'ds-text-emerald-600' : 'text-destructive'
-          : 'text-muted-foreground',
-      )}>
-        {usdDayA !== null && usdDayB !== null
-          ? formatDelta(usdDayA, usdDayB, formatReserveSizeUsd)
-          : '—'}
+      <span
+        className={cn(
+          'ds-text-10 tabular-nums font-medium text-right',
+          usdDayA !== null && usdDayB !== null
+            ? usdDayB - (usdDayA ?? 0) >= 0
+              ? 'ds-text-emerald-600'
+              : 'text-destructive'
+            : 'text-muted-foreground',
+        )}
+      >
+        {usdDayA !== null && usdDayB !== null ? formatDelta(usdDayA, usdDayB, formatReserveSizeUsd) : '—'}
       </span>
     </div>
   );
@@ -107,15 +114,32 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
 
   // Merge token lists from both snapshots
   const allTokenKeys = new Set<string>();
-  const tokenMap = new Map<string, { symbol: string; side: 'supply' | 'borrow'; aprA: number | null; aprB: number | null; usdDayA: number | null; usdDayB: number | null }>();
+  const tokenMap = new Map<
+    string,
+    {
+      symbol: string;
+      side: 'supply' | 'borrow';
+      aprA: number | null;
+      aprB: number | null;
+      usdDayA: number | null;
+      usdDayB: number | null;
+    }
+  >();
 
-  const symbolByReserveIdA = new Map(snapshotA.entries.map(e => [e.reserveId, e.tokenSymbol]));
-  const symbolByReserveIdB = new Map(snapshotB.entries.map(e => [e.reserveId, e.tokenSymbol]));
+  const symbolByReserveIdA = new Map(snapshotA.entries.map((e) => [e.reserveId, e.tokenSymbol]));
+  const symbolByReserveIdB = new Map(snapshotB.entries.map((e) => [e.reserveId, e.tokenSymbol]));
 
   for (const r of snapshotA.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
     allTokenKeys.add(key);
-    tokenMap.set(key, { symbol: symbolByReserveIdA.get(r.reserveId) ?? '?', side: r.side, aprA: r.totalPercent, aprB: null, usdDayA: r.usdPerDay, usdDayB: null });
+    tokenMap.set(key, {
+      symbol: symbolByReserveIdA.get(r.reserveId) ?? '?',
+      side: r.side,
+      aprA: r.totalPercent,
+      aprB: null,
+      usdDayA: r.usdPerDay,
+      usdDayB: null,
+    });
   }
   for (const r of snapshotB.positionResults) {
     const key = `${r.reserveId}-${r.side}`;
@@ -125,7 +149,14 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
       existing.aprB = r.totalPercent;
       existing.usdDayB = r.usdPerDay;
     } else {
-      tokenMap.set(key, { symbol: symbolByReserveIdB.get(r.reserveId) ?? '?', side: r.side, aprA: null, aprB: r.totalPercent, usdDayA: null, usdDayB: r.usdPerDay });
+      tokenMap.set(key, {
+        symbol: symbolByReserveIdB.get(r.reserveId) ?? '?',
+        side: r.side,
+        aprA: null,
+        aprB: r.totalPercent,
+        usdDayA: null,
+        usdDayB: r.usdPerDay,
+      });
     }
   }
 
@@ -150,8 +181,12 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
       {/* Column headers */}
       <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 pb-1 border-b border-border/50">
         <span className="ds-text-10 font-semibold text-muted-foreground uppercase tracking-wide">Metric</span>
-        <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate" title={snapshotA.label}>{snapshotA.label}</span>
-        <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate" title={snapshotB.label}>{snapshotB.label}</span>
+        <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate" title={snapshotA.label}>
+          {snapshotA.label}
+        </span>
+        <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate" title={snapshotB.label}>
+          {snapshotB.label}
+        </span>
         <span className="ds-text-10 font-semibold text-muted-foreground text-right min-w-[60px]">Delta</span>
       </div>
 
@@ -190,12 +225,24 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
         <div className="mt-2">
           <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-2 pb-1 border-b border-border/40">
             <span className="ds-text-10 font-semibold text-muted-foreground">Token</span>
-            <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate">{snapshotA.label}</span>
-            <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate">{snapshotB.label}</span>
+            <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate">
+              {snapshotA.label}
+            </span>
+            <span className="ds-text-10 font-semibold text-muted-foreground text-right truncate">
+              {snapshotB.label}
+            </span>
             <span className="ds-text-10 font-semibold text-muted-foreground text-right">Δ USD/d</span>
           </div>
           {Array.from(tokenMap.values()).map((t, i) => (
-            <TokenCompareRow key={i} tokenSymbol={t.symbol} side={t.side} aprA={t.aprA} aprB={t.aprB} usdDayA={t.usdDayA} usdDayB={t.usdDayB} />
+            <TokenCompareRow
+              key={i}
+              tokenSymbol={t.symbol}
+              side={t.side}
+              aprA={t.aprA}
+              aprB={t.aprB}
+              usdDayA={t.usdDayA}
+              usdDayB={t.usdDayB}
+            />
           ))}
         </div>
       )}

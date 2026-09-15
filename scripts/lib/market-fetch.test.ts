@@ -48,7 +48,7 @@ describe('fetchAndValidateMarkets', () => {
         }) as unknown as Response;
 
       await expect(fetchAndValidateMarkets('https://example.com/markets')).rejects.toThrow(
-        'Markets schema validation failed'
+        'Markets schema validation failed',
       );
     } finally {
       globalThis.fetch = originalFetch;

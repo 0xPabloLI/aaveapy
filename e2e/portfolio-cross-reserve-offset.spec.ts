@@ -5,6 +5,7 @@ import {
   fillBorrowAmountMobile,
   fillSupplyAmount,
   getMarketChipLabel,
+  getSupplyRoomUsd,
   readIncentiveAfter,
   setupPortfolioMode,
 } from './test-reserves';
@@ -61,10 +62,7 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
     for (const r of reserves) {
       const merklSupplys = (r.merklSupplys ?? []) as Record<string, unknown>[];
       for (const g of merklSupplys) {
-        const constraint = g.netPositionConstraint as
-          | { offsetReserveIds: string[] }
-          | null
-          | undefined;
+        const constraint = g.netPositionConstraint as { offsetReserveIds: string[] } | null | undefined;
         if (!constraint) continue;
         const offsets = constraint.offsetReserveIds;
         const nonSelf = offsets.filter((id) => id !== r.reserveId);
@@ -78,11 +76,12 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
         // AAV-1250: LTV clamping prevents borrow when ltv=0 (frozen/non-collateral)
         // Filter out reserves with ltv=0 or undefined — they can't be borrowed against
         if (!r.ltv || r.ltv === 0) continue;
+        // Zero supply room (cap exhausted by current positions) clamps manual
+        // supply to 0 on commit — baseline-after-incentive would be 0. Skip
+        // when the room is known and exhausted; unknown room stays included.
+        if ((getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) <= 0) continue;
 
-        const marketLabel = getMarketChipLabel(
-          r.marketName as string,
-          r.chainName as string,
-        );
+        const marketLabel = getMarketChipLabel(r.marketName as string, r.chainName as string);
         const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
         const dedupKey = `${r.reserveId as string}:${type}`;
         if (seen.has(dedupKey)) continue;
@@ -96,6 +95,8 @@ async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
           if (offsetReserve.borrowDisabled === true) continue;
           // AAV-1250: offset reserve also needs ltv > 0 for borrow to not be clamped to 0
           if (!offsetReserve.ltv || offsetReserve.ltv === 0) continue;
+          // Offset reserve receives the collateral supply — same zero-room clamp applies
+          if ((getSupplyRoomUsd(offsetReserve) ?? Number.POSITIVE_INFINITY) <= 0) continue;
           scenarios.push({
             type,
             targetSymbol: r.tokenSymbol as string,
@@ -143,11 +144,7 @@ const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.lengt
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossReserveScenario(
-  page: Page,
-  s: CrossOffsetScenario,
-  isMobile: boolean,
-) {
+async function runCrossReserveScenario(page: Page, s: CrossOffsetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
@@ -159,50 +156,29 @@ async function runCrossReserveScenario(
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   // Add offset reserve with supply to give it borrowing power (AAV-1250: LTV clamping)
-  const offsetAdded = await addReserveToPortfolio(
-    page,
-    s.offsetSymbol!,
-    s.offsetMarketLabel!,
-  );
-  expect(offsetAdded, `Should find and add ${s.offsetSymbol} (${s.offsetMarketLabel})`).toBe(
-    true,
-  );
+  const offsetAdded = await addReserveToPortfolio(page, s.offsetSymbol!, s.offsetMarketLabel!);
+  expect(offsetAdded, `Should find and add ${s.offsetSymbol} (${s.offsetMarketLabel})`).toBe(true);
   // Supply on offset reserve so its borrow is not LTV-clamped to 0
   await fillSupplyAmount(page, s.offsetSymbol!, '100000');
 
   const fillOffsetBorrow = isMobile
-    ? (amount: string) =>
-        fillBorrowAmountMobile(page, s.offsetReserveId!, s.offsetSymbol!, amount)
+    ? (amount: string) => fillBorrowAmountMobile(page, s.offsetReserveId!, s.offsetSymbol!, amount)
     : (amount: string) => fillBorrowAmountDesktop(page, s.offsetSymbol!, amount);
 
   await fillOffsetBorrow('500');
-  const halfOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
+  const halfOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
 
   // Assert: incentive decreased
-  expect(
-    halfOffsetAfter,
-    'Incentive should decrease when offset borrow is added',
-  ).toBeLessThan(baselineAfter);
+  expect(halfOffsetAfter, 'Incentive should decrease when offset borrow is added').toBeLessThan(baselineAfter);
 
   // Full offset: borrow = $1000 (well within maxBorrow at $100000 supply)
   await fillOffsetBorrow('1000');
-  const fullOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
+  const fullOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
 
   // Assert: further decrease, proportional to Merkl APR
-  expect(
-    fullOffsetAfter,
-    'Full offset should not increase from half offset',
-  ).toBeLessThanOrEqual(halfOffsetAfter + 0.01);
+  expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
+    halfOffsetAfter + 0.01,
+  );
   expect(
     baselineAfter - fullOffsetAfter,
     'Decrease should be proportional to Merkl APR (>= 40% of advertised APR)',
@@ -210,23 +186,14 @@ async function runCrossReserveScenario(
 
   // Over-offset: borrow > target supply ($2000) — should clamp via offset logic
   await fillOffsetBorrow('2000');
-  const overOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
+  const overOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(
     Math.abs(overOffsetAfter - fullOffsetAfter),
     'Over-offset should clamp (no further change beyond full offset)',
   ).toBeLessThanOrEqual(0.05);
 }
 
-async function runSelfLoopScenario(
-  page: Page,
-  s: CrossOffsetScenario,
-  isMobile: boolean,
-) {
+async function runSelfLoopScenario(page: Page, s: CrossOffsetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
@@ -237,31 +204,17 @@ async function runSelfLoopScenario(
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   const fillOwnBorrow = isMobile
-    ? (amount: string) =>
-        fillBorrowAmountMobile(page, s.targetReserveId, s.targetSymbol, amount)
+    ? (amount: string) => fillBorrowAmountMobile(page, s.targetReserveId, s.targetSymbol, amount)
     : (amount: string) => fillBorrowAmountDesktop(page, s.targetSymbol, amount);
 
   // Half offset: borrow = $50000 (50% of supply, within LTV limit)
   await fillOwnBorrow('50000');
-  const halfOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
-  expect(
-    halfOffsetAfter,
-    'Incentive should decrease when own borrow is added',
-  ).toBeLessThan(baselineAfter);
+  const halfOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(halfOffsetAfter, 'Incentive should decrease when own borrow is added').toBeLessThan(baselineAfter);
 
   // Full offset: borrow = $100000 (= supply, may be LTV-clamped to supply×ltv/100)
   await fillOwnBorrow('100000');
-  const fullOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
+  const fullOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
     halfOffsetAfter + 0.01,
   );
@@ -272,16 +225,8 @@ async function runSelfLoopScenario(
 
   // Over-offset: borrow = $200000 (> supply, should be LTV-clamped)
   await fillOwnBorrow('200000');
-  const overOffsetAfter = await readIncentiveAfter(
-    page,
-    s.targetReserveId,
-    'supply',
-    isMobile,
-  );
-  expect(
-    Math.abs(overOffsetAfter - fullOffsetAfter),
-    'Over-offset should clamp',
-  ).toBeLessThanOrEqual(0.05);
+  const overOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(Math.abs(overOffsetAfter - fullOffsetAfter), 'Over-offset should clamp').toBeLessThanOrEqual(0.05);
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────
@@ -301,21 +246,17 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of crossReserveScenarios) {
-      test(
-        `cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`,
-        async ({ page }) => {
-          await runCrossReserveScenario(page, s, false);
-        },
-      );
+      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`, async ({
+        page,
+      }) => {
+        await runCrossReserveScenario(page, s, false);
+      });
     }
 
     for (const s of selfLoopScenarios) {
-      test(
-        `self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`,
-        async ({ page }) => {
-          await runSelfLoopScenario(page, s, false);
-        },
-      );
+      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`, async ({ page }) => {
+        await runSelfLoopScenario(page, s, false);
+      });
     }
   });
 
@@ -333,21 +274,17 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of crossReserveScenarios) {
-      test(
-        `cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`,
-        async ({ page }) => {
-          await runCrossReserveScenario(page, s, true);
-        },
-      );
+      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`, async ({
+        page,
+      }) => {
+        await runCrossReserveScenario(page, s, true);
+      });
     }
 
     for (const s of selfLoopScenarios) {
-      test(
-        `self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`,
-        async ({ page }) => {
-          await runSelfLoopScenario(page, s, true);
-        },
-      );
+      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`, async ({ page }) => {
+        await runSelfLoopScenario(page, s, true);
+      });
     }
   });
 });

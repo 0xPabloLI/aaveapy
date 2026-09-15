@@ -12,43 +12,99 @@ const emptySource = { current: 0, after: 0, delta: 0 };
 function buildReserve(overrides: Partial<ReserveWithSpread>): ReserveWithSpread {
   return {
     reserveId: 'AaveV3Ethereum-0xTest',
-    marketName: 'AaveV3Ethereum', chainName: 'Ethereum', chainId: 1,
-    tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xTest', tokenPrice: 1, decimals: 6,
-    supplied: '1000000000000', supplyCap: '2000000000000', borrowCap: '1000000000000',
-    utilizationPct: 45, optimalUtilization: 80, slopeBelowOptimal: 4, slopeAboveOptimal: 60,
-    baseBorrowRate: 0, protocolFee: 10, supplyApy: 4.2, borrowApy: 6.1,
-    supplyDisabled: false, borrowDisabled: false, isFrozen: false, isPaused: false,
-    supplyIncentives: [], borrowIncentives: [], meritSupplys: [], meritBorrows: [],
-    merklSupplys: [], merklBorrows: [], brevisSupplys: [], brevisBorrows: [],
+    marketName: 'AaveV3Ethereum',
+    chainName: 'Ethereum',
+    chainId: 1,
+    tokenName: 'USDC',
+    tokenSymbol: 'USDC',
+    tokenAddress: '0xTest',
+    tokenPrice: 1,
+    decimals: 6,
+    supplied: '1000000000000',
+    supplyCap: '2000000000000',
+    borrowCap: '1000000000000',
+    utilizationPct: 45,
+    optimalUtilization: 80,
+    slopeBelowOptimal: 4,
+    slopeAboveOptimal: 60,
+    baseBorrowRate: 0,
+    protocolFee: 10,
+    supplyApy: 4.2,
+    borrowApy: 6.1,
+    supplyDisabled: false,
+    borrowDisabled: false,
+    isFrozen: false,
+    isPaused: false,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
     ...overrides,
   };
 }
 
 const sim: RateSimulationResult = {
-  tokenPrice: 1, tokenPriceLoading: false, forecastLoading: false,
-  forecastErrors: {}, forecastUnavailableCampaignCount: 0, scenarioUsdAccrual: null,
+  tokenPrice: 1,
+  tokenPriceLoading: false,
+  forecastLoading: false,
+  forecastErrors: {},
+  forecastUnavailableCampaignCount: 0,
+  scenarioUsdAccrual: null,
   supply: {
-    currentNative: 4.2, currentIncentive: 0, currentTotal: 4.2, headlineIncentive: 0,
-    afterNative: null, afterIncentive: null, afterTotal: null,
-    deltaNative: null, deltaIncentive: null, deltaTotal: null,
-    inputUsd: 1000, inputAmount: 1000, hasInput: true,
+    currentNative: 4.2,
+    currentIncentive: 0,
+    currentTotal: 4.2,
+    headlineIncentive: 0,
+    afterNative: null,
+    afterIncentive: null,
+    afterTotal: null,
+    deltaNative: null,
+    deltaIncentive: null,
+    deltaTotal: null,
+    inputUsd: 1000,
+    inputAmount: 1000,
+    hasInput: true,
     sources: { protocol: emptySource, merit: emptySource, merkl: emptySource, brevis: emptySource },
   },
   borrow: {
-    currentNative: 6.1, currentIncentive: 0, currentTotal: 6.1, headlineIncentive: 0,
-    afterNative: null, afterIncentive: null, afterTotal: null,
-    deltaNative: null, deltaIncentive: null, deltaTotal: null,
-    inputUsd: 500, inputAmount: 500, hasInput: true,
+    currentNative: 6.1,
+    currentIncentive: 0,
+    currentTotal: 6.1,
+    headlineIncentive: 0,
+    afterNative: null,
+    afterIncentive: null,
+    afterTotal: null,
+    deltaNative: null,
+    deltaIncentive: null,
+    deltaTotal: null,
+    inputUsd: 500,
+    inputAmount: 500,
+    hasInput: true,
     sources: { protocol: emptySource, merit: emptySource, merkl: emptySource, brevis: emptySource },
   },
   spread: { current: -0.5, after: null, delta: null, usesCurrentSide: null },
   utilization: { current: 45, after: 45, delta: 0, optimal: 80 },
   marketMetrics: {
-    availableLiquidityUsd: 550_000, availableLiquidityUsdAfter: null, availableLiquidityUsdDelta: null,
-    totalBorrowedUsd: 450_000, totalBorrowedUsdAfter: null, totalBorrowedUsdDelta: null,
-    supplyCapUsd: 2_000_000, borrowCapUsd: 1_000_000, protocolFee: 0.1, optimalUtilization: 0.8,
-    availableSupplyRoomUsd: 999_000, supplyCapExceeded: false, supplyCapExceededByUsd: null,
-    availableBorrowRoomUsd: 548_000, borrowCapExceeded: false, borrowCapExceededByUsd: null,
+    availableLiquidityUsd: 550_000,
+    availableLiquidityUsdAfter: null,
+    availableLiquidityUsdDelta: null,
+    totalBorrowedUsd: 450_000,
+    totalBorrowedUsdAfter: null,
+    totalBorrowedUsdDelta: null,
+    supplyCapUsd: 2_000_000,
+    borrowCapUsd: 1_000_000,
+    protocolFee: 0.1,
+    optimalUtilization: 0.8,
+    availableSupplyRoomUsd: 999_000,
+    supplyCapExceeded: false,
+    supplyCapExceededByUsd: null,
+    availableBorrowRoomUsd: 548_000,
+    borrowCapExceeded: false,
+    borrowCapExceededByUsd: null,
     borrowLimitedByLiquidity: false,
   },
 };
@@ -61,7 +117,10 @@ function renderCompact(overrides: Partial<ReserveWithSpread>) {
         <SimulationSubRow
           reserve={buildReserve(overrides)}
           simulation={sim}
-          isApy supplyInput="1000" borrowInput="500" inputMode="usd"
+          isApy
+          supplyInput="1000"
+          borrowInput="500"
+          inputMode="usd"
           compact={true}
         />
       </TooltipProvider>
@@ -77,7 +136,10 @@ function renderDesktop(overrides: Partial<ReserveWithSpread>) {
         <SimulationSubRow
           reserve={buildReserve(overrides)}
           simulation={sim}
-          isApy supplyInput="1000" borrowInput="500" inputMode="usd"
+          isApy
+          supplyInput="1000"
+          borrowInput="500"
+          inputMode="usd"
           compact={false}
         />
       </TooltipProvider>

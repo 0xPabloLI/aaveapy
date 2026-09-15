@@ -73,9 +73,7 @@ describe('Architecture guard: no repeated className strings (≥3 occurrences)',
 });
 
 describe('Architecture guard: ring/indicator components must not import Tooltip', () => {
-  const ringFiles = [
-    'components/dashboard/UtilizationIndicator.tsx',
-  ];
+  const ringFiles = ['components/dashboard/UtilizationIndicator.tsx'];
   for (const file of ringFiles) {
     it(`${file}`, () => {
       const src = readFile(file);
@@ -89,10 +87,27 @@ describe('Architecture guard: ring/indicator components must not import Tooltip'
 
 describe('Architecture guard: formatters must not re-import extracted module symbols', () => {
   const EXTRACTED_MODULES = [
-    { module: 'rateCalculations', symbols: ['calculateTotalSupplyApy', 'calculateTotalBorrowApy', 'calculateSpreadApy', 'calculateTotalSupplyApr', 'calculateTotalBorrowApr', 'calculateSpreadApr', 'annualPercentToDailyFraction'] },
+    {
+      module: 'rateCalculations',
+      symbols: [
+        'calculateTotalSupplyApy',
+        'calculateTotalBorrowApy',
+        'calculateSpreadApy',
+        'calculateTotalSupplyApr',
+        'calculateTotalBorrowApr',
+        'calculateSpreadApr',
+        'annualPercentToDailyFraction',
+      ],
+    },
     { module: 'rateSimulationCalculator', symbols: ['simulateRate'] },
-    { module: 'merklWhitelist', symbols: ['MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL', 'MERKL_WHITELIST_CHAIN_IDS', 'isMerklWhitelisted'] },
-    { module: 'incentiveAggregation', symbols: ['getReserveIncentiveValues', 'resolveVisibleIncentiveBadgeValue', 'IncentiveCalculationOptions'] },
+    {
+      module: 'merklWhitelist',
+      symbols: ['MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL', 'MERKL_WHITELIST_CHAIN_IDS', 'isMerklWhitelisted'],
+    },
+    {
+      module: 'incentiveAggregation',
+      symbols: ['getReserveIncentiveValues', 'resolveVisibleIncentiveBadgeValue', 'IncentiveCalculationOptions'],
+    },
     { module: 'marketLabels', symbols: ['getReserveMarketDisplayName', 'getHubChipLabel', 'getHubChipClass'] },
   ];
 
@@ -100,17 +115,16 @@ describe('Architecture guard: formatters must not re-import extracted module sym
     const src = readFile('lib/formatters.ts');
     for (const { module, symbols } of EXTRACTED_MODULES) {
       for (const symbol of symbols) {
-        expect(
-          src,
-          `formatters.ts must not reference ${symbol} from ${module}`,
-        ).not.toMatch(new RegExp(`\\b${symbol}\\b`));
+        expect(src, `formatters.ts must not reference ${symbol} from ${module}`).not.toMatch(
+          new RegExp(`\\b${symbol}\\b`),
+        );
       }
     }
   });
 
   for (const { module, symbols } of EXTRACTED_MODULES) {
     it(`no consumer imports ${module} symbols via formatters (star import)`, () => {
-      const libFiles = globTsFiles('lib').filter(f => !f.includes('formatters'));
+      const libFiles = globTsFiles('lib').filter((f) => !f.includes('formatters'));
       const componentFiles = globTsFiles('components');
       const hookFiles = globTsFiles('hooks');
       const allFiles = [...libFiles, ...componentFiles, ...hookFiles];
@@ -170,7 +184,10 @@ describe('Architecture guard: all GET endpoints must define 429 and 503 response
       }
       const retryAfter = (r503.headers as Record<string, unknown>)?.['Retry-After'];
       if (!retryAfter) violations.push(`${pathKey} 503 missing Retry-After header`);
-      const schema = (r503?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+      const schema = (
+        (r503?.content as Record<string, unknown> | undefined)?.['application/json'] as
+          Record<string, unknown> | undefined
+      )?.schema as Record<string, unknown>;
       // Accept either $ref or inline schema with properties (backend-generated spec uses inline)
       if (!schema || (!schema.$ref && !schema.properties)) violations.push(`${pathKey} 503 missing error body schema`);
     }
@@ -207,19 +224,19 @@ describe('Architecture guard: WalletPositionSource and PositionSource must stay 
 
     const parseUnion = (raw: string): Set<string> => {
       const values = raw.match(/'[^']+'/g) ?? [];
-      return new Set(values.map(v => v.slice(1, -1)));
+      return new Set(values.map((v) => v.slice(1, -1)));
     };
 
     const walletSources = parseUnion(mapperMatch![1]);
     const positionSources = parseUnion(portfolioMatch![1]);
 
-    const walletOnly = [...walletSources].filter(v => !positionSources.has(v));
-    const positionOnly = [...positionSources].filter(v => !walletSources.has(v) && v !== 'manual');
+    const walletOnly = [...walletSources].filter((v) => !positionSources.has(v));
+    const positionOnly = [...positionSources].filter((v) => !walletSources.has(v) && v !== 'manual');
 
     expect(
       { walletOnly, positionOnly },
       'WalletPositionSource and PositionSource (excluding manual) must match. ' +
-      `Only in WalletPositionSource: ${walletOnly}. Only in PositionSource: ${positionOnly}.`,
+        `Only in WalletPositionSource: ${walletOnly}. Only in PositionSource: ${positionOnly}.`,
     ).toEqual({ walletOnly: [], positionOnly: [] });
   });
 });
@@ -227,10 +244,9 @@ describe('Architecture guard: WalletPositionSource and PositionSource must stay 
 describe('Architecture guard: walletPositionToPortfolio must preserve source field', () => {
   it('converter output includes source: walletSourceToPositionSource(wp.source)', () => {
     const src = readFile('lib/walletPositionToPortfolio.ts');
-    expect(
-      src,
-      'convertWalletPositionsToEntries must derive source from walletSourceToPositionSource',
-    ).toMatch(/walletSourceToPositionSource\(wp\.source\)/);
+    expect(src, 'convertWalletPositionsToEntries must derive source from walletSourceToPositionSource').toMatch(
+      /walletSourceToPositionSource\(wp\.source\)/,
+    );
   });
 
   it('walletSourceToPositionSource function exists and is not a no-op placeholder', () => {
@@ -307,11 +323,14 @@ describe('Architecture guard: docs/plans directory structure', () => {
     } catch {
       return;
     }
-    const violations = subdirs.filter(d => {
+    const violations = subdirs.filter((d) => {
       const base = d.split('/').pop()!;
       return forbiddenPatterns.includes(base) && d !== 'completed';
     });
-    expect(violations, `Found forbidden completed directories: ${violations.join(', ')}. Only docs/plans/completed/ (lowercase) is allowed.`).toEqual([]);
+    expect(
+      violations,
+      `Found forbidden completed directories: ${violations.join(', ')}. Only docs/plans/completed/ (lowercase) is allowed.`,
+    ).toEqual([]);
   });
 
   it('no nested "linear-issues" or "phase-2" directory exists under docs/plans', () => {
@@ -328,11 +347,14 @@ describe('Architecture guard: docs/plans directory structure', () => {
     } catch {
       return;
     }
-    const violations = subdirs.filter(d => {
+    const violations = subdirs.filter((d) => {
       const base = d.split('/').pop()!;
       return forbiddenDirs.includes(base);
     });
-    expect(violations, `Found forbidden directory names: ${violations.join(', ')}. All plans go flat in docs/plans/completed/.`).toEqual([]);
+    expect(
+      violations,
+      `Found forbidden directory names: ${violations.join(', ')}. All plans go flat in docs/plans/completed/.`,
+    ).toEqual([]);
   });
 
   it('no "handoff" directory exists under docs/', () => {
@@ -393,9 +415,7 @@ describe('Architecture guard: test files must mock viem for value imports', () =
       if (viemImportLines.length === 0) return;
 
       // Check if ANY import is a value import (not `import type`)
-      const hasValueImport = viemImportLines.some(
-        (line) => !/^\s*import\s+type\s/.test(line),
-      );
+      const hasValueImport = viemImportLines.some((line) => !/^\s*import\s+type\s/.test(line));
       if (!hasValueImport) return; // All imports are type-only — safe
 
       // Value import present — must have a corresponding mock
@@ -403,9 +423,9 @@ describe('Architecture guard: test files must mock viem for value imports', () =
       expect(
         hasMock,
         `${file} has a value import from 'viem' but does not mock it.\n` +
-        'This can cause flaky CI failures from real network calls.\n' +
-        "Fix: add vi.mock('viem', () => ({ createPublicClient: vi.fn(), http: vi.fn() }))\n" +
-        'Or: convert to "import type { ... } from \'viem\'" if only types are needed.',
+          'This can cause flaky CI failures from real network calls.\n' +
+          "Fix: add vi.mock('viem', () => ({ createPublicClient: vi.fn(), http: vi.fn() }))\n" +
+          'Or: convert to "import type { ... } from \'viem\'" if only types are needed.',
       ).toBe(true);
     });
   }
@@ -424,19 +444,20 @@ describe('FCP optimization: lazy-loaded AaveProviders', () => {
     const appSrc = readFile('App.tsx');
 
     // Must NOT contain a static import of AaveProviders
-    const hasStaticImport = /import\s+\{[^}]*AaveProviders[^}]*\}\s+from\s+['"]@\/providers\/AaveProviders['"]/.test(appSrc);
+    const hasStaticImport = /import\s+\{[^}]*AaveProviders[^}]*\}\s+from\s+['"]@\/providers\/AaveProviders['"]/.test(
+      appSrc,
+    );
     expect(
       hasStaticImport,
       'App.tsx must not statically import AaveProviders — use lazy(() => import(...)) instead.\n' +
-      'A static import pulls @aave/react + @aave-dao (~218 KB gzip) into the initial chunk, blocking FCP.',
+        'A static import pulls @aave/react + @aave-dao (~218 KB gzip) into the initial chunk, blocking FCP.',
     ).toBe(false);
 
     // Must contain a lazy import
     const hasLazyImport = /lazy\s*\(\s*\(\s*\)\s*=>\s*import\s*\(\s*['"]@\/providers\/AaveProviders['"]/.test(appSrc);
-    expect(
-      hasLazyImport,
-      'App.tsx must use lazy(() => import("@/providers/AaveProviders")) for AaveProviders.',
-    ).toBe(true);
+    expect(hasLazyImport, 'App.tsx must use lazy(() => import("@/providers/AaveProviders")) for AaveProviders.').toBe(
+      true,
+    );
   });
 
   it('App.tsx does not statically import wagmi, rainbowkit, or wagmi config', () => {
@@ -450,14 +471,17 @@ describe('FCP optimization: lazy-loaded AaveProviders', () => {
       { pattern: /import\s+[^;]*\bfrom\s+['"]@rainbow-me\/rainbowkit['"]/, label: '@rainbow-me/rainbowkit' },
       { pattern: /import\s+['"]@rainbow-me\/rainbowkit\/styles\.css['"]/, label: '@rainbow-me/rainbowkit/styles.css' },
       // Named and side-effect forms: `import { wagmiConfig } from ...` and `import "@/lib/wagmi/config"`
-      { pattern: /import\s+[^;]*\bfrom\s+['"]@\/lib\/wagmi\/config['"]|import\s*['"]@\/lib\/wagmi\/config['"]/, label: '@/lib/wagmi/config' },
+      {
+        pattern: /import\s+[^;]*\bfrom\s+['"]@\/lib\/wagmi\/config['"]|import\s*['"]@\/lib\/wagmi\/config['"]/,
+        label: '@/lib/wagmi/config',
+      },
     ];
 
     for (const { pattern, label } of forbidden) {
       expect(
         pattern.test(appSrc),
         `App.tsx must not statically import ${label} — move it behind the lazy WalletProviders wrapper.\n` +
-        'A static import pulls vendor-blockchain (~420 KB gzip) into the entry chunk, blocking FCP.',
+          'A static import pulls vendor-blockchain (~420 KB gzip) into the entry chunk, blocking FCP.',
       ).toBe(false);
     }
   });
@@ -465,7 +489,8 @@ describe('FCP optimization: lazy-loaded AaveProviders', () => {
   it('App.tsx uses lazy() for WalletProviders', () => {
     const appSrc = readFile('App.tsx');
 
-    const hasStaticImport = /import\s+\{[^}]*WalletProviders[^}]*\}\s+from\s+['"]@\/providers\/WalletProviders['"]/.test(appSrc);
+    const hasStaticImport =
+      /import\s+\{[^}]*WalletProviders[^}]*\}\s+from\s+['"]@\/providers\/WalletProviders['"]/.test(appSrc);
     expect(
       hasStaticImport,
       'App.tsx must not statically import WalletProviders — use lazy(() => import(...)) instead.',
@@ -557,4 +582,3 @@ describe('FCP optimization: selective modulePreload in vite.config.ts', () => {
     ).toBe(true);
   });
 });
-

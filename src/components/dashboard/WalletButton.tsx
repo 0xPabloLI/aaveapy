@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { Wallet, Eye, ChevronDown, X, Copy, Check } from 'lucide-react'
-import { useWallet } from '@/hooks/useWallet'
-import { WatchAddressInput } from './WatchAddressInput'
-import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { wagmiConfig } from '@/lib/wagmi/config'
+import { useEffect, useRef, useState } from 'react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { Wallet, Eye, ChevronDown, X, Copy, Check } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
+import { WatchAddressInput } from './WatchAddressInput';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { wagmiConfig } from '@/lib/wagmi/config';
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_DESKTOP_ACTIVE_CLASS,
@@ -15,72 +15,70 @@ import {
   HEADER_CONTROL_MOBILE_CLASS,
   HEADER_CONTROL_POPOVER_ITEM_CLASS,
   HEADER_CONTROL_TRANSITION_DURATION,
-} from '@/lib/headerControlStyles'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@/lib/headerControlStyles';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface WalletButtonProps {
-  mobile?: boolean
-  onWatchSubmit?: (address: `0x${string}`) => void | Promise<void>
+  mobile?: boolean;
+  onWatchSubmit?: (address: `0x${string}`) => void | Promise<void>;
 }
 
 function truncateAddress(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
 export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProps) {
-  const { address, isConnected, isWatchMode, disconnect, disconnectAllAsync } = useWallet()
-  const [showWatchInput, setShowWatchInput] = useState(false)
-  const [pendingSwitch, setPendingSwitch] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const openConnectModalRef = useRef<(() => void) | null>(null)
+  const { address, isConnected, isWatchMode, disconnect, disconnectAllAsync } = useWallet();
+  const [showWatchInput, setShowWatchInput] = useState(false);
+  const [pendingSwitch, setPendingSwitch] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const openConnectModalRef = useRef<(() => void) | null>(null);
 
   const handleCopy = async () => {
-    if (!address) return
+    if (!address) return;
     try {
-      await navigator.clipboard.writeText(address)
-      setCopied(true)
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
       toast.success('Address copied', {
         description: truncateAddress(address),
-      })
-      window.setTimeout(() => setCopied(false), 900)
+      });
+      window.setTimeout(() => setCopied(false), 900);
     } catch {
-      toast.error('Failed to copy address')
+      toast.error('Failed to copy address');
     }
-  }
+  };
 
   const handleSwitchWallet = async () => {
-    setPendingSwitch(true)
-    await disconnectAllAsync()
-    await (wagmiConfig._internal as unknown as { store?: { removeItem: (key: string) => Promise<void> | void } }).store?.removeItem('recentConnectorId')
-  }
+    setPendingSwitch(true);
+    await disconnectAllAsync();
+    await (
+      wagmiConfig._internal as unknown as { store?: { removeItem: (key: string) => Promise<void> | void } }
+    ).store?.removeItem('recentConnectorId');
+  };
 
   useEffect(() => {
     if (pendingSwitch && !isConnected) {
-      setPendingSwitch(false)
-      openConnectModalRef.current?.()
+      setPendingSwitch(false);
+      openConnectModalRef.current?.();
     }
-  }, [pendingSwitch, isConnected])
+  }, [pendingSwitch, isConnected]);
 
   if (showWatchInput && onWatchSubmit) {
     return (
       <WatchAddressInput
         onSubmit={async (addr) => {
-          await onWatchSubmit(addr)
-          setShowWatchInput(false)
+          await onWatchSubmit(addr);
+          setShowWatchInput(false);
         }}
         onCancel={() => setShowWatchInput(false)}
       />
-    )
+    );
   }
 
   return (
     <ConnectButton.Custom>
       {({ openConnectModal, mounted }) => {
-        openConnectModalRef.current = openConnectModal
+        openConnectModalRef.current = openConnectModal;
 
         return (
           <div {...(!mounted ? { className: 'opacity-0 pointer-events-none' } : {})}>
@@ -90,7 +88,9 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   <button
                     type="button"
                     className={cn(mobile ? HEADER_CONTROL_MOBILE_CLASS : HEADER_CONTROL_DESKTOP_ACTIVE_CLASS, 'group')}
-                    aria-label={isWatchMode ? `Viewing ${truncateAddress(address)}` : `Wallet ${truncateAddress(address)}`}
+                    aria-label={
+                      isWatchMode ? `Viewing ${truncateAddress(address)}` : `Wallet ${truncateAddress(address)}`
+                    }
                   >
                     {isWatchMode ? (
                       <Eye className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
@@ -101,21 +101,17 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     {!mobile && (
                       <ChevronDown
                         className={cn(
-                           HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
-                           `transition-transform ${HEADER_CONTROL_TRANSITION_DURATION}`,
-                           'group-data-[state=open]:rotate-180',
-                         )}
+                          HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+                          `transition-transform ${HEADER_CONTROL_TRANSITION_DURATION}`,
+                          'group-data-[state=open]:rotate-180',
+                        )}
                         aria-hidden
                       />
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
-                  <button
-                    type="button"
-                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                    onClick={handleSwitchWallet}
-                  >
+                  <button type="button" className={HEADER_CONTROL_POPOVER_ITEM_CLASS} onClick={handleSwitchWallet}>
                     <Wallet className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
                     Switch wallet
                   </button>
@@ -129,15 +125,12 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                       View another address
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                    onClick={handleCopy}
-                  >
-                    {copied
-                      ? <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-                      : <Copy className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-                    }
+                  <button type="button" className={HEADER_CONTROL_POPOVER_ITEM_CLASS} onClick={handleCopy}>
+                    {copied ? (
+                      <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                    ) : (
+                      <Copy className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                    )}
                     {copied ? 'Copied!' : 'Copy address'}
                   </button>
                   <button
@@ -203,8 +196,8 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
               </div>
             )}
           </div>
-        )
+        );
       }}
     </ConnectButton.Custom>
-  )
+  );
 }

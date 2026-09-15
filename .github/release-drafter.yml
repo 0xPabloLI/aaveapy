@@ -1,0 +1,44 @@
+# Config for release-drafter (see .github/workflows/release-notes.yml).
+# Draft release on main is continuously updated from merged PRs; PR titles
+# follow conventional commits (see AGENTS.md PR guardrails), so autolabel by
+# prefix and group the changelog by category.
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '✨ Features'
+    labels: ['enhancement', 'feature', 'feat']
+  - title: '🐛 Fixes'
+    labels: ['bug', 'fix']
+  - title: '📊 Data & Integrations'
+    labels: ['data', 'integration', 'openapi-sync']
+  - title: '🧹 Maintenance & Tooling'
+    labels: ['chore', 'refactor', 'ci', 'dependencies', 'automerge']
+  - title: '📝 Documentation'
+    labels: ['documentation', 'docs']
+
+autolabeler:
+  - label: 'feat'
+    title: ['/^feat[:(]/']
+  - label: 'fix'
+    title: ['/^fix[:(]/']
+  - label: 'chore'
+    title: ['/^chore[:(]/']
+  - label: 'refactor'
+    title: ['/^refactor[:(]/']
+  - label: 'ci'
+    title: ['/^ci[:(]/']
+  - label: 'docs'
+    title: ['/^docs[:(]/']
+  - label: 'style'
+    title: ['/^style[:(]/']
+  - label: 'dependencies'
+    head: ['/^dependabot/']
+
+exclude:
+  - labels: ['skip-release']
+
+template: |
+  ## What changed
+
+  $CHANGES

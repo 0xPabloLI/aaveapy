@@ -3,12 +3,10 @@ import {
   type MeritCampaignGroup,
   type MerklOpportunityGroup,
   type ReserveWithSpread,
-  MerklForecastWireItem } from '@/types/aave';
+  MerklForecastWireItem,
+} from '@/types/aave';
 import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
-import {
-  getBrevisCampaignBreakdowns,
-  getBrevisResolvedBreakdown,
-} from '@/lib/brevis';
+import { getBrevisCampaignBreakdowns, getBrevisResolvedBreakdown } from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE, getPointToUsdRate, type PointRateMap } from '@/lib/tydro';
 import { getMerklBreakdownApr, forecastMerklApr, sanitizePercent } from '@/lib/merklForecast';
 import { convertAprToApy } from '@/lib/rateCalculations';
@@ -43,10 +41,7 @@ export interface IncentiveSources {
   brevis?: BrevisIncentive[];
 }
 
-export function getIncentiveSources(
-  reserve: ReserveWithSpread,
-  side: 'supply' | 'borrow',
-): IncentiveSources {
+export function getIncentiveSources(reserve: ReserveWithSpread, side: 'supply' | 'borrow'): IncentiveSources {
   return {
     protocol: side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives,
     merit: side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows,
@@ -58,7 +53,7 @@ export function getIncentiveSources(
 const sumNumberArray = (arr?: number[]): number => {
   if (!arr || !Array.isArray(arr)) return 0;
   return arr.reduce((sum, val) => {
-    return (!isNaN(val) && val >= 0) ? sum + val : sum;
+    return !isNaN(val) && val >= 0 ? sum + val : sum;
   }, 0);
 };
 
@@ -68,7 +63,7 @@ export const sumMeritIncentiveApr = (meritGroups?: MeritCampaignGroup[]): number
     getStartDate: (_group, b) => b.campaignStartedAt,
     getEndDate: (_group, b) => b.campaignEndedAt,
     include: () => true,
-    mapValue: (_group, b) => !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0,
+    mapValue: (_group, b) => (!isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0),
   });
 };
 
@@ -88,7 +83,7 @@ const sumMeritIncentiveApy = (meritGroups?: MeritCampaignGroup[]): number => {
 export const sumMerklIncentiveApr = (
   opportunities?: MerklOpportunityGroup[],
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
+  options: IncentiveCalculationOptions = {},
 ): number => {
   const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
   const useUnifiedEligibility = options.crossReserveNetEligibleUsd != null;
@@ -97,7 +92,12 @@ export const sumMerklIncentiveApr = (
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
+    include: (_group, breakdown) =>
+      isMerklWhitelistBreakdownIncluded(
+        breakdown,
+        options.whitelistMerklCampaignIds,
+        options.campaignAccessStatuses?.[breakdown.campaignId],
+      ),
     mapValue: (group, breakdown) => {
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
@@ -105,17 +105,30 @@ export const sumMerklIncentiveApr = (
       let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
-      const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
+      const effectiveCapUsd = resolvePositionCapUsd(
+        breakdown.positionCapNative,
+        breakdown.positionCapUsd,
+        tokenPrice,
+        decimals,
+      );
       if (applyUnifiedInMapValue) {
         // AAV-1164: Unified eligibility — cap and offset compose as single eligible principal.
         // eligible = min(netEligible, cap), rate = apr * eligible / grossPosition
         const netEligible = Math.max(options.crossReserveNetEligibleUsd!(group), 0);
-        const eligible = effectiveCapUsd != null && effectiveCapUsd > 0
-          ? Math.min(netEligible, effectiveCapUsd)
-          : netEligible;
-        apr = apr * eligible / positionUsd!;
-      } else if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
-        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+        const eligible =
+          effectiveCapUsd != null && effectiveCapUsd > 0 ? Math.min(netEligible, effectiveCapUsd) : netEligible;
+        apr = (apr * eligible) / positionUsd!;
+      } else if (
+        !isNaN(apr) &&
+        apr >= 0 &&
+        effectiveCapUsd != null &&
+        effectiveCapUsd > 0 &&
+        positionUsd != null &&
+        positionUsd > 0
+      ) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, {
+          isCombineCap: breakdown.isCombineCap ?? false,
+        }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
@@ -128,7 +141,7 @@ export const sumMerklIncentiveApr = (
 export const sumMerklIncentiveApy = (
   opportunities?: MerklOpportunityGroup[],
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
+  options: IncentiveCalculationOptions = {},
 ): number => {
   const { pointRateMap, positionUsd, tokenPrice, decimals } = options;
   const useUnifiedEligibility = options.crossReserveNetEligibleUsd != null;
@@ -137,7 +150,12 @@ export const sumMerklIncentiveApy = (
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
+    include: (_group, breakdown) =>
+      isMerklWhitelistBreakdownIncluded(
+        breakdown,
+        options.whitelistMerklCampaignIds,
+        options.campaignAccessStatuses?.[breakdown.campaignId],
+      ),
     mapValue: (group, breakdown) => {
       const effectiveRate = pointRateMap
         ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
@@ -145,16 +163,29 @@ export const sumMerklIncentiveApy = (
       let apr = options.forecastStates
         ? sanitizePercent(forecastMerklApr(breakdown, 0, options.forecastStates, effectiveRate))
         : getMerklBreakdownApr(breakdown, effectiveRate);
-      const effectiveCapUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, tokenPrice, decimals);
+      const effectiveCapUsd = resolvePositionCapUsd(
+        breakdown.positionCapNative,
+        breakdown.positionCapUsd,
+        tokenPrice,
+        decimals,
+      );
       if (applyUnifiedInMapValue) {
         // AAV-1164: Unified eligibility — cap and offset compose as single eligible principal.
         const netEligible = Math.max(options.crossReserveNetEligibleUsd!(group), 0);
-        const eligible = effectiveCapUsd != null && effectiveCapUsd > 0
-          ? Math.min(netEligible, effectiveCapUsd)
-          : netEligible;
-        apr = apr * eligible / positionUsd!;
-      } else if (!isNaN(apr) && apr >= 0 && effectiveCapUsd != null && effectiveCapUsd > 0 && positionUsd != null && positionUsd > 0) {
-        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, { isCombineCap: breakdown.isCombineCap ?? false }).aprPercent;
+        const eligible =
+          effectiveCapUsd != null && effectiveCapUsd > 0 ? Math.min(netEligible, effectiveCapUsd) : netEligible;
+        apr = (apr * eligible) / positionUsd!;
+      } else if (
+        !isNaN(apr) &&
+        apr >= 0 &&
+        effectiveCapUsd != null &&
+        effectiveCapUsd > 0 &&
+        positionUsd != null &&
+        positionUsd > 0
+      ) {
+        apr = applyPositionCapToForecastResult(apr, positionUsd, effectiveCapUsd, {
+          isCombineCap: breakdown.isCombineCap ?? false,
+        }).aprPercent;
       }
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
@@ -174,7 +205,10 @@ export const resolveBrevisCurrentApr = (
   return !isNaN(apr) && apr >= 0 ? apr : 0;
 };
 
-export const sumBrevisIncentiveApr = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
+export const sumBrevisIncentiveApr = (
+  brevis?: BrevisIncentive[],
+  forecastStates?: Record<string, MerklForecastWireItem>,
+): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
@@ -187,7 +221,10 @@ export const sumBrevisIncentiveApr = (brevis?: BrevisIncentive[], forecastStates
   });
 };
 
-export const sumBrevisIncentiveApy = (brevis?: BrevisIncentive[], forecastStates?: Record<string, MerklForecastWireItem>): number => {
+export const sumBrevisIncentiveApy = (
+  brevis?: BrevisIncentive[],
+  forecastStates?: Record<string, MerklForecastWireItem>,
+): number => {
   return sumActiveCampaignBreakdownValues(brevis, {
     allowOpenEnd: true,
     getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
@@ -207,7 +244,7 @@ export const calculateTotalIncentiveApr = (
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
+  options: IncentiveCalculationOptions = {},
 ): number => {
   const meritApr = sumMeritIncentiveApr(meritGroups);
   const merklApr = sumMerklIncentiveApr(merklOpportunities, tydroPointToUsdRate, options);
@@ -223,14 +260,14 @@ export const calculateTotalIncentiveApy = (
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
+  options: IncentiveCalculationOptions = {},
 ): number => {
   const meritApy = sumMeritIncentiveApy(meritGroups);
   const merklApy = sumMerklIncentiveApy(merklOpportunities, tydroPointToUsdRate, options);
 
   let protocolApy = 0;
   if (protocolIncentives && Array.isArray(protocolIncentives)) {
-    protocolIncentives.forEach(apr => {
+    protocolIncentives.forEach((apr) => {
       if (!isNaN(apr) && apr >= 0) {
         protocolApy += convertAprToApy(apr);
       }
@@ -246,9 +283,14 @@ export function getReserveIncentiveValues(
   reserve: ReserveWithSpread,
   side: 'supply' | 'borrow',
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
-  options: IncentiveCalculationOptions = {}
+  options: IncentiveCalculationOptions = {},
 ): { apr: number; apy: number } {
-  const { protocol: protocolIncentives, merit: meritGroups, merkl: merklOpportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, side);
+  const {
+    protocol: protocolIncentives,
+    merit: meritGroups,
+    merkl: merklOpportunities,
+    brevis: brevisIncentives,
+  } = getIncentiveSources(reserve, side);
 
   return {
     apr: calculateTotalIncentiveApr(
@@ -257,7 +299,7 @@ export function getReserveIncentiveValues(
       brevisIncentives,
       protocolIncentives,
       tydroPointToUsdRate,
-      options
+      options,
     ),
     apy: calculateTotalIncentiveApy(
       meritGroups,
@@ -265,7 +307,7 @@ export function getReserveIncentiveValues(
       brevisIncentives,
       protocolIncentives,
       tydroPointToUsdRate,
-      options
+      options,
     ),
   };
 }
@@ -277,7 +319,12 @@ export function reserveHasIncentiveTooltipSources(
   tydroPointToUsdRate: number,
   pointRateMap?: PointRateMap,
 ): boolean {
-  const { protocol: protocolIncentives, merit: meritGroups, merkl: opportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, side);
+  const {
+    protocol: protocolIncentives,
+    merit: meritGroups,
+    merkl: opportunities,
+    brevis: brevisIncentives,
+  } = getIncentiveSources(reserve, side);
   if (protocolIncentives && protocolIncentives.length > 0) {
     return true;
   }
@@ -288,7 +335,7 @@ export function reserveHasIncentiveTooltipSources(
       getStartDate: (_group, b) => b.campaignStartedAt,
       getEndDate: (_group, b) => b.campaignEndedAt,
       include: () => true,
-      mapValue: (_group, b) => !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0,
+      mapValue: (_group, b) => (!isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0),
     });
     if (meritApr > 0) return true;
   }
@@ -328,7 +375,10 @@ export function resolveVisibleIncentiveBadgeValue(
 ): number | null {
   if (rawIncentive === null || Number.isNaN(rawIncentive) || rawIncentive < 0) return null;
   if (rawIncentive > 0) return rawIncentive;
-  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate, pointRateMap)) {
+  if (
+    rawIncentive === 0 &&
+    reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate, pointRateMap)
+  ) {
     return rawIncentive;
   }
   return null;

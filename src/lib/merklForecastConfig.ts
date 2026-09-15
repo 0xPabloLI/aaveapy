@@ -9,7 +9,5 @@ export const getCoingeckoBackupPriceTtlMs = (tokenSymbol?: string | null): numbe
   if (!tokenSymbol) return COINGECKO_VOLATILE_TOKEN_TTL_MS;
   const normalized = tokenSymbol.trim().toUpperCase();
   if (!normalized) return COINGECKO_VOLATILE_TOKEN_TTL_MS;
-  return stableSymbols.has(normalized)
-    ? COINGECKO_STABLE_TOKEN_TTL_MS
-    : COINGECKO_VOLATILE_TOKEN_TTL_MS;
+  return stableSymbols.has(normalized) ? COINGECKO_STABLE_TOKEN_TTL_MS : COINGECKO_VOLATILE_TOKEN_TTL_MS;
 };

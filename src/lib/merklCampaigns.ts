@@ -28,7 +28,7 @@ export interface WhitelistOnlyMerklCampaignEntry {
  * Active whitelist-only Merkl campaigns across reserves (deduped by campaignId) for preference UI.
  */
 export const collectWhitelistOnlyMerklCampaignEntries = (
-  reserves: ReserveWithSpread[]
+  reserves: ReserveWithSpread[],
 ): WhitelistOnlyMerklCampaignEntry[] => {
   const byId = new Map<string, string>();
   let hasOrphanWhitelist = false;
@@ -36,7 +36,7 @@ export const collectWhitelistOnlyMerklCampaignEntries = (
   const visit = (
     groups: MerklOpportunityGroup[] | undefined,
     actionType: MerklCampaignOption['actionType'],
-    reserve: ReserveWithSpread
+    reserve: ReserveWithSpread,
   ) => {
     if (!groups) return;
     groups.forEach((group) => {
@@ -65,15 +65,10 @@ export const collectWhitelistOnlyMerklCampaignEntries = (
 
   const entries = Array.from(byId.entries());
   if (hasOrphanWhitelist) {
-    entries.push([
-      MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
-      'Whitelist Merkl (no campaign ID)',
-    ]);
+    entries.push([MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL, 'Whitelist Merkl (no campaign ID)']);
   }
 
-  return entries
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([campaignId, label]) => ({ campaignId, label }));
+  return entries.sort((a, b) => a[0].localeCompare(b[0])).map(([campaignId, label]) => ({ campaignId, label }));
 };
 
 const isBreakdownActive = (start?: string, end?: string, nowMs = Date.now()): boolean => {
@@ -91,12 +86,19 @@ const addFromGroups = (
   reserve: ReserveWithSpread,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   activeOnly: boolean,
-  campaignAccessStatuses?: Record<string, CampaignAccessStatus>
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>,
 ) => {
   if (!groups || groups.length === 0) return;
   groups.forEach((group) => {
     group.breakdowns?.forEach((breakdown) => {
-      if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId])) return;
+      if (
+        !isMerklWhitelistBreakdownIncluded(
+          breakdown,
+          whitelistMerklCampaignIds,
+          campaignAccessStatuses?.[breakdown.campaignId],
+        )
+      )
+        return;
       if (activeOnly && !isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
       const campaignId = String(breakdown.campaignId || '').trim();
       if (!campaignId) return;
@@ -130,15 +132,39 @@ const addFromGroups = (
 
 export const collectMerklCampaignOptions = (
   reserves: ReserveWithSpread[],
-  config: CollectMerklCampaignOptionsConfig = {}
+  config: CollectMerklCampaignOptionsConfig = {},
 ): MerklCampaignOption[] => {
   const byCampaignId = new Map<string, MerklCampaignOption>();
   const activeOnly = config.activeOnly === true;
 
   reserves.forEach((reserve) => {
-    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
-    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
-    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, config.whitelistMerklCampaignIds, activeOnly, config.campaignAccessStatuses);
+    addFromGroups(
+      byCampaignId,
+      reserve.merklSupplys,
+      'Supply',
+      reserve,
+      config.whitelistMerklCampaignIds,
+      activeOnly,
+      config.campaignAccessStatuses,
+    );
+    addFromGroups(
+      byCampaignId,
+      reserve.merklBorrows,
+      'Borrow',
+      reserve,
+      config.whitelistMerklCampaignIds,
+      activeOnly,
+      config.campaignAccessStatuses,
+    );
+    addFromGroups(
+      byCampaignId,
+      reserve.merklHolds,
+      'Hold',
+      reserve,
+      config.whitelistMerklCampaignIds,
+      activeOnly,
+      config.campaignAccessStatuses,
+    );
   });
 
   return Array.from(byCampaignId.values()).sort((a, b) => a.campaignId.localeCompare(b.campaignId));

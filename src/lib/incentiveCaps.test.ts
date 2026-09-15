@@ -22,9 +22,7 @@ describe('buildPositionCapEffect', () => {
       remainingDays: 200,
     });
     const note = capEffectToNote(eff);
-    expect(note.text).toBe(
-      'Incentive limited to first $5,000.00 · combined supply + borrow · ~100d earn',
-    );
+    expect(note.text).toBe('Incentive limited to first $5,000.00 · combined supply + borrow · ~100d earn');
     expect(note.color).toBe('muted');
     expect(eff.metrics).toEqual({ positionCapUsd: 5000, isCombineCap: true, remainingDays: 200 });
   });
@@ -110,9 +108,7 @@ describe('buildPositionCapEffect', () => {
       dailyRewardUsd: null,
       remainingDays: null,
     });
-    expect(capEffectToNote(eff).text).toBe(
-      'Incentive limited to first 5,000.00 USDT · combined supply + borrow',
-    );
+    expect(capEffectToNote(eff).text).toBe('Incentive limited to first 5,000.00 USDT · combined supply + borrow');
   });
 
   it('falls back to USD when positionCapNative is absent', () => {
@@ -237,12 +233,9 @@ describe('checkForecastAvailability', () => {
   });
 
   it('returns false when merged has valid forecastState', () => {
-    expect(checkForecastAvailability(
-      'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      'camp-1',
-      { apr: 5 },
-      { 'camp-1': { apr: 5 } },
-    )).toBe(false);
+    expect(
+      checkForecastAvailability('FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE', 'camp-1', { apr: 5 }, { 'camp-1': { apr: 5 } }),
+    ).toBe(false);
   });
 
   it('returns true for DUTCH_AUCTION when merged is null', () => {
@@ -250,12 +243,7 @@ describe('checkForecastAvailability', () => {
   });
 
   it('returns false for DUTCH_AUCTION when merged has forecastState', () => {
-    expect(checkForecastAvailability(
-      'DUTCH_AUCTION',
-      'camp-1',
-      { apr: 5 },
-      { 'camp-1': { apr: 5 } },
-    )).toBe(false);
+    expect(checkForecastAvailability('DUTCH_AUCTION', 'camp-1', { apr: 5 }, { 'camp-1': { apr: 5 } })).toBe(false);
   });
 });
 
@@ -288,7 +276,6 @@ describe('capEffectToNote', () => {
     const note = capEffectToNote(eff);
     expect(note).toEqual({ type: 'apr_cap', text: 'APR capped for low TVL', color: 'amber' });
   });
-
 });
 
 describe('netEligibleToNote', () => {

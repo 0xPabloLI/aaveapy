@@ -50,17 +50,13 @@ const makeSingleBreakdown = (brevis: BrevisIncentive): BrevisCampaignBreakdown =
 
 type BrevisCampaignBreakdown = NonNullable<BrevisIncentive['breakdowns']>[number];
 
-export const getBrevisCampaignName = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.name);
+export const getBrevisCampaignName = (brevis: BrevisIncentive): string | undefined => firstNonEmptyString(brevis.name);
 
-export const getBrevisCampaignApr = (brevis: BrevisIncentive): number =>
-  brevis.campaignApr ?? 0;
+export const getBrevisCampaignApr = (brevis: BrevisIncentive): number => brevis.campaignApr ?? 0;
 
-export const getBrevisCampaignStartedAt = (brevis: BrevisIncentive): string | undefined =>
-  brevis.campaignStartedAt;
+export const getBrevisCampaignStartedAt = (brevis: BrevisIncentive): string | undefined => brevis.campaignStartedAt;
 
-export const getBrevisCampaignEndedAt = (brevis: BrevisIncentive): string | undefined =>
-  brevis.campaignEndedAt;
+export const getBrevisCampaignEndedAt = (brevis: BrevisIncentive): string | undefined => brevis.campaignEndedAt;
 
 export const getBrevisCampaignMessage = (brevis: BrevisIncentive): string | undefined =>
   firstNonEmptyString(brevis.message);
@@ -68,18 +64,15 @@ export const getBrevisCampaignMessage = (brevis: BrevisIncentive): string | unde
 export const getBrevisDisplayLabel = (brevis: BrevisIncentive, fallback = 'Brevis'): string =>
   firstNonEmptyString(getBrevisCampaignName(brevis), getBrevisCampaignMessage(brevis)) ?? fallback;
 
-export const getBrevisLatestTvl = (brevis: BrevisIncentive): number | undefined =>
-  brevis.latestTvl;
+export const getBrevisLatestTvl = (brevis: BrevisIncentive): number | undefined => brevis.latestTvl;
 
-export const getBrevisTotalBudget = (brevis: BrevisIncentive): number | undefined =>
-  brevis.totalBudget;
+export const getBrevisTotalBudget = (brevis: BrevisIncentive): number | undefined => brevis.totalBudget;
 
+export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined => brevis.campaignId;
 
-export const getBrevisCampaignId = (brevis: BrevisIncentive): string | undefined =>
-  brevis.campaignId;
-
-export const getBrevisCampaignBreakdowns = (brevis: BrevisIncentive): BrevisCampaignBreakdown[] =>
-  [makeSingleBreakdown(brevis)];
+export const getBrevisCampaignBreakdowns = (brevis: BrevisIncentive): BrevisCampaignBreakdown[] => [
+  makeSingleBreakdown(brevis),
+];
 
 const BREVIS_FIX_TYPE = 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
 
@@ -89,9 +82,10 @@ export const getBrevisResolvedBreakdown = (
 ): BrevisResolvedBreakdown => {
   const rawAprCap = breakdown?.aprCap ?? brevis.aprCap;
   const campaignType = firstNonEmptyString(breakdown?.campaignType, brevis.campaignType);
-  const effectiveAprCap = campaignType === BREVIS_FIX_TYPE
-    ? (rawAprCap ?? firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr))
-    : rawAprCap;
+  const effectiveAprCap =
+    campaignType === BREVIS_FIX_TYPE
+      ? (rawAprCap ?? firstFiniteNumber(breakdown?.campaignApr, brevis.campaignApr))
+      : rawAprCap;
   return {
     name: getBrevisCampaignName(brevis),
     message: getBrevisCampaignMessage(brevis),
@@ -108,22 +102,10 @@ export const getBrevisResolvedBreakdown = (
   };
 };
 
-export const hasActiveBrevisBreakdown = (
-  brevis: BrevisIncentive,
-  nowMs = Date.now(),
-  allowOpenEnd = true,
-): boolean =>
-  isCampaignActive(
-    brevis.campaignStartedAt,
-    brevis.campaignEndedAt,
-    nowMs,
-    allowOpenEnd,
-  );
+export const hasActiveBrevisBreakdown = (brevis: BrevisIncentive, nowMs = Date.now(), allowOpenEnd = true): boolean =>
+  isCampaignActive(brevis.campaignStartedAt, brevis.campaignEndedAt, nowMs, allowOpenEnd);
 
-export const getFirstActiveBrevisLink = (
-  brevisItems?: BrevisIncentive[],
-  nowMs = Date.now(),
-): string | null => {
+export const getFirstActiveBrevisLink = (brevisItems?: BrevisIncentive[], nowMs = Date.now()): string | null => {
   if (!brevisItems?.length) return null;
   for (const brevis of brevisItems) {
     if (brevis.link && hasActiveBrevisBreakdown(brevis, nowMs, true)) {

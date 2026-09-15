@@ -66,7 +66,10 @@ function TestWrapper({
       isApy={isApy}
       setIsApy={setIsApy}
       marketsList={marketsList}
-      hubEntries={[{ id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' }, { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' }]}
+      hubEntries={[
+        { id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' },
+        { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' },
+      ]}
       selectedHubs={hubs}
       setSelectedHubs={setHubs}
       expandedChain={expandedChain}
@@ -123,17 +126,20 @@ describe('FilterBar', () => {
         isApy
         setIsApy={() => {}}
         marketsList={ETH_MULTI_MARKETS}
-        hubEntries={[{ id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' }, { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' }]}
+        hubEntries={[
+          { id: 'hub-core', name: 'Core', chainId: 1, chainName: 'Ethereum' },
+          { id: 'hub-prime', name: 'Prime', chainId: 1, chainName: 'Ethereum' },
+        ]}
         selectedHubs={[]}
         setSelectedHubs={setHubsFn}
         marketViewMode="hub"
         setMarketViewMode={() => {}}
-      />
+      />,
     );
 
     const marketsRow = container.querySelector('[data-testid="markets-row"]');
     expect(marketsRow).not.toBeNull();
-    const coreChip = Array.from(marketsRow!.querySelectorAll('button')).find(b => b.textContent === 'Core');
+    const coreChip = Array.from(marketsRow!.querySelectorAll('button')).find((b) => b.textContent === 'Core');
     expect(coreChip).toBeDefined();
     fireEvent.click(coreChip!);
     expect(setHubsFn).toHaveBeenCalledWith(['hub-core']);
@@ -161,7 +167,7 @@ describe('FilterBar', () => {
     const marketsRow = screen.getAllByTestId('markets-row')[0];
 
     const tokenChips = ['All', 'Stables', 'ETH', 'BTC', 'Pendle'].map((label) =>
-      within(tokensRow).getByRole('button', { name: label })
+      within(tokensRow).getByRole('button', { name: label }),
     );
     const allChip = within(marketsRow).getByRole('button', { name: 'All' });
 
@@ -216,26 +222,26 @@ describe('FilterBar setExpandedChain', () => {
   it('calls controlled setExpandedChain with chain name on expand', () => {
     function ControlledWrapper({ initialExpanded }: { initialExpanded: string | null }) {
       const [expandedChain, setExpandedChain] = useState<string | null>(initialExpanded);
-      return (
-        <TestWrapper expandedChain={expandedChain} setExpandedChain={setExpandedChain} />
-      );
+      return <TestWrapper expandedChain={expandedChain} setExpandedChain={setExpandedChain} />;
     }
     render(<ControlledWrapper initialExpanded={null} />);
 
-    act(() => { fireEvent.click(getExpandButton()); });
+    act(() => {
+      fireEvent.click(getExpandButton());
+    });
     expect(getCollapseButton()).toBeInTheDocument();
   });
 
   it('calls controlled setExpandedChain with null on collapse', () => {
     function ControlledWrapper({ initialExpanded }: { initialExpanded: string | null }) {
       const [expandedChain, setExpandedChain] = useState<string | null>(initialExpanded);
-      return (
-        <TestWrapper expandedChain={expandedChain} setExpandedChain={setExpandedChain} />
-      );
+      return <TestWrapper expandedChain={expandedChain} setExpandedChain={setExpandedChain} />;
     }
     render(<ControlledWrapper initialExpanded="Ethereum" />);
 
-    act(() => { fireEvent.click(getCollapseButton()); });
+    act(() => {
+      fireEvent.click(getCollapseButton());
+    });
     expect(getExpandButton()).toBeInTheDocument();
   });
 });
@@ -243,18 +249,14 @@ describe('FilterBar setExpandedChain', () => {
 describe('FilterBar setExpandedChain type contract', () => {
   it('setExpandedChain prop only accepts (chain: string | null) => void', () => {
     const setExpandedChain: (chain: string | null) => void = vi.fn();
-    render(
-      <TestWrapper setExpandedChain={setExpandedChain} expandedChain={null} />
-    );
+    render(<TestWrapper setExpandedChain={setExpandedChain} expandedChain={null} />);
     expect(true).toBe(true);
   });
 
   it('expandedChain prop only accepts string | null | undefined', () => {
     const validValues: (string | null | undefined)[] = ['Ethereum', null, undefined];
     validValues.forEach((val) => {
-      const { unmount } = render(
-        <TestWrapper expandedChain={val} />
-      );
+      const { unmount } = render(<TestWrapper expandedChain={val} />);
       unmount();
     });
     expect(true).toBe(true);

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildRateSimulationResult, buildMeritCampaignDetails, buildMerklCampaignDetails, buildBrevisCampaignDetails, attachCampaigns, sumForecastBrevisIncentiveApr } from './rateSimulationCalculator';
+import {
+  buildRateSimulationResult,
+  buildMeritCampaignDetails,
+  buildMerklCampaignDetails,
+  buildBrevisCampaignDetails,
+  attachCampaigns,
+  sumForecastBrevisIncentiveApr,
+} from './rateSimulationCalculator';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { ReserveWithSpread, MerklOpportunityGroup, MerklCampaignBreakdown } from '@/types/aave';
@@ -266,8 +273,7 @@ describe('A/B category: availableBorrowRoomUsd boundary', () => {
       borrowInput: '500',
     });
 
-    expect(withBorrow.marketMetrics.availableBorrowRoomUsd)
-      .toBe(noInput.marketMetrics.availableBorrowRoomUsd);
+    expect(withBorrow.marketMetrics.availableBorrowRoomUsd).toBe(noInput.marketMetrics.availableBorrowRoomUsd);
   });
 
   it('supply input changes availableBorrowRoomUsd (A→B hybrid via availableLiquidityForBorrow)', () => {
@@ -284,8 +290,9 @@ describe('A/B category: availableBorrowRoomUsd boundary', () => {
       supplyInput: '1000',
     });
 
-    expect(withSupply.marketMetrics.availableBorrowRoomUsd)
-      .toBeGreaterThan(noInput.marketMetrics.availableBorrowRoomUsd!);
+    expect(withSupply.marketMetrics.availableBorrowRoomUsd).toBeGreaterThan(
+      noInput.marketMetrics.availableBorrowRoomUsd!,
+    );
   });
 });
 
@@ -304,8 +311,9 @@ describe('totalSupplyUsd / totalBorrowUsd', () => {
       supplyInput: '1000',
       totalSupplyUsd: 1000,
     });
-    expect(withPrincipalExplicit.scenarioUsdAccrual?.supply.totalUsdPerDay)
-      .toBe(withoutPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay);
+    expect(withPrincipalExplicit.scenarioUsdAccrual?.supply?.totalUsdPerDay).toBe(
+      withoutPrincipal.scenarioUsdAccrual?.supply?.totalUsdPerDay,
+    );
   });
 
   it('uses totalSupplyUsd for accrual instead of supplyInputUsd', () => {
@@ -322,8 +330,9 @@ describe('totalSupplyUsd / totalBorrowUsd', () => {
       supplyInput: '1000',
       totalSupplyUsd: 2000,
     });
-    expect(withLargerPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay)
-      .toBeGreaterThan(base.scenarioUsdAccrual?.supply.totalUsdPerDay ?? 0);
+    expect(withLargerPrincipal.scenarioUsdAccrual?.supply?.totalUsdPerDay).toBeGreaterThan(
+      base.scenarioUsdAccrual?.supply?.totalUsdPerDay ?? 0,
+    );
   });
 
   it('uses totalBorrowUsd for accrual instead of borrowInputUsd', () => {
@@ -340,12 +349,8 @@ describe('totalSupplyUsd / totalBorrowUsd', () => {
       borrowInput: '500',
       totalBorrowUsd: 1000,
     });
-    expect(
-      Math.abs(
-        withLargerBorrowPrincipal.scenarioUsdAccrual?.borrow.totalUsdPerDay ?? 0
-      ),
-    ).toBeGreaterThan(
-      Math.abs(base.scenarioUsdAccrual?.borrow.totalUsdPerDay ?? 0),
+    expect(Math.abs(withLargerBorrowPrincipal.scenarioUsdAccrual?.borrow?.totalUsdPerDay ?? 0)).toBeGreaterThan(
+      Math.abs(base.scenarioUsdAccrual?.borrow?.totalUsdPerDay ?? 0),
     );
   });
 
@@ -363,10 +368,8 @@ describe('totalSupplyUsd / totalBorrowUsd', () => {
       supplyInput: '1000',
       totalSupplyUsd: 5000,
     });
-    expect(withPrincipal.supply.afterNative)
-      .toBe(withoutPrincipal.supply.afterNative);
-    expect(withPrincipal.supply.afterTotal)
-      .toBe(withoutPrincipal.supply.afterTotal);
+    expect(withPrincipal.supply.afterNative).toBe(withoutPrincipal.supply.afterNative);
+    expect(withPrincipal.supply.afterTotal).toBe(withoutPrincipal.supply.afterTotal);
   });
 });
 
@@ -466,8 +469,7 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     });
 
     // When total position (principal=$1500) exceeds cap ($1000), dilution reduces merit after
-    expect(withPrincipal.supply.sources.merit!.after)
-      .toBeLessThan(withoutPrincipal.supply.sources.merit!.after);
+    expect(withPrincipal.supply.sources.merit!.after).toBeLessThan(withoutPrincipal.supply.sources.merit!.after!);
   });
 
   it('Bug AAV-761: supply incentive campaign detail after=null (not 0) when only borrow has input', () => {
@@ -489,15 +491,19 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
   it('Bug AAV-761: merkl supply campaign detail after=null (not 0) when only borrow has input', () => {
     const merklReserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      merklSupplys: [{
-        name: 'Merkl Supply',
-        breakdowns: [{
-          campaignApr: 2.5,
-          campaignStartedAt: '2024-01-01',
-          campaignEndedAt: '2027-12-31',
-          campaignId: 'merkl-supply-1',
-        }],
-      }],
+      merklSupplys: [
+        {
+          name: 'Merkl Supply',
+          breakdowns: [
+            {
+              campaignApr: 2.5,
+              campaignStartedAt: '2024-01-01',
+              campaignEndedAt: '2027-12-31',
+              campaignId: 'merkl-supply-1',
+            },
+          ],
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve: merklReserve,
@@ -530,14 +536,16 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
   it('AAV-771: brevis supply campaign detail after=null when only borrow has input (explicit hasAnyInput guard)', () => {
     const brevisReserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      brevisSupplys: [{
-        campaignApr: 5,
-        link: 'https://example.com/brevis',
-        campaignStartedAt: '2024-01-01',
-        campaignEndedAt: '2030-12-31',
-        campaignId: 'brevis-supply-1',
-        message: 'Brevis Supply',
-      }],
+      brevisSupplys: [
+        {
+          campaignApr: 5,
+          link: 'https://example.com/brevis',
+          campaignStartedAt: '2024-01-01',
+          campaignEndedAt: '2030-12-31',
+          campaignId: 'brevis-supply-1',
+          message: 'Brevis Supply',
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve: brevisReserve,
@@ -714,25 +722,28 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     // This is MORE diluted than without principal (position=500, dilution=200/500=0.4)
     const SMALL_CAP_RESERVE: ReserveWithSpread = {
       ...BASE_RESERVE,
-      meritSupplys: [{
-        link: 'https://example.com', name: 'Small Cap Test',
-        message: [{ description: 'Base' }, { description: 'Self authentication. Cap: $200' }],
-        breakdowns: [
-          {
-            campaignApr: 10,
-            campaignStartedAt: '2024-01-01',
-            campaignEndedAt: '2030-12-31',
-            campaignId: 'merit-base',
-          },
-          {
-            campaignApr: 8,
-            campaignStartedAt: '2024-01-01',
-            campaignEndedAt: '2030-12-31',
-            campaignId: 'merit-self',
-            positionCapUsd: 200,
-          },
-        ],
-      }],
+      meritSupplys: [
+        {
+          link: 'https://example.com',
+          name: 'Small Cap Test',
+          message: [{ description: 'Base' }, { description: 'Self authentication. Cap: $200' }],
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2024-01-01',
+              campaignEndedAt: '2030-12-31',
+              campaignId: 'merit-base',
+            },
+            {
+              campaignApr: 8,
+              campaignStartedAt: '2024-01-01',
+              campaignEndedAt: '2030-12-31',
+              campaignId: 'merit-self',
+              positionCapUsd: 200,
+            },
+          ],
+        },
+      ],
     };
 
     // delta=$500, no wallet → totalPosition=500, eligible=min(500,200)=200, dilution=200/500=0.4
@@ -751,10 +762,8 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
       totalSupplyUsd: 1000, // wallet=$500 + delta=$500 = effective=$1000
     });
 
-    const noWalletSelf = (noWallet.supply.sources.merit?.campaigns ?? [])
-      .find((r) => r.id === 'merit-0-1');
-    const withWalletSelf = (withWallet.supply.sources.merit?.campaigns ?? [])
-      .find((r) => r.id === 'merit-0-1');
+    const noWalletSelf = (noWallet.supply.sources.merit?.campaigns ?? []).find((r) => r.id === 'merit-0-1');
+    const withWalletSelf = (withWallet.supply.sources.merit?.campaigns ?? []).find((r) => r.id === 'merit-0-1');
 
     expect(noWalletSelf?.after).not.toBeNull();
     expect(withWalletSelf?.after).not.toBeNull();
@@ -778,8 +787,7 @@ describe('Bug 2-4: merit position cap totalPositionUsd in campaign details & aft
     });
 
     // With total position $800 > cap $500, self-cap should be diluted
-    expect(withPrincipal.borrow.sources.merit!.after)
-      .toBeLessThan(withoutPrincipal.borrow.sources.merit!.after);
+    expect(withPrincipal.borrow.sources.merit!.after).toBeLessThan(withoutPrincipal.borrow.sources.merit!.after!);
   });
 });
 
@@ -803,8 +811,7 @@ describe('position cap dilution: buildIncentiveCurrent with wallet position', ()
     });
 
     // current incentive WITH wallet should be LOWER than undiluted (wallet exceeds cap)
-    expect(withWallet.supply.currentIncentive)
-      .toBeLessThan(noWallet.supply.currentIncentive);
+    expect(withWallet.supply.currentIncentive).toBeLessThan(noWallet.supply.currentIncentive);
   });
 
   it('current incentive delta should reflect only the delta change, not wallet dilution artifact', () => {
@@ -822,8 +829,7 @@ describe('position cap dilution: buildIncentiveCurrent with wallet position', ()
     });
 
     // With wallet=1500 > cap=1000, current should already be diluted
-    expect(withWalletAndDelta.supply.currentIncentive)
-      .toBeLessThan(18); // 10 (base) + 8 (self) = 18 undiluted
+    expect(withWalletAndDelta.supply.currentIncentive).toBeLessThan(18); // 10 (base) + 8 (self) = 18 undiluted
 
     // delta should be negative (adding position further dilutes self-cap)
     const deltaIncentive = withWalletAndDelta.supply.deltaIncentive!;
@@ -924,7 +930,7 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '500',   // delta=$500
+      supplyInput: '500', // delta=$500
       totalSupplyUsd: 1500, // wallet=$1000 + delta=$500
     });
 
@@ -942,8 +948,8 @@ describe('deltaIncentive shows dilution gap when hasInput=false but wallet exist
       reserve: MERIT_POSITION_CAP_RESERVE,
       reserveRateInput: VALID_RATE_INPUT,
       ...BASE_PARAMS,
-      supplyInput: '0',     // no supply delta → hasInput=false
-      borrowInput: '1',     // borrow delta=$1 (hasAnyInput=true, cross-side)
+      supplyInput: '0', // no supply delta → hasInput=false
+      borrowInput: '1', // borrow delta=$1 (hasAnyInput=true, cross-side)
       totalSupplyUsd: 1042, // wallet position > cap=$1000
       totalBorrowUsd: 1,
     });
@@ -1052,7 +1058,10 @@ describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
 
   it('generates capNote when deposit exceeds self-position cap', () => {
     const rows = buildMeritCampaignDetails({
-      merits, isApy: false, inputUsd: 5000, shouldComputeAfter: true,
+      merits,
+      isApy: false,
+      inputUsd: 5000,
+      shouldComputeAfter: true,
     });
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
@@ -1062,7 +1071,10 @@ describe('AAV-916: buildMeritCampaignDetails position cap capNote', () => {
 
   it('generates capNote but no capWarning when deposit is below cap', () => {
     const rows = buildMeritCampaignDetails({
-      merits, isApy: false, inputUsd: 500, shouldComputeAfter: true,
+      merits,
+      isApy: false,
+      inputUsd: 500,
+      shouldComputeAfter: true,
     });
     const selfRow = rows.find((r) => r.id === 'merit-0-1');
     expect(selfRow).toBeDefined();
@@ -1103,10 +1115,20 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('marks campaign as forecastUnavailable when forecastStates lacks the campaignId', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'camp-with-forecast': { campaignId: 'camp-with-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+      'camp-with-forecast': {
+        campaignId: 'camp-with-forecast',
+        requiredDaily: 100,
+        distributedSoFar: 50,
+        endTimestamp: 2000000000,
+      },
     };
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
     });
     const withoutForecast = rows.find((r) => r.id.includes('camp-without-forecast'));
     expect(withoutForecast).toBeDefined();
@@ -1116,10 +1138,20 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
 
   it('does not mark campaign as forecastUnavailable when forecastStates has the campaignId', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {
-      'camp-with-forecast': { campaignId: 'camp-with-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+      'camp-with-forecast': {
+        campaignId: 'camp-with-forecast',
+        requiredDaily: 100,
+        distributedSoFar: 50,
+        endTimestamp: 2000000000,
+      },
     };
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
     });
     const withForecast = rows.find((r) => r.id.includes('camp-with-forecast'));
     expect(withForecast).toBeDefined();
@@ -1129,7 +1161,12 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
   it('marks campaign as forecastUnavailable when mergeForecastState returns null (no campaignId)', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: true,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
     });
     const noIdRow = rows.find((r) => r.id.includes('-x'));
     expect(noIdRow).toBeDefined();
@@ -1140,7 +1177,12 @@ describe('buildMerklCampaignDetails — forecastUnavailable flag', () => {
   it('sets forecastUnavailable flag even when hasAnyInput is false (capNote not affected)', () => {
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1, shouldComputeAfter: false,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: false,
     });
     const unavailableRows = rows.filter((r) => r.forecastUnavailable);
     expect(unavailableRows.length).toBeGreaterThan(0);
@@ -1237,9 +1279,16 @@ describe('buildMerklCampaignDetails — positionCap', () => {
       },
     ];
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
-      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
-      grossForEligibility: 1000, netForEligibility: 1000,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      grossInputUsd: 1000,
+      grossForEligibility: 1000,
+      netForEligibility: 1000,
     });
     const row = rows[0];
     expect(row).toBeDefined();
@@ -1265,9 +1314,16 @@ describe('buildMerklCampaignDetails — positionCap', () => {
       },
     ];
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
-      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
-      grossForEligibility: 1000, netForEligibility: 1000,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      grossInputUsd: 1000,
+      grossForEligibility: 1000,
+      netForEligibility: 1000,
     });
     const row = rows[0];
     expect(row).toBeDefined();
@@ -1293,9 +1349,16 @@ describe('buildMerklCampaignDetails — positionCap', () => {
       },
     ];
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
-      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 2000,
-      grossForEligibility: 2000, netForEligibility: 1000,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      grossInputUsd: 2000,
+      grossForEligibility: 2000,
+      netForEligibility: 1000,
     });
     const row = rows[0];
     expect(row).toBeDefined();
@@ -1318,9 +1381,16 @@ describe('buildMerklCampaignDetails — positionCap', () => {
       },
     ];
     const rows = buildMerklCampaignDetails({
-      opportunities, isApy: false, inputUsd: 1000, forecastStates, tydroPointToUsdRate: 1,
-      shouldComputeAfter: true, eligibilityRatio: 1, grossInputUsd: 1000,
-      grossForEligibility: 1000, netForEligibility: 1000,
+      opportunities,
+      isApy: false,
+      inputUsd: 1000,
+      forecastStates,
+      tydroPointToUsdRate: 1,
+      shouldComputeAfter: true,
+      eligibilityRatio: 1,
+      grossInputUsd: 1000,
+      grossForEligibility: 1000,
+      netForEligibility: 1000,
     });
     const row = rows[0];
     expect(row).toBeDefined();
@@ -1346,7 +1416,11 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
     ];
     const forecastStates: Record<string, import('@/types/aave').MerklForecastWireItem> = {};
     const rows = buildBrevisCampaignDetails({
-      items: brevis, isApy: false, inputUsd: 1000, shouldComputeAfter: true, forecastStates,
+      items: brevis,
+      isApy: false,
+      inputUsd: 1000,
+      shouldComputeAfter: true,
+      forecastStates,
     });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBe(true);
@@ -1371,7 +1445,11 @@ describe('buildBrevisCampaignDetails — forecastUnavailable flag', () => {
       'brevis-1': { campaignId: 'brevis-1', requiredDaily: 50, distributedSoFar: 20, endTimestamp: 2000000000 },
     };
     const rows = buildBrevisCampaignDetails({
-      items: brevis, isApy: false, inputUsd: 1000, shouldComputeAfter: true, forecastStates,
+      items: brevis,
+      isApy: false,
+      inputUsd: 1000,
+      shouldComputeAfter: true,
+      forecastStates,
     });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].forecastUnavailable).toBeFalsy();
@@ -1394,33 +1472,32 @@ describe('Brevis position cap — totalPositionUsd fallback (AAV-1060 #10)', () 
   ];
 
   it('uses totalPositionUsd as fallback when combined deposits are absent', () => {
-    const resultWithTotal = sumForecastBrevisIncentiveApr(
-      brevisWithCap, false, 0, undefined, undefined, 20000,
-    );
-    const resultWithInputOnly = sumForecastBrevisIncentiveApr(
-      brevisWithCap, false, 0, undefined, undefined, undefined,
-    );
+    const resultWithTotal = sumForecastBrevisIncentiveApr(brevisWithCap, false, 0, undefined, undefined, 20000);
+    const resultWithInputOnly = sumForecastBrevisIncentiveApr(brevisWithCap, false, 0, undefined, undefined, undefined);
     expect(resultWithTotal).toBeLessThan(10);
     expect(resultWithInputOnly).toBe(10);
   });
 
   it('prefers combined deposits over totalPositionUsd', () => {
     const sharedDeposits = new Map([['brevis-cap-1', 3000]]);
-    const resultWithCombined = sumForecastBrevisIncentiveApr(
-      brevisWithCap, false, 0, sharedDeposits, undefined, 20000,
-    );
-    const resultWithTotalOnly = sumForecastBrevisIncentiveApr(
-      brevisWithCap, false, 0, undefined, undefined, 20000,
-    );
+    const resultWithCombined = sumForecastBrevisIncentiveApr(brevisWithCap, false, 0, sharedDeposits, undefined, 20000);
+    const resultWithTotalOnly = sumForecastBrevisIncentiveApr(brevisWithCap, false, 0, undefined, undefined, 20000);
     expect(resultWithCombined).not.toBe(resultWithTotalOnly);
   });
 
   it('buildBrevisCampaignDetails uses totalPositionUsd for position cap', () => {
     const rowsWithTotal = buildBrevisCampaignDetails({
-      items: brevisWithCap, isApy: false, inputUsd: 0, shouldComputeAfter: true, totalPositionUsd: 20000,
+      items: brevisWithCap,
+      isApy: false,
+      inputUsd: 0,
+      shouldComputeAfter: true,
+      totalPositionUsd: 20000,
     });
     const rowsWithInputOnly = buildBrevisCampaignDetails({
-      items: brevisWithCap, isApy: false, inputUsd: 0, shouldComputeAfter: true,
+      items: brevisWithCap,
+      isApy: false,
+      inputUsd: 0,
+      shouldComputeAfter: true,
     });
     expect(rowsWithTotal.length).toBe(1);
     expect(rowsWithInputOnly.length).toBe(1);
@@ -1434,15 +1511,19 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
   it('counts campaigns without campaignId (mergeForecastState returns null)', () => {
     const reserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      merklSupplys: [{
-        name: 'Merkl No ID',
-        breakdowns: [{
-          campaignApr: 3,
-          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2030-12-31',
-        }] as unknown as MerklCampaignBreakdown[],
-      }],
+      merklSupplys: [
+        {
+          name: 'Merkl No ID',
+          breakdowns: [
+            {
+              campaignApr: 3,
+              campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              campaignStartedAt: '2025-01-01',
+              campaignEndedAt: '2030-12-31',
+            },
+          ] as unknown as MerklCampaignBreakdown[],
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve,
@@ -1459,17 +1540,19 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
   it('counts Brevis campaigns without forecast', () => {
     const reserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      brevisSupplys: [{
-        campaignApr: 4,
-        campaignId: 'brevis-no-forecast',
-        link: 'https://example.com/brevis',
-        campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-        campaignStartedAt: '2025-01-01',
-        campaignEndedAt: '2030-12-31',
-        message: 'Brevis No Forecast',
-        positionCapUsd: undefined,
-        totalBudget: undefined,
-      }],
+      brevisSupplys: [
+        {
+          campaignApr: 4,
+          campaignId: 'brevis-no-forecast',
+          link: 'https://example.com/brevis',
+          campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+          campaignStartedAt: '2025-01-01',
+          campaignEndedAt: '2030-12-31',
+          message: 'Brevis No Forecast',
+          positionCapUsd: undefined,
+          totalBudget: undefined,
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve,
@@ -1486,16 +1569,20 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
   it('does not count campaigns with available forecast', () => {
     const reserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      merklSupplys: [{
-        name: 'Merkl With Forecast',
-        breakdowns: [{
-          campaignApr: 3,
-          campaignId: 'has-forecast',
-          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2030-12-31',
-        }],
-      }],
+      merklSupplys: [
+        {
+          name: 'Merkl With Forecast',
+          breakdowns: [
+            {
+              campaignApr: 3,
+              campaignId: 'has-forecast',
+              campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              campaignStartedAt: '2025-01-01',
+              campaignEndedAt: '2030-12-31',
+            },
+          ],
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve,
@@ -1503,7 +1590,12 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
       ...BASE_PARAMS,
       supplyInput: '1000',
       forecastStates: {
-        'has-forecast': { campaignId: 'has-forecast', requiredDaily: 100, distributedSoFar: 50, endTimestamp: 2000000000 },
+        'has-forecast': {
+          campaignId: 'has-forecast',
+          requiredDaily: 100,
+          distributedSoFar: 50,
+          endTimestamp: 2000000000,
+        },
       },
     });
     expect(result.forecastUnavailableCampaignCount).toBe(0);
@@ -1512,26 +1604,34 @@ describe('forecastUnavailableCampaignCount — expanded counting', () => {
   it('sums across supply and borrow sides', () => {
     const reserve: ReserveWithSpread = {
       ...BASE_RESERVE,
-      merklSupplys: [{
-        name: 'Merkl Supply No Forecast',
-        breakdowns: [{
-          campaignApr: 3,
-          campaignId: 'supply-no-forecast',
-          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2030-12-31',
-        }],
-      }],
-      merklBorrows: [{
-        name: 'Merkl Borrow No Forecast',
-        breakdowns: [{
-          campaignApr: 2,
-          campaignId: 'borrow-no-forecast',
-          campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-          campaignStartedAt: '2025-01-01',
-          campaignEndedAt: '2030-12-31',
-        }],
-      }],
+      merklSupplys: [
+        {
+          name: 'Merkl Supply No Forecast',
+          breakdowns: [
+            {
+              campaignApr: 3,
+              campaignId: 'supply-no-forecast',
+              campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              campaignStartedAt: '2025-01-01',
+              campaignEndedAt: '2030-12-31',
+            },
+          ],
+        },
+      ],
+      merklBorrows: [
+        {
+          name: 'Merkl Borrow No Forecast',
+          breakdowns: [
+            {
+              campaignApr: 2,
+              campaignId: 'borrow-no-forecast',
+              campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              campaignStartedAt: '2025-01-01',
+              campaignEndedAt: '2030-12-31',
+            },
+          ],
+        },
+      ],
     };
     const result = buildRateSimulationResult({
       reserve,
@@ -1549,17 +1649,21 @@ describe('AAV-975: anchorTvlUsd TVL_DILUTION per-source merit.after', () => {
     const RESERVE_WITH_SUPPLIED: ReserveWithSpread = {
       ...BASE_RESERVE,
       supplied: '10000000000000000000000',
-      meritSupplys: [{
-        link: 'https://example.com',
-        name: 'Merit TVL Test',
-        message: [{ description: 'Base reward' }],
-        breakdowns: [{
-          campaignApr: 10,
-          campaignStartedAt: '2024-01-01',
-          campaignEndedAt: '2030-12-31',
-          campaignId: 'merit-tvl-base',
-        }],
-      }],
+      meritSupplys: [
+        {
+          link: 'https://example.com',
+          name: 'Merit TVL Test',
+          message: [{ description: 'Base reward' }],
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2024-01-01',
+              campaignEndedAt: '2030-12-31',
+              campaignId: 'merit-tvl-base',
+            },
+          ],
+        },
+      ],
     };
 
     const result = buildRateSimulationResult({
@@ -1591,8 +1695,7 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
       walletSupplyUsd: 1500,
     });
 
-    expect(withWallet.supply.sources.merit!.current)
-      .toBeLessThan(noWallet.supply.sources.merit!.current);
+    expect(withWallet.supply.sources.merit!.current).toBeLessThan(noWallet.supply.sources.merit!.current!);
   });
 
   it('per-source merit.current + other sources ≈ total currentIncentive when wallet exceeds cap', () => {
@@ -1603,7 +1706,8 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
       walletSupplyUsd: 1500,
     });
 
-    const meritCurrent = result.supply.sources.merit!.current;
+    // merit!.current is number | null; null previously coerced to 0 in the sum — ?? 0 keeps that exact semantics.
+    const meritCurrent = result.supply.sources.merit!.current ?? 0;
     const merklCurrent = result.supply.sources.merkl?.current ?? 0;
     const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
     const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
@@ -1644,8 +1748,7 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
       walletSupplyUsd: 1500,
     });
 
-    const selfCampaign = result.supply.sources.merit!.campaigns
-      .find(c => c.id.includes('merit-0-1'));
+    const selfCampaign = result.supply.sources.merit!.campaigns?.find((c) => c.id.includes('merit-0-1'));
     expect(selfCampaign).toBeDefined();
     // Self campaign: headline=8, cap=1000, wallet=1500
     // diluted = 8 * min(1500,1000)/1500 = 8 * 0.667 ≈ 5.33
@@ -1660,8 +1763,7 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
       walletSupplyUsd: 1500,
     });
 
-    const baseCampaign = result.supply.sources.merit!.campaigns
-      .find(c => c.id.includes('merit-0-0'));
+    const baseCampaign = result.supply.sources.merit!.campaigns?.find((c) => c.id.includes('merit-0-0'));
     expect(baseCampaign).toBeDefined();
     expect(baseCampaign!.current).toBe(10);
   });
@@ -1680,14 +1782,17 @@ describe('AAV-979: per-source Merit current includes position cap dilution', () 
       walletBorrowUsd: 2000,
     });
 
-    expect(withWallet.borrow.sources.merit!.current)
-      .toBeLessThan(noWallet.borrow.sources.merit!.current);
+    expect(withWallet.borrow.sources.merit!.current).toBeLessThan(noWallet.borrow.sources.merit!.current!);
   });
 });
 
 describe('attachCampaigns: offsetNotes separation (AAV-1036)', () => {
   const metric = { current: 1, after: 2, delta: 1 };
-  const offsetNote: import('./incentiveCaps').IncentiveNote = { type: 'net_eligible', text: '$500 of $1,000 net eligible', color: 'muted' };
+  const offsetNote: import('./incentiveCaps').IncentiveNote = {
+    type: 'net_eligible',
+    text: '$500 of $1,000 net eligible',
+    color: 'muted',
+  };
   const campaigns = [
     { id: 'c1', label: 'Campaign 1', current: 0.5, after: 0.6, delta: 0.1 },
     { id: 'c2', label: 'Campaign 2', current: 0.3, after: 0.4, delta: 0.1 },
@@ -1759,12 +1864,8 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
   };
 
   it('Bug 1: merklGroupMultiplier uses total position for cross-reserve eligibility when supplyInputUsd=0 but wallet position exists', () => {
-    const crossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
-    const walletCrossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
+    const walletCrossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1796,9 +1897,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
   });
 
   it('Bug 1: without wallet position, current = headline (no scaling) — GOLDEN RULE', () => {
-    const crossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1820,12 +1919,8 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
   });
 
   it('Bug 2: aggregate currentIncentive matches per-source sum for Merkl with constraint', () => {
-    const crossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
-    const walletCrossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
+    const walletCrossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1853,12 +1948,8 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
   });
 
   it('headline incentive also includes eligibility scaling (AAV-1060 review fix)', () => {
-    const crossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
-    const walletCrossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
+    const walletCrossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const withConstraint = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1880,16 +1971,20 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
 
     const noConstraint: ReserveWithSpread = {
       ...MERKL_CONSTRAINT_RESERVE,
-      merklSupplys: [{
-        name: 'Standard merkl',
-        breakdowns: [{
-          campaignApr: 10,
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: '2099-01-01T00:00:00.000Z',
-          campaignId: 'std-test',
-        }],
-        opportunityId: '998',
-      }],
+      merklSupplys: [
+        {
+          name: 'Standard merkl',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'std-test',
+            },
+          ],
+          opportunityId: '998',
+        },
+      ],
     };
 
     const withoutConstraint = buildRateSimulationResult({
@@ -1912,9 +2007,7 @@ describe('AAV-1060: Merkl wallet position in net position constraint', () => {
   });
 
   it('merklCrossReserveNote uses total position for grossUsd when supplyInputUsd=0 but wallet exists', () => {
-    const crossReservePositions = new Map([
-      [USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[USDE_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const result = buildRateSimulationResult({
       reserve: MERKL_CONSTRAINT_RESERVE,
@@ -1977,9 +2070,7 @@ describe('AAV-1164: Merkl campaign details use unified eligibility', () => {
       forecastStates: {},
       meritMerklNetPosition: false,
       totalSupplyUsd: 1500,
-      crossReservePositions: new Map([
-        [offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }],
-      ]),
+      crossReservePositions: new Map([[offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }]]),
     });
 
     const campaign = result.supply.sources.merkl?.campaigns?.[0];
@@ -1994,16 +2085,20 @@ describe('AAV-1164: Merkl campaign details use unified eligibility', () => {
 describe('AAV-1102: Merit per-campaign current uses walletEligibilityRatio', () => {
   const MERIT_ELIGIBILITY_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
-    meritSupplys: [{
-      link: 'https://example.com',
-      name: 'Merit Test',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merit-elig-test',
-      }],
-    }],
+    meritSupplys: [
+      {
+        link: 'https://example.com',
+        name: 'Merit Test',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merit-elig-test',
+          },
+        ],
+      },
+    ],
   };
 
   it('per-campaign current is scaled by walletEligibilityRatio when wallet has borrow offset', () => {
@@ -2053,7 +2148,7 @@ describe('AAV-1102: Merit per-campaign current uses walletEligibilityRatio', () 
     });
 
     const meritCampaigns = result.supply.sources.merit?.campaigns ?? [];
-    const perCampaignSum = meritCampaigns.reduce((s, c) => s + c.current, 0);
+    const perCampaignSum = meritCampaigns.reduce((s, c) => s + (c.current ?? 0), 0);
     expect(perCampaignSum).toBeCloseTo(result.supply.sources.merit?.current ?? -1, 4);
   });
 });
@@ -2064,20 +2159,24 @@ describe('AAV-1102: Merkl per-campaign current uses wallet multiplier + eligibil
   const MERKL_WALLET_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     reserveId: OFFSET_RESERVE_ID,
-    merklSupplys: [{
-      name: 'Net lending',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merkl-elig-test',
-      }],
-      opportunityId: '999',
-      netPositionConstraint: {
-        sourceSide: 'supply',
-        offsetReserveIds: [OFFSET_RESERVE_ID],
+    merklSupplys: [
+      {
+        name: 'Net lending',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merkl-elig-test',
+          },
+        ],
+        opportunityId: '999',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: [OFFSET_RESERVE_ID],
+        },
       },
-    }],
+    ],
   };
 
   it('per-campaign current uses wallet positions (not simulated) for eligibility', () => {
@@ -2125,7 +2224,7 @@ describe('AAV-1102: Merkl per-campaign current uses wallet multiplier + eligibil
     });
 
     const merklCampaigns = result.supply.sources.merkl?.campaigns ?? [];
-    const perCampaignSum = merklCampaigns.reduce((s, c) => s + c.current, 0);
+    const perCampaignSum = merklCampaigns.reduce((s, c) => s + (c.current ?? 0), 0);
     expect(perCampaignSum).toBeCloseTo(result.supply.sources.merkl?.current ?? -1, 4);
   });
 });
@@ -2133,26 +2232,30 @@ describe('AAV-1102: Merkl per-campaign current uses wallet multiplier + eligibil
 describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilution', () => {
   const BREVIS_CAP_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
-    brevisSupplys: [{
-      campaignId: 'brevis-cap-test',
-      link: 'https://example.com/brevis',
-      campaignApr: 10,
-      campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      campaignStartedAt: '2025-01-01T00:00:00.000Z',
-      campaignEndedAt: '2099-01-01T00:00:00.000Z',
-      message: 'Brevis Cap Test',
-      positionCapUsd: 5000,
-      totalBudget: undefined,
-      breakdowns: [{
+    brevisSupplys: [
+      {
         campaignId: 'brevis-cap-test',
+        link: 'https://example.com/brevis',
         campaignApr: 10,
         campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
         campaignStartedAt: '2025-01-01T00:00:00.000Z',
         campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        message: 'Brevis Cap Test',
         positionCapUsd: 5000,
         totalBudget: undefined,
-      }],
-    }],
+        breakdowns: [
+          {
+            campaignId: 'brevis-cap-test',
+            campaignApr: 10,
+            campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            campaignStartedAt: '2025-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            positionCapUsd: 5000,
+            totalBudget: undefined,
+          },
+        ],
+      },
+    ],
   };
 
   it('per-campaign current is diluted when wallet exceeds positionCapUsd', () => {
@@ -2220,7 +2323,7 @@ describe('AAV-1102: Brevis per-campaign current applies wallet position cap dilu
     });
 
     const brevisCampaigns = result.supply.sources.brevis?.campaigns ?? [];
-    const perCampaignSum = brevisCampaigns.reduce((s, c) => s + c.current, 0);
+    const perCampaignSum = brevisCampaigns.reduce((s, c) => s + (c.current ?? 0), 0);
     expect(perCampaignSum).toBeCloseTo(result.supply.sources.brevis?.current ?? -1, 4);
   });
 });
@@ -2229,26 +2332,34 @@ describe('AAV-1102: aggregate sumCurrent matches buildIncentiveCurrent for all s
   const ALL_SOURCES_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     supplyIncentives: [2],
-    meritSupplys: [{
-      link: 'https://example.com',
-      name: 'Merit',
-      breakdowns: [{
-        campaignApr: 5,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merit-agg',
-      }],
-    }],
-    merklSupplys: [{
-      name: 'Merkl',
-      breakdowns: [{
-        campaignApr: 8,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merkl-agg',
-      }],
-      opportunityId: '997',
-    }],
+    meritSupplys: [
+      {
+        link: 'https://example.com',
+        name: 'Merit',
+        breakdowns: [
+          {
+            campaignApr: 5,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merit-agg',
+          },
+        ],
+      },
+    ],
+    merklSupplys: [
+      {
+        name: 'Merkl',
+        breakdowns: [
+          {
+            campaignApr: 8,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merkl-agg',
+          },
+        ],
+        opportunityId: '997',
+      },
+    ],
   };
 
   it('sum of per-source current equals aggregate currentIncentive', () => {
@@ -2283,17 +2394,21 @@ describe('AAV-1102: aggregate sumCurrent matches buildIncentiveCurrent for all s
 describe('AAV-1107: aggregate currentIncentive matches per-source sum with Merkl position cap', () => {
   const MERKL_POSCAP_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
-    merklSupplys: [{
-      name: 'Capped campaign',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'poscap-test',
-        positionCapNative: '1000000000000000000000', // 1000 tokens (18 decimals) = $1000
-      }],
-      opportunityId: '998',
-    }],
+    merklSupplys: [
+      {
+        name: 'Capped campaign',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'poscap-test',
+            positionCapNative: '1000000000000000000000', // 1000 tokens (18 decimals) = $1000
+          },
+        ],
+        opportunityId: '998',
+      },
+    ],
   };
 
   it('aggregate currentIncentive = per-source sum when wallet exceeds Merkl position cap', () => {
@@ -2364,26 +2479,34 @@ describe('AAV-1112: currentIncentive derived from per-source sum (no independent
   const ALL_SOURCES_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     supplyIncentives: [1.0],
-    meritSupplys: [{
-      name: 'Merit campaign',
-      breakdowns: [{
-        campaignApr: 5,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merit-1112',
-      }],
-    }],
-    merklSupplys: [{
-      name: 'Merkl campaign',
-      breakdowns: [{
-        campaignApr: 8,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merkl-1112',
-        positionCapNative: '1000000000000000000000', // $1000 cap
-      }],
-      opportunityId: '1112',
-    }],
+    meritSupplys: [
+      {
+        name: 'Merit campaign',
+        breakdowns: [
+          {
+            campaignApr: 5,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merit-1112',
+          },
+        ],
+      },
+    ],
+    merklSupplys: [
+      {
+        name: 'Merkl campaign',
+        breakdowns: [
+          {
+            campaignApr: 8,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merkl-1112',
+            positionCapNative: '1000000000000000000000', // $1000 cap
+          },
+        ],
+        opportunityId: '1112',
+      },
+    ],
   };
 
   it('supply currentIncentive = protocol + merit + merkl + brevis current', () => {
@@ -2415,15 +2538,19 @@ describe('AAV-1112: currentIncentive derived from per-source sum (no independent
     const BORROW_RESERVE: ReserveWithSpread = {
       ...ALL_SOURCES_RESERVE,
       borrowIncentives: [0.5],
-      meritBorrows: [{
-        name: 'Merit borrow',
-        breakdowns: [{
-          campaignApr: 3,
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: '2099-01-01T00:00:00.000Z',
-          campaignId: 'merit-b-1112',
-        }],
-      }],
+      meritBorrows: [
+        {
+          name: 'Merit borrow',
+          breakdowns: [
+            {
+              campaignApr: 3,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'merit-b-1112',
+            },
+          ],
+        },
+      ],
     };
 
     const result = buildRateSimulationResult({
@@ -2458,26 +2585,34 @@ describe('AAV-1113: afterIncentive derived from per-source sum (no independent p
   const ALL_SOURCES_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     supplyIncentives: [1.0],
-    meritSupplys: [{
-      name: 'Merit campaign',
-      breakdowns: [{
-        campaignApr: 5,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merit-1113',
-      }],
-    }],
-    merklSupplys: [{
-      name: 'Merkl campaign',
-      breakdowns: [{
-        campaignApr: 8,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'merkl-1113',
-        positionCapNative: '1000000000000000000000', // $1000 cap
-      }],
-      opportunityId: '1113',
-    }],
+    meritSupplys: [
+      {
+        name: 'Merit campaign',
+        breakdowns: [
+          {
+            campaignApr: 5,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merit-1113',
+          },
+        ],
+      },
+    ],
+    merklSupplys: [
+      {
+        name: 'Merkl campaign',
+        breakdowns: [
+          {
+            campaignApr: 8,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'merkl-1113',
+            positionCapNative: '1000000000000000000000', // $1000 cap
+          },
+        ],
+        opportunityId: '1113',
+      },
+    ],
   };
 
   it('supply afterIncentive = protocol + merit + merkl + brevis after (with input)', () => {
@@ -2574,20 +2709,24 @@ describe('Golden Rule: currentIncentive must NOT change with simulation input (A
   const MERKL_CONSTRAINT_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     supplyIncentives: [] as number[],
-    merklSupplys: [{
-      name: 'Net lending group',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'golden-rule-1',
-      }],
-      opportunityId: '99',
-      netPositionConstraint: {
-        sourceSide: 'supply',
-        offsetReserveIds: [BASE_RESERVE.reserveId],
+    merklSupplys: [
+      {
+        name: 'Net lending group',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'golden-rule-1',
+          },
+        ],
+        opportunityId: '99',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: [BASE_RESERVE.reserveId],
+        },
       },
-    }],
+    ],
   };
 
   it('Shared Scenario: current unchanged when borrow added (no wallet → no eligibility scaling)', () => {
@@ -2680,20 +2819,24 @@ describe('AAV-1120: walletBorrowUsd/walletSupplyUsd derivation must use raw (unc
     liquidity: '10000000000000000000000', // 10000
     borrowCap: '1000000000000000000000', // 1000 — small cap to trigger capping
     supplyCap: '10000000000000000000000', // 10000 — plenty
-    merklBorrows: [{
-      name: 'Net lending borrow group',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'aav1120-borrow-1',
-      }],
-      opportunityId: '1120',
-      netPositionConstraint: {
-        sourceSide: 'borrow',
-        offsetReserveIds: [BASE_RESERVE.reserveId],
+    merklBorrows: [
+      {
+        name: 'Net lending borrow group',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'aav1120-borrow-1',
+          },
+        ],
+        opportunityId: '1120',
+        netPositionConstraint: {
+          sourceSide: 'borrow',
+          offsetReserveIds: [BASE_RESERVE.reserveId],
+        },
       },
-    }],
+    ],
   };
 
   it('borrow currentIncentive is same whether delta is under or over borrow cap (same wallet)', () => {
@@ -2764,20 +2907,24 @@ describe('AAV-1120: walletBorrowUsd/walletSupplyUsd derivation must use raw (unc
       liquidity: '10000000000000000000000', // 10000
       supplyCap: '1000000000000000000000', // 1000 — small cap to trigger capping
       borrowCap: '10000000000000000000000', // 10000 — plenty
-      merklSupplys: [{
-        name: 'Net lending supply group',
-        breakdowns: [{
-          campaignApr: 10,
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: '2099-01-01T00:00:00.000Z',
-          campaignId: 'aav1120-supply-1',
-        }],
-        opportunityId: '1120s',
-        netPositionConstraint: {
-          sourceSide: 'supply',
-          offsetReserveIds: [BASE_RESERVE.reserveId],
+      merklSupplys: [
+        {
+          name: 'Net lending supply group',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'aav1120-supply-1',
+            },
+          ],
+          opportunityId: '1120s',
+          netPositionConstraint: {
+            sourceSide: 'supply',
+            offsetReserveIds: [BASE_RESERVE.reserveId],
+          },
         },
-      }],
+      ],
     };
 
     // Scenario A: delta supply = $500 (under cap of $1000)
@@ -2860,16 +3007,10 @@ describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserve
   };
 
   it('current does NOT change when offset reserve delta changes (walletCrossReservePositions uses wallet-only)', () => {
-    const walletCrossReservePositions = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
+    const walletCrossReservePositions = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }]]);
 
-    const crpSmallDelta = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
-    const crpLargeDelta = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }],
-    ]);
+    const crpSmallDelta = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }]]);
+    const crpLargeDelta = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }]]);
 
     const r1 = buildRateSimulationResult({
       reserve: RESERVE_WITH_CROSS_CONSTRAINT,
@@ -2920,16 +3061,10 @@ describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserve
   });
 
   it('after DOES change when offset reserve delta changes (uses crossReservePositions with total)', () => {
-    const walletCrossReservePositions = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
+    const walletCrossReservePositions = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }]]);
 
-    const crpSmallDelta = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
-    const crpLargeDelta = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }],
-    ]);
+    const crpSmallDelta = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 500 }]]);
+    const crpLargeDelta = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 800 }]]);
 
     const r1 = buildRateSimulationResult({
       reserve: RESERVE_WITH_CROSS_CONSTRAINT,
@@ -2971,13 +3106,11 @@ describe('AAV-1137: walletCrossReservePositions uses wallet-only for all reserve
       walletCrossReservePositions,
     });
 
-    expect(r1.supply.afterIncentive).not.toBeCloseTo(r2.supply.afterIncentive, 1);
+    expect(r1.supply.afterIncentive).not.toBeCloseTo(r2.supply.afterIncentive!, 1);
   });
 
   it('without walletCrossReservePositions, current=headline (no scaling) — GOLDEN RULE no-wallet case', () => {
-    const crossReservePositions = new Map([
-      [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }],
-    ]);
+    const crossReservePositions = new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 600 }]]);
 
     const result = buildRateSimulationResult({
       reserve: RESERVE_WITH_CROSS_CONSTRAINT,
@@ -3006,21 +3139,25 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
     borrowIncentives: [],
     meritSupplys: [],
     meritBorrows: [],
-    merklSupplys: [{
-      name: 'Cross Constraint Test',
-      link: 'https://example.com',
-      breakdowns: [{
-        campaignId: 'cross-test',
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-      }],
-      opportunityId: 'cross-opp',
-      netPositionConstraint: {
-        sourceSide: 'supply',
-        offsetReserveIds: ['offset-source'],
+    merklSupplys: [
+      {
+        name: 'Cross Constraint Test',
+        link: 'https://example.com',
+        breakdowns: [
+          {
+            campaignId: 'cross-test',
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+        opportunityId: 'cross-opp',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: ['offset-source'],
+        },
       },
-    }],
+    ],
     merklBorrows: [],
     brevisSupplys: [],
     brevisBorrows: [],
@@ -3030,12 +3167,8 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
     // Target reserve has wallet supply but no local input.
     // Offset source has a borrow delta that reduces target's eligible supply.
     const reserve = makeReserveWithCrossConstraint();
-    const crossReservePositions = new Map([
-      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
-    const walletCrossReservePositions = new Map([
-      ['offset-source', { supplyUsd: 0, borrowUsd: 500 }],
-    ]);
+    const crossReservePositions = new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]);
+    const walletCrossReservePositions = new Map([['offset-source', { supplyUsd: 0, borrowUsd: 500 }]]);
 
     const result = buildRateSimulationResult({
       reserve,
@@ -3057,15 +3190,14 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
 
     expect(result.supply.hasInput).toBe(false);
     // currentIncentive uses wallet-only offset: eligible = 1500 - 500 = 1000 → rate = 10 * 1000/1500
-    expect(result.supply.currentIncentive).toBeCloseTo(10 * 1000 / 1500, 6);
+    expect(result.supply.currentIncentive).toBeCloseTo((10 * 1000) / 1500, 6);
     // afterIncentive is non-null because portfolioScenarioActive is true
     expect(result.supply.afterIncentive).not.toBeNull();
     // afterIncentive uses the same crossReservePositions (offset still $500) → same as current
     expect(result.supply.afterIncentive!).toBeCloseTo(result.supply.currentIncentive, 6);
     // delta should be 0 (no change from current in this scenario)
     expect(result.supply.deltaIncentive).toBeCloseTo(0, 6);
-    expect(result.supply.sources.merkl?.campaigns?.[0]?.after)
-      .toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
+    expect(result.supply.sources.merkl?.campaigns?.[0]?.after).toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
   });
 
   it('portfolioScenarioActive makes afterNative = currentNative when no local input', () => {
@@ -3107,8 +3239,7 @@ describe('AAV-1166: Portfolio Complete Snapshot (portfolioScenarioActive)', () =
       portfolioScenarioActive: true,
     });
 
-    expect(result.supply.sources.merkl?.campaigns?.[0]?.after)
-      .toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
+    expect(result.supply.sources.merkl?.campaigns?.[0]?.after).toBeCloseTo(result.supply.sources.merkl?.after ?? 0, 6);
   });
 
   it('currentIncentive unchanged when toggling portfolioScenarioActive (Golden Rule #1)', () => {
@@ -3257,18 +3388,22 @@ describe('AAV-962: BORROW_BL incentive zeroing in simulation', () => {
   const BORROW_BL_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
     supplyIncentives: [],
-    merklSupplys: [{
-      name: 'BORROW_BL supply opp',
-      link: 'https://merkl.angle.money',
-      breakdowns: [{
-        campaignId: 'merkl-borrow-bl-sim',
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-      }],
-      opportunityId: 'borrow-bl-1',
-      borrowBlacklist: true,
-    }],
+    merklSupplys: [
+      {
+        name: 'BORROW_BL supply opp',
+        link: 'https://merkl.angle.money',
+        breakdowns: [
+          {
+            campaignId: 'merkl-borrow-bl-sim',
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+        opportunityId: 'borrow-bl-1',
+        borrowBlacklist: true,
+      },
+    ],
   };
 
   it('Shared Scenario: current unchanged (no wallet), after zeroed when borrowInput > 0', () => {
@@ -3450,40 +3585,48 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
 
   const NPC_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
-    merklSupplys: [{
-      name: 'Net lending group',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'npc-shared-test',
-      }],
-      opportunityId: 'npc-1',
-      netPositionConstraint: {
-        sourceSide: 'supply',
-        offsetReserveIds: [OFFSET_RESERVE_ID],
+    merklSupplys: [
+      {
+        name: 'Net lending group',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'npc-shared-test',
+          },
+        ],
+        opportunityId: 'npc-1',
+        netPositionConstraint: {
+          sourceSide: 'supply',
+          offsetReserveIds: [OFFSET_RESERVE_ID],
+        },
       },
-    }],
+    ],
   };
 
   const CAP_RESERVE: ReserveWithSpread = {
     ...BASE_RESERVE,
-    merklSupplys: [{
-      name: 'Cross-asset pairing group',
-      breakdowns: [{
-        campaignApr: 10,
-        campaignStartedAt: '2020-01-01T00:00:00.000Z',
-        campaignEndedAt: '2099-01-01T00:00:00.000Z',
-        campaignId: 'cap-shared-test',
-      }],
-      opportunityId: 'cap-1',
-      crossAssetPairing: {
-        sourceSide: 'supply',
-        pairedReserveId: PAIRED_RESERVE_ID,
-        pairedSide: 'supply',
-        discountFactor: 0.823,
+    merklSupplys: [
+      {
+        name: 'Cross-asset pairing group',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'cap-shared-test',
+          },
+        ],
+        opportunityId: 'cap-1',
+        crossAssetPairing: {
+          sourceSide: 'supply',
+          pairedReserveId: PAIRED_RESERVE_ID,
+          pairedSide: 'supply',
+          discountFactor: 0.823,
+        },
       },
-    }],
+    ],
   };
 
   // S1: Reserve has NPC, Shared scenario → no offset; show generic NPC note
@@ -3586,9 +3729,7 @@ describe('AAV-1024: Shared scenario generic offset note', () => {
       borrowInput: '0',
       forecastStates: {},
       totalSupplyUsd: 1000,
-      crossReservePositions: new Map([
-        [OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 400 }],
-      ]),
+      crossReservePositions: new Map([[OFFSET_RESERVE_ID, { supplyUsd: 0, borrowUsd: 400 }]]),
       reserveSymbolById: new Map([
         [OFFSET_RESERVE_ID, 'USDe'],
         [NPC_RESERVE.reserveId, 'USDC'],

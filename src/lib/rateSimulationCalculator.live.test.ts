@@ -108,10 +108,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
         const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
 
-        expect(perSourceSum).toBeCloseTo(
-          result.supply.currentIncentive,
-          5,
-        );
+        expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 5);
         checked++;
       }
 
@@ -126,7 +123,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
     async () => {
       reserves ??= await fetchReserves();
       const withBorrowIncentives = reserves.filter(
-        r =>
+        (r) =>
           (r.borrowIncentives?.length ?? 0) > 0 ||
           (r.meritBorrows?.length ?? 0) > 0 ||
           (r.merklBorrows?.length ?? 0) > 0 ||
@@ -148,10 +145,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         const brevisCurrent = result.borrow.sources.brevis?.current ?? 0;
         const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
 
-        expect(perSourceSum).toBeCloseTo(
-          result.borrow.currentIncentive,
-          5,
-        );
+        expect(perSourceSum).toBeCloseTo(result.borrow.currentIncentive, 5);
         checked++;
       }
 
@@ -187,10 +181,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         const brevisAfter = result.supply.sources.brevis?.after ?? 0;
         const perSourceSum = protocolAfter + meritAfter + merklAfter + brevisAfter;
 
-        expect(perSourceSum).toBeCloseTo(
-          result.supply.afterIncentive,
-          5,
-        );
+        expect(perSourceSum).toBeCloseTo(result.supply.afterIncentive, 5);
         checked++;
       }
 
@@ -243,22 +234,10 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         });
 
         // currentIncentive must be identical in all three scenarios (Shared Scenario = no wallet)
-        expect(r2.supply.currentIncentive).toBeCloseTo(
-          r1.supply.currentIncentive,
-          6,
-        );
-        expect(r3.supply.currentIncentive).toBeCloseTo(
-          r1.supply.currentIncentive,
-          6,
-        );
-        expect(r2.borrow.currentIncentive).toBeCloseTo(
-          r1.borrow.currentIncentive,
-          6,
-        );
-        expect(r3.borrow.currentIncentive).toBeCloseTo(
-          r1.borrow.currentIncentive,
-          6,
-        );
+        expect(r2.supply.currentIncentive).toBeCloseTo(r1.supply.currentIncentive, 6);
+        expect(r3.supply.currentIncentive).toBeCloseTo(r1.supply.currentIncentive, 6);
+        expect(r2.borrow.currentIncentive).toBeCloseTo(r1.borrow.currentIncentive, 6);
+        expect(r3.borrow.currentIncentive).toBeCloseTo(r1.borrow.currentIncentive, 6);
 
         // currentTotal must also be invariant
         if (r1.supply.currentTotal !== null && r2.supply.currentTotal !== null) {
@@ -335,22 +314,10 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         });
 
         // currentIncentive must be identical — wallet hasn't changed
-        expect(r2.supply.currentIncentive).toBeCloseTo(
-          r1.supply.currentIncentive,
-          6,
-        );
-        expect(r3.supply.currentIncentive).toBeCloseTo(
-          r1.supply.currentIncentive,
-          6,
-        );
-        expect(r2.borrow.currentIncentive).toBeCloseTo(
-          r1.borrow.currentIncentive,
-          6,
-        );
-        expect(r3.borrow.currentIncentive).toBeCloseTo(
-          r1.borrow.currentIncentive,
-          6,
-        );
+        expect(r2.supply.currentIncentive).toBeCloseTo(r1.supply.currentIncentive, 6);
+        expect(r3.supply.currentIncentive).toBeCloseTo(r1.supply.currentIncentive, 6);
+        expect(r2.borrow.currentIncentive).toBeCloseTo(r1.borrow.currentIncentive, 6);
+        expect(r3.borrow.currentIncentive).toBeCloseTo(r1.borrow.currentIncentive, 6);
 
         checked++;
       }
@@ -407,10 +374,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
 
         // currentIncentive must be the same — wallet borrow is $30000 in both cases
         // walletBorrowUsd is passed explicitly, so no derivation/capping ambiguity
-        expect(rLarge.borrow.currentIncentive).toBeCloseTo(
-          rSmall.borrow.currentIncentive,
-          6,
-        );
+        expect(rLarge.borrow.currentIncentive).toBeCloseTo(rSmall.borrow.currentIncentive, 6);
 
         checked++;
       }

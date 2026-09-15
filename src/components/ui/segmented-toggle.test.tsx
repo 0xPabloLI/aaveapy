@@ -53,9 +53,7 @@ describe('SegmentedToggle (vertical)', () => {
 
   it('horizontal orientation reports aria-orientation=horizontal', () => {
     render(<Harness orientation="horizontal" />);
-    expect(
-      screen.getByRole('radiogroup').getAttribute('aria-orientation'),
-    ).toBe('horizontal');
+    expect(screen.getByRole('radiogroup').getAttribute('aria-orientation')).toBe('horizontal');
   });
 
   // ─── interaction ────────────────────────────────────────────
@@ -67,9 +65,7 @@ describe('SegmentedToggle (vertical)', () => {
     fireEvent.click(token);
     expect(spy).toHaveBeenCalledWith('token');
     expect(token.getAttribute('aria-checked')).toBe('true');
-    expect(
-      screen.getByRole('radio', { name: 'USD' }).getAttribute('aria-checked'),
-    ).toBe('false');
+    expect(screen.getByRole('radio', { name: 'USD' }).getAttribute('aria-checked')).toBe('false');
   });
 
   it('clicking the already-active option keeps state stable', () => {

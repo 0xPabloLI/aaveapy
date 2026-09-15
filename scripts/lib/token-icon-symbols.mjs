@@ -1,7 +1,9 @@
 import path from 'path';
 
 export function normalizeSymbolKey(symbol) {
-  const key = String(symbol || '').trim().toLowerCase();
+  const key = String(symbol || '')
+    .trim()
+    .toLowerCase();
   if (!key) return null;
   if (key.includes('/') || key.includes('\\')) return null;
   return key;
@@ -92,7 +94,7 @@ function extractAssignedObjectLiteral(content, marker) {
 
 function parseNamedAddressBookImports(reservePatchesContent) {
   const importMatch = reservePatchesContent.match(
-    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/m
+    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/m,
   );
   if (!importMatch) return [];
 
@@ -162,10 +164,7 @@ function resolveRuntimeIconSymbol({ row, underlyingAssetMap, symbolMap }) {
   if (!rawSymbol) return null;
 
   const mapped =
-    symbolMap[rawSymbol] ??
-    symbolMap[rawSymbol.toUpperCase()] ??
-    symbolMap[rawSymbol.toLowerCase()] ??
-    rawSymbol;
+    symbolMap[rawSymbol] ?? symbolMap[rawSymbol.toUpperCase()] ?? symbolMap[rawSymbol.toLowerCase()] ?? rawSymbol;
 
   return unPrefixSymbol(String(mapped), 'AMM');
 }
@@ -229,9 +228,7 @@ export function collectIconSymbolLogoHints({
   for (const [address, value] of Object.entries(underlyingAssetMap)) {
     if (!value || typeof value !== 'object' || !value.iconSymbol) continue;
     const normalizedAddress = normalizeSymbolKey(address);
-    const logoURI =
-      value.logoURI ||
-      (normalizedAddress ? tokenLogoByAddress.get(normalizedAddress) : undefined);
+    const logoURI = value.logoURI || (normalizedAddress ? tokenLogoByAddress.get(normalizedAddress) : undefined);
     addHint(value.iconSymbol, logoURI);
   }
 
@@ -244,10 +241,7 @@ export function collectIconSymbolLogoHints({
     if (!iconSymbol) continue;
     const rawAddress = normalizeSymbolKey(row?.tokenAddress);
     const mapped = rawAddress ? underlyingAssetMap[rawAddress] : undefined;
-    const logoURI =
-      row?.logoURI ||
-      mapped?.logoURI ||
-      (rawAddress ? tokenLogoByAddress.get(rawAddress) : undefined);
+    const logoURI = row?.logoURI || mapped?.logoURI || (rawAddress ? tokenLogoByAddress.get(rawAddress) : undefined);
     addHint(iconSymbol, logoURI);
   }
 

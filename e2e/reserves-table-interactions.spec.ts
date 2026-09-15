@@ -44,10 +44,7 @@ async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise
   return reserveId;
 }
 
-async function expectExpandedRowInViewport(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-) {
+async function expectExpandedRowInViewport(page: Parameters<typeof test>[0]['page'], reserveId: string) {
   const expandedRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(expandedRow).toHaveClass(/bg-muted\/30/);
   await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toHaveCount(1);
@@ -62,10 +59,7 @@ async function expectExpandedRowInViewport(
 
 test.describe('Reserves table interaction matrix', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Desktop table matrix only',
-    );
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop table matrix only');
   });
 
   test.beforeEach(async ({ page }) => {
@@ -112,12 +106,28 @@ test.describe('Reserves table interaction matrix', () => {
     await expect(page.locator(`tbody tr[data-reserve-id="${expandedAfterSameMarketId}"] + tr`)).toHaveCount(1);
 
     const fallbackMarkets = [
-      'Arbitrum', 'Avalanche', 'Base', 'BSC', 'Celo', 'Gnosis', 'Ink', 'Linea',
-      'Mantle', 'MegaETH', 'Optimism', 'Plasma', 'Polygon', 'Scroll', 'Sonic', 'Core', 'Prime',
+      'Arbitrum',
+      'Avalanche',
+      'Base',
+      'BSC',
+      'Celo',
+      'Gnosis',
+      'Ink',
+      'Linea',
+      'Mantle',
+      'MegaETH',
+      'Optimism',
+      'Plasma',
+      'Polygon',
+      'Scroll',
+      'Sonic',
+      'Core',
+      'Prime',
     ];
-    const alternateMarket = (await pickAlternateVisibleMarket(page, selectedMarket))
-      ?? fallbackMarkets.find((m) => m !== selectedMarket)
-      ?? null;
+    const alternateMarket =
+      (await pickAlternateVisibleMarket(page, selectedMarket)) ??
+      fallbackMarkets.find((m) => m !== selectedMarket) ??
+      null;
     if (!alternateMarket) {
       throw new Error('No alternate market candidate found');
     }
@@ -168,7 +178,9 @@ test.describe('Reserves table interaction matrix', () => {
     await expectExpandedRowInViewport(page, reserveId);
 
     // Click the same row chip again to clear that market filter.
-    const sameRowMarketButton = page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`).first();
+    const sameRowMarketButton = page
+      .locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`)
+      .first();
     await sameRowMarketButton.click();
     await page.waitForTimeout(450);
     await expectExpandedRowInViewport(page, reserveId);

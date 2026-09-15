@@ -98,8 +98,8 @@
     --ds-tooltip-grid-rgb: 0 0 0;
     --ds-tooltip-surface-image:
       linear-gradient(180deg, rgb(var(--ds-tooltip-white-rgb) / 0.9), rgb(var(--ds-tooltip-white-rgb) / 0.98)),
-      radial-gradient(900px 220px at 5% -10%, rgb(var(--ds-tooltip-warm-rgb) / 0.10), transparent 60%),
-      radial-gradient(700px 220px at 100% 0%, rgb(var(--ds-tooltip-cool-rgb) / 0.10), transparent 55%),
+      radial-gradient(900px 220px at 5% -10%, rgb(var(--ds-tooltip-warm-rgb) / 0.1), transparent 60%),
+      radial-gradient(700px 220px at 100% 0%, rgb(var(--ds-tooltip-cool-rgb) / 0.1), transparent 55%),
       linear-gradient(90deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px),
       linear-gradient(0deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px);
     --ds-tooltip-surface-size: auto, auto, auto, 18px 18px, 18px 18px;
@@ -274,7 +274,7 @@
     line-height: 1;
     display: inline-flex;
     align-items: center;
-  cursor: pointer;
+    cursor: pointer;
   }
 
   .ds-button {
@@ -711,7 +711,7 @@
     border-color: rgb(var(--ds-purple-500-rgb) / 0.3);
   }
 
-  .dark input[type="checkbox"]:checked {
+  .dark input[type='checkbox']:checked {
     accent-color: hsl(var(--foreground));
   }
 }
@@ -790,9 +790,13 @@
     --chart-4: 37 92% 50%;
     --chart-5: 24 5% 44%;
     --sidebar: 60 9% 97%;
-    --font-sans: 'Source Sans Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    --font-sans:
+      'Source Sans Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Source Serif Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-    --font-mono: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --font-mono:
+      'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
@@ -868,10 +872,10 @@
     --chart-4: 37 92% 50%;
     --chart-5: 220 10% 30%;
     --sidebar: 220 12% 12%;
-    
+
     /* Keep rounded corners in dark mode for consistency */
     --radius: 1rem;
-    
+
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
@@ -903,12 +907,14 @@
 
   /* Smooth theme transition for all color-related properties */
   html.theme-transition {
-    transition: background-color 300ms ease-out,
-                color 200ms ease-out !important;
+    transition:
+      background-color 300ms ease-out,
+      color 200ms ease-out !important;
   }
   html.theme-transition body {
-    transition: background-color 300ms ease-out,
-                color 200ms ease-out !important;
+    transition:
+      background-color 300ms ease-out,
+      color 200ms ease-out !important;
   }
 }
 
@@ -947,13 +953,13 @@
     background-clip: text;
   }
 
-  .open-gradient-text[data-state="open"] {
+  .open-gradient-text[data-state='open'] {
     background: linear-gradient(135deg, hsl(320 95% 45%) 0%, hsl(265 90% 55%) 50%, hsl(178 95% 35%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .dark .open-gradient-text[data-state="open"] {
+  .dark .open-gradient-text[data-state='open'] {
     background: linear-gradient(135deg, hsl(320 100% 75%) 0%, hsl(265 100% 78%) 50%, hsl(178 100% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -967,13 +973,15 @@
   }
 
   .gradient-border::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     padding: 1px;
     border-radius: var(--radius);
     background: linear-gradient(135deg, hsl(var(--ds-gradient-primary)) 0%, hsl(var(--ds-gradient-secondary)) 100%);
-    -webkit-mask: linear-gradient(hsl(var(--ds-white)) 0 0) content-box, linear-gradient(hsl(var(--ds-white)) 0 0);
+    -webkit-mask:
+      linear-gradient(hsl(var(--ds-white)) 0 0) content-box,
+      linear-gradient(hsl(var(--ds-white)) 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
@@ -1003,7 +1011,8 @@
 }
 
 @keyframes reserve-flash {
-  0%, 40% {
+  0%,
+  40% {
     background-color: rgb(var(--ds-brand-magenta-rgb) / 0.08);
     box-shadow: 0 0 14px 3px rgb(var(--ds-brand-magenta-rgb) / 0.35);
   }

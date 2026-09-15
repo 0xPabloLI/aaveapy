@@ -24,9 +24,7 @@ function parseExpectedMapping(marketsConfigContent) {
       continue;
     }
 
-    const lending = line.match(
-      /LENDING_POOL_ADDRESS_PROVIDER:\s*(AaveV[23][A-Za-z0-9]+)\.POOL_ADDRESSES_PROVIDER/
-    );
+    const lending = line.match(/LENDING_POOL_ADDRESS_PROVIDER:\s*(AaveV[23][A-Za-z0-9]+)\.POOL_ADDRESSES_PROVIDER/);
     if (lending && !expected.has(lending[1])) {
       expected.set(lending[1], activeMarket);
     }
@@ -43,9 +41,7 @@ function parseExpectedMapping(marketsConfigContent) {
 }
 
 function parseLocalObjectContent(fileContent) {
-  const match = fileContent.match(
-    /const MARKET_NAME_MAP:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
-  );
+  const match = fileContent.match(/const MARKET_NAME_MAP:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/);
   if (!match || match.index == null) {
     throw new Error('Failed to parse MARKET_NAME_MAP from src/lib/aaveLinks.ts');
   }
@@ -120,9 +116,7 @@ async function main() {
   }
 
   const rebuiltBody = `\n${orderedKeys.map((key) => `  ${key}: '${local.get(key)}',`).join('\n')}\n`;
-  const nextContent = `${localContent.slice(0, object.start)}${rebuiltBody}${localContent.slice(
-    object.end
-  )}`;
+  const nextContent = `${localContent.slice(0, object.start)}${rebuiltBody}${localContent.slice(object.end)}`;
   await writeFile(LOCAL_MAP_PATH, nextContent, 'utf8');
 
   console.log(`Updated MARKET_NAME_MAP. Added ${additions}, updated ${updates}.`);

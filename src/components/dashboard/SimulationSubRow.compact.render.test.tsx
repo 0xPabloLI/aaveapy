@@ -213,8 +213,8 @@ describe('SimulationSubRow compact (mobile) Grid render', () => {
     const table = getByRole('table', { name: 'Simulation breakdown' });
     const cells = within(table).getAllByRole('cell');
     // Find numeric cells: they have text-right + whitespace-nowrap on the cell element.
-    const numericCells = cells.filter((cell) =>
-      cell.className.includes('text-right') && cell.className.includes('whitespace-nowrap'),
+    const numericCells = cells.filter(
+      (cell) => cell.className.includes('text-right') && cell.className.includes('whitespace-nowrap'),
     );
     expect(numericCells.length).toBeGreaterThanOrEqual(3);
     numericCells.forEach((cell) => {

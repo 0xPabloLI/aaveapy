@@ -17,38 +17,36 @@
  */
 
 /** Icon size used inside every header control (matches `ds-text-14`). */
-export const HEADER_CONTROL_ICON_CLASS = 'w-4 h-4'
+export const HEADER_CONTROL_ICON_CLASS = 'w-4 h-4';
 
 /** Smaller icon used for trailing affordances (chevrons, dots, popover items). */
-export const HEADER_CONTROL_AFFORDANCE_ICON_CLASS = 'w-3.5 h-3.5'
+export const HEADER_CONTROL_AFFORDANCE_ICON_CLASS = 'w-3.5 h-3.5';
 
 /** Transition duration for chevron rotation in header controls. */
-export const HEADER_CONTROL_TRANSITION_DURATION = 'duration-200'
+export const HEADER_CONTROL_TRANSITION_DURATION = 'duration-200';
 
 /** Gap between icon and label inside a header control. */
-export const HEADER_CONTROL_INNER_GAP_CLASS = 'gap-[var(--ds-space-1)]'
+export const HEADER_CONTROL_INNER_GAP_CLASS = 'gap-[var(--ds-space-1)]';
 
 /**
  * Shared focus ring — `ring-2 ring-ring` with `ring-offset-2 ring-offset-background`,
  * matches the clock popover, ThemeToggle and every other header control.
  */
 export const HEADER_CONTROL_FOCUS_RING_CLASS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 /** Shared surface treatment for header controls and inline watch inputs. */
-export const HEADER_CONTROL_SURFACE_CLASS =
-  'bg-card/60 border border-border/40 text-muted-foreground'
+export const HEADER_CONTROL_SURFACE_CLASS = 'bg-card/60 border border-border/40 text-muted-foreground';
 
 /** Shared hover border/background treatment for header controls. */
-export const HEADER_CONTROL_HOVER_CLASS = 'hover:bg-muted/60 hover:border-border'
+export const HEADER_CONTROL_HOVER_CLASS = 'hover:bg-muted/60 hover:border-border';
 
 /** Shared disabled treatment that preserves the same border color family. */
 export const HEADER_CONTROL_DISABLED_CLASS =
-  'disabled:opacity-40 disabled:hover:bg-card/60 disabled:hover:border-border/40 disabled:cursor-not-allowed'
+  'disabled:opacity-40 disabled:hover:bg-card/60 disabled:hover:border-border/40 disabled:cursor-not-allowed';
 
 /** Error treatment for header-control inputs. */
-export const HEADER_CONTROL_ERROR_CLASS =
-  'border-destructive text-destructive focus-visible:ring-destructive'
+export const HEADER_CONTROL_ERROR_CLASS = 'border-destructive text-destructive focus-visible:ring-destructive';
 
 /** Circular icon action used next to header-control inputs. */
 export const HEADER_CONTROL_ICON_BUTTON_CLASS = [
@@ -59,14 +57,14 @@ export const HEADER_CONTROL_ICON_BUTTON_CLASS = [
   'transition-colors',
   HEADER_CONTROL_DISABLED_CLASS,
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');
 
 /** Compact text action rendered inside a header-control status line. */
 export const HEADER_CONTROL_STATUS_ACTION_CLASS = [
   'rounded-sm px-[var(--ds-space-2)] py-[var(--ds-space-0-5)] ds-text-11',
   'text-foreground hover:bg-muted/60 transition-colors',
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');
 
 /**
  * Mobile circular icon button — used for FAQ, clock popover, wallet,
@@ -80,7 +78,7 @@ export const HEADER_CONTROL_MOBILE_CLASS = [
   HEADER_CONTROL_HOVER_CLASS,
   'touch-manipulation transition-colors',
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');
 
 /**
  * Desktop inline text button — used for wallet Connect / View address,
@@ -93,7 +91,7 @@ export const HEADER_CONTROL_DESKTOP_CLASS = [
   'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
   'transition-colors',
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');
 
 /**
  * Desktop variant used when the control reflects an active/connected
@@ -106,10 +104,10 @@ export const HEADER_CONTROL_DESKTOP_ACTIVE_CLASS = [
   'text-foreground hover:bg-muted/60',
   'transition-colors',
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');
 
 /** Spacing between sibling header controls (desktop). */
-export const HEADER_CONTROL_GROUP_GAP_CLASS = 'gap-[var(--ds-space-1)]'
+export const HEADER_CONTROL_GROUP_GAP_CLASS = 'gap-[var(--ds-space-1)]';
 
 /** Row inside a header-control popover (Connect / View address / Disconnect). */
 export const HEADER_CONTROL_POPOVER_ITEM_CLASS = [
@@ -117,4 +115,4 @@ export const HEADER_CONTROL_POPOVER_ITEM_CLASS = [
   'rounded-sm px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-11',
   'hover:bg-muted/60',
   HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
+].join(' ');

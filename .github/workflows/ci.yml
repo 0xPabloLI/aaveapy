@@ -17,10 +17,10 @@ on:
   workflow_dispatch:
     inputs:
       target_ref:
-        description: "Ref (branch or SHA) to run CI against"
+        description: 'Ref (branch or SHA) to run CI against'
         required: false
   schedule:
-    - cron: '0 6 * * *'  # daily UTC 6:00 — detect backend spec drift
+    - cron: '0 6 * * *' # daily UTC 6:00 — detect backend spec drift
 
 permissions:
   contents: read
@@ -40,7 +40,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Setup Socket Firewall
         uses: socketdev/action@v1
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -136,7 +136,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -146,8 +146,14 @@ jobs:
           fi
       - name: Install dependencies
         run: npm run ci:lockcheck
-      - name: Run build
-        run: npm run build
+      - name: Run build with performance measurement
+        run: npm run build:metrics
+      - name: Archive build metrics
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-metrics
+          path: dist/build-metrics.json
+          retention-days: 90
       - name: Run unit tests
         run: npm test
 
@@ -178,7 +184,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -223,7 +229,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -256,7 +262,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -285,14 +291,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Validate API schemas against live endpoints
         env:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
-          RUN_LIVE_TESTS: "true"
+          RUN_LIVE_TESTS: 'true'
         run: bash scripts/ci-live-schema-validate.sh
   live-simulation-validation:
     name: live-simulation-validation
@@ -309,14 +315,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Run simulation Golden Rule tests against live API
         env:
           LIVE_TEST_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
-          RUN_LIVE_TESTS: "true"
+          RUN_LIVE_TESTS: 'true'
         run: npm run test:live:simulation:staging
 
   content-security-check:
@@ -332,12 +338,38 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Check external URL whitelist
         run: npx tsx scripts/check-external-urls.ts
+
+  repo-policy:
+    name: repo-policy (AGENTS.md / TODO markers / dep release age)
+    runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
+      # PRs diff against the merge base; pushes have no lockfile delta to check.
+      BASE_REF: ${{ github.event.pull_request.base.sha || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CI_REF }}
+          fetch-depth: 0
+      # The three policy scripts are dependency-free node builtins — no npm ci.
+      - name: Validate AGENTS.md references (commands + doc paths)
+        run: npm run check:agents-md
+      - name: Technical-debt marker policy (ratchet)
+        run: npm run check:todos
+      - name: Dependency release-age gate (lockfile PRs only)
+        run: |
+          if git diff --name-only "${{ env.BASE_REF }}...${{ env.CI_REF }}" -- package-lock.json | grep -q .; then
+            npm run check:dep-age
+          else
+            echo "package-lock.json unchanged — skipping release-age gate"
+          fi
 
   openapi-check:
     name: openapi-check
@@ -359,7 +391,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -399,7 +431,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -436,7 +468,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
@@ -465,10 +497,10 @@ jobs:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
           token: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' && secrets.TOKEN_ICON_SYNC_PAT || secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
-          commit-message: "chore(openapi): sync spec + generated schemas from backend"
-          branch: "bot/openapi-sync-${{ github.run_id }}"
+          commit-message: 'chore(openapi): sync spec + generated schemas from backend'
+          branch: 'bot/openapi-sync-${{ github.run_id }}'
           delete-branch: true
-          title: "chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})"
+          title: 'chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})'
           body: |
             Auto-generated OpenAPI spec + Zod schema sync.
 

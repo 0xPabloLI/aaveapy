@@ -1,4 +1,4 @@
-import { features } from '@/config/features';
+import { isFeatureEnabled } from '@/config/featureFlags';
 
 /**
  * Idempotent prefetch helpers for the Portfolio experience.
@@ -16,7 +16,7 @@ import { features } from '@/config/features';
 let compareViewPromise: Promise<unknown> | null | undefined = null;
 
 export function prefetchPortfolioCompareView(): Promise<unknown> | undefined {
-  if (!features.snapshot) return undefined;
+  if (!isFeatureEnabled('snapshot')) return undefined;
 
   if (!compareViewPromise) {
     compareViewPromise = import('./PortfolioCompareView').catch((err) => {

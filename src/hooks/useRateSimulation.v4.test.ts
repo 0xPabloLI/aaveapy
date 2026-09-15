@@ -35,7 +35,10 @@ describe('V4 Hub simulation integration', () => {
     };
 
     const sim0 = simulateNativeRatesAfterActions(rateInput, { supplyAmount: '0', borrowAmount: '0' });
-    const simLarge = simulateNativeRatesAfterActions(rateInput, { supplyAmount: '5000000000000000000000', borrowAmount: '0' });
+    const simLarge = simulateNativeRatesAfterActions(rateInput, {
+      supplyAmount: '5000000000000000000000',
+      borrowAmount: '0',
+    });
 
     expect(simLarge.utilizationRatePercent).toBeLessThan(sim0.utilizationRatePercent);
     expect(simLarge.supplyApyPercent).toBeLessThan(sim0.supplyApyPercent);

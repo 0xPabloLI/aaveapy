@@ -26,10 +26,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as addressBook from '@aave-dao/aave-address-book';
-import {
-  DEFAULT_PRODUCTION_API_BASE,
-  DEFAULT_STAGING_API_BASE,
-} from './lib/default-api-bases.mjs';
+import { DEFAULT_PRODUCTION_API_BASE, DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
 import { safeUrlForLog } from './lib/fetch-utils.mjs';
 import {
   collectRequiredIconSymbols,
@@ -46,8 +43,7 @@ const RESERVE_PATCHES_PATH = getReservePatchesPath(ROOT);
 const TOKEN_SYMBOL_MAP_PATH = getTokenSymbolMapPath(ROOT);
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
 const INTERFACE_TOKEN_ICONS_BASE = String(
-  process.env.INTERFACE_TOKEN_ICONS_BASE ||
-    'https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens'
+  process.env.INTERFACE_TOKEN_ICONS_BASE || 'https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens',
 ).replace(/\/$/, '');
 /** Prefer vector first (matches upstream layout). */
 const INTERFACE_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'jpg'];
@@ -88,7 +84,14 @@ function getDefaultMarketsUrls() {
 function getMarketsUrlsToTry() {
   const explicit = process.env.SYNC_TOKEN_ICONS_MARKETS_API;
   if (explicit && explicit.trim()) {
-    const fromEnv = [...new Set(explicit.split(',').map((s) => s.trim()).filter(Boolean))];
+    const fromEnv = [
+      ...new Set(
+        explicit
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    ];
     const stagingMarkets = `${DEFAULT_STAGING_API_BASE}/markets`;
     if (!fromEnv.includes(stagingMarkets)) {
       fromEnv.push(stagingMarkets);
@@ -117,7 +120,9 @@ function sleep(ms) {
 }
 
 function* interfaceTokenCandidateUrls(symbol) {
-  const key = String(symbol || '').trim().toLowerCase();
+  const key = String(symbol || '')
+    .trim()
+    .toLowerCase();
   if (!key) return;
   for (const ext of INTERFACE_ICON_EXTENSIONS) {
     yield `${INTERFACE_TOKEN_ICONS_BASE}/${key}.${ext}`;
@@ -193,7 +198,7 @@ async function loadMarketsRows() {
         if (debugUrls || attempt === MARKETS_RETRY_COUNT) {
           const where = debugUrls ? ` ${safeUrlForLog(url)}` : '';
           console.warn(
-            `markets API ${label}${where} (${urlIndex + 1}/${urls.length}) attempt ${attempt}/${MARKETS_RETRY_COUNT} failed: ${msg}`
+            `markets API ${label}${where} (${urlIndex + 1}/${urls.length}) attempt ${attempt}/${MARKETS_RETRY_COUNT} failed: ${msg}`,
           );
         }
         if (attempt < MARKETS_RETRY_COUNT) {
@@ -243,7 +248,10 @@ async function fetchCoingeckoImageUrl(symbol) {
 
   const normalized = symbol.trim().toLowerCase().replace(/\s+/g, '');
   const exact = coins.find(
-    (coin) => String(coin?.symbol || '').toLowerCase().replace(/\s+/g, '') === normalized
+    (coin) =>
+      String(coin?.symbol || '')
+        .toLowerCase()
+        .replace(/\s+/g, '') === normalized,
   );
   if (!exact) return null;
 
@@ -278,10 +286,7 @@ async function downloadToFile(url, basePathWithoutExt) {
     throw new Error(`HTTP ${res.status}`);
   }
   const buf = Buffer.from(await res.arrayBuffer());
-  const ext = inferExtensionFromContentType(
-    res.headers.get('content-type'),
-    inferExtensionFromUrl(url)
-  );
+  const ext = inferExtensionFromContentType(res.headers.get('content-type'), inferExtensionFromUrl(url));
   const outPath = `${basePathWithoutExt}.${ext}`;
   fs.writeFileSync(outPath, buf);
   return outPath;
@@ -329,9 +334,7 @@ async function main() {
   const { missing, orphaned, logoHints } = await getMissingSymbols();
 
   if (orphaned.length > 0) {
-    console.warn(
-      `Orphaned token icons (local but not in API): ${orphaned.join(', ')} (${orphaned.length})`
-    );
+    console.warn(`Orphaned token icons (local but not in API): ${orphaned.join(', ')} (${orphaned.length})`);
   }
 
   if (missing.length === 0) {
@@ -340,16 +343,14 @@ async function main() {
   }
 
   if (checkOnly) {
-    const {
-      syncableFromInterface,
-      syncableFromCoingecko,
-      syncableFromLogo,
-      unsyncable,
-    } = await classifyMissingSymbols(missing, logoHints);
+    const { syncableFromInterface, syncableFromCoingecko, syncableFromLogo, unsyncable } = await classifyMissingSymbols(
+      missing,
+      logoHints,
+    );
 
     if (unsyncable.length > 0) {
       console.warn(
-        `Unsyncable token icons (no aave/interface file, no exact CoinGecko symbol match, and no logoURI): ${unsyncable.join(', ')}`
+        `Unsyncable token icons (no aave/interface file, no exact CoinGecko symbol match, and no logoURI): ${unsyncable.join(', ')}`,
       );
     }
 
@@ -357,21 +358,19 @@ async function main() {
     if (syncableStatic.length > 0) {
       if (syncableFromInterface.length > 0) {
         console.error(
-          `Missing ${syncableFromInterface.length} token icon(s) available on aave/interface: ${syncableFromInterface.join(', ')}`
+          `Missing ${syncableFromInterface.length} token icon(s) available on aave/interface: ${syncableFromInterface.join(', ')}`,
         );
       }
       if (syncableFromCoingecko.length > 0) {
         console.error(
-          `Missing ${syncableFromCoingecko.length} token icon(s) available via CoinGecko: ${syncableFromCoingecko.join(', ')}`
+          `Missing ${syncableFromCoingecko.length} token icon(s) available via CoinGecko: ${syncableFromCoingecko.join(', ')}`,
         );
       }
       process.exit(1);
     }
 
     if (syncableFromLogo.length > 0) {
-      console.error(
-        `Missing ${syncableFromLogo.length} logoURI-backed token icon(s): ${syncableFromLogo.join(', ')}`
-      );
+      console.error(`Missing ${syncableFromLogo.length} logoURI-backed token icon(s): ${syncableFromLogo.join(', ')}`);
       process.exit(1);
     }
 
@@ -379,9 +378,7 @@ async function main() {
     return;
   }
 
-  console.log(
-    `Fetching ${missing.length} missing icon(s) (aave/interface → CoinGecko → logoURI)...`
-  );
+  console.log(`Fetching ${missing.length} missing icon(s) (aave/interface → CoinGecko → logoURI)...`);
   const unresolved = [];
   let coingeckoCallIndex = 0;
 
@@ -400,9 +397,7 @@ async function main() {
       const sourceUrl = imageUrl || fallbackLogoUrl;
       if (!sourceUrl) {
         unresolved.push(symbol);
-        console.warn(
-          `  skip ${symbol}: no interface file, no exact CoinGecko symbol match, and no logoURI fallback`
-        );
+        console.warn(`  skip ${symbol}: no interface file, no exact CoinGecko symbol match, and no logoURI fallback`);
         continue;
       }
 

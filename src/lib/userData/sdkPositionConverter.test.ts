@@ -1,17 +1,17 @@
 // @vitest-environment happy-dom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   convertSdkSuppliesToWalletPositions,
   convertSdkBorrowsToWalletPositions,
-} from '@/lib/userData/sdkPositionConverter'
-import { buildReserveMap, buildReserveLookupByChainAndToken } from '@/lib/reserveKey'
-import type { ReserveWithSpread } from '@/types/aave'
+} from '@/lib/userData/sdkPositionConverter';
+import { buildReserveMap, buildReserveLookupByChainAndToken } from '@/lib/reserveKey';
+import type { ReserveWithSpread } from '@/types/aave';
 
-const SPOKE_V3 = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
-const SPOKE_V4 = '0x794a61358d682efdc006d42ba3808ad9c1fa5d07' as `0x${string}`
-const HUB_V4 = '0xccA8a2316A28c583E12c8844d2D4E1f4d8F8d26c9' as `0x${string}`
-const ETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' as `0x${string}`
-const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
+const SPOKE_V3 = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`;
+const SPOKE_V4 = '0x794a61358d682efdc006d42ba3808ad9c1fa5d07' as `0x${string}`;
+const HUB_V4 = '0xccA8a2316A28c583E12c8844d2D4E1f4d8F8d26c9' as `0x${string}`;
+const ETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' as `0x${string}`;
+const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`;
 
 const mockReserves = [
   {
@@ -38,10 +38,10 @@ const mockReserves = [
     tokenPrice: 1,
     decimals: 6,
   },
-] as unknown as ReserveWithSpread[]
+] as unknown as ReserveWithSpread[];
 
-const reserveMap = buildReserveMap(mockReserves)
-const chainTokenLookupMap = buildReserveLookupByChainAndToken(mockReserves)
+const reserveMap = buildReserveMap(mockReserves);
+const chainTokenLookupMap = buildReserveLookupByChainAndToken(mockReserves);
 
 describe('sdkPositionConverter', () => {
   describe('convertSdkSuppliesToWalletPositions', () => {
@@ -60,16 +60,16 @@ describe('sdkPositionConverter', () => {
           },
           isCollateral: true,
         },
-      ]
+      ];
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap)
-      expect(result).toHaveLength(1)
-      expect(result[0].reserveId).toBe(`1:${SPOKE_V3}:${ETH}`)
-      expect(result[0].tokenSymbol).toBe('ETH')
-      expect(result[0].side).toBe('supply')
-      expect(result[0].isOrphan).toBe(false)
-      expect(result[0].amountWad).toBe(1500000000000000000n)
-    })
+      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap);
+      expect(result).toHaveLength(1);
+      expect(result[0].reserveId).toBe(`1:${SPOKE_V3}:${ETH}`);
+      expect(result[0].tokenSymbol).toBe('ETH');
+      expect(result[0].side).toBe('supply');
+      expect(result[0].isOrphan).toBe(false);
+      expect(result[0].amountWad).toBe(1500000000000000000n);
+    });
 
     it('matches V4 with hubAddresses', () => {
       const supplies = [
@@ -87,12 +87,12 @@ describe('sdkPositionConverter', () => {
           },
           isCollateral: false,
         },
-      ]
+      ];
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap)
-      expect(result[0].reserveId).toBe(`1:${SPOKE_V4}:${USDC}:${HUB_V4.toLowerCase()}`)
-      expect(result[0].isOrphan).toBe(false)
-    })
+      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap);
+      expect(result[0].reserveId).toBe(`1:${SPOKE_V4}:${USDC}:${HUB_V4.toLowerCase()}`);
+      expect(result[0].isOrphan).toBe(false);
+    });
 
     it('falls back to chainToken lookup when no spokeAddress', () => {
       const supplies = [
@@ -108,12 +108,12 @@ describe('sdkPositionConverter', () => {
           },
           isCollateral: false,
         },
-      ]
+      ];
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap)
-      expect(result[0].isOrphan).toBe(false)
-      expect(result[0].tokenSymbol).toBe('USDC')
-    })
+      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap);
+      expect(result[0].isOrphan).toBe(false);
+      expect(result[0].tokenSymbol).toBe('USDC');
+    });
 
     it('marks orphan when reserve not found', () => {
       const supplies = [
@@ -132,13 +132,13 @@ describe('sdkPositionConverter', () => {
           },
           isCollateral: false,
         },
-      ]
+      ];
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap)
-      expect(result[0].isOrphan).toBe(true)
-      expect(result[0].tokenSymbol).toBe('UNKNOWN')
-    })
-  })
+      const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap);
+      expect(result[0].isOrphan).toBe(true);
+      expect(result[0].tokenSymbol).toBe('UNKNOWN');
+    });
+  });
 
   describe('convertSdkBorrowsToWalletPositions', () => {
     it('converts a borrow with reserveId match', () => {
@@ -155,16 +155,16 @@ describe('sdkPositionConverter', () => {
             amount: { value: '1000', onChainValue: 1000000000n, decimals: 6 },
           },
         },
-      ]
+      ];
 
-      const result = convertSdkBorrowsToWalletPositions(borrows, reserveMap, chainTokenLookupMap)
-      expect(result).toHaveLength(1)
-      expect(result[0].side).toBe('borrow')
-      expect(result[0].isCollateral).toBe(false)
-      expect(result[0].source).toBe('sdk')
-      expect(result[0].tokenSymbol).toBe('USDC')
-      expect(result[0].isOrphan).toBe(false)
-    })
+      const result = convertSdkBorrowsToWalletPositions(borrows, reserveMap, chainTokenLookupMap);
+      expect(result).toHaveLength(1);
+      expect(result[0].side).toBe('borrow');
+      expect(result[0].isCollateral).toBe(false);
+      expect(result[0].source).toBe('sdk');
+      expect(result[0].tokenSymbol).toBe('USDC');
+      expect(result[0].isOrphan).toBe(false);
+    });
 
     it('marks orphan borrow when not found', () => {
       const borrows = [
@@ -182,10 +182,10 @@ describe('sdkPositionConverter', () => {
             amount: { value: '0', onChainValue: 0n, decimals: 18 },
           },
         },
-      ]
+      ];
 
-      const result = convertSdkBorrowsToWalletPositions(borrows, reserveMap, chainTokenLookupMap)
-      expect(result[0].isOrphan).toBe(true)
-    })
-  })
-})
+      const result = convertSdkBorrowsToWalletPositions(borrows, reserveMap, chainTokenLookupMap);
+      expect(result[0].isOrphan).toBe(true);
+    });
+  });
+});

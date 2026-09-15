@@ -21,9 +21,7 @@ describe('OpenAPI CI workflow guard', () => {
     const checkApiBase = getLiveApiBase(getJobBlock(workflow, 'openapi-check'));
     const syncApiBase = getLiveApiBase(getJobBlock(workflow, 'openapi-sync'));
 
-    expect(checkApiBase).toBe(
-      "${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}",
-    );
+    expect(checkApiBase).toBe("${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}");
     expect(syncApiBase).toBe(checkApiBase);
   });
 });

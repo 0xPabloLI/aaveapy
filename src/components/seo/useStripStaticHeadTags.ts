@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 /**
  * index.html ships sitewide fallback meta tags (description / og:* / twitter:*)

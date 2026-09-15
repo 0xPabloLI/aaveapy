@@ -9,13 +9,11 @@ export const useTokenCategories = () => {
 
   return {
     ...query,
-    data:
-      query.data?.categories
-        ? {
-            stablecoins: query.data.categories.uniqueSymbolsStablecoins,
-            ethRelated: query.data.categories.uniqueSymbolsEth,
-          }
-        : (cachedEntry?.data ?? undefined),
+    data: query.data?.categories
+      ? {
+          stablecoins: query.data.categories.uniqueSymbolsStablecoins,
+          ethRelated: query.data.categories.uniqueSymbolsEth,
+        }
+      : (cachedEntry?.data ?? undefined),
   };
 };
-

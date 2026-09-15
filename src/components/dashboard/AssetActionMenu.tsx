@@ -6,7 +6,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveUrl, buildAaveV4AssetUrl } from '@/lib/aaveLinks';
 import { buildTydroReserveUrl } from '@/lib/tydroLinks';
-import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl, buildSpokeExplorerUrl } from '@/lib/poolExplorerLinks';
+import {
+  buildPoolExplorerUrl,
+  buildTokenExplorerUrl,
+  buildHubExplorerUrl,
+  buildSpokeExplorerUrl,
+} from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getExplorerIconSrc, getExplorerBrand } from '@/lib/explorerIcons';
@@ -114,7 +119,9 @@ export function AssetActionMenu({
   };
 
   const items: MenuItem[] = [
-    aaveUrl ? { key: 'aave', label: isV4 ? 'Open on Aave Pro' : 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
+    aaveUrl
+      ? { key: 'aave', label: isV4 ? 'Open on Aave Pro' : 'Open on Aave', href: aaveUrl, icon: 'external' as const }
+      : null,
     tydroUrl ? { key: 'tydro', label: 'Open on Tydro', href: tydroUrl, icon: 'external' as const } : null,
     isV4 && aaveV4AssetUrl
       ? { key: 'aave-v4-asset', label: 'View asset page', href: aaveV4AssetUrl, icon: 'external' as const }
@@ -140,26 +147,31 @@ export function AssetActionMenu({
   ].filter(Boolean) as MenuItem[];
 
   const renderItem = (item: MenuItem) => {
-    const Icon =
-      item.icon === 'external' ? ExternalLink : item.icon === 'check' ? Check : Copy;
+    const Icon = item.icon === 'external' ? ExternalLink : item.icon === 'check' ? Check : Copy;
     const baseCls = cn(
       'flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 ds-text-13 text-foreground/90',
       'transition-colors hover:bg-muted/70 active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
     );
     const truncatedAddress = `${tokenAddress.slice(0, 6)}…${tokenAddress.slice(-4)}`;
-    const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer' || item.key === 'hub-explorer' || item.key === 'spoke-explorer';
+    const isExplorerItem =
+      item.key === 'token-explorer' ||
+      item.key === 'pool-explorer' ||
+      item.key === 'hub-explorer' ||
+      item.key === 'spoke-explorer';
     const isAaveItem = item.key === 'aave' || item.key === 'aave-v4-asset';
     const protocolIconSrc = isAaveItem
-      ? (isV4 ? '/icons/tokens/aave-pro.svg' : '/icons/tokens/aave.svg')
+      ? isV4
+        ? '/icons/tokens/aave-pro.svg'
+        : '/icons/tokens/aave.svg'
       : item.key === 'tydro'
-        ? (isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg')
+        ? isDark
+          ? '/icons/partners/tydro-white.svg'
+          : '/icons/partners/tydro-black.svg'
         : null;
-    const explorerIconSrc =
-      isExplorerItem && item.href ? getExplorerIconSrc(item.href) : undefined;
+    const explorerIconSrc = isExplorerItem && item.href ? getExplorerIconSrc(item.href) : undefined;
     // `explorerName` is only meaningful when `explorerIconSrc` is set; the
     // `ExplorerIconStack` returns null when the explorer icon is missing.
-    const explorerName =
-      isExplorerItem && item.href ? (getExplorerBrand(item.href) ?? chainName) : chainName;
+    const explorerName = isExplorerItem && item.href ? (getExplorerBrand(item.href) ?? chainName) : chainName;
     const trailing =
       item.key === 'copy' ? (
         <span className="ds-text-11 text-muted-foreground/70 tabular-nums">{truncatedAddress}</span>
@@ -167,10 +179,7 @@ export function AssetActionMenu({
         <img
           src={protocolIconSrc}
           alt={isAaveItem ? (isV4 ? 'Aave Pro' : 'Aave') : 'Tydro'}
-          className={cn(
-            'h-3.5 w-3.5 rounded-full',
-            item.key !== 'tydro' && 'opacity-80',
-          )}
+          className={cn('h-3.5 w-3.5 rounded-full', item.key !== 'tydro' && 'opacity-80')}
           loading="lazy"
         />
       ) : isExplorerItem ? (
@@ -213,10 +222,7 @@ export function AssetActionMenu({
       >
         <span className="flex items-center gap-2">
           <Icon
-            className={cn(
-              'h-3.5 w-3.5',
-              item.icon === 'check' ? 'text-emerald-500' : 'text-muted-foreground/70',
-            )}
+            className={cn('h-3.5 w-3.5', item.icon === 'check' ? 'text-emerald-500' : 'text-muted-foreground/70')}
           />
           <span>{item.label}</span>
         </span>
@@ -330,12 +336,7 @@ export function AssetActionMenu({
           />
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        sideOffset={6}
-        className="w-[220px] p-1"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <PopoverContent align="start" sideOffset={6} className="w-[220px] p-1" onClick={(e) => e.stopPropagation()}>
         <div role="menu" aria-label={ariaLabel} className="flex flex-col">
           {items.map(renderItem)}
         </div>

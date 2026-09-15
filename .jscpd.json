@@ -1,0 +1,6 @@
+{
+  "min-tokens": 60,
+  "threshold": 3,
+  "reporters": ["console"],
+  "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/generated/**"]
+}

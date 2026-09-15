@@ -42,9 +42,7 @@ test.describe('SegmentedToggle — geometry regression', () => {
       const count = await segments.count();
       expect(count, 'vertical toggle should have at least 2 segments').toBeGreaterThanOrEqual(2);
 
-      const boxes = await Promise.all(
-        Array.from({ length: count }, (_, i) => segments.nth(i).boundingBox()),
-      );
+      const boxes = await Promise.all(Array.from({ length: count }, (_, i) => segments.nth(i).boundingBox()));
       for (let i = 1; i < boxes.length; i++) {
         const prev = boxes[i - 1]!;
         const curr = boxes[i]!;
@@ -60,9 +58,7 @@ test.describe('SegmentedToggle — geometry regression', () => {
 
       const activeSegment = verticalToggle.locator('button[aria-checked="true"]');
       await expect(activeSegment).toBeVisible();
-      const activeFontWeight = await activeSegment.evaluate(
-        (el) => getComputedStyle(el).fontWeight,
-      );
+      const activeFontWeight = await activeSegment.evaluate((el) => getComputedStyle(el).fontWeight);
       expect(
         parseInt(activeFontWeight, 10),
         'active segment font-weight should be ≥ 600 (semibold)',
@@ -70,13 +66,8 @@ test.describe('SegmentedToggle — geometry regression', () => {
 
       const indicator = verticalToggle.locator('div[aria-hidden]').first();
       await expect(indicator).toBeVisible();
-      const indicatorRadius = await indicator.evaluate(
-        (el) => getComputedStyle(el).borderRadius,
-      );
-      expect(
-        indicatorRadius,
-        'vertical indicator should use rounded-xl (not fully rounded)',
-      ).not.toBe('9999px');
+      const indicatorRadius = await indicator.evaluate((el) => getComputedStyle(el).borderRadius);
+      expect(indicatorRadius, 'vertical indicator should use rounded-xl (not fully rounded)').not.toBe('9999px');
     });
   });
 
@@ -103,9 +94,7 @@ test.describe('SegmentedToggle — geometry regression', () => {
       const count = await segments.count();
       expect(count, 'horizontal toggle should have at least 2 segments').toBeGreaterThanOrEqual(2);
 
-      const boxes = await Promise.all(
-        Array.from({ length: count }, (_, i) => segments.nth(i).boundingBox()),
-      );
+      const boxes = await Promise.all(Array.from({ length: count }, (_, i) => segments.nth(i).boundingBox()));
       for (let i = 1; i < boxes.length; i++) {
         const prev = boxes[i - 1]!;
         const curr = boxes[i]!;
@@ -121,21 +110,11 @@ test.describe('SegmentedToggle — geometry regression', () => {
 
       const indicator = horizontalToggle.locator('div[aria-hidden]').first();
       await expect(indicator).toBeVisible();
-      const indicatorRadius = await indicator.evaluate(
-        (el) => getComputedStyle(el).borderRadius,
-      );
-      expect(
-        indicatorRadius,
-        'horizontal indicator should use rounded-full (fully round pill)',
-      ).toBe('9999px');
+      const indicatorRadius = await indicator.evaluate((el) => getComputedStyle(el).borderRadius);
+      expect(indicatorRadius, 'horizontal indicator should use rounded-full (fully round pill)').toBe('9999px');
 
-      const trackRadius = await horizontalToggle.evaluate(
-        (el) => getComputedStyle(el).borderRadius,
-      );
-      expect(
-        trackRadius,
-        'horizontal track should use rounded-full',
-      ).toBe('9999px');
+      const trackRadius = await horizontalToggle.evaluate((el) => getComputedStyle(el).borderRadius);
+      expect(trackRadius, 'horizontal track should use rounded-full').toBe('9999px');
     });
 
     test('AprApyToggle (chip size) renders at desktop viewport', async ({ page }, testInfo) => {
@@ -144,19 +123,21 @@ test.describe('SegmentedToggle — geometry regression', () => {
       await page.goto('/');
       await expect(page.getByRole('radiogroup').first()).toBeVisible({ timeout: 30_000 });
 
-      const aprApyGroup = page.locator('[aria-orientation="horizontal"]').filter({
-        has: page.locator('button[role="radio"]', { hasText: 'APR' }),
-      }).first();
+      const aprApyGroup = page
+        .locator('[aria-orientation="horizontal"]')
+        .filter({
+          has: page.locator('button[role="radio"]', { hasText: 'APR' }),
+        })
+        .first();
       await expect(aprApyGroup).toBeVisible();
 
       const trackBox = await aprApyGroup.boundingBox();
       expect(trackBox, 'AprApyToggle track must render').not.toBeNull();
       if (!trackBox) return;
 
-      expect(
-        trackBox.height,
-        'chip toggle height should be ≤ 28px (smaller than default 2rem)',
-      ).toBeLessThanOrEqual(28);
+      expect(trackBox.height, 'chip toggle height should be ≤ 28px (smaller than default 2rem)').toBeLessThanOrEqual(
+        28,
+      );
     });
 
     test('AprApyToggle (chip size) renders at mobile viewport', async ({ page }, testInfo) => {
@@ -193,14 +174,16 @@ test.describe('SegmentedToggle — geometry regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await expect.poll(
-        async () => {
-          const box = await indicator.boundingBox();
-          if (!box || !indicatorBoxBefore) return 0;
-          return Math.abs(box.x - indicatorBoxBefore.x);
-        },
-        { timeout: 3_000, message: 'indicator to slide after click' },
-      ).toBeGreaterThan(1);
+      await expect
+        .poll(
+          async () => {
+            const box = await indicator.boundingBox();
+            if (!box || !indicatorBoxBefore) return 0;
+            return Math.abs(box.x - indicatorBoxBefore.x);
+          },
+          { timeout: 3_000, message: 'indicator to slide after click' },
+        )
+        .toBeGreaterThan(1);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();
@@ -227,14 +210,16 @@ test.describe('SegmentedToggle — geometry regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      await expect.poll(
-        async () => {
-          const box = await indicator.boundingBox();
-          if (!box || !indicatorBoxBefore) return 0;
-          return Math.abs(box.y - indicatorBoxBefore.y);
-        },
-        { timeout: 3_000, message: 'indicator to slide vertically after click' },
-      ).toBeGreaterThan(1);
+      await expect
+        .poll(
+          async () => {
+            const box = await indicator.boundingBox();
+            if (!box || !indicatorBoxBefore) return 0;
+            return Math.abs(box.y - indicatorBoxBefore.y);
+          },
+          { timeout: 3_000, message: 'indicator to slide vertically after click' },
+        )
+        .toBeGreaterThan(1);
       const indicatorBoxAfter = await indicator.boundingBox();
 
       expect(indicatorBoxBefore, 'indicator must exist before click').not.toBeNull();

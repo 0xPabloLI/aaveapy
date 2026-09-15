@@ -11,14 +11,14 @@ import type { ReserveWithSpread } from '@/types/aave';
 const baseRateInput: RateCalcInput = {
   decimals: 18,
   deficit: '0',
-  liquidity: '1000000000000000000000000',  // 1M tokens (18 decimals)
-  borrowed: '500000000000000000000000',    // 500k tokens
+  liquidity: '1000000000000000000000000', // 1M tokens (18 decimals)
+  borrowed: '500000000000000000000000', // 500k tokens
   /* Rate params are now percent numbers (not RAY strings) */
-  protocolFee: 10,         // 10%
-  slopeBelowOptimal: 4,     // 4%
-  slopeAboveOptimal: 60,    // 60%
+  protocolFee: 10, // 10%
+  slopeBelowOptimal: 4, // 4%
+  slopeAboveOptimal: 60, // 60%
   baseBorrowRate: 0, // 0%
-  optimalUtilization: 80,      // 80%
+  optimalUtilization: 80, // 80%
 };
 
 describe('simulateNativeRatesAfterSupply', () => {
@@ -144,8 +144,8 @@ describe('borrowed precision (replaces totalScaledVariableDebt × variableBorrow
     const usdcInput: RateCalcInput = {
       ...baseRateInput,
       decimals: 6,
-      liquidity: '1000000000000',  // 1M USDC (6 decimals)
-      borrowed: '500000000000',    // 500k USDC
+      liquidity: '1000000000000', // 1M USDC (6 decimals)
+      borrowed: '500000000000', // 500k USDC
     };
     const result = simulateNativeRatesAfterActions(usdcInput, { supplyAmount: '0', borrowAmount: '0' });
     expect(result.utilizationRatePercent).toBeCloseTo(33.33, 1);
@@ -155,8 +155,8 @@ describe('borrowed precision (replaces totalScaledVariableDebt × variableBorrow
     // ~4.5M tokens with 18 decimals
     const largeDebtInput: RateCalcInput = {
       ...baseRateInput,
-      liquidity: '5000000000000000000000000',  // 5M
-      borrowed: '4512942554869044630386380',   // ~4.51M (realistic on-chain value)
+      liquidity: '5000000000000000000000000', // 5M
+      borrowed: '4512942554869044630386380', // ~4.51M (realistic on-chain value)
     };
     const result = simulateNativeRatesAfterActions(largeDebtInput, { supplyAmount: '0', borrowAmount: '0' });
     // utilization ≈ 4.51M / (5M + 4.51M) ≈ 47.4%
@@ -190,7 +190,7 @@ describe('deficit impact on rates', () => {
   it('zero deficit has no impact on rates', () => {
     const result = simulateNativeRatesAfterActions(
       { ...baseRateInput, deficit: '0' },
-      { supplyAmount: '0', borrowAmount: '0' }
+      { supplyAmount: '0', borrowAmount: '0' },
     );
     const baseline = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
 
@@ -216,7 +216,7 @@ describe('baseBorrowRate impact on rates', () => {
   it('zero baseBorrowRate is the default behavior', () => {
     const result = simulateNativeRatesAfterActions(
       { ...baseRateInput, baseBorrowRate: 0 },
-      { supplyAmount: '0', borrowAmount: '0' }
+      { supplyAmount: '0', borrowAmount: '0' },
     );
     const baseline = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
 
@@ -263,9 +263,14 @@ describe('hasRateCalcFields', () => {
   });
 
   const requiredFields = [
-    'liquidity', 'borrowed', 'deficit',
-    'protocolFee', 'slopeBelowOptimal', 'slopeAboveOptimal',
-    'baseBorrowRate', 'optimalUtilization',
+    'liquidity',
+    'borrowed',
+    'deficit',
+    'protocolFee',
+    'slopeBelowOptimal',
+    'slopeAboveOptimal',
+    'baseBorrowRate',
+    'optimalUtilization',
   ] as const;
 
   for (const field of requiredFields) {

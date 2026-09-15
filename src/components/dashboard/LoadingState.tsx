@@ -37,7 +37,9 @@ function HeaderSkeleton({ isMobile }: { isMobile: boolean }) {
           </div>
           <Skeleton variant="subtle" className="h-3 md:h-4 w-44 md:w-64 rounded-md" />
         </div>
-        {isMobile && <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg shrink-0" />}
+        {isMobile && (
+          <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg shrink-0" />
+        )}
       </div>
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
         <Skeleton variant="subtle" className="w-4 h-4 rounded-md" />
@@ -85,9 +87,15 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
         >
           {/* Category header: icon + title + subtitle */}
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] md:mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] md:w-[var(--ds-button-sm-h)] md:h-[var(--ds-button-sm-h)] rounded-lg" />
+            <Skeleton
+              variant="gradient"
+              className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] md:w-[var(--ds-button-sm-h)] md:h-[var(--ds-button-sm-h)] rounded-lg"
+            />
             <div className="space-y-1 flex-1 min-w-0">
-              <Skeleton variant="gradient" className={`h-4 md:h-5 ${cardIndex % 2 === 0 ? 'w-16 md:w-24' : 'w-20 md:w-28'}`} />
+              <Skeleton
+                variant="gradient"
+                className={`h-4 md:h-5 ${cardIndex % 2 === 0 ? 'w-16 md:w-24' : 'w-20 md:w-28'}`}
+              />
               <Skeleton variant="subtle" className="h-2.5 md:h-3 w-20 md:w-32 rounded-md" />
             </div>
           </div>
@@ -98,14 +106,29 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
                 key={i}
                 className="grid grid-cols-[auto,minmax(0,1fr),auto] grid-rows-[auto,auto] items-center gap-x-[var(--ds-space-1-5)] md:gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-0-5)] px-[var(--ds-space-2)] md:px-[var(--ds-space-3)] h-12 md:h-14 rounded-lg border border-border/70 bg-card/45 overflow-hidden"
               >
-                <Skeleton variant="gradient" className="w-7 h-7 md:w-[var(--ds-control-h)] md:h-[var(--ds-control-h)] rounded-full border-transparent" />
-                <Skeleton variant={isMobile ? 'subtle' : 'default'} className={`h-3.5 md:h-4 rounded-md ${i % 2 === 0 ? 'w-8 md:w-14' : 'w-10 md:w-16'}`} />
-                <Skeleton variant="gradient" className={`h-4 md:h-5 justify-self-end rounded-md ${i % 3 === 0 ? 'w-10 md:w-16' : 'w-12 md:w-[4.5rem]'}`} />
+                <Skeleton
+                  variant="gradient"
+                  className="w-7 h-7 md:w-[var(--ds-control-h)] md:h-[var(--ds-control-h)] rounded-full border-transparent"
+                />
+                <Skeleton
+                  variant={isMobile ? 'subtle' : 'default'}
+                  className={`h-3.5 md:h-4 rounded-md ${i % 2 === 0 ? 'w-8 md:w-14' : 'w-10 md:w-16'}`}
+                />
+                <Skeleton
+                  variant="gradient"
+                  className={`h-4 md:h-5 justify-self-end rounded-md ${i % 3 === 0 ? 'w-10 md:w-16' : 'w-12 md:w-[4.5rem]'}`}
+                />
                 <div className="flex items-center gap-[var(--ds-space-0-5)] md:gap-[var(--ds-space-1)] min-w-0">
                   <Skeleton variant="subtle" className="w-3.5 h-3.5 rounded-full shrink-0 border-transparent" />
-                  <Skeleton variant="subtle" className={`h-2.5 rounded-md ${i % 2 === 0 ? 'w-12 md:w-20' : 'w-10 md:w-[4.5rem]'}`} />
+                  <Skeleton
+                    variant="subtle"
+                    className={`h-2.5 rounded-md ${i % 2 === 0 ? 'w-12 md:w-20' : 'w-10 md:w-[4.5rem]'}`}
+                  />
                 </div>
-                <Skeleton variant="subtle" className={`h-2.5 md:h-3 justify-self-end rounded-md ${i % 2 === 0 ? 'w-10 md:w-20' : 'w-8 md:w-16'}`} />
+                <Skeleton
+                  variant="subtle"
+                  className={`h-2.5 md:h-3 justify-self-end rounded-md ${i % 2 === 0 ? 'w-10 md:w-20' : 'w-8 md:w-16'}`}
+                />
               </div>
             ))}
           </div>
@@ -255,12 +278,7 @@ function MobileCardSkeleton() {
 /* ─── Mobile reserves section skeleton ─── */
 function MobileReservesSkeleton() {
   return (
-    <motion.div
-      className="space-y-3"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
       <ScenarioControlsSkeleton isMobile />
       {/* Sort header */}
       <div className="flex justify-between items-center px-[var(--ds-space-1)]">

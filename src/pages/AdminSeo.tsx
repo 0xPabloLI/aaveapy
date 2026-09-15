@@ -1,15 +1,16 @@
-import { useMemo, useState } from "react";
-import { useGscRows, useSemrushRows, useSemrushDeleteMutation } from "@/hooks/useSeoData";
-import { SEO_COUNTRIES, countryFromAlpha3, countryFromSemrush } from "@/lib/seoCountries";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
-import { Helmet } from "react-helmet-async";
-import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
-import { formatPercent, formatReserveSizeToken, formatUsd } from "@/lib/formatters";
+import { useMemo, useState } from 'react';
+import { useGscRows, useSemrushRows, useSemrushDeleteMutation } from '@/hooks/useSeoData';
+import { SEO_COUNTRIES, countryFromAlpha3, countryFromSemrush } from '@/lib/seoCountries';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Trash2, RefreshCw, AlertCircle, LogOut } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import SeoDashboardGate from '@/components/admin/SeoDashboardGate';
+import LocalizedPagesPanel from '@/components/admin/LocalizedPagesPanel';
+import { formatPercent, formatReserveSizeToken, formatUsd } from '@/lib/formatters';
 
-type RangePreset = "7d" | "28d" | "90d";
+type RangePreset = '7d' | '28d' | '90d';
 
 function isoDaysAgo(days: number): string {
   const d = new Date();
@@ -20,7 +21,7 @@ function isoDaysAgo(days: number): string {
 function presetRange(preset: RangePreset): { from: string; to: string } {
   // GSC has ~2-3 day lag; use day-3 as "to".
   const to = isoDaysAgo(3);
-  const map: Record<RangePreset, number> = { "7d": 7, "28d": 28, "90d": 90 };
+  const map: Record<RangePreset, number> = { '7d': 7, '28d': 28, '90d': 90 };
   const from = isoDaysAgo(3 + map[preset]);
   return { from, to };
 }
@@ -30,28 +31,26 @@ function fmtPct(n: number) {
 }
 
 function fmtPos(n: number | null) {
-  if (n == null) return "—";
+  if (n == null) return '—';
   return n.toFixed(1);
 }
 
 function fmtNum(n: number | null | undefined) {
-  if (n == null) return "—";
+  if (n == null) return '—';
   return formatReserveSizeToken(n);
 }
 
 function fmtUsd(n: number | null | undefined) {
-  if (n == null) return "—";
+  if (n == null) return '—';
   return formatUsd(n);
 }
 
 const EMPTY_ROWS: never[] = [];
 
 const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
-  const [preset, setPreset] = useState<RangePreset>("28d");
-  const [selectedCountries, setSelectedCountries] = useState<Set<string>>(
-    new Set(SEO_COUNTRIES.map((c) => c.alpha3)),
-  );
-  const [keywordFilter, setKeywordFilter] = useState("");
+  const [preset, setPreset] = useState<RangePreset>('28d');
+  const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set(SEO_COUNTRIES.map((c) => c.alpha3)));
+  const [keywordFilter, setKeywordFilter] = useState('');
 
   const range = useMemo(() => presetRange(preset), [preset]);
   const countryAlpha3 = useMemo(() => Array.from(selectedCountries), [selectedCountries]);
@@ -67,7 +66,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
     from: range.from,
     to: range.to,
     country: countryAlpha3.length > 0 ? countryAlpha3 : undefined,
-    groupBy: ["country", "page", "query"],
+    groupBy: ['country', 'page', 'query'],
   });
 
   const semrushQuery = useSemrushRows({
@@ -106,10 +105,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
         clicks: v.clicks,
         impressions: v.impressions,
         ctr: v.impressions > 0 ? v.clicks / v.impressions : 0,
-        avgPosition:
-          v.positions.length > 0
-            ? v.positions.reduce((a, b) => a + b, 0) / v.positions.length
-            : null,
+        avgPosition: v.positions.length > 0 ? v.positions.reduce((a, b) => a + b, 0) / v.positions.length : null,
       }))
       .sort((a, b) => b.clicks - a.clicks);
   }, [gscRows]);
@@ -139,14 +135,14 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
           {/* Filter bar */}
           <div className="bg-card border border-border/60 rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-1.5">
-              {(["7d", "28d", "90d"] as const).map((p) => (
+              {(['7d', '28d', '90d'] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPreset(p)}
                   className={`ds-text-12 px-2.5 py-1 rounded-md transition ${
                     preset === p
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/40 text-muted-foreground hover:ring-2 hover:ring-border"
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/40 text-muted-foreground hover:ring-2 hover:ring-border'
                   }`}
                 >
                   {p}
@@ -168,8 +164,8 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
                     onClick={() => toggleCountry(c.alpha3)}
                     className={`ds-text-12 px-2 py-1 rounded-md transition inline-flex items-center gap-1 ${
                       active
-                        ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
-                        : "bg-muted/30 text-muted-foreground hover:ring-2 hover:ring-border"
+                        ? 'bg-primary/10 text-foreground ring-1 ring-primary/40'
+                        : 'bg-muted/30 text-muted-foreground hover:ring-2 hover:ring-border'
                     }`}
                   >
                     <span>{c.flag}</span>
@@ -202,16 +198,15 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
             </Button>
           </div>
 
+          {/* Localized page scoreboard */}
+          {gscQuery.isLoading ? <Skeleton className="h-40 w-full mb-8" /> : <LocalizedPagesPanel rows={gscRows} />}
+
           {/* GSC section */}
           <section className="mb-8">
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="ds-text-16 font-semibold">Google Search Console</h2>
               <span className="ds-text-11 text-muted-foreground tabular-nums">
-                {gscQuery.data
-                  ? `${gscQuery.data.total.toLocaleString()} rows`
-                  : gscQuery.isLoading
-                    ? "loading…"
-                    : ""}
+                {gscQuery.data ? `${gscQuery.data.total.toLocaleString()} rows` : gscQuery.isLoading ? 'loading…' : ''}
               </span>
             </div>
 
@@ -226,20 +221,14 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
                   {countryAgg.map((row) => {
                     const c = countryFromAlpha3(row.country);
                     return (
-                      <div
-                        key={row.country}
-                        className="bg-card border border-border/60 rounded-xl p-3"
-                      >
+                      <div key={row.country} className="bg-card border border-border/60 rounded-xl p-3">
                         <div className="ds-text-12 text-muted-foreground flex items-center gap-1 mb-1">
-                          <span>{c?.flag ?? "🏳️"}</span>
+                          <span>{c?.flag ?? '🏳️'}</span>
                           <span>{c?.label ?? row.country.toUpperCase()}</span>
                         </div>
-                        <div className="ds-text-20 font-semibold tabular-nums">
-                          {row.clicks.toLocaleString()}
-                        </div>
+                        <div className="ds-text-20 font-semibold tabular-nums">{row.clicks.toLocaleString()}</div>
                         <div className="ds-text-11 text-muted-foreground tabular-nums">
-                          {row.impressions.toLocaleString()} impr · {fmtPct(row.ctr)} ·
-                          pos {fmtPos(row.avgPosition)}
+                          {row.impressions.toLocaleString()} impr · {fmtPct(row.ctr)} · pos {fmtPos(row.avgPosition)}
                         </div>
                       </div>
                     );
@@ -280,26 +269,22 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
                               >
                                 <td className="px-3 py-2">
                                   <span className="inline-flex items-center gap-1">
-                                    <span>{c?.flag ?? "🏳️"}</span>
+                                    <span>{c?.flag ?? '🏳️'}</span>
                                     <span className="ds-text-12">{c?.label ?? row.country}</span>
                                   </span>
                                 </td>
                                 <td className="px-3 py-2 ds-text-12 text-muted-foreground truncate max-w-[200px]">
-                                  {row.page.replace(/^https?:\/\/[^/]+/, "")}
+                                  {row.page.replace(/^https?:\/\/[^/]+/, '')}
                                 </td>
-                                <td className="px-3 py-2">{row.query || <em className="text-muted-foreground">(no query)</em>}</td>
-                                <td className="px-3 py-2 text-right tabular-nums">
-                                  {row.clicks.toLocaleString()}
+                                <td className="px-3 py-2">
+                                  {row.query || <em className="text-muted-foreground">(no query)</em>}
                                 </td>
+                                <td className="px-3 py-2 text-right tabular-nums">{row.clicks.toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                                   {row.impressions.toLocaleString()}
                                 </td>
-                                <td className="px-3 py-2 text-right tabular-nums">
-                                  {fmtPct(row.ctr)}
-                                </td>
-                                <td className="px-3 py-2 text-right tabular-nums">
-                                  {fmtPos(row.position)}
-                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums">{fmtPct(row.ctr)}</td>
+                                <td className="px-3 py-2 text-right tabular-nums">{fmtPos(row.position)}</td>
                               </tr>
                             );
                           })}
@@ -328,7 +313,7 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="ds-text-16 font-semibold">Semrush seed snapshots</h2>
               <span className="ds-text-11 text-muted-foreground tabular-nums">
-                {semrushQuery.data ? `${semrushRows.length} rows` : ""}
+                {semrushQuery.data ? `${semrushRows.length} rows` : ''}
               </span>
             </div>
 
@@ -356,32 +341,23 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
                       {semrushRows.map((row) => {
                         const c = countryFromSemrush(row.country);
                         return (
-                          <tr
-                            key={row.id}
-                            className="border-t border-border/40 hover:bg-muted/20"
-                          >
+                          <tr key={row.id} className="border-t border-border/40 hover:bg-muted/20">
                             <td className="px-3 py-2 ds-text-12 text-muted-foreground tabular-nums">
                               {row.snapshot_date}
                             </td>
                             <td className="px-3 py-2">
                               <span className="inline-flex items-center gap-1">
-                                <span>{c?.flag ?? "🏳️"}</span>
+                                <span>{c?.flag ?? '🏳️'}</span>
                                 <span className="ds-text-12">{c?.label ?? row.country.toUpperCase()}</span>
                               </span>
                             </td>
                             <td className="px-3 py-2">{row.keyword}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {fmtNum(row.volume)}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {fmtPos(row.position)}
-                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(row.volume)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{fmtPos(row.position)}</td>
                             <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                               {fmtUsd(row.cpc_usd)}
                             </td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {fmtNum(row.difficulty)}
-                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(row.difficulty)}</td>
                             <td className="px-3 py-2 text-right">
                               <button
                                 onClick={() => {
@@ -402,11 +378,9 @@ const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
                       {semrushRows.length === 0 && (
                         <tr>
                           <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                            No Semrush rows. Seed via{" "}
-                            <code className="ds-text-11 bg-muted/40 px-1 rounded">
-                              POST /api/seo/semrush
-                            </code>{" "}
-                            (see m3 spec §6.2).
+                            No Semrush rows. Seed via{' '}
+                            <code className="ds-text-11 bg-muted/40 px-1 rounded">POST /api/seo/semrush</code> (see m3
+                            spec §6.2).
                           </td>
                         </tr>
                       )}
@@ -429,14 +403,11 @@ function ErrorCard({ error }: { error: unknown }) {
     <div className="bg-card border border-destructive/40 rounded-xl p-4 flex items-start gap-3">
       <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
       <div className="ds-text-13">
-        <div className="font-medium text-destructive">
-          Request failed{status ? ` (${status})` : ""}
-        </div>
+        <div className="font-medium text-destructive">Request failed{status ? ` (${status})` : ''}</div>
         <div className="ds-text-12 text-muted-foreground mt-0.5">{msg}</div>
         {status === 503 && (
           <div className="ds-text-11 text-muted-foreground mt-2">
-            Backend likely hasn't deployed M3 yet, or <code>SEO_ADMIN_TOKEN</code> isn't
-            configured on Railway.
+            Backend likely hasn't deployed M3 yet, or <code>SEO_ADMIN_TOKEN</code> isn't configured on Railway.
           </div>
         )}
       </div>
@@ -444,10 +415,6 @@ function ErrorCard({ error }: { error: unknown }) {
   );
 }
 
-const AdminSeo = () => (
-  <SeoDashboardGate>
-    {(signOut) => <AdminSeoInner onSignOut={signOut} />}
-  </SeoDashboardGate>
-);
+const AdminSeo = () => <SeoDashboardGate>{(signOut) => <AdminSeoInner onSignOut={signOut} />}</SeoDashboardGate>;
 
 export default AdminSeo;

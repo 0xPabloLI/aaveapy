@@ -3,6 +3,27 @@ import { LocalizedRatesPage, type RatesPageContent } from '@/components/seo/Loca
 const content: RatesPageContent = {
   path: '/fr/taux-aave-apy',
   lang: 'fr',
+  languageSwitcherLabel: 'Autres langues',
+  calculator: {
+    id: 'calculatrice',
+    h2: 'Calculatrice de rendement en euros',
+    intro:
+      "Saisissez un montant en euros et choisissez une réserve stablecoin : le calculateur applique le taux de dépôt en direct d'Aave V3 et affiche le gain brut par an, par mois et par jour.",
+    numberLocale: 'fr-FR',
+    currency: 'EUR',
+    defaultAmount: 10000,
+    amountLabel: 'Montant déposé (€)',
+    reserveLabel: 'Réserve (taux en direct)',
+    apyLabel: 'APY de dépôt',
+    perYear: 'Par an',
+    perMonth: 'Par mois',
+    perDay: 'Par jour',
+    usdEquivalentLabel: 'Soit en dollars :',
+    loading: 'Chargement des taux en direct…',
+    error: 'Taux indisponibles pour le moment. Réessayez dans quelques instants.',
+    disclaimer:
+      "Estimation à taux constant : l'APY d'Aave varie à chaque bloc. Le rendement est libellé en dollars, donc le change EUR/USD, les frais de réseau et la fiscalité ne sont pas inclus. Ceci n'est pas un conseil en investissement.",
+  },
   ogLocale: 'fr_FR',
   title: 'Taux et APY Aave V3 — rendement DeFi en temps réel',
   description:
@@ -21,7 +42,7 @@ const content: RatesPageContent = {
       id: 'fonctionnement',
       h2: 'Comment fonctionne le protocole Aave',
       paragraphs: [
-        "Aave est un marché de liquidité non custodial : personne ne détient vos fonds à votre place et toutes les règles vivent dans des contrats intelligents publics. Qui dépose un actif reçoit un aToken qui accumule les intérêts directement dans son solde. Qui emprunte doit déposer une garantie supérieure à sa dette (position surcollatéralisée) et paie des intérêts au pool.",
+        'Aave est un marché de liquidité non custodial : personne ne détient vos fonds à votre place et toutes les règles vivent dans des contrats intelligents publics. Qui dépose un actif reçoit un aToken qui accumule les intérêts directement dans son solde. Qui emprunte doit déposer une garantie supérieure à sa dette (position surcollatéralisée) et paie des intérêts au pool.',
         "Le taux n'est fixé par personne : il découle d'une courbe qui dépend du taux d'utilisation du pool, c'est-à-dire la part des dépôts effectivement empruntée. Près du point optimal, les taux montent lentement ; au-delà, ils grimpent fortement pour attirer de nouveaux dépôts et protéger la liquidité de retrait.",
         "Si la garantie d'un emprunteur passe sous le seuil (health factor inférieur à 1), la position devient liquidable : une partie de la dette est remboursée par un tiers en échange d'un bonus sur la garantie.",
       ],
@@ -42,6 +63,23 @@ const content: RatesPageContent = {
         "Côté emprunt, si vous déposez 10 000 € d'ETH en garantie et empruntez 4 000 € d'USDC à 5,5 % d'APY, le coût annuel est d'environ 220 €. Votre health factor reste confortable tant que l'ETH ne chute pas brutalement ; en dessous de 1, la position devient liquidable. Les frais de gaz sur un L2 comme Base restent de l'ordre de quelques centimes par transaction, donc négligeables face à ces montants — ce ne serait pas le cas sur le mainnet Ethereum pour un petit dépôt.",
       ],
     },
+    {
+      id: 'rendement-defi',
+      h2: 'DeFi rendement : où trouver le meilleur rendement stablecoin',
+      paragraphs: [
+        "Quand on parle de rendement DeFi, on compare en réalité trois choses différentes : le taux de base payé par les emprunteurs, les incitations distribuées en tokens, et le risque propre à chaque réserve. Sur Aave, seul le premier est garanti par la courbe du protocole ; les deux autres varient selon les programmes en cours et la qualité de l'actif déposé.",
+        "Pour un rendement stablecoin, la comparaison utile se fait réserve par réserve : USDC sur Base, USDT sur Arbitrum, USDC sur Ethereum n'ont ni la même utilisation, ni la même profondeur, ni les mêmes incitations. Un écart de 2 points d'APY entre deux réseaux est courant et se referme en quelques heures dès que la liquidité se déplace.",
+        "Notre règle de lecture : partez de l'APY effectif (base + incitations), vérifiez la taille du pool pour savoir si votre montant déplacera la courbe, puis regardez si l'incitation a une date de fin. Un rendement à 9 % qui s'arrête dans dix jours ne vaut pas un rendement à 5 % stable sur six mois.",
+      ],
+    },
+    {
+      id: 'aave-lending-v3',
+      h2: 'Aave lending et Aave V3 : prêter sans intermédiaire',
+      paragraphs: [
+        "Le lending sur Aave V3 ne ressemble pas à un compte à terme : il n'y a ni durée bloquée, ni contrepartie unique. Vous déposez, vous recevez un aToken, vous retirez quand vous voulez tant que le pool dispose de liquidité disponible. C'est cette liquidité disponible — et non un engagement contractuel — qui conditionne le retrait immédiat.",
+        "Les risques à connaître restent le risque de contrat intelligent, le risque de dépeg du stablecoin déposé, et le risque d'illiquidité temporaire quand l'utilisation approche des 100 %. Le tableau de bord affiche justement l'utilisation de chaque réserve pour repérer ces situations avant de déposer.",
+      ],
+    },
   ],
   drivers: {
     id: 'facteurs',
@@ -57,11 +95,11 @@ const content: RatesPageContent = {
       },
       {
         title: 'Réseau et liquidité locale',
-        body: "La même réserve dispose de pools indépendants par réseau. Sur les réseaux plus petits, la liquidité est faible : un gros dépôt déplace beaucoup plus le taux.",
+        body: 'La même réserve dispose de pools indépendants par réseau. Sur les réseaux plus petits, la liquidité est faible : un gros dépôt déplace beaucoup plus le taux.',
       },
       {
         title: 'Incitations externes',
-        body: "Merit, Merkl et Brevis ajoutent un APR par-dessus le taux de base. Un pool au taux modeste peut offrir le meilleur rendement effectif du marché grâce aux incitations.",
+        body: 'Merit, Merkl et Brevis ajoutent un APR par-dessus le taux de base. Un pool au taux modeste peut offrir le meilleur rendement effectif du marché grâce aux incitations.',
       },
     ],
   },
@@ -70,9 +108,9 @@ const content: RatesPageContent = {
     h2: 'Comment comparer les taux sur AaveAPY',
     steps: [
       "Ouvrez le tableau de bord en direct et triez par colonne APY de dépôt ou d'emprunt.",
-      "Utilisez le sélecteur APR/APY pour aligner la comparaison sur la façon dont chaque programme publie ses récompenses.",
+      'Utilisez le sélecteur APR/APY pour aligner la comparaison sur la façon dont chaque programme publie ses récompenses.',
       "Filtrez par réseau via les pages de blockchain, ou par actif via les pages d'actif.",
-      "Avant de valider, utilisez le simulateur : saisissez le montant à déposer ou à emprunter et voyez de combien votre propre position déplace la courbe.",
+      'Avant de valider, utilisez le simulateur : saisissez le montant à déposer ou à emprunter et voyez de combien votre propre position déplace la courbe.',
     ],
   },
   faq: {
@@ -107,7 +145,7 @@ const content: RatesPageContent = {
         a: "Non. La consultation est en lecture seule, sans portefeuille ni inscription. Vous ne connectez un portefeuille que dans l'application officielle Aave, au moment de déposer ou d'emprunter.",
       },
       {
-        q: "Aave est-il disponible en France ?",
+        q: 'Aave est-il disponible en France ?',
         a: "Aave est un protocole décentralisé accessible depuis n'importe quel portefeuille compatible EVM. Les taux affichés ici sont identiques pour tous les utilisateurs : ils dépendent du pool et du réseau, pas du pays. Vérifiez toujours votre cadre fiscal et réglementaire local avant d'investir.",
       },
       {
@@ -125,6 +163,18 @@ const content: RatesPageContent = {
       {
         q: 'Quel réseau choisir depuis la France pour de petits montants ?',
         a: "Pour quelques milliers d'euros, les L2 (Base, Arbitrum, Optimism, Polygon) sont nettement plus adaptés : les frais de transaction s'y comptent en centimes, contre parfois plusieurs euros sur le mainnet Ethereum. Le mainnet garde l'avantage de la profondeur de liquidité, utile seulement pour des positions importantes.",
+      },
+      {
+        q: 'Quel est le meilleur rendement stablecoin en DeFi aujourd’hui ?',
+        a: "Il n'y a pas de réponse figée : le classement change plusieurs fois par jour. En pratique, les réserves USDC et USDT sur les L2 offrent le meilleur compromis rendement / liquidité, et les incitations Merit ou Merkl font souvent la différence finale. Triez le tableau de bord par APY effectif et vérifiez la date de fin des programmes avant de vous décider.",
+      },
+      {
+        q: 'Le rendement DeFi affiché est-il garanti ?',
+        a: "Non. Le taux de base bouge à chaque bloc en fonction de l'utilisation du pool, et les incitations peuvent être réduites ou arrêtées par les programmes qui les financent. Les chiffres affichés sont une photo de l'instant, pas un rendement contractuel.",
+      },
+      {
+        q: 'Aave V3 est-il différent d’Aave V2 pour un prêteur ?',
+        a: "Oui, sur trois points concrets : la V3 sépare les marchés par réseau avec des paramètres propres, elle ajoute des plafonds de dépôt et d'emprunt par réserve, et elle introduit l'E-Mode et l'isolation mode. Pour un prêteur, cela signifie surtout que le même actif peut afficher des taux très différents selon le réseau choisi.",
       },
     ],
   },

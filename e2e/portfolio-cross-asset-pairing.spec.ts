@@ -110,10 +110,7 @@ async function discoverCrossAssetScenarios(): Promise<CrossAssetScenario[]> {
 
           scenarios.push({
             sourceSymbol: r.tokenSymbol as string,
-            sourceMarketLabel: getMarketChipLabel(
-              r.marketName as string,
-              r.chainName as string,
-            ),
+            sourceMarketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
             sourceReserveId: r.reserveId as string,
             sourceSide: side,
             pairedSymbol: pairedReserve.tokenSymbol as string,
@@ -147,11 +144,7 @@ const hasScenarios = scenarios.length > 0;
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossAssetPairingScenario(
-  page: Page,
-  s: CrossAssetScenario,
-  isMobile: boolean,
-) {
+async function runCrossAssetPairingScenario(page: Page, s: CrossAssetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
@@ -167,11 +160,12 @@ async function runCrossAssetPairingScenario(
   }
 
   // Set source position
-  const fillSourcePosition = s.sourceSide === 'borrow'
-    ? (isMobile
+  const fillSourcePosition =
+    s.sourceSide === 'borrow'
+      ? isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.sourceReserveId, s.sourceSymbol, amount)
-        : (amount: string) => fillBorrowAmountDesktop(page, s.sourceSymbol, amount))
-    : (amount: string) => fillSupplyAmount(page, s.sourceSymbol, amount);
+        : (amount: string) => fillBorrowAmountDesktop(page, s.sourceSymbol, amount)
+      : (amount: string) => fillSupplyAmount(page, s.sourceSymbol, amount);
 
   // Use $1000 as source position
   await fillSourcePosition('1000');
@@ -191,11 +185,12 @@ async function runCrossAssetPairingScenario(
     await fillSupplyAmount(page, s.pairedSymbol, '100000');
   }
 
-  const fillPairedPosition = s.pairedSide === 'borrow'
-    ? (isMobile
+  const fillPairedPosition =
+    s.pairedSide === 'borrow'
+      ? isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.pairedReserveId, s.pairedSymbol, amount)
-        : (amount: string) => fillBorrowAmountDesktop(page, s.pairedSymbol, amount))
-    : (amount: string) => fillSupplyAmount(page, s.pairedSymbol, amount);
+        : (amount: string) => fillBorrowAmountDesktop(page, s.pairedSymbol, amount)
+      : (amount: string) => fillSupplyAmount(page, s.pairedSymbol, amount);
 
   // Step 3: Add small paired position ($500)
   // effective = min(1000, 500 × discountFactor)
@@ -204,10 +199,7 @@ async function runCrossAssetPairingScenario(
   const halfPairedAfter = await readIncentiveAfter(page, s.sourceReserveId, s.sourceSide, isMobile);
 
   // Incentive should be higher than baseline (0 or low) when paired position is added
-  expect(
-    halfPairedAfter,
-    'Incentive should increase when paired position is added',
-  ).toBeGreaterThan(baselineAfter);
+  expect(halfPairedAfter, 'Incentive should increase when paired position is added').toBeGreaterThan(baselineAfter);
 
   // Step 4: Increase paired position ($2000) — now source ($1000) is the binding constraint
   // effective = min(1000, 2000 × discountFactor) = 1000 (if discountFactor >= 0.5)
@@ -215,10 +207,9 @@ async function runCrossAssetPairingScenario(
   const fullPairedAfter = await readIncentiveAfter(page, s.sourceReserveId, s.sourceSide, isMobile);
 
   // With enough paired position, incentive should be at least as high as half-paired
-  expect(
-    fullPairedAfter,
-    'Full paired should not decrease from half paired',
-  ).toBeGreaterThanOrEqual(halfPairedAfter - 0.01);
+  expect(fullPairedAfter, 'Full paired should not decrease from half paired').toBeGreaterThanOrEqual(
+    halfPairedAfter - 0.01,
+  );
 
   // Step 5: Increase paired further ($5000) — should clamp at source position
   await fillPairedPosition('5000');
@@ -248,12 +239,11 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
     }
 
     for (const s of scenarios) {
-      test(
-        `cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`,
-        async ({ page }) => {
-          await runCrossAssetPairingScenario(page, s, false);
-        },
-      );
+      test(`cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`, async ({
+        page,
+      }) => {
+        await runCrossAssetPairingScenario(page, s, false);
+      });
     }
   });
 
@@ -271,12 +261,11 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
     }
 
     for (const s of scenarios) {
-      test(
-        `cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`,
-        async ({ page }) => {
-          await runCrossAssetPairingScenario(page, s, true);
-        },
-      );
+      test(`cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`, async ({
+        page,
+      }) => {
+        await runCrossAssetPairingScenario(page, s, true);
+      });
     }
   });
 });

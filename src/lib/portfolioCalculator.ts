@@ -23,9 +23,7 @@ const DAYS_PER_YEAR = 365;
 /**
  * Aggregate an array of per-position results into a portfolio summary.
  */
-export function aggregatePortfolioSummary(
-  results: PortfolioPositionResult[]
-): PortfolioSummary {
+export function aggregatePortfolioSummary(results: PortfolioPositionResult[]): PortfolioSummary {
   let totalSupplyUsd = 0;
   let totalBorrowUsd = 0;
   let supplyUsdPerDay = 0;
@@ -72,22 +70,12 @@ export function aggregatePortfolioSummary(
 
   const netUsdPerDay = supplyUsdPerDay + borrowUsdPerDay;
 
-  const netEffectiveApy =
-    totalSupplyUsd > 0
-      ? (netUsdPerDay * DAYS_PER_YEAR) / totalSupplyUsd * 100
-      : 0;
+  const netEffectiveApy = totalSupplyUsd > 0 ? ((netUsdPerDay * DAYS_PER_YEAR) / totalSupplyUsd) * 100 : 0;
 
-  const supplyWeightedApy = totalSupplyUsd > 0
-    ? supplyWeightedSum / totalSupplyUsd
-    : 0;
-  const borrowWeightedApy = totalBorrowUsd > 0
-    ? borrowWeightedSum / totalBorrowUsd
-    : 0;
+  const supplyWeightedApy = totalSupplyUsd > 0 ? supplyWeightedSum / totalSupplyUsd : 0;
+  const borrowWeightedApy = totalBorrowUsd > 0 ? borrowWeightedSum / totalBorrowUsd : 0;
 
-  const buildMetric = (
-    currentVal: number | null,
-    afterVal: number,
-  ): PortfolioSimulationMetric | undefined => {
+  const buildMetric = (currentVal: number | null, afterVal: number): PortfolioSimulationMetric | undefined => {
     if (currentVal === null) return undefined;
     return {
       current: currentVal,
@@ -96,12 +84,14 @@ export function aggregatePortfolioSummary(
     };
   };
 
-  const currentNetUsdPerDay = currentSupplyUsdPerDay !== null && currentBorrowUsdPerDay !== null
-    ? currentSupplyUsdPerDay + currentBorrowUsdPerDay
-    : null;
-  const currentNetEffectiveApy = currentNetUsdPerDay !== null && currentTotalSupplyUsd !== null && currentTotalSupplyUsd > 0
-    ? (currentNetUsdPerDay * DAYS_PER_YEAR) / currentTotalSupplyUsd * 100
-    : null;
+  const currentNetUsdPerDay =
+    currentSupplyUsdPerDay !== null && currentBorrowUsdPerDay !== null
+      ? currentSupplyUsdPerDay + currentBorrowUsdPerDay
+      : null;
+  const currentNetEffectiveApy =
+    currentNetUsdPerDay !== null && currentTotalSupplyUsd !== null && currentTotalSupplyUsd > 0
+      ? ((currentNetUsdPerDay * DAYS_PER_YEAR) / currentTotalSupplyUsd) * 100
+      : null;
 
   return {
     totalSupplyUsd,
@@ -112,14 +102,16 @@ export function aggregatePortfolioSummary(
     netEffectiveApy,
     supplyWeightedApy,
     borrowWeightedApy,
-    ...(hasAnyMetrics ? {
-      totalSupplyUsdMetric: buildMetric(currentTotalSupplyUsd, totalSupplyUsd),
-      totalBorrowUsdMetric: buildMetric(currentTotalBorrowUsd, totalBorrowUsd),
-      supplyUsdPerDayMetric: buildMetric(currentSupplyUsdPerDay, supplyUsdPerDay),
-      borrowUsdPerDayMetric: buildMetric(currentBorrowUsdPerDay, borrowUsdPerDay),
-      netUsdPerDayMetric: buildMetric(currentNetUsdPerDay, netUsdPerDay),
-      netEffectiveApyMetric: buildMetric(currentNetEffectiveApy, netEffectiveApy),
-    } : {}),
+    ...(hasAnyMetrics
+      ? {
+          totalSupplyUsdMetric: buildMetric(currentTotalSupplyUsd, totalSupplyUsd),
+          totalBorrowUsdMetric: buildMetric(currentTotalBorrowUsd, totalBorrowUsd),
+          supplyUsdPerDayMetric: buildMetric(currentSupplyUsdPerDay, supplyUsdPerDay),
+          borrowUsdPerDayMetric: buildMetric(currentBorrowUsdPerDay, borrowUsdPerDay),
+          netUsdPerDayMetric: buildMetric(currentNetUsdPerDay, netUsdPerDay),
+          netEffectiveApyMetric: buildMetric(currentNetEffectiveApy, netEffectiveApy),
+        }
+      : {}),
   };
 }
 
@@ -149,10 +141,7 @@ export function computePositionUsdPerDay(
   return -nativeDaily + incentiveDaily;
 }
 
-export function resolvePositionAmountUsd(
-  sideData: PortfolioSideData,
-  reserve: ReserveWithSpread | undefined
-): number {
+export function resolvePositionAmountUsd(sideData: PortfolioSideData, reserve: ReserveWithSpread | undefined): number {
   const raw = parseNumberInput(sideData.amount);
   if (raw <= 0) return 0;
   if (sideData.inputMode === 'usd') return raw;
@@ -181,9 +170,8 @@ export function buildPortfolioPositionResult(
   effectiveUsd?: number,
   ltvClampedUsd?: number,
 ): PortfolioPositionResult {
-  const totalPercent = side === 'supply'
-    ? nativeAprPercent + incentiveAprPercent
-    : nativeAprPercent - incentiveAprPercent;
+  const totalPercent =
+    side === 'supply' ? nativeAprPercent + incentiveAprPercent : nativeAprPercent - incentiveAprPercent;
   const usdPerDay = computePositionUsdPerDay(
     side,
     effectiveUsd ?? amountUsd,
@@ -274,9 +262,7 @@ export function getHfColorClass(hf: number | null): string {
  * Returns null when no valid HF exists.
  */
 export function getMinHf(healthFactors: { healthFactor: number | null }[]): number | null {
-  const validHfs = healthFactors
-    .map(hf => hf.healthFactor)
-    .filter((hf): hf is number => hf != null && hf > 0);
+  const validHfs = healthFactors.map((hf) => hf.healthFactor).filter((hf): hf is number => hf != null && hf > 0);
   return validHfs.length > 0 ? Math.min(...validHfs) : null;
 }
 
@@ -291,12 +277,11 @@ export function getMinHf(healthFactors: { healthFactor: number | null }[]): numb
  * - `direction = 'flat'` → |delta| < 0.01 (no visible change)
  * - `direction = null` → no current baseline (no wallet / no on-chain data)
  */
-export function getLowestHfDelta(
-  healthFactors: { healthFactor: number | null; deltaHealthFactor: number | null }[],
-): { delta: number | null; direction: 'up' | 'down' | 'flat' | null } {
-  const poolsWithAfter = healthFactors.filter(
-    hf => hf.healthFactor != null && hf.healthFactor > 0,
-  );
+export function getLowestHfDelta(healthFactors: { healthFactor: number | null; deltaHealthFactor: number | null }[]): {
+  delta: number | null;
+  direction: 'up' | 'down' | 'flat' | null;
+} {
+  const poolsWithAfter = healthFactors.filter((hf) => hf.healthFactor != null && hf.healthFactor > 0);
   if (poolsWithAfter.length === 0) return { delta: null, direction: null };
 
   // Find the pool with the lowest `after` HF (matches the badge)
@@ -310,4 +295,3 @@ export function getLowestHfDelta(
   const direction = Math.abs(delta) < 0.01 ? 'flat' : delta > 0 ? 'up' : 'down';
   return { delta, direction };
 }
-

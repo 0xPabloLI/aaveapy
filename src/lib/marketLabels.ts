@@ -76,9 +76,7 @@ export function getHubChipClass(isV4: boolean): string {
  *  - V3 non-Ethereum: extract suffix from marketName (e.g., "AaveV3Base" → "Base")
  *    This ensures consistency with V4 and supports future sub-markets.
  */
-export function getReserveMarketDisplayName(
-  market: Pick<ReserveWithSpread, 'chainName' | 'marketName'>
-): string {
+export function getReserveMarketDisplayName(market: Pick<ReserveWithSpread, 'chainName' | 'marketName'>): string {
   if (market.marketName?.startsWith('AaveV4')) {
     const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
     return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');

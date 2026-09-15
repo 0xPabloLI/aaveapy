@@ -48,18 +48,22 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = memo(({ chainId, chainName, className = '' }: { chainId: number; chainName: string; className?: string }) => {
-  const size = 'w-3.5 h-3.5';
-  const src = getChainIconSrc(chainId);
-  if (!src) {
-    return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
-        {chainName.charAt(0)}
-      </div>
-    );
-  }
-  return <img src={src} alt={`${chainName} logo`} className={`${size} ${className}`} loading="lazy" />;
-});
+const ChainIcon = memo(
+  ({ chainId, chainName, className = '' }: { chainId: number; chainName: string; className?: string }) => {
+    const size = 'w-3.5 h-3.5';
+    const src = getChainIconSrc(chainId);
+    if (!src) {
+      return (
+        <div
+          className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}
+        >
+          {chainName.charAt(0)}
+        </div>
+      );
+    }
+    return <img src={src} alt={`${chainName} logo`} className={`${size} ${className}`} loading="lazy" />;
+  },
+);
 ChainIcon.displayName = 'ChainIcon';
 
 /** Group markets by chainName, preserving Ethereum first, then alphabetical. */
@@ -86,8 +90,9 @@ function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGr
 
   const groups: ChainGroup[] = [];
   // Sort chains: Ethereum first, then remaining alphabetically
-  const sortedChainNames = Array.from(chainMap.entries())
-    .sort(([a], [b]) => (a === 'Ethereum' ? -1 : b === 'Ethereum' ? 1 : a.localeCompare(b)));
+  const sortedChainNames = Array.from(chainMap.entries()).sort(([a], [b]) =>
+    a === 'Ethereum' ? -1 : b === 'Ethereum' ? 1 : a.localeCompare(b),
+  );
 
   for (const [chainName, { chainId, markets }] of sortedChainNames) {
     groups.push({ chainId, chainName, markets, expandable: markets.length > 1 });
@@ -123,18 +128,24 @@ const FilterBar = ({
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
   const [internalExpandedChain, setInternalExpandedChain] = useState<string | null>(null);
   const expandedChain = controlledExpandedChain ?? internalExpandedChain;
-  const setExpandedChain = useCallback((chain: string | null) => {
-    setInternalExpandedChain(chain);
-    setControlledExpandedChain?.(chain);
-  }, [setControlledExpandedChain]);
+  const setExpandedChain = useCallback(
+    (chain: string | null) => {
+      setInternalExpandedChain(chain);
+      setControlledExpandedChain?.(chain);
+    },
+    [setControlledExpandedChain],
+  );
 
   /** View mode for the markets row: 'chain' = chain chips, 'hub' = hub chips */
   const [internalMarketViewMode, setInternalMarketViewMode] = useState<'chain' | 'hub'>('chain');
   const marketViewMode = controlledMarketViewMode ?? internalMarketViewMode;
-  const setMarketViewMode = useCallback((mode: 'chain' | 'hub') => {
-    setInternalMarketViewMode(mode);
-    setControlledMarketViewMode?.(mode);
-  }, [setControlledMarketViewMode]);
+  const setMarketViewMode = useCallback(
+    (mode: 'chain' | 'hub') => {
+      setInternalMarketViewMode(mode);
+      setControlledMarketViewMode?.(mode);
+    },
+    [setControlledMarketViewMode],
+  );
 
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
@@ -153,7 +164,10 @@ const FilterBar = ({
   // Check if any sub-market of a chain is selected (but not the whole chain)
   const hasSubMarketSelected = useCallback(
     (group: ChainGroup) => {
-      return group.markets.some((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName))) && !isChainSelected(group);
+      return (
+        group.markets.some((m) => selectedMarkets.includes(marketKey(m.chainId, m.marketName))) &&
+        !isChainSelected(group)
+      );
     },
     [selectedMarkets, isChainSelected],
   );
@@ -354,7 +368,9 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3 h-3" />
-            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+            <span className="hidden lg:inline">
+              {showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}
+            </span>
           </button>
         )}
 
@@ -381,7 +397,9 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+            <span className="truncate">
+              {showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}
+            </span>
           </button>
         )}
 
@@ -395,10 +413,7 @@ const FilterBar = ({
         <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Markets</span>
 
         {/* "All" button */}
-        <FilterChip
-          selected={noMarketsSelected && noHubSelected}
-          onClick={handleAllClick}
-        >
+        <FilterChip selected={noMarketsSelected && noHubSelected} onClick={handleAllClick}>
           All
         </FilterChip>
 
@@ -417,8 +432,7 @@ const FilterBar = ({
         )}
 
         {marketViewMode === 'hub' && hasHubs
-          ? (
-            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name + chain icon) */
+          ? /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name + chain icon) */
             hubEntries!.map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
@@ -441,9 +455,7 @@ const FilterBar = ({
                 </FilterChip>
               );
             })
-          )
-          : (
-            /* Chain mode: original chain chips */
+          : /* Chain mode: original chain chips */
             chainGroups.map((group) => {
               const selected = isChainSelected(group);
               const subSelected = hasSubMarketSelected(group);
@@ -476,77 +488,99 @@ const FilterBar = ({
                         title={expanded ? `Collapse ${group.chainName} markets` : `Expand ${group.chainName} markets`}
                       >
                         <AnimatePresence mode="wait" initial={false}>
-                          {expanded
-                            ? <motion.span key="left" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronLeft className="w-3 h-3" /></motion.span>
-                            : <motion.span key="right" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronRight className="w-3 h-3" /></motion.span>
-                          }
+                          {expanded ? (
+                            <motion.span
+                              key="left"
+                              initial={{ opacity: 0, rotate: 90 }}
+                              animate={{ opacity: 1, rotate: 0 }}
+                              exit={{ opacity: 0, rotate: 90 }}
+                              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex items-center"
+                            >
+                              <ChevronLeft className="w-3 h-3" />
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              key="right"
+                              initial={{ opacity: 0, rotate: -90 }}
+                              animate={{ opacity: 1, rotate: 0 }}
+                              exit={{ opacity: 0, rotate: -90 }}
+                              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex items-center"
+                            >
+                              <ChevronRight className="w-3 h-3" />
+                            </motion.span>
+                          )}
                         </AnimatePresence>
                       </button>
                     </div>
 
                     <AnimatePresence initial={false}>
-                      {expanded && group.markets
-                        .slice()
-                        .sort((a, b) => {
-                          const aVersion = getProtocolVersion(a.marketName);
-                          const bVersion = getProtocolVersion(b.marketName);
-                          if (aVersion === 'v4' && bVersion !== 'v4') return -1;
-                          if (aVersion !== 'v4' && bVersion === 'v4') return 1;
-                          return 0;
-                        })
-                        .map((market, index) => {
-                          const isSubSelected = selectedMarkets.includes(marketKey(market.chainId, market.marketName));
-                          const version = getProtocolVersion(market.marketName);
-                          const isV4 = version === 'v4';
-                          return (
-                            <motion.button
-                              key={marketKey(market.chainId, market.marketName)}
-                              layout
-                              variants={{
-                                hidden: { width: 0, opacity: 0, scale: 0.98 },
-                                visible: (i: number) => ({
-                                  width: 'auto',
-                                  opacity: 1,
-                                  scale: 1,
-                                  transition: {
-                                    width: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
-                                    opacity: { duration: 0.22, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
-                                    scale: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
-                                  },
-                                }),
-                                exit: (i: number) => ({
-                                  width: 0,
-                                  opacity: 0,
-                                  scale: 0.98,
-                                  transition: {
-                                    width: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
-                                    opacity: { duration: 0.14, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
-                                    scale: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
-                                  },
-                                }),
-                              }}
-                              initial="hidden"
-                              animate="visible"
-                              exit="exit"
-                              custom={index}
-                              transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
-                              onClick={() => toggleSubMarket(marketKey(market.chainId, market.marketName))}
-                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
-                                isSubSelected
-                                  ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-                                  : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
-                              }`}
-                              title={market.marketName}
-                            >
-                              {isV4 && (
-                                <span className="inline-flex items-center px-1 py-0 rounded-full ds-text-9 !leading-none font-medium text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                                  V4
-                                </span>
-                              )}
-                              <span>{getSubMarketLabel(market.marketName)}</span>
-                            </motion.button>
-                          );
-                        })}
+                      {expanded &&
+                        group.markets
+                          .slice()
+                          .sort((a, b) => {
+                            const aVersion = getProtocolVersion(a.marketName);
+                            const bVersion = getProtocolVersion(b.marketName);
+                            if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                            if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                            return 0;
+                          })
+                          .map((market, index) => {
+                            const isSubSelected = selectedMarkets.includes(
+                              marketKey(market.chainId, market.marketName),
+                            );
+                            const version = getProtocolVersion(market.marketName);
+                            const isV4 = version === 'v4';
+                            return (
+                              <motion.button
+                                key={marketKey(market.chainId, market.marketName)}
+                                layout
+                                variants={{
+                                  hidden: { width: 0, opacity: 0, scale: 0.98 },
+                                  visible: (i: number) => ({
+                                    width: 'auto',
+                                    opacity: 1,
+                                    scale: 1,
+                                    transition: {
+                                      width: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                      opacity: { duration: 0.22, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                      scale: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                    },
+                                  }),
+                                  exit: (i: number) => ({
+                                    width: 0,
+                                    opacity: 0,
+                                    scale: 0.98,
+                                    transition: {
+                                      width: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                      opacity: { duration: 0.14, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                      scale: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                    },
+                                  }),
+                                }}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                custom={index}
+                                transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
+                                onClick={() => toggleSubMarket(marketKey(market.chainId, market.marketName))}
+                                className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
+                                  isSubSelected
+                                    ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                                    : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
+                                }`}
+                                title={market.marketName}
+                              >
+                                {isV4 && (
+                                  <span className="inline-flex items-center px-1 py-0 rounded-full ds-text-9 !leading-none font-medium text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                    V4
+                                  </span>
+                                )}
+                                <span>{getSubMarketLabel(market.marketName)}</span>
+                              </motion.button>
+                            );
+                          })}
                     </AnimatePresence>
                     {expanded && <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />}
                   </Fragment>
@@ -569,8 +603,7 @@ const FilterBar = ({
                   <span>{group.chainName}</span>
                 </button>
               );
-            })
-          )}
+            })}
       </div>
     </div>
   );

@@ -42,10 +42,10 @@ describe('portfolioSearch', () => {
   describe('filterAndRankReservesForPortfolioSearch', () => {
     it('ranks exact > prefix > substring', () => {
       const reserves: ReserveWithSpread[] = [
-        mk('XETH', 'A', 1, 1),     // substring "eth"
-        mk('WETH', 'B', 2, 1),     // substring; higher TVL than XETH
-        mk('ETHX', 'C', 1, 1),     // prefix "eth"
-        mk('ETH',  'D', 1, 1),     // exact
+        mk('XETH', 'A', 1, 1), // substring "eth"
+        mk('WETH', 'B', 2, 1), // substring; higher TVL than XETH
+        mk('ETHX', 'C', 1, 1), // prefix "eth"
+        mk('ETH', 'D', 1, 1), // exact
       ];
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'eth');
       expect(out.map((r) => r.tokenSymbol)).toEqual(['ETH', 'ETHX', 'WETH', 'XETH']);
@@ -53,31 +53,24 @@ describe('portfolioSearch', () => {
 
     it('within same rank, higher TVL comes first', () => {
       const reserves: ReserveWithSpread[] = [
-        mk('WETH', 'AaveV3Ethereum', 100, 3000),  // 300k
-        mk('WETH', 'AaveV3Ink',      1000, 3000), // 3M  ← highest
-        mk('WETH', 'AaveV3Base',     500, 3000),  // 1.5M
+        mk('WETH', 'AaveV3Ethereum', 100, 3000), // 300k
+        mk('WETH', 'AaveV3Ink', 1000, 3000), // 3M  ← highest
+        mk('WETH', 'AaveV3Base', 500, 3000), // 1.5M
       ];
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'weth');
-      expect(out.map((r) => r.marketName)).toEqual([
-        'AaveV3Ink',
-        'AaveV3Base',
-        'AaveV3Ethereum',
-      ]);
+      expect(out.map((r) => r.marketName)).toEqual(['AaveV3Ink', 'AaveV3Base', 'AaveV3Ethereum']);
     });
 
     it('normalizes USD₮ <-> USDT', () => {
-      const reserves: ReserveWithSpread[] = [
-        mk('USD₮', 'AaveV3Plasma', 100, 1),
-        mk('USDC',  'AaveV3Ethereum', 100, 1),
-      ];
+      const reserves: ReserveWithSpread[] = [mk('USD₮', 'AaveV3Plasma', 100, 1), mk('USDC', 'AaveV3Ethereum', 100, 1)];
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'usdt');
       expect(out.map((r) => r.tokenSymbol)).toEqual(['USD₮']);
     });
 
     it('combines tiered rank then TVL: high-TVL substring still loses to low-TVL exact', () => {
       const reserves: ReserveWithSpread[] = [
-        mk('WETH', 'AaveV3Ink',      10_000, 3000), // substring, huge TVL
-        mk('ETH',  'AaveV3Ethereum', 1, 3000),      // exact, tiny TVL
+        mk('WETH', 'AaveV3Ink', 10_000, 3000), // substring, huge TVL
+        mk('ETH', 'AaveV3Ethereum', 1, 3000), // exact, tiny TVL
       ];
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'eth');
       expect(out[0].tokenSymbol).toBe('ETH');
@@ -91,9 +84,7 @@ describe('portfolioSearch', () => {
     });
 
     it('respects limit', () => {
-      const reserves: ReserveWithSpread[] = Array.from({ length: 10 }, (_, i) =>
-        mk('WETH', `M${i}`, i + 1, 1000),
-      );
+      const reserves: ReserveWithSpread[] = Array.from({ length: 10 }, (_, i) => mk('WETH', `M${i}`, i + 1, 1000));
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'weth', { limit: 3 });
       expect(out).toHaveLength(3);
       // Highest TVL first (M9, M8, M7)
@@ -105,9 +96,7 @@ describe('portfolioSearch', () => {
     });
 
     it('default limit uses PORTFOLIO_SEARCH_HARD_LIMIT', () => {
-      const reserves: ReserveWithSpread[] = Array.from({ length: 600 }, (_, i) =>
-        mk('WETH', `M${i}`, i + 1, 1000),
-      );
+      const reserves: ReserveWithSpread[] = Array.from({ length: 600 }, (_, i) => mk('WETH', `M${i}`, i + 1, 1000));
       const out = filterAndRankReservesForPortfolioSearch(reserves, 'weth');
       expect(out).toHaveLength(PORTFOLIO_SEARCH_HARD_LIMIT);
     });

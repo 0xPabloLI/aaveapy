@@ -3,11 +3,9 @@ import { describe, expect, it } from 'vitest';
 function computeOrphanedIcons(
   existingLocalIcons: Set<string>,
   requiredApiSymbols: Set<string>,
-  protectedSymbols: Set<string> = new Set(['default'])
+  protectedSymbols: Set<string> = new Set(['default']),
 ): string[] {
-  return [...existingLocalIcons]
-    .filter((s) => !requiredApiSymbols.has(s) && !protectedSymbols.has(s))
-    .sort();
+  return [...existingLocalIcons].filter((s) => !requiredApiSymbols.has(s) && !protectedSymbols.has(s)).sort();
 }
 
 describe('computeOrphanedIcons', () => {

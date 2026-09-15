@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 
 interface UseReserveExpansionOptions {
   /**
@@ -39,9 +47,7 @@ export interface UseReserveExpansionResult {
  * latch when nothing is expanded, and collapsing on mobile→desktop
  * viewport transitions.
  */
-export function useReserveExpansion(
-  { isMobile }: UseReserveExpansionOptions,
-): UseReserveExpansionResult {
+export function useReserveExpansion({ isMobile }: UseReserveExpansionOptions): UseReserveExpansionResult {
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
   const suppressNextToggleReserveIdRef = useRef<string | null>(null);
 

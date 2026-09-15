@@ -1,36 +1,36 @@
-import type { V3UserPosition } from './aaveV3UserClient'
-import type { V4UserPosition } from './aaveV4UserClient'
-import type { ReserveWithSpread } from '@/types/aave'
-import type { ReserveMap, ReserveChainTokenMap } from '@/lib/reserveKey'
-import { buildReserveMap, toChainTokenKey } from '@/lib/reserveKey'
-import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults'
+import type { V3UserPosition } from './aaveV3UserClient';
+import type { V4UserPosition } from './aaveV4UserClient';
+import type { ReserveWithSpread } from '@/types/aave';
+import type { ReserveMap, ReserveChainTokenMap } from '@/lib/reserveKey';
+import { buildReserveMap, toChainTokenKey } from '@/lib/reserveKey';
+import { DEFAULT_TOKEN_DECIMALS } from '@/lib/tokenDefaults';
 
-export type WalletPositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4'
+export type WalletPositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4';
 
 export interface WalletPosition {
-  reserveId: string
-  chainId: number
-  asset: `0x${string}`
-  tokenSymbol: string
-  side: 'supply' | 'borrow'
-  amountWad: bigint
-  amountUsd: number
-  isCollateral: boolean
-  source: WalletPositionSource
-  isOrphan: boolean
+  reserveId: string;
+  chainId: number;
+  asset: `0x${string}`;
+  tokenSymbol: string;
+  side: 'supply' | 'borrow';
+  amountWad: bigint;
+  amountUsd: number;
+  isCollateral: boolean;
+  source: WalletPositionSource;
+  isOrphan: boolean;
 }
 
 export interface PositionMeta {
-  reserveId: string | undefined
-  tokenSymbol: string
-  tokenPrice: number
-  decimals: number
+  reserveId: string | undefined;
+  tokenSymbol: string;
+  tokenPrice: number;
+  decimals: number;
 }
 
-const WAD = 10n ** 18n
+const WAD = 10n ** 18n;
 
 function wadToHuman(wad: bigint): number {
-  return Number(wad / WAD) + Number(wad % WAD) / Number(WAD)
+  return Number(wad / WAD) + Number(wad % WAD) / Number(WAD);
 }
 
 export function mapV3PositionToWalletPosition(
@@ -39,13 +39,14 @@ export function mapV3PositionToWalletPosition(
   meta: PositionMeta,
   source: WalletPositionSource,
 ): WalletPosition {
-  const amountWad = side === 'supply'
-    ? pos.supplyWad
-    : pos.stableBorrowWad > 0n
-      ? pos.stableBorrowWad + pos.variableBorrowWad
-      : pos.variableBorrowWad
+  const amountWad =
+    side === 'supply'
+      ? pos.supplyWad
+      : pos.stableBorrowWad > 0n
+        ? pos.stableBorrowWad + pos.variableBorrowWad
+        : pos.variableBorrowWad;
 
-  const isOrphan = meta.reserveId === undefined
+  const isOrphan = meta.reserveId === undefined;
 
   return {
     reserveId: meta.reserveId ?? '',
@@ -58,7 +59,7 @@ export function mapV3PositionToWalletPosition(
     isCollateral: pos.isCollateral,
     source,
     isOrphan,
-  }
+  };
 }
 
 export function mapV4PositionToWalletPosition(
@@ -67,11 +68,9 @@ export function mapV4PositionToWalletPosition(
   meta: PositionMeta,
   source: WalletPositionSource,
 ): WalletPosition {
-  const amountWad = side === 'supply'
-    ? pos.suppliedAssets
-    : pos.stableDebt + pos.variableDebt
+  const amountWad = side === 'supply' ? pos.suppliedAssets : pos.stableDebt + pos.variableDebt;
 
-  const isOrphan = meta.reserveId === undefined
+  const isOrphan = meta.reserveId === undefined;
 
   return {
     reserveId: meta.reserveId ?? '',
@@ -84,7 +83,7 @@ export function mapV4PositionToWalletPosition(
     isCollateral: pos.isCollateral,
     source,
     isOrphan,
-  }
+  };
 }
 
 const ORPHAN_META: PositionMeta = {
@@ -92,7 +91,7 @@ const ORPHAN_META: PositionMeta = {
   tokenSymbol: '',
   tokenPrice: 0,
   decimals: 0,
-}
+};
 
 /**
  * Resolve position metadata by (chainId, tokenAddress) using O(1) Map lookup.
@@ -106,23 +105,23 @@ export function resolvePositionMeta(
   tokenAddress: string,
   lookupMap: ReserveChainTokenMap,
 ): PositionMeta {
-  const key = toChainTokenKey(chainId, tokenAddress)
-  const reserve = lookupMap.get(key)
-  if (!reserve) return ORPHAN_META
+  const key = toChainTokenKey(chainId, tokenAddress);
+  const reserve = lookupMap.get(key);
+  if (!reserve) return ORPHAN_META;
   if (reserve._ambiguousFallback) {
     console.warn(
       `[resolvePositionMeta] Ambiguous chainToken fallback for key "${key}": ` +
-      `multiple reserves share this (chainId, tokenAddress). ` +
-      `Matched reserveId="${reserve.reserveId}" but others exist. ` +
-      `Prefer reserveId-precise lookup via composeReserveId.`,
-    )
+        `multiple reserves share this (chainId, tokenAddress). ` +
+        `Matched reserveId="${reserve.reserveId}" but others exist. ` +
+        `Prefer reserveId-precise lookup via composeReserveId.`,
+    );
   }
   return {
     reserveId: reserve.reserveId,
     tokenSymbol: reserve.tokenSymbol,
     tokenPrice: reserve.tokenPrice ?? 0,
     decimals: reserve.decimals ?? DEFAULT_TOKEN_DECIMALS,
-  }
+  };
 }
 
 /**
@@ -141,18 +140,18 @@ export function resolvePositionMetaByReserveId(
   chainTokenLookupMap: ReserveChainTokenMap,
 ): PositionMeta {
   if (reserveId) {
-    const reserve = reserveMap.get(reserveId.trim())
+    const reserve = reserveMap.get(reserveId.trim());
     if (reserve) {
       return {
         reserveId: reserve.reserveId,
         tokenSymbol: reserve.tokenSymbol,
         tokenPrice: reserve.tokenPrice ?? 0,
         decimals: reserve.decimals ?? DEFAULT_TOKEN_DECIMALS,
-      }
+      };
     }
   }
-  return resolvePositionMeta(chainId, tokenAddress, chainTokenLookupMap)
+  return resolvePositionMeta(chainId, tokenAddress, chainTokenLookupMap);
 }
 
 /** Convenience: build a ReserveMap from a flat array. */
-export const buildReserveMapFromReserves = buildReserveMap
+export const buildReserveMapFromReserves = buildReserveMap;

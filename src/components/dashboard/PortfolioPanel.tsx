@@ -8,19 +8,29 @@
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
 import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, CloudDownload } from 'lucide-react';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
-import { features } from '@/config/features';
+import { isFeatureEnabled } from '@/config/featureFlags';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { formatUsd } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioReserveEntry, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot, PortfolioHealthFactor } from '@/types/portfolio';
+import type {
+  PortfolioReserveEntry,
+  PortfolioPositionResult,
+  PortfolioSummary,
+  PortfolioSnapshot,
+  PortfolioHealthFactor,
+} from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import type { WalletLoadState } from '@/hooks/useUserPositionsSdk';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
-import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
+import {
+  filterAndRankReservesForPortfolioSearch,
+  getReserveTvlUsd,
+  PORTFOLIO_SEARCH_HARD_LIMIT,
+} from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 
@@ -36,10 +46,7 @@ import { isRestrictedReserve } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 
-import {
-  HEADER_CONTROL_ICON_BUTTON_CLASS,
-  HEADER_CONTROL_ICON_CLASS,
-} from '@/lib/headerControlStyles';
+import { HEADER_CONTROL_ICON_BUTTON_CLASS, HEADER_CONTROL_ICON_CLASS } from '@/lib/headerControlStyles';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -91,9 +98,9 @@ function SearchResultRow({
         'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
         alreadyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
-      aria-label={alreadyAdded
-        ? `${reserve.tokenSymbol} already added`
-        : `Add ${reserve.tokenSymbol} (supply and borrow)`}
+      aria-label={
+        alreadyAdded ? `${reserve.tokenSymbol} already added` : `Add ${reserve.tokenSymbol} (supply and borrow)`
+      }
     >
       <ReserveIdentity
         tokenSymbol={reserve.tokenSymbol}
@@ -115,7 +122,6 @@ function SearchResultRow({
   );
 }
 
-
 /** Snapshot list item with compare / delete actions. */
 const SnapshotItem = memo(function SnapshotItem({
   snapshot,
@@ -132,10 +138,14 @@ const SnapshotItem = memo(function SnapshotItem({
   const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
   return (
-    <div className={cn(
-      'flex items-center gap-2 rounded-lg px-2.5 py-1.5 border transition-colors',
-      isSelectedForCompare ? `${PORTFOLIO_THEME.border} ${PORTFOLIO_THEME.bgSubtle}` : 'border-border/30 hover:bg-muted/40',
-    )}>
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg px-2.5 py-1.5 border transition-colors',
+        isSelectedForCompare
+          ? `${PORTFOLIO_THEME.border} ${PORTFOLIO_THEME.bgSubtle}`
+          : 'border-border/30 hover:bg-muted/40',
+      )}
+    >
       <button
         type="button"
         onClick={() => onToggleCompare(snapshot.id)}
@@ -151,7 +161,9 @@ const SnapshotItem = memo(function SnapshotItem({
       </button>
       <div className="flex-1 min-w-0">
         <span className="ds-text-11 font-semibold text-foreground truncate block">{snapshot.label}</span>
-        <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.entries.length} positions</span>
+        <span className="ds-text-10 text-muted-foreground">
+          {timeStr} · {snapshot.entries.length} positions
+        </span>
       </div>
       <button
         type="button"
@@ -197,8 +209,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showCompare, setShowCompare] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -297,9 +307,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
   const suggestedReserves = useMemo(() => {
     const addedSymbols = new Set(entries.map((e) => e.tokenSymbol.toUpperCase()));
-    const sortedBySize = [...reserves].sort(
-      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
-    );
+    const sortedBySize = [...reserves].sort((a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0));
     const pickTop = (predicate: (sym: string) => boolean, n: number) => {
       const seen = new Set<string>();
       const out: ReserveWithSpread[] = [];
@@ -313,13 +321,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
       }
       return out;
     };
-    return [
-      ...pickTop(isStablecoinSymbol, 2),
-      ...pickTop(isEthRelatedSymbol, 2),
-      ...pickTop(isBtcRelatedSymbol, 1),
-    ];
+    return [...pickTop(isStablecoinSymbol, 2), ...pickTop(isEthRelatedSymbol, 2), ...pickTop(isBtcRelatedSymbol, 1)];
   }, [reserves, entries]);
-
 
   const handleWalletSyncClick = useCallback(() => {
     onWalletSync?.();
@@ -354,20 +357,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
         here; the check in scripts/check-portfolio-panel-spacing.sh
         enforces this.
       */}
-      <div
-        className={cn(
-          isMobile
-            ? 'pl-[var(--ds-space-1-5)] py-[var(--ds-space-2-5)]'
-            : 'py-[var(--ds-space-3)]',
-        )}
-      >
+      <div className={cn(isMobile ? 'pl-[var(--ds-space-1-5)] py-[var(--ds-space-2-5)]' : 'py-[var(--ds-space-3)]')}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
             <Layers className={`size-4 ${PORTFOLIO_THEME.text}`} aria-hidden />
-            <span className="ds-text-14 font-semibold text-foreground">
-              Portfolio
-            </span>
+            <span className="ds-text-14 font-semibold text-foreground">Portfolio</span>
             <span className="ds-text-10 text-muted-foreground/50 italic">
               {isMobile
                 ? 'Simulation only.'
@@ -375,7 +370,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </span>
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)]">
-
             {walletConnected && (
               <button
                 type="button"
@@ -395,13 +389,13 @@ const PortfolioPanel = memo(function PortfolioPanel({
             )}
 
             {/* Save snapshot */}
-            {features.snapshot && entries.length > 0 && summary && (
+            {isFeatureEnabled('snapshot') && entries.length > 0 && summary && (
               <button
                 type="button"
                 onClick={() => setShowSaveInput((p) => !p)}
                 className={cn(
                   HEADER_CONTROL_ICON_BUTTON_CLASS,
-                'relative touch-target-expand-y',
+                  'relative touch-target-expand-y',
                   showSaveInput && 'bg-muted text-foreground',
                 )}
                 aria-label={showSaveInput ? 'Cancel save' : 'Save snapshot'}
@@ -432,20 +426,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {entries.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => actions.clearAll()}
-                    title="Clear all"
-                    className={cn(
-                      HEADER_CONTROL_ICON_BUTTON_CLASS,
-                'relative touch-target-expand-y',
-                      PORTFOLIO_THEME.trashHoverBg,
-                      PORTFOLIO_THEME.trashHoverText,
-                    )}
-                    aria-label="Clear all positions"
-                  >
-                    <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
-                  </button>
+              <button
+                type="button"
+                onClick={() => actions.clearAll()}
+                title="Clear all"
+                className={cn(
+                  HEADER_CONTROL_ICON_BUTTON_CLASS,
+                  'relative touch-target-expand-y',
+                  PORTFOLIO_THEME.trashHoverBg,
+                  PORTFOLIO_THEME.trashHoverText,
+                )}
+                aria-label="Clear all positions"
+              >
+                <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
+              </button>
             )}
             {onSimulationModeChange && simulationMode && (
               <PortfolioModeToggle
@@ -455,25 +449,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
               />
             )}
           </div>
-
         </div>
         {walletLoadState && walletLoadState !== 'idle' && (
           <div className="flex items-center gap-1.5 mb-2.5 ds-text-11 text-muted-foreground">
             {walletLoadState === 'loading' && (
-              <><RefreshCw className="size-3 animate-spin" aria-hidden /> Syncing…</>
+              <>
+                <RefreshCw className="size-3 animate-spin" aria-hidden /> Syncing…
+              </>
             )}
             {walletLoadState === 'success-empty' && (
-              <><Wallet className="size-3" aria-hidden /> Wallet has no positions</>
+              <>
+                <Wallet className="size-3" aria-hidden /> Wallet has no positions
+              </>
             )}
-            {walletLoadState === 'error' && (
-              <span className="text-destructive/80">Wallet sync failed</span>
-            )}
+            {walletLoadState === 'error' && <span className="text-destructive/80">Wallet sync failed</span>}
           </div>
         )}
 
-
         {/* Save snapshot input */}
-        {features.snapshot && showSaveInput && (
+        {isFeatureEnabled('snapshot') && showSaveInput && (
           <div className="flex items-center gap-2 mb-2.5">
             <input
               value={snapshotName}
@@ -522,15 +516,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     existingEntries={entries}
                   />
                 ))}
-                {hasMoreResults && (
-                  <div ref={sentinelRef} className="h-1" aria-hidden="true" />
-                )}
+                {hasMoreResults && <div ref={sentinelRef} className="h-1" aria-hidden="true" />}
               </div>
             )}
             {searchQuery.trim() && filteredReserves.length === 0 && (
-              <p className="mt-1.5 px-2 ds-text-11 text-muted-foreground italic">
-                No tokens found
-              </p>
+              <p className="mt-1.5 px-2 ds-text-11 text-muted-foreground italic">No tokens found</p>
             )}
           </div>
         )}
@@ -561,11 +551,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               })}
               <button
                 type="button"
-                onClick={() =>
-                  setDismissedSuggestions(
-                    new Set(suggestedReserves.map((r) => getReserveKey(r))),
-                  )
-                }
+                onClick={() => setDismissedSuggestions(new Set(suggestedReserves.map((r) => getReserveKey(r))))}
                 className="inline-flex h-[var(--ds-chip-h)] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 ds-text-11 font-medium leading-none text-muted-foreground transition-colors duration-200 hover:bg-muted/60 hover:text-foreground"
                 aria-label="Dismiss all popular token suggestions"
                 title="Clear all suggestions"
@@ -607,9 +593,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               PORTFOLIO_THEME.bgSubtle,
             )}
           >
-            <p className="ds-text-13 font-semibold text-foreground">
-              Build your portfolio
-            </p>
+            <p className="ds-text-13 font-semibold text-foreground">Build your portfolio</p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
@@ -631,14 +615,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
       </div>
 
       {/* Saved Snapshots */}
-      {features.snapshot && snapshots.length > 0 && (
-        <div className={cn(
-          isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
-        )}>
+      {isFeatureEnabled('snapshot') && snapshots.length > 0 && (
+        <div className={cn(isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3')}>
           <div className="flex items-center justify-between mb-2">
-            <span className="ds-text-12 font-semibold text-foreground">
-              Saved Snapshots ({snapshots.length})
-            </span>
+            <span className="ds-text-12 font-semibold text-foreground">Saved Snapshots ({snapshots.length})</span>
             {canCompare && (
               <button
                 type="button"
@@ -650,9 +630,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </button>
             )}
           </div>
-          <p className="ds-text-10 text-muted-foreground mb-2">
-            Select 2 snapshots to compare
-          </p>
+          <p className="ds-text-10 text-muted-foreground mb-2">Select 2 snapshots to compare</p>
           <div className="space-y-1.5">
             {snapshots.map((s) => (
               <SnapshotItem
@@ -668,7 +646,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       )}
 
       {/* Compare view */}
-      {features.snapshot && showCompare && compareSnapshots && (
+      {isFeatureEnabled('snapshot') && showCompare && compareSnapshots && (
         <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
           <PortfolioCompareView
             snapshotA={compareSnapshots.a}
@@ -694,7 +672,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
             ←
           </button>
           <span className="ds-text-12 font-semibold tabular-nums min-w-[160px] text-center">
-            Variant {prototypeVariant} — {prototypeVariant === 'A' ? 'Current (effective left)' : prototypeVariant === 'B' ? '🔒 Wallet left + tooltip' : '→ Effective right'}
+            Variant {prototypeVariant} —{' '}
+            {prototypeVariant === 'A'
+              ? 'Current (effective left)'
+              : prototypeVariant === 'B'
+                ? '🔒 Wallet left + tooltip'
+                : '→ Effective right'}
           </span>
           <button
             type="button"

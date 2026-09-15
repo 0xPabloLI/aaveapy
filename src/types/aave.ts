@@ -1,9 +1,12 @@
 export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
 
 export type IncentiveMessageScalar = string | number | boolean | null;
-export type IncentiveMessage = string | IncentiveMessage[] | {
-  [key: string]: IncentiveMessageScalar | IncentiveMessage;
-};
+export type IncentiveMessage =
+  | string
+  | IncentiveMessage[]
+  | {
+      [key: string]: IncentiveMessageScalar | IncentiveMessage;
+    };
 
 export interface MeritCampaignBreakdown extends ForecastableBreakdown {
   campaignId: string;
@@ -161,13 +164,13 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   reserveId: string;
   /** V4 SDK ReserveId for pro.aave.com deep-links. */
   aaveProReserveId?: string;
-  
+
   // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;
   borrowApy?: number;
   tokenPrice?: number;
   utilizationPct?: number;
-  
+
   // Availability flags
   supplyDisabled?: boolean;
   borrowDisabled?: boolean;
@@ -175,8 +178,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   isPaused?: boolean;
   /** V4 only: false when status.active is false. Absent = active (V3 / V4 normal). */
   isActive?: false;
-  
-  
+
   // Rate calculation fields (from /api/markets reserves)
   decimals?: number;
   supplied?: string;
@@ -203,16 +205,16 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
   borrowIncentives?: number[];
-  
+
   // Merit APR incentives (CampaignGroup format)
   meritSupplys?: MeritCampaignGroup[];
   meritBorrows?: MeritCampaignGroup[];
-  
+
   // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];
   merklBorrows?: MerklOpportunityGroup[];
   merklHolds?: MerklOpportunityGroup[];
-  
+
   // Brevis APR incentives (array of objects)
   brevisSupplys?: BrevisIncentive[];
   brevisBorrows?: BrevisIncentive[];
@@ -227,7 +229,6 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   spokeId?: string;
   spokeName?: string;
   spokeAddress?: string;
-
 }
 
 export interface MarketsResponse {
@@ -338,8 +339,8 @@ export const BTC_RELATED = ['BTC', 'CBBTC', 'WBTC', 'LBTC', 'TBTC', 'EBTC'];
 export const PENDLE_TOKENS = ['PT-', 'YT-', 'SY-'];
 
 export const ETHEREUM_MARKET_NAMES: Record<string, string> = {
-  'AaveV3Ethereum': 'Core',
-  'AaveV3EthereumLido': 'Prime',
-  'AaveV3EthereumHorizon': 'Horizon RWA',
-  'AaveV3EthereumEtherFi': 'EtherFi',
+  AaveV3Ethereum: 'Core',
+  AaveV3EthereumLido: 'Prime',
+  AaveV3EthereumHorizon: 'Horizon RWA',
+  AaveV3EthereumEtherFi: 'EtherFi',
 };

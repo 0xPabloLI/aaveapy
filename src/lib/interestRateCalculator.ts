@@ -59,7 +59,7 @@ function calculateVariableBorrowRate(
   optimalUsageRatePct: number,
   baseVariableBorrowRatePct: number,
   variableRateSlope1Pct: number,
-  variableRateSlope2Pct: number
+  variableRateSlope2Pct: number,
 ): number {
   const optimal = Math.max(optimalUsageRatePct, 0.0001); // avoid division by zero
 
@@ -130,7 +130,9 @@ function computeRates(
   // We use Number() after dividing by a scale factor to keep values well
   // within safe integer range (< 2^53). The scale is derived from the
   // token decimals so the resulting numbers are in human-readable token units.
-  const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
+  // typeof guard narrows `number | undefined` (Number.isFinite alone does not narrow).
+  const decimals =
+    typeof rateInput.decimals === 'number' && Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
   const scaleNumber = Math.pow(10, decimals);
 
   const totalBorrowedTokens = Number(totalBorrowed) / scaleNumber;
@@ -138,22 +140,16 @@ function computeRates(
   const supplyDenominatorTokens = Number(supplyUsageDenominator) / scaleNumber;
 
   // Utilization as percent (0-100)
-  const borrowUsageRatePct =
-    borrowDenominatorTokens > 0
-      ? (totalBorrowedTokens / borrowDenominatorTokens) * 100
-      : 0;
+  const borrowUsageRatePct = borrowDenominatorTokens > 0 ? (totalBorrowedTokens / borrowDenominatorTokens) * 100 : 0;
 
-  const supplyUsageRatePct =
-    supplyDenominatorTokens > 0
-      ? (totalBorrowedTokens / supplyDenominatorTokens) * 100
-      : 0;
+  const supplyUsageRatePct = supplyDenominatorTokens > 0 ? (totalBorrowedTokens / supplyDenominatorTokens) * 100 : 0;
 
   const borrowRatePct = calculateVariableBorrowRate(
     borrowUsageRatePct,
     rateInput.optimalUtilization,
     rateInput.baseBorrowRate,
     rateInput.slopeBelowOptimal,
-    rateInput.slopeAboveOptimal
+    rateInput.slopeAboveOptimal,
   );
 
   // supplyRate = borrowRate * utilization * (1 - protocolFee / 100)
@@ -180,9 +176,11 @@ export interface NativeRateActionInputs {
 
 export function simulateNativeRatesAfterActions(
   rateInput: RateCalcInput,
-  { supplyAmount = '0', borrowAmount = '0' }: NativeRateActionInputs
+  { supplyAmount = '0', borrowAmount = '0' }: NativeRateActionInputs,
 ): NativeRateSimulation {
-  const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
+  // typeof guard narrows `number | undefined` (Number.isFinite alone does not narrow).
+  const decimals =
+    typeof rateInput.decimals === 'number' && Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
   const addedLiquidity = parseUnits(supplyAmount, decimals);
   const addedBorrow = parseUnits(borrowAmount, decimals);
 
@@ -201,19 +199,20 @@ export function simulateNativeRatesAfterActions(
   const supplyUsageDenominatorRaw = baseLiquidity + baseBorrowed + baseDeficit + addedLiquidity;
   const supplyUsageDenominator = supplyUsageDenominatorRaw > 0n ? supplyUsageDenominatorRaw : 0n;
 
-  return computeRates(rateInput, borrowUsageDenominator, supplyUsageDenominator, newBorrowed, addedLiquidity, addedBorrow);
+  return computeRates(
+    rateInput,
+    borrowUsageDenominator,
+    supplyUsageDenominator,
+    newBorrowed,
+    addedLiquidity,
+    addedBorrow,
+  );
 }
 
-export function simulateNativeRatesAfterSupply(
-  rateInput: RateCalcInput,
-  supplyAmount: string
-): NativeRateSimulation {
+export function simulateNativeRatesAfterSupply(rateInput: RateCalcInput, supplyAmount: string): NativeRateSimulation {
   return simulateNativeRatesAfterActions(rateInput, { supplyAmount, borrowAmount: '0' });
 }
 
-export function simulateNativeRatesAfterBorrow(
-  rateInput: RateCalcInput,
-  borrowAmount: string
-): NativeRateSimulation {
+export function simulateNativeRatesAfterBorrow(rateInput: RateCalcInput, borrowAmount: string): NativeRateSimulation {
   return simulateNativeRatesAfterActions(rateInput, { supplyAmount: '0', borrowAmount });
 }

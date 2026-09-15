@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractCapWarnings, formatProtocolCapText, type PortfolioCapWarning, type ProtocolCapWarning, type IncentiveCapWarning } from './portfolioCapWarnings';
+import {
+  extractCapWarnings,
+  formatProtocolCapText,
+  type PortfolioCapWarning,
+  type ProtocolCapWarning,
+  type IncentiveCapWarning,
+} from './portfolioCapWarnings';
 import type { RateSimulationComputedResult, SimulationCampaignDetail } from './rateSimulationCalculator';
 
 const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateSimulationComputedResult => ({
@@ -13,7 +19,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     inputUsd: 1000,
     currentNative: 3,
     currentIncentive: 5,
-    
+
     currentTotal: 8,
     afterNative: 2.5,
     afterIncentive: 4,
@@ -21,7 +27,12 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     deltaNative: -0.5,
     deltaIncentive: -1,
     deltaTotal: -1.5,
-    sources: { protocol: { current: 3, after: 2.5, delta: -0.5 }, merit: { current: 0, after: 0, delta: 0 }, merkl: { current: 0, after: 0, delta: 0 }, brevis: { current: 5, after: 4, delta: -1, campaigns: [] } },
+    sources: {
+      protocol: { current: 3, after: 2.5, delta: -0.5 },
+      merit: { current: 0, after: 0, delta: 0 },
+      merkl: { current: 0, after: 0, delta: 0 },
+      brevis: { current: 5, after: 4, delta: -1, campaigns: [] },
+    },
   },
   borrow: {
     hasInput: true,
@@ -30,7 +41,7 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     inputUsd: 500,
     currentNative: 5,
     currentIncentive: 0,
-    
+
     currentTotal: 5,
     afterNative: 5,
     afterIncentive: 0,
@@ -38,7 +49,12 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     deltaNative: 0,
     deltaIncentive: 0,
     deltaTotal: 0,
-    sources: { protocol: { current: 5, after: 5, delta: 0 }, merit: { current: 0, after: 0, delta: 0 }, merkl: { current: 0, after: 0, delta: 0 }, brevis: { current: 0, after: 0, delta: 0 } },
+    sources: {
+      protocol: { current: 5, after: 5, delta: 0 },
+      merit: { current: 0, after: 0, delta: 0 },
+      merkl: { current: 0, after: 0, delta: 0 },
+      brevis: { current: 0, after: 0, delta: 0 },
+    },
   },
   spread: { current: -2, after: -2.5, delta: -0.5, usesCurrentSide: null },
   utilization: { current: 0.8, after: 0.85, delta: 0.05, optimal: 0.9 },
@@ -175,7 +191,7 @@ describe('extractCapWarnings', () => {
       },
     });
     const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw).toBeDefined();
     expect(icw.source).toBe('brevis');
     expect(icw.capUsd).toBe(1000);
@@ -202,7 +218,7 @@ describe('extractCapWarnings', () => {
       },
     });
     const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw).toBeDefined();
     expect(icw.source).toBe('merit');
     expect(icw.capUsd).toBe(2000);
@@ -230,7 +246,7 @@ describe('extractCapWarnings', () => {
     });
     const entries = [{ reserveId: 'r1', borrowAmountUsd: 2000 }];
     const warnings = extractCapWarnings('r1', 'supply', result, entries);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw).toBeDefined();
     expect(icw.adjustToUsd).toBe(3000); // 5000 - 2000 borrow
     expect(icw.isCombineCap).toBe(true);
@@ -287,7 +303,7 @@ describe('extractCapWarnings', () => {
       },
     });
     const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw).toBeDefined();
     expect(icw.isCapBinding).toBe(false);
   });
@@ -342,7 +358,7 @@ describe('extractCapWarnings', () => {
       },
     });
     const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icws = warnings.filter(w => w.kind === 'incentive_cap') as IncentiveCapWarning[];
+    const icws = warnings.filter((w) => w.kind === 'incentive_cap') as IncentiveCapWarning[];
     expect(icws).toHaveLength(1);
     expect(icws[0].source).toBe('brevis');
     expect(icws[0].capUsd).toBe(1000);
@@ -378,7 +394,7 @@ describe('extractCapWarnings', () => {
       },
     });
     const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icws = warnings.filter(w => w.kind === 'incentive_cap') as IncentiveCapWarning[];
+    const icws = warnings.filter((w) => w.kind === 'incentive_cap') as IncentiveCapWarning[];
     expect(icws).toHaveLength(2);
     expect(icws[0].source).toBe('brevis');
     expect(icws[1].source).toBe('merit');
@@ -405,39 +421,50 @@ describe('extractCapWarnings', () => {
     });
     const entries = [{ reserveId: 'r1', borrowAmountUsd: 1500 }];
     const warnings = extractCapWarnings('r1', 'supply', result, entries);
-    const icw = warnings.find(w => w.kind === 'incentive_cap') as IncentiveCapWarning;
+    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
     expect(icw.adjustToUsd).toBe(0);
   });
 });
 
 describe('formatProtocolCapText', () => {
   it('formats supply cap text with available amount', () => {
-    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500' }))
-      .toBe('Supply limited to $11,500 available');
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500' })).toBe(
+      'Supply limited to $11,500 available',
+    );
   });
 
   it('formats borrow cap text with available amount', () => {
-    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700' }))
-      .toBe('Borrow limited to $4,700 available');
+    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700' })).toBe(
+      'Borrow limited to $4,700 available',
+    );
   });
 
   it('adds (liquidity) suffix when limitedByLiquidity is true', () => {
-    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700', limitedByLiquidity: true }))
-      .toBe('Borrow limited to $4,700 available (liquidity)');
+    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700', limitedByLiquidity: true })).toBe(
+      'Borrow limited to $4,700 available (liquidity)',
+    );
   });
 
   it('adds "Current" prefix when currentExceeded is true', () => {
-    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', currentExceeded: true }))
-      .toBe('Current Supply limited to $11,500 available');
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', currentExceeded: true })).toBe(
+      'Current Supply limited to $11,500 available',
+    );
   });
 
   it('combines currentExceeded and limitedByLiquidity', () => {
-    expect(formatProtocolCapText({ side: 'borrow', availableFormatted: '$4,700', currentExceeded: true, limitedByLiquidity: true }))
-      .toBe('Current Borrow limited to $4,700 available (liquidity)');
+    expect(
+      formatProtocolCapText({
+        side: 'borrow',
+        availableFormatted: '$4,700',
+        currentExceeded: true,
+        limitedByLiquidity: true,
+      }),
+    ).toBe('Current Borrow limited to $4,700 available (liquidity)');
   });
 
   it('does not add suffix when limitedByLiquidity is false', () => {
-    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', limitedByLiquidity: false }))
-      .toBe('Supply limited to $11,500 available');
+    expect(formatProtocolCapText({ side: 'supply', availableFormatted: '$11,500', limitedByLiquidity: false })).toBe(
+      'Supply limited to $11,500 available',
+    );
   });
 });

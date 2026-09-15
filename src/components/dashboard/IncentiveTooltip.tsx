@@ -2,7 +2,13 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritCampaignGroup, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
+import {
+  ReserveWithSpread,
+  MeritCampaignGroup,
+  MerklOpportunityGroup,
+  BrevisIncentive,
+  CampaignAccessStatus,
+} from '@/types/aave';
 import { formatPercent, formatUsd } from '@/lib/formatters';
 import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
@@ -60,7 +66,9 @@ function getMessageLines(message?: string | Record<string, unknown> | unknown[])
       if (parsed && typeof parsed === 'object') {
         return getMessageLines(parsed as Record<string, unknown>);
       }
-    } catch { /* not JSON, treat as plain string */ }
+    } catch {
+      /* not JSON, treat as plain string */
+    }
     return filterLines([{ text: message }]);
   }
   if (Array.isArray(message)) {
@@ -72,14 +80,12 @@ function getMessageLines(message?: string | Record<string, unknown> | unknown[])
             const values = Object.values(item as Record<string, unknown>)
               .map((entry) => formatValue(entry))
               .filter(Boolean);
-            return values.length > 0
-              ? { text: values.join(': '), emphasizePrefix: values.length > 1 }
-              : '';
+            return values.length > 0 ? { text: values.join(': '), emphasizePrefix: values.length > 1 } : '';
           }
           return '';
         })
         .filter(Boolean)
-        .map((item) => (typeof item === 'string' ? { text: item } : item))
+        .map((item) => (typeof item === 'string' ? { text: item } : item)),
     );
   }
   const values = Object.values(message)
@@ -173,10 +179,7 @@ const darkSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, stri
   ACI: '/icons/partners/aci-white.svg',
 };
 
-const getSourceIcon = (
-  sourceType?: IncentiveSource['sourceType'],
-  isDark?: boolean
-) => {
+const getSourceIcon = (sourceType?: IncentiveSource['sourceType'], isDark?: boolean) => {
   if (!sourceType || sourceType === 'Protocol') return null;
   const map = isDark ? darkSourceIconMap : lightSourceIconMap;
   return map[sourceType];
@@ -195,7 +198,7 @@ function resolveRewardTokenIconSrc(symbol?: string, preferredUrl?: string): stri
 
 function campaignsHaveUniformIcon(campaigns: IncentiveCampaign[]): boolean {
   const icons = campaigns
-    .map(c => resolveRewardTokenIconSrc(c.rewardTokenSymbol, c.rewardTokenIconUrl))
+    .map((c) => resolveRewardTokenIconSrc(c.rewardTokenSymbol, c.rewardTokenIconUrl))
     .filter(Boolean);
   if (icons.length === 0) return false;
   return new Set(icons).size === 1;
@@ -249,12 +252,15 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
   }, [incentiveSources]);
 
   const groupedBySource = useMemo(() => {
-    const map = new Map<string, {
-      sourceType: IncentiveSource['sourceType'];
-      sourceName: string;
-      sourceLink?: string;
-      items: typeof allEndedItems;
-    }>();
+    const map = new Map<
+      string,
+      {
+        sourceType: IncentiveSource['sourceType'];
+        sourceName: string;
+        sourceLink?: string;
+        items: typeof allEndedItems;
+      }
+    >();
     for (const item of allEndedItems) {
       const key = `${item.sourceType ?? 'unknown'}:${item.sourceName}`;
       const group = map.get(key) ?? {
@@ -284,7 +290,9 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
         } else {
           resolvedMessage = message;
         }
-      } catch { /* not JSON */ }
+      } catch {
+        /* not JSON */
+      }
       if (!resolvedMessage) resolvedMessage = message;
     } else {
       resolvedMessage = message as Record<string, unknown> | unknown[];
@@ -292,7 +300,10 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
     const lines = getMessageLines(resolvedMessage);
     if (lines.length === 0) return null;
     return (
-      <ul key={`${keyPrefix}-msg`} className="mt-[var(--ds-space-0-5)] space-y-[var(--ds-space-0-5)] ds-tooltip-body text-zinc-400">
+      <ul
+        key={`${keyPrefix}-msg`}
+        className="mt-[var(--ds-space-0-5)] space-y-[var(--ds-space-0-5)] ds-tooltip-body text-zinc-400"
+      >
         {lines.map((line, lineIndex) => (
           <li key={`${keyPrefix}-msg-line-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
             <span className="mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0" />
@@ -329,16 +340,20 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       {expanded && (
         <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
           {groupedBySource.map((group, sourceIndex) => {
-            const iconSrc = group.sourceType !== 'ACI'
-              ? getSourceIcon(group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined, isDark)
-              : null;
+            const iconSrc =
+              group.sourceType !== 'ACI'
+                ? getSourceIcon(
+                    group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined,
+                    isDark,
+                  )
+                : null;
 
             return (
-              <div
-                key={`ended-${sourceIndex}`}
-                className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
-              >
-                <div data-testid="ended-source-header" className="flex items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]">
+              <div key={`ended-${sourceIndex}`} className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]">
+                <div
+                  data-testid="ended-source-header"
+                  className="flex items-center gap-x-[var(--ds-space-1-5)] mb-[var(--ds-space-1)]"
+                >
                   <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0">
                     {iconSrc && (
                       <span
@@ -353,9 +368,7 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                         />
                       </span>
                     )}
-                    <span className="ds-tooltip-title text-zinc-400 break-words block min-w-0">
-                      {group.sourceName}
-                    </span>
+                    <span className="ds-tooltip-title text-zinc-400 break-words block min-w-0">{group.sourceName}</span>
                     {group.sourceLink && (
                       <a
                         href={group.sourceLink}
@@ -370,33 +383,41 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
                   </div>
                 </div>
                 {group.items.map((item, ci: number) => {
-                  const dateRangeText = item.lastEndedCampaign.startedAt && formatDateSafe(item.lastEndedCampaign.startedAt)
-                    ? `${formatDateSafe(item.lastEndedCampaign.startedAt)} - ${formatDateSafe(item.lastEndedCampaign.endedAt)}`
-                    : `Ended: ${formatDateSafe(item.lastEndedCampaign.endedAt)}`;
-                  const endedCampaignUrl = item.sourceLink && item.lastEndedCampaign.campaignId
-                    ? `${item.sourceLink}/campaigns/${item.lastEndedCampaign.campaignId}` : undefined;
+                  const ended = item.lastEndedCampaign;
+                  if (!ended) return null;
+                  const dateRangeText =
+                    ended.startedAt && formatDateSafe(ended.startedAt)
+                      ? `${formatDateSafe(ended.startedAt)} - ${formatDateSafe(ended.endedAt)}`
+                      : `Ended: ${formatDateSafe(ended.endedAt)}`;
+                  const endedCampaignUrl =
+                    item.sourceLink && ended.campaignId
+                      ? `${item.sourceLink}/campaigns/${ended.campaignId}`
+                      : undefined;
                   return (
-                  <div
-                    key={`ended-${sourceIndex}-c-${ci}`}
-                    className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
-                  >
-                    <div data-testid="ended-campaign-row" className="ds-tooltip-body flex items-start gap-x-[var(--ds-space-1-5)] text-zinc-400">
-                      <span className="break-words min-w-0 flex items-center gap-1.5">
-                        {dateRangeText}
-                        {endedCampaignUrl ? (
-                          <a
-                            href={endedCampaignUrl}
-                            {...externalLinkTabProps(isMobile)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400 flex-shrink-0"
-                            title="View campaign"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : null}
-                      </span>
+                    <div
+                      key={`ended-${sourceIndex}-c-${ci}`}
+                      className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
+                    >
+                      <div
+                        data-testid="ended-campaign-row"
+                        className="ds-tooltip-body flex items-start gap-x-[var(--ds-space-1-5)] text-zinc-400"
+                      >
+                        <span className="break-words min-w-0 flex items-center gap-1.5">
+                          {dateRangeText}
+                          {endedCampaignUrl ? (
+                            <a
+                              href={endedCampaignUrl}
+                              {...externalLinkTabProps(isMobile)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex h-5 w-5 items-center justify-center rounded-full transition-opacity opacity-50 hover:opacity-80 text-zinc-400 flex-shrink-0"
+                              title="View campaign"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : null}
+                        </span>
+                      </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -451,7 +472,7 @@ const IncentiveTooltip = ({
           </span>
         ) : (
           <span key={`txt-${index}`}>{part}</span>
-        )
+        ),
       )}
     </>
   );
@@ -473,10 +494,10 @@ const IncentiveTooltip = ({
     if (!dateString) return null;
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   };
 
@@ -492,10 +513,8 @@ const IncentiveTooltip = ({
     (type === 'supply'
       ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb))]'
       : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb))]');
-  const valueAccentClass =
-    accentTextClass ?? (type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan');
-  const valueBgClass =
-    accentBgClass ?? (type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10');
+  const valueAccentClass = accentTextClass ?? (type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan');
+  const valueBgClass = accentBgClass ?? (type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10');
   const isDark = resolvedTheme === 'dark';
   const tooltipSurfaceStyle = {
     backgroundColor: 'hsl(var(--card))',
@@ -515,7 +534,9 @@ const IncentiveTooltip = ({
 
     sources.forEach((source) => {
       const key = buildSourceGroupKey(source);
-      const campaigns = source.campaigns ?? [{ value: source.value, message: source.message, sourceType: source.sourceType }];
+      const campaigns = source.campaigns ?? [
+        { value: source.value, message: source.message, sourceType: source.sourceType },
+      ];
       const existing = grouped.get(key);
 
       if (!existing) {
@@ -539,7 +560,12 @@ const IncentiveTooltip = ({
     const sources: IncentiveSource[] = [];
 
     // Protocol incentives (number array)
-    const { protocol: protocolIncentives, merit: meritGroups, merkl: opportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, type);
+    const {
+      protocol: protocolIncentives,
+      merit: meritGroups,
+      merkl: opportunities,
+      brevis: brevisIncentives,
+    } = getIncentiveSources(reserve, type);
     if (protocolIncentives && Array.isArray(protocolIncentives) && protocolIncentives.length > 0) {
       const totalProtocol = protocolIncentives.reduce((sum, apr) => {
         if (!isNaN(apr) && apr >= 0) {
@@ -571,7 +597,14 @@ const IncentiveTooltip = ({
           const groupName = group.name?.trim() || 'Merit';
           const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
           const bdGroupLabel = extractActionLabelFromMeritMessage(group.message);
-          const bdLabel = bdActionLabel ?? bdGroupLabel ?? (activeBreakdowns.length > 1 ? (breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? `${groupName} (double yield)` : `${groupName} (base)`) : groupName);
+          const bdLabel =
+            bdActionLabel ??
+            bdGroupLabel ??
+            (activeBreakdowns.length > 1
+              ? breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0
+                ? `${groupName} (double yield)`
+                : `${groupName} (base)`
+              : groupName);
           return {
             value,
             startDate: breakdown.campaignStartedAt,
@@ -579,7 +612,13 @@ const IncentiveTooltip = ({
             message: breakdown.message ?? group.message,
             sourceType: 'ACI',
             campaignType: breakdown.campaignType,
-             ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? { positionCapUsd: breakdown.positionCapUsd, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: true } : {}),
+            ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0
+              ? {
+                  positionCapUsd: breakdown.positionCapUsd,
+                  isCombineCap: breakdown.isCombineCap ?? false,
+                  isNetPositionCap: true,
+                }
+              : {}),
           };
         });
 
@@ -619,8 +658,15 @@ const IncentiveTooltip = ({
               sourceType: 'Brevis' as const,
               campaignType: breakdown.campaignType ?? brevis.campaignType,
               aprCap: breakdown.aprCap ?? brevis.aprCap,
-              ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0 ? { positionCapUsd: breakdown.positionCapUsd, isCombineCap: breakdown.isCombineCap ?? brevis.isCombineCap ?? true } : {}),
-              ...(brevis.positionCapUsd != null && brevis.positionCapUsd > 0 && breakdown.positionCapUsd == null ? { positionCapUsd: brevis.positionCapUsd, isCombineCap: brevis.isCombineCap ?? true } : {}),
+              ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0
+                ? {
+                    positionCapUsd: breakdown.positionCapUsd,
+                    isCombineCap: breakdown.isCombineCap ?? brevis.isCombineCap ?? true,
+                  }
+                : {}),
+              ...(brevis.positionCapUsd != null && brevis.positionCapUsd > 0 && breakdown.positionCapUsd == null
+                ? { positionCapUsd: brevis.positionCapUsd, isCombineCap: brevis.isCombineCap ?? true }
+                : {}),
             };
           })
           .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
@@ -646,20 +692,24 @@ const IncentiveTooltip = ({
 
         for (const breakdown of opportunity.breakdowns) {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
-        const effectiveRate = pointRateMap
-          ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
-          : tydroPointToUsdRate;
-        // AAV-1013: borrowBlacklist short-circuits — if user has borrow and opportunity has borrowBlacklist, incentive is 0.
-        const isBorrowBlacklisted = opportunity.borrowBlacklist === true && userHasBorrow;
-        const apr = isBorrowBlacklisted ? 0 : (
-          forecastStates
-            ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
-            : getMerklBreakdownApr(breakdown, effectiveRate)
-        );
-        const whitelistOnly = breakdown.whitelistOnly === true;
-        const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
-        if (!isNaN(apr) && apr >= 0) {
-          const displayValue = isApy ? convertAprToApy(apr) : apr;
+          const effectiveRate = pointRateMap
+            ? getPointToUsdRate(breakdown.rewardTokenSymbol, pointRateMap)
+            : tydroPointToUsdRate;
+          // AAV-1013: borrowBlacklist short-circuits — if user has borrow and opportunity has borrowBlacklist, incentive is 0.
+          const isBorrowBlacklisted = opportunity.borrowBlacklist === true && userHasBorrow;
+          const apr = isBorrowBlacklisted
+            ? 0
+            : forecastStates
+              ? sanitizePercent(forecastMerklApr(breakdown, 0, forecastStates, effectiveRate))
+              : getMerklBreakdownApr(breakdown, effectiveRate);
+          const whitelistOnly = breakdown.whitelistOnly === true;
+          const included = isMerklWhitelistBreakdownIncluded(
+            breakdown,
+            whitelistMerklCampaignIds,
+            campaignAccessStatuses?.[breakdown.campaignId],
+          );
+          if (!isNaN(apr) && apr >= 0) {
+            const displayValue = isApy ? convertAprToApy(apr) : apr;
             const oppLink = getMerklOppLink(opportunity);
             const campaignUrl = oppLink ? `${oppLink}/campaigns/${breakdown.campaignId}` : undefined;
             sources.push({
@@ -671,23 +721,41 @@ const IncentiveTooltip = ({
               link: oppLink,
               message: opportunity.message,
               rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                   campaigns: [{
-                     value: included ? displayValue : 0,
-                     rawValue: displayValue,
-                     whitelistOnly,
-                     included,
-                     startDate: breakdown.campaignStartedAt,
-                     endDate: breakdown.campaignEndedAt,
-                     campaignId: breakdown.campaignId,
-                     ...(campaignUrl ? { campaignUrl } : {}),
-                     sourceType: 'Merkl',
-                 campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
-                       aprCap: breakdown.aprCap,
-                          ...(() => { const capUsd = resolvePositionCapUsd(breakdown.positionCapNative, breakdown.positionCapUsd, reserve.tokenPrice, reserve.decimals); return capUsd != null && capUsd > 0 ? { positionCapUsd: capUsd, positionCapNative: breakdown.positionCapNative, tokenSymbol: reserve.tokenSymbol, isCombineCap: breakdown.isCombineCap ?? false, isNetPositionCap: opportunity.netPositionConstraint != null } : {}; })(),
-                       rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
-                       rewardTokenSymbol: breakdown.rewardTokenSymbol,
-                         lastEndedCampaign: breakdown.lastEndedCampaign,
-                    }],
+              campaigns: [
+                {
+                  value: included ? displayValue : 0,
+                  rawValue: displayValue,
+                  whitelistOnly,
+                  included,
+                  startDate: breakdown.campaignStartedAt,
+                  endDate: breakdown.campaignEndedAt,
+                  campaignId: breakdown.campaignId,
+                  ...(campaignUrl ? { campaignUrl } : {}),
+                  sourceType: 'Merkl',
+                  campaignType: breakdown.campaignType ?? 'DUTCH_AUCTION',
+                  aprCap: breakdown.aprCap,
+                  ...(() => {
+                    const capUsd = resolvePositionCapUsd(
+                      breakdown.positionCapNative,
+                      breakdown.positionCapUsd,
+                      reserve.tokenPrice,
+                      reserve.decimals,
+                    );
+                    return capUsd != null && capUsd > 0
+                      ? {
+                          positionCapUsd: capUsd,
+                          positionCapNative: breakdown.positionCapNative,
+                          tokenSymbol: reserve.tokenSymbol,
+                          isCombineCap: breakdown.isCombineCap ?? false,
+                          isNetPositionCap: opportunity.netPositionConstraint != null,
+                        }
+                      : {};
+                  })(),
+                  rewardTokenIconUrl: breakdown.rewardTokenIconUrl,
+                  rewardTokenSymbol: breakdown.rewardTokenSymbol,
+                  lastEndedCampaign: breakdown.lastEndedCampaign,
+                },
+              ],
             });
           }
         }
@@ -696,7 +764,6 @@ const IncentiveTooltip = ({
 
     return groupIncentiveSources(sources);
   };
-
 
   const incentiveSources = buildIncentiveSources();
   const orderedIncentiveSources = useMemo(() => {
@@ -727,10 +794,11 @@ const IncentiveTooltip = ({
   }, [incentiveSources, campaignAccessStatuses]);
 
   const nativeApy = type === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
-  const displayTargetApr = (aprCap: number) => isApy ? convertAprToApy(aprCap) : aprCap;
-  const displayNative = () => isApy ? nativeApy : apyToApr(nativeApy);
+  const displayTargetApr = (aprCap: number) => (isApy ? convertAprToApy(aprCap) : aprCap);
+  const displayNative = () => (isApy ? nativeApy : apyToApr(nativeApy));
 
-  const CAMPAIGN_DESC_WRAPPER = 'mt-[var(--ds-space-1)] rounded-md bg-muted/40 border-l-2 border-muted-foreground/30 pl-[var(--ds-space-1-5)] py-[3px] pr-[var(--ds-space-1)]';
+  const CAMPAIGN_DESC_WRAPPER =
+    'mt-[var(--ds-space-1)] rounded-md bg-muted/40 border-l-2 border-muted-foreground/30 pl-[var(--ds-space-1-5)] py-[3px] pr-[var(--ds-space-1)]';
 
   const renderCampaignTypeDescription = (campaign: IncentiveCampaign) => {
     const ct = campaign.campaignType;
@@ -740,7 +808,8 @@ const IncentiveTooltip = ({
       return (
         <div data-campaign-desc="TARGET_TOTAL_APR" className={CAMPAIGN_DESC_WRAPPER}>
           <p className="ds-tooltip-body break-words text-muted-foreground">
-            Target total {isApy ? 'APY' : 'APR'}: {formatPercent(displayTargetApr(campaign.aprCap!))} = Native {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
+            Target total {isApy ? 'APY' : 'APR'}: {formatPercent(displayTargetApr(campaign.aprCap!))} = Native{' '}
+            {formatPercent(displayNative())} + Merkl {formatPercent(campaign.rawValue ?? campaign.value)}
           </p>
         </div>
       );
@@ -781,7 +850,11 @@ const IncentiveTooltip = ({
     return null;
   };
 
-  const renderCampaignMessageLines = (message: IncentiveCampaign['message'], keyPrefix: string, accentClass: string) => {
+  const renderCampaignMessageLines = (
+    message: IncentiveCampaign['message'],
+    keyPrefix: string,
+    accentClass: string,
+  ) => {
     const lines = getMessageLines(message);
     if (lines.length === 0) return null;
     return (
@@ -796,15 +869,23 @@ const IncentiveTooltip = ({
     );
   };
 
-  const renderCampaignContent = (campaign: IncentiveCampaign, campaignAccentClass: string, keyPrefix: string, showApr?: boolean) => {
-    const dateRangeText = campaign.startDate && campaign.endDate && formatDateRange(campaign.startDate, campaign.endDate)
-      ? `Campaign time: ${formatDateRange(campaign.startDate, campaign.endDate)}`
-      : '';
+  const renderCampaignContent = (
+    campaign: IncentiveCampaign,
+    campaignAccentClass: string,
+    keyPrefix: string,
+    showApr?: boolean,
+  ) => {
+    const dateRangeText =
+      campaign.startDate && campaign.endDate && formatDateRange(campaign.startDate, campaign.endDate)
+        ? `Campaign time: ${formatDateRange(campaign.startDate, campaign.endDate)}`
+        : '';
     const campaignIconSrc = resolveRewardTokenIconSrc(campaign.rewardTokenSymbol, campaign.rewardTokenIconUrl);
     return (
       <>
         {dateRangeText && (
-          <div className={`ds-tooltip-body mt-[var(--ds-space-1)] flex items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}>
+          <div
+            className={`ds-tooltip-body mt-[var(--ds-space-1)] flex items-start gap-x-[var(--ds-space-1-5)] ${campaignAccentClass}`}
+          >
             <span className="min-w-0 inline-flex items-center gap-1.5">
               <span className="break-words min-w-0">{dateRangeText}</span>
               {campaign.campaignUrl ? (
@@ -822,25 +903,30 @@ const IncentiveTooltip = ({
             {showApr && (
               <span data-testid="campaign-apr" className="flex items-center gap-0.5 whitespace-nowrap ml-auto">
                 {campaignIconSrc && (
-                  <img
-                    src={campaignIconSrc}
-                    alt=""
-                    className="h-3.5 w-3.5 flex-shrink-0 rounded-full"
-                    loading="lazy"
-                  />
+                  <img src={campaignIconSrc} alt="" className="h-3.5 w-3.5 flex-shrink-0 rounded-full" loading="lazy" />
                 )}
-                <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>{formatPercent(campaign.value)}</span>
+                <span className={`tabular-nums font-semibold ${campaignAccentClass}`}>
+                  {formatPercent(campaign.value)}
+                </span>
               </span>
             )}
           </div>
         )}
         {renderCampaignTypeDescription(campaign)}
-         {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
-           <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-amber-600 dark:text-amber-400">
-              Incentive on first {campaign.positionCapNative != null && campaign.tokenSymbol != null
-                ? (formatPositionCapNativeDisplay(campaign.positionCapNative, campaign.tokenSymbol, reserve.decimals) ?? formatUsd(campaign.positionCapUsd))
-                : formatUsd(campaign.positionCapUsd)} {campaign.isCombineCap ? 'of combined supply + borrow' : campaign.isNetPositionCap ? 'of net supply − borrow' : type} only
-           </p>
+        {campaign.positionCapUsd != null && campaign.positionCapUsd > 0 && (
+          <p className="ds-tooltip-body mt-[var(--ds-space-1)] break-words text-amber-600 dark:text-amber-400">
+            Incentive on first{' '}
+            {campaign.positionCapNative != null && campaign.tokenSymbol != null
+              ? (formatPositionCapNativeDisplay(campaign.positionCapNative, campaign.tokenSymbol, reserve.decimals) ??
+                formatUsd(campaign.positionCapUsd))
+              : formatUsd(campaign.positionCapUsd)}{' '}
+            {campaign.isCombineCap
+              ? 'of combined supply + borrow'
+              : campaign.isNetPositionCap
+                ? 'of net supply − borrow'
+                : type}{' '}
+            only
+          </p>
         )}
         {renderCampaignMessageLines(campaign.message, keyPrefix, campaignAccentClass)}
       </>
@@ -848,8 +934,7 @@ const IncentiveTooltip = ({
   };
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
-    const campaignsBase =
-      source.campaigns ?? [{ value: source.value, sourceType: source.sourceType }];
+    const campaignsBase = source.campaigns ?? [{ value: source.value, sourceType: source.sourceType }];
     const campaigns = [...campaignsBase].sort((a, b) => {
       const aExcluded = a.whitelistOnly === true && a.included === false;
       const bExcluded = b.whitelistOnly === true && b.included === false;
@@ -973,10 +1058,7 @@ const IncentiveTooltip = ({
       const tooltipWidth = tooltipRef.current.offsetWidth;
       const minLeft = 16;
       const maxLeft = Math.max(minLeft, window.innerWidth - tooltipWidth - minLeft);
-      const baseLeft =
-        type === 'borrow'
-          ? anchored.triggerCenterX - tooltipWidth + 24
-          : anchored.position.x;
+      const baseLeft = type === 'borrow' ? anchored.triggerCenterX - tooltipWidth + 24 : anchored.position.x;
       const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
       setTooltipLeft(nextLeft);
       const gap = 8;
@@ -988,12 +1070,11 @@ const IncentiveTooltip = ({
       const tooltipHeight = tooltipRef.current.offsetHeight;
       const minTop = viewportEdge;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
-      const triggerTopY = anchoredTriggerRect?.top ?? (anchored.position.y - effectiveTriggerHeight);
+      const triggerTopY = anchoredTriggerRect?.top ?? anchored.position.y - effectiveTriggerHeight;
       const desiredTopTop = triggerTopY - tooltipHeight - gap;
       const spaceBelow = window.innerHeight - desiredBottomTop - viewportEdge;
       const spaceAbove = triggerTopY - gap - viewportEdge;
-      const shouldPlaceAbove =
-        spaceBelow < tooltipHeight + flipThreshold && spaceAbove > spaceBelow + flipThreshold;
+      const shouldPlaceAbove = spaceBelow < tooltipHeight + flipThreshold && spaceAbove > spaceBelow + flipThreshold;
       setTooltipPlacement(shouldPlaceAbove ? 'top' : 'bottom');
       const desiredTop = shouldPlaceAbove ? desiredTopTop : desiredBottomTop;
       const clampedTop = Math.min(Math.max(desiredTop, minTop), maxTop);
@@ -1016,9 +1097,7 @@ const IncentiveTooltip = ({
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined' && tooltipRef.current
-        ? new ResizeObserver(updatePosition)
-        : null;
+      typeof ResizeObserver !== 'undefined' && tooltipRef.current ? new ResizeObserver(updatePosition) : null;
     if (resizeObserver && tooltipRef.current) {
       resizeObserver.observe(tooltipRef.current);
     }
@@ -1044,10 +1123,8 @@ const IncentiveTooltip = ({
     animated?: boolean;
   }) {
     const campaigns = source.campaigns ?? [];
-    const hasIncludedCampaign =
-      campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
-    const allWhitelistExcluded =
-      source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
+    const hasIncludedCampaign = campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
+    const allWhitelistExcluded = source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
     const sourceDisplayValue = allWhitelistExcluded
       ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
       : source.value;
@@ -1104,7 +1181,10 @@ const IncentiveTooltip = ({
               </a>
             ) : null}
           </span>
-          <span data-testid="source-header-apr" className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 ml-auto`}>
+          <span
+            data-testid="source-header-apr"
+            className={`${valueClass} whitespace-nowrap flex items-center gap-0.5 ml-auto`}
+          >
             {headerRewardTokenIcon && (
               <img
                 src={headerRewardTokenIcon}
@@ -1133,27 +1213,21 @@ const IncentiveTooltip = ({
       >
         {/* Detailed sources */}
         {hasDetails ? (
-              <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
-                <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
-                <div className="divide-y divide-border/40">
-                {orderedIncentiveSources.map((source, index) => (
-                      <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} />
-                    ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-[var(--ds-space-2)]">
-                    <p className="ds-tooltip-body text-muted-foreground italic">
-                      No detailed breakdown available
-                    </p>
-                  </div>
-                )}
-                <RecentlyEndedSection
-                  incentiveSources={incentiveSources}
-                  isDark={isDark}
-                  isMobile={true}
-                />
-            </BottomSheet>
+          <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+            <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
+            <div className="divide-y divide-border/40">
+              {orderedIncentiveSources.map((source, index) => (
+                <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-[var(--ds-space-2)]">
+            <p className="ds-tooltip-body text-muted-foreground italic">No detailed breakdown available</p>
+          </div>
+        )}
+        <RecentlyEndedSection incentiveSources={incentiveSources} isDark={isDark} isMobile={true} />
+      </BottomSheet>
     );
     if (usePortal && portalTarget) {
       return createPortal(content, portalTarget);
@@ -1165,25 +1239,22 @@ const IncentiveTooltip = ({
   const content = (
     <>
       {/* Background overlay - subtle for click-away */}
-      <div 
-        className="fixed inset-0 z-30 animate-in fade-in-0 duration-200" 
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-30 animate-in fade-in-0 duration-200" onClick={onClose} />
       {/* Tooltip content with smooth zoom + fade animation */}
       <div
         ref={tooltipRef}
         className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
           tooltipPlacement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
         }`}
-        style={{ 
+        style={{
           left: `${tooltipLeft ?? position.x}px`,
           top: `${tooltipTop ?? position.y + 8}px`,
           ...tooltipSurfaceStyle,
         }}
       >
         {/* Arrow using SVG dual-path (fill + stroke separated) — matches TooltipCalloutArrow approach */}
-        {showTooltipArrow && (
-          tooltipPlacement === 'top' ? (
+        {showTooltipArrow &&
+          (tooltipPlacement === 'top' ? (
             <svg
               className="absolute pointer-events-none z-20"
               style={{ left: `${arrowLeft}px`, bottom: -8 }}
@@ -1193,7 +1264,13 @@ const IncentiveTooltip = ({
               aria-hidden
             >
               <path d="M0 0 L8 9 L16 0 Z" fill="hsl(var(--card))" />
-              <path d="M0 0 L8 9 L16 0" stroke="hsl(var(--border) / 0.6)" strokeWidth="1" strokeLinejoin="round" fill="none" />
+              <path
+                d="M0 0 L8 9 L16 0"
+                stroke="hsl(var(--border) / 0.6)"
+                strokeWidth="1"
+                strokeLinejoin="round"
+                fill="none"
+              />
             </svg>
           ) : (
             <svg
@@ -1205,10 +1282,15 @@ const IncentiveTooltip = ({
               aria-hidden
             >
               <path d="M0 9 L8 0 L16 9 Z" fill="hsl(var(--card))" />
-              <path d="M0 9 L8 0 L16 9" stroke="hsl(var(--border) / 0.6)" strokeWidth="1" strokeLinejoin="round" fill="none" />
+              <path
+                d="M0 9 L8 0 L16 9"
+                stroke="hsl(var(--border) / 0.6)"
+                strokeWidth="1"
+                strokeLinejoin="round"
+                fill="none"
+              />
             </svg>
-          )
-        )}
+          ))}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
           {hasIneligibleCampaigns && (
@@ -1222,23 +1304,17 @@ const IncentiveTooltip = ({
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
               <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
               <div className="divide-y divide-border/40">
-              {orderedIncentiveSources.map((source, index) => (
-                <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} animated />
-              ))}
+                {orderedIncentiveSources.map((source, index) => (
+                  <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} animated />
+                ))}
               </div>
             </div>
           ) : (
             <div className="mb-[var(--ds-space-2)]">
-              <p className="ds-tooltip-body text-muted-foreground italic">
-                No detailed breakdown available
-              </p>
+              <p className="ds-tooltip-body text-muted-foreground italic">No detailed breakdown available</p>
             </div>
           )}
-          <RecentlyEndedSection
-            incentiveSources={incentiveSources}
-            isDark={isDark}
-            isMobile={false}
-          />
+          <RecentlyEndedSection incentiveSources={incentiveSources} isDark={isDark} isMobile={false} />
         </div>
       </div>
     </>

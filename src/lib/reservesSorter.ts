@@ -5,15 +5,7 @@ export type { SortOrder } from './sorters';
 
 export type SortMode = 'total' | 'native' | 'incentive';
 
-export type SortableColumn =
-  | 'token'
-  | 'price'
-  | 'market'
-  | 'size'
-  | 'util'
-  | 'supply'
-  | 'borrow'
-  | 'spread';
+export type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
 export type SizeSortMode =
   | 'supply'
@@ -79,12 +71,7 @@ function orderMultiplier(order: SortOrder): number {
   return order === 'asc' ? 1 : -1;
 }
 
-function compareByToken<R>(
-  a: R,
-  b: R,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareByToken<R>(a: R, b: R, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   const m = orderMultiplier(order);
   const byToken = vg.getTokenSymbol(a).localeCompare(vg.getTokenSymbol(b), undefined, { sensitivity: 'base' });
   if (byToken !== 0) return m * byToken;
@@ -93,12 +80,7 @@ function compareByToken<R>(
   return m * vg.getReserveId(a).localeCompare(vg.getReserveId(b));
 }
 
-function compareByMarket<R>(
-  a: R,
-  b: R,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareByMarket<R>(a: R, b: R, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   const m = orderMultiplier(order);
   const byMarket = vg.getMarketName(a).localeCompare(vg.getMarketName(b), undefined, { sensitivity: 'base' });
   if (byMarket !== 0) return m * byMarket;
@@ -107,12 +89,7 @@ function compareByMarket<R>(
   return m * vg.getReserveId(a).localeCompare(vg.getReserveId(b));
 }
 
-function compareByPrice<R>(
-  a: R,
-  b: R,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareByPrice<R>(a: R, b: R, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   // null → -Infinity: missing values sort last in desc (preserves original ReservesTable behavior)
   const aP = vg.getTokenPrice(a) ?? -Infinity;
   const bP = vg.getTokenPrice(b) ?? -Infinity;
@@ -121,13 +98,7 @@ function compareByPrice<R>(
   return vg.getReserveId(a).localeCompare(vg.getReserveId(b));
 }
 
-function compareBySize<R>(
-  a: R,
-  b: R,
-  mode: SizeSortMode,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareBySize<R>(a: R, b: R, mode: SizeSortMode, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   // null → -Infinity: missing values sort last in desc (preserves original behavior)
   let comparison: number;
 
@@ -161,14 +132,18 @@ function compareBySize<R>(
     comparison = aT - bT;
   } else if (mode === 'supplyCapPct') {
     return compareSizeToCapPct(
-      vg.getReserveSizeUsd(a), vg.getReserveSizeUsd(b),
-      vg.getSupplyCapUsd(a), vg.getSupplyCapUsd(b),
+      vg.getReserveSizeUsd(a),
+      vg.getReserveSizeUsd(b),
+      vg.getSupplyCapUsd(a),
+      vg.getSupplyCapUsd(b),
       order,
     );
   } else if (mode === 'borrowCapPct') {
     return compareSizeToCapPct(
-      vg.getTotalBorrowedUsd(a), vg.getTotalBorrowedUsd(b),
-      vg.getBorrowCapUsd(a), vg.getBorrowCapUsd(b),
+      vg.getTotalBorrowedUsd(a),
+      vg.getTotalBorrowedUsd(b),
+      vg.getBorrowCapUsd(a),
+      vg.getBorrowCapUsd(b),
       order,
     );
   } else if (mode === 'availableLiquidity') {
@@ -185,13 +160,7 @@ function compareBySize<R>(
   return vg.getReserveId(a).localeCompare(vg.getReserveId(b));
 }
 
-function compareByUtil<R>(
-  a: R,
-  b: R,
-  mode: UtilSortMode,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareByUtil<R>(a: R, b: R, mode: UtilSortMode, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   // null → -Infinity: missing values sort last in desc (preserves original behavior)
   let comparison: number;
 
@@ -253,12 +222,7 @@ export function compareSupplyOrBorrow<R>(
   }
 }
 
-function compareBySpread<R>(
-  a: R,
-  b: R,
-  order: SortOrder,
-  vg: ReserveSortValueGetters<R>,
-): number {
+function compareBySpread<R>(a: R, b: R, order: SortOrder, vg: ReserveSortValueGetters<R>): number {
   const aSupplyDisabled = vg.isSupplyDisabled(a);
   const bSupplyDisabled = vg.isSupplyDisabled(b);
   const aBorrowDisabled = vg.isBorrowDisabled(a);
@@ -301,16 +265,30 @@ export function sortReserves<R>(
     }
     if (sortColumn === 'supply') {
       return compareSupplyOrBorrow(
-        a, b, config.supplySortMode, config.supplySortOrder,
-        vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal,
-        vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg,
+        a,
+        b,
+        config.supplySortMode,
+        config.supplySortOrder,
+        vg.getDisplaySupplyNative,
+        vg.getDisplaySupplyIncentive,
+        vg.getDisplaySupplyTotal,
+        vg.hasSupplyIncentiveSource,
+        vg.isSupplyDisabled,
+        vg,
       );
     }
     if (sortColumn === 'borrow') {
       return compareSupplyOrBorrow(
-        a, b, config.borrowSortMode, config.borrowSortOrder,
-        vg.getDisplayBorrowNative, vg.getDisplayBorrowIncentive, vg.getDisplayBorrowTotal,
-        vg.hasBorrowIncentiveSource, vg.isBorrowDisabled, vg,
+        a,
+        b,
+        config.borrowSortMode,
+        config.borrowSortOrder,
+        vg.getDisplayBorrowNative,
+        vg.getDisplayBorrowIncentive,
+        vg.getDisplayBorrowTotal,
+        vg.hasBorrowIncentiveSource,
+        vg.isBorrowDisabled,
+        vg,
       );
     }
     return compareBySpread(a, b, config.spreadSortOrder, vg);

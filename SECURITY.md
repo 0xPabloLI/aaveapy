@@ -65,6 +65,22 @@ In **Settings → Branches**:
 - You can edit PR descriptions, remove sensitive comments, and lock conversations.
 - Git history can be rewritten, but previously cloned/forked copies may still retain old data.
 
+## Dependency Supply-Chain Policy
+
+Three layers complement GitHub's Dependabot alerts / security updates:
+
+| Layer | Tool | Where |
+| --- | --- | --- |
+| Known CVEs | `npm audit --omit=dev --audit-level=high` + `osv-scanner` | CI `security-audit`, pre-push |
+| Behavioural analysis | Socket Firewall (`sfw npm ci`) | CI `socket-firewall` |
+| **Minimum release age** | `scripts/check-dep-release-age.mjs` | CI `repo-policy` (lockfile PRs) |
+
+**Minimum release age:** adopted dependency versions must have been published at
+least **7 days** ago (`MIN_RELEASE_AGE_DAYS`, default 7). A freshly published
+compromised or buggy release cannot land here on day zero. Overrides are
+deliberate and must be documented in the PR description
+(`MIN_RELEASE_AGE_DAYS=0` via workflow dispatch).
+
 ## Local verification commands
 
 ```bash

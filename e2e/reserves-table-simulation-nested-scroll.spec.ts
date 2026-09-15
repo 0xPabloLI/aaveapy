@@ -20,9 +20,7 @@ async function openExpandedSimulation(page: Parameters<typeof test>[0]['page']) 
   await page.goto('/');
   await waitDesktopTable(page);
 
-  const supplyInput = page.locator(
-    '[data-reserves-sticky-scenario] input[aria-label="Supply amount"]',
-  );
+  const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
   await supplyInput.fill('10000000');
   await page.waitForTimeout(1000);
 
@@ -36,16 +34,12 @@ async function openExpandedSimulation(page: Parameters<typeof test>[0]['page']) 
 }
 
 test.describe('Reserves simulation document scroll (desktop)', () => {
-  test('wheel over simulation scrolls the document without inner vertical overflow', async ({
-    page,
-  }) => {
+  test('wheel over simulation scrolls the document without inner vertical overflow', async ({ page }) => {
     const { scrollPort } = await openExpandedSimulation(page);
     const before = await readInnerScrollMetrics(scrollPort);
 
     expect(before.maxScroll, 'simulation must not create an inner vertical scroll range').toBeLessThanOrEqual(2);
-    expect(before.overflowY, 'simulation must not use an inner vertical scrollport').not.toMatch(
-      /^(auto|scroll)$/,
-    );
+    expect(before.overflowY, 'simulation must not use an inner vertical scrollport').not.toMatch(/^(auto|scroll)$/);
 
     await scrollPort.hover();
     const windowBefore = await page.evaluate(() => window.scrollY);
@@ -61,9 +55,7 @@ test.describe('Reserves simulation document scroll (desktop)', () => {
     expect(after.scrollTop, 'wheel must not be absorbed by the simulation wrapper').toBeLessThanOrEqual(1);
   });
 
-  test('consecutive wheels keep inner scrollTop at zero while the scenario stays unchanged', async ({
-    page,
-  }) => {
+  test('consecutive wheels keep inner scrollTop at zero while the scenario stays unchanged', async ({ page }) => {
     const { scrollPort, supplyInput } = await openExpandedSimulation(page);
     const initialScenario = await supplyInput.inputValue();
     const initialWindowY = await page.evaluate(() => window.scrollY);

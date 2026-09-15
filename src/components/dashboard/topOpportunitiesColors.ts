@@ -74,7 +74,7 @@ export const getAccentBgClass = (value: number | null) => {
 
 export const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
   if (value === null) return 'text-muted-foreground';
-  const intensity = 1 - (index / Math.max(total - 1, 1));
+  const intensity = 1 - index / Math.max(total - 1, 1);
 
   if (intensity >= 0.8) {
     return 'bg-gradient-to-r from-purple-700 via-purple-600 to-purple-600 text-transparent bg-clip-text';
@@ -93,7 +93,7 @@ export const getSpreadColorClass = (value: number | null, index: number = 0, tot
 
 export const getSpreadAccentClass = (value: number | null, index: number = 0, total: number = 5) => {
   if (value === null) return 'text-muted-foreground';
-  const intensity = 1 - (index / Math.max(total - 1, 1));
+  const intensity = 1 - index / Math.max(total - 1, 1);
   if (intensity >= 0.8) return 'ds-text-purple-600-70';
   if (intensity >= 0.6) return 'ds-text-purple-500-70';
   if (intensity >= 0.4) return 'text-fuchsia-500/70';

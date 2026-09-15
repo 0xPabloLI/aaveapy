@@ -39,11 +39,7 @@ export interface UsePortfolioToggleArgs {
 export interface UsePortfolioToggleResult {
   portfolioReserveIds: Set<string>;
   hiddenReserveIds: Set<string>;
-  handlePortfolioToggle: (
-    reserveId: string,
-    reserve: ReserveWithSpread,
-    side?: 'supply' | 'borrow',
-  ) => void;
+  handlePortfolioToggle: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
   portfolioResults: PortfolioPositionResult[];
   portfolioSummary: PortfolioSummary;
   portfolioHealthFactors?: PortfolioHealthFactor[];
@@ -165,16 +161,10 @@ export const usePortfolioToggle = ({
           const s = e[side];
           const amountUsd = resolvePositionAmountUsd(s, reserve);
           if (amountUsd <= 0) continue;
-          const nativePercent =
-            side === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
-          const incentiveArr =
-            side === 'supply'
-              ? (reserve.supplyIncentives ?? [])
-              : (reserve.borrowIncentives ?? []);
+          const nativePercent = side === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
+          const incentiveArr = side === 'supply' ? (reserve.supplyIncentives ?? []) : (reserve.borrowIncentives ?? []);
           const incentivePercent = incentiveArr.reduce((acc, v) => acc + v, 0);
-          out.push(
-            buildPortfolioPositionResult(e.reserveId, side, amountUsd, nativePercent, incentivePercent),
-          );
+          out.push(buildPortfolioPositionResult(e.reserveId, side, amountUsd, nativePercent, incentivePercent));
         }
         return out;
       });
