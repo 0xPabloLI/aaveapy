@@ -16,4 +16,9 @@ describe('getChainIconSrc', () => {
     const src = getChainIconSrc(143);
     expect(src).toBe('/icons/networks/monad.svg');
   });
+
+  it('returns chainlink-arc icon for chain ID 5042', () => {
+    const src = getChainIconSrc(5042);
+    expect(src).toBe('/icons/networks/chainlink-arc.svg');
+  });
 });

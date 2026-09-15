@@ -26,6 +26,14 @@ describe('chainRegistry', () => {
       expect(AAVE_V4_CHAIN_IDS).toContain(1);
     });
 
+    it('V4 chain IDs contains Chainlink Arc (chain ID 5042)', () => {
+      expect(AAVE_V4_CHAIN_IDS).toContain(5042);
+    });
+
+    it('getAaveProtocolVersion returns v4 for Chainlink Arc', () => {
+      expect(getAaveProtocolVersion(5042)).toBe('v4');
+    });
+
     it('no duplicates in AAVE_CHAIN_IDS', () => {
       const unique = new Set(AAVE_CHAIN_IDS);
       expect(AAVE_CHAIN_IDS.length).toBe(unique.size);
