@@ -109,7 +109,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-toast": "^1.2.14",
-    "@radix-ui/react-tooltip": "^1.2.7",
+    "@radix-ui/react-tooltip": "^1.2.16",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@sentry/react": "^10.73.0",
     "@supabase/supabase-js": "^2.99.3",
