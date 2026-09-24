@@ -1,18 +1,10 @@
-import { makeApi, Zodios, type ZodiosOptions } from "@zodios/core";
-import { z } from "zod";
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
 
 const MarketsResponse: z.ZodTypeAny = z.lazy(() => MarketsResponse);
-const MerklBorrowHookProtocol = z.object({
-  protocol: z.number(),
-  borrowBytesLike: z.array(z.string()),
-});
+const MerklBorrowHookProtocol = z.object({ protocol: z.number(), borrowBytesLike: z.array(z.string()) });
 const SideDataSubSourceErrors = z
-  .object({
-    categories: z.string(),
-    fdv: z.string(),
-    forecast: z.string(),
-    campaignAccess: z.string(),
-  })
+  .object({ categories: z.string(), fdv: z.string(), forecast: z.string(), campaignAccess: z.string() })
   .partial();
 const SideDataPayload = z.object({
   generatedAt: z.string(),
@@ -26,12 +18,7 @@ const SideDataPayload = z.object({
     .optional(),
   fdv: z
     .object({
-      items: z.array(
-        z.object({
-          symbol: z.union([z.string(), z.null()]),
-          fdvUsd: z.union([z.number(), z.null()]),
-        })
-      ),
+      items: z.array(z.object({ symbol: z.union([z.string(), z.null()]), fdvUsd: z.union([z.number(), z.null()]) })),
       fetchedAt: z.string(),
       staleTimeMs: z.number(),
     })
@@ -44,24 +31,21 @@ const SideDataPayload = z.object({
           requiredDaily: z.number().optional(),
           distributedSoFar: z.number(),
           endTimestamp: z.number(),
-        })
+        }),
       ),
-      errors: z.array(
-        z.object({ campaignId: z.string(), message: z.string() })
-      ),
+      errors: z.array(z.object({ campaignId: z.string(), message: z.string() })),
       staleTimeMs: z.number(),
     })
     .optional(),
   campaignAccess: z
     .object({
-      campaigns: z.record(
-        z.string(),
+      campaigns: z.record(z.string(), 
         z.object({
           chainId: z.number(),
           whitelist: z.array(z.string()),
           blacklist: z.array(z.string()),
           borrowHookProtocols: z.array(MerklBorrowHookProtocol).optional(),
-        })
+        }),
       ),
       updatedAt: z.string(),
     })
@@ -70,19 +54,19 @@ const SideDataPayload = z.object({
 });
 const MarketsErrorResponse = z
   .object({
-    errorCode: z.enum(["MARKETS_SNAPSHOT_NOT_READY", "MARKETS_SNAPSHOT_STALE"]),
+    errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
     error: z.string(),
     message: z.string(),
   })
   .passthrough();
 const ForecastCampaignTypeLite = z.enum([
-  "MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
-  "DUTCH_AUCTION",
-  "FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE",
-  "TARGET_TOTAL_APR",
-  "FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE",
-  "FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT",
-  "MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT",
+  'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'DUTCH_AUCTION',
+  'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'TARGET_TOTAL_APR',
+  'FIX_REWARD_AMOUNT_PER_LIQUIDITY_VALUE',
+  'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT',
+  'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT',
 ]);
 const ApiMeritCampaignBreakdown = z.object({
   campaignApr: z.number(),
@@ -105,20 +89,14 @@ const CampaignGroupApiMeritCampaignBreakdown = z.object({
   message: z.string().optional(),
   breakdowns: z.array(ApiMeritCampaignBreakdown),
   netPositionConstraint: z
-    .union([
-      z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
-        offsetReserveIds: z.array(z.string()),
-      }),
-      z.null(),
-    ])
+    .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
     .optional(),
   crossAssetPairing: z
     .union([
       z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
+        sourceSide: z.enum(['supply', 'borrow']),
         pairedReserveId: z.string(),
-        pairedSide: z.enum(["supply", "borrow"]),
+        pairedSide: z.enum(['supply', 'borrow']),
         discountFactor: z.number(),
       }),
       z.null(),
@@ -147,13 +125,7 @@ const MerklCampaignBreakdown = z.object({
   plannedDaily: z.number().optional(),
   budgetBoundMode: z.string().optional(),
   parentCampaignId: z.string().optional(),
-  lastEndedCampaign: z
-    .object({
-      startedAt: z.string(),
-      endedAt: z.string(),
-      campaignId: z.string(),
-    })
-    .optional(),
+  lastEndedCampaign: z.object({ startedAt: z.string(), endedAt: z.string(), campaignId: z.string() }).optional(),
 });
 const ApiMerklOpportunityGroup = z.object({
   opportunityId: z.string().optional(),
@@ -162,20 +134,14 @@ const ApiMerklOpportunityGroup = z.object({
   message: z.string().optional(),
   breakdowns: z.array(MerklCampaignBreakdown),
   netPositionConstraint: z
-    .union([
-      z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
-        offsetReserveIds: z.array(z.string()),
-      }),
-      z.null(),
-    ])
+    .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
     .optional(),
   crossAssetPairing: z
     .union([
       z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
+        sourceSide: z.enum(['supply', 'borrow']),
         pairedReserveId: z.string(),
-        pairedSide: z.enum(["supply", "borrow"]),
+        pairedSide: z.enum(['supply', 'borrow']),
         discountFactor: z.number(),
       }),
       z.null(),
@@ -203,20 +169,14 @@ const CampaignGroupApiBrevisBreakdown = z.object({
   message: z.string().optional(),
   breakdowns: z.array(ApiBrevisBreakdown),
   netPositionConstraint: z
-    .union([
-      z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
-        offsetReserveIds: z.array(z.string()),
-      }),
-      z.null(),
-    ])
+    .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
     .optional(),
   crossAssetPairing: z
     .union([
       z.object({
-        sourceSide: z.enum(["supply", "borrow"]),
+        sourceSide: z.enum(['supply', 'borrow']),
         pairedReserveId: z.string(),
-        pairedSide: z.enum(["supply", "borrow"]),
+        pairedSide: z.enum(['supply', 'borrow']),
         discountFactor: z.number(),
       }),
       z.null(),
@@ -300,10 +260,10 @@ export const schemas = {
 
 const endpoints = makeApi([
   {
-    method: "get",
-    path: "/markets",
-    alias: "getMarkets",
-    requestFormat: "json",
+    method: 'get',
+    path: '/markets',
+    alias: 'getMarkets',
+    requestFormat: 'json',
     response: MarketsResponse,
     errors: [
       {
@@ -316,10 +276,7 @@ const endpoints = makeApi([
         description: `Service unavailable — data not ready or too stale`,
         schema: z
           .object({
-            errorCode: z.enum([
-              "MARKETS_SNAPSHOT_NOT_READY",
-              "MARKETS_SNAPSHOT_STALE",
-            ]),
+            errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
             error: z.string(),
             message: z.string(),
           })
@@ -328,10 +285,10 @@ const endpoints = makeApi([
     ],
   },
   {
-    method: "get",
-    path: "/meta/side-data",
-    alias: "getMetaSideData",
-    requestFormat: "json",
+    method: 'get',
+    path: '/meta/side-data',
+    alias: 'getMetaSideData',
+    requestFormat: 'json',
     response: SideDataPayload,
     errors: [
       {
@@ -344,10 +301,7 @@ const endpoints = makeApi([
         description: `Service unavailable — data not ready or too stale`,
         schema: z
           .object({
-            errorCode: z.enum([
-              "MARKETS_SNAPSHOT_NOT_READY",
-              "MARKETS_SNAPSHOT_STALE",
-            ]),
+            errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
             error: z.string(),
             message: z.string(),
           })
