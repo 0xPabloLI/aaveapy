@@ -1,7 +1,11 @@
 name: Auto Merge
 
+# Trigger: pull_request (NOT the legacy pull-request-target) — GitHub restricts
+# pull-request-target on public repos from 2026-11-02. All trigger sources are
+# same-repo branches (dependabot[bot], PAT-created bot sync PRs, repo writers),
+# and this workflow never checks out PR code, so pull_request is sufficient.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, labeled, reopened, synchronize, ready_for_review]
 
 permissions:
@@ -12,7 +16,8 @@ jobs:
   enable-automerge:
     if: >-
       contains(github.event.pull_request.labels.*.name, 'automerge') &&
-      github.event.pull_request.draft != true
+      github.event.pull_request.draft != true &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Enable auto-merge (enable-early)
