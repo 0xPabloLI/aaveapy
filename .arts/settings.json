@@ -5,5 +5,6 @@
         "**/.env": false
     },
     "diffEditor.renderSideBySide": false,
-    "workbench.activityBar.location": "default"
+    "workbench.activityBar.location": "default",
+    "clawMode.mode": "claw"
 }
