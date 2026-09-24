@@ -11,21 +11,32 @@ export function shouldIncludeModule(name) {
   return true;
 }
 
-export async function discoverMainnetChainIds() {
+export async function discoverMainnetChainModules() {
   const ab = await import('@aave-dao/aave-address-book');
-  const ids = new Set();
+  const byChainId = new Map();
   for (const [name, mod] of Object.entries(ab)) {
     if (!shouldIncludeModule(name)) continue;
     const m = mod;
     if (!m || typeof m.CHAIN_ID !== 'number') continue;
-    if (typeof m.POOL === 'string' && m.POOL.startsWith('0x')) {
-      ids.add(m.CHAIN_ID);
-      continue;
-    }
-    if (m.SPOKES && typeof m.SPOKES === 'object') {
-      ids.add(m.CHAIN_ID);
-      continue;
+    const qualifies =
+      (typeof m.POOL === 'string' && m.POOL.startsWith('0x')) || (m.SPOKES && typeof m.SPOKES === 'object');
+    if (!qualifies) continue;
+    // Same chainId from multiple modules (e.g. AaveV1 + AaveV3Ethereum for
+    // chainId 1): prefer modern AaveV3/V4 modules for slug derivation, then
+    // lexicographic order for determinism.
+    const prev = byChainId.get(m.CHAIN_ID);
+    if (prev == null || moduleRank(name) < moduleRank(prev) || (moduleRank(name) === moduleRank(prev) && name < prev)) {
+      byChainId.set(m.CHAIN_ID, name);
     }
   }
-  return ids;
+  return byChainId;
+}
+
+function moduleRank(name) {
+  return /^AaveV[34]/.test(name) ? 0 : 1;
+}
+
+export async function discoverMainnetChainIds() {
+  const modules = await discoverMainnetChainModules();
+  return new Set(modules.keys());
 }

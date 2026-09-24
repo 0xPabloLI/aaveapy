@@ -57,7 +57,7 @@
     "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
-    "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs",
+    "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs --write",
     "sync:chain-network-icons-upstream": "node scripts/sync-chain-network-icons-upstream.mjs",
     "sync:coingecko-platform-map": "node --experimental-strip-types scripts/sync-coingecko-platform-map.mjs",
     "sync:pool-addresses-upstream": "node scripts/sync-pool-addresses-upstream.mjs",
