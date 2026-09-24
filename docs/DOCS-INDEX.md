@@ -88,6 +88,7 @@ _Last inventory pass: 2026-07-06._
 - Canonical: `docs/specs/schema-pipeline-automation.md` (后端驱动全链路 schema 自动生成；Phase 1 ✅, Phase 2–3 pending AAV-1214/1216; ADR-0026)
 - Canonical: `docs/specs/chain-icon-map-auto-sync.md` (chainIconMap 双源自动同步；registry 占位条目 + slug 六级推导 + rename 自愈; AAV-1297)
 - Canonical: `docs/specs/hardcode-sync-gate-tiering.md` (Hardcode Sync 门禁分级；退出码协议 0/2/critical + sync/verify 双链 runner + pending-chain-ids 白名单 + incomplete-asset/stale-hardcode; AAV-1296)
+- Canonical: `docs/specs/aav-1298-openapi-sync-dev-convergence.md` (openapi-sync bot PR 收敛 dev + schedule 安全网修复 + codegen 产物自修复 patcher; AAV-1298)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)
@@ -134,6 +135,8 @@ _Last inventory pass: 2026-07-06._
 | `docs/specs/fcp-optimization.md` | FCP 优化 spec（钱包层 lazy 边界 + advancedChunks + 首屏守卫；含场景矩阵与验证证据） | 2026-08-29 | Canonical | `src/App.tsx`, `src/providers/WalletProviders.tsx`, `vite.config.ts`, `src/test/architecture-guard.test.ts` | keep |
 | `docs/specs/chain-icon-map-auto-sync.md` | chainIconMap 自动同步 spec（registry 数据源 / 占位 SVG / slug 推导 / rename 自愈；含场景矩阵） | 2026-09-24 | Canonical | `scripts/sync-chain-icon-map-upstream.mjs`, `scripts/lib/chain-slug.mjs`, `src/lib/chainIconMap.ts` | keep |
 | `docs/specs/hardcode-sync-gate-tiering.md` | Hardcode Sync 门禁分级 spec（退出码协议 / 双链 runner / 白名单逃生通道 / stale 升级；含场景矩阵与验证证据） | 2026-09-24 | Canonical | `scripts/hardcode-chain-runner.mjs`, `scripts/check-*-upstream.mjs`, `.github/workflows/hardcode-sync.yml` | keep |
+| `docs/specs/aav-1298-openapi-sync-dev-convergence.md` | openapi-sync 收敛 spec（bot PR dev-only 路由 / schedule 安全网 / codegen patcher 链；含场景矩阵与验证证据） | 2026-09-24 | Canonical | `.github/workflows/ci.yml`, `scripts/lib/patch-generated-schemas.mjs`, `package.json` | keep |
+| `docs/archive/2026-09-24-hardcode-sync-resilience.md` | Hardcode Sync 韧性 + 三分支同步流程交接（AAV-1296/#629 事件复盘、bot PR 收敛决策与实施顺序） | 2026-09-24 | Historical archive | `docs/specs/hardcode-sync-gate-tiering.md`, `docs/specs/aav-1298-openapi-sync-dev-convergence.md` | keep |
 | `docs/specs/e2e-wallet-connect-injected.md` | E2E 真实钱包连接测试 spec（mock EIP-1193 + EIP-6963；含场景矩阵与移动端弹窗发现） | 2026-09-05 | Canonical | `e2e/eip1193-mock.ts`, `e2e/wallet-connect-injected.spec.ts`, `docs/conventions/wallet-js-injection-testing.md` | keep |
 | `docs/specs/chainlink-arc-v4-chain-onboarding.md` | Chainlink Arc (chainId 5042) 新链接入 spec（registry/icon map/manifest 四件套原子性；含场景矩阵与实测取证方法） | 2026-09-16 | Canonical | `src/lib/chainIconMap.ts`, `scripts/check-chain-icon-map-upstream.mjs`, `public/icons/networks/chainlink-arc.svg` | keep |
 | `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
