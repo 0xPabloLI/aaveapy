@@ -41,6 +41,7 @@ const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   1868: 'soneium',
   4326: 'megaeth',
   5000: 'mantle',
+  5042: 'arc',
   8453: 'base',
   9745: 'plasma',
   42161: 'arbitrum-one',
