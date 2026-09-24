@@ -96,3 +96,4 @@ tracker 是 session 的外部记忆：fresh session 必须能只从 durable sour
 ## 已知坑（来自实战）
 
 - **不信 Linear sub_issues 聚合状态**：`get_issue(sub_issues: true)` 返回的状态可能是缓存/快照，与单条 `get_issue(id)` 结果不一致。必须逐条单查确认。
+- **并发 session commit 前必须核对 HEAD 与 staged 边界**：多 agent session 并行工作时 commit 是全仓库操作——lint-staged 失败（如 ref lock 冲突）后 staged 内容可能滞留 index，被任何一个 session 的下一次 commit 卷走（双向：本任务内容被卷入他人 commit，或本 session commit 卷入他人文件）。commit 前固定动作：① `git rev-parse HEAD` 与预期一致；② `git diff --cached --name-only` 逐项核对边界；发现 HEAD 已移动立即停下核对归属，**不要盲目重试 commit**。已发生实例：AAV-1297（T3 commit 卷入本 session 未 staged 文档）、AAV-1296（并发 session 的 docs commit `2b3f77fe` 卷入本任务 lint-staged 失败后滞留的 staged 内容，message 与内容不符）。
