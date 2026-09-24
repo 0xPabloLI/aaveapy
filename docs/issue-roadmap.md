@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-24（Roadmap 全量方案架构审查与优先级对齐 — 完成 GitHub Issues 与 Active Linear Issues 方案 Review，落地 6 项关键优化建议）。
+> **Last inventory**: 2026-09-24（AAV-1296 Hardcode Sync 门禁分级交付：退出码协议 + 双链 runner + pending-chain-ids 白名单 + incomplete-asset/stale-hardcode；spec `docs/specs/hardcode-sync-gate-tiering.md`）。
 >
-> **frontier** = AAV-1296（Hardcode Sync 门禁分级与白名单，Urgent，优先第一步；依赖的 AAV-1297 已完成）。
+> **frontier** = AAV-1299（e2e flaky: portfolio-incentive-calculation，High，Ready for agent；AAV-1296/1297 已完成）。
 
 ---
 
@@ -37,7 +37,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | GitHub # | Linear | Priority | State | Title | Labels |
 | --- | --- | --- | --- | --- | --- |
 | #668 | AAV-1297 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] chainIconMap 自动同步：从 registry 自动生成占位条目 | enhancement, hardcode |
-| #667 | AAV-1296 | **Urgent** | Ready for agent | [Improvement] Hardcode Sync 韧性：解除「全或无」门禁单点故障 | enhancement, hardcode, drift |
+| #667 | AAV-1296 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] Hardcode Sync 韧性：解除「全或无」门禁单点故障 | enhancement, hardcode, drift |
 | #671 | AAV-1299 | **High** | Ready for agent | [Bug] e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | bug |
 | #670 | AAV-1298 | **High** | Todo | 🔥 Lovable CI failure: openapi-sync | bug, ci-failure-lovable |
 
@@ -96,6 +96,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1296 | Hardcode Sync 韧性：解除「全或无」门禁单点故障 | 2026-09-24 |
 | AAV-1279 | FCP 优化：延迟加载非首屏 chunk（代码 `19b102a1` 已合入三分支） | 2026-09-24 |
 | AAV-1300 | [Hardcode Sync] verify failed after retry | 2026-09-24 |
 | AAV-1294 | [CI] deployment-smoke-test 恒为假绿灯 | 2026-09-24 |
