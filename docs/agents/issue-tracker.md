@@ -8,6 +8,14 @@ Issues are tracked in **Linear** using the Linear MCP tools. Backend-agnostic co
 - **Team key**: AAV
 - **Team ID**: 8aded493-39e5-4d78-a24d-e81e7882ed00
 
+## 连接配置（CodeArts 侧）
+
+MCP server 配置在 `.codeartsdoer/mcp/mcp_settings.json`（server key `linear`，`LINEAR_API_KEY` 走 env 注入，包 `@hatcloud/linear-mcp`）。配置文件是连接的 source of truth——不在此重复 key/路径/版本等会漂移的值。
+
+**工具名前缀**：CodeArts 实际工具名带 `linear_` 前缀（如 `linear_list_teams`、`linear_create_issue`）。下方 Workflow 章节及 core 契约中的 `mcp__linear_*` 写法是 agent-harness core 的通用约定；CodeArts 调用时去掉 `mcp__` 前缀。裸名（如 `list_teams`）会报 "not found" 并误判 server 连不上。
+
+**连通性自检**：调用 `linear_list_teams`，应返回 team AAV（id 见上节）。一条命令同时验证连接、认证、team 配置。
+
 ## Workflow (Linear-specific)
 
 - **Create issue**: `mcp__linear_create_issue` with `teamId`

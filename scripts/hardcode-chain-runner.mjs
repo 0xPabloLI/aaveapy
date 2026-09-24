@@ -60,9 +60,9 @@ export function extractNpmScriptNames(commands) {
   return names;
 }
 
-export function formatGithubOutput({ hasGaps, gaps }) {
-  const lines = [`has_gaps=${hasGaps ? 'true' : 'false'}`];
-  if (hasGaps && gaps.length > 0) {
+export function formatGithubOutput(gaps) {
+  const lines = [`has_gaps=${gaps.length > 0 ? 'true' : 'false'}`];
+  if (gaps.length > 0) {
     lines.push('gap_summary<<EOF');
     for (const g of gaps) {
       lines.push(`${g.command} (exit ${g.code})`);
@@ -125,7 +125,7 @@ export async function runChain({
   }
 
   if (githubOutputPath) {
-    const output = formatGithubOutput({ hasGaps: gaps.length > 0, gaps });
+    const output = formatGithubOutput(gaps);
     await appendFileImpl(githubOutputPath, output);
   }
 

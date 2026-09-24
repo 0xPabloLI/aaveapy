@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, extractNpmScriptNames, formatGithubOutput, runChain } from './hardcode-chain-runner.mjs';
+import { CHAINS, aggregate, extractNpmScriptNames, formatGithubOutput, runChain } from './hardcode-chain-runner.mjs';
 
 describe('check scripts exit-code protocol', () => {
   const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -225,18 +225,26 @@ describe('runChain', () => {
 
 describe('formatGithubOutput', () => {
   it('multi-line gap summary uses heredoc EOF format', () => {
-    const out = formatGithubOutput({
-      hasGaps: true,
-      gaps: [
-        { command: 'npm run check:a', code: 2 },
-        { command: 'npm run check:b', code: 2 },
-      ],
-    });
+    const out = formatGithubOutput([
+      { command: 'npm run check:a', code: 2 },
+      { command: 'npm run check:b', code: 2 },
+    ]);
     assert.equal(out, 'has_gaps=true\ngap_summary<<EOF\nnpm run check:a (exit 2)\nnpm run check:b (exit 2)\nEOF\n');
   });
 
   it('clean run emits only has_gaps=false', () => {
-    const out = formatGithubOutput({ hasGaps: false, gaps: [] });
+    const out = formatGithubOutput([]);
     assert.equal(out, 'has_gaps=false\n');
+  });
+});
+
+describe('CHAINS manifest guard', () => {
+  it('every npm run reference in the built-in chains exists in package.json scripts', async () => {
+    const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    for (const [chainName, commands] of Object.entries(CHAINS)) {
+      for (const name of extractNpmScriptNames(commands)) {
+        assert.ok(pkg.scripts[name], `chain '${chainName}' references missing npm script '${name}'`);
+      }
+    }
   });
 });

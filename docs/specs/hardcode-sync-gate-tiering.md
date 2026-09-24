@@ -161,3 +161,10 @@ AAV-1297 交付后 registry↔map 缺口可被 sync `--write` 自动修复，但
 - 现状事实链（2026-09-24 核实）：`hardcode:verify` 9 子命令、`hardcode:sync` 8 子命令、drift-check 逐 step 调 check（不引用 verify 链）、`check:chain-registry-upstream` 已 advisory、`sync:chain-icons-upstream` 已带 `--write`（AAV-1297）。
 - exit(1) 保留语义的迁移核对以「结构性 = 无法确认产出健康度」为判准，逐脚本分支在 T2 实施时二次核对。
 - AAV-1297 遗留 nit（insertEntries lastIndexOf、applySvgPlans 风格）不在本任务范围。
+
+## 实施验证记录（2026-09-24）
+
+- 门禁四件套通过：lint（0 errors）/ test（vitest + scripts node:test 全绿）/ build / tsc。
+- Runtime smoke（本地真实跑）：① `hardcode:verify` 9/9 全跑不短路，真实既有漂移（coingecko map + token icons 2 个 gap）→ gap-only exit 0 + `::warning::`（场景 1/2/14/20 证据，旧机制下这两个 gap 会瘫痪整条同步）；② `hardcode:sync` 8/8 全跑 exit 0，gap 被自动修复（tokenPriceResolver.ts +1 行真实 sync 产出，属 bot PR 日常工作内容）；③ 复跑 `hardcode:verify` 收敛全绿 exit 0（sync→verify 闭环，场景 1）。
+- Code review（双轴）修复：`GAP_SUMMARY` 表达式与 `HAS_GAPS` 同源化（round2.has_gaps=='true' 判定，消除 round2 clean 时回落 round1 残值的隐患——注：GH 表达式非空字符串为 truthy，HAS_GAPS 原表达式语义正确）；`formatGithubOutput` 去冗余 hasGaps 参数（内部派生）；补 CHAINS↔package.json 清单存在性单测。
+- 实施偏离登记：① direct-run 守卫（check-chain-icon-map-upstream）由「测试 import 成功且无网络副作用」隐式覆盖，不设专门用例（与 AAV-1297 先例一致）；② `loadPendingChainIds` 接受数字字符串（宽容解析，测试固化）；③ 场景 8 的「spawn 失败→critical」之外，runner 增加运行前置守卫（清单引用不存在 → fail-fast exit 1），协议语义不变；④ 白名单为双向豁免（「registry 有 map 无」与「map 有 registry 无」同权）——对齐判定语义按 chainId 整体豁免，比单向更一致，spec L64 字面按此理解。

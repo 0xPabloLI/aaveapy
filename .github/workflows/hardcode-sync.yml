@@ -132,8 +132,10 @@ jobs:
         env:
           # Whichever verify round produced the PR decides the gap signal
           # (round 2 only ran when round 1 hit a critical failure).
+          # Note: non-empty strings are truthy in GH expressions, so the round-2
+          # outputs ('true'/'false') take precedence whenever they exist.
           HAS_GAPS: ${{ steps.verify_round2.outputs.has_gaps != '' && steps.verify_round2.outputs.has_gaps || steps.verify_round1.outputs.has_gaps }}
-          GAP_SUMMARY: ${{ steps.verify_round2.outputs.gap_summary || steps.verify_round1.outputs.gap_summary }}
+          GAP_SUMMARY: ${{ steps.verify_round2.outputs.has_gaps == 'true' && steps.verify_round2.outputs.gap_summary || steps.verify_round1.outputs.gap_summary }}
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
