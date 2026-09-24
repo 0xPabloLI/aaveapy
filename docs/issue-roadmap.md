@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-24（AAV-1298 openapi-sync 修复：bot PR 收敛到 dev + codegen 产物自修复 patcher，commit `12037128`；schema:check 零 diff 恢复可判定）。
+> **Last inventory**: 2026-09-24（AAV-1298 交付并 push 验证闭环：bot PR 收敛 dev + codegen 产物自修复 patcher，commit `12037128`；CI run 36003645267 全绿，真实 drift 下 openapi-sync 正确 skipped。遗留清理：bot 僵尸分支 19→0、#655/#657 经 dependabot rebase + automerge 自动合并、GitHub issues 清零。新开排队票：AAV-1301 Medium（eslint 10 工具链升级，GitHub #653）、AAV-1302 Low（release-drafter v7 迁移，GitHub #656，调研结论=不可原样合并）；剩余 open PR 仅此二者，等票消化 + 用户合并拍板）。
 >
 > **frontier** = AAV-1282（High，移动端 RainbowKit wallets prop；GitHub issues 已清零 open）。
 
