@@ -18,7 +18,7 @@ _Last inventory pass: 2026-07-06._
 - Canonical: `docs/PR_ANALYSIS.md` (PR batching/automerge policy)
 - Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
 - Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)
-
+- Canonical: `docs/issue-roadmap.md` (Issue Roadmap: open issue 优先级排序与状态快照; GitHub issue 始终排最前; 与 `docs/agents/issue-tracker.md` 分工——本文件用户可见，issue-tracker.md agent 内部配置)
 
 ### API, contracts, and CI conventions
 
