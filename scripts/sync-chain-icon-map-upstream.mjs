@@ -269,7 +269,10 @@ export function computeUpstreamRenames(upstreamNetworks, chainIdMap, mapEntries)
 export function applyRenames(content, renames) {
   let next = content;
   for (const { chainId, from, to } of renames) {
-    const pattern = new RegExp(`(\\s+${chainId}: )'${from}'(,)`);
+    // `from` comes from upstream iconBase filenames, which may contain regex
+    // metacharacters (e.g. '.') — escape before building the pattern.
+    const escapedFrom = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`(\\s+${chainId}: )'${escapedFrom}'(,)`);
 
     const replaced = next.replace(pattern, `$1'${to}'$2`);
     if (replaced === next) {
@@ -290,18 +293,25 @@ export async function resolveRenameSvg(rename, io) {
   const fileName = `${rename.to}.svg`;
   if (existsFn(fileName)) return;
 
-  try {
-    const res = await fetchImpl(`${publicRoot}${rename.iconPath}`, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    await writeFileFn(path.join(NETWORKS_ICONS_DIR, fileName), buf);
-    console.log(`  downloaded ${fileName} from upstream`);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`  upstream download failed (${msg}); writing placeholder for ${fileName}`);
-    const content = renderPlaceholderSvg(monogramFromSlug(rename.to));
-    await writeFileFn(path.join(NETWORKS_ICONS_DIR, fileName), content);
+  // Two attempts before degrading to a placeholder — a transient upstream
+  // hiccup must not permanently replace a real logo with a placeholder
+  // (once written, the "existing file is never overwritten" rule keeps it).
+  let lastErrMsg = 'unknown error';
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetchImpl(`${publicRoot}${rename.iconPath}`, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      await writeFileFn(path.join(NETWORKS_ICONS_DIR, fileName), buf);
+      console.log(`  downloaded ${fileName} from upstream`);
+      return;
+    } catch (err) {
+      lastErrMsg = err instanceof Error ? err.message : String(err);
+    }
   }
+  console.warn(`  upstream download failed after 2 attempts (${lastErrMsg}); writing placeholder for ${fileName}`);
+  const content = renderPlaceholderSvg(monogramFromSlug(rename.to));
+  await writeFileFn(path.join(NETWORKS_ICONS_DIR, fileName), content);
 }
 
 async function main() {

@@ -66,6 +66,18 @@ describe('applyRenames', () => {
     const unchanged = applyRenames(MAP_WITH_STALE_ARC, []);
     assert.equal(unchanged, MAP_WITH_STALE_ARC);
   });
+
+  it('escapes regex metacharacters in the from slug', () => {
+    // Upstream iconBase filenames may contain '.' — an unescaped '.' would
+    // widen the pattern and weaken match precision.
+    const map = `export const chainIconMap: Record<number, string> = {
+  9001: 'foo.bar',
+};
+`;
+    const renamed = applyRenames(map, [{ chainId: 9001, from: 'foo.bar', to: 'foobar', iconPath: '/x.svg' }]);
+    assert.match(renamed, /9001: 'foobar',/);
+    assert.ok(!renamed.includes("'foo.bar'"));
+  });
 });
 
 describe('resolveRenameSvg', () => {
@@ -100,6 +112,24 @@ describe('resolveRenameSvg', () => {
       },
       writeFileFn: async (dest, content) => calls.push([dest, content]),
     });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0][0], /chainlink-arc\.svg$/);
+  });
+
+  it('retries once before falling back: second attempt succeeds', async () => {
+    const calls = [];
+    let attempts = 0;
+    await resolveRenameSvg(rename, {
+      UPSTREAM_PUBLIC_ROOT: 'https://upstream.example',
+      existsFn: () => false,
+      fetchImpl: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('transient network error');
+        return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+      },
+      writeFileFn: async (dest, content) => calls.push([dest, content]),
+    });
+    assert.equal(attempts, 2);
     assert.equal(calls.length, 1);
     assert.match(calls[0][0], /chainlink-arc\.svg$/);
   });

@@ -160,3 +160,13 @@ describe('insertEntries + parse round-trip (check-script contract)', () => {
     assert.match(content, /chainlink-arc',\n\};\n?$/);
   });
 });
+
+describe('viem/chains real export (slug Level 3 data source)', () => {
+  it('resolves known chain ids to names usable for slug derivation', async () => {
+    // Guards the L3 assumption end-to-end: the real viem/chains export the
+    // sync script relies on actually maps chainId -> { name }.
+    const chains = await import('viem/chains');
+    const base = Object.values(chains).find((c) => c && c.id === 8453);
+    assert.equal(base?.name, 'Base');
+  });
+});

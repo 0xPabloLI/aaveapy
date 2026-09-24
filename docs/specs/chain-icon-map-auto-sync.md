@@ -130,3 +130,9 @@ CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 504
 - 三个设计决策已经用户确认（2026-09-24）：L3 双源（viem + chainid.network）、rename 自愈纳入、测试入口挂 npm test。
 - 5042 的正确 slug 必须靠 overrides 表（L2 推导出 `arc` ≠ dev 手工值 `chainlink-arc`）；overrides 表是三分支收敛一致性的锚点。
 - rename 场景的概率评估：上游 aave/interface 收录新链通常滞后 address-book 数周，窗口期内 L2/L4 占位条目先落地，收录时 rename 自愈接管。
+
+## 实施验证记录（2026-09-24）
+
+- Runtime smoke 全部完成：① 本地 dry-run 21 upstream + 21 registry 链全绿 exit 0（场景 5/11/14/15/19 的 smoke 证据）；② 删除 celo 条目后 `--write` 自动补回（场景 1/12）；③ 改写 `celo-old` 后 rename 自愈字节级恢复（场景 8/9）；④ 恢复后工作区干净。
+- 门禁四件套通过：lint / test（vitest 3640 + scripts 50）/ build / tsc。
+- 实现偏离登记：`resolveRenameSvg` 的上游下载用注入 `fetchImpl` + 2 次尝试（可测试性 + 瞬时故障重试），未复用 `fetchWithTimeout` 函数本体——语义（超时 + 重试）与 spec L40 意图一致。
