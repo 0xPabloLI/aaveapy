@@ -82,7 +82,7 @@ jobs:
           LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
-          npm run hardcode:verify
+          npm run hardcode:verify -- --github-output
           status=$?
           if [ "$status" -eq 0 ]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
@@ -115,7 +115,7 @@ jobs:
           LIVE_TEST_API_BASE_CI: ${{ secrets.LIVE_TEST_API_BASE_CI != '' && secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: |
           set +e
-          npm run hardcode:verify
+          npm run hardcode:verify -- --github-output
           status=$?
           if [ "$status" -eq 0 ]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
@@ -129,6 +129,11 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed == 'true' ||
           steps.verify_round2.outputs.passed == 'true'
+        env:
+          # Whichever verify round produced the PR decides the gap signal
+          # (round 2 only ran when round 1 hit a critical failure).
+          HAS_GAPS: ${{ steps.verify_round2.outputs.has_gaps != '' && steps.verify_round2.outputs.has_gaps || steps.verify_round1.outputs.has_gaps }}
+          GAP_SUMMARY: ${{ steps.verify_round2.outputs.gap_summary || steps.verify_round1.outputs.gap_summary }}
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
@@ -141,12 +146,17 @@ jobs:
 
             Verification:
             - `npm run hardcode:verify`
+            ${{ env.HAS_GAPS == 'true' && '
+
+            **Data gaps (advisory, labeled `incomplete-asset`)** — pending manual follow-up, do not block the sync:
+            ' || '' }}${{ env.GAP_SUMMARY }}
           branch: bot/hardcode-sync-${{ matrix.target_branch }}
           base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
             ${{ env.TARGET_BRANCH != 'main' && 'automerge' || '' }}
             hardcode
+            ${{ env.HAS_GAPS == 'true' && 'incomplete-asset' || '' }}
 
       - name: Approve and enable auto-merge for bot PR
         if: steps.cpr.outputs.pull-request-number != ''
@@ -360,4 +370,29 @@ jobs:
                 labels: ['hardcode', 'drift']
               });
               core.info('Created a new hardcode verify failure issue');
+            }
+
+            // Escalate stale verify-failed issues (AAV-1296 gate tiering): an open
+            // issue older than STALE_DAYS without the escalation label gets labeled
+            // and pinged so #629-style 14-day neglect cannot repeat.
+            const STALE_DAYS = 3;
+            const STALE_LABEL = 'stale-hardcode';
+            const staleCutoff = Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000;
+            for (const issue of issues) {
+              const labelNames = issue.labels.map(l => l.name);
+              if (labelNames.includes(STALE_LABEL)) continue;
+              if (new Date(issue.created_at).getTime() >= staleCutoff) continue;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: [STALE_LABEL]
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Escalation: this verify-failed issue has been open for more than ${STALE_DAYS} days without resolution. Please triage or close (AAV-1296 gate tiering).`
+              });
+              core.info(`Escalated stale issue #${issue.number} with ${STALE_LABEL}`);
             }
