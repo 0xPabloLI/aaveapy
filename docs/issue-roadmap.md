@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-24（AAV-1299 e2e flaky 修复：discovery 可算性过滤 + 占位断言 30s 重试/graceful skip，commit `39220652`）。
+> **Last inventory**: 2026-09-24（AAV-1298 openapi-sync 修复：bot PR 收敛到 dev + codegen 产物自修复 patcher，commit `12037128`；schema:check 零 diff 恢复可判定）。
 >
-> **frontier** = AAV-1298（🔥 Lovable CI failure: openapi-sync，High，Todo；GitHub issues 剩此一张 open）。
+> **frontier** = AAV-1282（High，移动端 RainbowKit wallets prop；GitHub issues 已清零 open）。
 
 ---
 
@@ -39,7 +39,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | #668 | AAV-1297 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] chainIconMap 自动同步：从 registry 自动生成占位条目 | enhancement, hardcode |
 | #667 | AAV-1296 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] Hardcode Sync 韧性：解除「全或无」门禁单点故障 | enhancement, hardcode, drift |
 | #671 | AAV-1299 | **High** | Done（2026-09-24 交付，见 Linear 交付记录） | [Bug] e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | bug |
-| #670 | AAV-1298 | **High** | Todo | 🔥 Lovable CI failure: openapi-sync | bug, ci-failure-lovable |
+| #670 | AAV-1298 | **High** | Done（2026-09-24 交付，见 Linear 交付记录） | 🔥 Lovable CI failure: openapi-sync | bug, ci-failure-lovable |
 
 ---
 
@@ -96,6 +96,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1298 | 🔥 Lovable CI failure: openapi-sync（bot PR 收敛 dev + codegen patcher） | 2026-09-24 |
 | AAV-1299 | e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | 2026-09-24 |
 | AAV-1296 | Hardcode Sync 韧性：解除「全或无」门禁单点故障 | 2026-09-24 |
 | AAV-1279 | FCP 优化：延迟加载非首屏 chunk（代码 `19b102a1` 已合入三分支） | 2026-09-24 |
