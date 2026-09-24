@@ -111,7 +111,7 @@ jobs:
       # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
       - name: Run ESLint (Reviewdog)
         if: github.event_name == 'pull_request'
-        uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1
+        uses: reviewdog/action-eslint@b6303df522851d0e9abaea654da0222037d97e75 # v1
         env:
           REVIEWDOG_VERSION: v0.20.3
         with:
