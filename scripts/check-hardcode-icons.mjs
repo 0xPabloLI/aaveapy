@@ -68,7 +68,7 @@ async function main() {
     for (const symbol of missing) {
       console.error(`- ${symbol}`);
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log('No missing iconSymbol token icons.');

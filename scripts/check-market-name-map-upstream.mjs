@@ -103,7 +103,7 @@ async function main() {
     for (const item of missing) {
       console.error(`- ${item.sourceKey}: expected '${item.expected}', actual '${item.actual ?? '<missing>'}'`);
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log('MARKET_NAME_MAP is aligned with upstream marketsConfig (non-sepolia markets).');

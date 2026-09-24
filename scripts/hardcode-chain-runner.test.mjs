@@ -1,7 +1,43 @@
 #!/usr/bin/env node
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { aggregate, extractNpmScriptNames, formatGithubOutput, runChain } from './hardcode-chain-runner.mjs';
+
+describe('check scripts exit-code protocol', () => {
+  const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
+
+  // Gap branches must signal with exit 2 (advisory) instead of exit 1; structural
+  // failures keep exit 1 (blocking). Guard against regression to all-or-nothing.
+  const GAP_SIGNAL_SCRIPTS = [
+    'check-hardcode-icons.mjs',
+    'check-reserve-patches-upstream.mjs',
+    'check-market-name-map-upstream.mjs',
+    'check-chain-icon-map-upstream.mjs',
+    'check-coingecko-platform-map-upstream.mjs',
+    'sync-token-icons.mjs',
+    'check-pool-addresses-upstream.mjs',
+  ];
+
+  it('each check script signals data gaps with process.exit(2)', async () => {
+    for (const name of GAP_SIGNAL_SCRIPTS) {
+      const source = await readFile(path.join(SCRIPTS_DIR, name), 'utf8');
+      assert.ok(source.includes('process.exit(2)'), `${name} must contain process.exit(2) for gap branches`);
+    }
+  });
+
+  it('each check script keeps process.exit(1) for structural failures', async () => {
+    for (const name of GAP_SIGNAL_SCRIPTS) {
+      const source = await readFile(path.join(SCRIPTS_DIR, name), 'utf8');
+      assert.ok(
+        source.includes('process.exit(1)'),
+        `${name} must keep process.exit(1) for structural failures (catch / parse)`,
+      );
+    }
+  });
+});
 
 describe('aggregate', () => {
   it('all clean → exit 0, no gaps, no criticals', () => {
