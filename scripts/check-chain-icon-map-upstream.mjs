@@ -12,6 +12,7 @@ const REMOTE_NETWORKS_CONFIG_URL =
 const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIconMap.ts');
 const NETWORKS_ICONS_DIR = path.join(ROOT, 'public', 'icons', 'networks');
 const PENDING_CHAIN_ICON_BASES_PATH = path.join(ROOT, 'scripts', 'data', 'pending-chain-icon-bases.json');
+const PENDING_CHAIN_IDS_PATH = path.join(ROOT, 'scripts', 'data', 'pending-chain-ids.json');
 
 async function loadUpstreamNetworksConfig() {
   return await fetchWithTimeout(REMOTE_NETWORKS_CONFIG_URL);
@@ -131,11 +132,53 @@ async function loadPendingIconBases() {
   return new Set(data.map((x) => String(x).toLowerCase()));
 }
 
+// Pure: parse the pending chainId escape-hatch allowlist (scripts/data/pending-chain-ids.json).
+// Escape hatch only — sync --write (AAV-1297) auto-generates placeholder entries, so the
+// default empty table keeps current behavior.
+export function loadPendingChainIds(content) {
+  let data;
+  try {
+    data = JSON.parse(content);
+  } catch (error) {
+    throw new Error(`pending-chain-ids.json is not valid JSON: ${error instanceof Error ? error.message : error}`);
+  }
+  if (!Array.isArray(data)) {
+    throw new Error('pending-chain-ids.json must be a JSON array of chainId numbers');
+  }
+  const ids = new Set();
+  for (const entry of data) {
+    const num = typeof entry === 'string' && /^\d+$/.test(entry) ? Number(entry) : entry;
+    if (typeof num !== 'number' || !Number.isInteger(num) || num <= 0) {
+      throw new Error(`pending-chain-ids.json entries must be positive integer chainIds, got: ${String(entry)}`);
+    }
+    ids.add(num);
+  }
+  return ids;
+}
+
+// Pure: registry ↔ chainIconMap chainId alignment. chainIds in the pending allowlist are
+// demoted from mismatches to allowed (advisory warning only).
+export function evaluateRegistryAlignment({ registryIds, mapIds, pendingIds }) {
+  const mismatches = [];
+  const allowed = [];
+  for (const id of [...registryIds].filter((id) => !mapIds.has(id))) {
+    (pendingIds.has(id) ? allowed : mismatches).push(id);
+  }
+  for (const id of [...mapIds].filter((id) => !registryIds.has(id))) {
+    (pendingIds.has(id) ? allowed : mismatches).push(id);
+  }
+  return {
+    mismatches: mismatches.sort((a, b) => a - b),
+    allowed: allowed.sort((a, b) => a - b),
+  };
+}
+
 async function main() {
-  const [upstreamContent, localContent, pendingBases] = await Promise.all([
+  const [upstreamContent, localContent, pendingBases, pendingChainIds] = await Promise.all([
     loadUpstreamNetworksConfig(),
     readFile(LOCAL_CHAIN_ICONS_PATH, 'utf8'),
     loadPendingIconBases(),
+    readFile(PENDING_CHAIN_IDS_PATH, 'utf8').then(loadPendingChainIds),
   ]);
 
   const localMap = parseLocalChainIconMap(localContent);
@@ -178,7 +221,7 @@ async function main() {
     for (const item of mappingErrors) {
       console.error(`- ${item.name}: needs icon '${item.iconBase}' in chainIconMap`);
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   if (assetErrors.length > 0) {
@@ -188,31 +231,41 @@ async function main() {
     for (const item of assetErrors) {
       console.error(`- ${item.name}: expected file for base '${item.iconBase}'`);
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log('chainIconMap covers all upstream prod network icons.');
   console.log('On-disk network icons (or pending allowlist) cover all mapped bases.');
 
-  // Cross-check: chainRegistry chainIds ↔ chainIconMap chainIds
+  // Cross-check: chainRegistry chainIds ↔ chainIconMap chainIds (with pending allowlist escape hatch)
   const registryIds = await discoverMainnetChainIds();
-  const iconMapIds = new Set(localMap.keys());
-  const inRegistryNotIcon = [...registryIds].filter((id) => !iconMapIds.has(id));
-  const inIconNotRegistry = [...iconMapIds].filter((id) => !registryIds.has(id));
-  if (inRegistryNotIcon.length > 0 || inIconNotRegistry.length > 0) {
+  const { mismatches, allowed } = evaluateRegistryAlignment({
+    registryIds,
+    mapIds: new Set(localMap.keys()),
+    pendingIds: pendingChainIds,
+  });
+  if (allowed.length > 0) {
+    console.warn(
+      `Pending chainIds (allowlisted in scripts/data/pending-chain-ids.json, advisory): ${allowed.join(', ')}`,
+    );
+  }
+  if (mismatches.length > 0) {
     console.error('\nchainRegistry ↔ chainIconMap chainId mismatch:');
-    for (const id of inRegistryNotIcon) {
-      console.error(`  - chainId ${id}: in chainRegistry but NOT in chainIconMap`);
+    for (const id of mismatches) {
+      const inRegistryNotIcon = registryIds.has(id);
+      console.error(
+        `  - chainId ${id}: ${inRegistryNotIcon ? 'in chainRegistry but NOT in chainIconMap' : 'in chainIconMap but NOT in chainRegistry'}`,
+      );
     }
-    for (const id of inIconNotRegistry) {
-      console.error(`  - chainId ${id}: in chainIconMap but NOT in chainRegistry`);
-    }
-    process.exit(1);
+    process.exit(2);
   }
   console.log(`chainRegistry ↔ chainIconMap: all ${registryIds.size} chainIds aligned.`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack || error.message : String(error));
-  process.exit(1);
-});
+// Direct-run guard: importing this module from tests must not execute main().
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    process.exit(1);
+  });
+}

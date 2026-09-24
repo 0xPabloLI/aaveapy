@@ -1,7 +1,11 @@
 name: Auto Approve Remediation PR
 
+# Trigger: pull_request (NOT the legacy pull-request-target) — GitHub restricts
+# pull-request-target on public repos from 2026-11-02. The job guard below
+# whitelists same-repo bot PRs only (head ref prefix + author
+# github-actions[bot]); fork PRs cannot match, so pull_request is sufficient.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
