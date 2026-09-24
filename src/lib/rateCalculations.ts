@@ -18,10 +18,7 @@ export const convertAprToApy = (apr: number): number => {
  * campaign detail rows reconcile with the aggregate path in `incentiveAggregation.ts`,
  * which also scales APR before converting to APY.
  */
-export const scaleAprThenConvert = (
-  aprPercent: number,
-  options: { ratio: number; isApy: boolean },
-): number => {
+export const scaleAprThenConvert = (aprPercent: number, options: { ratio: number; isApy: boolean }): number => {
   const scaled = aprPercent * options.ratio;
   return options.isApy ? convertAprToApy(scaled) : scaled;
 };
@@ -47,14 +44,17 @@ export function annualPercentToDailyFraction(ratePercent: number, isApy: boolean
     const r = ratePercent / 100;
     return Math.pow(1 + r, 1 / 365) - 1;
   }
-  return (ratePercent / 100) / 365;
+  return ratePercent / 100 / 365;
 }
 
 /**
  * Calculate total supply APR = native supply APR + incentive APR.
  * Returns null if native is null/undefined/NaN or incentive is NaN.
  */
-export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefined, incentiveApr: number): number | null => {
+export const calculateTotalSupplyApr = (
+  nativeSupplyApr: number | null | undefined,
+  incentiveApr: number,
+): number | null => {
   if (nativeSupplyApr === null || nativeSupplyApr === undefined) return null;
   if (isNaN(nativeSupplyApr) || isNaN(incentiveApr)) return null;
   return nativeSupplyApr + incentiveApr;
@@ -64,7 +64,10 @@ export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefin
  * Calculate total supply APY = native supply APY + incentive APY.
  * Returns null if native is null/undefined/NaN or incentive is NaN.
  */
-export const calculateTotalSupplyApy = (nativeSupplyApy: number | null | undefined, incentiveApy: number): number | null => {
+export const calculateTotalSupplyApy = (
+  nativeSupplyApy: number | null | undefined,
+  incentiveApy: number,
+): number | null => {
   if (nativeSupplyApy === null || nativeSupplyApy === undefined) return null;
   if (isNaN(nativeSupplyApy) || isNaN(incentiveApy)) return null;
   return nativeSupplyApy + incentiveApy;
@@ -74,7 +77,10 @@ export const calculateTotalSupplyApy = (nativeSupplyApy: number | null | undefin
  * Calculate total borrow APR = native borrow APR - incentive APR.
  * Returns null if native is null/undefined/NaN or incentive is NaN.
  */
-export const calculateTotalBorrowApr = (nativeBorrowApr: number | null | undefined, incentiveApr: number): number | null => {
+export const calculateTotalBorrowApr = (
+  nativeBorrowApr: number | null | undefined,
+  incentiveApr: number,
+): number | null => {
   if (nativeBorrowApr === null || nativeBorrowApr === undefined) return null;
   if (isNaN(nativeBorrowApr) || isNaN(incentiveApr)) return null;
   return nativeBorrowApr - incentiveApr;
@@ -84,7 +90,10 @@ export const calculateTotalBorrowApr = (nativeBorrowApr: number | null | undefin
  * Calculate total borrow APY = native borrow APY - incentive APY.
  * Returns null if native is null/undefined/NaN or incentive is NaN.
  */
-export const calculateTotalBorrowApy = (nativeBorrowApy: number | null | undefined, incentiveApy: number): number | null => {
+export const calculateTotalBorrowApy = (
+  nativeBorrowApy: number | null | undefined,
+  incentiveApy: number,
+): number | null => {
   if (nativeBorrowApy === null || nativeBorrowApy === undefined) return null;
   if (isNaN(nativeBorrowApy) || isNaN(incentiveApy)) return null;
   return nativeBorrowApy - incentiveApy;

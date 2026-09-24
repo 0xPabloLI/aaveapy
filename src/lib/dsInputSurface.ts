@@ -10,10 +10,7 @@ function cnDsLaneFocusOverlay(focusBorder: string, focusVisibleRing: string): st
   return cn('focus:!bg-card focus:text-foreground', focusBorder, focusVisibleRing);
 }
 
-const supplyFocus = cnDsLaneFocusOverlay(
-  'focus:!border-emerald-600',
-  'focus-visible:!ring-emerald-500/30',
-);
+const supplyFocus = cnDsLaneFocusOverlay('focus:!border-emerald-600', 'focus-visible:!ring-emerald-500/30');
 const borrowFocus = cnDsLaneFocusOverlay(
   'focus:!border-[rgb(var(--ds-brand-cyan-rgb))]',
   'focus-visible:!ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]',
@@ -23,12 +20,10 @@ const emptyNeutralBorder =
   'border-border/60 !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40';
 
 /** Same `--border` token as `border-border/*`; theme stores space-separated HSL components. */
-const neutralFilledSurface =
-  'border-border/80 !bg-[hsl(var(--border)/0.22)] text-foreground';
+const neutralFilledSurface = 'border-border/80 !bg-[hsl(var(--border)/0.22)] text-foreground';
 
 /** Filter search: **filled** border + fill use the same RGB token; while **focused**, match scenario inputs (`focus:bg-card`). */
-const magentaFilledSurface =
-  'border-[rgb(var(--ds-brand-magenta-rgb)/0.72)] ds-bg-brand-magenta-10 text-foreground';
+const magentaFilledSurface = 'border-[rgb(var(--ds-brand-magenta-rgb)/0.72)] ds-bg-brand-magenta-10 text-foreground';
 
 const magentaFilledFocus = cnDsLaneFocusOverlay(
   'focus:!border-[rgb(var(--ds-brand-magenta-rgb))]',
@@ -43,25 +38,14 @@ const magentaFilledFocus = cnDsLaneFocusOverlay(
  * Use with controlled `value` + `hasValue === value.trim() !== ''`.
  */
 export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVariant = 'neutral'): string {
-  const shell =
-    'rounded-md border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-0';
+  const shell = 'rounded-md border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-0';
 
   if (variant === 'neutral') {
-    return cn(
-      shell,
-      hasValue
-        ? cn(neutralFilledSurface, neutralFocus)
-        : cn(emptyNeutralBorder, neutralFocus),
-    );
+    return cn(shell, hasValue ? cn(neutralFilledSurface, neutralFocus) : cn(emptyNeutralBorder, neutralFocus));
   }
 
   if (variant === 'magenta') {
-    return cn(
-      shell,
-      hasValue
-        ? cn(magentaFilledSurface, magentaFilledFocus)
-        : cn(emptyNeutralBorder, neutralFocus),
-    );
+    return cn(shell, hasValue ? cn(magentaFilledSurface, magentaFilledFocus) : cn(emptyNeutralBorder, neutralFocus));
   }
 
   if (variant === 'supply') {
@@ -76,10 +60,7 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
   return cn(
     shell,
     hasValue
-      ? cn(
-          'border-[rgb(var(--ds-brand-cyan-rgb)/0.72)] ds-bg-brand-cyan-10 text-foreground',
-          borrowFocus,
-        )
+      ? cn('border-[rgb(var(--ds-brand-cyan-rgb)/0.72)] ds-bg-brand-cyan-10 text-foreground', borrowFocus)
       : cn(emptyNeutralBorder, borrowFocus),
   );
 }

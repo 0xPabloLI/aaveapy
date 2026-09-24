@@ -35,11 +35,11 @@ const TSX_FILES = globSync(['components/**/*.tsx', 'hooks/**/*.ts', 'pages/**/*.
 // Files that may legitimately reference the field name in type definitions,
 // schema validation, tests, or documentation.
 const ALLOWLIST = new Set([
-  'types/aave.ts',                    // type definition
-  'lib/apiSchemas.ts',                // Zod schema
-  'lib/apiSchemas.test.ts',          // schema test
-  'lib/reserveStatus.ts',            // helper implementation
-  'lib/reserveStatus.test.ts',       // helper tests
+  'types/aave.ts', // type definition
+  'lib/apiSchemas.ts', // Zod schema
+  'lib/apiSchemas.test.ts', // schema test
+  'lib/reserveStatus.ts', // helper implementation
+  'lib/reserveStatus.test.ts', // helper tests
   'test/reserve-status-helper-regression.test.ts', // this file
 ]);
 

@@ -78,9 +78,7 @@ export function fetchIconSymbolAndName() {
       tokenSymbolMapContent: 'export const SYMBOL_MAP: { [key: string]: string } = {};',
       marketsRows: [],
       addressBookContext: {},
-      tokenLogoByAddress: new Map([
-        ['0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'https://example.com/foo.svg'],
-      ]),
+      tokenLogoByAddress: new Map([['0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'https://example.com/foo.svg']]),
     });
 
     expect(hints.get('foo')).toBe('https://example.com/foo.svg');

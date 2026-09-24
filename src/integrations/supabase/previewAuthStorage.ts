@@ -5,14 +5,20 @@
 export function brokeredPreviewStorage() {
   if (typeof window === 'undefined') return undefined;
   const host = location.hostname;
-  const PREVIEW_ZONES = ['lovableproject.com', 'lovableproject-dev.com', 'lovable.app', 'gpt-eng.com', 'gptengineer.run'];
+  const PREVIEW_ZONES = [
+    'lovableproject.com',
+    'lovableproject-dev.com',
+    'lovable.app',
+    'gpt-eng.com',
+    'gptengineer.run',
+  ];
   const onPreviewZone = PREVIEW_ZONES.some((z) => host === z || host.endsWith('.' + z));
   // Read the id only from non-user-controlled host positions, so a user-named
   // preview--<name> host can't smuggle another project's id.
   const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
   const projectId = onPreviewZone
-    ? (host.match(new RegExp('^(?:id-preview(?:-[a-z0-9]+)?|project)--(' + UUID + ')(?:-dev)?(?=\\.|$)', 'i'))?.[1]
-        ?? host.match(new RegExp('^(' + UUID + ')(?=[.-])', 'i'))?.[1])
+    ? (host.match(new RegExp('^(?:id-preview(?:-[a-z0-9]+)?|project)--(' + UUID + ')(?:-dev)?(?=\\.|$)', 'i'))?.[1] ??
+      host.match(new RegExp('^(' + UUID + ')(?=[.-])', 'i'))?.[1])
     : undefined;
   const framed = window.parent && window.parent !== window;
   if (!projectId || !framed) return localStorage;
@@ -23,10 +29,15 @@ export function brokeredPreviewStorage() {
   const EDITOR = dev
     ? /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$|^http:\/\/localhost:3000$/
     : /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$/;
-  const ancestor = (location.ancestorOrigins && location.ancestorOrigins[0]) || (document.referrer ? new URL(document.referrer).origin : '');
-  const editorOrigins = ancestor && EDITOR.test(ancestor)
-    ? [ancestor]
-    : (dev ? ['https://lovable.dev', 'http://localhost:3000'] : ['https://lovable.dev']);
+  const ancestor =
+    (location.ancestorOrigins && location.ancestorOrigins[0]) ||
+    (document.referrer ? new URL(document.referrer).origin : '');
+  const editorOrigins =
+    ancestor && EDITOR.test(ancestor)
+      ? [ancestor]
+      : dev
+        ? ['https://lovable.dev', 'http://localhost:3000']
+        : ['https://lovable.dev'];
   const RESULT = 'lovable-preview-auth:result';
   const TIMEOUT = 2000;
   const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -71,7 +82,10 @@ export function brokeredPreviewStorage() {
       // '' is the logout tombstone: clear the local copy too so it can't resurrect if
       // the broker later goes silent. A null reply means never-synced -> keep local.
       if (res && res.ok && typeof res.value === 'string') {
-        if (res.value === '') { localStorage.removeItem(key); return null; }
+        if (res.value === '') {
+          localStorage.removeItem(key);
+          return null;
+        }
         return res.value;
       }
       return localStorage.getItem(key);

@@ -58,11 +58,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioCapWarning } from '@/lib/portfolioCapWarnings';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
-import {
-CompactInput,
-MetricValue,
-WarningMarker,
-} from './PortfolioTablePrimitives';
+import { CompactInput, MetricValue, WarningMarker } from './PortfolioTablePrimitives';
 import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 
 /* ── Column geometry ─────────────────────────────────────────────── */
@@ -72,18 +68,18 @@ import { PortfolioSummaryBar } from './PortfolioSummaryBar';
 // claim means it absorbs almost zero extra space. Input cols have no width
 // → they absorb all remaining space. Other cols have fixed px widths.
 const COL_WIDTHS = [
-  '1px',         // 0  Reserve — content-adaptive, no extra space claim
-  '50%',         // 1  Supply Input — equal share with Borrow Input (auto layout hint)
-  '50%',         // 2  Borrow Input — equal share with Supply Input (auto layout hint)
-  '62px',        // 3  Supply Native
-  '62px',        // 4  Borrow Native
-  '62px',        // 5  Supply Incent
-  '62px',        // 6  Borrow Incent
-  '62px',        // 7  Supply Total
-  '62px',        // 8  Borrow Total
-  '68px',        // 9  Supply $/day
-  '68px',        // 10 Borrow $/day
-  '72px',        // 11 Net $/day
+  '1px', // 0  Reserve — content-adaptive, no extra space claim
+  '50%', // 1  Supply Input — equal share with Borrow Input (auto layout hint)
+  '50%', // 2  Borrow Input — equal share with Supply Input (auto layout hint)
+  '62px', // 3  Supply Native
+  '62px', // 4  Borrow Native
+  '62px', // 5  Supply Incent
+  '62px', // 6  Borrow Incent
+  '62px', // 7  Supply Total
+  '62px', // 8  Borrow Total
+  '68px', // 9  Supply $/day
+  '68px', // 10 Borrow $/day
+  '72px', // 11 Net $/day
 ] as const;
 
 function UnifiedColgroup() {
@@ -152,7 +148,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 }: PortfolioUnifiedTableProps) {
   if (entries.length === 0) return null;
 
-  const reserveIdToReserve = new Map(reserves.map(r => [r.reserveId, r]));
+  const reserveIdToReserve = new Map(reserves.map((r) => [r.reserveId, r]));
 
   const resultMap = new Map<string, { supply?: PortfolioPositionResult; borrow?: PortfolioPositionResult }>();
   if (positionResults) {
@@ -164,7 +160,7 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
     }
   }
 
-  const hasForecastUnavailable = positionResults?.some(r => (r.forecastUnavailableCampaignCount ?? 0) > 0) ?? false;
+  const hasForecastUnavailable = positionResults?.some((r) => (r.forecastUnavailableCampaignCount ?? 0) > 0) ?? false;
 
   return (
     <div className="rounded-lg border border-border/50 overflow-x-auto">
@@ -172,24 +168,76 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
         <UnifiedColgroup />
         <thead>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th rowSpan={2} className={cn('pl-2 pr-3 py-1 text-center font-semibold', HEADER_BASE)}>Reserve</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Input</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Native</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Incentive</th>
-            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Total</th>
-            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>Earn $/day</th>
+            <th rowSpan={2} className={cn('pl-2 pr-3 py-1 text-center font-semibold', HEADER_BASE)}>
+              Reserve
+            </th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>
+              Input
+            </th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>
+              Native
+            </th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>
+              Incentive
+            </th>
+            <th colSpan={2} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>
+              Total
+            </th>
+            <th colSpan={3} className={cn('px-1 py-1 text-center font-semibold', GROUP_SEP, HEADER_BASE)}>
+              Earn $/day
+            </th>
           </tr>
           <tr className="text-muted-foreground border-b border-border/50">
-            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}><span className="hidden lg:inline">Supply</span><span className="lg:hidden">S</span></th>
-            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}><span className="hidden lg:inline">Borrow</span><span className="lg:hidden">B</span></th>
+            <th
+              className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}
+            >
+              <span className="hidden lg:inline">Supply</span>
+              <span className="lg:hidden">S</span>
+            </th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}>
+              <span className="hidden lg:inline">Borrow</span>
+              <span className="lg:hidden">B</span>
+            </th>
+            <th
+              className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}
+            >
+              <span className="hidden lg:inline">Supply</span>
+              <span className="lg:hidden">S</span>
+            </th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}>
+              <span className="hidden lg:inline">Borrow</span>
+              <span className="lg:hidden">B</span>
+            </th>
+            <th
+              className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}
+            >
+              <span className="hidden lg:inline">Supply</span>
+              <span className="lg:hidden">S</span>
+            </th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}>
+              <span className="hidden lg:inline">Borrow</span>
+              <span className="lg:hidden">B</span>
+            </th>
+            <th
+              className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}
+            >
+              <span className="hidden lg:inline">Supply</span>
+              <span className="lg:hidden">S</span>
+            </th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}>
+              <span className="hidden lg:inline">Borrow</span>
+              <span className="lg:hidden">B</span>
+            </th>
+            <th
+              className={cn('px-1 py-0.5 text-right font-medium', GROUP_SEP, 'ds-text-11', HEADER_BASE, SUPPLY_COLOR)}
+            >
+              <span className="hidden lg:inline">Supply</span>
+              <span className="lg:hidden">S</span>
+            </th>
+            <th className={cn('px-1 py-0.5 text-right font-medium ds-text-11', SIDE_SEP, HEADER_BASE, BORROW_COLOR)}>
+              <span className="hidden lg:inline">Borrow</span>
+              <span className="lg:hidden">B</span>
+            </th>
             <th className={cn('px-1 py-0.5 pr-2 text-right font-semibold', GROUP_SEP, HEADER_BASE)}>Net</th>
           </tr>
         </thead>
@@ -204,27 +252,38 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
             const isHidden = entry.hidden;
             const isRestricted = entry.restrictedStatus != null;
 
-            const disabledNotice = reserve ? {
-              supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
-              borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
-            } : { supply: 'Reserve unavailable', borrow: 'Reserve unavailable' };
+            const disabledNotice = reserve
+              ? {
+                  supply: reserve.isPaused ? 'Paused' : isSupplyDisabled(reserve) ? 'Supply unavailable' : null,
+                  borrow: reserve.isPaused ? 'Paused' : isBorrowDisabled(reserve) ? 'Borrow unavailable' : null,
+                }
+              : { supply: 'Reserve unavailable', borrow: 'Reserve unavailable' };
 
-            const supplyCapLimitUsd = capWarningsMap?.get(entry.reserveId)?.supply?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
-            const borrowCapLimitUsd = capWarningsMap?.get(entry.reserveId)?.borrow?.find(w => w.kind === 'protocol_cap')?.adjustToUsd;
+            const supplyCapLimitUsd = capWarningsMap
+              ?.get(entry.reserveId)
+              ?.supply?.find((w) => w.kind === 'protocol_cap')?.adjustToUsd;
+            const borrowCapLimitUsd = capWarningsMap
+              ?.get(entry.reserveId)
+              ?.borrow?.find((w) => w.kind === 'protocol_cap')?.adjustToUsd;
             const supplyWarnings = capWarningsMap?.get(entry.reserveId)?.supply ?? [];
             const borrowWarnings = capWarningsMap?.get(entry.reserveId)?.borrow ?? [];
 
             // Split warnings: protocol caps go on Input columns, incentive caps/offsets go on Incentive columns
-            const supplyInputWarns = supplyWarnings.filter(w => w.kind === 'protocol_cap');
-            const supplyIncentWarns = supplyWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
-            const borrowInputWarns = borrowWarnings.filter(w => w.kind === 'protocol_cap');
-            const borrowIncentWarns = borrowWarnings.filter(w => w.kind === 'incentive_cap' || w.kind === 'incentive_offset');
+            const supplyInputWarns = supplyWarnings.filter((w) => w.kind === 'protocol_cap');
+            const supplyIncentWarns = supplyWarnings.filter(
+              (w) => w.kind === 'incentive_cap' || w.kind === 'incentive_offset',
+            );
+            const borrowInputWarns = borrowWarnings.filter((w) => w.kind === 'protocol_cap');
+            const borrowIncentWarns = borrowWarnings.filter(
+              (w) => w.kind === 'incentive_cap' || w.kind === 'incentive_offset',
+            );
 
             // AAV-1250: LTV clamping warning — only when LTV is the binding constraint
             // (ltvClampedUsd === amountUsd means LTV determined the final amount)
-            const ltvWarning = borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
-              ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
-              : [];
+            const ltvWarning =
+              borrowResult?.ltvClampedUsd != null && borrowResult.ltvClampedUsd === borrowResult.amountUsd
+                ? [{ kind: 'ltv_cap' as const, side: 'borrow' as const, clampedUsd: borrowResult.ltvClampedUsd }]
+                : [];
             const borrowInputWithLtvWarns = [...borrowInputWarns, ...ltvWarning];
 
             const hasWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
@@ -237,10 +296,14 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
             const restrictedIcon = (() => {
               switch (entry.restrictedStatus) {
-                case 'frozen': return <Snowflake className="size-2.5 text-sky-500" aria-hidden />;
-                case 'paused': return <PauseCircle className="size-2.5 ds-text-paused" aria-hidden />;
-                case 'inactive': return <Ban className="size-2.5 ds-text-paused" aria-hidden />;
-                default: return null;
+                case 'frozen':
+                  return <Snowflake className="size-2.5 text-sky-500" aria-hidden />;
+                case 'paused':
+                  return <PauseCircle className="size-2.5 ds-text-paused" aria-hidden />;
+                case 'inactive':
+                  return <Ban className="size-2.5 ds-text-paused" aria-hidden />;
+                default:
+                  return null;
               }
             })();
 
@@ -258,15 +321,30 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); if (!isRestricted) handleMinusClick(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isRestricted) handleMinusClick();
+                      }}
                       className={cn(
                         'shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors',
                         !isRestricted && PORTFOLIO_THEME.trashHoverBg,
                         !isRestricted && PORTFOLIO_THEME.trashHoverText,
                       )}
-                      aria-label={isRestricted ? `${entry.tokenSymbol} is restricted` : isHidden ? `Restore ${entry.tokenSymbol}` : `Remove ${entry.tokenSymbol}`}
+                      aria-label={
+                        isRestricted
+                          ? `${entry.tokenSymbol} is restricted`
+                          : isHidden
+                            ? `Restore ${entry.tokenSymbol}`
+                            : `Remove ${entry.tokenSymbol}`
+                      }
                     >
-                      {isRestricted ? restrictedIcon : isHidden ? <EyeOff className="size-2.5" strokeWidth={2.5} aria-hidden /> : <Minus className="size-2.5" strokeWidth={2.5} aria-hidden />}
+                      {isRestricted ? (
+                        restrictedIcon
+                      ) : isHidden ? (
+                        <EyeOff className="size-2.5" strokeWidth={2.5} aria-hidden />
+                      ) : (
+                        <Minus className="size-2.5" strokeWidth={2.5} aria-hidden />
+                      )}
                     </button>
                     <ReserveIdentity
                       tokenSymbol={entry.tokenSymbol}
@@ -284,7 +362,6 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                 <td data-cell="supply-input" className={cn(INPUT_CELL, GROUP_SEP, SUPPLY_BAND)}>
                   <div className="flex items-center gap-0.5">
                     <div className="flex-1 min-w-[7rem]">
-
                       <CompactInput
                         sideData={entry.supply}
                         side="supply"
@@ -323,11 +400,27 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
 
                 {/* Supply Native */}
                 <td data-cell="supply-native" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
-                  {supplyResult ? <MetricValue afterValue={supplyResult.nativePercent} metric={supplyResult.nativeMetric} formatFn={formatPercent} /> : '—'}
+                  {supplyResult ? (
+                    <MetricValue
+                      afterValue={supplyResult.nativePercent}
+                      metric={supplyResult.nativeMetric}
+                      formatFn={formatPercent}
+                    />
+                  ) : (
+                    '—'
+                  )}
                 </td>
                 {/* Borrow Native */}
                 <td data-cell="borrow-native" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
-                  {borrowResult ? <MetricValue afterValue={borrowResult.nativePercent} metric={borrowResult.nativeMetric} formatFn={formatPercent} /> : '—'}
+                  {borrowResult ? (
+                    <MetricValue
+                      afterValue={borrowResult.nativePercent}
+                      metric={borrowResult.nativeMetric}
+                      formatFn={formatPercent}
+                    />
+                  ) : (
+                    '—'
+                  )}
                 </td>
 
                 {/* Supply Incentive */}
@@ -335,12 +428,21 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {supplyResult && supplyResult.incentivePercent !== 0 ? (
                       <>
-                        <MetricValue afterValue={supplyResult.incentivePercent} metric={supplyResult.incentiveMetric} formatFn={formatPercent} />
-                        {supplyResult.forecastUnavailableCampaignCount != null && supplyResult.forecastUnavailableCampaignCount > 0 && (
-                          <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
-                        )}
+                        <MetricValue
+                          afterValue={supplyResult.incentivePercent}
+                          metric={supplyResult.incentiveMetric}
+                          formatFn={formatPercent}
+                        />
+                        {supplyResult.forecastUnavailableCampaignCount != null &&
+                          supplyResult.forecastUnavailableCampaignCount > 0 && (
+                            <span className="ds-text-9 text-muted-foreground" title="No forecast">
+                              *
+                            </span>
+                          )}
                       </>
-                    ) : '—'}
+                    ) : (
+                      '—'
+                    )}
                     {supplyIncentWarns.length > 0 && <WarningMarker warnings={supplyIncentWarns} />}
                   </span>
                 </td>
@@ -349,35 +451,74 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
                   <span className="inline-flex items-center gap-0.5 justify-end">
                     {borrowResult && borrowResult.incentivePercent !== 0 ? (
                       <>
-                        <MetricValue afterValue={borrowResult.incentivePercent} metric={borrowResult.incentiveMetric} formatFn={formatPercent} />
-                        {borrowResult.forecastUnavailableCampaignCount != null && borrowResult.forecastUnavailableCampaignCount > 0 && (
-                          <span className="ds-text-9 text-muted-foreground" title="No forecast">*</span>
-                        )}
+                        <MetricValue
+                          afterValue={borrowResult.incentivePercent}
+                          metric={borrowResult.incentiveMetric}
+                          formatFn={formatPercent}
+                        />
+                        {borrowResult.forecastUnavailableCampaignCount != null &&
+                          borrowResult.forecastUnavailableCampaignCount > 0 && (
+                            <span className="ds-text-9 text-muted-foreground" title="No forecast">
+                              *
+                            </span>
+                          )}
                       </>
-                    ) : '—'}
+                    ) : (
+                      '—'
+                    )}
                     {borrowIncentWarns.length > 0 && <WarningMarker warnings={borrowIncentWarns} />}
                   </span>
                 </td>
 
                 {/* Supply Total */}
-                <td data-cell="supply-total" className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}>
-                  {supplyResult ? <MetricValue afterValue={supplyResult.totalPercent} metric={supplyResult.totalMetric} formatFn={formatPercent} /> : '—'}
+                <td
+                  data-cell="supply-total"
+                  className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_BAND, SUPPLY_COLOR)}
+                >
+                  {supplyResult ? (
+                    <MetricValue
+                      afterValue={supplyResult.totalPercent}
+                      metric={supplyResult.totalMetric}
+                      formatFn={formatPercent}
+                    />
+                  ) : (
+                    '—'
+                  )}
                 </td>
                 {/* Borrow Total */}
                 <td data-cell="borrow-total" className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_BAND, BORROW_COLOR)}>
-                  {borrowResult ? <MetricValue afterValue={borrowResult.totalPercent} metric={borrowResult.totalMetric} formatFn={formatPercent} /> : '—'}
+                  {borrowResult ? (
+                    <MetricValue
+                      afterValue={borrowResult.totalPercent}
+                      metric={borrowResult.totalMetric}
+                      formatFn={formatPercent}
+                    />
+                  ) : (
+                    '—'
+                  )}
                 </td>
 
                 {/* Supply $/day */}
                 <td data-cell="supply-usd-per-day" className={cn(VAL_CELL, GROUP_SEP, SUPPLY_BAND, SUPPLY_COLOR)}>
-                  {supplyResult ? (supplyResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(supplyResult.usdPerDay)) : '—'}
+                  {supplyResult
+                    ? supplyResult.usdPerDay === 0
+                      ? '—'
+                      : formatSignedReserveSizeUsd(supplyResult.usdPerDay)
+                    : '—'}
                 </td>
                 {/* Borrow $/day */}
                 <td data-cell="borrow-usd-per-day" className={cn(VAL_CELL, SIDE_SEP, BORROW_BAND, BORROW_COLOR)}>
-                  {borrowResult ? (borrowResult.usdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(borrowResult.usdPerDay)) : '—'}
+                  {borrowResult
+                    ? borrowResult.usdPerDay === 0
+                      ? '—'
+                      : formatSignedReserveSizeUsd(borrowResult.usdPerDay)
+                    : '—'}
                 </td>
                 {/* Net $/day */}
-                <td data-cell="net-usd-per-day" className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', 'bg-muted/15')}>
+                <td
+                  data-cell="net-usd-per-day"
+                  className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground', 'bg-muted/15')}
+                >
                   {(() => {
                     const s = supplyResult?.usdPerDay ?? 0;
                     const b = borrowResult?.usdPerDay ?? 0;
@@ -393,8 +534,12 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
           <tfoot>
             <tr className="border-t-2 border-border/60 bg-muted/30">
               <td className="pl-2 pr-3 py-1.5 font-bold ds-text-11 text-center">Total</td>
-              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>{formatReserveSizeUsd(summary.totalSupplyUsd)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>{formatReserveSizeUsd(summary.totalBorrowUsd)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, 'font-bold', SUPPLY_COLOR)}>
+                {formatReserveSizeUsd(summary.totalSupplyUsd)}
+              </td>
+              <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)}>
+                {formatReserveSizeUsd(summary.totalBorrowUsd)}
+              </td>
               <td className={cn(VAL_CELL, GROUP_SEP)} />
               <td className={cn(VAL_CELL, SIDE_SEP)} />
               <td className={cn(VAL_CELL, GROUP_SEP)} />
@@ -405,9 +550,15 @@ const PortfolioUnifiedTable = memo(function PortfolioUnifiedTable({
               <td className={cn(VAL_CELL, SIDE_SEP, 'font-bold', BORROW_COLOR)} title="Weighted average">
                 {formatPercent(summary.borrowWeightedApy)}
               </td>
-              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>{summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}</td>
-              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>{summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}</td>
-              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>{summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}</td>
+              <td className={cn(VAL_CELL, GROUP_SEP, SUPPLY_COLOR)}>
+                {summary.supplyUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.supplyUsdPerDay)}
+              </td>
+              <td className={cn(VAL_CELL, SIDE_SEP, BORROW_COLOR)}>
+                {summary.borrowUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.borrowUsdPerDay)}
+              </td>
+              <td className={cn(LAST_CELL, GROUP_SEP, 'font-bold', 'text-foreground')}>
+                {summary.netUsdPerDay === 0 ? '—' : formatSignedReserveSizeUsd(summary.netUsdPerDay)}
+              </td>
             </tr>
           </tfoot>
         )}

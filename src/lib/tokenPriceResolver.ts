@@ -21,8 +21,7 @@ interface ResolveForecastTokenPriceWithBackupOptions {
   allowThirdPartyFetch?: boolean;
 }
 
-const toKey = (chainId: number, address: string): string =>
-  `${chainId}:${address.toLowerCase()}`;
+const toKey = (chainId: number, address: string): string => `${chainId}:${address.toLowerCase()}`;
 
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 const PLATFORM_TTL_MS = 24 * 60 * 60 * 1000;
@@ -42,6 +41,7 @@ const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   1868: 'soneium',
   4326: 'megaeth',
   5000: 'mantle',
+  5042: 'arc',
   8453: 'base',
   9745: 'plasma',
   42161: 'arbitrum-one',
@@ -69,12 +69,10 @@ const COINGECKO_COIN_ID_BY_SYMBOL: Record<string, string> = {
 
 const priceCache = new Map<string, { price: number; expiresAt: number }>();
 const priceInFlight = new Map<string, Promise<number | undefined>>();
-let platformMapCache:
-  | {
-      map: Map<number, string>;
-      expiresAt: number;
-    }
-  | null = null;
+let platformMapCache: {
+  map: Map<number, string>;
+  expiresAt: number;
+} | null = null;
 let lastPlatformForceRefreshAt = 0;
 
 const pushIfPresent = (into: string[], value?: string | null) => {
@@ -157,7 +155,7 @@ export const resolveForecastTokenPrice = ({
 
 const getAssetPlatformMap = async (
   fetchImpl: FetchLike,
-  options?: { forceRefresh?: boolean }
+  options?: { forceRefresh?: boolean },
 ): Promise<Map<number, string>> => {
   const now = Date.now();
   if (!options?.forceRefresh && platformMapCache && platformMapCache.expiresAt > now) {
@@ -197,7 +195,7 @@ const getAssetPlatformMap = async (
 const fetchTokenPriceByPlatform = async (
   platformId: string,
   normalizedAddress: string,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
 ): Promise<number | undefined> => {
   const url =
     `${COINGECKO_API_BASE}/simple/token_price/${platformId}` +
@@ -216,7 +214,7 @@ const fetchTokenPriceByPlatform = async (
 const fetchCoingeckoPriceBySymbol = async (
   symbol: string,
   tokenSymbol: string | null | undefined,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
 ): Promise<number | undefined> => {
   const coinId = COINGECKO_COIN_ID_BY_SYMBOL[symbol];
   if (!coinId) return undefined;
@@ -232,10 +230,7 @@ const fetchCoingeckoPriceBySymbol = async (
 
   const request = (async () => {
     try {
-      const url =
-        `${COINGECKO_API_BASE}/simple/price` +
-        `?ids=${encodeURIComponent(coinId)}` +
-        `&vs_currencies=usd`;
+      const url = `${COINGECKO_API_BASE}/simple/price` + `?ids=${encodeURIComponent(coinId)}` + `&vs_currencies=usd`;
       const response = await coingeckoLimiter.run(() => fetchImpl(url));
       if (!response.ok) return undefined;
 
@@ -267,7 +262,7 @@ const fetchCoingeckoTokenPrice = async (
   chainId: number,
   address: string,
   tokenSymbol: string | null | undefined,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
 ): Promise<number | undefined> => {
   const normalizedAddress = address.toLowerCase();
   const cacheKey = toKey(chainId, normalizedAddress);
@@ -289,8 +284,7 @@ const fetchCoingeckoTokenPrice = async (
         const mappedPlatforms = await getAssetPlatformMap(fetchImpl);
         platformId = resolvePlatformId(chainId, mappedPlatforms);
         const now = Date.now();
-        const shouldForceRefresh =
-          now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
+        const shouldForceRefresh = now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
         if (!platformId && shouldForceRefresh) {
           lastPlatformForceRefreshAt = now;
           const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
@@ -303,8 +297,7 @@ const fetchCoingeckoTokenPrice = async (
       let usd = await fetchTokenPriceByPlatform(platformId, normalizedAddress, fetchImpl);
       if (usd === undefined && !forceRefreshedPlatforms) {
         const now = Date.now();
-        const shouldForceRefresh =
-          now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
+        const shouldForceRefresh = now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
         if (shouldForceRefresh) {
           lastPlatformForceRefreshAt = now;
           const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
@@ -335,7 +328,7 @@ const fetchCoingeckoTokenPrice = async (
 export const resolveForecastTokenPriceWithBackup = async (
   input: ResolveForecastTokenPriceInput,
   fetchImpl: FetchLike = fetch,
-  options?: ResolveForecastTokenPriceWithBackupOptions
+  options?: ResolveForecastTokenPriceWithBackupOptions,
 ): Promise<number | undefined> => {
   const localPrice = resolveForecastTokenPrice(input);
   if (localPrice !== undefined) return localPrice;

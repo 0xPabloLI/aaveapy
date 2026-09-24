@@ -10,7 +10,12 @@ const STRING_LITERAL_RE = /['"`]([^'"`]*[\u4e00-\u9fff][^'"`]*)['"`]/g;
 const EXCLUDE_DIRS = new Set(['test', '__tests__']);
 const EXCLUDE_SUFFIXES = ['.test.ts', '.test.tsx', '.stories.tsx', '.d.ts'];
 // Localized landing pages whose CJK content is intentional (target-market copy).
-const EXCLUDE_FILES = new Set(['./pages/AaveApyZH.tsx', './pages/AaveApyJA.tsx']);
+const EXCLUDE_FILES = new Set([
+  './pages/AaveApyZH.tsx',
+  './pages/AaveApyJA.tsx',
+  // Locale registry: native language names are intentional UI labels.
+  './lib/localizedPages.ts',
+]);
 
 function globSourceFiles(dir: string): string[] {
   const results: string[] = [];
@@ -81,9 +86,7 @@ for (const rel of ALL_FILES) {
 describe('no-chinese-visible', () => {
   it('should have no user-visible Chinese characters in frontend source', () => {
     if (allHits.length > 0) {
-      const details = allHits
-        .map((h) => `  ${h.file}:${h.line} → "${h.text}"`)
-        .join('\n');
+      const details = allHits.map((h) => `  ${h.file}:${h.line} → "${h.text}"`).join('\n');
       expect.fail(
         `Found user-visible Chinese in frontend source:\n${details}\n\nReplace with English or add to exclusion list.`,
       );

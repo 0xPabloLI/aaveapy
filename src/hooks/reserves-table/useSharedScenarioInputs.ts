@@ -40,9 +40,9 @@ export interface UseSharedScenarioInputsResult {
  * the mobile sheet open/close state, plus the callbacks the
  * `ScenarioControls` instances bind to.
  */
-export function useSharedScenarioInputs(
-  { scenarioControlsRef }: UseSharedScenarioInputsOptions,
-): UseSharedScenarioInputsResult {
+export function useSharedScenarioInputs({
+  scenarioControlsRef,
+}: UseSharedScenarioInputsOptions): UseSharedScenarioInputsResult {
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<ScenarioInputMode>('usd');
@@ -53,14 +53,11 @@ export function useSharedScenarioInputs(
     setMobileNetOpen((prev) => !prev);
   }, []);
 
-  const handleScenarioChange = useCallback(
-    (supply: string, borrow: string, mode: ScenarioInputMode) => {
-      setDebouncedSharedSupplyInput(supply);
-      setDebouncedSharedBorrowInput(borrow);
-      setSharedInputMode(mode);
-    },
-    [],
-  );
+  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: ScenarioInputMode) => {
+    setDebouncedSharedSupplyInput(supply);
+    setDebouncedSharedBorrowInput(borrow);
+    setSharedInputMode(mode);
+  }, []);
 
   const handleCorrectSupplyInput = useCallback(
     (correctedValue: string) => {

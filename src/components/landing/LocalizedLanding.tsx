@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { LocaleHead } from "@/components/seo/LocaleHead";
-import { LOCALE_PATH_MAP, SITE_ORIGIN, type SupportedLocale } from "@/i18n";
+import { Link } from 'react-router-dom';
+import { ArrowRight, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LocaleHead } from '@/components/seo/LocaleHead';
+import { LOCALE_PATH_MAP, SITE_ORIGIN, type SupportedLocale } from '@/i18n';
 
 interface LandingFaq {
   q: string;
@@ -21,7 +21,7 @@ interface LandingContent {
 }
 
 interface LocalizedLandingProps {
-  locale: Exclude<SupportedLocale, "en">;
+  locale: Exclude<SupportedLocale, 'en'>;
   content: LandingContent;
   /** Optional in-locale related pages rendered under the FAQ. */
   relatedLinks?: Array<{ to: string; label: string }>;
@@ -31,12 +31,12 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
   const path = `/${LOCALE_PATH_MAP[locale]}`;
 
   const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
     mainEntity: content.faqs.map((f) => ({
-      "@type": "Question",
+      '@type': 'Question',
       name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
     })),
   };
 
@@ -88,10 +88,7 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
         <section className="container mx-auto px-4 pb-16 max-w-5xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {content.features.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-xl border border-border/60 bg-card p-6"
-              >
+              <div key={f.title} className="rounded-xl border border-border/60 bg-card p-6">
                 <h2 className="text-base font-semibold text-foreground">{f.title}</h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.body}</p>
               </div>
@@ -104,10 +101,7 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">FAQ</h2>
           <div className="space-y-3">
             {content.faqs.map((f) => (
-              <details
-                key={f.q}
-                className="group rounded-xl border border-border/60 bg-card p-5 open:bg-card"
-              >
+              <details key={f.q} className="group rounded-xl border border-border/60 bg-card p-5 open:bg-card">
                 <summary className="cursor-pointer list-none flex items-start justify-between gap-4 text-base font-semibold text-foreground">
                   <span>{f.q}</span>
                   <span className="text-muted-foreground transition group-open:rotate-45 text-xl leading-none select-none">
@@ -127,7 +121,7 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
           >
             {relatedLinks.map((l, i) => (
               <span key={l.to}>
-                {i > 0 && " · "}
+                {i > 0 && ' · '}
                 <Link to={l.to} className="text-secondary hover:underline">
                   {l.label}
                 </Link>
@@ -139,9 +133,7 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
         {/* FOOTER CTA */}
         <section className="container mx-auto px-4 pb-24 max-w-5xl">
           <div className="rounded-2xl border border-border/60 bg-card p-8 sm:p-12 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">
-              {content.hero.title}
-            </h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">{content.hero.title}</h2>
             <div className="mt-6">
               <Button asChild size="lg" className="rounded-xl">
                 <Link to="/">
@@ -150,9 +142,7 @@ export function LocalizedLanding({ locale, content, relatedLinks }: LocalizedLan
                 </Link>
               </Button>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {SITE_ORIGIN.replace("https://", "")}
-            </p>
+            <p className="mt-4 text-xs text-muted-foreground">{SITE_ORIGIN.replace('https://', '')}</p>
           </div>
         </section>
       </main>

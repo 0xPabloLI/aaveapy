@@ -38,9 +38,7 @@ const MobileSortMenu = ({
             key={option.key}
             onClick={option.onSelect}
             className={`w-full px-2 py-1.5 text-left ds-text-13 transition-colors flex items-center justify-between gap-1.5 ${
-              option.isSelected
-                ? `${option.activeClassName} font-bold bg-card/60`
-                : 'text-muted-foreground'
+              option.isSelected ? `${option.activeClassName} font-bold bg-card/60` : 'text-muted-foreground'
             }`}
           >
             <span>{option.label}</span>
@@ -114,11 +112,7 @@ export default function ReservesTableMobileSortBar({
           <span>Size</span>
           <ChevronDown className="w-3 h-3" />
         </button>
-        <MobileSortMenu
-          open={showSizeSortMenu}
-          onClose={onCloseMenus}
-          options={sizeSortOptions}
-        />
+        <MobileSortMenu open={showSizeSortMenu} onClose={onCloseMenus} options={sizeSortOptions} />
       </div>
 
       <div className="relative overflow-visible">
@@ -135,11 +129,7 @@ export default function ReservesTableMobileSortBar({
           <span>Liq</span>
           <ChevronDown className="w-3 h-3" />
         </button>
-        <MobileSortMenu
-          open={showUtilSortMenu}
-          onClose={onCloseMenus}
-          options={utilSortOptions}
-        />
+        <MobileSortMenu open={showUtilSortMenu} onClose={onCloseMenus} options={utilSortOptions} />
       </div>
 
       <div className="relative overflow-visible">
@@ -155,11 +145,7 @@ export default function ReservesTableMobileSortBar({
           <span>Supply</span>
           <ChevronDown className="w-3 h-3" />
         </button>
-        <MobileSortMenu
-          open={showSupplySortMenu}
-          onClose={onCloseMenus}
-          options={supplySortOptions}
-        />
+        <MobileSortMenu open={showSupplySortMenu} onClose={onCloseMenus} options={supplySortOptions} />
       </div>
 
       <div className="relative overflow-visible">
@@ -175,12 +161,7 @@ export default function ReservesTableMobileSortBar({
           <span>Borrow</span>
           <ChevronDown className="w-3 h-3" />
         </button>
-        <MobileSortMenu
-          open={showBorrowSortMenu}
-          onClose={onCloseMenus}
-          options={borrowSortOptions}
-          align="end"
-        />
+        <MobileSortMenu open={showBorrowSortMenu} onClose={onCloseMenus} options={borrowSortOptions} align="end" />
       </div>
 
       <div className="relative overflow-visible">
@@ -199,12 +180,7 @@ export default function ReservesTableMobileSortBar({
           <span className="truncate">{mobileExtraSortChipLabel}</span>
           <ChevronDown className="w-3 h-3 shrink-0" />
         </button>
-        <MobileSortMenu
-          open={showExtraSortMenu}
-          onClose={onCloseMenus}
-          options={extraSortOptions}
-          align="end"
-        />
+        <MobileSortMenu open={showExtraSortMenu} onClose={onCloseMenus} options={extraSortOptions} align="end" />
       </div>
     </div>
   );

@@ -1,0 +1,36 @@
+name: ✨ Feature request
+description: Propose an improvement to the dashboard, data coverage, or developer experience.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Triage happens in Linear (team **Aaveapy**); a maintainer will sync this issue there.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Which user decision does this unblock? Link any Linear ticket (AAV-xxx).
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior, not the implementation. Note design-token or layout implications if UI-related.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints acknowledged
+      options:
+        - label: Semantic color discipline (no non-semantic grays, each hue keeps exactly one meaning)
+        - label: Mobile targets ≥44px and no hover-only affordances
+        - label: Rate-simulation changes respect the Golden Rules (docs/rate-calculation.md Part 8)

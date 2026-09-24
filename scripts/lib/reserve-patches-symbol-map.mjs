@@ -205,9 +205,7 @@ export function symbolMapsEqual(a, b) {
 export function buildMergedSymbolMap(mapLocal, orderUpstream, mapUpstream) {
   const merged = new Map(mapLocal);
   for (const [k, v] of mapUpstream) merged.set(k, v);
-  const localOnly = [...mapLocal.keys()]
-    .filter((k) => !mapUpstream.has(k))
-    .sort((x, y) => x.localeCompare(y));
+  const localOnly = [...mapLocal.keys()].filter((k) => !mapUpstream.has(k)).sort((x, y) => x.localeCompare(y));
   const keyOrder = [...orderUpstream];
   for (const k of localOnly) {
     if (!keyOrder.includes(k)) keyOrder.push(k);
@@ -235,11 +233,7 @@ export function mergeSymbolMapInContent(localContent, upstreamContent) {
   const upstreamBody = upstreamContent.slice(ub.openIndex + 1, ub.closeIndex);
   const localParsed = parseSymbolMapBody(localBody);
   const upstreamParsed = parseSymbolMapBody(upstreamBody);
-  const { merged, keyOrder } = buildMergedSymbolMap(
-    localParsed.map,
-    upstreamParsed.order,
-    upstreamParsed.map
-  );
+  const { merged, keyOrder } = buildMergedSymbolMap(localParsed.map, upstreamParsed.order, upstreamParsed.map);
   if (symbolMapsEqual(merged, localParsed.map)) {
     return { content: localContent, changed: false };
   }

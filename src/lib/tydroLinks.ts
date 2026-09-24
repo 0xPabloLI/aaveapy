@@ -16,10 +16,7 @@ export function isTydroSupportedMarket(marketName: string): boolean {
   return marketName === 'AaveV3Ink' || marketName === 'AaveV3InkWhitelabel';
 }
 
-export function buildTydroReserveUrl(reserve: {
-  marketName: string;
-  tokenAddress: string;
-}): string | null {
+export function buildTydroReserveUrl(reserve: { marketName: string; tokenAddress: string }): string | null {
   if (!isTydroSupportedMarket(reserve.marketName) || !reserve.tokenAddress) return null;
   const underlyingAsset = reserve.tokenAddress.toLowerCase();
   return `${TYDRO_APP_BASE}/reserve-overview/?underlyingAsset=${encodeURIComponent(

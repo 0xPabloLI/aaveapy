@@ -1,0 +1,5 @@
+# OWASP ZAP scan rules tuning (see .github/workflows/dast-scan.yml).
+# Format: ruleId	IGNORE|WARN	(optional)comment
+# Add entries only for triaged false positives — never to hide a real finding.
+# Example:
+# 10038	IGNORE	Static assets are served from a CDN without cookies

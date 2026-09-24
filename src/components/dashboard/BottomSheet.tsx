@@ -26,11 +26,7 @@ export default function BottomSheet({
   animate = false,
 }: BottomSheetProps) {
   const overlay = (
-    <div
-      className={`fixed inset-0 z-30 bg-background/${overlayOpacity}`}
-      onClick={onClose}
-      aria-hidden="true"
-    />
+    <div className={`fixed inset-0 z-30 bg-background/${overlayOpacity}`} onClick={onClose} aria-hidden="true" />
   );
 
   const sheet = (
@@ -58,9 +54,7 @@ export default function BottomSheet({
         </button>
       </div>
 
-      <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
-        {children}
-      </div>
+      <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">{children}</div>
     </div>
   );
 

@@ -74,11 +74,7 @@ describe('preload image fallback tracking', () => {
   });
 
   it('remembers the first available fallback source for png-only token icons', async () => {
-    const sources = [
-      '/icons/tokens/aammdai.svg',
-      '/icons/tokens/aammdai.webp',
-      '/icons/tokens/aammdai.png',
-    ];
+    const sources = ['/icons/tokens/aammdai.svg', '/icons/tokens/aammdai.webp', '/icons/tokens/aammdai.png'];
 
     loadOutcomes.set(sources[0], false);
     loadOutcomes.set(sources[1], false);
@@ -102,9 +98,7 @@ describe('preload image fallback tracking', () => {
     const unknown = 'nonexistent-symbol-xyz';
     const sources = getTokenIconSources(unknown);
     expect(sources.length).toBe(TOKEN_ICON_FORMATS.length);
-    expect(sources).toEqual(
-      TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${unknown}.${fmt}`)
-    );
+    expect(sources).toEqual(TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${unknown}.${fmt}`));
   });
 });
 

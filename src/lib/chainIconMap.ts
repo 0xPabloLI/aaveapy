@@ -20,4 +20,5 @@ export const chainIconMap: Record<number, string> = {
   4326: 'megaeth',
   196: 'xlayer',
   143: 'monad',
+  5042: 'chainlink-arc',
 };

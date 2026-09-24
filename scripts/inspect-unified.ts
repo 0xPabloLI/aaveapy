@@ -6,7 +6,7 @@ async function main() {
 
   page.on('domcontentloaded', async () => {
     await page.evaluate(() => {
-      document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+      document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
     });
   });
 
@@ -14,12 +14,16 @@ async function main() {
   await page.waitForTimeout(4000);
 
   await page.evaluate(() => {
-    document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+    document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
   });
   await page.keyboard.press('Escape');
 
   // Click Portfolio toggle
-  const portfolioToggle = page.locator('label:has-text("Portfolio") button[role="switch"], [data-testid="portfolio-toggle"], button:has-text("Portfolio")').first();
+  const portfolioToggle = page
+    .locator(
+      'label:has-text("Portfolio") button[role="switch"], [data-testid="portfolio-toggle"], button:has-text("Portfolio")',
+    )
+    .first();
   if (await portfolioToggle.isVisible().catch(() => false)) {
     const isChecked = await portfolioToggle.getAttribute('aria-checked');
     if (isChecked !== 'true') {
@@ -29,12 +33,17 @@ async function main() {
   }
 
   // Add tokens via chips
-  const chips = page.locator('button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")');
+  const chips = page.locator(
+    'button:has-text("USDC"), button:has-text("WETH"), button:has-text("DAI"), button:has-text("WBTC")',
+  );
   const chipCount = await chips.count().catch(() => 0);
   console.log(`Found ${chipCount} chips`);
   if (chipCount > 0) {
     for (let i = 0; i < Math.min(4, chipCount); i++) {
-      await chips.nth(i).click({ timeout: 3000 }).catch(() => {});
+      await chips
+        .nth(i)
+        .click({ timeout: 3000 })
+        .catch(() => {});
       await page.waitForTimeout(500);
     }
   }
@@ -93,10 +102,10 @@ async function main() {
 
     const rect = table.getBoundingClientRect();
     const cols = table.querySelectorAll('colgroup col');
-    const colWidths = Array.from(cols).map(c => (c as HTMLElement).getAttribute('style') || '');
+    const colWidths = Array.from(cols).map((c) => (c as HTMLElement).getAttribute('style') || '');
 
     const headerCells = table.querySelectorAll('thead th');
-    const headerTexts = Array.from(headerCells).map(th => ({
+    const headerTexts = Array.from(headerCells).map((th) => ({
       text: th.textContent?.trim() || '',
       width: th.getBoundingClientRect().width,
       colspan: th.getAttribute('colspan'),
@@ -108,10 +117,12 @@ async function main() {
 
     // Get first data row cell widths
     const firstRow = bodyRows[0]?.querySelectorAll('td');
-    const cellWidths = firstRow ? Array.from(firstRow).map(td => ({
-      text: td.textContent?.trim().substring(0, 30) || '',
-      width: Math.round(td.getBoundingClientRect().width),
-    })) : [];
+    const cellWidths = firstRow
+      ? Array.from(firstRow).map((td) => ({
+          text: td.textContent?.trim().substring(0, 30) || '',
+          width: Math.round(td.getBoundingClientRect().width),
+        }))
+      : [];
 
     // Check for overflow
     const container = table.closest('div');

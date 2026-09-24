@@ -121,6 +121,8 @@ npx playwright test e2e/onchain-hf-js-injection.spec.ts --workers=1
 - `e2e/test-wallets.ts` — Shared test wallet addresses (`WATCH_ADDRESS`)
 - `src/lib/wagmi/config.ts` — Wagmi config with `watchModeConnector` registered
 
+**Real injected-wallet connect tests** (walking the actual Connect modal → wagmi `injected()` lifecycle): use `e2e/eip1193-mock.ts`, which injects a mock EIP-1193 provider + EIP-6963 announcement via `addInitScript`. Contract and scenarios: `docs/specs/e2e-wallet-connect-injected.md`. Note: the injected connect modal is desktop-only today (RainbowKit mobile modal needs its `wallets` prop, see spec R2).
+
 ## Comparison with CDP
 
 | Aspect | JS Injection | CDP |

@@ -1,45 +1,62 @@
-import js from "@eslint/js";
-import globals from "globals";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
-import tseslint from "typescript-eslint";
-import importPlugin from "eslint-plugin-import";
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
-  { ignores: ["dist", ".worktrees", "e2e", "scripts", "test-results", "src/integrations/supabase/client.ts", "src/integrations/supabase/previewAuthStorage.ts", "src/integrations/supabase/types.ts"] },
+  {
+    ignores: [
+      'dist',
+      '.worktrees',
+      'e2e',
+      'scripts',
+      'test-results',
+      'src/integrations/supabase/client.ts',
+      'src/integrations/supabase/previewAuthStorage.ts',
+      'src/integrations/supabase/types.ts',
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ["src/**/*.{ts,tsx}"],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ["./tsconfig.app.json"],
+        project: ['./tsconfig.app.json'],
       },
     },
     plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
       import: importPlugin,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "@typescript-eslint/no-unused-vars": "off",
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      '@typescript-eslint/no-unused-vars': 'off',
       // react-hooks 7.x 新增规则较严格，暂关闭以免阻塞升级；后续可逐步修代码再开启
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/refs": "off",
-      "react-hooks/static-components": "off",
-      "react-hooks/preserve-manual-memoization": "off",
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
       // 禁止重复导入
-      "import/no-duplicates": "error",
+      'import/no-duplicates': 'error',
+      // ── 圈复杂度棘轮（warn-only）──
+      // 基线：>15 的函数约 69 处（2026-09 测得，热点集中在 rate simulation /
+      // 前端 dashboard 组件）。不阻塞 CI，新代码超限会出现在 reviewdog 注解里；
+      // 机会性修复后逐步下调阈值。Golden-Rules 计算器刻意分支密集，
+      // 重构前先读 docs/rate-calculation.md Part 8。
+      complexity: ['warn', 15],
     },
   },
   {
-    files: ["src/components/ui/**/*.{ts,tsx}"],
+    files: ['src/components/ui/**/*.{ts,tsx}'],
     rules: {
       // shadcn/ui primitives intentionally export helpers alongside components
-      "react-refresh/only-export-components": "off",
+      'react-refresh/only-export-components': 'off',
     },
   },
   {
@@ -47,27 +64,25 @@ export default tseslint.config(
     // Block pl/pr/px/ml/mr/mx-[Npx|Nrem] magic values; always use
     // var(--ds-space-*) tokens so the Portfolio toggle stays aligned with
     // the Single-mode toggle.
-    files: ["src/components/dashboard/Portfolio*.{ts,tsx}"],
+    files: ['src/components/dashboard/Portfolio*.{ts,tsx}'],
     rules: {
-      "no-restricted-syntax": [
-        "error",
+      'no-restricted-syntax': [
+        'error',
         {
-          selector:
-            "Literal[value=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]",
+          selector: 'Literal[value=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]',
           message:
-            "Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.",
+            'Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.',
         },
         {
-          selector:
-            "TemplateElement[value.raw=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]",
+          selector: 'TemplateElement[value.raw=/\\b[pm][lrx]-\\[[0-9][^\\]]*(px|rem)\\]/]',
           message:
-            "Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.",
+            'Portfolio*.tsx: do not use arbitrary pl/pr/px/ml/mr/mx-[Npx|Nrem] values. Use var(--ds-space-N) tokens. See docs/design/portfolio-panel-spacing.md.',
         },
       ],
     },
   },
   {
-    files: ["src/**/*.test.tsx"],
+    files: ['src/**/*.test.tsx'],
     languageOptions: {
       parserOptions: {
         project: null,

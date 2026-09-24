@@ -15,11 +15,7 @@ const PortfolioPanelSkeleton = memo(function PortfolioPanelSkeleton() {
   const isMobile = useIsMobile();
   return (
     <div className="space-y-3">
-      <div
-        className={cn(
-          isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
-        )}
-      >
+      <div className={cn(isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3')}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">

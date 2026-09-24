@@ -202,9 +202,7 @@ describe('computeCrossAssetNetEligible', () => {
     const result = computeCrossAssetNetEligible({
       sourceGrossUsd: 100,
       pairing: cbEthPairing,
-      crossReservePositions: new Map([
-        ['r-cbeth', { supplyUsd: 50, borrowUsd: 0 }],
-      ]),
+      crossReservePositions: new Map([['r-cbeth', { supplyUsd: 50, borrowUsd: 0 }]]),
     });
     expect(result).toBeCloseTo(41.15, 10);
   });
@@ -245,9 +243,7 @@ describe('computeCrossAssetNetEligible', () => {
     const result = computeCrossAssetNetEligible({
       sourceGrossUsd: 100,
       pairing: sUsdePairing,
-      crossReservePositions: new Map([
-        ['r-susde', { supplyUsd: 50, borrowUsd: 0 }],
-      ]),
+      crossReservePositions: new Map([['r-susde', { supplyUsd: 50, borrowUsd: 0 }]]),
     });
     expect(result).toBeCloseTo(59.8, 10);
   });
@@ -307,9 +303,7 @@ describe('computeCrossAssetEligibilityRatio', () => {
     const ratio = computeCrossAssetEligibilityRatio({
       sourceGrossUsd: 50,
       pairing: cbEthPairing,
-      crossReservePositions: new Map([
-        ['r-cbeth', { supplyUsd: 100, borrowUsd: 0 }],
-      ]),
+      crossReservePositions: new Map([['r-cbeth', { supplyUsd: 100, borrowUsd: 0 }]]),
     });
     expect(ratio).toBe(1);
   });

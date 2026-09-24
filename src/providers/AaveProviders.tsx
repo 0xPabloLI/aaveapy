@@ -8,9 +8,7 @@ const v3Client = AaveV3Client.create({ environment: v3Production });
 export function AaveProviders({ children }: { children: ReactNode }) {
   return (
     <AaveV4Provider client={v4Client}>
-      <AaveV3Provider client={v3Client}>
-        {children}
-      </AaveV3Provider>
+      <AaveV3Provider client={v3Client}>{children}</AaveV3Provider>
     </AaveV4Provider>
   );
 }

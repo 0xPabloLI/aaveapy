@@ -59,7 +59,9 @@ const ChainPage = () => {
       <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto max-w-3xl px-4 py-12 md:py-20">
           <nav className="mb-6 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+            <Link to="/" className="hover:text-foreground transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">{chain.displayName}</span>
           </nav>
@@ -75,14 +77,10 @@ const ChainPage = () => {
                 loading="eager"
               />
             ) : null}
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              AaveAPY on {chain.displayName}
-            </h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">AaveAPY on {chain.displayName}</h1>
           </header>
 
-          <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-8">
-            {chain.intro}
-          </p>
+          <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-8">{chain.intro}</p>
 
           <section aria-labelledby="highlights" className="mb-10">
             <h2 id="highlights" className="text-xl font-semibold mb-3">
@@ -91,7 +89,9 @@ const ChainPage = () => {
             <ul className="space-y-2">
               {chain.highlights.map((h) => (
                 <li key={h} className="flex gap-2 text-foreground">
-                  <span aria-hidden className="text-primary">•</span>
+                  <span aria-hidden className="text-primary">
+                    •
+                  </span>
                   <span>{h}</span>
                 </li>
               ))}

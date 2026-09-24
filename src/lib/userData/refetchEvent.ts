@@ -19,15 +19,15 @@
  * See ADR-0015 for design rationale.
  */
 
-export type RefetchSource = 'f5' | 'button' | 'watch-reentry' | 'auto'
+export type RefetchSource = 'f5' | 'button' | 'watch-reentry' | 'auto';
 
 export interface RefetchEvent {
-  source: RefetchSource
+  source: RefetchSource;
 }
 
-export type RefetchListener = (event: RefetchEvent) => void
+export type RefetchListener = (event: RefetchEvent) => void;
 
-const listeners = new Set<RefetchListener>()
+const listeners = new Set<RefetchListener>();
 
 /**
  * Fan out a refresh signal to all current listeners.
@@ -36,9 +36,9 @@ const listeners = new Set<RefetchListener>()
 export function bumpRefetch(source: RefetchSource): void {
   for (const listener of listeners) {
     try {
-      listener({ source })
+      listener({ source });
     } catch (err) {
-      console.error('[refetchEvent] listener failed for source', source, err)
+      console.error('[refetchEvent] listener failed for source', source, err);
     }
   }
 }
@@ -48,10 +48,10 @@ export function bumpRefetch(source: RefetchSource): void {
  * Idempotent for the same function reference (Set semantics).
  */
 export function subscribeRefetch(listener: RefetchListener): () => void {
-  listeners.add(listener)
+  listeners.add(listener);
   return () => {
-    listeners.delete(listener)
-  }
+    listeners.delete(listener);
+  };
 }
 
 /**
@@ -64,5 +64,5 @@ export function subscribeRefetch(listener: RefetchListener): () => void {
  * tag is the machine-readable signal that IDEs / type checkers honour.
  */
 export function _resetRefetchListeners(): void {
-  listeners.clear()
+  listeners.clear();
 }

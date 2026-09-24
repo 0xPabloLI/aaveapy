@@ -53,14 +53,22 @@ describe('isMerklWhitelistBreakdownIncluded', () => {
 
   it('excludes blacklisted campaigns regardless of whitelist toggle', () => {
     const set = new Set(['abc']);
-    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: false, campaignId: 'abc' }, set, 'blacklisted')).toBe(false);
-    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: true, campaignId: 'abc' }, set, 'blacklisted')).toBe(false);
+    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: false, campaignId: 'abc' }, set, 'blacklisted')).toBe(
+      false,
+    );
+    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: true, campaignId: 'abc' }, set, 'blacklisted')).toBe(
+      false,
+    );
   });
 
   it('excludes whitelist-blocked campaigns regardless of whitelist toggle', () => {
     const set = new Set(['abc']);
-    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: false, campaignId: 'abc' }, set, 'whitelist-blocked')).toBe(false);
-    expect(isMerklWhitelistBreakdownIncluded({ whitelistOnly: true, campaignId: 'abc' }, set, 'whitelist-blocked')).toBe(false);
+    expect(
+      isMerklWhitelistBreakdownIncluded({ whitelistOnly: false, campaignId: 'abc' }, set, 'whitelist-blocked'),
+    ).toBe(false);
+    expect(
+      isMerklWhitelistBreakdownIncluded({ whitelistOnly: true, campaignId: 'abc' }, set, 'whitelist-blocked'),
+    ).toBe(false);
   });
 
   it('allows campaigns with "allowed" access status (same as omitting)', () => {

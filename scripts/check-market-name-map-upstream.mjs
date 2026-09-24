@@ -45,9 +45,7 @@ function parseExpectedMapping(marketsConfigContent) {
 }
 
 function parseLocalMap(aaveLinksContent) {
-  const objectMatch = aaveLinksContent.match(
-    /const MARKET_NAME_MAP:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
-  );
+  const objectMatch = aaveLinksContent.match(/const MARKET_NAME_MAP:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/);
   if (!objectMatch) {
     throw new Error('Failed to parse MARKET_NAME_MAP from src/lib/aaveLinks.ts');
   }
@@ -96,14 +94,14 @@ async function main() {
 
   console.log(`Upstream market source keys parsed: ${expected.size}`);
   console.log(`Local MARKET_NAME_MAP keys: ${local.size}`);
-  console.log(`Checked non-sepolia expected keys: ${[...expected.entries()].filter(([, v]) => !isIgnoredMarket(v)).length}`);
+  console.log(
+    `Checked non-sepolia expected keys: ${[...expected.entries()].filter(([, v]) => !isIgnoredMarket(v)).length}`,
+  );
 
   if (missing.length > 0) {
     console.error('\nMARKET_NAME_MAP mismatch against upstream marketsConfig:');
     for (const item of missing) {
-      console.error(
-        `- ${item.sourceKey}: expected '${item.expected}', actual '${item.actual ?? '<missing>'}'`
-      );
+      console.error(`- ${item.sourceKey}: expected '${item.expected}', actual '${item.actual ?? '<missing>'}'`);
     }
     process.exit(1);
   }
@@ -115,4 +113,3 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.stack || error.message : String(error));
   process.exit(1);
 });
-

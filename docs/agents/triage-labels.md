@@ -1,38 +1,39 @@
-# Triage Workflow States
+# Triage Labels
 
-The triage skill uses Linear's **workflow states** (not labels) on the Aaveapy team (key: `AAV`).
+The triage skill uses five canonical roles. Label strings match role names.
 
-## Workflow States
+## Category Labels
 
-| State | Type | Triage Meaning |
-|-------|------|----------------|
-| **Backlog** | backlog | Known but deprioritized; needs re-evaluation before picking up |
-| **Todo** | unstarted | Confirmed, queued for work |
-| **Ready for agent** | unstarted | Fully specified, an AFK agent can pick up |
-| **Needs Info** | unstarted | Waiting on reporter/owner for more information |
-| **In Progress** | started | Currently being worked on |
-| **In Review** | started | Under code review |
-| **Done** | completed | Completed |
-| **Duplicate** | duplicate | Duplicate of another issue |
-| **Canceled** | canceled | Will not be actioned (replaces `wontfix`) |
+| Label         | Meaning                    |
+| ------------- | -------------------------- |
+| `bug`         | Something is broken        |
+| `enhancement` | New feature or improvement |
+
+## State Labels
+
+| Label             | Meaning                                  |
+| ----------------- | ---------------------------------------- |
+| `needs-triage`    | Maintainer needs to evaluate             |
+| `needs-info`      | Waiting on reporter for more information |
+| `ready-for-agent` | Fully specified, ready for an AFK agent  |
+| `ready-for-human` | Needs human implementation               |
+| `wontfix`         | Will not be actioned                     |
 
 ## Triage Flow
 
 ```
-New issue → Backlog (needs evaluation)
-         → Needs Info (waiting for clarification)
-         → Ready for agent (agent-pickable)
-         → Canceled (won't fix)
+New issue → needs-triage (needs evaluation)
+          → needs-info (waiting on clarification)
+          → ready-for-agent (agent-pickable)
+          → wontfix (won't fix)
 
-Backlog + clarified → Ready for agent / Todo
-Needs Info + stale (>3 months) → Canceled
-Ready for agent + wrong priority → move to Backlog
+needs-triage + clarified → ready-for-agent / ready-for-human
+needs-info + reporter replies → needs-triage
 ```
 
 ## Conventions
 
-- **Ready for agent** should only be used for issues that are: (1) fully specified with acceptance criteria, (2) have correct priority set, (3) are actionable by an agent without further human input.
-- Low/No priority issues should NOT be in `Ready for agent` — move to `Backlog` instead.
-- `Needs Info` issues stale for >3 months without updates should be moved to `Canceled`.
-- `Canceled` replaces the old `wontfix` label concept.
-- Backend-only issues are out of scope for frontend triage — leave them as-is.
+- Every triaged issue carries exactly one category label and one state label.
+- `ready-for-agent` requires: (1) fully specified with acceptance criteria, (2) correct priority, (3) actionable by an agent without further human input.
+- `wontfix` issues should be closed with an explanation comment.
+- Closing a completed issue: keep its category label, remove all state labels. `wontfix` is for rejected items only.

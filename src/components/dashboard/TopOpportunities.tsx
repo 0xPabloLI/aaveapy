@@ -2,12 +2,7 @@ import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, ty
 import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
-import {
-  isStablecoinSymbol,
-  isEthRelatedSymbol,
-  isBtcRelatedSymbol,
-  TokenCategoryGroups,
-} from '@/lib/tokenCategories';
+import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol, TokenCategoryGroups } from '@/lib/tokenCategories';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import {
   calculateTotalSupplyApy,
@@ -55,7 +50,9 @@ interface TopOpportunitiesProps {
 }
 
 type TopOpportunitiesTooltipState = {
-  reserve: ReserveWithTotals;
+  // Base reserve type: tooltip consumers only need ReserveWithSpread fields,
+  // and click handlers receive reserves from CategoryCard (ReserveWithSpread).
+  reserve: ReserveWithSpread;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;
@@ -83,50 +80,52 @@ interface CategoryCardHeaderProps {
   iconVariants: Record<string, unknown>;
 }
 
-const CategoryCardHeader = memo(({
-  title,
-  shortTitle,
-  subtitle,
-  icon: Icon,
-  iconColorClass,
-  bgColorClass,
-  isMobile,
-  shouldAnimateHeader,
-  headerVariants,
-  iconVariants,
-}: CategoryCardHeaderProps) => {
-  const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
-  const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
+const CategoryCardHeader = memo(
+  ({
+    title,
+    shortTitle,
+    subtitle,
+    icon: Icon,
+    iconColorClass,
+    bgColorClass,
+    isMobile,
+    shouldAnimateHeader,
+    headerVariants,
+    iconVariants,
+  }: CategoryCardHeaderProps) => {
+    const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
+    const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
 
-  return (
-    <HeaderWrapper
-      className={`flex items-center gap-[var(--ds-space-2)] ${isMobile ? 'mb-[var(--ds-space-2)]' : 'mb-[var(--ds-space-3)]'}`}
-      {...(shouldAnimateHeader
-        ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
-        : {})}
-    >
-      <IconWrapper
-        className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
-        {...(shouldAnimateHeader
-          ? { variants: iconVariants, initial: 'hidden', animate: ['visible', 'pulse'] as const }
-          : {})}
+    return (
+      <HeaderWrapper
+        className={`flex items-center gap-[var(--ds-space-2)] ${isMobile ? 'mb-[var(--ds-space-2)]' : 'mb-[var(--ds-space-3)]'}`}
+        {...(shouldAnimateHeader ? { initial: 'hidden', animate: 'visible', variants: headerVariants } : {})}
       >
-        <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
-      </IconWrapper>
-      <div className="flex-1 min-w-0">
-        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-13' : 'ds-text-14'}`}>
-          {shortTitle ? (
-            <>
-              <span className="min-[400px]:hidden">{shortTitle}</span>
-              <span className="hidden min-[400px]:inline">{title}</span>
-            </>
-          ) : title}
-        </h3>
-        <p className="text-foreground/60 truncate ds-text-11">{subtitle}</p>
-      </div>
-    </HeaderWrapper>
-  );
-});
+        <IconWrapper
+          className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
+          {...(shouldAnimateHeader
+            ? { variants: iconVariants, initial: 'hidden', animate: ['visible', 'pulse'] as const }
+            : {})}
+        >
+          <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
+        </IconWrapper>
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-bold truncate ${isMobile ? 'ds-text-13' : 'ds-text-14'}`}>
+            {shortTitle ? (
+              <>
+                <span className="min-[400px]:hidden">{shortTitle}</span>
+                <span className="hidden min-[400px]:inline">{title}</span>
+              </>
+            ) : (
+              title
+            )}
+          </h3>
+          <p className="text-foreground/60 truncate ds-text-11">{subtitle}</p>
+        </div>
+      </HeaderWrapper>
+    );
+  },
+);
 
 interface ReserveIdentityProps {
   iconSymbol: string;
@@ -140,66 +139,66 @@ interface ReserveIdentityProps {
   miniRightContent?: ReactNode;
 }
 
-const ReserveIdentity = memo(({
-  iconSymbol,
-  logoURI,
-  tokenSymbol,
-  chainName,
-  chainIconSrc,
-  marketDisplayName,
-  isMobile,
-  mini = false,
-  miniRightContent,
-}: ReserveIdentityProps) => {
-  if (mini) {
+const ReserveIdentity = memo(
+  ({
+    iconSymbol,
+    logoURI,
+    tokenSymbol,
+    chainName,
+    chainIconSrc,
+    marketDisplayName,
+    isMobile,
+    mini = false,
+    miniRightContent,
+  }: ReserveIdentityProps) => {
+    if (mini) {
+      return (
+        <div className="flex items-center gap-[var(--ds-space-1)]">
+          <TokenIcon
+            symbol={iconSymbol}
+            size={24}
+            loading="eager"
+            className="shrink-0"
+            logoURI={logoURI ?? undefined}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 w-full items-start gap-[var(--ds-space-0-5)]">
+              <span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-11 leading-tight">
+                {tokenSymbol}
+              </span>
+            </div>
+            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
+              {chainIconSrc && <img src={chainIconSrc} alt={chainName} className="w-3 h-3" />}
+              <span className="truncate">{marketDisplayName}</span>
+            </div>
+          </div>
+          {miniRightContent ? <div className="shrink-0 tabular-nums text-right">{miniRightContent}</div> : null}
+        </div>
+      );
+    }
+
     return (
-      <div className="flex items-center gap-[var(--ds-space-1)]">
+      <>
         <TokenIcon
           symbol={iconSymbol}
-          size={24}
+          size={isMobile ? 28 : 32}
           loading="eager"
-          className="shrink-0"
-          logoURI={logoURI}
+          className="shrink-0 row-span-2"
+          logoURI={logoURI ?? undefined}
         />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 w-full items-start gap-[var(--ds-space-0-5)]">
-            <span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
-          </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={chainName} className="w-3 h-3" />
-            )}
-            <span className="truncate">{marketDisplayName}</span>
-          </div>
-        </div>
-        {miniRightContent ? <div className="shrink-0 tabular-nums text-right">{miniRightContent}</div> : null}
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <TokenIcon
-        symbol={iconSymbol}
-        size={isMobile ? 28 : 32}
-        loading="eager"
-        className="shrink-0 row-span-2"
-        logoURI={logoURI}
-      />
         <div className="flex items-start min-w-0 w-full gap-[var(--ds-space-1)]">
           <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-tight ds-text-13">
-          {tokenSymbol}
-        </span>
-      </div>
-      <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
-        {chainIconSrc && (
-          <img src={chainIconSrc} alt={chainName} className="shrink-0 w-3.5 h-3.5" />
-        )}
-        <p className="text-secondary truncate ds-text-11 leading-none">{marketDisplayName}</p>
-      </div>
-    </>
-  );
-});
+            {tokenSymbol}
+          </span>
+        </div>
+        <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
+          {chainIconSrc && <img src={chainIconSrc} alt={chainName} className="shrink-0 w-3.5 h-3.5" />}
+          <p className="text-secondary truncate ds-text-11 leading-none">{marketDisplayName}</p>
+        </div>
+      </>
+    );
+  },
+);
 
 type ReserveWithTotals = ReserveWithSpread & {
   supplyIncentiveApr: number;
@@ -231,7 +230,7 @@ interface MiniReserveApyRowProps {
     reserve: ReserveWithTotals,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
-    accentValue: number | null
+    accentValue: number | null,
   ) => void;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
 }
@@ -254,7 +253,8 @@ const MiniReserveApyRow = ({
   if (isLeverage) {
     return (
       <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-11`}>
-        {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
+        {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} -{' '}
+        {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
       </span>
     );
   }
@@ -269,9 +269,7 @@ const MiniReserveApyRow = ({
 
   return (
     <>
-      <span className={`ds-text-11 tabular-nums ${apyAccentText}`}>
-        {formatPercent(nativeValue ?? null)}
-      </span>
+      <span className={`ds-text-11 tabular-nums ${apyAccentText}`}>{formatPercent(nativeValue ?? null)}</span>
       <span className="text-muted-foreground ds-text-11">+</span>
       <button
         type="button"
@@ -299,7 +297,7 @@ interface MiniReserveCardProps {
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
-    accentValue: number | null
+    accentValue: number | null,
   ) => void;
   getApyAccentClasses: (value: number | null) => { text: string; chip: string };
   getApyColorClass: (value: number | null) => string;
@@ -326,14 +324,20 @@ const MiniReserveCard = ({
 }: MiniReserveCardProps) => {
   const isLeverage = type === 'leverage';
   const mainValue = isLeverage
-    ? (isApy ? reserve.apySpread : reserve.aprSpread)
-    : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    ? isApy
+      ? reserve.apySpread
+      : reserve.aprSpread
+    : isApy
+      ? reserve.totalSupplyApy
+      : reserve.totalSupplyApr;
   const nativeValue = reserve.supplyApy ?? null;
   const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
   const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
   const apyAccent = getApyAccentClasses(mainValue);
   const mainValueNode = (
-    <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
+    <span
+      className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}
+    >
       {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
     </span>
   );
@@ -407,7 +411,7 @@ interface ReserveItemProps {
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
-    accentValue: number | null
+    accentValue: number | null,
   ) => void;
   getApyAccentClasses: (value: number | null) => { text: string; chip: string };
   getApyColorClass: (value: number | null) => string;
@@ -416,27 +420,34 @@ interface ReserveItemProps {
   itemVariants: import('framer-motion').Variants;
 }
 
-const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function ReserveItem({
-  reserve,
-  index,
-  type,
-  totalItems = 5,
-  disableMotion = false,
-  isApy,
-  isMobile,
-  isRateDragging,
-  onCardClick,
-  onIncentiveClick,
-  getApyAccentClasses,
-  getApyColorClass,
-  getSpreadColorClass,
-  getSpreadAccentClass,
-  itemVariants,
-}, ref) {
+const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function ReserveItem(
+  {
+    reserve,
+    index,
+    type,
+    totalItems = 5,
+    disableMotion = false,
+    isApy,
+    isMobile,
+    isRateDragging,
+    onCardClick,
+    onIncentiveClick,
+    getApyAccentClasses,
+    getApyColorClass,
+    getSpreadColorClass,
+    getSpreadAccentClass,
+    itemVariants,
+  },
+  ref,
+) {
   const isLeverage = type === 'leverage';
   const mainValue = isLeverage
-    ? (isApy ? reserve.apySpread : reserve.aprSpread)
-    : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    ? isApy
+      ? reserve.apySpread
+      : reserve.aprSpread
+    : isApy
+      ? reserve.totalSupplyApy
+      : reserve.totalSupplyApr;
   const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
   const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
   const apyAccent = getApyAccentClasses(mainValue);
@@ -461,13 +472,15 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
       } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
       onClick={() => onCardClick(reserve)}
     >
-      <div className={`grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] ${isMobile ? 'gap-y-[var(--ds-space-0-5)]' : 'gap-y-[var(--ds-space-1)]'} flex-1 min-w-0 h-full`}>
+      <div
+        className={`grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] ${isMobile ? 'gap-y-[var(--ds-space-0-5)]' : 'gap-y-[var(--ds-space-1)]'} flex-1 min-w-0 h-full`}
+      >
         <TokenIcon
           symbol={iconSymbol}
           size={isMobile ? 28 : 32}
           loading="eager"
           className="shrink-0 row-span-2"
-          logoURI={logoURI}
+          logoURI={logoURI ?? undefined}
         />
         <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
           <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-none ds-text-14">
@@ -475,14 +488,12 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           </span>
         </div>
         <div
-          className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
+          className={`${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
         >
           {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
         </div>
         <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
-          {chainIconSrc && (
-            <img src={chainIconSrc} alt={reserve.chainName} className="shrink-0 w-3.5 h-3.5" />
-          )}
+          {chainIconSrc && <img src={chainIconSrc} alt={reserve.chainName} className="shrink-0 w-3.5 h-3.5" />}
           <p className="text-secondary truncate ds-text-11 leading-none">{getReserveMarketDisplayName(reserve)}</p>
         </div>
         {!isLeverage && hasIncentive && (
@@ -502,7 +513,9 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           </div>
         )}
         {isLeverage && (
-          <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-11`}>
+          <div
+            className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-11`}
+          >
             {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} -{' '}
             {(() => {
               const borrowValue = isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr;
@@ -540,7 +553,7 @@ interface CategoryCardProps {
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
-    accentValue: number | null
+    accentValue: number | null,
   ) => void;
 }
 
@@ -569,7 +582,9 @@ const CategoryCard = ({
   const shouldAnimateList = !isMobile && !isApyChanged;
 
   return (
-    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'px-[var(--ds-space-2)] py-[var(--ds-space-2)]' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+    <div
+      className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'px-[var(--ds-space-2)] py-[var(--ds-space-2)]' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}
+    >
       <CategoryCardHeader
         title={title}
         shortTitle={shortTitle}
@@ -587,7 +602,7 @@ const CategoryCard = ({
         {categoryReserves.length > 0 ? (
           shouldAnimateList ? (
             <AnimatePresence mode="popLayout">
-              {categoryReserves.map((reserve, i) => (
+              {categoryReserves.map((reserve, i) =>
                 isMobile ? (
                   <MiniReserveCard
                     key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
@@ -625,11 +640,11 @@ const CategoryCard = ({
                     getSpreadAccentClass={getSpreadAccentClass}
                     itemVariants={itemVariants}
                   />
-                )
-              ))}
+                ),
+              )}
             </AnimatePresence>
           ) : (
-            categoryReserves.map((reserve, i) => (
+            categoryReserves.map((reserve, i) =>
               isMobile ? (
                 <MiniReserveCard
                   key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
@@ -667,8 +682,8 @@ const CategoryCard = ({
                   getSpreadAccentClass={getSpreadAccentClass}
                   itemVariants={itemVariants}
                 />
-              )
-            ))
+              ),
+            )
           )
         ) : (
           <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
@@ -699,7 +714,9 @@ const TopOpportunities = ({
     const forecast = sideDataMetaQuery.data?.forecast;
     if (!forecast) return {};
     const states: Record<string, MerklForecastWireItem> = {};
-    forecast.items.forEach((item) => { states[item.campaignId] = item; });
+    forecast.items.forEach((item) => {
+      states[item.campaignId] = item;
+    });
     return states;
   }, [sideDataMetaQuery.data?.forecast]);
 
@@ -722,98 +739,123 @@ const TopOpportunities = ({
 
   // Calculate totals for all reserves (frontend calculates incentive totals from details)
   // Memoize to prevent recalculation when props haven't changed
-  const reservesWithTotals = useMemo<ReserveWithTotals[]>(() => reserves.map(reserve => {
-    const supplyIncentive = getReserveIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
-      whitelistMerklCampaignIds,
-      pointRateMap,
-    });
-    const borrowIncentive = getReserveIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
-      whitelistMerklCampaignIds,
-      pointRateMap,
-    });
+  const reservesWithTotals = useMemo<ReserveWithTotals[]>(
+    () =>
+      reserves
+        .map((reserve) => {
+          const supplyIncentive = getReserveIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
+            whitelistMerklCampaignIds,
+            pointRateMap,
+          });
+          const borrowIncentive = getReserveIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
+            whitelistMerklCampaignIds,
+            pointRateMap,
+          });
 
-    const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
-    const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentive.apy);
-    const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy ?? null, supplyIncentive.apr);
-    const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy ?? null, borrowIncentive.apr);
+          const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
+          const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentive.apy);
+          const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy ?? null, supplyIncentive.apr);
+          const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy ?? null, borrowIncentive.apr);
 
-    return {
-      ...reserve,
-      supplyIncentiveApr: supplyIncentive.apr,
-      supplyIncentiveApy: supplyIncentive.apy,
-      borrowIncentiveApr: borrowIncentive.apr,
-      borrowIncentiveApy: borrowIncentive.apy,
-      totalSupplyApy,
-      totalBorrowApy,
-      apySpread: calculateSpreadApy(totalSupplyApy, totalBorrowApy),
-      totalSupplyApr,
-      totalBorrowApr,
-      aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
-    };
-  }).filter(r => !r.isFrozen && !r.isPaused && r.isActive !== false), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate, pointRateMap]);
+          return {
+            ...reserve,
+            supplyIncentiveApr: supplyIncentive.apr,
+            supplyIncentiveApy: supplyIncentive.apy,
+            borrowIncentiveApr: borrowIncentive.apr,
+            borrowIncentiveApy: borrowIncentive.apy,
+            totalSupplyApy,
+            totalBorrowApy,
+            apySpread: calculateSpreadApy(totalSupplyApy, totalBorrowApy),
+            totalSupplyApr,
+            totalBorrowApr,
+            aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
+          };
+        })
+        .filter((r) => !r.isFrozen && !r.isPaused && r.isActive !== false),
+    [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate, pointRateMap],
+  );
 
   // Top 5 Stable APY - memoized to prevent recalculation
-  const topStable = useMemo(() => [...reservesWithTotals]
-    .filter(m => isStablecoinSymbol(m.tokenSymbol, categoryGroups))
-    .filter(m => {
-      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
-      return value !== null && !isNaN(value);
-    })
-    .sort((a, b) => {
-      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
-      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
-      return bValue - aValue;
-    })
-    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
+  const topStable = useMemo(
+    () =>
+      [...reservesWithTotals]
+        .filter((m) => isStablecoinSymbol(m.tokenSymbol, categoryGroups))
+        .filter((m) => {
+          const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+          return value !== null && !isNaN(value);
+        })
+        .sort((a, b) => {
+          // The filter above guarantees the supply metric is non-null (value !== null && !isNaN).
+          const aValue = (isApy ? a.totalSupplyApy : a.totalSupplyApr)!;
+          const bValue = (isApy ? b.totalSupplyApy : b.totalSupplyApr)!;
+          return bValue - aValue;
+        })
+        .slice(0, DISPLAY_COUNT),
+    [reservesWithTotals, isApy, categoryGroups],
+  );
 
   // Top 5 ETH APY - memoized to prevent recalculation
-  const topEth = useMemo(() => [...reservesWithTotals]
-    .filter(m => isEthRelatedSymbol(m.tokenSymbol, categoryGroups))
-    .filter(m => {
-      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
-      return value !== null && !isNaN(value);
-    })
-    .sort((a, b) => {
-      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
-      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
-      return bValue - aValue;
-    })
-    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
+  const topEth = useMemo(
+    () =>
+      [...reservesWithTotals]
+        .filter((m) => isEthRelatedSymbol(m.tokenSymbol, categoryGroups))
+        .filter((m) => {
+          const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+          return value !== null && !isNaN(value);
+        })
+        .sort((a, b) => {
+          // The filter above guarantees the supply metric is non-null (value !== null && !isNaN).
+          const aValue = (isApy ? a.totalSupplyApy : a.totalSupplyApr)!;
+          const bValue = (isApy ? b.totalSupplyApy : b.totalSupplyApr)!;
+          return bValue - aValue;
+        })
+        .slice(0, DISPLAY_COUNT),
+    [reservesWithTotals, isApy, categoryGroups],
+  );
 
   // Top 5 BTC APY - memoized to prevent recalculation
-  const topBtc = useMemo(() => [...reservesWithTotals]
-    .filter(m => isBtcRelatedSymbol(m.tokenSymbol, categoryGroups))
-    .filter(m => {
-      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
-      return value !== null && !isNaN(value);
-    })
-    .sort((a, b) => {
-      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
-      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
-      return bValue - aValue;
-    })
-    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
+  const topBtc = useMemo(
+    () =>
+      [...reservesWithTotals]
+        .filter((m) => isBtcRelatedSymbol(m.tokenSymbol, categoryGroups))
+        .filter((m) => {
+          const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+          return value !== null && !isNaN(value);
+        })
+        .sort((a, b) => {
+          // The filter above guarantees the supply metric is non-null (value !== null && !isNaN).
+          const aValue = (isApy ? a.totalSupplyApy : a.totalSupplyApr)!;
+          const bValue = (isApy ? b.totalSupplyApy : b.totalSupplyApr)!;
+          return bValue - aValue;
+        })
+        .slice(0, DISPLAY_COUNT),
+    [reservesWithTotals, isApy, categoryGroups],
+  );
 
   // Top 5 Looping opportunities - memoized to prevent recalculation
-  const topLooping = useMemo(() => [...reservesWithTotals]
-    .filter(m => {
-      const spread = isApy ? m.apySpread : m.aprSpread;
-      return spread !== null && spread > 0;
-    })
-    .sort((a, b) => {
-      const aSpread = isApy ? a.apySpread : a.aprSpread;
-      const bSpread = isApy ? b.apySpread : b.aprSpread;
-      return (bSpread || 0) - (aSpread || 0);
-    })
-    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy]);
+  const topLooping = useMemo(
+    () =>
+      [...reservesWithTotals]
+        .filter((m) => {
+          const spread = isApy ? m.apySpread : m.aprSpread;
+          return spread !== null && spread > 0;
+        })
+        .sort((a, b) => {
+          const aSpread = isApy ? a.apySpread : a.aprSpread;
+          const bSpread = isApy ? b.apySpread : b.aprSpread;
+          return (bSpread || 0) - (aSpread || 0);
+        })
+        .slice(0, DISPLAY_COUNT),
+    [reservesWithTotals, isApy],
+  );
 
   const headerVariants = {
     hidden: { opacity: 0, x: -10 },
     visible: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
-    }
+      transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const },
+    },
   };
 
   const iconVariants = {
@@ -821,12 +863,12 @@ const TopOpportunities = ({
     visible: {
       scale: 1,
       rotate: 0,
-      transition: { type: 'spring' as const, stiffness: 260, damping: 20, delay: 0.1 }
+      transition: { type: 'spring' as const, stiffness: 260, damping: 20, delay: 0.1 },
     },
     pulse: {
       scale: [1, 1.1, 1],
-      transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const }
-    }
+      transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const },
+    },
   };
 
   const itemVariants = {
@@ -834,8 +876,8 @@ const TopOpportunities = ({
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { delay: 0.2 + i * 0.08, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
-    })
+      transition: { delay: 0.2 + i * 0.08, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const },
+    }),
   };
 
   const handleCardClick = (reserve: ReserveWithSpread) => {
@@ -844,45 +886,48 @@ const TopOpportunities = ({
     }
   };
 
-  const handleIncentiveClick = useCallback((
-    e: React.MouseEvent,
-    reserve: ReserveWithTotals,
-    type: 'supply' | 'borrow',
-    incentiveValue: number | null,
-    accentValue: number | null,
-  ) => {
-    e.stopPropagation();
-    if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const triggerCenterX = rect.left + rect.width / 2;
-    if (import.meta.env.DEV) {
-      const target = e.currentTarget as HTMLElement;
-      const style = window.getComputedStyle(target);
-      const parent = target.parentElement;
-      const parentStyle = parent ? window.getComputedStyle(parent) : null;
-      console.debug('[TopOpportunities] Incentive rect', rect);
-      console.debug('[TopOpportunities] Incentive transform', style.transform);
-      console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
-    }
-    setTooltipState({
-      reserve,
-      type,
-      position: { x: rect.left, y: rect.bottom },
-      triggerCenterX,
-      triggerHeight: rect.height,
-      triggerRect: {
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-      },
-      accentBorderClass: getAccentBorderClass(accentValue),
-      accentTextClass: getAccentTextClass(accentValue),
-      accentBgClass: getAccentBgClass(accentValue),
-    });
-  }, []);
+  const handleIncentiveClick = useCallback(
+    (
+      e: React.MouseEvent,
+      reserve: ReserveWithSpread,
+      type: 'supply' | 'borrow',
+      incentiveValue: number | null,
+      accentValue: number | null,
+    ) => {
+      e.stopPropagation();
+      if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const triggerCenterX = rect.left + rect.width / 2;
+      if (import.meta.env.DEV) {
+        const target = e.currentTarget as HTMLElement;
+        const style = window.getComputedStyle(target);
+        const parent = target.parentElement;
+        const parentStyle = parent ? window.getComputedStyle(parent) : null;
+        console.debug('[TopOpportunities] Incentive rect', rect);
+        console.debug('[TopOpportunities] Incentive transform', style.transform);
+        console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
+      }
+      setTooltipState({
+        reserve,
+        type,
+        position: { x: rect.left, y: rect.bottom },
+        triggerCenterX,
+        triggerHeight: rect.height,
+        triggerRect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+        accentBorderClass: getAccentBorderClass(accentValue),
+        accentTextClass: getAccentTextClass(accentValue),
+        accentBgClass: getAccentBgClass(accentValue),
+      });
+    },
+    [],
+  );
 
   // Mobile carousel state
   const [api, setApi] = useState<CarouselApi>();
@@ -899,7 +944,7 @@ const TopOpportunities = ({
     setCanScrollPrev(api.canScrollPrev());
     setCanScrollNext(api.canScrollNext());
 
-    api.on("select", () => {
+    api.on('select', () => {
       setCurrent(api.selectedScrollSnap());
       setCanScrollPrev(api.canScrollPrev());
       setCanScrollNext(api.canScrollNext());
@@ -912,49 +957,49 @@ const TopOpportunities = ({
       shortTitle: `Stable ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
-      iconColorClass: "text-success",
-      bgColorClass: "bg-success/10",
+      iconColorClass: 'text-success',
+      bgColorClass: 'bg-success/10',
       reserves: topStable,
-      categoryKey: "stable",
-      type: "supply" as const,
-      emptyMessage: "No stablecoin opportunities found"
+      categoryKey: 'stable',
+      type: 'supply' as const,
+      emptyMessage: 'No stablecoin opportunities found',
     },
     {
       title: `Top ETH ${isApy ? 'APY' : 'APR'}`,
       shortTitle: `ETH ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
-      iconColorClass: "text-success",
-      bgColorClass: "bg-success/10",
+      iconColorClass: 'text-success',
+      bgColorClass: 'bg-success/10',
       reserves: topEth,
-      categoryKey: "eth",
-      type: "supply" as const,
-      emptyMessage: "No ETH-related opportunities found"
+      categoryKey: 'eth',
+      type: 'supply' as const,
+      emptyMessage: 'No ETH-related opportunities found',
     },
     {
       title: `Top BTC ${isApy ? 'APY' : 'APR'}`,
       shortTitle: `BTC ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
-      iconColorClass: "text-success",
-      bgColorClass: "bg-success/10",
+      iconColorClass: 'text-success',
+      bgColorClass: 'bg-success/10',
       reserves: topBtc,
-      categoryKey: "btc",
-      type: "supply" as const,
-      emptyMessage: "No BTC-related opportunities found"
+      categoryKey: 'btc',
+      type: 'supply' as const,
+      emptyMessage: 'No BTC-related opportunities found',
     },
     {
-      title: "Leverage Opportunities",
-      shortTitle: "Leverage",
+      title: 'Leverage Opportunities',
+      shortTitle: 'Leverage',
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
-      iconColorClass: "ds-text-purple-500",
-      bgColorClass: "ds-bg-purple-500-10",
+      iconColorClass: 'ds-text-purple-500',
+      bgColorClass: 'ds-bg-purple-500-10',
       reserves: topLooping,
-      categoryKey: "leverage",
-      type: "leverage" as const,
-      emptyMessage: "No looping opportunities found"
-    }
+      categoryKey: 'leverage',
+      type: 'leverage' as const,
+      emptyMessage: 'No looping opportunities found',
+    },
   ];
 
   // Desktop only (xl+): grid layout. Mobile + tablet: carousel (swipe) below.
@@ -1025,74 +1070,74 @@ const TopOpportunities = ({
         <Carousel
           setApi={setApi}
           opts={{
-            align: "center",
+            align: 'center',
             loop: false,
             dragFree: false,
-            containScroll: "keepSnaps",
+            containScroll: 'keepSnaps',
           }}
           className="w-full"
         >
-        {/* Edge light-bands + double chevrons to hint horizontal scroll */}
-        {canScrollPrev && (
-          <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
-            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] left-0 w-full bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb)/0.62)] via-[rgb(var(--ds-brand-cyan-rgb)/0.38)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.72)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.52)]" />
-            <button
-              type="button"
-              className="pointer-events-auto absolute left-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
-              onClick={() => api?.scrollPrev()}
-              aria-label="Previous slide"
-            >
-              <ChevronsLeft className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-        {canScrollNext && (
-          <div className="pointer-events-none absolute -right-[2rem] top-0 h-full w-[2.5rem] z-10">
-            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] right-0 w-full bg-gradient-to-l from-[rgb(var(--ds-brand-magenta-rgb)/0.62)] via-[rgb(var(--ds-brand-cyan-rgb)/0.38)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.72)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.52)]" />
-            <button
-              type="button"
-              className="pointer-events-auto absolute right-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
-              onClick={() => api?.scrollNext()}
-              aria-label="Next slide"
-            >
-              <ChevronsRight className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform transform-gpu [backface-visibility:hidden]">
-          {mobilePages.map((pageCats, pageIndex) => (
-            <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
-              <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                {pageCats.map((category) => (
-                  <CategoryCard
-                    key={category.categoryKey}
-                    title={category.title}
-                    shortTitle={category.shortTitle}
-                    subtitle={category.subtitle}
-                    icon={category.icon}
-                    iconColorClass={category.iconColorClass}
-                    bgColorClass={category.bgColorClass}
-                    reserves={category.reserves}
-                    categoryKey={category.categoryKey}
-                    type={category.type}
-                    emptyMessage={category.emptyMessage}
-                    isMobile={isMobile}
-                    isApy={isApy}
-                    isApyChanged={isApyChanged}
-                    isRateDragging={isRateDragging}
-                    headerVariants={headerVariants}
-                    iconVariants={iconVariants}
-                    itemVariants={itemVariants}
-                    onCardClick={handleCardClick}
-                    onIncentiveClick={handleIncentiveClick}
-                  />
-                ))}
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
+          {/* Edge light-bands + double chevrons to hint horizontal scroll */}
+          {canScrollPrev && (
+            <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
+              <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] left-0 w-full bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb)/0.62)] via-[rgb(var(--ds-brand-cyan-rgb)/0.38)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.72)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.52)]" />
+              <button
+                type="button"
+                className="pointer-events-auto absolute left-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
+                onClick={() => api?.scrollPrev()}
+                aria-label="Previous slide"
+              >
+                <ChevronsLeft className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          {canScrollNext && (
+            <div className="pointer-events-none absolute -right-[2rem] top-0 h-full w-[2.5rem] z-10">
+              <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] right-0 w-full bg-gradient-to-l from-[rgb(var(--ds-brand-magenta-rgb)/0.62)] via-[rgb(var(--ds-brand-cyan-rgb)/0.38)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.72)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.52)]" />
+              <button
+                type="button"
+                className="pointer-events-auto absolute right-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
+                onClick={() => api?.scrollNext()}
+                aria-label="Next slide"
+              >
+                <ChevronsRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform transform-gpu [backface-visibility:hidden]">
+            {mobilePages.map((pageCats, pageIndex) => (
+              <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
+                <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                  {pageCats.map((category) => (
+                    <CategoryCard
+                      key={category.categoryKey}
+                      title={category.title}
+                      shortTitle={category.shortTitle}
+                      subtitle={category.subtitle}
+                      icon={category.icon}
+                      iconColorClass={category.iconColorClass}
+                      bgColorClass={category.bgColorClass}
+                      reserves={category.reserves}
+                      categoryKey={category.categoryKey}
+                      type={category.type}
+                      emptyMessage={category.emptyMessage}
+                      isMobile={isMobile}
+                      isApy={isApy}
+                      isApyChanged={isApyChanged}
+                      isRateDragging={isRateDragging}
+                      headerVariants={headerVariants}
+                      iconVariants={iconVariants}
+                      itemVariants={itemVariants}
+                      onCardClick={handleCardClick}
+                      onIncentiveClick={handleIncentiveClick}
+                    />
+                  ))}
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
 
-        {/* Navigation arrows integrated into edge bands */}
+          {/* Navigation arrows integrated into edge bands */}
         </Carousel>
 
         {/* Pagination indicators - 2 dots for 2 pages */}

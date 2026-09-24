@@ -21,10 +21,7 @@ export type UseNumberInputReturn = Pick<
 >;
 
 /** @deprecated Use useDebouncedInput instead */
-export function useNumberInput({
-  initialValue,
-  onCommit,
-}: UseNumberInputParams): UseNumberInputReturn {
+export function useNumberInput({ initialValue, onCommit }: UseNumberInputParams): UseNumberInputReturn {
   const { displayValue, handleChange, handleBlur, handleFocus } = useDebouncedInput({
     value: initialValue,
     onCommit,

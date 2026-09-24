@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { compareIncentiveWithNative, compareSizeToCapPct, compareNullableNumbers, compareNumbers, isValidNumber } from './sorters';
+import {
+  compareIncentiveWithNative,
+  compareSizeToCapPct,
+  compareNullableNumbers,
+  compareNumbers,
+  isValidNumber,
+} from './sorters';
 
 describe('compareIncentiveWithNative', () => {
   it('sorts by incentive value in descending order', () => {

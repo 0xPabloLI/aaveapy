@@ -48,9 +48,9 @@ describe('forecastWithTVL', () => {
   it('stays APR-capped when TVL is very small', () => {
     const result = forecastWithTVL(baseState, 1_000, nowTs);
 
-    const expectedCapDaily = (1_000 * baseState.aprCap) / 365;
+    const expectedCapDaily = (1_000 * baseState.aprCap!) / 365;
     expect(result.dailyRewards).toBeCloseTo(expectedCapDaily, 10);
-    expect(result.apr).toBeCloseTo(baseState.aprCap, 10);
+    expect(result.apr).toBeCloseTo(baseState.aprCap!, 10);
     expect(result.regime).toBe('APR_CAPPED');
   });
 
@@ -216,7 +216,7 @@ describe('deriveForecastProgressFlags', () => {
         ...progressState,
         distributedSoFar: 250_000,
       },
-      1_770_200_000
+      1_770_200_000,
     );
 
     expect(flags.isUnderDistributed).toBe(false);
@@ -229,7 +229,7 @@ describe('deriveForecastProgressFlags', () => {
         totalBudget: 590_910.6,
         distributedSoFar: 547_837.39,
       },
-      1_770_521_447
+      1_770_521_447,
     );
 
     expect(flags.isUnderDistributed).toBe(true);

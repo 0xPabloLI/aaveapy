@@ -31,16 +31,17 @@ describe('SdkErrorBoundary', () => {
     expect(screen.getByText(/SDK data loading error/)).toBeInTheDocument();
   });
 
-  it('logs error to console', () => {
+  it('logs structured error to console', () => {
     render(
       <SdkErrorBoundary>
         <ThrowingChild shouldThrow={true} />
       </SdkErrorBoundary>,
     );
-    expect(console.error).toHaveBeenCalledWith(
-      '[SdkErrorBoundary] SDK rendering error:',
-      expect.any(Error),
-      expect.objectContaining({ componentStack: expect.any(String) }),
-    );
+    // React emits its own uncaught-error logs alongside ours; assert our
+    // structured line is among them (exact shape pinned by logger.test.ts).
+    const calls = (console.error as ReturnType<typeof vi.spyOn>).mock.calls.map((c: unknown[]) =>
+      String(c[0]),
+    ) as string[];
+    expect(calls.some((line: string) => line.includes('SDK rendering error'))).toBe(true);
   });
 });

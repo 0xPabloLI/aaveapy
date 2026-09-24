@@ -105,11 +105,11 @@ export const SEO_ASSETS: SeoAssetConfig[] = [
     symbol: 'GHO',
     displayName: 'GHO',
     symbolMatcher: 'GHO',
-    title: 'Aave GHO APY — Live Rates for Aave\'s Native Stablecoin',
+    title: "Aave GHO APY — Live Rates for Aave's Native Stablecoin",
     description:
-      'Track live Aave GHO supply and borrow APYs. Aave\'s native overcollateralized stablecoin with all active incentives included.',
+      "Track live Aave GHO supply and borrow APYs. Aave's native overcollateralized stablecoin with all active incentives included.",
     intro:
-      'GHO is Aave\'s native overcollateralized stablecoin, minted directly against deposits in Aave V3. Live supply and borrow APYs across every market where GHO is listed, with all active incentives included in the effective yield.',
+      "GHO is Aave's native overcollateralized stablecoin, minted directly against deposits in Aave V3. Live supply and borrow APYs across every market where GHO is listed, with all active incentives included in the effective yield.",
     highlights: [
       'Live GHO supply and borrow APYs across all Aave markets',
       'See where GHO is mintable and the discount rate for stkAAVE holders',
@@ -119,5 +119,4 @@ export const SEO_ASSETS: SeoAssetConfig[] = [
   },
 ];
 
-export const getSeoAssetBySlug = (slug: string | undefined) =>
-  SEO_ASSETS.find((a) => a.slug === slug?.toLowerCase());
+export const getSeoAssetBySlug = (slug: string | undefined) => SEO_ASSETS.find((a) => a.slug === slug?.toLowerCase());

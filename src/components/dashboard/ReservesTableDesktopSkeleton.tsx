@@ -24,7 +24,10 @@ export default function ReservesTableDesktopSkeleton() {
           <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
             <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
               <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-              <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
+              <Skeleton
+                variant="subtle"
+                className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`}
+              />
             </div>
           </TableCell>
           <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
@@ -33,7 +36,10 @@ export default function ReservesTableDesktopSkeleton() {
           <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
             <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
               <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-              <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
+              <Skeleton
+                variant="subtle"
+                className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`}
+              />
             </div>
           </TableCell>
           <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">

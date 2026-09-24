@@ -7,7 +7,7 @@ async function main() {
 
   page.on('domcontentloaded', async () => {
     await page.evaluate(() => {
-      document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+      document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
     });
   });
 
@@ -15,7 +15,7 @@ async function main() {
   await page.waitForTimeout(5000);
 
   await page.evaluate(() => {
-    document.querySelectorAll('vite-error-overlay').forEach(el => el.remove());
+    document.querySelectorAll('vite-error-overlay').forEach((el) => el.remove());
   });
   await page.keyboard.press('Escape');
 
@@ -44,13 +44,20 @@ async function main() {
     if (parentBox) {
       console.log('Portfolio toggle label box:', JSON.stringify(headerBox));
       console.log('Parent header box:', JSON.stringify(parentBox));
-      console.log('Overflow check - label bottom:', headerBox.y + headerBox.height, 'parent bottom:', parentBox.y + parentBox.height);
+      console.log(
+        'Overflow check - label bottom:',
+        headerBox.y + headerBox.height,
+        'parent bottom:',
+        parentBox.y + parentBox.height,
+      );
       console.log('Overflow:', headerBox.y + headerBox.height > parentBox.y + parentBox.height ? 'YES' : 'NO');
     }
   }
 
   // Also check all header icon buttons for overflow
-  const headerButtons = page.locator('[data-testid="portfolio-mode-toggle"] ~ button, [data-testid="portfolio-mode-toggle"] ~ * button');
+  const headerButtons = page.locator(
+    '[data-testid="portfolio-mode-toggle"] ~ button, [data-testid="portfolio-mode-toggle"] ~ * button',
+  );
   const count = await headerButtons.count();
   console.log(`Found ${count} sibling buttons in header area`);
 

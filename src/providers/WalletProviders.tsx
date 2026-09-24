@@ -1,8 +1,8 @@
-import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
-import "@rainbow-me/rainbowkit/styles.css";
-import { wagmiConfig } from "@/lib/wagmi/config";
-import type { ReactNode } from "react";
+import { WagmiProvider } from 'wagmi';
+import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
+import '@rainbow-me/rainbowkit/styles.css';
+import { wagmiConfig } from '@/lib/wagmi/config';
+import type { ReactNode } from 'react';
 
 /**
  * Wallet provider layer — wagmi + RainbowKit context for the route subtree.
@@ -15,10 +15,7 @@ import type { ReactNode } from "react";
 export function WalletProviders({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
-      <RainbowKitProvider
-        theme={{ lightMode: lightTheme(), darkMode: darkTheme() }}
-        modalSize="compact"
-      >
+      <RainbowKitProvider theme={{ lightMode: lightTheme(), darkMode: darkTheme() }} modalSize="compact">
         {children}
       </RainbowKitProvider>
     </WagmiProvider>

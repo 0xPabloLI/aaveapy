@@ -323,10 +323,9 @@ describe('useDebouncedInput', () => {
   describe('external value sync', () => {
     it('syncs displayValue when external value prop changes (not focused)', () => {
       const onCommit = vi.fn();
-      const { result, rerender } = renderHook(
-        ({ value }) => useDebouncedInput({ onCommit, value }),
-        { initialProps: { value: '1,000' } },
-      );
+      const { result, rerender } = renderHook(({ value }) => useDebouncedInput({ onCommit, value }), {
+        initialProps: { value: '1,000' },
+      });
       expect(result.current.displayValue).toBe('1,000');
       rerender({ value: '2,000' });
       expect(result.current.displayValue).toBe('2,000');
@@ -334,10 +333,9 @@ describe('useDebouncedInput', () => {
 
     it('does not overwrite displayValue while user is typing (focused)', () => {
       const onCommit = vi.fn();
-      const { result, rerender } = renderHook(
-        ({ value }) => useDebouncedInput({ onCommit, value }),
-        { initialProps: { value: '1,000' } },
-      );
+      const { result, rerender } = renderHook(({ value }) => useDebouncedInput({ onCommit, value }), {
+        initialProps: { value: '1,000' },
+      });
       act(() => {
         result.current.handleFocus({ target: { value: '1,000' } } as React.FocusEvent<HTMLInputElement>);
       });
@@ -373,7 +371,9 @@ describe('useDebouncedInput', () => {
       });
       expect(result.current.displayValue).toBe('5,000');
       act(() => {
-        result.current.handleChange({ target: { value: '7', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+        result.current.handleChange({
+          target: { value: '7', selectionStart: 1 },
+        } as React.ChangeEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('7');
     });
@@ -385,7 +385,9 @@ describe('useDebouncedInput', () => {
         result.current.handleChange({ target: { value: '5000' } } as React.ChangeEvent<HTMLInputElement>);
       });
       act(() => {
-        result.current.handleChange({ target: { value: '.', selectionStart: 1 } } as React.ChangeEvent<HTMLInputElement>);
+        result.current.handleChange({
+          target: { value: '.', selectionStart: 1 },
+        } as React.ChangeEvent<HTMLInputElement>);
       });
       expect(result.current.displayValue).toBe('0.');
     });

@@ -24,7 +24,7 @@ interface ReservesTableMobileGridProps {
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
-    apy: number | null
+    apy: number | null,
   ) => void;
   onToggleExpand: (reserveId: string) => void;
   onCorrectSupplyInput?: (correctedValue: string) => void;
@@ -41,7 +41,10 @@ function MobileReservesSkeletonGrid() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border-transparent shrink-0" />
+            <Skeleton
+              variant="gradient"
+              className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border-transparent shrink-0"
+            />
             <div className="space-y-1 flex-1 min-w-0">
               <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
               <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />
@@ -169,11 +172,7 @@ export default function ReservesTableMobileGrid({
     ) : null;
 
     nodes.push(
-      <div
-        key={`row-${i}`}
-        className="col-span-2"
-        data-reserve-expanded-anchor={activeId ?? undefined}
-      >
+      <div key={`row-${i}`} className="col-span-2" data-reserve-expanded-anchor={activeId ?? undefined}>
         {rowHasExpanded && activeReserve && activeId ? (
           <MobileExpandedReserveShell
             side={leftExpanded ? 'left' : 'right'}
@@ -192,7 +191,7 @@ export default function ReservesTableMobileGrid({
                 simulation={simulationsById[activeId]}
                 supplyInput={supplyInput}
                 borrowInput={borrowInput}
-        hasScenarioInput={hasScenarioInput}
+                hasScenarioInput={hasScenarioInput}
                 inputMode={inputMode}
                 onCorrectSupplyInput={onCorrectSupplyInput}
                 onCorrectBorrowInput={onCorrectBorrowInput}
@@ -207,7 +206,7 @@ export default function ReservesTableMobileGrid({
             {rightCard ? <div className="min-w-0">{rightCard}</div> : null}
           </div>
         )}
-      </div>
+      </div>,
     );
   }
 

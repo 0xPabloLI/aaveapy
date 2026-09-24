@@ -104,12 +104,7 @@ export function formatSignedScenarioDailyCashflow(
   if (inputMode === 'usd') {
     return formatSignedReserveSizeUsd(valueUsd);
   }
-  if (
-    tokenPrice === null ||
-    tokenPrice === undefined ||
-    !Number.isFinite(tokenPrice) ||
-    tokenPrice <= 0
-  ) {
+  if (tokenPrice === null || tokenPrice === undefined || !Number.isFinite(tokenPrice) || tokenPrice <= 0) {
     return '—';
   }
   const tokenAmount = valueUsd / tokenPrice;
@@ -125,10 +120,7 @@ interface FormatScenarioSizeOptions {
 
 export const formatScenarioSize = (
   value: number | null | undefined,
-  {
-    inputMode = 'usd',
-    tokenPrice,
-  }: FormatScenarioSizeOptions = {}
+  { inputMode = 'usd', tokenPrice }: FormatScenarioSizeOptions = {},
 ): string => {
   if (inputMode === 'usd') {
     return formatReserveSizeUsd(value);
@@ -150,7 +142,7 @@ export const formatScenarioSize = (
 
 export const formatScenarioSizeDelta = (
   value: number | null | undefined,
-  options: FormatScenarioSizeOptions = {}
+  options: FormatScenarioSizeOptions = {},
 ): string => {
   if (value === null || value === undefined || isNaN(value)) return '—';
   const prefix = value > 0 ? '+' : '';

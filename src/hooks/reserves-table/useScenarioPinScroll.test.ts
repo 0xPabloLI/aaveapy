@@ -75,9 +75,7 @@ describe('useScenarioPinScroll', () => {
     it('keeps an already-expanded row expanded and stages the filter-pin target', () => {
       const setExpandedReserveId = vi.fn();
       const { result } = renderHook(() =>
-        useScenarioPinScroll(
-          makeOpts({ expandedReserveId: 'reserve-A', setExpandedReserveId }),
-        ),
+        useScenarioPinScroll(makeOpts({ expandedReserveId: 'reserve-A', setExpandedReserveId })),
       );
 
       act(() => result.current.handleMarketChipClick('reserve-A'));
@@ -87,9 +85,7 @@ describe('useScenarioPinScroll', () => {
     it('does NOT implicitly expand a collapsed row', () => {
       const setExpandedReserveId = vi.fn();
       const { result } = renderHook(() =>
-        useScenarioPinScroll(
-          makeOpts({ expandedReserveId: null, setExpandedReserveId }),
-        ),
+        useScenarioPinScroll(makeOpts({ expandedReserveId: null, setExpandedReserveId })),
       );
 
       act(() => result.current.handleMarketChipClick('reserve-A'));
@@ -99,9 +95,7 @@ describe('useScenarioPinScroll', () => {
     it('clears the staged target when clicking a different row than the expanded one', () => {
       const setExpandedReserveId = vi.fn();
       const { result } = renderHook(() =>
-        useScenarioPinScroll(
-          makeOpts({ expandedReserveId: 'reserve-A', setExpandedReserveId }),
-        ),
+        useScenarioPinScroll(makeOpts({ expandedReserveId: 'reserve-A', setExpandedReserveId })),
       );
 
       act(() => result.current.handleMarketChipClick('reserve-B'));
@@ -113,9 +107,7 @@ describe('useScenarioPinScroll', () => {
   describe('filter pin scroll on reserves change', () => {
     it('does not schedule anything on the very first reserves render (baseline established)', () => {
       const reserves = [makeReserve('A'), makeReserve('B')];
-      const { result } = renderHook(() =>
-        useScenarioPinScroll(makeOpts({ reserves, sortedData: reserves })),
-      );
+      const { result } = renderHook(() => useScenarioPinScroll(makeOpts({ reserves, sortedData: reserves })));
 
       // No scheduling happens because lastReservesKeyForFilterPinRef is just being set.
       // Verifying no thrown errors / no callback to setExpandedReserveId.
@@ -139,12 +131,8 @@ describe('useScenarioPinScroll', () => {
 
   describe('isMobile flag wiring', () => {
     it('produces a working cancel function in both mobile and desktop mode', () => {
-      const desktopHook = renderHook(() =>
-        useScenarioPinScroll(makeOpts({ isMobile: false })),
-      );
-      const mobileHook = renderHook(() =>
-        useScenarioPinScroll(makeOpts({ isMobile: true })),
-      );
+      const desktopHook = renderHook(() => useScenarioPinScroll(makeOpts({ isMobile: false })));
+      const mobileHook = renderHook(() => useScenarioPinScroll(makeOpts({ isMobile: true })));
 
       const cancelDesktop = desktopHook.result.current.schedulePinScrollToReserve('x', 10);
       const cancelMobile = mobileHook.result.current.schedulePinScrollToReserve('y', 10);

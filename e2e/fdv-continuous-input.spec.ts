@@ -38,14 +38,14 @@ test.describe('FDV input — continuous typing', () => {
     for (const char of chars) {
       await fdvInput!.press(char, { delay: 30 });
       await page.waitForTimeout(20);
-      const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+      const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
       expect(stillFocused).toBe(true);
     }
 
     await page.waitForTimeout(500);
 
     // After typing, the input should still be focused
-    const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+    const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
     expect(stillFocused).toBe(true);
 
     // Value should contain all typed characters
@@ -75,7 +75,7 @@ test.describe('FDV input — continuous typing', () => {
     await fdvInput!.pressSequentially('75', { delay: 10 });
     await page.waitForTimeout(500);
 
-    const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+    const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
     expect(stillFocused).toBe(true);
 
     const rawValue = await fdvInput!.inputValue();
@@ -96,7 +96,7 @@ test.describe('FDV input — continuous typing', () => {
     await fdvInput!.pressSequentially('12.5', { delay: 30 });
     await page.waitForTimeout(500);
 
-    const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+    const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
     expect(stillFocused).toBe(true);
 
     const rawValue = await fdvInput!.inputValue();
@@ -124,7 +124,7 @@ test.describe('FDV input — continuous typing', () => {
     await fdvInput!.pressSequentially('1.234', { delay: 30 });
     await page.waitForTimeout(500);
 
-    const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+    const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
     expect(stillFocused).toBe(true);
 
     // Should be truncated to 2 decimal places
@@ -153,7 +153,7 @@ test.describe('FDV input — continuous typing', () => {
     await fdvInput!.pressSequentially('3.14', { delay: 30 });
     await page.waitForTimeout(500);
 
-    const stillFocused = await fdvInput!.evaluate(el => document.activeElement === el);
+    const stillFocused = await fdvInput!.evaluate((el) => document.activeElement === el);
     expect(stillFocused).toBe(true);
 
     // Should stay as-is (already within 2 decimal places)

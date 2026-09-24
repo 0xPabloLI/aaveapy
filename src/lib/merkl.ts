@@ -1,10 +1,7 @@
 import { isCampaignActive } from './campaignGroups';
 import type { MerklOpportunityGroup } from '@/types/aave';
 
-export const getFirstActiveMerklLink = (
-  opportunities?: MerklOpportunityGroup[],
-  nowMs = Date.now(),
-): string | null => {
+export const getFirstActiveMerklLink = (opportunities?: MerklOpportunityGroup[], nowMs = Date.now()): string | null => {
   if (!opportunities?.length) return null;
   for (const opp of opportunities) {
     if (!opp.link) continue;

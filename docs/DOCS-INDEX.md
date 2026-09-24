@@ -129,8 +129,11 @@ _Last inventory pass: 2026-07-06._
 | `docs/specs/reserve-table-market-hub-filtering.md` | Reserve table market/hub filtering behavior contract | 2026-04-22 | Canonical | `src/components/dashboard/ReservesTable.tsx` | keep |
 | `docs/specs/v4-reserveId-uniqueness.md` | V4 reserveId uniqueness contract | 2026-04-22 | Canonical | `src/lib/reserveKey.ts`, `src/lib/apiSchemas.ts` | keep |
 | `docs/specs/fcp-optimization.md` | FCP 优化 spec（钱包层 lazy 边界 + advancedChunks + 首屏守卫；含场景矩阵与验证证据） | 2026-08-29 | Canonical | `src/App.tsx`, `src/providers/WalletProviders.tsx`, `vite.config.ts`, `src/test/architecture-guard.test.ts` | keep |
+| `docs/specs/e2e-wallet-connect-injected.md` | E2E 真实钱包连接测试 spec（mock EIP-1193 + EIP-6963；含场景矩阵与移动端弹窗发现） | 2026-09-05 | Canonical | `e2e/eip1193-mock.ts`, `e2e/wallet-connect-injected.spec.ts`, `docs/conventions/wallet-js-injection-testing.md` | keep |
+| `docs/specs/chainlink-arc-v4-chain-onboarding.md` | Chainlink Arc (chainId 5042) 新链接入 spec（registry/icon map/manifest 四件套原子性；含场景矩阵与实测取证方法） | 2026-09-16 | Canonical | `src/lib/chainIconMap.ts`, `scripts/check-chain-icon-map-upstream.mjs`, `public/icons/networks/chainlink-arc.svg` | keep |
 | `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
 | `docs/archive/2026-08-29-fcp-chunk-defer-tickets.md` | FCP Round 2 tickets（全部完成） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
+| `docs/archive/2026-09-06-scenario-pin-reorder-window-fix.md` | Scenario-pin e2e flake 根因与修复（pagination reorder-grow；含场景矩阵与验证证据） | 2026-09-06 | Historical archive | `src/hooks/reserves-table/useReservesPagination.ts`, `docs/design/frontend-interaction-guardrails.md` | keep |
 | `docs/archive/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation.md` | keep |
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-04-04 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |

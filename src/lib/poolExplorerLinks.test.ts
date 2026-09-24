@@ -72,51 +72,33 @@ describe('Every market deep-links to getReserveData', () => {
 });
 
 describe('Etherscan family URL format', () => {
-  const etherscanMarkets = getExplorerMarketNames().filter(
-    (m) => getExplorerFamily(m) === 'etherscan'
-  );
+  const etherscanMarkets = getExplorerMarketNames().filter((m) => getExplorerFamily(m) === 'etherscan');
 
-  it.each(etherscanMarkets)(
-    '%s follows https://{explorer}/address/{pool}#readProxyContract#F23',
-    (market) => {
-      const url = buildPoolExplorerUrl(market)!;
-      expect(url).toMatch(
-        /^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}#readProxyContract#F23$/
-      );
-    }
-  );
+  it.each(etherscanMarkets)('%s follows https://{explorer}/address/{pool}#readProxyContract#F23', (market) => {
+    const url = buildPoolExplorerUrl(market)!;
+    expect(url).toMatch(/^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}#readProxyContract#F23$/);
+  });
 });
 
 describe('Routescan family URL format', () => {
-  const routescanMarkets = getExplorerMarketNames().filter(
-    (m) => getExplorerFamily(m) === 'routescan'
-  );
+  const routescanMarkets = getExplorerMarketNames().filter((m) => getExplorerFamily(m) === 'routescan');
 
   it.each(routescanMarkets)(
     '%s follows https://{explorer}/address/{pool}/contract/{chainId}/readProxyContract#F23',
     (market) => {
       const url = buildPoolExplorerUrl(market)!;
-      expect(url).toMatch(
-        /^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\/contract\/\d+\/readProxyContract#F23$/
-      );
-    }
+      expect(url).toMatch(/^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\/contract\/\d+\/readProxyContract#F23$/);
+    },
   );
 });
 
 describe('Blockscout family URL format', () => {
-  const blockscoutMarkets = getExplorerMarketNames().filter(
-    (m) => getExplorerFamily(m) === 'blockscout'
-  );
+  const blockscoutMarkets = getExplorerMarketNames().filter((m) => getExplorerFamily(m) === 'blockscout');
 
-  it.each(blockscoutMarkets)(
-    '%s follows https://{explorer}/address/{pool}?tab=read_proxy#0xc952485d',
-    (market) => {
-      const url = buildPoolExplorerUrl(market)!;
-      expect(url).toMatch(
-        /^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\?tab=read_proxy#0xc952485d$/
-      );
-    }
-  );
+  it.each(blockscoutMarkets)('%s follows https://{explorer}/address/{pool}?tab=read_proxy#0xc952485d', (market) => {
+    const url = buildPoolExplorerUrl(market)!;
+    expect(url).toMatch(/^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\?tab=read_proxy#0xc952485d$/);
+  });
 });
 
 describe('OKLink family URL format', () => {
@@ -155,12 +137,9 @@ describe('Pool addresses match aave-address-book', () => {
     AaveV3XLayer: '0xE3F3Caefdd7180F884c01E57f65Df979Af84f116',
   };
 
-  it.each(Object.entries(expectedAddresses))(
-    '%s pool address matches address-book',
-    (market, expected) => {
-      expect(getPoolAddress(market)).toBe(expected);
-    }
-  );
+  it.each(Object.entries(expectedAddresses))('%s pool address matches address-book', (market, expected) => {
+    expect(getPoolAddress(market)).toBe(expected);
+  });
 });
 
 describe('Pool addresses are checksummed', () => {
@@ -176,55 +155,55 @@ describe('Pool addresses are checksummed', () => {
 describe('Specific URL snapshots', () => {
   it('Ethereum', () => {
     expect(buildPoolExplorerUrl('AaveV3Ethereum')).toBe(
-      'https://etherscan.io/address/0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2#readProxyContract#F23'
+      'https://etherscan.io/address/0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2#readProxyContract#F23',
     );
   });
 
   it('Avalanche uses snowscan.xyz (etherscan family)', () => {
     expect(buildPoolExplorerUrl('AaveV3Avalanche')).toBe(
-      'https://snowscan.xyz/address/0x794a61358D6845594F94dc1DB02A252b5b4814aD#readProxyContract#F23'
+      'https://snowscan.xyz/address/0x794a61358D6845594F94dc1DB02A252b5b4814aD#readProxyContract#F23',
     );
   });
 
   it('Metis uses /contract/1088/readProxyContract#F23', () => {
     expect(buildPoolExplorerUrl('AaveV3Metis')).toBe(
-      'https://metisscan.info/address/0x90df02551bB792286e8D4f13E0e357b4Bf1D6a57/contract/1088/readProxyContract#F23'
+      'https://metisscan.info/address/0x90df02551bB792286e8D4f13E0e357b4Bf1D6a57/contract/1088/readProxyContract#F23',
     );
   });
 
   it('Mantle is etherscan family', () => {
     expect(buildPoolExplorerUrl('AaveV3Mantle')).toBe(
-      'https://mantlescan.xyz/address/0x458F293454fE0d67EC0655f3672301301DD51422#readProxyContract#F23'
+      'https://mantlescan.xyz/address/0x458F293454fE0d67EC0655f3672301301DD51422#readProxyContract#F23',
     );
   });
 
   it('Linea uses correct address-book address', () => {
     expect(buildPoolExplorerUrl('AaveV3Linea')).toBe(
-      'https://lineascan.build/address/0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac#readProxyContract#F23'
+      'https://lineascan.build/address/0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac#readProxyContract#F23',
     );
   });
 
   it('ZkSync blockscout with correct address', () => {
     expect(buildPoolExplorerUrl('AaveV3ZkSync')).toBe(
-      'https://zksync.blockscout.com/address/0x78e30497a3c7527d953c6B1E3541b021A98Ac43c?tab=read_proxy#0xc952485d'
+      'https://zksync.blockscout.com/address/0x78e30497a3c7527d953c6B1E3541b021A98Ac43c?tab=read_proxy#0xc952485d',
     );
   });
 
   it('Plasma with correct address-book address', () => {
     expect(buildPoolExplorerUrl('AaveV3Plasma')).toBe(
-      'https://plasmascan.to/address/0x925a2A7214Ed92428B5b1B090F80b25700095e12#readProxyContract#F23'
+      'https://plasmascan.to/address/0x925a2A7214Ed92428B5b1B090F80b25700095e12#readProxyContract#F23',
     );
   });
 
   it('Soneium blockscout with function selector', () => {
     expect(buildPoolExplorerUrl('AaveV3Soneium')).toBe(
-      'https://soneium.blockscout.com/address/0xDd3d7A7d03D9fD9ef45f3E587287922eF65CA38B?tab=read_proxy#0xc952485d'
+      'https://soneium.blockscout.com/address/0xDd3d7A7d03D9fD9ef45f3E587287922eF65CA38B?tab=read_proxy#0xc952485d',
     );
   });
 
   it('XLayer OKLink with proxy-read', () => {
     expect(buildPoolExplorerUrl('AaveV3XLayer')).toBe(
-      'https://www.oklink.com/x-layer/address/0xE3F3Caefdd7180F884c01E57f65Df979Af84f116/contract#category=proxy-read&id=22'
+      'https://www.oklink.com/x-layer/address/0xE3F3Caefdd7180F884c01E57f65Df979Af84f116/contract#category=proxy-read&id=22',
     );
   });
 });
@@ -245,9 +224,7 @@ describe('buildHubExplorerUrl', () => {
 
   it('builds etherscan family URL for Ethereum Hub', () => {
     const hubAddr = '0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9';
-    expect(buildHubExplorerUrl(hubAddr, { chainName: 'Ethereum' })).toBe(
-      `https://etherscan.io/address/${hubAddr}`,
-    );
+    expect(buildHubExplorerUrl(hubAddr, { chainName: 'Ethereum' })).toBe(`https://etherscan.io/address/${hubAddr}`);
   });
 });
 
@@ -280,9 +257,7 @@ describe('buildSpokeExplorerUrl', () => {
   });
 
   it('returns null when no chainName provided', () => {
-    expect(
-      buildSpokeExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9'),
-    ).toBeNull();
+    expect(buildSpokeExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9')).toBeNull();
   });
 });
 
@@ -347,9 +322,7 @@ describe('buildTokenExplorerUrl', () => {
 
   it('applies routescan pathFormat for Metis token links', () => {
     const url = buildTokenExplorerUrl('AaveV3Metis', USDC)!;
-    expect(url).toBe(
-      `https://metisscan.info/address/${USDC}/contract/1088/readProxyContract`,
-    );
+    expect(url).toBe(`https://metisscan.info/address/${USDC}/contract/1088/readProxyContract`);
     expect(url).not.toContain('#F23');
   });
 

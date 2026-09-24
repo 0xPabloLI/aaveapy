@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { sortReserves, compareSupplyOrBorrow, type ReserveSortConfig, type ReserveSortValueGetters, type SortOrder, type SortableColumn, type SizeSortMode, type UtilSortMode, type SortMode } from './reservesSorter';
+import {
+  sortReserves,
+  compareSupplyOrBorrow,
+  type ReserveSortConfig,
+  type ReserveSortValueGetters,
+  type SortOrder,
+  type SortableColumn,
+  type SizeSortMode,
+  type UtilSortMode,
+  type SortMode,
+} from './reservesSorter';
 
 interface StubReserve {
   reserveId: string;
@@ -113,21 +123,23 @@ function stub(overrides: Partial<StubReserve> = {}): StubReserve {
 describe('sortReserves', () => {
   describe('token sort', () => {
     it('sorts by token symbol ascending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', tokenSymbol: 'WBTC' }),
-        stub({ reserveId: 'r2', tokenSymbol: 'AAVE' }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'asc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', tokenSymbol: 'WBTC' }), stub({ reserveId: 'r2', tokenSymbol: 'AAVE' })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
       expect(result[1].reserveId).toBe('r1');
     });
 
     it('sorts by token symbol descending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', tokenSymbol: 'AAVE' }),
-        stub({ reserveId: 'r2', tokenSymbol: 'WBTC' }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', tokenSymbol: 'AAVE' }), stub({ reserveId: 'r2', tokenSymbol: 'WBTC' })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
       expect(result[1].reserveId).toBe('r1');
     });
@@ -137,7 +149,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r2', tokenSymbol: 'USDC', marketName: 'Polygon' }),
         stub({ reserveId: 'r1', tokenSymbol: 'USDC', marketName: 'Ethereum' }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'asc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'token', tokenSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
       expect(result[1].reserveId).toBe('r2');
     });
@@ -149,7 +165,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', marketName: 'Polygon' }),
         stub({ reserveId: 'r2', marketName: 'Arbitrum' }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'market', marketSortOrder: 'asc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'market', marketSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -158,47 +178,55 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r2', marketName: 'Ethereum', tokenSymbol: 'WBTC' }),
         stub({ reserveId: 'r1', marketName: 'Ethereum', tokenSymbol: 'AAVE' }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'market', marketSortOrder: 'asc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'market', marketSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
 
   describe('price sort', () => {
     it('sorts by price descending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', tokenPrice: 1 }),
-        stub({ reserveId: 'r2', tokenPrice: 40000 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', tokenPrice: 1 }), stub({ reserveId: 'r2', tokenPrice: 40000 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('null price sorts last in desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', tokenPrice: undefined }),
-        stub({ reserveId: 'r2', tokenPrice: 100 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', tokenPrice: undefined }), stub({ reserveId: 'r2', tokenPrice: 100 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('tiebreaks by reserveId', () => {
-      const reserves = [
-        stub({ reserveId: 'r2', tokenPrice: 100 }),
-        stub({ reserveId: 'r1', tokenPrice: 100 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r2', tokenPrice: 100 }), stub({ reserveId: 'r1', tokenPrice: 100 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'price', priceSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
 
   describe('size sort', () => {
     it('sorts by supply size desc (default mode)', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', reserveSizeUsd: 100 }),
-        stub({ reserveId: 'r2', reserveSizeUsd: 500 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', reserveSizeUsd: 100 }), stub({ reserveId: 'r2', reserveSizeUsd: 500 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -207,7 +235,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', totalBorrowedUsd: 100 }),
         stub({ reserveId: 'r2', totalBorrowedUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrow', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrow', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -216,7 +248,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', supplyCapUsd: 1_000_000 }),
         stub({ reserveId: 'r2', supplyCapUsd: 5_000_000 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyCapValue', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyCapValue', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -225,7 +261,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', borrowCapUsd: 500_000 }),
         stub({ reserveId: 'r2', borrowCapUsd: 2_000_000 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowCapValue', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowCapValue', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -234,25 +274,31 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', availableLiquidityUsd: 100 }),
         stub({ reserveId: 'r2', availableLiquidityUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'availableLiquidity', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'availableLiquidity', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('sorts by deficitRatio desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', deficitRatio: 0.1 }),
-        stub({ reserveId: 'r2', deficitRatio: 0.5 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'deficitRatio', sizeSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', deficitRatio: 0.1 }), stub({ reserveId: 'r2', deficitRatio: 0.5 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'deficitRatio', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('sorts by deficitAmount desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', deficitAmount: 100 }),
-        stub({ reserveId: 'r2', deficitAmount: 500 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'deficitAmount', sizeSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', deficitAmount: 100 }), stub({ reserveId: 'r2', deficitAmount: 500 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'deficitAmount', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -261,7 +307,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', reserveSizeUsd: 50, supplyCapUsd: 100 }),
         stub({ reserveId: 'r2', reserveSizeUsd: 90, supplyCapUsd: 100 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyCapPct', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyCapPct', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -270,27 +320,33 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', reserveSizeUsd: null }),
         stub({ reserveId: 'r2', reserveSizeUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('tiebreaks by reserveId', () => {
-      const reserves = [
-        stub({ reserveId: 'r2', reserveSizeUsd: 100 }),
-        stub({ reserveId: 'r1', reserveSizeUsd: 100 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r2', reserveSizeUsd: 100 }), stub({ reserveId: 'r1', reserveSizeUsd: 100 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supply', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
 
   describe('util sort', () => {
     it('sorts by utilization desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', utilization: 30 }),
-        stub({ reserveId: 'r2', utilization: 80 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', utilization: 30 }), stub({ reserveId: 'r2', utilization: 80 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -299,7 +355,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', optimalUtilization: 50 }),
         stub({ reserveId: 'r2', optimalUtilization: 80 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'util', utilSortMode: 'optimal', utilSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'util', utilSortMode: 'optimal', utilSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -308,16 +368,21 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', availableLiquidityUsd: 100 }),
         stub({ reserveId: 'r2', availableLiquidityUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'util', utilSortMode: 'liquidity', utilSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'util', utilSortMode: 'liquidity', utilSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('tiebreaks by reserveId', () => {
-      const reserves = [
-        stub({ reserveId: 'r2', utilization: 50 }),
-        stub({ reserveId: 'r1', utilization: 50 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r2', utilization: 50 }), stub({ reserveId: 'r1', utilization: 50 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
@@ -328,7 +393,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyTotal: 3 }),
         stub({ reserveId: 'r2', displaySupplyTotal: 8 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -337,7 +406,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyNative: 1 }),
         stub({ reserveId: 'r2', displaySupplyNative: 5 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'native', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'native', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -346,7 +419,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyTotal: null }),
         stub({ reserveId: 'r2', displaySupplyTotal: 5 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -355,7 +432,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r2', displaySupplyTotal: 5 }),
         stub({ reserveId: 'r1', displaySupplyTotal: 5 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
@@ -366,7 +447,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displayBorrowTotal: 2 }),
         stub({ reserveId: 'r2', displayBorrowTotal: 7 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -375,7 +460,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displayBorrowNative: 1 }),
         stub({ reserveId: 'r2', displayBorrowNative: 4 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'native', borrowSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'native', borrowSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -384,36 +473,43 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displayBorrowTotal: null }),
         stub({ reserveId: 'r2', displayBorrowTotal: 3 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
 
   describe('spread sort', () => {
     it('sorts by spread desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', displaySpread: 1 }),
-        stub({ reserveId: 'r2', displaySpread: 5 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', displaySpread: 1 }), stub({ reserveId: 'r2', displaySpread: 5 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('null spread sorts last in desc', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', displaySpread: null }),
-        stub({ reserveId: 'r2', displaySpread: 2 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', displaySpread: null }), stub({ reserveId: 'r2', displaySpread: 2 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
     it('tiebreaks by reserveId', () => {
-      const reserves = [
-        stub({ reserveId: 'r2', displaySpread: 2 }),
-        stub({ reserveId: 'r1', displaySpread: 2 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r2', displaySpread: 2 }), stub({ reserveId: 'r1', displaySpread: 2 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
@@ -424,7 +520,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyTotal: 3 }),
         stub({ reserveId: 'r2', displaySupplyTotal: 8 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: null, supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: null, supplySortMode: 'total', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -435,7 +535,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyIncentive: 0, displaySupplyNative: 5, supplyHasIncentiveSource: false }),
         stub({ reserveId: 'r2', displaySupplyIncentive: 0, displaySupplyNative: 1, supplyHasIncentiveSource: true }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'incentive', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'incentive', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -446,18 +550,23 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', marketName: 'Arbitrum' }),
         stub({ reserveId: 'r2', marketName: 'Polygon' }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'market', marketSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'market', marketSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
 
   describe('price sort asc', () => {
     it('sorts by price ascending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', tokenPrice: 40000 }),
-        stub({ reserveId: 'r2', tokenPrice: 1 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'price', priceSortOrder: 'asc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', tokenPrice: 40000 }), stub({ reserveId: 'r2', tokenPrice: 1 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'price', priceSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -468,7 +577,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', availableToBorrowUsd: 100 }),
         stub({ reserveId: 'r2', availableToBorrowUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowAvailability', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowAvailability', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -477,7 +590,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', supplyAvailabilityUsd: 100 }),
         stub({ reserveId: 'r2', supplyAvailabilityUsd: 500 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyAvailability', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'supplyAvailability', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -486,18 +603,23 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', totalBorrowedUsd: 50, borrowCapUsd: 100 }),
         stub({ reserveId: 'r2', totalBorrowedUsd: 90, borrowCapUsd: 100 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowCapPct', sizeSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'size', sizeSortMode: 'borrowCapPct', sizeSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
 
   describe('util sort asc', () => {
     it('sorts by utilization ascending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', utilization: 80 }),
-        stub({ reserveId: 'r2', utilization: 30 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'asc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', utilization: 80 }), stub({ reserveId: 'r2', utilization: 30 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'util', utilSortMode: 'util', utilSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -508,7 +630,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyTotal: 8 }),
         stub({ reserveId: 'r2', displaySupplyTotal: 3 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'asc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -519,7 +645,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displaySupplyIncentive: 1, displaySupplyNative: 5, supplyHasIncentiveSource: true }),
         stub({ reserveId: 'r2', displaySupplyIncentive: 3, displaySupplyNative: 5, supplyHasIncentiveSource: true }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'incentive', supplySortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'supply', supplySortMode: 'incentive', supplySortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -530,7 +660,11 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r1', displayBorrowIncentive: 0, displayBorrowNative: 5, borrowHasIncentiveSource: false }),
         stub({ reserveId: 'r2', displayBorrowIncentive: 0, displayBorrowNative: 1, borrowHasIncentiveSource: true }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'incentive', borrowSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'incentive', borrowSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
 
@@ -539,18 +673,23 @@ describe('sortReserves', () => {
         stub({ reserveId: 'r2', displayBorrowTotal: 3 }),
         stub({ reserveId: 'r1', displayBorrowTotal: 3 }),
       ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r1');
     });
   });
 
   describe('spread sort asc', () => {
     it('sorts by spread ascending', () => {
-      const reserves = [
-        stub({ reserveId: 'r1', displaySpread: 5 }),
-        stub({ reserveId: 'r2', displaySpread: 1 }),
-      ];
-      const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'asc' }), stubValueGetters);
+      const reserves = [stub({ reserveId: 'r1', displaySpread: 5 }), stub({ reserveId: 'r2', displaySpread: 1 })];
+      const result = sortReserves(
+        reserves,
+        makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'asc' }),
+        stubValueGetters,
+      );
       expect(result[0].reserveId).toBe('r2');
     });
   });
@@ -576,38 +715,124 @@ describe('sortReserves', () => {
     it('native mode: null values sort last in desc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyNative: null });
       const b = stub({ reserveId: 'r2', displaySupplyNative: 5 });
-      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
+      expect(
+        compareSupplyOrBorrow(
+          a,
+          b,
+          'native',
+          'desc',
+          vg.getDisplaySupplyNative,
+          vg.getDisplaySupplyIncentive,
+          vg.getDisplaySupplyTotal,
+          vg.hasSupplyIncentiveSource,
+          vg.isSupplyDisabled,
+          vg,
+        ),
+      ).toBeGreaterThan(0);
     });
 
     it('native mode: both null falls back to reserveId tiebreaker', () => {
       const a = stub({ reserveId: 'r1', displaySupplyNative: null });
       const b = stub({ reserveId: 'r2', displaySupplyNative: null });
-      const result = compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg);
+      const result = compareSupplyOrBorrow(
+        a,
+        b,
+        'native',
+        'desc',
+        vg.getDisplaySupplyNative,
+        vg.getDisplaySupplyIncentive,
+        vg.getDisplaySupplyTotal,
+        vg.hasSupplyIncentiveSource,
+        vg.isSupplyDisabled,
+        vg,
+      );
       expect(result).toBeLessThan(0);
     });
 
     it('total mode: sorts by total in desc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyTotal: 3 });
       const b = stub({ reserveId: 'r2', displaySupplyTotal: 7 });
-      expect(compareSupplyOrBorrow(a, b, 'total', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
+      expect(
+        compareSupplyOrBorrow(
+          a,
+          b,
+          'total',
+          'desc',
+          vg.getDisplaySupplyNative,
+          vg.getDisplaySupplyIncentive,
+          vg.getDisplaySupplyTotal,
+          vg.hasSupplyIncentiveSource,
+          vg.isSupplyDisabled,
+          vg,
+        ),
+      ).toBeGreaterThan(0);
     });
 
     it('total mode: sorts by total in asc order', () => {
       const a = stub({ reserveId: 'r1', displaySupplyTotal: 3 });
       const b = stub({ reserveId: 'r2', displaySupplyTotal: 7 });
-      expect(compareSupplyOrBorrow(a, b, 'total', 'asc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeLessThan(0);
+      expect(
+        compareSupplyOrBorrow(
+          a,
+          b,
+          'total',
+          'asc',
+          vg.getDisplaySupplyNative,
+          vg.getDisplaySupplyIncentive,
+          vg.getDisplaySupplyTotal,
+          vg.hasSupplyIncentiveSource,
+          vg.isSupplyDisabled,
+          vg,
+        ),
+      ).toBeLessThan(0);
     });
 
     it('incentive mode: delegates to compareIncentiveWithNative', () => {
-      const a = stub({ reserveId: 'r1', displaySupplyIncentive: 0, displaySupplyNative: 5, supplyHasIncentiveSource: false });
-      const b = stub({ reserveId: 'r2', displaySupplyIncentive: 0, displaySupplyNative: 1, supplyHasIncentiveSource: true });
-      expect(compareSupplyOrBorrow(a, b, 'incentive', 'desc', vg.getDisplaySupplyNative, vg.getDisplaySupplyIncentive, vg.getDisplaySupplyTotal, vg.hasSupplyIncentiveSource, vg.isSupplyDisabled, vg)).toBeGreaterThan(0);
+      const a = stub({
+        reserveId: 'r1',
+        displaySupplyIncentive: 0,
+        displaySupplyNative: 5,
+        supplyHasIncentiveSource: false,
+      });
+      const b = stub({
+        reserveId: 'r2',
+        displaySupplyIncentive: 0,
+        displaySupplyNative: 1,
+        supplyHasIncentiveSource: true,
+      });
+      expect(
+        compareSupplyOrBorrow(
+          a,
+          b,
+          'incentive',
+          'desc',
+          vg.getDisplaySupplyNative,
+          vg.getDisplaySupplyIncentive,
+          vg.getDisplaySupplyTotal,
+          vg.hasSupplyIncentiveSource,
+          vg.isSupplyDisabled,
+          vg,
+        ),
+      ).toBeGreaterThan(0);
     });
 
     it('works for borrow side with borrow getters', () => {
       const a = stub({ reserveId: 'r1', displayBorrowNative: null });
       const b = stub({ reserveId: 'r2', displayBorrowNative: 5 });
-      expect(compareSupplyOrBorrow(a, b, 'native', 'desc', vg.getDisplayBorrowNative, vg.getDisplayBorrowIncentive, vg.getDisplayBorrowTotal, vg.hasBorrowIncentiveSource, vg.isBorrowDisabled, vg)).toBeGreaterThan(0);
+      expect(
+        compareSupplyOrBorrow(
+          a,
+          b,
+          'native',
+          'desc',
+          vg.getDisplayBorrowNative,
+          vg.getDisplayBorrowIncentive,
+          vg.getDisplayBorrowTotal,
+          vg.hasBorrowIncentiveSource,
+          vg.isBorrowDisabled,
+          vg,
+        ),
+      ).toBeGreaterThan(0);
     });
   });
 
@@ -618,7 +843,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
           stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -628,7 +857,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
           stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'asc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'asc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -638,7 +871,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: true }),
           stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: true }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r1');
         expect(result[1].reserveId).toBe('r2');
       });
@@ -648,7 +885,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySupplyTotal: 100, supplyDisabled: true }),
           stub({ reserveId: 'r2', displaySupplyTotal: 1, supplyDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -660,7 +901,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
           stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -670,7 +915,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
           stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'asc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'asc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -680,7 +929,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displayBorrowTotal: 10, borrowDisabled: true }),
           stub({ reserveId: 'r2', displayBorrowTotal: 5, borrowDisabled: true }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r1');
         expect(result[1].reserveId).toBe('r2');
       });
@@ -692,7 +945,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true }),
           stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -702,7 +959,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySpread: 10, borrowDisabled: true }),
           stub({ reserveId: 'r2', displaySpread: 5, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -713,7 +974,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false, borrowDisabled: false }),
           stub({ reserveId: 'r3', displaySpread: 8, supplyDisabled: false, borrowDisabled: true }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
         expect(result[2].reserveId).toBe('r3');
@@ -724,7 +989,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true, borrowDisabled: true }),
           stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: false, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r2');
         expect(result[1].reserveId).toBe('r1');
       });
@@ -734,7 +1003,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySpread: 10, supplyDisabled: true, borrowDisabled: true }),
           stub({ reserveId: 'r2', displaySpread: 5, supplyDisabled: true, borrowDisabled: true }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'spread', spreadSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r1');
         expect(result[1].reserveId).toBe('r2');
       });
@@ -746,7 +1019,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displayBorrowTotal: 10, supplyDisabled: true, borrowDisabled: false }),
           stub({ reserveId: 'r2', displayBorrowTotal: 5, supplyDisabled: false, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'borrow', borrowSortMode: 'total', borrowSortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r1');
         expect(result[1].reserveId).toBe('r2');
       });
@@ -756,7 +1033,11 @@ describe('sortReserves', () => {
           stub({ reserveId: 'r1', displaySupplyTotal: 10, supplyDisabled: false, borrowDisabled: true }),
           stub({ reserveId: 'r2', displaySupplyTotal: 5, supplyDisabled: false, borrowDisabled: false }),
         ];
-        const result = sortReserves(reserves, makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }), stubValueGetters);
+        const result = sortReserves(
+          reserves,
+          makeConfig({ activeSortColumn: 'supply', supplySortMode: 'total', supplySortOrder: 'desc' }),
+          stubValueGetters,
+        );
         expect(result[0].reserveId).toBe('r1');
         expect(result[1].reserveId).toBe('r2');
       });

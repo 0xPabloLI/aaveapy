@@ -175,9 +175,7 @@ export function preloadImagesIdle(srcs: string[]): void {
       }
     };
 
-    preloadImage(uniqueSrcs[index])
-      .then(scheduleNext)
-      .catch(scheduleNext); // Continue even if one fails
+    preloadImage(uniqueSrcs[index]).then(scheduleNext).catch(scheduleNext); // Continue even if one fails
   };
 
   // Start preloading after a short delay to not interfere with initial render
@@ -210,9 +208,7 @@ export function preloadFallbackImagesIdle(srcGroups: string[][]): void {
       }
     };
 
-    preloadFirstAvailableImage(uniqueGroups[index])
-      .then(scheduleNext)
-      .catch(scheduleNext);
+    preloadFirstAvailableImage(uniqueGroups[index]).then(scheduleNext).catch(scheduleNext);
   };
 
   if ('requestIdleCallback' in window) {
@@ -228,7 +224,10 @@ export function preloadFallbackImagesIdle(srcGroups: string[][]): void {
  */
 export function preloadTokenIcons(symbols: string[]): void {
   const iconSourceGroups = symbols.flatMap((symbol) => {
-    const parts = symbol.split('_').map((part) => part.trim()).filter(Boolean);
+    const parts = symbol
+      .split('_')
+      .map((part) => part.trim())
+      .filter(Boolean);
     return parts.map((part) => getTokenIconSources(part));
   });
 

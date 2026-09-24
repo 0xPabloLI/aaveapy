@@ -19,7 +19,7 @@ vi.mock('@/lib/chainIcons', () => ({
 vi.mock('@/lib/marketLabels', () => ({
   getMarketChipLabel: () => 'Ethereum',
   isV4Market: (marketName: string) => marketName.startsWith('AaveV4'),
-  getHubChipClass: (isV4: boolean) => isV4 ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground',
+  getHubChipClass: (isV4: boolean) => (isV4 ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'),
 }));
 
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
@@ -95,15 +95,11 @@ const makeActions = (): PortfolioSimulationActions => ({
 });
 
 function renderCard(entries: PortfolioReserveEntry[]) {
-  const reserves = entries.map(e => makeReserve(e.tokenSymbol));
+  const reserves = entries.map((e) => makeReserve(e.tokenSymbol));
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <TooltipProvider>
-        <MobilePortfolioCard
-          entries={entries}
-          actions={makeActions()}
-          reserves={reserves}
-        />
+        <MobilePortfolioCard entries={entries} actions={makeActions()} reserves={reserves} />
       </TooltipProvider>
     </QueryClientProvider>,
   );
@@ -117,8 +113,9 @@ describe('MobilePortfolioCard — P0 audit fixes (AAV-1183)', () => {
       const entries = [makeEntry('USDC')];
       const { container } = renderCard(entries);
       // Find the span containing the token symbol text
-      const symbolSpan = Array.from(container.querySelectorAll('span'))
-        .find(s => s.textContent === 'USDC' && s.classList.contains('font-semibold'));
+      const symbolSpan = Array.from(container.querySelectorAll('span')).find(
+        (s) => s.textContent === 'USDC' && s.classList.contains('font-semibold'),
+      );
       expect(symbolSpan).toBeTruthy();
       expect(symbolSpan!.className).not.toContain('truncate');
     });
@@ -126,8 +123,9 @@ describe('MobilePortfolioCard — P0 audit fixes (AAV-1183)', () => {
     it('token symbol span has break-words and min-w-0', () => {
       const entries = [makeEntry('USDC')];
       const { container } = renderCard(entries);
-      const symbolSpan = Array.from(container.querySelectorAll('span'))
-        .find(s => s.textContent === 'USDC' && s.classList.contains('font-semibold'));
+      const symbolSpan = Array.from(container.querySelectorAll('span')).find(
+        (s) => s.textContent === 'USDC' && s.classList.contains('font-semibold'),
+      );
       expect(symbolSpan).toBeTruthy();
       expect(symbolSpan!.className).toContain('break-words');
       expect(symbolSpan!.className).toContain('min-w-0');
@@ -147,8 +145,9 @@ describe('MobilePortfolioCard — P0 audit fixes (AAV-1183)', () => {
     it('pill tab buttons have min-h-[36px] + touch-target-expand (visual 36px, touch 44px via ::before)', () => {
       const entries = [makeEntry('USDC')];
       const { container } = renderCard(entries);
-      const tabs = Array.from(container.querySelectorAll('button'))
-        .filter(b => b.textContent === 'Supply' || b.textContent === 'Borrow');
+      const tabs = Array.from(container.querySelectorAll('button')).filter(
+        (b) => b.textContent === 'Supply' || b.textContent === 'Borrow',
+      );
       expect(tabs.length).toBe(2);
       for (const tab of tabs) {
         expect(tab.className).toContain('min-h-[36px]');
@@ -228,9 +227,9 @@ describe('MobilePortfolioCard — P1 ARIA tablist + reduced-motion (AAV-1184)', 
       expect(tab.getAttribute('aria-selected')).toBeTruthy();
     }
     // Supply tab should be selected by default
-    const supplyTab = Array.from(tabs).find(t => t.textContent === 'Supply');
+    const supplyTab = Array.from(tabs).find((t) => t.textContent === 'Supply');
     expect(supplyTab?.getAttribute('aria-selected')).toBe('true');
-    const borrowTab = Array.from(tabs).find(t => t.textContent === 'Borrow');
+    const borrowTab = Array.from(tabs).find((t) => t.textContent === 'Borrow');
     expect(borrowTab?.getAttribute('aria-selected')).toBe('false');
   });
 

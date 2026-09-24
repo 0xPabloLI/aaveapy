@@ -48,10 +48,10 @@ export const useReservesLayoutRefs = ({
   useEffect(() => {
     const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
     if (!target) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setTableInView(entry.isIntersecting),
-      { threshold: 0, rootMargin: '200px 0px 200px 0px' },
-    );
+    const io = new IntersectionObserver(([entry]) => setTableInView(entry.isIntersecting), {
+      threshold: 0,
+      rootMargin: '200px 0px 200px 0px',
+    });
     io.observe(target);
     return () => io.disconnect();
   }, [isMobile]);
@@ -66,13 +66,9 @@ export const useReservesLayoutRefs = ({
       const measuredH = stickyEl.getBoundingClientRect().height;
       const scenarioH = isPortfolioMode ? 0 : measuredH;
       card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
-      const theadH =
-        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
+      const theadH = theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
       if (theadH > 0) {
-        card.style.setProperty(
-          '--reserves-expanded-main-row-top',
-          `${scenarioH + theadH}px`,
-        );
+        card.style.setProperty('--reserves-expanded-main-row-top', `${scenarioH + theadH}px`);
       } else {
         card.style.removeProperty('--reserves-expanded-main-row-top');
       }

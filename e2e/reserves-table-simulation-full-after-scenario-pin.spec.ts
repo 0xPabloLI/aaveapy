@@ -22,33 +22,19 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom + 8;
 }
 
-async function getVisibleReserveOrder(
-  page: Parameters<typeof test>[0]['page'],
-): Promise<string[]> {
-  return page.locator('tbody tr[data-reserve-id]').evaluateAll((rows) =>
-    rows
-      .map((row) => row.getAttribute('data-reserve-id') ?? '')
-      .filter((id) => id.length > 0),
-  );
+async function getVisibleReserveOrder(page: Parameters<typeof test>[0]['page']): Promise<string[]> {
+  return page
+    .locator('tbody tr[data-reserve-id]')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0));
 }
 
 function didReorder(beforeOrder: string[], afterOrder: string[]): boolean {
-  return (
-    beforeOrder.length !== afterOrder.length ||
-    beforeOrder.some((id, index) => id !== afterOrder[index])
-  );
+  return beforeOrder.length !== afterOrder.length || beforeOrder.some((id, index) => id !== afterOrder[index]);
 }
 
-async function setScenarioInputs(
-  page: Parameters<typeof test>[0]['page'],
-  values: { supply: string; borrow: string },
-) {
-  await page.locator(
-    '[data-reserves-sticky-scenario] input[aria-label="Supply amount"]',
-  ).fill(values.supply);
-  await page.locator(
-    '[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]',
-  ).fill(values.borrow);
+async function setScenarioInputs(page: Parameters<typeof test>[0]['page'], values: { supply: string; borrow: string }) {
+  await page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]').fill(values.supply);
+  await page.locator('[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]').fill(values.borrow);
 }
 
 async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
@@ -76,19 +62,14 @@ async function resetScrollByProbe(page: Parameters<typeof test>[0]['page']) {
   });
 }
 
-async function getScrollByProbeCount(
-  page: Parameters<typeof test>[0]['page'],
-): Promise<number> {
+async function getScrollByProbeCount(page: Parameters<typeof test>[0]['page']): Promise<number> {
   return page.evaluate(() => {
     type ProbedWindow = Window & { __e2eScrollByCalls?: number };
     return (window as ProbedWindow).__e2eScrollByCalls ?? 0;
   });
 }
 
-async function moveRowAwayFromPinBand(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-) {
+async function moveRowAwayFromPinBand(page: Parameters<typeof test>[0]['page'], reserveId: string) {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).first();
   const pinnedTopY = await getPinnedTopY(page);
   for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -106,18 +87,13 @@ async function moveRowAwayFromPinBand(
 }
 
 function simulationScrollPortForMainRow(mainRow: Locator) {
-  return mainRow
-    .locator('xpath=following-sibling::tr[1]')
-    .locator('[data-reserves-simulation-scrollport]')
-    .first();
+  return mainRow.locator('xpath=following-sibling::tr[1]').locator('[data-reserves-simulation-scrollport]').first();
 }
 
 test.describe('Simulation fully visible after scenario-driven pin (desktop)', () => {
   test.skip(!!process.env.CI, 'Complex multi-step scenario pin timing — run locally');
 
-  test('after a scenario-driven pin, simulation has no inner vertical overflow', async ({
-    page,
-  }) => {
+  test('after a scenario-driven pin, simulation has no inner vertical overflow', async ({ page }) => {
     test.setTimeout(180_000);
 
     await page.goto('/');
@@ -161,15 +137,17 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
       await setScenarioInputs(page, step);
       // Wait for the table sort to stabilize (two consecutive reads with same order).
       // A fixed 1200ms wait is insufficient — the sort may still be in progress.
-      await expect.poll(
-        async () => {
-          const order1 = await getVisibleReserveOrder(page);
-          await page.waitForTimeout(100);
-          const order2 = await getVisibleReserveOrder(page);
-          return order1.join(',') === order2.join(',') ? order1.length : 0;
-        },
-        { timeout: 15_000, message: `table sort to stabilize after scenario step` },
-      ).toBeGreaterThan(0);
+      await expect
+        .poll(
+          async () => {
+            const order1 = await getVisibleReserveOrder(page);
+            await page.waitForTimeout(100);
+            const order2 = await getVisibleReserveOrder(page);
+            return order1.join(',') === order2.join(',') ? order1.length : 0;
+          },
+          { timeout: 15_000, message: `table sort to stabilize after scenario step` },
+        )
+        .toBeGreaterThan(0);
       const afterOrder = await getVisibleReserveOrder(page);
       if (!didReorder(beforeOrder, afterOrder)) continue;
 
@@ -195,8 +173,7 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
           },
           {
             timeout: 30_000,
-            message:
-              'pin mechanism should settle after scenario-driven reorder (row in band or scrollBy fired)',
+            message: 'pin mechanism should settle after scenario-driven reorder (row in band or scrollBy fired)',
           },
         )
         .toBe(true);

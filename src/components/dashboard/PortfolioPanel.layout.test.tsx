@@ -10,10 +10,7 @@ import { resolve } from 'node:path';
  */
 
 describe('PortfolioPanel portfolio layout', () => {
-  const src = readFileSync(
-    resolve(__dirname, 'PortfolioPanel.tsx'),
-    'utf8',
-  );
+  const src = readFileSync(resolve(__dirname, 'PortfolioPanel.tsx'), 'utf8');
 
   it('renders PortfolioUnifiedTable (not legacy PortfolioTokenRow)', () => {
     expect(src).toMatch(/PortfolioUnifiedTable/);

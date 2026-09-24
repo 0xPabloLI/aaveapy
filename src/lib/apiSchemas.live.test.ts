@@ -15,10 +15,7 @@
  *   npm run test:live
  */
 import { describe, expect, it } from 'vitest';
-import {
-  MarketsResponseSchema,
-  SideDataMetaResponseSchema,
-} from './apiSchemas';
+import { MarketsResponseSchema, SideDataMetaResponseSchema } from './apiSchemas';
 import {
   formatLiveHttpError,
   isLikelyCloudflareChallenge,
@@ -37,8 +34,7 @@ async function readBodySnippet(res: Response): Promise<string> {
 
 function logSoftFailWarning(endpoint: string, reason: string): void {
   console.warn(
-    `[live-schema] soft-failing ${endpoint}: ${reason}. ` +
-      'Set LIVE_TEST_STRICT=true to fail the run instead.',
+    `[live-schema] soft-failing ${endpoint}: ${reason}. ` + 'Set LIVE_TEST_STRICT=true to fail the run instead.',
   );
 }
 
@@ -75,7 +71,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () =>
             status: res.status,
             statusText: res.statusText,
             url,
-          })
+          }),
         );
       }
 
@@ -124,7 +120,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () =>
             status: res.status,
             statusText: res.statusText,
             url,
-          })
+          }),
         );
       }
 

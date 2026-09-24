@@ -32,11 +32,7 @@ import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE, buildPointRateMap } from '@/lib/tydro';
 import { AlertTriangle, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  preloadIncentiveIcons,
-  setPreloadPaused,
-  shouldUseFullPreloadMode,
-} from '@/lib/preloadUtils';
+import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList, getChainCount } from '@/lib/marketsList';
 import { marketKey } from '@/lib/marketKey';
@@ -62,7 +58,7 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
+  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showFrozenOrPaused, setShowFrozenOrPaused] = useState(false);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
@@ -88,8 +84,6 @@ const Index = () => {
     });
   }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
-
-
 
   // Always start at FDV default 1 on load/refresh (do not restore from cache)
   const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
@@ -118,14 +112,8 @@ const Index = () => {
 
   const cachedMarkets = useMemo(() => getCachedMarkets(), []);
   const effectiveReservesData = data ?? cachedMarkets;
-  const effectiveMarketsList = useMemo(
-    () => buildMarketsList(effectiveReservesData),
-    [effectiveReservesData]
-  );
-  const chainCount = useMemo(
-    () => getChainCount(effectiveReservesData),
-    [effectiveReservesData]
-  );
+  const effectiveMarketsList = useMemo(() => buildMarketsList(effectiveReservesData), [effectiveReservesData]);
+  const chainCount = useMemo(() => getChainCount(effectiveReservesData), [effectiveReservesData]);
 
   const isUsingCache = !isLoading && isError && !!effectiveReservesData;
 
@@ -152,7 +140,12 @@ const Index = () => {
     let marketParam = searchParams.get('market');
 
     // Fallback to persisted filters when URL params are absent.
-    let persisted: { chain?: string | null; category?: string | null; search?: string | null; market?: string | null } | null = null;
+    let persisted: {
+      chain?: string | null;
+      category?: string | null;
+      search?: string | null;
+      market?: string | null;
+    } | null = null;
     if (chainParam === null && categoryParam === null && searchParam === null && marketParam === null) {
       try {
         const raw = typeof window !== 'undefined' ? window.localStorage.getItem('aaveapy:filters') : null;
@@ -184,11 +177,12 @@ const Index = () => {
           // If market param present, narrow down to specific markets
           let finalKeys = matchedKeys;
           if (marketParam) {
-            const chainId = effectiveMarketsList.find(
-              (m) => m.chainName.toLowerCase().includes(chainFilter),
-            )?.chainId;
+            const chainId = effectiveMarketsList.find((m) => m.chainName.toLowerCase().includes(chainFilter))?.chainId;
             if (chainId !== undefined) {
-              const slugs = marketParam.split(',').map((s) => s.trim()).filter(Boolean);
+              const slugs = marketParam
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
               const { resolved, invalid } = resolveMarketSlugs(slugs, chainId, effectiveMarketsList);
               if (resolved.length > 0 && resolved.length < matchedKeys.length) {
                 finalKeys = resolved;
@@ -225,24 +219,26 @@ const Index = () => {
 
     // Clean invalid params from URL so the user gets a valid shareable link.
     if (hasInvalidParam) {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        const chainFilter = chainParam?.trim().toLowerCase() ?? '';
-        const chainMatched =
-          chainFilter &&
-          effectiveMarketsList.some((m) => m.chainName.toLowerCase().includes(chainFilter));
-        if (!chainMatched) {
-          next.delete('chain');
-          next.delete('market'); // market without valid chain is meaningless
-        }
-        if (marketHadInvalid) next.delete('market');
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          const chainFilter = chainParam?.trim().toLowerCase() ?? '';
+          const chainMatched =
+            chainFilter && effectiveMarketsList.some((m) => m.chainName.toLowerCase().includes(chainFilter));
+          if (!chainMatched) {
+            next.delete('chain');
+            next.delete('market'); // market without valid chain is meaningless
+          }
+          if (marketHadInvalid) next.delete('market');
 
-        const cat = categoryParam?.trim().toLowerCase() ?? '';
-        const catValid = ['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat);
-        if (!catValid) next.delete('category');
+          const cat = categoryParam?.trim().toLowerCase() ?? '';
+          const catValid = ['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat);
+          if (!catValid) next.delete('category');
 
-        return next.toString() === prev.toString() ? prev : next;
-      }, { replace: true });
+          return next.toString() === prev.toString() ? prev : next;
+        },
+        { replace: true },
+      );
     }
 
     initialParamsAppliedRef.current = true;
@@ -281,24 +277,26 @@ const Index = () => {
       .filter((slug): slug is string => slug !== null);
   }, [selectedMarkets, effectiveMarketsList]);
 
-
   // Two-way sync: push current filter state into URL whenever it changes,
   // and mirror to localStorage so refresh/reopen restores the same view.
   useEffect(() => {
     if (!initialParamsAppliedRef.current) return;
     const trimmed = searchQuery.trim();
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (derivedChainSlug) next.set('chain', derivedChainSlug);
-      else next.delete('chain');
-      if (derivedMarketSlugs) next.set('market', derivedMarketSlugs.join(','));
-      else next.delete('market');
-      if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
-      else next.delete('category');
-      if (trimmed) next.set('search', trimmed);
-      else next.delete('search');
-      return next.toString() === prev.toString() ? prev : next;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (derivedChainSlug) next.set('chain', derivedChainSlug);
+        else next.delete('chain');
+        if (derivedMarketSlugs) next.set('market', derivedMarketSlugs.join(','));
+        else next.delete('market');
+        if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
+        else next.delete('category');
+        if (trimmed) next.set('search', trimmed);
+        else next.delete('search');
+        return next.toString() === prev.toString() ? prev : next;
+      },
+      { replace: true },
+    );
 
     try {
       if (typeof window !== 'undefined') {
@@ -319,7 +317,6 @@ const Index = () => {
     }
   }, [derivedChainSlug, derivedMarketSlugs, selectedCategory, searchQuery, setSearchParams]);
 
-
   useEffect(() => {
     if (!isUsingCache) {
       setShowCacheWarning(false);
@@ -333,12 +330,7 @@ const Index = () => {
     return () => window.clearTimeout(timer);
   }, [isUsingCache]);
 
-
-
-  const stableReserves = useMemo(
-    () => effectiveReservesData?.reserves ?? [],
-    [effectiveReservesData?.reserves]
-  );
+  const stableReserves = useMemo(() => effectiveReservesData?.reserves ?? [], [effectiveReservesData?.reserves]);
   const hasReserves = stableReserves.length > 0;
 
   // Wallet position sync (SDK-first + on-chain fallback)
@@ -350,7 +342,6 @@ const Index = () => {
     v3SdkFailed,
     v4SdkFailed,
   } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
-
 
   // Auto-import: wallet connect → SDK query → merge → toast
   useWalletAutoImport({
@@ -366,12 +357,12 @@ const Index = () => {
     onDisconnect: () => setSimulationMode('single'),
   });
 
-// On-chain HF baseline (AAV-1253 P7) — fetch real HF per pool/spoke when wallet is connected
-const onchainHfResult = useOnchainHealthFactor({
-  address: walletAddress,
-  entries: portfolio.entries,
-  reserves: stableReserves,
-});
+  // On-chain HF baseline (AAV-1253 P7) — fetch real HF per pool/spoke when wallet is connected
+  const onchainHfResult = useOnchainHealthFactor({
+    address: walletAddress,
+    entries: portfolio.entries,
+    reserves: stableReserves,
+  });
 
   const handleWalletSync = useCallback(() => {
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
@@ -387,10 +378,7 @@ const onchainHfResult = useOnchainHealthFactor({
       toast.error('Failed to load wallet positions');
     }
   }, [walletResult, stableReserves, portfolio.actions]);
-  const preloadMode = useMemo(
-    () => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'),
-    []
-  );
+  const preloadMode = useMemo(() => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'), []);
 
   // Preload reserve token/chain icons (uses iconSymbol from reservePatches, same as UI).
   usePreloadReserveAssets(stableReserves, {
@@ -407,10 +395,7 @@ const onchainHfResult = useOnchainHealthFactor({
     return () => clearTimeout(timeoutId);
   }, [hasReserves]);
 
-  const tokenCategoryGroups = useMemo(
-    () => buildTokenCategoryGroups(tokenCategoryOverrides),
-    [tokenCategoryOverrides]
-  );
+  const tokenCategoryGroups = useMemo(() => buildTokenCategoryGroups(tokenCategoryOverrides), [tokenCategoryOverrides]);
 
   // Build token price index from market snapshot so simulation/tooltips use backend prices (no CoinGecko backup storm).
   const tokenPrices = useMemo((): TokenPricesIndex => {
@@ -441,15 +426,18 @@ const onchainHfResult = useOnchainHealthFactor({
     return true;
   }, []);
 
-  const handleTopCardClick = useCallback((reserve: ReserveWithSpread) => {
-    const id = getReserveKey(reserve);
-    setSearchQuery('');
-    setSelectedMarkets([]);
-    setSelectedCategory('all');
-    setSelectedHubs([]);
-    setPendingScrollReserveId(id);
-    scrollToReserveElement(id);
-  }, [scrollToReserveElement]);
+  const handleTopCardClick = useCallback(
+    (reserve: ReserveWithSpread) => {
+      const id = getReserveKey(reserve);
+      setSearchQuery('');
+      setSelectedMarkets([]);
+      setSelectedCategory('all');
+      setSelectedHubs([]);
+      setPendingScrollReserveId(id);
+      scrollToReserveElement(id);
+    },
+    [scrollToReserveElement],
+  );
 
   useEffect(() => {
     if (!pendingScrollReserveId) return;
@@ -474,7 +462,6 @@ const onchainHfResult = useOnchainHealthFactor({
       setSortOrder('desc');
     }
   };
-
 
   // Derive unique hub entries (id + display name + chain) from current reserves (stable, alphabetical by name)
   const hubEntries = useMemo(() => {
@@ -554,7 +541,15 @@ const onchainHfResult = useOnchainHealthFactor({
 
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedHubs, selectedCategory, tokenCategoryGroups, showFrozenOrPaused]);
+  }, [
+    effectiveReservesData?.reserves,
+    searchQuery,
+    selectedMarkets,
+    selectedHubs,
+    selectedCategory,
+    tokenCategoryGroups,
+    showFrozenOrPaused,
+  ]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -603,11 +598,10 @@ const onchainHfResult = useOnchainHealthFactor({
             <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 ds-text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="ds-text-14 font-medium ds-text-amber-900">
-                  Using cached data
-                </p>
+                <p className="ds-text-14 font-medium ds-text-amber-900">Using cached data</p>
                 <p className="ds-text-11 ds-text-amber-700 mt-[var(--ds-space-1)]">
-                  Unable to fetch latest data. Displaying cached information. Please check your connection and try refreshing.
+                  Unable to fetch latest data. Displaying cached information. Please check your connection and try
+                  refreshing.
                 </p>
               </div>
             </div>
@@ -618,11 +612,10 @@ const onchainHfResult = useOnchainHealthFactor({
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="ds-text-14 font-medium text-destructive">
-                  Failed to load data
-                </p>
+                <p className="ds-text-14 font-medium text-destructive">Failed to load data</p>
                 <p className="ds-text-11 text-destructive/80 mt-[var(--ds-space-1)]">
-                  {(error as Error).message || 'An unexpected error occurred. Please check your connection and try again later.'}
+                  {(error as Error).message ||
+                    'An unexpected error occurred. Please check your connection and try again later.'}
                 </p>
               </div>
             </div>
@@ -633,9 +626,7 @@ const onchainHfResult = useOnchainHealthFactor({
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="ds-text-14 font-medium text-destructive">
-                  No data available
-                </p>
+                <p className="ds-text-14 font-medium text-destructive">No data available</p>
                 <p className="ds-text-11 text-destructive/80 mt-[var(--ds-space-1)]">
                   Unable to load data. Please check your connection and try refreshing the page.
                 </p>
@@ -645,149 +636,141 @@ const onchainHfResult = useOnchainHealthFactor({
 
           {/* Header */}
           <div className="mb-3 md:mb-5">
-            <Header
-              lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
-              chainCount={chainCount}
-            />
+            <Header lastUpdated={effectiveReservesData?.snapshot?.lastUpdated} chainCount={chainCount} />
           </div>
 
           <main className="space-y-3 md:space-y-5">
-          {/* INK Incentive APR Calculator */}
-          <>
-            <InkAprCalculator
-              rateInput={tydroPointToUsdRateInput}
-              setRateInput={setTydroPointToUsdRateInput}
-              onDragStateChange={setIsRateDragging}
-            />
-          </>
+            {/* INK Incentive APR Calculator */}
+            <>
+              <InkAprCalculator
+                rateInput={tydroPointToUsdRateInput}
+                setRateInput={setTydroPointToUsdRateInput}
+                onDragStateChange={setIsRateDragging}
+              />
+            </>
 
-          {/* Top Opportunities */}
-          <div ref={topOppsRef}>
-            {stableReserves && stableReserves.length > 0 && (
-              <TopOpportunities
-                reserves={stableReserves}
+            {/* Top Opportunities */}
+            <div ref={topOppsRef}>
+              {stableReserves && stableReserves.length > 0 && (
+                <TopOpportunities
+                  reserves={stableReserves}
+                  isApy={isApy}
+                  isRateDragging={isRateDragging}
+                  whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                  onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
+                  categoryGroups={tokenCategoryGroups}
+                  onCardClick={handleTopCardClick}
+                  tydroPointToUsdRate={tydroPointToUsdRate}
+                  pointRateMap={pointRateMap}
+                  campaignAccessStatuses={campaignAccessStatuses}
+                />
+              )}
+            </div>
+
+            {/* Filters + Reserves Table (tighter gap) */}
+            <div className="space-y-2 md:space-y-3">
+              <FilterBar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                selectedMarkets={selectedMarkets}
+                setSelectedMarkets={setSelectedMarkets}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
                 isApy={isApy}
-                isRateDragging={isRateDragging}
-                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                categoryGroups={tokenCategoryGroups}
-                onCardClick={handleTopCardClick}
+                setIsApy={setIsApy}
+                marketsList={effectiveMarketsList}
+                showFrozenOrPaused={showFrozenOrPaused}
+                setShowFrozenOrPaused={setShowFrozenOrPaused}
+                hubEntries={hubEntries}
+                selectedHubs={selectedHubs}
+                setSelectedHubs={setSelectedHubs}
+                marketViewMode={marketViewMode}
+                setMarketViewMode={(mode) => {
+                  setMarketViewMode(mode);
+                  if (mode === 'chain') {
+                    startTransition(() => {
+                      setSelectedHubs([]);
+                    });
+                  } else {
+                    startTransition(() => {
+                      setSelectedMarkets([]);
+                      setExpandedChain(null);
+                    });
+                  }
+                }}
+                expandedChain={expandedChain}
+                setExpandedChain={setExpandedChain}
+              />
+
+              <ReservesTable
+                reserves={filteredReserves}
+                allReserves={stableReserves}
+                sortField={sortField}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+                isApy={isApy}
+                isLoading={isLoading}
+                onSelectMarket={(key) => {
+                  setSelectedMarkets((prev) => (prev.length === 1 && prev[0] === key ? [] : [key]));
+                  setSelectedHubs([]);
+                  setMarketViewMode('chain');
+                  const chain =
+                    effectiveMarketsList.find((m) => marketKey(m.chainId, m.marketName) === key)?.chainName ?? null;
+                  setExpandedChain(chain);
+                  const el = topOppsRef.current;
+                  if (el) {
+                    const y = el.getBoundingClientRect().bottom + window.scrollY;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
+                onSelectHub={(hubId) => {
+                  setSelectedHubs((prev) => (prev.length === 1 && prev[0] === hubId ? [] : [hubId]));
+                  setSelectedMarkets([]);
+                  setMarketViewMode('hub');
+                  const el = topOppsRef.current;
+                  if (el) {
+                    const y = el.getBoundingClientRect().bottom + window.scrollY;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
                 tydroPointToUsdRate={tydroPointToUsdRate}
                 pointRateMap={pointRateMap}
+                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
+                tokenPrices={tokenPrices}
+                scrollToReserveId={pendingScrollReserveId}
+                simulationMode={simulationMode}
+                onSimulationModeChange={setSimulationMode}
+                portfolioEntries={portfolio.entries}
+                portfolioActions={portfolio.actions}
+                portfolioSnapshots={portfolio.snapshots}
+                lastModifiedReserveId={portfolio.lastModifiedReserveId}
+                onWalletSync={handleWalletSync}
+                walletLoadState={walletLoadState}
+                onRefresh={handleRefresh}
+                dataUpdatedAt={dataUpdatedAt}
+                topOppsRef={topOppsRef}
                 campaignAccessStatuses={campaignAccessStatuses}
+                onchainHfMap={onchainHfResult.onchainHfMap}
               />
+            </div>
+
+            {/* Empty state */}
+            {filteredReserves.length === 0 && effectiveReservesData && !isLoading && (
+              <div className="text-center py-[var(--ds-space-12)]">
+                <p className="text-muted-foreground">No reserves found matching your filters</p>
+              </div>
             )}
-          </div>
 
-          {/* Filters + Reserves Table (tighter gap) */}
-          <div className="space-y-2 md:space-y-3">
+            {/* No data state (when there's no data at all, not even cache) - only show if no banner is shown */}
+            {!effectiveReservesData && !isLoading && !!error && (
+              <div className="text-center py-[var(--ds-space-12)]">
+                <p className="text-muted-foreground">No data to display</p>
+              </div>
+            )}
 
-            <FilterBar
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              selectedMarkets={selectedMarkets}
-              setSelectedMarkets={setSelectedMarkets}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              isApy={isApy}
-              setIsApy={setIsApy}
-              marketsList={effectiveMarketsList}
-              showFrozenOrPaused={showFrozenOrPaused}
-              setShowFrozenOrPaused={setShowFrozenOrPaused}
-              hubEntries={hubEntries}
-              selectedHubs={selectedHubs}
-              setSelectedHubs={setSelectedHubs}
-              marketViewMode={marketViewMode}
-              setMarketViewMode={(mode) => {
-                setMarketViewMode(mode);
-                if (mode === 'chain') {
-                  startTransition(() => {
-                    setSelectedHubs([]);
-                  });
-                } else {
-                  startTransition(() => {
-                    setSelectedMarkets([]);
-                    setExpandedChain(null);
-                  });
-                }
-              }}
-              expandedChain={expandedChain}
-              setExpandedChain={setExpandedChain}
-
-            />
-
-            <ReservesTable
-              reserves={filteredReserves}
-              allReserves={stableReserves}
-              sortField={sortField}
-              sortOrder={sortOrder}
-              onSort={handleSort}
-              isApy={isApy}
-              isLoading={isLoading}
-              onSelectMarket={(key) => {
-                setSelectedMarkets((prev) =>
-                  prev.length === 1 && prev[0] === key ? [] : [key]
-                );
-                setSelectedHubs([]);
-                setMarketViewMode('chain');
-                const chain = effectiveMarketsList.find((m) => marketKey(m.chainId, m.marketName) === key)?.chainName ?? null;
-                setExpandedChain(chain);
-                const el = topOppsRef.current;
-                if (el) {
-                  const y = el.getBoundingClientRect().bottom + window.scrollY;
-                  window.scrollTo({ top: y, behavior: 'smooth' });
-                }
-              }}
-              onSelectHub={(hubId) => {
-                setSelectedHubs((prev) =>
-                  prev.length === 1 && prev[0] === hubId ? [] : [hubId]
-                );
-                setSelectedMarkets([]);
-                setMarketViewMode('hub');
-                const el = topOppsRef.current;
-                if (el) {
-                  const y = el.getBoundingClientRect().bottom + window.scrollY;
-                  window.scrollTo({ top: y, behavior: 'smooth' });
-                }
-              }}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-              pointRateMap={pointRateMap}
-              whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-              onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-              tokenPrices={tokenPrices}
-              scrollToReserveId={pendingScrollReserveId}
-              simulationMode={simulationMode}
-              onSimulationModeChange={setSimulationMode}
-portfolioEntries={portfolio.entries}
-portfolioActions={portfolio.actions}
-portfolioSnapshots={portfolio.snapshots}
-lastModifiedReserveId={portfolio.lastModifiedReserveId}
-onWalletSync={handleWalletSync}
-walletLoadState={walletLoadState}
-onRefresh={handleRefresh}
-dataUpdatedAt={dataUpdatedAt}
-topOppsRef={topOppsRef}
-campaignAccessStatuses={campaignAccessStatuses}
-onchainHfMap={onchainHfResult.onchainHfMap}
-/>
-          </div>
-
-          {/* Empty state */}
-          {filteredReserves.length === 0 && effectiveReservesData && !isLoading && (
-            <div className="text-center py-[var(--ds-space-12)]">
-              <p className="text-muted-foreground">No reserves found matching your filters</p>
-            </div>
-          )}
-
-          {/* No data state (when there's no data at all, not even cache) - only show if no banner is shown */}
-          {!effectiveReservesData && !isLoading && !!error && (
-            <div className="text-center py-[var(--ds-space-12)]">
-              <p className="text-muted-foreground">No data to display</p>
-            </div>
-          )}
-
-          {/* FAQ */}
-          <FaqSection />
+            {/* FAQ */}
+            <FaqSection />
           </main>
 
           {/* Footer */}
@@ -795,27 +778,15 @@ onchainHfMap={onchainHfResult.onchainHfMap}
             <div className="flex flex-col items-center gap-1.5 px-4 sm:gap-2">
               <p className="text-center ds-text-14 text-muted-foreground leading-relaxed">
                 Data sourced from{' '}
-                <a
-                  href="https://app.aave.com"
-                  {...footerLinkTab}
-                  className="text-secondary hover:underline"
-                >
+                <a href="https://app.aave.com" {...footerLinkTab} className="text-secondary hover:underline">
                   Aave Protocol
                 </a>
                 {', '}
-                <a
-                  href="https://app.merkl.xyz"
-                  {...footerLinkTab}
-                  className="text-secondary hover:underline"
-                >
+                <a href="https://app.merkl.xyz" {...footerLinkTab} className="text-secondary hover:underline">
                   Merkl
                 </a>
                 {', '}
-                <a
-                  href="https://apps.aavechan.com/"
-                  {...footerLinkTab}
-                  className="text-secondary hover:underline"
-                >
+                <a href="https://apps.aavechan.com/" {...footerLinkTab} className="text-secondary hover:underline">
                   ACI
                 </a>
                 {', '}
@@ -853,12 +824,7 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                   className="inline-flex items-center gap-2 align-baseline text-signature-strong transition-opacity duration-200 hover:opacity-100"
                 >
                   <span>Pablo</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                    fill="currentColor"
-                  >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor">
                     <path d="M18.244 2H21.5l-7.11 8.126L22.75 22h-6.545l-5.124-6.694L5.22 22H1.96l7.603-8.694L1.5 2h6.711l4.632 6.112L18.244 2Zm-1.143 18.02h1.804L7.23 3.875H5.295L17.101 20.02Z" />
                   </svg>
                 </a>
@@ -882,7 +848,9 @@ onchainHfMap={onchainHfResult.onchainHfMap}
                   title="View source on GitHub"
                   className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                  </svg>
                 </a>
               </div>
             </div>

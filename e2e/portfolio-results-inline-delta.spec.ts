@@ -34,7 +34,10 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
       const resultsTable = page.locator('table').filter({ hasText: 'Reserve' }).filter({ hasText: 'Native' });
       await expect(resultsTable).toBeVisible({ timeout: 5000 });
 
-      const deltaBadge = resultsTable.locator('td').filter({ hasText: /^[+-]\$/ }).first();
+      const deltaBadge = resultsTable
+        .locator('td')
+        .filter({ hasText: /^[+-]\$/ })
+        .first();
       await expect(deltaBadge).toBeVisible({ timeout: 5000 });
     });
 
@@ -43,10 +46,16 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
       const supplyInput = await setupPortfolio(page);
       await supplyInput.fill('1000000');
 
-      const summaryCard = page.locator('div.grid').filter({ hasText: 'Total Supply' }).filter({ hasText: 'Net Daily Earn' });
+      const summaryCard = page
+        .locator('div.grid')
+        .filter({ hasText: 'Total Supply' })
+        .filter({ hasText: 'Net Daily Earn' });
       await expect(summaryCard).toBeVisible({ timeout: 5000 });
 
-      const summaryDelta = summaryCard.locator('span').filter({ hasText: /^\+?\-?\$[0-9]/ }).first();
+      const summaryDelta = summaryCard
+        .locator('span')
+        .filter({ hasText: /^\+?\-?\$[0-9]/ })
+        .first();
       await expect(summaryDelta).toBeVisible({ timeout: 5000 });
     });
 
@@ -64,7 +73,10 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
         await supplyInput.clear();
       }
 
-      const deltaBadge = resultsTable.locator('td').filter({ hasText: /^[+-]\$/ }).first();
+      const deltaBadge = resultsTable
+        .locator('td')
+        .filter({ hasText: /^[+-]\$/ })
+        .first();
       await expect(deltaBadge).not.toBeVisible({ timeout: 3000 });
     });
   });
