@@ -155,7 +155,8 @@
     "@zodios/core": {
       "zod": "$zod"
     },
-    "qr": "0.5.5"
+    "qr": "0.5.5",
+    "@base-org/account": "^2.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
