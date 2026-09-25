@@ -2,7 +2,11 @@ import { V3_POOL_ADDRESSES } from '../chainRegistry';
 
 export { V3_POOL_ADDRESSES };
 
-export const MULTICALL3_ADDRESS = '0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3' as const;
+// Canonical Multicall3 (EIP-55 checksummed). The previous value here was a
+// 39-hex-char truncated transcription — viem rejected it with
+// InvalidAddressError before any RPC left the process, which made every
+// multicall in the on-chain fallback path fail unconditionally.
+export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
 
 export function getV3PoolAddress(chainId: number): `0x${string}` | undefined {
   return V3_POOL_ADDRESSES[chainId] as `0x${string}` | undefined;

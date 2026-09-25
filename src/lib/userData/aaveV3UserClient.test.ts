@@ -59,7 +59,14 @@ describe('getV3PoolAddress', () => {
 
 describe('MULTICALL3_ADDRESS', () => {
   it('is the well-known Multicall3 address', () => {
-    expect(MULTICALL3_ADDRESS).toBe('0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3');
+    expect(MULTICALL3_ADDRESS).toBe('0xcA11bde05977b3631167028862bE2a173976CA11');
+  });
+  // Regression guard: the constant once shipped as a 39-hex-char truncated
+  // transcription, which viem rejects with InvalidAddressError before any RPC
+  // is attempted — silently disabling the whole on-chain fallback path.
+  it('passes viem address validation (20 bytes, checksummed)', async () => {
+    const { isAddress } = await import('viem');
+    expect(isAddress(MULTICALL3_ADDRESS)).toBe(true);
   });
 });
 
