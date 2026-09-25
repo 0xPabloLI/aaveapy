@@ -6,7 +6,9 @@ import { watchModeConnector } from './watchModeConnector';
 
 export { mainnet as WALLET_SUPPORTED_CHAINS };
 
-const WALLETCONNECT_PROJECT_ID = 'aaveapy-wallet';
+// WalletConnect Cloud projectId (Reown dashboard, cloud.walletconnect.com) —
+// public by design; the dashboard's domain allowlist is what guards misuse.
+const WALLETCONNECT_PROJECT_ID = 'bb22b46d186e6bc48099189cc912dbe6';
 
 /**
  * Modal-listed wallets must be created via `connectorsForWallets`: RainbowKit's
