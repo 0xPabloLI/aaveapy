@@ -1,5 +1,13 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import {
+  getMarketChipLabel,
+  getSupplyRoomUsd,
+  pickIncentiveReserve,
+  type DiscoveryReserve,
+  type PickedReserve,
+} from './reserveDiscovery';
+
 /**
  * Shared E2E test reserve discovery — prevents hardcoded token breakage.
  *
@@ -8,8 +16,11 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * when the staging data no longer matches their assumptions.
  *
  * This module fetches the staging API at module load and exposes:
- * - findIncentiveReserve(): a reserve with supply incentives AND ltv > 0
+ * - findIncentiveReserve(): a reserve with a COMPUTABLE supply incentive AND ltv > 0
  * - findAnyActiveReserve(): any active, non-frozen reserve (for UI tests)
+ *
+ * Pure selection logic lives in ./reserveDiscovery (zero-dependency, unit
+ * tested in src/test/reserveDiscovery.test.ts — AAV-1299).
  *
  * Tests should use these instead of hardcoding 'USDC' / 'GHO' etc.
  * If no suitable reserve is found, tests skip gracefully.
@@ -20,36 +31,14 @@ import { expect, type Locator, type Page } from '@playwright/test';
 // Falls back to staging-api.aaveapy.com for local development.
 const STAGING_API = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 
-export interface TestReserve {
-  symbol: string;
-  marketLabel: string;
-  reserveId: string;
-  chainName: string;
-  marketName: string;
-  ltv: number;
-}
+export type TestReserve = PickedReserve;
 
-// ─── Market label helper (mirrors src/lib/marketLabels.ts) ───────────
-
-const ETHEREUM_MARKET_NAMES: Record<string, string> = {
-  AaveV3Ethereum: 'Core',
-  AaveV3EthereumLido: 'Prime',
-  AaveV3EthereumHorizon: 'Horizon RWA',
-  AaveV3EthereumEtherFi: 'EtherFi',
-};
-
-export function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
-  if (ETHEREUM_MARKET_NAMES[marketName]) return ETHEREUM_MARKET_NAMES[marketName];
-  if (marketName.startsWith('AaveV4')) {
-    return marketName.replace(/^AaveV4/i, '').replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-  return marketName;
-}
+// Pure helpers re-exported for cross-reserve / cross-asset specs.
+export { getMarketChipLabel, getSupplyRoomUsd };
 
 // ─── API fetch with cache ────────────────────────────────────────────
 
-type ReserveData = Record<string, unknown>;
+type ReserveData = DiscoveryReserve;
 
 let reservesCache: ReserveData[] | null = null;
 
@@ -74,82 +63,26 @@ function isUsableReserve(r: ReserveData): boolean {
   return true;
 }
 
-function hasSupplyIncentive(r: ReserveData): boolean {
-  const merklSupplys = (r.merklSupplys ?? []) as unknown[];
-  const meritSupplys = (r.meritSupplys ?? []) as unknown[];
-  return merklSupplys.length > 0 || meritSupplys.length > 0;
-}
-
 function hasLtv(r: ReserveData): boolean {
   const ltv = r.ltv as number | undefined;
   return typeof ltv === 'number' && ltv > 0;
 }
 
-/**
- * USD supply room for a reserve — mirrors the app's marketMetrics fallback
- * (`nativeToUsd(suppliable)` preferred, else `max(supplyCap − supplied, 0)`;
- * see rateSimulationCalculator.ts availableSupplyRoomUsd).
- *
- * Reserves with zero supply room clamp manual positions to 0 on commit
- * (CompactInput clampFn), which renders every portfolio cell as '—' and makes
- * incentive assertions meaningless. Discovery helpers use this to prefer
- * reserves where a manual position can actually be modeled.
- *
- * Returns null when the API data is insufficient to determine room, so
- * callers can treat unknown as "don't exclude" (data-poor fallback).
- */
-export function getSupplyRoomUsd(r: ReserveData): number | null {
-  const decimals = (r.decimals as number | undefined) ?? 18;
-  const price = r.tokenPrice as number | undefined;
-  if (price == null || !Number.isFinite(price) || price <= 0) return null;
-  const toUsd = (raw: unknown): number | null => {
-    if (raw === null || raw === undefined || raw === '') return null;
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) return null;
-    return (value / Math.pow(10, decimals)) * price;
-  };
-  const suppliableUsd = toUsd(r.suppliable);
-  if (suppliableUsd !== null) return suppliableUsd;
-  const capUsd = toUsd(r.supplyCap);
-  const suppliedUsd = toUsd(r.supplied);
-  if (capUsd !== null && suppliedUsd !== null) return Math.max(capUsd - suppliedUsd, 0);
-  return null;
-}
-
-function toTestReserve(r: ReserveData): TestReserve {
-  return {
-    symbol: r.tokenSymbol as string,
-    marketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
-    reserveId: r.reserveId as string,
-    chainName: r.chainName as string,
-    marketName: r.marketName as string,
-    ltv: r.ltv as number,
-  };
-}
-
 // ─── Public API ──────────────────────────────────────────────────────
 
 /**
- * Find a reserve with supply incentives AND ltv > 0 on staging.
+ * Find a reserve with a computable supply incentive AND ltv > 0 on staging.
  * Used by incentive calculation tests that need real APR data.
  *
- * Prefers reserves with higher ltv (more borrowing headroom for LTV clamping).
+ * A campaign qualifies only when the UI can render a numeric percent for it:
+ * campaignApr > 0 (or points-based), active time window, and not an AMOUNT
+ * variant (AAV-1275). Merit arrays are ignored (Merit retired — AAV-1289).
+ * Prefers nonzero supply room, then highest net supply APR.
  * Returns null if no suitable reserve is found.
  */
 export async function findIncentiveReserve(): Promise<TestReserve | null> {
   const reserves = await fetchReserves();
-  const candidates = reserves.filter((r) => isUsableReserve(r) && hasSupplyIncentive(r) && hasLtv(r));
-  if (candidates.length === 0) return null;
-  // Prefer reserves with nonzero supply room: cap-exhausted markets clamp any
-  // manual supply to 0, so incentive/total cells render '—' and assertions on
-  // values are untestable. Falls back to all candidates when room is unknown
-  // for every reserve (data-poor API), preserving the old behavior.
-  const withRoom = candidates.filter((r) => (getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) > 0);
-  // Sort by ltv descending — higher ltv = more borrowing headroom
-  withRoom.sort((a, b) => (b.ltv as number) - (a.ltv as number));
-  if (withRoom.length > 0) return toTestReserve(withRoom[0]);
-  candidates.sort((a, b) => (b.ltv as number) - (a.ltv as number));
-  return toTestReserve(candidates[0]);
+  return pickIncentiveReserve(reserves, new Date().toISOString());
 }
 
 /**
@@ -172,6 +105,19 @@ export async function findAnyActiveReserve(): Promise<TestReserve | null> {
   }
   return toTestReserve(candidates[0]);
 }
+
+function toTestReserve(r: ReserveData): TestReserve {
+  return {
+    symbol: r.tokenSymbol as string,
+    marketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
+    reserveId: r.reserveId as string,
+    chainName: r.chainName as string,
+    marketName: r.marketName as string,
+    ltv: r.ltv as number,
+  };
+}
+
+// ─── Setup helpers ───────────────────────────────────────────────────
 
 /**
  * Shared setup helper — adds a reserve to portfolio mode and returns the supply input.

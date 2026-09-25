@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { shouldIncludeModule, discoverMainnetChainIds } from '../../scripts/lib/chain-utils.mjs';
+import {
+  shouldIncludeModule,
+  discoverMainnetChainIds,
+  discoverMainnetChainModules,
+} from '../../scripts/lib/chain-utils.mjs';
 
 describe('shouldIncludeModule', () => {
   it('excludes base modules (namespace prefixes)', () => {
@@ -60,5 +64,26 @@ describe('discoverMainnetChainIds', () => {
     const ids = await discoverMainnetChainIds();
     const ethereumCount = [...ids].filter((id) => id === 1).length;
     expect(ethereumCount).toBe(1);
+  });
+});
+
+describe('discoverMainnetChainModules', () => {
+  it('is consistent with discoverMainnetChainIds', async () => {
+    const [modules, ids] = await Promise.all([discoverMainnetChainModules(), discoverMainnetChainIds()]);
+    expect(new Set(modules.keys())).toEqual(ids);
+  }, 30000);
+
+  it('maps every chainId to a module name', async () => {
+    const modules = await discoverMainnetChainModules();
+    for (const [chainId, moduleName] of modules) {
+      expect(Number.isInteger(chainId)).toBe(true);
+      expect(typeof moduleName).toBe('string');
+      expect(moduleName.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('includes the ethereum mainnet module deterministically', async () => {
+    const modules = await discoverMainnetChainModules();
+    expect(modules.get(1)).toBe('AaveV3Ethereum');
   });
 });

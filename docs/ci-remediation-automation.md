@@ -9,7 +9,7 @@ This repo now uses a two-step remediation flow:
    - Base branch is the same source branch (`main/dev/railway/feature/**`).
 
 2. `.github/workflows/auto-approve-remediation-pr.yml`
-   - On `pull_request_target`, only for remediation bot PRs.
+   - On `pull_request`, only for remediation bot PRs.
    - Policy-checks changed files, then:
      - auto-approves
      - enables squash auto-merge

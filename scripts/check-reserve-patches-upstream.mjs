@@ -132,7 +132,7 @@ async function main() {
   }
 
   if (hasDrift) {
-    process.exit(1);
+    process.exit(2);
   }
 }
 

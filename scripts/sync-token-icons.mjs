@@ -366,12 +366,12 @@ async function main() {
           `Missing ${syncableFromCoingecko.length} token icon(s) available via CoinGecko: ${syncableFromCoingecko.join(', ')}`,
         );
       }
-      process.exit(1);
+      process.exit(2);
     }
 
     if (syncableFromLogo.length > 0) {
       console.error(`Missing ${syncableFromLogo.length} logoURI-backed token icon(s): ${syncableFromLogo.join(', ')}`);
-      process.exit(1);
+      process.exit(2);
     }
 
     console.log('No missing syncable token icons.');

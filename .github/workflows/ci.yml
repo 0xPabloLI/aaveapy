@@ -111,7 +111,7 @@ jobs:
       # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
       - name: Run ESLint (Reviewdog)
         if: github.event_name == 'pull_request'
-        uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1
+        uses: reviewdog/action-eslint@b6303df522851d0e9abaea654da0222037d97e75 # v1
         env:
           REVIEWDOG_VERSION: v0.20.3
         with:
@@ -400,7 +400,8 @@ jobs:
         env:
           LIVE_API_BASE: ${{ secrets.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         # Non-blocking: spec drift from backend is an expected event, not a code bug.
-        # The openapi-sync job creates a PR to fix; daily schedule is the safety net.
+        # The openapi-sync job creates a PR against dev (bot PR 收敛 — AAV-1298);
+        # daily schedule is the safety net.
         continue-on-error: true
         run: |
           set +e
@@ -446,10 +447,13 @@ jobs:
     name: openapi-sync
     needs:
       - openapi-check
+    # Bot PR 收敛 (AAV-1298): sync PRs target dev only, never lovable —
+    # see docs/archive/2026-09-24-hardcode-sync-resilience.md §3. Branches
+    # other than dev get read-only drift detection from openapi-check.
+    # Schedule fires on the default branch ref, hence the explicit checkout/base below.
     if: >
       always() &&
-      (github.event_name == 'push' || github.event_name == 'schedule') &&
-      github.ref_name != 'main' &&
+      ((github.event_name == 'push' && github.ref_name == 'dev') || github.event_name == 'schedule') &&
       needs.openapi-check.outputs.drift == 'true'
     runs-on: ubuntu-latest
     env:
@@ -463,7 +467,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: dev
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -489,6 +493,11 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Generate icon manifests for typecheck
+        # chainIconManifest.generated.ts / tokenIconManifest.generated.ts are
+        # gitignored; husky's pre-commit typecheck needs them present (AAV-1298).
+        run: node scripts/generate-icon-manifests.mjs
+
       - name: Create spec sync PR
         id: cpr
         if: steps.diff.outputs.changed == 'true'
@@ -500,20 +509,20 @@ jobs:
           commit-message: 'chore(openapi): sync spec + generated schemas from backend'
           branch: 'bot/openapi-sync-${{ github.run_id }}'
           delete-branch: true
-          title: 'chore(openapi): sync spec + generated schemas from backend (${{ github.ref_name }})'
+          title: 'chore(openapi): sync spec + generated schemas from backend'
           body: |
             Auto-generated OpenAPI spec + Zod schema sync.
 
-            Trigger: `${{ github.event_name }}` on `${{ github.ref_name }}`
+            Trigger: `${{ github.event_name }}` → `dev`
             The `openapi-check` job detected a spec drift; this PR syncs:
             - `public/openapi.json` from the live backend
             - `src/generated/api/schemas.ts` via `npm run schema:codegen`
 
             ⚠️ Generated code may break compilation — review before merge.
           labels: |
-            ${{ github.ref_name != 'main' && 'automerge' || '' }}
+            automerge
             openapi-sync
-          base: ${{ github.ref_name }}
+          base: dev
 
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'

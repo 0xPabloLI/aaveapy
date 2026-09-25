@@ -163,7 +163,7 @@ async function main() {
         console.error(`- chainId ${item.chainId}: expected '${item.expectedPlatform}', actual '${item.localPlatform}'`);
       }
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log('HARDCODED_PLATFORM_BY_CHAIN_ID is aligned with CoinGecko for current market chainIds.');

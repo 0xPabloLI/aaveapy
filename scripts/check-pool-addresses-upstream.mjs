@@ -84,7 +84,7 @@ async function main() {
     for (const mismatch of mismatches) {
       console.error(`- ${mismatch}`);
     }
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log('All pool addresses match @aave-dao/aave-address-book');
