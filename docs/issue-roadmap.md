@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-24（AAV-1298 交付并 push 验证闭环。完成排队新票 AAV-1301 与 AAV-1302 技术审查：AAV-1301 因上游 react-hooks 插件未适配 ESLint 10 判定暂缓升级，降级为 Low / Backlog；AAV-1302 明确配置迁移与 autolabeler 拆分适配方案，维持 Low / Todo 待实施）。
+> **Last inventory**: 2026-09-25（AAV-1282 交付：connectorsForWallets 注入 rkDetails 钱包修复移动端 Connect 弹窗，e2e 双端解禁 4/4 passed，commit `bd894862`；实施期发现 wallets barrel 与 wagmi 3.x 不兼容，以本地工厂镜像规避，详见 Linear 交付评论与 spec Revision R1）。
 >
-> **frontier** = AAV-1282（High，移动端 RainbowKit wallets prop；GitHub issues 已清零 open）。
+> **frontier** = AAV-1280（High，e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空；Backlog 态，开工前需 triage 提级）。
 
 ---
 
@@ -53,7 +53,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title | Assignee |
 | --- | --- | --- | --- | --- |
-| AAV-1282 | High | Todo | 移动端 Connect 弹窗为空：RainbowKit 未配置 wallets prop | — |
 | AAV-1280 | High | Backlog | e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空 | — |
 
 ### Medium
@@ -100,6 +99,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1282 | 移动端 Connect 弹窗为空：RainbowKit wallets 注入（connectorsForWallets + 本地工厂，e2e 双端解禁） | 2026-09-25 |
 | AAV-1298 | 🔥 Lovable CI failure: openapi-sync（bot PR 收敛 dev + codegen patcher） | 2026-09-24 |
 | AAV-1299 | e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | 2026-09-24 |
 | AAV-1296 | Hardcode Sync 韧性：解除「全或无」门禁单点故障 | 2026-09-24 |
