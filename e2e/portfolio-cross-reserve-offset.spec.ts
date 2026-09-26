@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { discoverOffsetScenarios, type DiscoveryReserve, type OffsetScenario } from './reserveDiscovery';
+import { discoverOffsetScenarios, type OffsetScenario } from './reserveDiscovery';
 import {
   addReserveToPortfolio,
+  fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
@@ -36,21 +37,10 @@ import {
 
 // ─── API Discovery ─────────────────────────────────────────────────
 
-const STAGING_API = 'https://staging-api.aaveapy.com/api';
-
-async function fetchMarketsReserves(): Promise<DiscoveryReserve[]> {
-  try {
-    const resp = await fetch(`${STAGING_API}/markets`);
-    if (!resp.ok) return [];
-    const data = (await resp.json()) as { reserves?: DiscoveryReserve[] };
-    return data.reserves ?? [];
-  } catch {
-    return [];
-  }
-}
-
-// Discover at module load (top-level await — Playwright supports ESM TLA)
-const allScenarios: OffsetScenario[] = discoverOffsetScenarios(await fetchMarketsReserves(), new Date().toISOString());
+// Discover at module load (top-level await — Playwright supports ESM TLA).
+// API base comes from the shared env-resolving fetcher (AAV-1280 leftover):
+// CI sets VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
+const allScenarios: OffsetScenario[] = discoverOffsetScenarios(await fetchStagingReserves(), new Date().toISOString());
 const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reserve').slice(0, 3);
 const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;

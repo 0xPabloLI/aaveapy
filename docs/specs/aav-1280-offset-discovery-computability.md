@@ -68,6 +68,7 @@ triage 时点（2026-09-26）staging 实测：Celo 已无 `netPositionConstraint
 
 ## Out of scope
 
-- offset spec 的 API base 解析（硬编码 staging URL vs `VITE_API_BASE_URL`）——独立关注点，另行处理。
+- ~~offset spec 的 API base 解析~~ → **已于同日跟进解决**：`test-reserves.ts` 的 env 解析 fetch（`VITE_API_BASE_URL` 优先，绕 CI 的 Cloudflare/WAF 403）以 `fetchStagingReserves` 导出，offset 与 cross-asset-pairing 两个 spec 的硬编码 staging URL 收敛到该入口；`staging-smoke.spec.ts` 的硬编码是故意的本地 operator smoke（头部注释声明 CI 全 skip），保持不变。
 - AMOUNT 变体在 UI 侧的实际展示策略（AAV-1275 产品决策，仍 open）。
 - UI 侧 campaign 挂点/spoke 匹配排查（修复方向 1）：触发数据已消失无法运行时验证；静态审查未见 UI 缺口——三道门均为设计行为。若未来再现"数据有活动 UI 为空"，按新证据重开排查。
+- `portfolio-cross-asset-pairing.spec.ts` discovery 的可算性缺口（同 AAV-1280 病因：raw APR 直加，不校时间窗/白名单/AMOUNT）——独立开票进入 triage，不在本 spec 范围内顺手修。

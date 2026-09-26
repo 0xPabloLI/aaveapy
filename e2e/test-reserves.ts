@@ -42,7 +42,13 @@ type ReserveData = DiscoveryReserve;
 
 let reservesCache: ReserveData[] | null = null;
 
-async function fetchReserves(): Promise<ReserveData[]> {
+/**
+ * Fetch (and cache per process) the staging `/markets` reserves.
+ * Shared by specs that run their own module-load discovery (AAV-1280):
+ * API base resolution — CI's VITE_API_BASE_URL bypassing Cloudflare/WAF —
+ * lives here only, so hardcoded staging URLs can't silently false-skip.
+ */
+export async function fetchStagingReserves(): Promise<DiscoveryReserve[]> {
   if (reservesCache) return reservesCache;
   try {
     const resp = await fetch(`${STAGING_API}/markets`);
