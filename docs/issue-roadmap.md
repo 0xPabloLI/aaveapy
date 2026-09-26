@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-25（AAV-1282 交付；MULTICALL3_ADDRESS 常量修复与金丝雀测试已提交 `1061bd14` + e2e 钱包说明 `e3fac7c0`；新建 AAV-1303、AAV-1304、AAV-1305；#675/#676 PR_TARGET 迁移已合并 main 闭环）。
+> **Last inventory**: 2026-09-26（AAV-1280 交付：offset e2e 场景 discovery 对齐 UI 渲染门控——`isComputableMerklCampaign` 收紧 + `discoverOffsetScenarios` 纯函数抽取 + 34 单测；原始 Celo 触发数据已消失，当前 staging 0 场景，spec 实测干净 skip。spec 见 `docs/specs/aav-1280-offset-discovery-computability.md`）。
 >
-> **frontier** = AAV-1280（High，e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空；Backlog 态，开工前需 triage 提级）。
+> **frontier** = AAV-1305 第二阶段（Medium，`getV3UserPositionsOnChain` 目标由 Pool 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`；Backlog 态）。
 
 ---
 
@@ -32,6 +32,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 | **AAV-1303** | Merit 后端已下线导致 openapi-sync 自动生成与前端代码引用脱节（TS2551/TS2339） | **前端 Merit 退役清理**：移除契约 wrapper 与 types.ts 中 Merit 残留引用；统一 types.ts 维护方式（自动化或 header 文档对齐），恢复 openapi-sync CI 绿灯。 | Backlog，待前端-后端协同部署后处理 |
 | **AAV-1304** | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 标签字重不一致 | **空态友好化 + 样式归一**：Lowest HF 链上查询恢复后，补充无债务时空态说明（如隐藏或 tooltip 说明）；统一 Advanced 区域同级标签的 Typography token。 | Backlog，Low 优先级排期 |
 | **AAV-1305** | 生产钱包仓位导入失败双层根因（SDK GraphQL 网络不可达 + MULTICALL3 常量缺字符 + Pool 移除 getUserReserveData） | **双阶段分治修复**：第一阶段已修正 `MULTICALL3_ADDRESS` 常量（`1061bd14`）打通 viem 校验；第二阶段将 `getV3UserPositionsOnChain` 目标由 `Pool` 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`。 | 第一阶段已提交，第二阶段排期 Backlog |
+| **AAV-1280** | 测试侧 discovery 只累加 raw `campaignApr`，未镜像 UI 渲染门控（时间窗/白名单/AMOUNT 变体），选中 UI 渲染 `—` 的 reserve 致 baseline 断言失败 | **测试侧加固**：`isComputableMerklCampaign` 收紧（缺失边界/date-only 规范化/whitelistOnly 排除）+ `discoverOffsetScenarios` 纯函数抽取 + 单测锚定每条门控。UI 侧静态审查三道门均为设计行为，无缺口。 | 已交付（测试侧）；原始触发数据已消失不复现 |
 
 ---
 
@@ -54,9 +55,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 ### Urgent / High
 
-| Linear | Priority | State | Title | Assignee |
-| --- | --- | --- | --- | --- |
-| AAV-1280 | High | Backlog | e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空 | — |
+当前无 open Urgent/High issue。
 
 ### Medium
 
@@ -105,6 +104,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1280 | e2e self-loop offset：场景 discovery 对齐 UI 渲染门控（测试侧加固，原始触发数据已消失，e2e 实测干净 skip） | 2026-09-26 |
 | GitHub #676 | PR_TARGET 迁移到 pull_request 生产部署（dev→main 合并 52cf2aef，审计日志零残留） | 2026-09-25 |
 | AAV-1305 (P1) | 修复 MULTICALL3_ADDRESS 常量缺 hex 字符（19.5B→20B）+ 金丝雀测试防回归（commit `1061bd14`） | 2026-09-25 |
 | AAV-1282 | 移动端 Connect 弹窗为空：RainbowKit wallets 注入（connectorsForWallets + 本地工厂，e2e 双端解禁） | 2026-09-25 |

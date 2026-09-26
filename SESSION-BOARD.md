@@ -60,6 +60,7 @@
 | amp-0430a | Amp | 清理 deadcode 与过时文档（explorer-links 调试残留 / 顶层临时文件 / DOCS-INDEX 同步） | test_explorers.sh, icon-preview.html, .gitignore, scripts/test-explorer-links.*, scripts/test-explorer-links-full.mjs, scripts/verify-explorer-links.ts, scripts/verify-asset-action-menu-position.mjs, scripts/compare-merit-forecast-paths.mjs, docs/conventions/api-base-urls.md, docs/pool-explorer-links.md, docs/DOCS-INDEX.md, SESSION-BOARD.md | done | 2026-04-30T00:00:00Z | 删除 10 个 dead 文件（explorer-links 调试 6 + 顶层临时 2 + 一次性脚本 2）、tsbuildinfo 入 .gitignore、DOCS-INDEX 同步 7 个新增文档 + 全表日期；lint/test(482 pass)/build 全绿；docs/plans/ 旧文件的 worktree 删除是其他 session 留下的，未一并 commit |
 | codex-0502a | Codex | 调整 FilterBar Ethereum 展开布局 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T22:56:31+08:00 | 已完成；验证通过；superpowers bootstrap/use-skill 因本机 Node simdjson 动态库缺失失败 |
 | codex-0502b | Codex | 恢复 FilterBar Ethereum 子市场 push 展开动画 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T23:00:00+08:00 | 已完成；沿用 bundled Node 验证；Magic Patterns MCP 已写入 Codex config 但当前端点需要授权 |
+| droid-0926a | Droid | AAV-1280 offset spec discovery 可算性对齐 UI 渲染门控 | e2e/reserveDiscovery.ts, e2e/portfolio-cross-reserve-offset.spec.ts, src/test/reserveDiscovery.test.ts, docs/issue-roadmap.md, SESSION-BOARD.md | done | 2026-09-26T00:00:00+08:00 | 已交付：谓词收紧 + 纯函数抽取 + 34 单测；e2e 实测干净 skip；gate 全绿 |
 
 ---
 
