@@ -7,7 +7,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
-_Last inventory pass: 2026-07-06._
+_Last inventory pass: 2026-09-26._
 
 ## Canonical Structure
 
@@ -19,6 +19,13 @@ _Last inventory pass: 2026-07-06._
 - Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
 - Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)
 - Canonical: `docs/issue-roadmap.md` (Issue Roadmap: open issue 优先级排序与状态快照; GitHub issue 始终排最前; 与 `docs/agents/issue-tracker.md` 分工——本文件用户可见，issue-tracker.md agent 内部配置)
+
+### Agent 内部契约（docs/agents/）
+
+- Canonical: `docs/agents/issue-tracker.md` (agent 内部 Linear 配置与契约：连接配置、write-once body、认知卸载、wayfinding、已知坑)
+- Canonical: `docs/agents/triage-labels.md` (triage label 契约角色与流转；实存 label 以 Linear 查询为准)
+- Canonical: `docs/agents/harness.md` (相对 agent-harness core 的本地改编登记 + 本机 CDP 测试浏览器环境)
+- Canonical: `docs/agents/domain.md` (skills 消费 `CONTEXT.md` / `docs/adr/` 的规则)
 
 ### API, contracts, and CI conventions
 

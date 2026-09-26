@@ -16,6 +16,8 @@ MCP server 配置在 `.codeartsdoer/mcp/mcp_settings.json`（server key `linear`
 
 **连通性自检**：调用 `linear_list_teams`，应返回 team AAV（id 见上节）。一条命令同时验证连接、认证、team 配置。
 
+**连接配置（Factory Droid 会话）**：Linear 由 Factory connectors 提供，无本地 MCP 配置文件——工具名 `linear__<action>`（双下划线，如 `linear__create_issue`，经 ConnectorSearch 发现），参数为 snake_case（如 `team_id`）。CodeArts 的 `linear_<action>` 与 core 的 `mcp__linear_<action>` 写法均不适用于 Factory 会话。
+
 ## Workflow (Linear-specific)
 
 - **Create issue**: `mcp__linear_create_issue` with `teamId`
