@@ -78,3 +78,8 @@
 - `useOnchainHealthFactor` ——`getUserAccountData` 在 Pool 上仍保留，不迁移。
 - SDK GraphQL 端点可用性本身（层 1 瞬态故障）——由 fallback 架构兜底，不在本票范围。
 - `e2e/test-wallets.ts` 注释（遗留项 3）——Phase 1 已完成。
+
+## Postscript（2026-09-27，AAV-1309 交付后补记）
+
+- 场景矩阵第 15 行所引「HITL 一致性测试」已按用户裁定改为 onchain-only 集成测试语义（`deec631e`）：该测试 SDK 侧原为硬编码空数组、断言恒真，HITL 标注无协议支撑。第 15 行「4/4 通过」的实际含义是冒烟 + 无重复 reserveId，不是逐字段一致性证明。
+- 修复时沿数据流核查发现两个既有生产缺陷，已开票：AAV-1311（onchain fallback 对非 18-dec 代币 amountUsd 缩小 10^(18-dec) 倍——第 11 行证据中的 6 decimals 手工解码即此问题的旁证，pipeline 本身无缩放）、AAV-1310（RPC 轮换耗尽返回空成功而非 error，errors/failedSources 均为空）。

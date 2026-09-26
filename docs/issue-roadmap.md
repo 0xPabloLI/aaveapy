@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-27（AAV-1305 P2 交付：V3 仓位读取迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（address book 全 24 链自动发现 + isAddress 金丝雀）；实施期 runtime 证据抓到真实 viem multicall 返回位置 tuple 的潜伏解码缺陷（命名解构在真实 RPC 下产出 undefined 字段，旧实现同样带此缺陷），一并修正；watch-reentry listener 未就绪抛 `{}` 噪音修复。Celo USD₮ 真实仓位经生产轮换路径检出（1044.776914 / collateral=true），HITL 一致性 4/4。spec 见 `docs/specs/aav-1305-v3-dataprovider-migration.md`。发现项：`userPositionConsistency.test.ts` 默认 API base（onrender）已 404，需 `VITE_API_BASE` 覆盖，已新开 AAV-1309 进 triage）。
+> **Last inventory**: 2026-09-27（AAV-1305 P2 交付：V3 仓位读取迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（address book 全 24 链自动发现 + isAddress 金丝雀）；实施期 runtime 证据抓到真实 viem multicall 返回位置 tuple 的潜伏解码缺陷（命名解构在真实 RPC 下产出 undefined 字段，旧实现同样带此缺陷），一并修正；watch-reentry listener 未就绪抛 `{}` 噪音修复。Celo USD₮ 真实仓位经生产轮换路径检出（1044.776914 / collateral=true）。spec 见 `docs/specs/aav-1305-v3-dataprovider-migration.md`。AAV-1309 随后交付（`deec631e`）：`userPositionConsistency.test.ts` 实为空洞断言（SDK 侧硬编码空数组）+ 无协议支撑的 HITL 标注 + 默认 API base 失效，已按用户裁定改为 onchain-only 语义；沿数据流核查时发现两个既有生产缺陷——AAV-1311（非 18-dec 代币金额缩小 10^12 倍）与 AAV-1310（RPC 轮换耗尽静默空成功），均 High 进 Backlog）。
 >
 > **frontier** = AAV-1308（Medium，e2e cross-asset-pairing discovery 可算性缺口，同 AAV-1280 病因；Backlog 态）。
 
@@ -55,14 +55,16 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 ### Urgent / High
 
-当前无 open Urgent/High issue。
+| Linear | Priority | State | Title |
+| --- | --- | --- | --- |
+| AAV-1311 | High | Backlog | Onchain fallback 仓位 USD 金额对非 18-dec 代币缩小 10^(18-dec) 倍（DataProvider raw 直接按 wad 换算） |
+| AAV-1310 | High | Backlog | RPC 轮换耗尽返回空成功而非 error：fallback 静默显示 $0 且 failedSources 为空 |
 
 ### Medium
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
 | AAV-1308 | Medium | Backlog | e2e cross-asset-pairing discovery 可算性缺口：raw APR 直加未镜像 UI 渲染门控（同 AAV-1280 病因） |
-| AAV-1309 | Medium | Backlog | HITL 一致性测试默认 API base 失效：userPositionConsistency 默认 onrender URL 404，需收敛 env 解析 |
 | AAV-1303 | Medium | Backlog | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复 |
 | AAV-1295 | Medium | Backlog | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过 |
 | AAV-1292 | Medium | Backlog | railway → main 正式晋升：三个定时工作流从未运行 |
@@ -105,6 +107,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1309 | 一致性测试 API base 失效 + 空洞断言 + 假 HITL 标注（`deec631e`，onchain-only 语义；过程中发现 AAV-1310/1311） | 2026-09-27 |
 | AAV-1305 | 生产钱包仓位导入失败双层根因（P1 MULTICALL3 常量 `1061bd14`；P2 DataProvider 迁移 `2d6e70fb` + watch-reentry 加固 `5f928681`，Celo 真实仓位实测检出） | 2026-09-27 |
 | AAV-1280 | e2e self-loop offset：场景 discovery 对齐 UI 渲染门控（测试侧加固，原始触发数据已消失，e2e 实测干净 skip） | 2026-09-26 |
 | GitHub #676 | PR_TARGET 迁移到 pull_request 生产部署（dev→main 合并 52cf2aef，审计日志零残留） | 2026-09-25 |
