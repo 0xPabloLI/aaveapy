@@ -87,7 +87,7 @@ function hasLtv(r: ReserveData): boolean {
  * Returns null if no suitable reserve is found.
  */
 export async function findIncentiveReserve(): Promise<TestReserve | null> {
-  const reserves = await fetchReserves();
+  const reserves = await fetchStagingReserves();
   return pickIncentiveReserve(reserves, new Date().toISOString());
 }
 
@@ -99,7 +99,7 @@ export async function findIncentiveReserve(): Promise<TestReserve | null> {
  * Falls back to common stablecoins (USDC, USDT, WETH) for reliability.
  */
 export async function findAnyActiveReserve(): Promise<TestReserve | null> {
-  const reserves = await fetchReserves();
+  const reserves = await fetchStagingReserves();
   const candidates = reserves.filter((r) => isUsableReserve(r) && hasLtv(r));
   if (candidates.length === 0) return null;
 
