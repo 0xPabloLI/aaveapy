@@ -4,7 +4,7 @@
 
 - **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — live Aave V3 positions (current chains documented in `e2e/test-wallets.ts`). Use in Playwright via the "Watch address" input.
 - **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
-- **CDP 测试浏览器（本机）**: 专用 profile `/Users/pabloli/chrome-tiktok-profile`（用户维护，内含 Vercel SSO 登录态）。用 `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/Users/pabloli/chrome-tiktok-profile --remote-debugging-port=9333 --no-first-run` 启动后 `connectOverCDP('http://127.0.0.1:9333')` 附着，可叠加设备仿真做移动端测试。staging 鉴权墙备选：Vercel 项目 `protectionBypass` 密钥加 `x-vercel-protection-bypass` 请求头。不可用路径：Chrome 默认目录（136+ 禁 CDP）、Factory 代理 `127.0.0.1:54233`（隔离空 profile 且禁 `Target.createTarget`）。附着真实 profile 时 UI locale 为 zh-CN，探针选择器需兼容中文文案（如「连接钱包」）。
+- **CDP 浏览器环境（本机）**: 专用 profile / staging 鉴权 bypass / zh-CN 选择器陷阱 —— 启动、附着与不可用路径见 `docs/agents/harness.md`。
 
 ## Project Snapshot
 

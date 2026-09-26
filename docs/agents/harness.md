@@ -13,3 +13,13 @@
 | git-concurrent-recovery.md | **未引入** | 单写者纪律下竞态应急未触发过；触发时从 core 仓取 |
 | scenario 两文件 | 住 `docs/conventions/`，用 core 合并版原样 | 与 core 一致 |
 | AGENTS.md 设计段 | Users/Brand/Aesthetic/Principles/Token 全套内联（AAVE repos 中最完整） | 本 repo 的插槽值；core 不收品牌内容 |
+
+## 本机 CDP 测试浏览器环境（machine-local）
+
+> 不属 core 偏离登记——本机环境事实，住这里避免 AGENTS.md 常驻载入膨胀。
+
+- **专用 profile**：`/Users/pabloli/chrome-tiktok-profile`（用户维护，内含 Vercel SSO 登录态）。
+- **启动 + 附着**：`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/Users/pabloli/chrome-tiktok-profile --remote-debugging-port=9333 --no-first-run` 起可见窗口，`chromium.connectOverCDP('http://127.0.0.1:9333')` 附着；`browser.newContext({ ...devices['Pixel 7'] })` 可叠加移动端仿真。
+- **staging 鉴权墙备选**：Vercel 项目 `protectionBypass` 密钥加 `x-vercel-protection-bypass` 请求头（配 `x-vercel-set-bypass-mode: persist`），免登录过墙。
+- **不可用路径**：Chrome 默认目录（Chrome 136+ 对默认 user-data-dir 禁 CDP）；Factory 桌面代理 `127.0.0.1:54233`（隔离空 profile、禁 `Target.createTarget`）。
+- **zh-CN 陷阱**：附着真实 profile 时 UI 为中文（弹窗标题「连接钱包」），探针/选择器需兼容中文文案。
