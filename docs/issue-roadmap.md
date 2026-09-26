@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-26（AAV-1280 交付：offset e2e 场景 discovery 对齐 UI 渲染门控——`isComputableMerklCampaign` 收紧 + `discoverOffsetScenarios` 纯函数抽取 + 34 单测；原始 Celo 触发数据已消失，当前 staging 0 场景，spec 实测干净 skip。spec 见 `docs/specs/aav-1280-offset-discovery-computability.md`）。
+> **Last inventory**: 2026-09-26（AAV-1280 交付：offset e2e 场景 discovery 对齐 UI 渲染门控——`isComputableMerklCampaign` 收紧 + `discoverOffsetScenarios` 纯函数抽取 + 34 单测；原始 Celo 触发数据已消失，当前 staging 0 场景，spec 实测干净 skip。spec 见 `docs/specs/aav-1280-offset-discovery-computability.md`。遗留项（API base 硬编码）已跟进解决 `7345b47c`；实施中发现 cross-asset-pairing spec 同款缺口，新开 AAV-1308 进 triage）。
 >
 > **frontier** = AAV-1305 第二阶段（Medium，`getV3UserPositionsOnChain` 目标由 Pool 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`；Backlog 态）。
 
@@ -62,6 +62,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
 | AAV-1305 | Medium | Backlog | 生产钱包仓位导入失败：双层根因（Aave SDK GraphQL 端点网络不可达 + MULTICALL3_ADDRESS 常量非法致 fallback 必然失败） |
+| AAV-1308 | Medium | Backlog | e2e cross-asset-pairing discovery 可算性缺口：raw APR 直加未镜像 UI 渲染门控（同 AAV-1280 病因） |
 | AAV-1303 | Medium | Backlog | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复 |
 | AAV-1295 | Medium | Backlog | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过 |
 | AAV-1292 | Medium | Backlog | railway → main 正式晋升：三个定时工作流从未运行 |
