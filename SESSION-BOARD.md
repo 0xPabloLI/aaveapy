@@ -61,6 +61,7 @@
 | codex-0502a | Codex | 调整 FilterBar Ethereum 展开布局 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T22:56:31+08:00 | 已完成；验证通过；superpowers bootstrap/use-skill 因本机 Node simdjson 动态库缺失失败 |
 | codex-0502b | Codex | 恢复 FilterBar Ethereum 子市场 push 展开动画 | src/components/dashboard/FilterBar.tsx, SESSION-BOARD.md | done | 2026-05-02T23:00:00+08:00 | 已完成；沿用 bundled Node 验证；Magic Patterns MCP 已写入 Codex config 但当前端点需要授权 |
 | droid-0926a | Droid | AAV-1280 offset spec discovery 可算性对齐 UI 渲染门控 | e2e/reserveDiscovery.ts, e2e/portfolio-cross-reserve-offset.spec.ts, src/test/reserveDiscovery.test.ts, docs/issue-roadmap.md, SESSION-BOARD.md | done | 2026-09-26T00:00:00+08:00 | 已交付：谓词收紧 + 纯函数抽取 + 34 单测；e2e 实测干净 skip；gate 全绿 |
+| droid-0927a | Droid | AAV-1305 P2 DataProvider 迁移 + watch-reentry 加固 | src/lib/chainRegistry.ts, src/lib/userData/aaveV3UserClient.ts, src/lib/userData/aaveV3UserClient.test.ts, src/hooks/useUserPositionsSdk.ts, src/hooks/useUserPositionsSdk.test.tsx, docs/specs/aav-1305-v3-dataprovider-migration.md, docs/DOCS-INDEX.md, docs/issue-roadmap.md, SESSION-BOARD.md | done | 2026-09-27T04:10:00+08:00 | 补登记：session 启动时漏读本看板（只走了 roadmap + issue-tracker 指针），结束补注。教训：期间并行 session 提交 e2e 改动（8e59187c/fd3f5fcf）在板上不可见，靠 git 状态漂移事后发现——注册本可让该协调显式化 |
 
 ---
 
