@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-27（AAV-1305 P2 交付：V3 仓位读取迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（address book 全 24 链自动发现 + isAddress 金丝雀）；实施期 runtime 证据抓到真实 viem multicall 返回位置 tuple 的潜伏解码缺陷（命名解构在真实 RPC 下产出 undefined 字段，旧实现同样带此缺陷），一并修正；watch-reentry listener 未就绪抛 `{}` 噪音修复。Celo USD₮ 真实仓位经生产轮换路径检出（1044.776914 / collateral=true）。spec 见 `docs/specs/aav-1305-v3-dataprovider-migration.md`。AAV-1309 随后交付（`deec631e`）：`userPositionConsistency.test.ts` 实为空洞断言（SDK 侧硬编码空数组）+ 无协议支撑的 HITL 标注 + 默认 API base 失效，已按用户裁定改为 onchain-only 语义；沿数据流核查时发现两个既有生产缺陷——AAV-1311（非 18-dec 代币金额缩小 10^12 倍）与 AAV-1310（RPC 轮换耗尽静默空成功），均 High 进 Backlog。前一日 09-26 AAV-1280 已交付：offset e2e 场景 discovery 对齐 UI 渲染门控（spec 见 `docs/specs/aav-1280-offset-discovery-computability.md`；遗留 API base 硬编码跟进解决 `7345b47c`））。
+> **Last inventory**: 2026-09-27（完成对新开及待分诊 issues 的全面审查与流转：AAV-1311/1310/1308 经根因核查与方案裁决标为 `ready-for-agent`；AAV-1307 经 `fd3f5fcf` 本地 pre-push 隔离后验证关闭（Done，含交付记录）；AAV-1306/GitHub #678 经 `4dcd31fc` 修复依赖、最新 lovable CI 全绿验证后关闭（Done，#678 已 closed）。此前 09-27 交付 AAV-1305 P2（DataProvider 迁移 `2d6e70fb`）与 AAV-1309（一致性测试断言收敛 `deec631e`））。
 >
-> **frontier** = AAV-1308（Medium，e2e cross-asset-pairing discovery 可算性缺口，同 AAV-1280 病因；Backlog 态）。
+> **frontier** = AAV-1311（High，Onchain fallback 仓位 USD 金额对非 18-dec 代币缩小 10^(18-dec) 倍，ready-for-agent 态；后续同批 AAV-1310、AAV-1308）。
 
 ---
 
@@ -18,6 +18,11 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 | Issue | 现状 / 方案痛点 | 审查建议与方案修正 | 调整动作 |
 | --- | --- | --- | --- |
+| **AAV-1311** | `userPositionMapper.ts` 中 `wadToHuman` 恒除以 $10^{18}$ 忽略 `meta.decimals`，6-dec 代币（USDT/USDC）在 onchain fallback 路径下 USD 缩小 $10^{12}$ 倍（测试钱包 $1044 显示为 $0.000001） | **最小闭环修复**：`mapV3PositionToWalletPosition` / `mapV4PositionToWalletPosition` 按 `meta.decimals` 计算人类可读代币数量再乘 `tokenPrice`；`WalletPosition.amountWad` 明确 raw 原生单位语义；单测补非 18-dec 矩阵与数量级断言。 | 标为 ready-for-agent，维持 High（frontier 首选） |
+| **AAV-1310** | `createClientWithRpcRotation` 轮换超时耗尽返回 `null` 时，`getV3UserPositionsOnChain` 静默返回空成功 `{ positions: [], accountSummary: null }`，导致 `failedSources` 为空且 UI 呈现假 $0 | **语义分流与显式报错**：区分 `rpcUrls.length === 0`（未配置 RPC，平滑降级）与轮换耗尽（基础设施超时/故障，显式抛错）。使 `getV3UserPositionsMultiChain` 捕获至 `errors` 并推入 `failedSources`，让 UI 准确提示降级。 | 标为 ready-for-agent，维持 High |
+| **AAV-1308** | `portfolio-cross-asset-pairing.spec.ts` 裸加 `campaignApr`，未镜像 UI 侧时间窗（排除 open-ended）、白名单与 AMOUNT 变体门控（同 AAV-1280 病因） | **纯函数抽离与门控对齐**：抽取至 `e2e/reserveDiscovery.ts`，两端（supply/borrow）均复用 `isComputableMerklCampaign`，并在 `src/test/reserveDiscovery.test.ts` 增补测试矩阵。 | 移出 needs-triage，标为 ready-for-agent，维持 Medium |
+| **AAV-1307** | 本地 `pre-push` 门禁中 `reserves-table-scenario-pin.spec.ts` 8 步时序用例因双 worker 并发高负载耗时 56s 超时 | **Hook 层隔离**：Commit `fd3f5fcf0cb1` 已在 `scripts/pre-push-e2e.mjs` 中通过 `GREP_INVERT` 排除该已在 CI skip 的时序用例，达成验收标准。 | Done（2026-09-27 关闭，交付记录含 A/B 归因与如实记账） |
+| **AAV-1306** | GitHub #678，`lovable` 分支 CI 因 `@base-org/account` 与 `@wagmi/connectors` 的 peer-dep 冲突飘红 | **依赖对齐与 CI 恢复**：Commit `4dcd31fc` 已通过 override 修复冲突，最新 CI workflow 全部恢复绿灯。 | Done（2026-09-27 关闭；GitHub #678 已 closed） |
 | **AAV-1297** | 依赖外部 API 推导 slug 存在 CI 网络抖动风险 | **四级兜底推导**：Overrides 表 → AddressBook 模块名正则 → 外部 chainid.network（带超时）→ 通用 `chain-${id}`。配套标准化占位 SVG 与 manifest 自动构建。 | 设为 AAV-1296 前置 |
 | **AAV-1296** | 「全或无」门禁导致一旦有缺项整条 sync 瘫痪 | **门禁拆分 + 降级通道**：verify 拆为 critical（报错阻塞）与 advisory（补占位/警告但允许建 PR）。补 `pending-chain-ids.json` 逃生通道。 | 依赖 AAV-1297 产物 |
 | **AAV-1298** | openapi-sync 尝试对 lovable 分支建 PR 失败 | **收敛 Bot PR 目标**：依据三分支规范，所有自动同步 bot 统一只对 `dev` 建 PR，禁止直打 lovable；排查 codegen 语法与 PAT 权限。 | 目标分支收敛至 dev |
@@ -42,6 +47,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | GitHub # | Linear | Priority | State | Title | Labels |
 | --- | --- | --- | --- | --- | --- |
+| #678 | AAV-1306 | **None** | Done（2026-09-27 关闭；`4dcd31fc` 修复 @base-org/account peer-dep，最新 lovable CI 全绿） | 🔥 Lovable CI failure: e2e-desktop (2/2), socket-firewall, peer-dep-check... | bug, ci-failure-lovable, repo:frontend |
 | #668 | AAV-1297 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] chainIconMap 自动同步：从 registry 自动生成占位条目 | enhancement, hardcode |
 | #667 | AAV-1296 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] Hardcode Sync 韧性：解除「全或无」门禁单点故障 | enhancement, hardcode, drift |
 | #671 | AAV-1299 | **High** | Done（2026-09-24 交付，见 Linear 交付记录） | [Bug] e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | bug |
@@ -57,14 +63,14 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1311 | High | Backlog | Onchain fallback 仓位 USD 金额对非 18-dec 代币缩小 10^(18-dec) 倍（DataProvider raw 直接按 wad 换算） |
-| AAV-1310 | High | Backlog | RPC 轮换耗尽返回空成功而非 error：fallback 静默显示 $0 且 failedSources 为空 |
+| AAV-1311 | High | Backlog (ready-for-agent) | Onchain fallback 仓位 USD 金额对非 18-dec 代币缩小 10^(18-dec) 倍（DataProvider raw 直接按 wad 换算） |
+| AAV-1310 | High | Backlog (ready-for-agent) | RPC 轮换耗尽返回空成功而非 error：fallback 静默显示 $0 且 failedSources 为空 |
 
 ### Medium
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1308 | Medium | Backlog | e2e cross-asset-pairing discovery 可算性缺口：raw APR 直加未镜像 UI 渲染门控（同 AAV-1280 病因） |
+| AAV-1308 | Medium | Backlog (ready-for-agent) | e2e cross-asset-pairing discovery 可算性缺口：raw APR 直加未镜像 UI 渲染门控（同 AAV-1280 病因） |
 | AAV-1303 | Medium | Backlog | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复 |
 | AAV-1295 | Medium | Backlog | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过 |
 | AAV-1292 | Medium | Backlog | railway → main 正式晋升：三个定时工作流从未运行 |
