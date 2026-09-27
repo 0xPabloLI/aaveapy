@@ -7,7 +7,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
-_Last inventory pass: 2026-09-26._
+_Last inventory pass: 2026-09-27._
 
 ## Canonical Structure
 

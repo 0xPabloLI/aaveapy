@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-27（AAV-1305 P2 交付：V3 仓位读取迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（address book 全 24 链自动发现 + isAddress 金丝雀）；实施期 runtime 证据抓到真实 viem multicall 返回位置 tuple 的潜伏解码缺陷（命名解构在真实 RPC 下产出 undefined 字段，旧实现同样带此缺陷），一并修正；watch-reentry listener 未就绪抛 `{}` 噪音修复。Celo USD₮ 真实仓位经生产轮换路径检出（1044.776914 / collateral=true）。spec 见 `docs/specs/aav-1305-v3-dataprovider-migration.md`。AAV-1309 随后交付（`deec631e`）：`userPositionConsistency.test.ts` 实为空洞断言（SDK 侧硬编码空数组）+ 无协议支撑的 HITL 标注 + 默认 API base 失效，已按用户裁定改为 onchain-only 语义；沿数据流核查时发现两个既有生产缺陷——AAV-1311（非 18-dec 代币金额缩小 10^12 倍）与 AAV-1310（RPC 轮换耗尽静默空成功），均 High 进 Backlog）。
+> **Last inventory**: 2026-09-27（AAV-1305 P2 交付：V3 仓位读取迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（address book 全 24 链自动发现 + isAddress 金丝雀）；实施期 runtime 证据抓到真实 viem multicall 返回位置 tuple 的潜伏解码缺陷（命名解构在真实 RPC 下产出 undefined 字段，旧实现同样带此缺陷），一并修正；watch-reentry listener 未就绪抛 `{}` 噪音修复。Celo USD₮ 真实仓位经生产轮换路径检出（1044.776914 / collateral=true）。spec 见 `docs/specs/aav-1305-v3-dataprovider-migration.md`。AAV-1309 随后交付（`deec631e`）：`userPositionConsistency.test.ts` 实为空洞断言（SDK 侧硬编码空数组）+ 无协议支撑的 HITL 标注 + 默认 API base 失效，已按用户裁定改为 onchain-only 语义；沿数据流核查时发现两个既有生产缺陷——AAV-1311（非 18-dec 代币金额缩小 10^12 倍）与 AAV-1310（RPC 轮换耗尽静默空成功），均 High 进 Backlog。前一日 09-26 AAV-1280 已交付：offset e2e 场景 discovery 对齐 UI 渲染门控（spec 见 `docs/specs/aav-1280-offset-discovery-computability.md`；遗留 API base 硬编码跟进解决 `7345b47c`））。
 >
 > **frontier** = AAV-1308（Medium，e2e cross-asset-pairing discovery 可算性缺口，同 AAV-1280 病因；Backlog 态）。
 
