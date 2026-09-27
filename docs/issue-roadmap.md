@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-27（AAV-1311 经 `084131f5` 修复关闭（Done，含 live 实测证据）：onchain fallback `rawToHuman` 按代币原生精度换算，Celo USD₮ $1044.57 正确呈现；一致性测试补量级 invariant。此前 09-27 完成新开 issue 全面审查流转（AAV-1311/1310/1308 标 ready-for-agent；AAV-1307/AAV-1306 验证关闭）与 AAV-1305 P2（`2d6e70fb`）、AAV-1309（`deec631e`）交付）。
+> **Last inventory**: 2026-09-27（AAV-1311 经 `084131f5` 修复关闭（Done，含 live 实测证据）：onchain fallback `rawToHuman` 按代币原生精度换算，Celo USD₮ $1044.57 正确呈现；一致性测试补量级 invariant。此前 09-27 完成新开 issue 全面审查流转（AAV-1311/1310/1308 标 ready-for-agent；AAV-1307/AAV-1306 验证关闭）与 AAV-1305 P2（`2d6e70fb`）、AAV-1309（`deec631e`）交付。同日 Arc (5042) 链图标对齐上游 slug `arc` + 官方 logo 替换占位图（`0c3cd74b`，lovable 本地，待晋升）；V4 外链 logo 管道化开票 AAV-1312）。
 >
 > **frontier** = AAV-1310（High，RPC 轮换耗尽静默空成功，ready-for-agent 态；后续同批 AAV-1308）。
 
@@ -79,6 +79,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1312 | Low | Backlog (needs-triage) | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
 | AAV-1304 | Low | Backlog | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
 | AAV-1302 | Low | Todo | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 | AAV-1301 | Low | Backlog | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* |

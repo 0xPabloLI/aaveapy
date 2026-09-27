@@ -43,6 +43,14 @@ CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 504
 - 已存在的 SVG 文件一律不覆盖。
 - manifest 无需显式联动：`hardcode:sync` 链条中 `sync:chain-icons-upstream` 排在 `generate-chain-icon-manifest.mjs` 之前，SVG 落盘后自动拾取。
 
+### 占位图替换素材来源（手动 backup 优先级）
+
+sync 管道产出占位图后，换官方 logo 按此优先级手动取材：
+
+1. **上游 aave/interface `public/icons/networks/<slug>.svg`** — 首选：同源同格式（SVG）。注意 V4-only 链的外链 logo 不走 networksConfig 管道，而是硬编码在 `MarketSwitcher.tsx` 的 `V4_LINKS`（Arc 先例，管道化方案见 AAV-1312）。
+2. **链官方品牌资源** — 官网/press kit 手动下载。
+3. **ethereum-lists/chains**（chainid.network 数据源，社区维护 registry）— 兜底：仅索引不托管，`_data/icons/<name>.json` 指向外部 URL/IPFS；多为 PNG 需转 SVG，IPFS 网关可用性无保障。与 slug 推导 L3.5 同源不同用途（那边取 slug，这里取素材）。
+
 ### 原子性
 
 所有占位 SVG 生成成功后才写 chainIconMap；任一失败 exit 1 且不写 map。
