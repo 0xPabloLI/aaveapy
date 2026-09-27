@@ -14,7 +14,8 @@
  *
  * 已知局限（AAV-1310）：RPC 轮换耗尽当前会静默返回空仓位而非 error，此场景下
  * 本测试会空跑通过；AAV-1310 修复后 errors 断言才会对「全链失败」红灯。
- * 金额量级断言待 AAV-1311（非 18-dec 代币缩放缺陷）修复后补充。
+ * 金额量级断言（AAV-1311）：assertAmountMagnitudes 对每个仓位复算
+ * raw / 10^decimals × tokenPrice（独立取自 /markets reserves），相对偏差 > 1e-6 红灯。
  *
  * 运行方式（无 WALLET_ADDRESS 时全部 skip，不进 CI 默认路径）：
  *   WALLET_ADDRESS=0x... npx vitest run src/test/userPositionConsistency.test.ts
@@ -78,6 +79,35 @@ function assertNoDuplicateEntries(positions: WalletPosition[], label: string) {
   );
 }
 
+/**
+ * AAV-1311 invariant：amountUsd 必须等于 raw 按代币自身精度换算后 × price。
+ * 复算源（reserves 的 decimals / tokenPrice）独立于生产 mapper——生产若忽略
+ * decimals（恒除 10^18），6-dec 仓位与复算值差 10^12 倍，此处红灯。
+ * 下面的两段法换算是对 rawToHuman 的刻意重复（保持断言独立，勿 DRY 合并）。
+ * 只对原生 raw 语义的 source 生效：sdk source 的 amountWad 可能是 decimalToWad
+ * 归一的 18-dec wad（混合语义），跳过不判。
+ */
+function assertAmountMagnitudes(positions: WalletPosition[], reserves: ReserveWithSpread[], label: string) {
+  const bad = positions
+    .filter((p) => !p.isOrphan && p.source !== 'sdk')
+    .map((p) => {
+      const reserve = reserves.find((r) => r.reserveId === p.reserveId);
+      if (!reserve) return null; // resolvability 由 assertAllResolvable 单独保证
+      const decimals = reserve.decimals ?? 18;
+      const price = reserve.tokenPrice ?? 0;
+      const divisor = 10n ** BigInt(Math.max(0, Math.floor(decimals)));
+      const expected = (Number(p.amountWad / divisor) + Number(p.amountWad % divisor) / Number(divisor)) * price;
+      if (!Number.isFinite(expected)) return null;
+      const relDev =
+        expected === 0 ? (p.amountUsd === 0 ? 0 : Infinity) : Math.abs(p.amountUsd - expected) / Math.abs(expected);
+      return relDev > 1e-6
+        ? `${p.reserveId}:${p.side} amountUsd=${p.amountUsd} expected≈${expected} relDev=${relDev.toExponential(2)}`
+        : null;
+    })
+    .filter((v): v is string => v !== null);
+  expect(bad, `${label}: amountUsd must equal raw / 10^decimals × tokenPrice (AAV-1311)`).toEqual([]);
+}
+
 function assertNoChainErrors(errors: { chainId?: number; spokeName?: string | null }[], label: string) {
   expect(
     errors.map((e) => `${e.chainId ?? '?'}:${e.spokeName ?? ''}`),
@@ -107,6 +137,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     assertAllResolvable(positions, 'V3 ETH');
     assertAmountsPositiveAndFinite(positions, 'V3 ETH');
+    assertAmountMagnitudes(positions, reserves, 'V3 ETH');
     assertNoDuplicateEntries(positions, 'V3 ETH');
     const offChain = positions.filter((p) => p.chainId !== ethMarket[1].chainId);
     expect(
@@ -136,6 +167,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     assertAllResolvable(positions, 'V3 OP');
     assertAmountsPositiveAndFinite(positions, 'V3 OP');
+    assertAmountMagnitudes(positions, reserves, 'V3 OP');
     assertNoDuplicateEntries(positions, 'V3 OP');
     const offChain = positions.filter((p) => p.chainId !== opMarket[1].chainId);
     expect(
@@ -164,6 +196,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     assertAllResolvable(positions, 'V4');
     assertAmountsPositiveAndFinite(positions, 'V4');
+    assertAmountMagnitudes(positions, reserves, 'V4');
     assertNoDuplicateEntries(positions, 'V4');
   }, 60_000);
 
@@ -203,6 +236,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     );
 
     assertAllResolvable(allPositions, 'combined');
+    assertAmountMagnitudes(allPositions, reserves, 'combined');
 
     const portfolio = convertWalletPositionsToEntries(allPositions, reserves);
     const ids = portfolio.map((e) => e.reserveId);

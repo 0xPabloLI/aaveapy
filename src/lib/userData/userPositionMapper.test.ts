@@ -38,17 +38,29 @@ describe('WalletPosition unified type', () => {
 });
 
 describe('mapV3PositionToWalletPosition', () => {
+  // Fixture 形态契约（AAV-1311）：V3UserPosition 的 raw 字段装载 DataProvider 返回的
+  // 代币原生精度——6-dec 代币以 10^6 为基准，不用 18-dec WAD 冒充真实数据形态。
+  const USDC_UNIT = 10n ** 6n;
+
   const v3Pos: V3UserPosition = {
     chainId: 1,
     marketName: 'AaveV3Ethereum',
     asset: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`,
-    supplyWad: 5000n * WAD,
+    supplyWad: 5000n * USDC_UNIT,
     stableBorrowWad: 0n,
-    variableBorrowWad: 2000n * WAD,
+    variableBorrowWad: 2000n * USDC_UNIT,
     isCollateral: true,
   };
 
-  it('maps V3 supply position', () => {
+  const v3Weth: V3UserPosition = {
+    ...v3Pos,
+    asset: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`,
+    supplyWad: 5000n * WAD,
+    stableBorrowWad: 0n,
+    variableBorrowWad: 2000n * WAD,
+  };
+
+  it('maps V3 supply position (6-dec raw scaled by meta.decimals)', () => {
     const result = mapV3PositionToWalletPosition(
       v3Pos,
       'supply',
@@ -62,14 +74,14 @@ describe('mapV3PositionToWalletPosition', () => {
     );
     expect(result.reserveId).toBe('1:0xpool:0xA0b8');
     expect(result.side).toBe('supply');
-    expect(result.amountWad).toBe(5000n * WAD);
+    expect(result.amountWad).toBe(5000n * USDC_UNIT);
     expect(result.amountUsd).toBe(5000);
     expect(result.isCollateral).toBe(true);
     expect(result.source).toBe('onchain-v3');
     expect(result.isOrphan).toBe(false);
   });
 
-  it('maps V3 variable borrow position', () => {
+  it('maps V3 variable borrow position (6-dec raw scaled by meta.decimals)', () => {
     const result = mapV3PositionToWalletPosition(
       v3Pos,
       'borrow',
@@ -82,7 +94,7 @@ describe('mapV3PositionToWalletPosition', () => {
       'onchain-v3',
     );
     expect(result.side).toBe('borrow');
-    expect(result.amountWad).toBe(2000n * WAD);
+    expect(result.amountWad).toBe(2000n * USDC_UNIT);
     expect(result.amountUsd).toBe(2000);
   });
 
@@ -90,7 +102,7 @@ describe('mapV3PositionToWalletPosition', () => {
     const v3Stable: V3UserPosition = {
       ...v3Pos,
       supplyWad: 0n,
-      stableBorrowWad: 1000n * WAD,
+      stableBorrowWad: 1000n * USDC_UNIT,
       variableBorrowWad: 0n,
     };
     const result = mapV3PositionToWalletPosition(
@@ -104,13 +116,13 @@ describe('mapV3PositionToWalletPosition', () => {
       },
       'onchain-v3',
     );
-    expect(result.amountWad).toBe(1000n * WAD);
+    expect(result.amountWad).toBe(1000n * USDC_UNIT);
     expect(result.amountUsd).toBe(1000);
   });
 
-  it('computes amountUsd from WAD amount and tokenPrice', () => {
+  it('keeps 18-dec regression: amountUsd from wad-shaped amount and tokenPrice', () => {
     const result = mapV3PositionToWalletPosition(
-      v3Pos,
+      v3Weth,
       'supply',
       {
         reserveId: '1:0xpool:0xC02a',
@@ -123,20 +135,68 @@ describe('mapV3PositionToWalletPosition', () => {
     expect(result.amountUsd).toBe(5000 * 3000);
   });
 
-  it('marks orphan when reserveId is undefined', () => {
+  it('scales 6-dec raw by meta.decimals (Celo USD₮ evidence: raw 1044773458 → 1044.773458)', () => {
     const result = mapV3PositionToWalletPosition(
-      v3Pos,
+      { ...v3Pos, supplyWad: 1044773458n, variableBorrowWad: 0n },
       'supply',
       {
-        reserveId: undefined,
+        reserveId: 'celo:0xpool:0xusdt',
+        tokenSymbol: 'USD₮',
+        tokenPrice: 1,
+        decimals: 6,
+      },
+      'onchain-v3',
+    );
+    expect(result.amountUsd).toBeCloseTo(1044.773458, 6);
+  });
+
+  it('preserves fractional precision via two-segment raw conversion', () => {
+    const result = mapV3PositionToWalletPosition(
+      { ...v3Pos, supplyWad: 123n * USDC_UNIT + 456789n, variableBorrowWad: 0n },
+      'supply',
+      {
+        reserveId: '1:0xpool:0xA0b8',
         tokenSymbol: 'USDC',
         tokenPrice: 1,
         decimals: 6,
       },
       'onchain-v3',
     );
+    expect(result.amountUsd).toBeCloseTo(123.456789, 6);
+  });
+
+  it('scales merged stable+variable borrow raw by meta.decimals', () => {
+    const result = mapV3PositionToWalletPosition(
+      { ...v3Pos, supplyWad: 0n, stableBorrowWad: 300n * USDC_UNIT, variableBorrowWad: 200n * USDC_UNIT },
+      'borrow',
+      {
+        reserveId: '1:0xpool:0xA0b8',
+        tokenSymbol: 'USDC',
+        tokenPrice: 1,
+        decimals: 6,
+      },
+      'onchain-v3',
+    );
+    expect(result.amountWad).toBe(500n * USDC_UNIT);
+    expect(result.amountUsd).toBe(500);
+  });
+
+  it('marks orphan when reserveId is undefined (zero price, no NaN despite decimals=0)', () => {
+    const result = mapV3PositionToWalletPosition(
+      v3Pos,
+      'supply',
+      {
+        reserveId: undefined,
+        tokenSymbol: 'USDC',
+        tokenPrice: 0,
+        decimals: 0,
+      },
+      'onchain-v3',
+    );
     expect(result.isOrphan).toBe(true);
     expect(result.reserveId).toBe('');
+    expect(result.amountUsd).toBe(0);
+    expect(Number.isFinite(result.amountUsd)).toBe(true);
   });
 });
 
@@ -189,19 +249,44 @@ describe('mapV4PositionToWalletPosition', () => {
     expect(result.amountUsd).toBe(3 * 3000);
   });
 
-  it('marks orphan when reserveId is undefined', () => {
+  it('scales V4 6-dec raw by meta.decimals (supply and borrow)', () => {
+    const v4Usdc: V4UserPosition = {
+      chainId: 1,
+      spokeName: 'MAIN_SPOKE',
+      reserveId: 1n,
+      asset: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`,
+      suppliedAssets: 5000n * 10n ** 6n,
+      stableDebt: 0n,
+      variableDebt: 300n * 10n ** 6n,
+      isCollateral: true,
+    };
+    const meta = {
+      reserveId: '1:0xspoke:0xA0b8',
+      tokenSymbol: 'USDC',
+      tokenPrice: 1,
+      decimals: 6,
+    };
+    const supply = mapV4PositionToWalletPosition(v4Usdc, 'supply', meta, 'onchain-v4');
+    const borrow = mapV4PositionToWalletPosition(v4Usdc, 'borrow', meta, 'onchain-v4');
+    expect(supply.amountUsd).toBe(5000);
+    expect(borrow.amountUsd).toBe(300);
+  });
+
+  it('marks orphan when reserveId is undefined (zero price, no NaN despite decimals=0)', () => {
     const result = mapV4PositionToWalletPosition(
       v4Pos,
       'supply',
       {
         reserveId: undefined,
         tokenSymbol: 'WETH',
-        tokenPrice: 3000,
-        decimals: 18,
+        tokenPrice: 0,
+        decimals: 0,
       },
       'onchain-v4',
     );
     expect(result.isOrphan).toBe(true);
+    expect(result.amountUsd).toBe(0);
+    expect(Number.isFinite(result.amountUsd)).toBe(true);
   });
 });
 

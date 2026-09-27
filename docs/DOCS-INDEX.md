@@ -99,6 +99,7 @@ _Last inventory pass: 2026-09-27._
 - Canonical: `docs/specs/aav-1282-mobile-connect-modal-rainbowkit-wallets.md` (移动端 Connect 弹窗修复：connectorsForWallets 注入 rkDetails 钱包 + e2e 双端解禁; AAV-1282)
 - Canonical: `docs/specs/aav-1280-offset-discovery-computability.md` (offset e2e 场景 discovery 对齐 UI 渲染门控：isComputableMerklCampaign 收紧 + discoverOffsetScenarios 纯函数抽取; AAV-1280)
 - Canonical: `docs/specs/aav-1305-v3-dataprovider-migration.md` (V3 仓位读取迁移 AAVE_PROTOCOL_DATA_PROVIDER：9 字段 ABI 布局互证 + positional tuple 解码 + watch-reentry listener 加固; AAV-1305 P2)
+- Canonical: `docs/specs/aav-1311-onchain-fallback-decimals.md` (onchain fallback 非 18-dec 代币 USD 缩水修复：rawToHuman 按 meta.decimals 换算 + amountWad 原生 raw 语义文档化 + 一致性测试量级 invariant; AAV-1311)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)
@@ -151,6 +152,7 @@ _Last inventory pass: 2026-09-27._
 | `docs/specs/aav-1282-mobile-connect-modal-rainbowkit-wallets.md` | 移动端 Connect 弹窗修复 spec（connectorsForWallets / rkDetails 契约 / FCP 不变量；含场景矩阵） | 2026-09-25 | Canonical | `src/lib/wagmi/config.ts`, `src/lib/wagmi/config.test.ts`, `playwright.config.ts` | keep |
 | `docs/specs/aav-1280-offset-discovery-computability.md` | offset e2e discovery 对齐 UI 渲染门控 spec（谓词收紧 / 纯函数抽取 / dedup 语义；含场景矩阵） | 2026-09-26 | Canonical | `e2e/reserveDiscovery.ts`, `e2e/portfolio-cross-reserve-offset.spec.ts`, `src/test/reserveDiscovery.test.ts` | keep |
 | `docs/specs/aav-1305-v3-dataprovider-migration.md` | V3 仓位读取 DataProvider 迁移 spec（9 字段 ABI 布局 / positional tuple 解码 / 降级矩阵 / watch-reentry 加固；含场景矩阵与实测证据） | 2026-09-27 | Canonical | `src/lib/chainRegistry.ts`, `src/lib/userData/aaveV3UserClient.ts`, `src/hooks/useUserPositionsSdk.ts` | keep |
+| `docs/specs/aav-1311-onchain-fallback-decimals.md` | onchain fallback 非 18-dec USD 缩水修复 spec（rawToHuman 两段法 / amountWad 原生 raw 语义 / fixture 形态契约 / 量级 invariant；含场景矩阵与实测证据） | 2026-09-27 | Canonical | `src/lib/userData/userPositionMapper.ts`, `src/test/userPositionConsistency.test.ts` | keep |
 | `docs/specs/chainlink-arc-v4-chain-onboarding.md` | Chainlink Arc (chainId 5042) 新链接入 spec（registry/icon map/manifest 四件套原子性；含场景矩阵与实测取证方法） | 2026-09-16 | Canonical | `src/lib/chainIconMap.ts`, `scripts/check-chain-icon-map-upstream.mjs`, `public/icons/networks/chainlink-arc.svg` | keep |
 | `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
 | `docs/archive/2026-08-29-fcp-chunk-defer-tickets.md` | FCP Round 2 tickets（全部完成） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
