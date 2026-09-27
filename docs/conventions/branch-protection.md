@@ -1,4 +1,4 @@
-# main Branch Protection (5 层防御)
+# Branch Protection（main 5 层防御 + lovable 直推分级）
 
 main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶意代码无法自动合并到 main：
 
@@ -29,3 +29,14 @@ main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶
 - **根因**：solo developer 的 `required_approving_review_count=0` 意味着用户可以 self-merge 任何 CI 通过的 PR。Layer 1 只阻止 bot auto-merge，不阻止手动 merge。Layer 5 通过 CI check 机制性阻止 `lovable → main` 等非标准流程的 PR 被合并
 - **启用步骤**：push workflow → 等 CI 运行一次 → 在 GitHub Settings → Branches → main required checks 中添加 `branch-flow-guard`
 - **Bot sync 例外**：`bot/hardcode-sync-*` 和 `bot/token-icon-sync-*` 分支可以绕过 branch-flow-guard 直接向 main 开 PR。这些是低风险的资产/地址/图标同步更新，仍然通过所有其他 CI 检查。Layer 1（不加 automerge label）+ Layer 4（required_signatures）确保这些 PR 仍需在 GitHub UI 手动合并
+
+## lovable 直推分级：admin bypass 是有意决策
+
+`lovable` 与 main 相反：classic branch protection 配 4 个 required checks（lint / build / peer-dep-check / security-audit）+ `enforce_admins: false`。admin 直推会绕过 checks 拦截，push 后 checks 才开始跑——这是集成分支的分级设计，不是配置疏忽，不要当 bug 去"修"。
+
+**为什么**：required checks 与直接 push 机制上不兼容——直推产生新 SHA，checks 只能后置，二者取一。lovable 是集成分支，选速度（直推）；main 是生产分支，选严格（`enforce_admins=true`，一切走 PR，见 Layer 2）。这个取舍由两层补偿控制撑住：
+
+1. **Shift-left**：pre-push hook 已在本地前置 `ci:remote`（lint/build/test/audit）+ osv/semgrep/knip/dup——远端 4 个 checks 中 lint / build / security-audit 已有本地等价物，peer-dep-check（CI 里跑 `npm ci` 验 lockfile）是唯一仅远端的 gate。
+2. **生产端隔离**：lovable 上的未验证 commit 流不到生产——Layer 5 branch-flow-guard 只放行 `dev → main`。
+
+**直推后的约定**：watch checks 直到收敛，红了就 revert 或 fix-forward 补修——bypass 授权的是"checks 后置"，checks 全绿仍是 commit 落地的标准。修改此分级时先改本节（决策 home），再动 GitHub 设置，保持文档与实际配置一致。
