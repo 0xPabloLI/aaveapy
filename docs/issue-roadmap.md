@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-27（AAV-1311 经 `084131f5` 修复关闭（Done，含 live 实测证据）：onchain fallback `rawToHuman` 按代币原生精度换算，Celo USD₮ $1044.57 正确呈现；一致性测试补量级 invariant。此前 09-27 完成新开 issue 全面审查流转（AAV-1311/1310/1308 标 ready-for-agent；AAV-1307/AAV-1306 验证关闭）与 AAV-1305 P2（`2d6e70fb`）、AAV-1309（`deec631e`）交付。同日 Arc (5042) 链图标对齐上游 slug `arc` + 官方 logo 替换占位图（`0c3cd74b`，lovable 本地，待晋升）；V4 外链 logo 管道化开票 AAV-1312）。
+> **Last inventory**: 2026-09-27(AAV-1310 经 `9552fe60` + `4f93ca0b` 交付关闭(Done):createClientWithRpcRotation 轮换耗尽改 throw RpcRotationExhaustedError,null 语义收紧为「registry 无 RPC」;V3/V4 multichain errors 通道非空 + failedSources 正确提示降级;HF 消费方映射既有 null 降级;双轴 review 闭环(修正 spec 措辞与证据映射)。此前 09-27:AAV-1311 经 `084131f5` 修复关闭(Celo USD₮ live 实测 $1044.57);完成新开 issue 全面审查流转与 AAV-1305 P2(`2d6e70fb`)、AAV-1309(`deec631e`)交付;Arc (5042) 链图标对齐上游 slug `arc` + 官方 logo 替换(`0c3cd74b`,lovable 本地,待晋升);V4 外链 logo 管道化开票 AAV-1312)。
 >
-> **frontier** = AAV-1310（High，RPC 轮换耗尽静默空成功，ready-for-agent 态；后续同批 AAV-1308）。
+> **frontier** = AAV-1308(Medium,e2e cross-asset-pairing discovery 可算性缺口,ready-for-agent 态;同批其余候选 AAV-1303/1295/1292)。
 
 ---
 
@@ -63,7 +63,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1310 | High | Backlog (ready-for-agent) | RPC 轮换耗尽返回空成功而非 error：fallback 静默显示 $0 且 failedSources 为空 |
 
 ### Medium
 
@@ -113,6 +112,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1310 | RPC 轮换耗尽静默空成功修复(`9552fe60` throw RpcRotationExhaustedError + null 语义收紧;V3/V4 errors 通道非空 + failedSources;HF 消费方降级对齐;spec `4f93ca0b` 含场景矩阵 + review 闭环) | 2026-09-27 |
 | AAV-1311 | Onchain fallback 非 18-dec 代币 USD 缩水（`rawToHuman` 按 meta.decimals 换算 `084131f5`；Celo USD₮ live 实测 $1044.57；一致性测试量级 invariant） | 2026-09-27 |
 | AAV-1309 | 一致性测试 API base 失效 + 空洞断言 + 假 HITL 标注（`deec631e`，onchain-only 语义；过程中发现 AAV-1310/1311） | 2026-09-27 |
 | AAV-1305 | 生产钱包仓位导入失败双层根因（P1 MULTICALL3 常量 `1061bd14`；P2 DataProvider 迁移 `2d6e70fb` + watch-reentry 加固 `5f928681`，Celo 真实仓位实测检出） | 2026-09-27 |
