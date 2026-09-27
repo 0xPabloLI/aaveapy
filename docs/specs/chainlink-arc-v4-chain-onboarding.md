@@ -5,6 +5,8 @@
 **关联**: GitHub #629 / AAV-1284 / AAV-1283 (无关), ADR-0020
 **类型**: bug（CI verify 持续 fail）+ 新链接入
 
+> **2026-09-27 更新**：占位 SVG 已被上游官方 logo 替换（取自 aave/interface `public/icons/networks/arc.svg`，`MarketSwitcher.tsx` V4_LINKS 硬编码 slug），slug 由 `chainlink-arc` 对齐为 `arc`（overrides + chainIconMap 同步改名）。下文 `chainlink-arc` 为 2026-09-16 交付时的历史记录。
+
 ## Problem Statement
 
 Hardcode Sync CI 在 dev/main/lovable 三分支每日 fail（自 2026-09-10 起，#629 已积累 6 次报警）。根因：`@aave-dao/aave-address-book@4.68.0` 新增 `AaveV4Arc` 模块（Chainlink Arc 链，chainId **5042**，SPOKES 架构）。CI 每日 `npm update address-book` 后，`discoverMainnetChainIds()` 与运行时 chainRegistry 均将 5042 计入，但 `chainIconMap` 无 5042 条目 → verify 报 `chainRegistry ↔ chainIconMap chainId mismatch` → exit 1。
