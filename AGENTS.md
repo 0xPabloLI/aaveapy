@@ -135,7 +135,7 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## main Branch Protection (5 层防御)
-main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 auto-merge + Branch Protection/CODEOWNERS + Content Security CI + Commit Signature + Branch Flow Guard）确保恶意代码无法自动合并。遇到 branch protection 阻塞时报告给用户决定，详见 `docs/conventions/branch-protection.md`。
+main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 auto-merge + Branch Protection + Content Security CI + Branch Flow Guard + Commit Signature[待 UI 启用]）确保恶意代码无法自动合并；CODEOWNERS 现仅作高危路径清单，review 未强制。遇到 branch protection 阻塞时报告给用户决定，详见 `docs/conventions/branch-protection.md`。
 
 ## Golden Rules: Rate Simulation Calculator
 `rateSimulationCalculator.ts` 的不变量（4 条 Golden Rules：current 不变量 / aggregate 单一路径 / wallet fallback = identity / headline 纯市场 rate）见 `docs/rate-calculation.md` Part 8。修改 calculator 前必须先读这些规则。
