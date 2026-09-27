@@ -47,6 +47,11 @@
 ### Design Token Quick Reference
 字体/字号/间距/圆角/阴影等 token 详见 `docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）。涉及 UI 样式实现时查阅。
 
+## Session Start
+
+1. **注册 `SESSION-BOARD.md`**：登记 session-id + touch-files，与 active 条目冲突检测；结束注销。启动不读看板 = 并行 session 互不可见，协调只能靠事后 git 考古。
+2. **`docs/issue-roadmap.md`**：Last inventory + frontier 定位默认任务；领票前先读该票全部评论（正文 write-once，不承载最新状态）。
+
 ## Session Workflow
 
 ### Decision: Lightweight or Substantial?
