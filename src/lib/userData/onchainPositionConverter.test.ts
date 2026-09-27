@@ -9,6 +9,9 @@ import type { V4UserPosition } from './aaveV4UserClient';
 import type { ReserveWithSpread } from '@/types/aave';
 
 const WAD = 10n ** 18n;
+// Fixture 形态契约（AAV-1311）：DataProvider 返回代币原生精度 raw，
+// 6-dec 代币以 10^6 为基准——不用 18-dec WAD 冒充真实数据形态。
+const USDC_UNIT = 10n ** 6n;
 
 const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`;
 const WETH_ADDR = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`;
@@ -53,7 +56,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         chainId: 1,
         marketName: V3_ETH_MARKET,
         asset: USDC_ADDR,
-        supplyWad: 5000n * WAD,
+        supplyWad: 5000n * USDC_UNIT,
         stableBorrowWad: 0n,
         variableBorrowWad: 0n,
         isCollateral: true,
@@ -62,7 +65,7 @@ describe('convertV3PositionsToWalletPositions', () => {
     const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3');
     expect(result).toHaveLength(1);
     expect(result[0].side).toBe('supply');
-    expect(result[0].amountWad).toBe(5000n * WAD);
+    expect(result[0].amountWad).toBe(5000n * USDC_UNIT);
     expect(result[0].amountUsd).toBe(5000);
     expect(result[0].reserveId).toBe(USDC_RESERVE_ID);
     expect(result[0].source).toBe('onchain-v3');
@@ -75,9 +78,9 @@ describe('convertV3PositionsToWalletPositions', () => {
         chainId: 1,
         marketName: V3_ETH_MARKET,
         asset: USDC_ADDR,
-        supplyWad: 5000n * WAD,
+        supplyWad: 5000n * USDC_UNIT,
         stableBorrowWad: 0n,
-        variableBorrowWad: 2000n * WAD,
+        variableBorrowWad: 2000n * USDC_UNIT,
         isCollateral: true,
       },
     ];
@@ -85,8 +88,9 @@ describe('convertV3PositionsToWalletPositions', () => {
     expect(result).toHaveLength(2);
     const supply = result.find((p) => p.side === 'supply')!;
     const borrow = result.find((p) => p.side === 'borrow')!;
-    expect(supply.amountWad).toBe(5000n * WAD);
-    expect(borrow.amountWad).toBe(2000n * WAD);
+    expect(supply.amountWad).toBe(5000n * USDC_UNIT);
+    expect(borrow.amountWad).toBe(2000n * USDC_UNIT);
+    expect(supply.amountUsd).toBe(5000);
     expect(borrow.amountUsd).toBe(2000);
   });
 
@@ -98,13 +102,14 @@ describe('convertV3PositionsToWalletPositions', () => {
         asset: USDC_ADDR,
         supplyWad: 0n,
         stableBorrowWad: 0n,
-        variableBorrowWad: 3000n * WAD,
+        variableBorrowWad: 3000n * USDC_UNIT,
         isCollateral: false,
       },
     ];
     const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3');
     expect(result).toHaveLength(1);
     expect(result[0].side).toBe('borrow');
+    expect(result[0].amountUsd).toBe(3000);
   });
 
   it('skips position with both supply and borrow at zero', () => {
@@ -142,13 +147,13 @@ describe('convertV3PositionsToWalletPositions', () => {
     expect(result[0].amountUsd).toBe(0);
   });
 
-  it('handles multiple positions across different tokens', () => {
+  it('handles multiple positions across different tokens (mixed decimals scaled independently)', () => {
     const positions: V3UserPosition[] = [
       {
         chainId: 1,
         marketName: V3_ETH_MARKET,
         asset: USDC_ADDR,
-        supplyWad: 5000n * WAD,
+        supplyWad: 5000n * USDC_UNIT,
         stableBorrowWad: 0n,
         variableBorrowWad: 0n,
         isCollateral: true,
@@ -167,6 +172,13 @@ describe('convertV3PositionsToWalletPositions', () => {
     expect(result).toHaveLength(3);
     expect(result.filter((p) => p.tokenSymbol === 'USDC')).toHaveLength(1);
     expect(result.filter((p) => p.tokenSymbol === 'WETH')).toHaveLength(2);
+    const usdcSupply = result.find((p) => p.tokenSymbol === 'USDC')!;
+    const wethSupply = result.find((p) => p.tokenSymbol === 'WETH' && p.side === 'supply')!;
+    const wethBorrow = result.find((p) => p.tokenSymbol === 'WETH' && p.side === 'borrow')!;
+    // 6-dec 与 18-dec 各自按自身精度缩放，互不污染（AAV-1311 场景矩阵行 8）。
+    expect(usdcSupply.amountUsd).toBe(5000);
+    expect(wethSupply.amountUsd).toBe(10 * 3000);
+    expect(wethBorrow.amountUsd).toBe(3 * 3000);
   });
 });
 

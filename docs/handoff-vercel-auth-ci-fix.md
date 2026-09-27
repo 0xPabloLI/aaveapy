@@ -106,6 +106,8 @@ This session implemented comprehensive main branch protection:
 - Vercel Authentication (via Vercel MCP API)
 - `AGENTS.md` documentation for all layers
 
+> **勘误 (2026-09-27)**：上列表中 Layer 4 的状态记录有误——`gh api` 实查 main 与 lovable 均 `required_signatures=false`（未启用）；CODEOWNERS 的 code owner review 也未强制（`require_code_owner_reviews=false`），Layer 2 实际防线是 `enforce_admins=true` + required checks。权威状态与分级决策见 `docs/conventions/branch-protection.md`。
+
 All changes are on `lovable` branch, PR #519 targets `main`.
 
 ## Resolution (Completed)

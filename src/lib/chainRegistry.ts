@@ -39,6 +39,7 @@ function shouldIncludeModule(name: string): boolean {
 interface AbModuleBase {
   CHAIN_ID: number;
   POOL?: string;
+  AAVE_PROTOCOL_DATA_PROVIDER?: string;
   SPOKES?: Record<string, string>;
   HUBS?: Record<string, string>;
 }
@@ -48,6 +49,7 @@ interface DiscoveredEntry {
   moduleName: string;
   chainId: number;
   pool?: string;
+  provider?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +65,13 @@ const ENTRIES: readonly DiscoveredEntry[] = (() => {
 
     // V3: has POOL address
     if (typeof m.POOL === 'string' && m.POOL.startsWith('0x')) {
-      result.push({ version: 'v3', moduleName: name, chainId: m.CHAIN_ID, pool: m.POOL });
+      result.push({
+        version: 'v3',
+        moduleName: name,
+        chainId: m.CHAIN_ID,
+        pool: m.POOL,
+        provider: typeof m.AAVE_PROTOCOL_DATA_PROVIDER === 'string' ? m.AAVE_PROTOCOL_DATA_PROVIDER : undefined,
+      });
       continue;
     }
     // V4: has SPOKES (Hub & Spoke architecture, no single POOL)
@@ -222,6 +230,18 @@ export function getAaveProtocolVersion(chainId: number): 'v3' | 'v4' | null {
 /** V3 pool address lookup — auto-discovered from address book */
 export const V3_POOL_ADDRESSES: Record<string, string> = Object.fromEntries(
   ENTRIES.filter((e) => e.version === 'v3' && e.pool).map((e) => [String(e.chainId), e.pool!]),
+);
+
+/**
+ * V3 AaveProtocolDataProvider address lookup — auto-discovered from address book.
+ *
+ * Aave V3.2+ removed `getUserReserveData` from the Pool (raw eth_call reverts
+ * on every wallet); the per-reserve user data lives on the protocol Data
+ * Provider, whose `getUserReserveData` returns interest-bearing balances
+ * (AAV-1305 Phase 2).
+ */
+export const V3_PROTOCOL_DATA_PROVIDER_ADDRESSES: Record<string, string> = Object.fromEntries(
+  ENTRIES.filter((e) => e.version === 'v3' && e.provider).map((e) => [String(e.chainId), e.provider!]),
 );
 
 // ---------------------------------------------------------------------------

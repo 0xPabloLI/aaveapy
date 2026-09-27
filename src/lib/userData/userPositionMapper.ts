@@ -13,6 +13,15 @@ export interface WalletPosition {
   asset: `0x${string}`;
   tokenSymbol: string;
   side: 'supply' | 'borrow';
+  /**
+   * Raw amount in **token-native base units** (not a fixed 18-dec wad):
+   * - onchain/gap sources (`onchain-v3`/`onchain-v4`/`gap-*`): DataProvider/Spoke
+   *   returns native-precision raw (e.g. 6-dec USDT balance stays in micro units).
+   * - `sdk` source: `onChainValue` when present (native raw), else the human value
+   *   normalized to 18-dec wad by `decimalToWad` (mixed semantics, see
+   *   `sdkPositionConverter.ts`).
+   * Production consumers must use `amountUsd`; `amountWad` is provenance-only.
+   */
   amountWad: bigint;
   amountUsd: number;
   isCollateral: boolean;
@@ -27,10 +36,18 @@ export interface PositionMeta {
   decimals: number;
 }
 
-const WAD = 10n ** 18n;
-
-function wadToHuman(wad: bigint): number {
-  return Number(wad / WAD) + Number(wad % WAD) / Number(WAD);
+/**
+ * Convert a token-native raw bigint to a human-readable number using the
+ * token's own decimals — NOT a fixed 18-dec wad (AAV-1311: DataProvider/Spoke
+ * return native-precision raw, so 6-dec stables must divide by 10^6).
+ *
+ * Two-segment conversion (integer part + fractional part) keeps precision for
+ * large balances: each segment fits within float53 individually.
+ */
+function rawToHuman(raw: bigint, decimals: number): number {
+  const safeDecimals = Math.max(0, Math.floor(decimals));
+  const divisor = 10n ** BigInt(safeDecimals);
+  return Number(raw / divisor) + Number(raw % divisor) / Number(divisor);
 }
 
 export function mapV3PositionToWalletPosition(
@@ -55,7 +72,7 @@ export function mapV3PositionToWalletPosition(
     tokenSymbol: meta.tokenSymbol,
     side,
     amountWad,
-    amountUsd: wadToHuman(amountWad) * meta.tokenPrice,
+    amountUsd: rawToHuman(amountWad, meta.decimals) * meta.tokenPrice,
     isCollateral: pos.isCollateral,
     source,
     isOrphan,
@@ -79,7 +96,7 @@ export function mapV4PositionToWalletPosition(
     tokenSymbol: meta.tokenSymbol,
     side,
     amountWad,
-    amountUsd: wadToHuman(amountWad) * meta.tokenPrice,
+    amountUsd: rawToHuman(amountWad, meta.decimals) * meta.tokenPrice,
     isCollateral: pos.isCollateral,
     source,
     isOrphan,

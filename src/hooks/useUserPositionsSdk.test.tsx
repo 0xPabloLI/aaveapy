@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -33,6 +33,14 @@ const { mockV3RefreshQueryWhere, mockV4RefreshQueryWhere } = vi.hoisted(() => ({
   mockV3RefreshQueryWhere: vi.fn(),
   mockV4RefreshQueryWhere: vi.fn(),
 }));
+// Per-test overrides for the AaveClient context value. `null` = default mock
+// (client with a working refreshQueryWhere); any other value is returned as-is,
+// so tests can simulate an uninitialized client (undefined) or one whose
+// refreshQueryWhere throws synchronously.
+const { v3ClientOverride, v4ClientOverride } = vi.hoisted(() => ({
+  v3ClientOverride: { current: null as null | unknown },
+  v4ClientOverride: { current: null as null | unknown },
+}));
 
 vi.mock('./useWallet', () => ({
   useWallet: useWalletMock,
@@ -41,13 +49,19 @@ vi.mock('./useWallet', () => ({
 vi.mock('@aave/react', () => ({
   useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
   useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
-  useAaveClient: () => ({ refreshQueryWhere: mockV4RefreshQueryWhere }),
+  useAaveClient: () =>
+    v4ClientOverride.current !== null
+      ? (v4ClientOverride.current as never)
+      : { refreshQueryWhere: mockV4RefreshQueryWhere },
 }));
 
 vi.mock('@aave/react-v3', () => ({
   useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
   useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
-  useAaveClient: () => ({ refreshQueryWhere: mockV3RefreshQueryWhere }),
+  useAaveClient: () =>
+    v3ClientOverride.current !== null
+      ? (v3ClientOverride.current as never)
+      : { refreshQueryWhere: mockV3RefreshQueryWhere },
 }));
 
 vi.mock('@/lib/userData/gapFallbackQuery', () => ({
@@ -594,6 +608,77 @@ describe('useUserPositionsSdk - urql refetch on refetchEvent (S4, AAV-698)', () 
       });
       expect(other).toBe(false);
     }
+    unmount();
+  });
+});
+
+// ---------- refetchEvent listener resilience (AAV-1305) ----------
+
+describe('useUserPositionsSdk - refetchEvent listener resilience (AAV-1305)', () => {
+  beforeEach(() => {
+    _resetRefetchListeners();
+    mockInvalidateQueries.mockClear();
+    mockGapRefetch.mockClear();
+    mockV3RefreshQueryWhere.mockClear();
+    mockV4RefreshQueryWhere.mockClear();
+    useWalletMock.mockReturnValue({
+      address: USER,
+      isConnected: true,
+      isWatchMode: false,
+    });
+  });
+
+  afterEach(() => {
+    v3ClientOverride.current = null;
+    v4ClientOverride.current = null;
+  });
+
+  it('skips refreshQueryWhere without throwing when the AaveClient is not yet initialized', () => {
+    v3ClientOverride.current = undefined;
+    v4ClientOverride.current = undefined;
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(() => bumpRefetch('watch-reentry')).not.toThrow();
+    expect(mockV3RefreshQueryWhere).not.toHaveBeenCalled();
+    expect(mockV4RefreshQueryWhere).not.toHaveBeenCalled();
+    // The RQ invalidation (source of truth for the fallback path) still fires.
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['user-positions-onchain-fallback', USER] });
+    // Pre-fix symptom: refetchEvent's isolation logged
+    // "[refetchEvent] listener failed for source watch-reentry {}".
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('[refetchEvent]'),
+      expect.anything(),
+      expect.anything(),
+    );
+
+    errorSpy.mockRestore();
+    unmount();
+  });
+
+  it('keeps the remaining refreshes alive when one client throws synchronously', () => {
+    // Production log shape (AAV-1305): the urql client threw an object that
+    // printed as `{}` — a sync throw inside the listener, not a rejected promise.
+    v3ClientOverride.current = {
+      refreshQueryWhere: () => {
+        throw {};
+      },
+    };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(() => bumpRefetch('watch-reentry')).not.toThrow();
+    // The other client's refreshes still go through.
+    expect(mockV4RefreshQueryWhere).toHaveBeenCalledTimes(2);
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('[refetchEvent]'),
+      expect.anything(),
+      expect.anything(),
+    );
+
+    errorSpy.mockRestore();
     unmount();
   });
 });

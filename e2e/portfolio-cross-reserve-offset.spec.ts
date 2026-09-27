@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { discoverOffsetScenarios, type OffsetScenario } from './reserveDiscovery';
 import {
   addReserveToPortfolio,
+  fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
-  getMarketChipLabel,
-  getSupplyRoomUsd,
   readIncentiveAfter,
   setupPortfolioMode,
 } from './test-reserves';
@@ -25,126 +25,29 @@ import {
  * Assertions are behavioural (relative changes, proportional to Merkl APR),
  * not value-specific, to remain resilient to APR changes over time.
  *
+ * Scenario selection lives in ./reserveDiscovery (AAV-1280): groups only
+ * qualify when their computable breakdown APRs sum > 0, mirroring the UI's
+ * render gates (active window, whitelist, AMOUNT variants) so a selected
+ * scenario always renders a numeric incentive — never the '—' failure shape.
+ * Unit-tested in src/test/reserveDiscovery.test.ts.
+ *
  * If no cross-offset campaigns are found in staging data, all tests skip.
  * Desktop + mobile variants are generated from the same scenario list.
  */
 
-// ─── Types ─────────────────────────────────────────────────────────
-
-interface CrossOffsetScenario {
-  type: 'cross-reserve' | 'self-loop';
-  targetSymbol: string;
-  targetMarketLabel: string;
-  targetReserveId: string;
-  targetApr: number;
-  chainName: string;
-  offsetSymbol?: string;
-  offsetMarketLabel?: string;
-  offsetReserveId?: string;
-}
-
 // ─── API Discovery ─────────────────────────────────────────────────
 
-const STAGING_API = 'https://staging-api.aaveapy.com/api';
-
-async function discoverScenarios(): Promise<CrossOffsetScenario[]> {
-  try {
-    const resp = await fetch(`${STAGING_API}/markets`);
-    if (!resp.ok) return [];
-    const data = (await resp.json()) as { reserves?: Record<string, unknown>[] };
-    const reserves = data.reserves ?? [];
-    const idMap: Record<string, Record<string, unknown>> = {};
-    for (const r of reserves) idMap[r.reserveId as string] = r;
-
-    const scenarios: CrossOffsetScenario[] = [];
-    const seen = new Set<string>();
-
-    for (const r of reserves) {
-      const merklSupplys = (r.merklSupplys ?? []) as Record<string, unknown>[];
-      for (const g of merklSupplys) {
-        const constraint = g.netPositionConstraint as { offsetReserveIds: string[] } | null | undefined;
-        if (!constraint) continue;
-        const offsets = constraint.offsetReserveIds;
-        const nonSelf = offsets.filter((id) => id !== r.reserveId);
-        const breakdowns = (g.breakdowns ?? []) as { campaignApr?: number }[];
-        const apr = breakdowns.reduce((s, b) => s + (b.campaignApr ?? 0), 0);
-        if (apr <= 0) continue;
-
-        // Skip reserves that cannot be added to portfolio or have supply disabled
-        if (r.isFrozen || r.isPaused || r.isActive === false) continue;
-        if (r.supplyDisabled === true) continue;
-        // AAV-1250: LTV clamping prevents borrow when ltv=0 (frozen/non-collateral)
-        // Filter out reserves with ltv=0 or undefined — they can't be borrowed against
-        if (!r.ltv || r.ltv === 0) continue;
-        // Zero supply room (cap exhausted by current positions) clamps manual
-        // supply to 0 on commit — baseline-after-incentive would be 0. Skip
-        // when the room is known and exhausted; unknown room stays included.
-        if ((getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) <= 0) continue;
-
-        const marketLabel = getMarketChipLabel(r.marketName as string, r.chainName as string);
-        const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
-        const dedupKey = `${r.reserveId as string}:${type}`;
-        if (seen.has(dedupKey)) continue;
-        seen.add(dedupKey);
-
-        if (type === 'cross-reserve') {
-          const offsetReserve = idMap[nonSelf[0]];
-          if (!offsetReserve) continue;
-          // Skip if offset reserve cannot be added or has borrow disabled
-          if (offsetReserve.isFrozen || offsetReserve.isPaused || offsetReserve.isActive === false) continue;
-          if (offsetReserve.borrowDisabled === true) continue;
-          // AAV-1250: offset reserve also needs ltv > 0 for borrow to not be clamped to 0
-          if (!offsetReserve.ltv || offsetReserve.ltv === 0) continue;
-          // Offset reserve receives the collateral supply — same zero-room clamp applies
-          if ((getSupplyRoomUsd(offsetReserve) ?? Number.POSITIVE_INFINITY) <= 0) continue;
-          scenarios.push({
-            type,
-            targetSymbol: r.tokenSymbol as string,
-            targetMarketLabel: marketLabel,
-            targetReserveId: r.reserveId as string,
-            targetApr: apr,
-            chainName: r.chainName as string,
-            offsetSymbol: offsetReserve.tokenSymbol as string,
-            offsetMarketLabel: getMarketChipLabel(
-              offsetReserve.marketName as string,
-              offsetReserve.chainName as string,
-            ),
-            offsetReserveId: offsetReserve.reserveId as string,
-          });
-        } else {
-          scenarios.push({
-            type,
-            targetSymbol: r.tokenSymbol as string,
-            targetMarketLabel: marketLabel,
-            targetReserveId: r.reserveId as string,
-            targetApr: apr,
-            chainName: r.chainName as string,
-          });
-        }
-      }
-    }
-
-    // Sort: cross-reserve first, then by APR descending
-    scenarios.sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'cross-reserve' ? -1 : 1;
-      return b.targetApr - a.targetApr;
-    });
-
-    return scenarios;
-  } catch {
-    return [];
-  }
-}
-
-// Discover at module load (top-level await — Playwright supports ESM TLA)
-const allScenarios = await discoverScenarios();
+// Discover at module load (top-level await — Playwright supports ESM TLA).
+// API base comes from the shared env-resolving fetcher (AAV-1280 leftover):
+// CI sets VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
+const allScenarios: OffsetScenario[] = discoverOffsetScenarios(await fetchStagingReserves(), new Date().toISOString());
 const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reserve').slice(0, 3);
 const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossReserveScenario(page: Page, s: CrossOffsetScenario, isMobile: boolean) {
+async function runCrossReserveScenario(page: Page, s: OffsetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
@@ -193,7 +96,7 @@ async function runCrossReserveScenario(page: Page, s: CrossOffsetScenario, isMob
   ).toBeLessThanOrEqual(0.05);
 }
 
-async function runSelfLoopScenario(page: Page, s: CrossOffsetScenario, isMobile: boolean) {
+async function runSelfLoopScenario(page: Page, s: OffsetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 

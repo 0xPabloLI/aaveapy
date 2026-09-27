@@ -15,8 +15,10 @@
  * A campaign is "computable" only when the UI can render a numeric percent
  * for it, mirroring `getMerklBreakdownApr` (src/lib/merklForecast.ts):
  * 1. `campaignApr > 0`, or points-based (`pointsPerThousandUsd > 0`)
- * 2. started < now < ended (missing/invalid boundaries are ignored)
+ * 2. started < now < ended with BOTH boundaries present (mirrors
+ *    `isCampaignActive` with allowOpenEnd=false — AAV-1280)
  * 3. campaignType is not an AMOUNT variant
+ * 4. not whitelist-only (e2e never opts in — AAV-1280)
  */
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@ export interface MerklBreakdown {
   campaignEndedAt?: string;
   campaignType?: string;
   pointsPerThousandUsd?: number;
+  whitelistOnly?: boolean;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────
@@ -70,18 +73,45 @@ const parseTime = (iso: string | undefined): number | null => {
   return Number.isFinite(t) ? t : null;
 };
 
+/**
+ * Mirrors `parseCampaignBoundaryMs` (src/lib/campaignGroups.ts): date-only
+ * boundaries normalize to start-of-day (start) / end-of-day (end), so an
+ * end date of `2026-10-01` stays renderable through that whole day.
+ */
+const parseBoundary = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
+    const t = Date.parse(normalized);
+    return Number.isNaN(t) ? null : t;
+  }
+  const t = Date.parse(value);
+  return Number.isNaN(t) ? null : t;
+};
+
 const parseApr = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
 
 /**
  * Whether a single Merkl breakdown can produce a numeric incentive percent
  * in the UI at time `nowIso` (mirrors getMerklBreakdownApr + forecast gating).
+ *
+ * AAV-1280: the gate chain must mirror the UI's render gates exactly
+ * (sumMerklIncentiveApr in src/lib/incentiveAggregation.ts):
+ * 1. `isCampaignActive(start, end, now, allowOpenEnd=false)` — a breakdown
+ *    missing either boundary is NOT counted by the UI (Merkl never open-end),
+ *    so discovery must not select it either.
+ * 2. whitelist-only campaigns are excluded unless the user opts in — e2e
+ *    never opts in, so they always render '—'.
+ * 3. AMOUNT variants are a test-side conservative exclusion (their APR is a
+ *    token amount, not percent — AAV-1275).
  */
 export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): boolean {
+  if (b.whitelistOnly) return false;
   const now = parseTime(nowIso);
-  const started = parseTime(b.campaignStartedAt);
-  const ended = parseTime(b.campaignEndedAt);
-  if (started != null && now != null && started > now) return false;
-  if (ended != null && now != null && ended < now) return false;
+  const started = parseBoundary(b.campaignStartedAt, 'start');
+  if (started === null || (now != null && started > now)) return false;
+  const ended = parseBoundary(b.campaignEndedAt, 'end');
+  if (ended === null || (now != null && ended < now)) return false;
   if (b.campaignType && AMOUNT_VARIANT_CAMPAIGN_TYPES.includes(b.campaignType)) return false;
   const apr = parseApr(b.campaignApr);
   if (apr > 0) return true;
@@ -200,4 +230,113 @@ export function pickIncentiveReserve(reserves: DiscoveryReserve[], nowIso: strin
     marketName: best.marketName as string,
     ltv: best.ltv as number,
   };
+}
+
+// ─── Cross-reserve offset scenarios (AAV-1280) ───────────────────────
+
+/** Loose shape of a Merkl opportunity group carrying a net-position constraint. */
+interface OffsetOpportunityGroup {
+  netPositionConstraint?: { offsetReserveIds?: string[] } | null;
+  breakdowns?: unknown;
+}
+
+/** A portfolio cross-reserve/self-loop offset scenario to exercise in e2e. */
+export interface OffsetScenario {
+  type: 'cross-reserve' | 'self-loop';
+  targetSymbol: string;
+  targetMarketLabel: string;
+  targetReserveId: string;
+  /** Sum of computable breakdown APRs (percent points). */
+  targetApr: number;
+  chainName: string;
+  offsetSymbol?: string;
+  offsetMarketLabel?: string;
+  offsetReserveId?: string;
+}
+
+function usableForOffsetPosition(r: DiscoveryReserve): boolean {
+  if (r.isFrozen || r.isPaused || r.isActive === false) return false;
+  if (r.supplyDisabled === true) return false;
+  if (typeof r.ltv !== 'number' || r.ltv <= 0) return false;
+  if ((getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) <= 0) return false;
+  return true;
+}
+
+/**
+ * Discover cross-reserve / self-loop Merkl offset scenarios from /markets
+ * reserves (ported from portfolio-cross-reserve-offset.spec.ts — AAV-1280).
+ *
+ * A group qualifies only when its COMPUTABLE breakdown APRs sum > 0: the
+ * per-breakdown gate chain (active window with both boundaries, whitelist
+ * opt-in, AMOUNT variants) mirrors the UI's render gates via
+ * `isComputableMerklCampaign`, so discovery never selects a reserve the UI
+ * renders as '—' (the AAV-1280 failure). Points-only groups stay excluded
+ * (conservative: the proportional-offset assertions need percent APR).
+ *
+ * Cross-reserve scenarios additionally require the offset reserve to be
+ * addable and borrowable (active, ltv > 0, borrow enabled, supply room).
+ */
+export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: string): OffsetScenario[] {
+  const idMap = new Map<string, DiscoveryReserve>();
+  for (const r of reserves) {
+    if (typeof r.reserveId === 'string' && r.reserveId) idMap.set(r.reserveId, r);
+  }
+
+  const scenarios: OffsetScenario[] = [];
+  const seen = new Set<string>();
+
+  for (const r of reserves) {
+    if (typeof r.reserveId !== 'string' || !r.reserveId) continue;
+    if (!usableForOffsetPosition(r)) continue;
+
+    const groups = r.merklSupplys;
+    if (!Array.isArray(groups)) continue;
+    for (const g of groups as OffsetOpportunityGroup[]) {
+      const offsets = g.netPositionConstraint?.offsetReserveIds;
+      if (!Array.isArray(offsets)) continue;
+      const nonSelf = offsets.filter((id) => id !== r.reserveId);
+      const breakdowns = Array.isArray(g.breakdowns) ? (g.breakdowns as MerklBreakdown[]) : [];
+      const apr = breakdowns
+        .filter((b) => isComputableMerklCampaign(b, nowIso))
+        .reduce((sum, b) => sum + parseApr(b.campaignApr), 0);
+      if (apr <= 0) continue;
+
+      const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
+      const dedupKey = `${r.reserveId}:${type}`;
+      if (seen.has(dedupKey)) continue;
+
+      const scenario: OffsetScenario = {
+        type,
+        targetSymbol: r.tokenSymbol as string,
+        targetMarketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
+        targetReserveId: r.reserveId,
+        targetApr: apr,
+        chainName: r.chainName as string,
+      };
+
+      if (type === 'cross-reserve') {
+        const offsetReserve = idMap.get(nonSelf[0]);
+        if (!offsetReserve) continue;
+        if (offsetReserve.borrowDisabled === true) continue;
+        if (!usableForOffsetPosition(offsetReserve)) continue;
+        scenario.offsetSymbol = offsetReserve.tokenSymbol as string;
+        scenario.offsetMarketLabel = getMarketChipLabel(
+          offsetReserve.marketName as string,
+          offsetReserve.chainName as string,
+        );
+        scenario.offsetReserveId = offsetReserve.reserveId;
+      }
+
+      seen.add(dedupKey);
+      scenarios.push(scenario);
+    }
+  }
+
+  // Sort: cross-reserve first, then by APR descending
+  scenarios.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'cross-reserve' ? -1 : 1;
+    return b.targetApr - a.targetApr;
+  });
+
+  return scenarios;
 }

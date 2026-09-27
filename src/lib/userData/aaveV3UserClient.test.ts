@@ -1,14 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   V3_POOL_ADDRESSES,
+  V3_PROTOCOL_DATA_PROVIDER_ADDRESSES,
+  DATA_PROVIDER_ABI,
+  POOL_ABI,
   getV3PoolAddress,
+  getV3ProtocolDataProviderAddress,
   MULTICALL3_ADDRESS,
   getV3UserPositionsOnChain,
   getV3UserPositionsMultiChain,
   type V3OnchainResult,
   type V3AssetsByMarket,
 } from './aaveV3UserClient';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains';
 import type { createPublicClient } from 'viem';
 
@@ -17,6 +21,37 @@ vi.mock('./chainDiscovery', async (importOriginal) => {
   return {
     ...actual,
     getAllRpcUrls: vi.fn().mockReturnValue([]),
+  };
+});
+
+// Per-test overrides for the chain registry tables, used to exercise the
+// degradation paths (provider missing / pool missing) that no real chain
+// hits today. The mock reads through getters so overrides set inside a
+// test are visible to the module under test at call time.
+const rpcRotationMocks = vi.hoisted(() => ({
+  createClientWithRpcRotation: vi.fn(),
+}));
+
+vi.mock('./rpcResilience', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./rpcResilience')>();
+  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+});
+
+const registryOverrides = vi.hoisted(() => ({
+  pool: null as Record<string, string> | null,
+  provider: null as Record<string, string> | null,
+}));
+
+vi.mock('../chainRegistry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../chainRegistry')>();
+  return {
+    ...actual,
+    get V3_POOL_ADDRESSES() {
+      return registryOverrides.pool ?? actual.V3_POOL_ADDRESSES;
+    },
+    get V3_PROTOCOL_DATA_PROVIDER_ADDRESSES() {
+      return registryOverrides.provider ?? actual.V3_PROTOCOL_DATA_PROVIDER_ADDRESSES;
+    },
   };
 });
 
@@ -70,6 +105,31 @@ describe('MULTICALL3_ADDRESS', () => {
   });
 });
 
+describe('V3_PROTOCOL_DATA_PROVIDER_ADDRESSES', () => {
+  it('covers the same chain set as V3_POOL_ADDRESSES (both derive from the address book)', () => {
+    expect(new Set(Object.keys(V3_PROTOCOL_DATA_PROVIDER_ADDRESSES))).toEqual(new Set(Object.keys(V3_POOL_ADDRESSES)));
+  });
+
+  it('every value passes viem address validation', async () => {
+    const { isAddress } = await import('viem');
+    for (const address of Object.values(V3_PROTOCOL_DATA_PROVIDER_ADDRESSES)) {
+      expect(isAddress(address)).toBe(true);
+    }
+  });
+
+  it('mainnet matches the address live-verified in AAV-1305', () => {
+    expect(getV3ProtocolDataProviderAddress(1)).toBe('0x0a16f2FCC0D44FaE41cc54e079281D84A363bECD');
+  });
+
+  it('celo matches the provider live-decoded with a real position (AAV-1305 evidence)', () => {
+    expect(getV3ProtocolDataProviderAddress(42220)).toBe('0x2e0f8D3B1631296cC7c56538D6Eb6032601E15ED');
+  });
+
+  it('returns undefined for unknown chain', () => {
+    expect(getV3ProtocolDataProviderAddress(999999)).toBeUndefined();
+  });
+});
+
 function makeMockClient(multicallResult: unknown[]) {
   const mockMulticall = vi.fn().mockResolvedValue(multicallResult);
   const client = {
@@ -84,38 +144,16 @@ const USER = '0x1111111111111111111111111111111111111111' as `0x${string}`;
 const POOL = getV3PoolAddress(1)!;
 
 describe('getV3UserPositionsOnChain', () => {
+  // Mock results use positional tuples — that is what real viem multicall
+  // returns for multi-output calls (named objects would silently decode to
+  // undefined fields, which is exactly the latent bug AAV-1305 evidence caught).
   it('returns positions for reserves with non-zero balances', async () => {
     const { client } = makeMockClient([
+      { status: 'success', result: [1000n * 10n ** 18n, 0n, 500n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, true] },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, false] },
       {
         status: 'success',
-        result: {
-          currentATokenBalance: 1000n * 10n ** 18n,
-          currentStableDebt: 0n,
-          currentVariableDebt: 500n * 10n ** 18n,
-          scaledVariableDebt: 0n,
-          usageAsCollateralEnabled: true,
-        },
-      },
-      {
-        status: 'success',
-        result: {
-          currentATokenBalance: 0n,
-          currentStableDebt: 0n,
-          currentVariableDebt: 0n,
-          scaledVariableDebt: 0n,
-          usageAsCollateralEnabled: false,
-        },
-      },
-      {
-        status: 'success',
-        result: {
-          totalCollateralBase: 1000n * 10n ** 8n,
-          totalDebtBase: 500n * 10n ** 8n,
-          availableBorrowsBase: 400n * 10n ** 8n,
-          currentLiquidationThreshold: 8000n,
-          ltv: 7500n,
-          healthFactor: 1000000000000000000n,
-        },
+        result: [1000n * 10n ** 8n, 500n * 10n ** 8n, 400n * 10n ** 8n, 8000n, 7500n, 1000000000000000000n],
       },
     ]);
 
@@ -137,27 +175,8 @@ describe('getV3UserPositionsOnChain', () => {
 
   it('skips zero-balance reserves', async () => {
     const { client } = makeMockClient([
-      {
-        status: 'success',
-        result: {
-          currentATokenBalance: 0n,
-          currentStableDebt: 0n,
-          currentVariableDebt: 0n,
-          scaledVariableDebt: 0n,
-          usageAsCollateralEnabled: false,
-        },
-      },
-      {
-        status: 'success',
-        result: {
-          totalCollateralBase: 0n,
-          totalDebtBase: 0n,
-          availableBorrowsBase: 0n,
-          currentLiquidationThreshold: 0n,
-          ltv: 0n,
-          healthFactor: 0n,
-        },
-      },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, false] },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
     ]);
 
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
@@ -167,21 +186,22 @@ describe('getV3UserPositionsOnChain', () => {
   it('skips failed multicall entries', async () => {
     const { client } = makeMockClient([
       { status: 'failure', result: undefined },
-      {
-        status: 'success',
-        result: {
-          totalCollateralBase: 0n,
-          totalDebtBase: 0n,
-          availableBorrowsBase: 0n,
-          currentLiquidationThreshold: 0n,
-          ltv: 0n,
-          healthFactor: 0n,
-        },
-      },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
     ]);
 
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
     expect(result.positions).toHaveLength(0);
+  });
+
+  it('skips a success entry whose result is not an array (unexpected shape)', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: { currentATokenBalance: 5n } as never },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    expect(result.positions).toHaveLength(0);
+    expect(result.accountSummary).not.toBeNull();
   });
 
   it('returns empty for unknown chain', async () => {
@@ -192,20 +212,94 @@ describe('getV3UserPositionsOnChain', () => {
 
   it('returns null accountSummary when getUserAccountData fails', async () => {
     const { client } = makeMockClient([
-      {
-        status: 'success',
-        result: {
-          currentATokenBalance: 100n * 10n ** 18n,
-          currentStableDebt: 0n,
-          currentVariableDebt: 0n,
-          scaledVariableDebt: 0n,
-          usageAsCollateralEnabled: true,
-        },
-      },
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
       { status: 'failure', result: undefined },
     ]);
 
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    expect(result.positions).toHaveLength(1);
+    expect(result.accountSummary).toBeNull();
+  });
+
+  // AAV-1305 Phase 2: reserve reads moved off the Pool (V3.2+ removed
+  // getUserReserveData there — raw eth_call reverts on every wallet) onto
+  // AAVE_PROTOCOL_DATA_PROVIDER. getUserAccountData only exists on the Pool
+  // and stays there.
+  it('targets reserve calls at the DataProvider and the account call at the Pool', async () => {
+    const { client, mockMulticall } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 3n * 10n ** 25n, 0n, true] },
+      { status: 'success', result: [100n * 10n ** 8n, 0n, 80n * 10n ** 8n, 8000n, 7500n, 1000000000000000000n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    expect(mockMulticall).toHaveBeenCalledTimes(1);
+    const contracts = mockMulticall.mock.calls[0][0].contracts;
+    expect(contracts).toHaveLength(2);
+    expect(contracts[0]).toMatchObject({
+      address: getV3ProtocolDataProviderAddress(1),
+      functionName: 'getUserReserveData',
+      args: [DAI, USER],
+    });
+    expect(contracts[0].abi).toBe(DATA_PROVIDER_ABI);
+    expect(contracts[1]).toMatchObject({
+      address: POOL,
+      functionName: 'getUserAccountData',
+      args: [USER],
+    });
+    expect(contracts[1].abi).toBe(POOL_ABI);
+
+    expect(result.positions[0]?.supplyWad).toBe(100n * 10n ** 18n);
+    expect(result.positions[0]?.isCollateral).toBe(true);
+    expect(result.accountSummary?.healthFactorWad).toBe(1000000000000000000n);
+  });
+
+  it('ignores market-level rate fields of the DataProvider result (non-zero for empty wallets)', async () => {
+    // The DataProvider returns stableBorrowRate / liquidityRate even for a
+    // user with no position — they are market-level, not user data. The
+    // zero-balance skip must not be fooled by them.
+    const { client } = makeMockClient([
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 5n * 10n ** 24n, 0n, false] },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    expect(result.positions).toHaveLength(0);
+  });
+});
+
+describe('getV3UserPositionsOnChain degradation (registry overrides)', () => {
+  afterEach(() => {
+    registryOverrides.pool = null;
+    registryOverrides.provider = null;
+  });
+
+  it('provider missing: no reserve calls, account call still proceeds', async () => {
+    registryOverrides.provider = {};
+    const { client, mockMulticall } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 8n, 0n, 80n * 10n ** 8n, 8000n, 7500n, 1000000000000000000n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    const contracts = mockMulticall.mock.calls[0][0].contracts;
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].functionName).toBe('getUserAccountData');
+    expect(result.positions).toHaveLength(0);
+    expect(result.accountSummary).not.toBeNull();
+  });
+
+  it('pool missing: no account call, reserve calls still proceed', async () => {
+    registryOverrides.pool = {};
+    const { client, mockMulticall } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    const contracts = mockMulticall.mock.calls[0][0].contracts;
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].functionName).toBe('getUserReserveData');
     expect(result.positions).toHaveLength(1);
     expect(result.accountSummary).toBeNull();
   });
@@ -281,9 +375,45 @@ describe('getV3UserPositionsMultiChain', () => {
   });
 });
 
-describe('createClientWithRpcRotation (V3)', () => {
-  it('returns null for chain with no RPC URLs', async () => {
-    const result = await createClientWithRpcRotation(999991);
-    expect(result).toBeNull();
+describe('getV3UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+    rpcRotationMocks.createClientWithRpcRotation.mockResolvedValue(null);
+  });
+
+  it('registry has no RPC (client null) → empty success (unchanged degradation)', async () => {
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum');
+    expect(result).toEqual({ positions: [], accountSummary: null });
+  });
+
+  it('rotation exhausted → getV3UserPositionsOnChain rejects (not empty success)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum')).rejects.toBeInstanceOf(
+      RpcRotationExhaustedError,
+    );
+  });
+
+  it('multichain captures rotation exhaustion into errors (not silent empty)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(42161));
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Arbitrum: { chainId: 42161, assets: [USDC] },
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(42161);
+    expect(result.errors[0].error).toBeInstanceOf(RpcRotationExhaustedError);
+  });
+
+  it('explicit client bypasses RPC rotation entirely', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
+      { status: 'success', result: [100n * 10n ** 8n, 0n, 0n, 8000n, 7500n, 1000000000000000000n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    expect(result.positions).toHaveLength(1);
   });
 });

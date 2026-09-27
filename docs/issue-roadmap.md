@@ -8,9 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-09-25（AAV-1282 交付；MULTICALL3_ADDRESS 常量修复与金丝雀测试已提交 `1061bd14` + e2e 钱包说明 `e3fac7c0`；新建 AAV-1303、AAV-1304、AAV-1305；#675/#676 PR_TARGET 迁移已合并 main 闭环）。
+> **Last inventory**: 2026-09-27(AAV-1310 经 `9552fe60` + `4f93ca0b` 交付关闭(Done):createClientWithRpcRotation 轮换耗尽改 throw RpcRotationExhaustedError,null 语义收紧为「registry 无 RPC」;V3/V4 multichain errors 通道非空 + failedSources 正确提示降级;HF 消费方映射既有 null 降级;双轴 review 闭环(修正 spec 措辞与证据映射)。此前 09-27:AAV-1311 经 `084131f5` 修复关闭(Celo USD₮ live 实测 $1044.57);完成新开 issue 全面审查流转与 AAV-1305 P2(`2d6e70fb`)、AAV-1309(`deec631e`)交付;Arc (5042) 链图标对齐上游 slug `arc` + 官方 logo 替换(`0c3cd74b`,lovable 本地,待晋升);V4 外链 logo 管道化开票 AAV-1312)。
 >
-> **frontier** = AAV-1280（High，e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空；Backlog 态，开工前需 triage 提级）。
+> **frontier** = AAV-1308(Medium,e2e cross-asset-pairing discovery 可算性缺口,ready-for-agent 态;同批其余候选 AAV-1303/1295/1292)。
 
 ---
 
@@ -18,6 +18,11 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 | Issue | 现状 / 方案痛点 | 审查建议与方案修正 | 调整动作 |
 | --- | --- | --- | --- |
+| **AAV-1311** | `userPositionMapper.ts` 中 `wadToHuman` 恒除以 $10^{18}$ 忽略 `meta.decimals`，6-dec 代币（USDT/USDC）在 onchain fallback 路径下 USD 缩小 $10^{12}$ 倍（测试钱包 $1044 显示为 $0.000001） | **最小闭环修复（已交付）**：`rawToHuman` 按 `meta.decimals` 两段法换算；`amountWad` 文档化原生 raw 语义；fixture 形态修正 + 一致性测试量级 invariant。Live 实测 Celo USD₮ $1044.57 正确呈现（`084131f5`）。 | Done（2026-09-27 关闭，交付记录见 Linear） |
+| **AAV-1310** | `createClientWithRpcRotation` 轮换超时耗尽返回 `null` 时，`getV3UserPositionsOnChain` 静默返回空成功 `{ positions: [], accountSummary: null }`，导致 `failedSources` 为空且 UI 呈现假 $0 | **语义分流与显式报错**：区分 `rpcUrls.length === 0`（未配置 RPC，平滑降级）与轮换耗尽（基础设施超时/故障，显式抛错）。使 `getV3UserPositionsMultiChain` 捕获至 `errors` 并推入 `failedSources`，让 UI 准确提示降级。 | 标为 ready-for-agent，维持 High |
+| **AAV-1308** | `portfolio-cross-asset-pairing.spec.ts` 裸加 `campaignApr`，未镜像 UI 侧时间窗（排除 open-ended）、白名单与 AMOUNT 变体门控（同 AAV-1280 病因） | **纯函数抽离与门控对齐**：抽取至 `e2e/reserveDiscovery.ts`，两端（supply/borrow）均复用 `isComputableMerklCampaign`，并在 `src/test/reserveDiscovery.test.ts` 增补测试矩阵。 | 移出 needs-triage，标为 ready-for-agent，维持 Medium |
+| **AAV-1307** | 本地 `pre-push` 门禁中 `reserves-table-scenario-pin.spec.ts` 8 步时序用例因双 worker 并发高负载耗时 56s 超时 | **Hook 层隔离**：Commit `fd3f5fcf0cb1` 已在 `scripts/pre-push-e2e.mjs` 中通过 `GREP_INVERT` 排除该已在 CI skip 的时序用例，达成验收标准。 | Done（2026-09-27 关闭，交付记录含 A/B 归因与如实记账） |
+| **AAV-1306** | GitHub #678，`lovable` 分支 CI 因 `@base-org/account` 与 `@wagmi/connectors` 的 peer-dep 冲突飘红 | **依赖对齐与 CI 恢复**：Commit `4dcd31fc` 已通过 override 修复冲突，最新 CI workflow 全部恢复绿灯。 | Done（2026-09-27 关闭；GitHub #678 已 closed） |
 | **AAV-1297** | 依赖外部 API 推导 slug 存在 CI 网络抖动风险 | **四级兜底推导**：Overrides 表 → AddressBook 模块名正则 → 外部 chainid.network（带超时）→ 通用 `chain-${id}`。配套标准化占位 SVG 与 manifest 自动构建。 | 设为 AAV-1296 前置 |
 | **AAV-1296** | 「全或无」门禁导致一旦有缺项整条 sync 瘫痪 | **门禁拆分 + 降级通道**：verify 拆为 critical（报错阻塞）与 advisory（补占位/警告但允许建 PR）。补 `pending-chain-ids.json` 逃生通道。 | 依赖 AAV-1297 产物 |
 | **AAV-1298** | openapi-sync 尝试对 lovable 分支建 PR 失败 | **收敛 Bot PR 目标**：依据三分支规范，所有自动同步 bot 统一只对 `dev` 建 PR，禁止直打 lovable；排查 codegen 语法与 PAT 权限。 | 目标分支收敛至 dev |
@@ -31,7 +36,8 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 | **AAV-1302** | release-drafter v7 在 PR 阶段属假绿灯；autolabeler 拆分且弃用旧 category 配置 | **配置模型迁移 + 拆分契约适配**：重构 `.github/release-drafter.yml` 消除弃用警告；按 v7 规范适配 autolabeler 逻辑，保证 draft release 分组准确。 | 维持 Low / Todo，排期实施并闭环 #656 |
 | **AAV-1303** | Merit 后端已下线导致 openapi-sync 自动生成与前端代码引用脱节（TS2551/TS2339） | **前端 Merit 退役清理**：移除契约 wrapper 与 types.ts 中 Merit 残留引用；统一 types.ts 维护方式（自动化或 header 文档对齐），恢复 openapi-sync CI 绿灯。 | Backlog，待前端-后端协同部署后处理 |
 | **AAV-1304** | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 标签字重不一致 | **空态友好化 + 样式归一**：Lowest HF 链上查询恢复后，补充无债务时空态说明（如隐藏或 tooltip 说明）；统一 Advanced 区域同级标签的 Typography token。 | Backlog，Low 优先级排期 |
-| **AAV-1305** | 生产钱包仓位导入失败双层根因（SDK GraphQL 网络不可达 + MULTICALL3 常量缺字符 + Pool 移除 getUserReserveData） | **双阶段分治修复**：第一阶段已修正 `MULTICALL3_ADDRESS` 常量（`1061bd14`）打通 viem 校验；第二阶段将 `getV3UserPositionsOnChain` 目标由 `Pool` 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`。 | 第一阶段已提交，第二阶段排期 Backlog |
+| **AAV-1305** | 生产钱包仓位导入失败双层根因（SDK GraphQL 网络不可达 + MULTICALL3 常量缺字符 + Pool 移除 getUserReserveData） | **双阶段分治修复**：第一阶段已修正 `MULTICALL3_ADDRESS` 常量（`1061bd14`）打通 viem 校验；第二阶段已将 `getV3UserPositionsOnChain` 目标由 `Pool` 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（`2d6e70fb`），watch-reentry 噪音修复（`5f928681`）。 | 已交付（2026-09-27，双阶段完成，见 Linear 交付记录） |
+| **AAV-1280** | 测试侧 discovery 只累加 raw `campaignApr`，未镜像 UI 渲染门控（时间窗/白名单/AMOUNT 变体），选中 UI 渲染 `—` 的 reserve 致 baseline 断言失败 | **测试侧加固**：`isComputableMerklCampaign` 收紧（缺失边界/date-only 规范化/whitelistOnly 排除）+ `discoverOffsetScenarios` 纯函数抽取 + 单测锚定每条门控。UI 侧静态审查三道门均为设计行为，无缺口。 | 已交付（测试侧）；原始触发数据已消失不复现 |
 
 ---
 
@@ -41,6 +47,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | GitHub # | Linear | Priority | State | Title | Labels |
 | --- | --- | --- | --- | --- | --- |
+| #678 | AAV-1306 | **None** | Done（2026-09-27 关闭；`4dcd31fc` 修复 @base-org/account peer-dep，最新 lovable CI 全绿） | 🔥 Lovable CI failure: e2e-desktop (2/2), socket-firewall, peer-dep-check... | bug, ci-failure-lovable, repo:frontend |
 | #668 | AAV-1297 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] chainIconMap 自动同步：从 registry 自动生成占位条目 | enhancement, hardcode |
 | #667 | AAV-1296 | **Urgent** | Done（2026-09-24 交付，见 Linear 交付记录） | [Improvement] Hardcode Sync 韧性：解除「全或无」门禁单点故障 | enhancement, hardcode, drift |
 | #671 | AAV-1299 | **High** | Done（2026-09-24 交付，见 Linear 交付记录） | [Bug] e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | bug |
@@ -54,15 +61,14 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 ### Urgent / High
 
-| Linear | Priority | State | Title | Assignee |
-| --- | --- | --- | --- | --- |
-| AAV-1280 | High | Backlog | e2e self-loop offset 用例失败：staging Merkl 数据标记 Celo spoke 有活动但 UI incentive 为空 | — |
+| Linear | Priority | State | Title |
+| --- | --- | --- | --- |
 
 ### Medium
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1305 | Medium | Backlog | 生产钱包仓位导入失败：双层根因（Aave SDK GraphQL 端点网络不可达 + MULTICALL3_ADDRESS 常量非法致 fallback 必然失败） |
+| AAV-1308 | Medium | Backlog (ready-for-agent) | e2e cross-asset-pairing discovery 可算性缺口：raw APR 直加未镜像 UI 渲染门控（同 AAV-1280 病因） |
 | AAV-1303 | Medium | Backlog | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复 |
 | AAV-1295 | Medium | Backlog | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过 |
 | AAV-1292 | Medium | Backlog | railway → main 正式晋升：三个定时工作流从未运行 |
@@ -72,6 +78,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1312 | Low | Backlog (needs-triage) | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
 | AAV-1304 | Low | Backlog | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
 | AAV-1302 | Low | Todo | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 | AAV-1301 | Low | Backlog | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* |
@@ -105,6 +112,11 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1310 | RPC 轮换耗尽静默空成功修复(`9552fe60` throw RpcRotationExhaustedError + null 语义收紧;V3/V4 errors 通道非空 + failedSources;HF 消费方降级对齐;spec `4f93ca0b` 含场景矩阵 + review 闭环) | 2026-09-27 |
+| AAV-1311 | Onchain fallback 非 18-dec 代币 USD 缩水（`rawToHuman` 按 meta.decimals 换算 `084131f5`；Celo USD₮ live 实测 $1044.57；一致性测试量级 invariant） | 2026-09-27 |
+| AAV-1309 | 一致性测试 API base 失效 + 空洞断言 + 假 HITL 标注（`deec631e`，onchain-only 语义；过程中发现 AAV-1310/1311） | 2026-09-27 |
+| AAV-1305 | 生产钱包仓位导入失败双层根因（P1 MULTICALL3 常量 `1061bd14`；P2 DataProvider 迁移 `2d6e70fb` + watch-reentry 加固 `5f928681`，Celo 真实仓位实测检出） | 2026-09-27 |
+| AAV-1280 | e2e self-loop offset：场景 discovery 对齐 UI 渲染门控（测试侧加固，原始触发数据已消失，e2e 实测干净 skip） | 2026-09-26 |
 | GitHub #676 | PR_TARGET 迁移到 pull_request 生产部署（dev→main 合并 52cf2aef，审计日志零残留） | 2026-09-25 |
 | AAV-1305 (P1) | 修复 MULTICALL3_ADDRESS 常量缺 hex 字符（19.5B→20B）+ 金丝雀测试防回归（commit `1061bd14`） | 2026-09-25 |
 | AAV-1282 | 移动端 Connect 弹窗为空：RainbowKit wallets 注入（connectorsForWallets + 本地工厂，e2e 双端解禁） | 2026-09-25 |

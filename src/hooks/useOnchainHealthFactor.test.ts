@@ -4,11 +4,21 @@
  *
  * Covers C5/C7/C17/C20 from the AAV-1253 scenario matrix.
  */
-import { describe, it, expect } from 'vitest';
-import { extractPoolTargets } from './useOnchainHealthFactor';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { extractPoolTargets, fetchOnchainHfBaselines } from './useOnchainHealthFactor';
+import { RpcRotationExhaustedError } from '@/lib/userData/rpcResilience';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+
+const rpcRotationMocks = vi.hoisted(() => ({
+  createClientWithRpcRotation: vi.fn(),
+}));
+
+vi.mock('@/lib/userData/rpcResilience', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/userData/rpcResilience')>();
+  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+});
 
 const makeReserve = (overrides: Partial<ReserveWithSpread & RateCalcInput> = {}): ReserveWithSpread & RateCalcInput =>
   ({
@@ -197,5 +207,62 @@ describe('extractPoolTargets (AAV-1253)', () => {
     const targets = extractPoolTargets(entries, [reserve]);
     expect(targets.v3Pools).toHaveLength(0);
     expect(targets.v4Spokes).toHaveLength(0);
+  });
+});
+
+describe('fetchOnchainHfBaselines RPC rotation exhaustion (AAV-1310)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+  });
+
+  it('rotation exhausted → empty HF map, no throw', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    const reserve = makeReserve({ reserveId: 'r-v3-usdc', marketName: 'AaveV3Ethereum', chainId: 1 });
+    const target = {
+      v3Pools: [
+        {
+          chainId: 1,
+          marketName: 'AaveV3Ethereum',
+          poolAddress: '0xabc1234567890123456789012345678901234567' as `0x${string}`,
+        },
+      ],
+      v4Spokes: [],
+    };
+
+    const result = await fetchOnchainHfBaselines('0x1111111111111111111111111111111111111111' as `0x${string}`, target);
+
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(0);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('RPC rotation exhausted'), expect.any(Error));
+    consoleSpy.mockRestore();
+  });
+
+  it('non-exhaustion client error is absorbed by allSettled (not logged as rotation exhaustion)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new Error('unexpected'));
+
+    const target = {
+      v3Pools: [
+        {
+          chainId: 1,
+          marketName: 'AaveV3Ethereum',
+          poolAddress: '0xabc1234567890123456789012345678901234567' as `0x${string}`,
+        },
+      ],
+      v4Spokes: [],
+    };
+
+    const result = await fetchOnchainHfBaselines('0x1111111111111111111111111111111111111111' as `0x${string}`, target);
+
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(0);
+    // allSettled absorbs any IIFE rejection — the exhaustion-specific log must NOT have fired
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('RPC rotation exhausted'),
+      expect.any(Error),
+    );
+    consoleErrorSpy.mockRestore();
   });
 });

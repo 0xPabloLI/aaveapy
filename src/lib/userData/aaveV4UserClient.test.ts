@@ -14,12 +14,21 @@ import {
   type V4ReserveInfo,
 } from './aaveV4UserClient';
 import { createPublicClient } from 'viem';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
 import { getAllRpcUrls } from './chainDiscovery';
 
 vi.mock('./chainDiscovery', () => ({
   getAllRpcUrls: vi.fn().mockReturnValue([]),
 }));
+
+const rpcRotationMocks = vi.hoisted(() => ({
+  createClientWithRpcRotation: vi.fn(),
+}));
+
+vi.mock('./rpcResilience', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./rpcResilience')>();
+  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+});
 
 vi.mock('viem', () => ({
   createPublicClient: vi.fn(),
@@ -342,23 +351,36 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
   });
 });
 
-describe('createClientWithRpcRotation', () => {
+describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+    rpcRotationMocks.createClientWithRpcRotation.mockResolvedValue(null);
   });
 
-  it('returns null for chain with no RPC URLs', async () => {
-    vi.mocked(getAllRpcUrls).mockReturnValue([]);
-    const result = await createClientWithRpcRotation(999991);
-    expect(result).toBeNull();
+  it('registry has no RPC (client null) → empty success (unchanged degradation)', async () => {
+    const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, []);
+    expect(result).toEqual({ positions: [], accountSummaries: [] });
   });
 
-  it('returns a client for a known chain', async () => {
-    vi.mocked(getAllRpcUrls).mockReturnValue(['https://eth.drpc.org']);
-    vi.mocked(createPublicClient).mockReturnValue({
-      getChainId: vi.fn().mockResolvedValue(1),
-    } as unknown as ReturnType<typeof createPublicClient>);
-    const result = await createClientWithRpcRotation(1);
-    expect(result).not.toBeNull();
+  it('rotation exhausted → getV4UserPositionsOnChain rejects (not empty success)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    await expect(getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [])).rejects.toBeInstanceOf(
+      RpcRotationExhaustedError,
+    );
+  });
+
+  it('allSpokes captures rotation exhaustion into errors (not silent empty)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    const result = await getV4UserPositionsAllSpokes(1, USER, {
+      MAIN_SPOKE: [{ reserveId: 0n, asset: WETH }],
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(1);
+    expect(result.errors[0].spokeName).toBe('MAIN_SPOKE');
+    expect(result.errors[0].error).toBeInstanceOf(RpcRotationExhaustedError);
   });
 });

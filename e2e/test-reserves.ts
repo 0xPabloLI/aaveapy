@@ -42,7 +42,13 @@ type ReserveData = DiscoveryReserve;
 
 let reservesCache: ReserveData[] | null = null;
 
-async function fetchReserves(): Promise<ReserveData[]> {
+/**
+ * Fetch (and cache per process) the staging `/markets` reserves.
+ * Shared by specs that run their own module-load discovery (AAV-1280):
+ * API base resolution — CI's VITE_API_BASE_URL bypassing Cloudflare/WAF —
+ * lives here only, so hardcoded staging URLs can't silently false-skip.
+ */
+export async function fetchStagingReserves(): Promise<DiscoveryReserve[]> {
   if (reservesCache) return reservesCache;
   try {
     const resp = await fetch(`${STAGING_API}/markets`);
@@ -81,7 +87,7 @@ function hasLtv(r: ReserveData): boolean {
  * Returns null if no suitable reserve is found.
  */
 export async function findIncentiveReserve(): Promise<TestReserve | null> {
-  const reserves = await fetchReserves();
+  const reserves = await fetchStagingReserves();
   return pickIncentiveReserve(reserves, new Date().toISOString());
 }
 
@@ -93,7 +99,7 @@ export async function findIncentiveReserve(): Promise<TestReserve | null> {
  * Falls back to common stablecoins (USDC, USDT, WETH) for reliability.
  */
 export async function findAnyActiveReserve(): Promise<TestReserve | null> {
-  const reserves = await fetchReserves();
+  const reserves = await fetchStagingReserves();
   const candidates = reserves.filter((r) => isUsableReserve(r) && hasLtv(r));
   if (candidates.length === 0) return null;
 

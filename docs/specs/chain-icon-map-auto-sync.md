@@ -6,6 +6,8 @@
 **类型**: enhancement（CI hardcode sync 韧性）
 **前置阅读**: docs/archive/2026-09-24-hardcode-sync-resilience.md、docs/specs/chainlink-arc-v4-chain-onboarding.md（手工接入先例）
 
+> **2026-09-27 更新**：overrides 锚点由 `chainlink-arc` 改为 `arc`（用户确认方案 B）。上游 aave/interface 已在 `MarketSwitcher.tsx` 的 `V4_LINKS` 硬编码 `logo: '/icons/networks/arc.svg'`（外链入口，不走 networksConfig 管道），官方 SVG 直接取自上游 `public/icons/networks/arc.svg` 替换占位图。下文 `chainlink-arc` 相关表述为 2026-09 交付时的历史记录。
+
 ## Problem Statement
 
 CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 5042 AaveV4Arc）进入 `discoverMainnetChainIds()` → `check:chain-icons-upstream` 的 registry↔map 双向校验发现 `chainIconMap` 缺条目 → verify fail。而 `sync-chain-icon-map-upstream.mjs` 数据源只有 aave/interface networksConfig（上游未收录 5042），且 `hardcode:sync` 调用不带 `--write`（dry-run）→ 无法自愈 → 两轮失败不建 PR → 同步瘫痪（#629 瘫痪 14 天）。
@@ -25,8 +27,8 @@ CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 504
 
 | 级 | 来源 | 规则 | 示例 |
 |---|------|------|------|
-| 0 | upstream iconBase | networksConfig 收录时直接用（rename 收敛方向） | 5042 → `chainlink-arc` |
-| 1 | `scripts/data/chain-slug-overrides.json` | 人工指派表（upstream 未收录时） | `{"5042": "chainlink-arc"}` |
+| 0 | upstream iconBase | networksConfig 收录时直接用（rename 收敛方向） | 143 → `monad` |
+| 1 | `scripts/data/chain-slug-overrides.json` | 人工指派表（upstream 未收录时） | `{"5042": "arc"}` |
 | 2 | address-book 模块名 | 剥 `AaveV3`/`AaveV4` 前缀 + camelCase→kebab | `AaveV4Arc` → `arc` |
 | 3 | viem/chains 本地查找 | id → name → kebab，零网络 | 8453 → `base` |
 | 3.5 | chainid.network API | 3s 超时 + catch，viem 查不到时的兜底 | — |
@@ -40,6 +42,14 @@ CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 504
 - rename 时新 slug 无文件 → 优先从 upstream 下载（`UPSTREAM_PUBLIC_ROOT` + networkLogoPath，fetchWithTimeout），失败降级生成占位。
 - 已存在的 SVG 文件一律不覆盖。
 - manifest 无需显式联动：`hardcode:sync` 链条中 `sync:chain-icons-upstream` 排在 `generate-chain-icon-manifest.mjs` 之前，SVG 落盘后自动拾取。
+
+### 占位图替换素材来源（手动 backup 优先级）
+
+sync 管道产出占位图后，换官方 logo 按此优先级手动取材：
+
+1. **上游 aave/interface `public/icons/networks/<slug>.svg`** — 首选：同源同格式（SVG）。注意 V4-only 链的外链 logo 不走 networksConfig 管道，而是硬编码在 `MarketSwitcher.tsx` 的 `V4_LINKS`（Arc 先例，管道化方案见 AAV-1312）。
+2. **链官方品牌资源** — 官网/press kit 手动下载。
+3. **ethereum-lists/chains**（chainid.network 数据源，社区维护 registry）— 兜底：仅索引不托管，`_data/icons/<name>.json` 指向外部 URL/IPFS；多为 PNG 需转 SVG，IPFS 网关可用性无保障。与 slug 推导 L3.5 同源不同用途（那边取 slug，这里取素材）。
 
 ### 原子性
 
