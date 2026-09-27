@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   V3_POOL_ADDRESSES,
   V3_PROTOCOL_DATA_PROVIDER_ADDRESSES,
@@ -12,7 +12,7 @@ import {
   type V3OnchainResult,
   type V3AssetsByMarket,
 } from './aaveV3UserClient';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains';
 import type { createPublicClient } from 'viem';
 
@@ -28,6 +28,15 @@ vi.mock('./chainDiscovery', async (importOriginal) => {
 // degradation paths (provider missing / pool missing) that no real chain
 // hits today. The mock reads through getters so overrides set inside a
 // test are visible to the module under test at call time.
+const rpcRotationMocks = vi.hoisted(() => ({
+  createClientWithRpcRotation: vi.fn(),
+}));
+
+vi.mock('./rpcResilience', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./rpcResilience')>();
+  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+});
+
 const registryOverrides = vi.hoisted(() => ({
   pool: null as Record<string, string> | null,
   provider: null as Record<string, string> | null,
@@ -366,9 +375,45 @@ describe('getV3UserPositionsMultiChain', () => {
   });
 });
 
-describe('createClientWithRpcRotation (V3)', () => {
-  it('returns null for chain with no RPC URLs', async () => {
-    const result = await createClientWithRpcRotation(999991);
-    expect(result).toBeNull();
+describe('getV3UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+    rpcRotationMocks.createClientWithRpcRotation.mockResolvedValue(null);
+  });
+
+  it('registry has no RPC (client null) → empty success (unchanged degradation)', async () => {
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum');
+    expect(result).toEqual({ positions: [], accountSummary: null });
+  });
+
+  it('rotation exhausted → getV3UserPositionsOnChain rejects (not empty success)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum')).rejects.toBeInstanceOf(
+      RpcRotationExhaustedError,
+    );
+  });
+
+  it('multichain captures rotation exhaustion into errors (not silent empty)', async () => {
+    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(42161));
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Arbitrum: { chainId: 42161, assets: [USDC] },
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(42161);
+    expect(result.errors[0].error).toBeInstanceOf(RpcRotationExhaustedError);
+  });
+
+  it('explicit client bypasses RPC rotation entirely', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
+      { status: 'success', result: [100n * 10n ** 8n, 0n, 0n, 8000n, 7500n, 1000000000000000000n] },
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    expect(result.positions).toHaveLength(1);
   });
 });

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isInfrastructureFailure, withTimeout, classifyRpcError, createClientWithRpcRotation } from './rpcResilience';
+import {
+  isInfrastructureFailure,
+  withTimeout,
+  classifyRpcError,
+  createClientWithRpcRotation,
+  RpcRotationExhaustedError,
+} from './rpcResilience';
 import { getAllRpcUrls } from './chainDiscovery';
 import { createPublicClient } from 'viem';
 
@@ -169,7 +175,7 @@ describe('createClientWithRpcRotation catch path', () => {
       getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    await createClientWithRpcRotation(1);
+    await expect(createClientWithRpcRotation(1)).rejects.toBeInstanceOf(RpcRotationExhaustedError);
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('(network)'), expect.any(Error));
   });
@@ -181,7 +187,7 @@ describe('createClientWithRpcRotation catch path', () => {
       getChainId: vi.fn().mockRejectedValue(new Error('CALL_EXCEPTION')),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    await createClientWithRpcRotation(1);
+    await expect(createClientWithRpcRotation(1)).rejects.toBeInstanceOf(RpcRotationExhaustedError);
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('(contract)'), expect.any(Error));
   });
@@ -193,8 +199,55 @@ describe('createClientWithRpcRotation catch path', () => {
       getChainId: vi.fn().mockRejectedValue(new Error('something unexpected')),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    await createClientWithRpcRotation(1);
+    await expect(createClientWithRpcRotation(1)).rejects.toBeInstanceOf(RpcRotationExhaustedError);
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('(unknown)'), expect.any(Error));
+  });
+});
+
+describe('createClientWithRpcRotation exhaustion semantics (AAV-1310)', () => {
+  const mockedGetAllRpcUrls = vi.mocked(getAllRpcUrls);
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns null (no throw) when registry has no RPC URLs', async () => {
+    mockedGetAllRpcUrls.mockReturnValue([]);
+    await expect(createClientWithRpcRotation(999991)).resolves.toBeNull();
+  });
+
+  it('throws when all RPC URLs fail (rotation exhausted), with type marker', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockedGetAllRpcUrls.mockReturnValue(['https://rpc-a.example.com', 'https://rpc-b.example.com']);
+    vi.mocked(createPublicClient).mockReturnValue({
+      getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')),
+    } as unknown as ReturnType<typeof createPublicClient>);
+
+    const chainId = 42220;
+    const err = await createClientWithRpcRotation(chainId).then(
+      () => {
+        throw new Error('expected exhaustion error, got null/client');
+      },
+      (e: unknown) => e as Error,
+    );
+
+    expect(err).toBeInstanceOf(RpcRotationExhaustedError);
+    expect(err.message).toContain('RPC rotation exhausted for chain 42220');
+    expect((err as RpcRotationExhaustedError).type).toBe('rpc-rotation-exhausted');
+    expect(warnSpy).toHaveBeenCalledTimes(2); // per-URL warn still emitted before throwing
+  });
+
+  it('does not throw when at least one RPC succeeds (rotation itself works)', async () => {
+    const clients = [
+      { getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')) },
+      { getChainId: vi.fn().mockResolvedValue(1) },
+    ];
+    vi.mocked(createPublicClient).mockImplementation(
+      () => clients.shift() as unknown as ReturnType<typeof createPublicClient>,
+    );
+    mockedGetAllRpcUrls.mockReturnValue(['https://rpc-a.example.com', 'https://rpc-b.example.com']);
+
+    await expect(createClientWithRpcRotation(1)).resolves.not.toBeNull();
   });
 });

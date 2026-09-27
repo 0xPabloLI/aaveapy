@@ -20,7 +20,7 @@ import {
   SPOKE_ABI,
   MULTICALL3_ADDRESS as V4_MULTICALL3_ADDRESS,
 } from '@/lib/userData/aaveV4UserClient';
-import { createClientWithRpcRotation } from '@/lib/userData/rpcResilience';
+import { createClientWithRpcRotation, RpcRotationExhaustedError } from '@/lib/userData/rpcResilience';
 import { wadToHf, type OnchainHfMap, type OnchainHfBaseline } from '@/lib/userData/onchainHealthFactor';
 import { subscribeRefetch } from '@/lib/userData/refetchEvent';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -118,7 +118,16 @@ async function fetchV3PoolHf(
   userAddress: `0x${string}`,
   client?: PublicClient,
 ): Promise<OnchainHfBaseline | null> {
-  const publicClient = client ?? (await createClientWithRpcRotation(target.chainId));
+  let publicClient: PublicClient | undefined = client;
+  if (!publicClient) {
+    try {
+      publicClient = (await createClientWithRpcRotation(target.chainId)) ?? undefined;
+    } catch (err) {
+      if (!(err instanceof RpcRotationExhaustedError)) throw err;
+      console.error(`[onchain-hf] V3 pool ${target.marketName} (chain ${target.chainId}) RPC rotation exhausted`, err); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      return null;
+    }
+  }
   if (!publicClient) return null;
 
   try {
@@ -160,7 +169,16 @@ async function fetchV4SpokeHf(
   userAddress: `0x${string}`,
   client?: PublicClient,
 ): Promise<OnchainHfBaseline | null> {
-  const publicClient = client ?? (await createClientWithRpcRotation(target.chainId));
+  let publicClient: PublicClient | undefined = client;
+  if (!publicClient) {
+    try {
+      publicClient = (await createClientWithRpcRotation(target.chainId)) ?? undefined;
+    } catch (err) {
+      if (!(err instanceof RpcRotationExhaustedError)) throw err;
+      console.error(`[onchain-hf] V4 spoke ${target.marketName} (chain ${target.chainId}) RPC rotation exhausted`, err); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      return null;
+    }
+  }
   if (!publicClient) return null;
 
   try {
@@ -198,7 +216,7 @@ async function fetchV4SpokeHf(
 /**
  * Fetch all on-chain HF baselines for the given pool targets.
  */
-async function fetchOnchainHfBaselines(address: `0x${string}`, targets: PoolTargets): Promise<OnchainHfMap> {
+export async function fetchOnchainHfBaselines(address: `0x${string}`, targets: PoolTargets): Promise<OnchainHfMap> {
   const map: OnchainHfMap = new Map();
 
   // Group V3 pools by chainId to share RPC clients
@@ -226,7 +244,14 @@ async function fetchOnchainHfBaselines(address: `0x${string}`, targets: PoolTarg
 
     fetchPromises.push(
       (async () => {
-        const client = await clientPromise;
+        let client: PublicClient | null;
+        try {
+          client = await clientPromise;
+        } catch (err) {
+          if (!(err instanceof RpcRotationExhaustedError)) throw err;
+          console.error(`[onchain-hf] chain ${chainId} RPC rotation exhausted, skipping HF baselines`, err); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+          return;
+        }
         if (!client) return;
 
         // V3 pools on this chain
@@ -296,7 +321,6 @@ export function useOnchainHealthFactor({
     return subscribeRefetch(() => {
       void queryClient.invalidateQueries({ queryKey: ['onchain-hf', address] });
     });
-     
   }, [address, queryClient]);
 
   return {

@@ -50,6 +50,21 @@ export function classifyRpcError(err: unknown): 'network' | 'contract' | 'unknow
   return 'unknown';
 }
 
+/**
+ * Thrown by `createClientWithRpcRotation` when the chain is configured with
+ * RPC URLs but every endpoint fails (timeout / 5xx / network) — an
+ * infrastructure failure, distinct from a chain absent from the registry
+ * (which returns `null` and degrades to an empty result).
+ */
+export class RpcRotationExhaustedError extends Error {
+  readonly type = 'rpc-rotation-exhausted';
+
+  constructor(chainId: number) {
+    super(`RPC rotation exhausted for chain ${chainId}`);
+    this.name = 'RpcRotationExhaustedError';
+  }
+}
+
 export async function createClientWithRpcRotation(chainId: number): Promise<PublicClient | null> {
   const rpcUrls = getAllRpcUrls(chainId);
   if (rpcUrls.length === 0) return null;
@@ -71,5 +86,5 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
       continue;
     }
   }
-  return null;
+  throw new RpcRotationExhaustedError(chainId);
 }
