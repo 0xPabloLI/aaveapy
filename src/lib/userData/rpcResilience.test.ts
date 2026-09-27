@@ -5,6 +5,7 @@ import {
   classifyRpcError,
   createClientWithRpcRotation,
   RpcRotationExhaustedError,
+  isRpcRotationExhausted,
 } from './rpcResilience';
 import { getAllRpcUrls } from './chainDiscovery';
 import { createPublicClient } from 'viem';
@@ -249,5 +250,28 @@ describe('createClientWithRpcRotation exhaustion semantics (AAV-1310)', () => {
     mockedGetAllRpcUrls.mockReturnValue(['https://rpc-a.example.com', 'https://rpc-b.example.com']);
 
     await expect(createClientWithRpcRotation(1)).resolves.not.toBeNull();
+  });
+});
+
+describe('isRpcRotationExhausted (AAV-1310)', () => {
+  it('recognises a real instance', () => {
+    expect(isRpcRotationExhausted(new RpcRotationExhaustedError(1))).toBe(true);
+  });
+
+  it('recognises a cross-chunk duplicate instance by name/type (instanceof fallback)', () => {
+    // 打包器把模块拆进多个 chunk 时会出现第二个 class 实例，`instanceof` 静默失效。
+    const duplicate = Object.assign(new Error('RPC rotation exhausted for chain 1'), {
+      name: 'RpcRotationExhaustedError',
+      type: 'rpc-rotation-exhausted',
+    });
+    expect(duplicate instanceof RpcRotationExhaustedError).toBe(false);
+    expect(isRpcRotationExhausted(duplicate)).toBe(true);
+  });
+
+  it('rejects unrelated errors, null and undefined', () => {
+    expect(isRpcRotationExhausted(new Error('ETIMEDOUT'))).toBe(false);
+    expect(isRpcRotationExhausted(null)).toBe(false);
+    expect(isRpcRotationExhausted(undefined)).toBe(false);
+    expect(isRpcRotationExhausted('rpc-rotation-exhausted')).toBe(false);
   });
 });

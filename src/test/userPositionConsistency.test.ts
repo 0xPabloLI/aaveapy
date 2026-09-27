@@ -12,8 +12,10 @@
  * 测试不需要 HITL：SDK-vs-ABI 对比脚手架移除；SDK 路径由 useUserPositionsSdk
  * 单测（mock）+ E2E 覆盖，本文件专注 onchain 路径与储备目录的一致性。
  *
- * 已知局限（AAV-1310）：RPC 轮换耗尽当前会静默返回空仓位而非 error，此场景下
- * 本测试会空跑通过；AAV-1310 修复后 errors 断言才会对「全链失败」红灯。
+ * 已知局限（AAV-1310，已修复）：RPC 轮换耗尽不再静默返回空仓位，而是抛
+ * RpcRotationExhaustedError 并进 errors —— 因此「全链失败」场景下链级 error 断言
+ * 会红灯。残留局限：multicall 层 client 健康但批量读全失败时仍返回空成功（假 $0），
+ * 已另开票跟踪，修复前该场景本测试仍会空跑通过。
  * 金额量级断言（AAV-1311）：assertAmountMagnitudes 对每个仓位复算
  * raw / 10^decimals × tokenPrice（独立取自 /markets reserves），相对偏差 > 1e-6 红灯。
  *
