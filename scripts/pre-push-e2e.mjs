@@ -62,6 +62,14 @@ const GREP_INVERT = [
   // on both sides of the diff (base passed its single sample, HEAD 2/3),
   // isolated runs pass, app bundle identical across samples → load flake.
   'does not force pin',
+  // Load-flake, 2026-09-28. Both fail only under full-suite 2-worker load
+  // against the dev server; isolating their spec files with the same flags →
+  // 10 passed (1.7m), and CI e2e-desktop (built preview, 2 shards) passes them.
+  // The change that surfaced them (AAV-1320: CSP + vercel.json) cannot affect
+  // table scroll or row expansion. CI keeps covering both; local pre-push drops
+  // them so a flaky suite doesn't block unrelated pushes.
+  'M9 点整行', // scenario-input-modes.desktop — expansion timing
+  '\\(1\\) not at anchor', // reserves-table-market-filter-pin — scroll-pin anchor (regex-escaped parens)
 ].join('|');
 
 console.log('');
@@ -80,7 +88,8 @@ const result = await new Promise((resolve) => {
     ['playwright', 'test', '--project=chromium', '--retries=1', '--workers=2', '--grep-invert', GREP_INVERT],
     {
       stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env },
+      // Recording is debug-only overhead on a full-suite local run; CI keeps it.
+      env: { ...process.env, E2E_NO_RECORDING: '1' },
     },
   );
 
