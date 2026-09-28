@@ -100,6 +100,23 @@ hash 随脚本内容漂移；且**内联脚本集合跨依赖升级不稳定**�
 
 观察（不阻塞）：点 Allow 后首个 collect ping 带 `gcs=G101`（consent update 与首 ping 的 GA 侧竞态），预置 granted 路径为 `gcs=G100`——既有 Consent Mode 行为，与本 CSP 修复无关。
 
+**部署门（矩阵 #16，2026-09-28 preview 实测）**
+
+PR #692（lovable → dev）的 Vercel preview，CDP Chrome（专用 profile 含 Vercel SSO 登录态）+ 本地 SOCKS5 代理访问（本机裸连 vercel.app 不可达）：
+
+| 检查项 | 结果 |
+|---|---|
+| CSP 响应头 | `script-src 'self' 'wasm-unsafe-eval' 'sha256-QS+Akr…69cs=' https://www.googletagmanager.com https://*.google-analytics.com https://static.cloudflareinsights.com` ✓ |
+| 部署一致性 | `aaveapy-deploy-sha` = `f16da8a5`（对齐 PR head）✓ |
+| consent 内联块 | DOM 枚举比对 hash：`covered=YES`（修复前该块被拦）✓ |
+| `dataLayer[0]` | `['consent','default',{analytics_storage:'denied',…}]` ✓ |
+| 预置 declined | GA 网络请求 **0 条** ✓ |
+| 预置 granted 回访 | `gtag/js` 200 + `google-analytics.com/g/collect` 204 ✓ |
+| 站点自身 CSP violation | 2 个：next-themes 主题脚本（矩阵 #14，有意不放行）+ vendor chunk eval（票外既有）。其余 1074 条来自专用 profile 的 Chrome 扩展（`chrome-extension://`），与站点无关 |
+| 主题功能 | 暗色仿真下 `html class="dark"` 正常（class 由 React effect 应用）✓ |
+
+**CI 反馈修复**：CodeQL 报 2 项 high —— ① `SCRIPT_RE` 缺 `i` flag（静默跳过 `<SCRIPT>` 大写下会让门禁漏检仍报绿，属真实健壮性缺口）；② 测试用 URL `includes` 被判为不完整 URL 校验。均已修（`999ac53f`），补大写标签用例锚定。
+
 ## Out of scope
 
 - **vendor-forms chunk 的 eval 被拦**（既有行为，非本票引入）：不引入 `unsafe-eval`；是否值得排查/放行另开票跟进。

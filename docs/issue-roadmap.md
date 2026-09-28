@@ -72,7 +72,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
 | AAV-1303 | Medium | Todo | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（next-after-1320；prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
-| AAV-1320 | Medium | In Progress | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起）— 已交付本地闭环 `567823ec`（CSP 放行 consent hash + GA origin + 构建期 hash 校验门），待标准上线流程 preview/prod 实测后关闭 |
+| AAV-1320 | Medium | In Review | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起）— 已交付 `567823ec`/`f16da8a5`/`999ac53f`（CSP 放行 consent hash + GA origin + 构建期 hash 校验门 + CodeQL 两项 high 修复）；**PR #692 preview 实测通过**（CSP 头/deploy-sha/consent default/declined 0 请求/granted 回访上报），待 lovable→dev→main 晋升后关闭 |
 | AAV-1316 | Medium | Backlog (ready-for-agent) | [e2e] AAV-895 cross-asset-pairing 用例从未真实执行过：注入 synthetic 载荷证明 min(1,2) 链路可达 |
 | AAV-1317 | Medium | Backlog (ready-for-agent) | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 |
 | AAV-1318 | Medium | Backlog (ready-for-agent) | [e2e] offset discovery 未查借出空间与 LTV 融资额度（AAV-1308 同族缺口，底座已就绪） |
