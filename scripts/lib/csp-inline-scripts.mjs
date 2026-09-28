@@ -17,7 +17,10 @@ import { createHash } from 'node:crypto';
 
 const EXECUTABLE_TYPES = new Set(['module', 'text/javascript', 'application/javascript']);
 
-const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/g;
+// `i` flag: HTML tag names are case-insensitive (`<SCRIPT>` is valid), and a
+// case-sensitive match would silently skip an inline script — leaving it
+// unhashed while the gate still reported success.
+const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 // `\s` prefix so `data-src=` / `form-src=` don't read as external-src markers
 // (a false external match would silently skip an executable inline script).
 const HAS_SRC_RE = /(?:^|\s)src\s*=/i;

@@ -51,10 +51,12 @@ describe('sha256Base64', () => {
 describe('extractScriptSrcTokens', () => {
   it('extracts the script-src directive tokens from a CSP value', () => {
     const tokens = extractScriptSrcTokens(cspWith("'self'", `'${CONSENT_BLOCK_HASH}'`, ...REQUIRED_ORIGINS));
-    assert.ok(tokens.includes("'self'"));
-    assert.ok(tokens.includes(`'${CONSENT_BLOCK_HASH}'`)); // hash-sources are quoted in CSP
-    assert.ok(tokens.includes('https://www.googletagmanager.com'));
-    assert.ok(tokens.includes('https://*.google-analytics.com'));
+    const tokenSet = new Set(tokens);
+    assert.ok(tokenSet.has("'self'"));
+    assert.ok(tokenSet.has(`'${CONSENT_BLOCK_HASH}'`)); // hash-sources are quoted in CSP
+    for (const origin of REQUIRED_ORIGINS) {
+      assert.ok(tokenSet.has(origin), `expected token ${origin} in ${JSON.stringify(tokens)}`);
+    }
   });
 
   it('returns null when the CSP has no script-src directive', () => {
@@ -99,6 +101,12 @@ describe('extractInlineScripts', () => {
     const scripts = extractInlineScripts('<script data-src="x">inline()</script>');
     assert.equal(scripts.length, 1);
     assert.equal(scripts[0].content, 'inline()');
+  });
+
+  it('matches upper-case tags (HTML tag names are case-insensitive)', () => {
+    const scripts = extractInlineScripts('<SCRIPT>upper()</SCRIPT>');
+    assert.equal(scripts.length, 1);
+    assert.equal(scripts[0].content, 'upper()');
   });
 });
 
