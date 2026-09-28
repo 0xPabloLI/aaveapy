@@ -119,7 +119,7 @@ PR #692（lovable → dev）的 Vercel preview，CDP Chrome（专用 profile 含
 
 ## Out of scope
 
-- **vendor-forms chunk 的 eval 被拦**（既有行为，非本票引入）：不引入 `unsafe-eval`；是否值得排查/放行另开票跟进。
+- **vendor-forms chunk 的 eval 被拦**（既有行为，非本票引入）：**排查结论 = 良性降级，无需修复**。该 chunk 内只有一处 `Function(`，形如 `try { Function(''), !0 } catch { return !1 }`——Ajv 特征的能力探测（同一函数带 `jitless` 选项与 `navigator.userAgent.includes('Cloudflare')` 判断），用于检测运行环境是否支持 JIT。CSP 拦截后 `catch` 返回 false，Ajv 退回 non-JIT 解释模式：正确性不变，仅性能路径不同。故不引入 `unsafe-eval`。
 - **next-themes 主题脚本放行**：CSR 下该脚本无首绘职责，放行无收益；若未来改为 SSG/SSR 需重新评估（矩阵 14）。
 - **GTM 容器迁移 / nonce 化 CSP**：静态托管限制下收益不足。
 - **consent 链路重构**：评论区已核实注入逻辑正确，本票只恢复其运行前提。
