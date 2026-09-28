@@ -2,8 +2,9 @@
 
 ## Quick Reference
 
-- **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — holds Aave V3 positions on mainnet. Source: `e2e/test-wallets.ts`. Use in Playwright via the "Watch address" input.
+- **Test wallet (view-only)**: `0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314` — live Aave V3 positions (current chains documented in `e2e/test-wallets.ts`). Use in Playwright via the "Watch address" input.
 - **Brand name**: `AaveAPY` (one word, camelCase). Consistent across UI, meta tags, structured data, and locales.
+- **CDP 浏览器环境（本机）**: 专用 profile / staging 鉴权 bypass / zh-CN 选择器陷阱 —— 启动、附着与不可用路径见 `docs/agents/harness.md`。
 
 ## Project Snapshot
 
@@ -45,6 +46,11 @@
 
 ### Design Token Quick Reference
 字体/字号/间距/圆角/阴影等 token 详见 `docs/design/DESIGN-SYSTEM-REFERENCE.md`（840 行主文档）。涉及 UI 样式实现时查阅。
+
+## Session Start
+
+1. **注册 `SESSION-BOARD.md`**：登记 session-id + touch-files，与 active 条目冲突检测；结束注销。启动不读看板 = 并行 session 互不可见，协调只能靠事后 git 考古。
+2. **`docs/issue-roadmap.md`**：Last inventory + frontier 定位默认任务；领票前先读该票全部评论（正文 write-once，不承载最新状态）。
 
 ## Session Workflow
 
@@ -129,7 +135,7 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## main Branch Protection (5 层防御)
-main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 auto-merge + Branch Protection/CODEOWNERS + Content Security CI + Commit Signature + Branch Flow Guard）确保恶意代码无法自动合并。遇到 branch protection 阻塞时报告给用户决定，详见 `docs/conventions/branch-protection.md`。
+main 是生产分支，直接面向用户。5 层机制性保护（Bot PR 不 auto-merge + Branch Protection + Content Security CI + Branch Flow Guard + Commit Signature[待 UI 启用]）确保恶意代码无法自动合并；CODEOWNERS 现仅作高危路径清单，review 未强制。遇到 branch protection 阻塞时报告给用户决定，详见 `docs/conventions/branch-protection.md`。
 
 ## Golden Rules: Rate Simulation Calculator
 `rateSimulationCalculator.ts` 的不变量（4 条 Golden Rules：current 不变量 / aggregate 单一路径 / wallet fallback = identity / headline 纯市场 rate）见 `docs/rate-calculation.md` Part 8。修改 calculator 前必须先读这些规则。

@@ -50,6 +50,39 @@ export function classifyRpcError(err: unknown): 'network' | 'contract' | 'unknow
   return 'unknown';
 }
 
+/**
+ * Thrown by `createClientWithRpcRotation` when the chain is configured with
+ * RPC URLs but every endpoint fails (timeout / 5xx / network) — an
+ * infrastructure failure, distinct from a chain absent from the registry
+ * (which returns `null` and degrades to an empty result).
+ */
+export const RPC_ROTATION_EXHAUSTED_TYPE = 'rpc-rotation-exhausted';
+export const RPC_ROTATION_EXHAUSTED_NAME = 'RpcRotationExhaustedError';
+
+export class RpcRotationExhaustedError extends Error {
+  readonly type = RPC_ROTATION_EXHAUSTED_TYPE;
+
+  constructor(chainId: number) {
+    super(`RPC rotation exhausted for chain ${chainId}`);
+    this.name = RPC_ROTATION_EXHAUSTED_NAME;
+  }
+}
+
+/**
+ * 判定是否为「RPC 轮换耗尽」。
+ *
+ * 首选 `instanceof`，但打包器把本模块拆进多个 chunk 时可能出现两个 class 实例，
+ * `instanceof` 会静默失效 —— 那会让消费方把 exhaustion 当普通异常 rethrow，
+ * 被 `Promise.allSettled` 无声吞掉，退回 AAV-1310 想消灭的静默失败。
+ * 因此退化到 `name` / `type` 的结构化判定作为兜底。
+ */
+export function isRpcRotationExhausted(error: unknown): boolean {
+  if (error instanceof RpcRotationExhaustedError) return true;
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { name?: unknown; type?: unknown };
+  return candidate.name === RPC_ROTATION_EXHAUSTED_NAME || candidate.type === RPC_ROTATION_EXHAUSTED_TYPE;
+}
+
 export async function createClientWithRpcRotation(chainId: number): Promise<PublicClient | null> {
   const rpcUrls = getAllRpcUrls(chainId);
   if (rpcUrls.length === 0) return null;
@@ -71,5 +104,5 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
       continue;
     }
   }
-  return null;
+  throw new RpcRotationExhaustedError(chainId);
 }

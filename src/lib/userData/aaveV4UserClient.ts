@@ -66,7 +66,10 @@ export function getV4HubAddresses(chainId: number): V4HubEntry[] | undefined {
   return V4_HUB_ADDRESSES[chainId];
 }
 
-export const MULTICALL3_ADDRESS = '0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3' as const;
+// Canonical Multicall3 (EIP-55 checksummed) — must stay 20 bytes / 40 hex
+// chars, or viem's multicall rejects it with InvalidAddressError before any
+// RPC is attempted (kept in sync with aaveV3UserClient.ts).
+export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
 
 export interface V4UserPosition {
   chainId: number;

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   addReserveToPortfolio,
+  fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
@@ -46,14 +47,11 @@ interface CrossAssetScenario {
 
 // ─── API Discovery ─────────────────────────────────────────────────
 
-const STAGING_API = 'https://staging-api.aaveapy.com/api';
-
+// API base comes from the shared env-resolving fetcher (AAV-1280 leftover):
+// CI sets VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
 async function discoverCrossAssetScenarios(): Promise<CrossAssetScenario[]> {
   try {
-    const resp = await fetch(`${STAGING_API}/markets`);
-    if (!resp.ok) return [];
-    const data = (await resp.json()) as { reserves?: Record<string, unknown>[] };
-    const reserves = data.reserves ?? [];
+    const reserves = await fetchStagingReserves();
     const idMap: Record<string, Record<string, unknown>> = {};
     for (const r of reserves) idMap[r.reserveId as string] = r;
 

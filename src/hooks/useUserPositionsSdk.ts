@@ -285,6 +285,31 @@ export function buildV4ChainIds(reserves: ReserveWithSpread[]): number[] {
   return [...chainIdsSet];
 }
 
+/**
+ * Best-effort urql cache refresh for a refetch bump (AAV-1305).
+ *
+ * The AaveClient may not be initialized yet when a Watch Mode re-entry bumps
+ * refetch before the SDK provider has created its urql client — the call then
+ * throws synchronously (an object that logs as `{}`), which refetchEvent's
+ * listener isolation reports as
+ * `[refetchEvent] listener failed for source watch-reentry {}` noise. In that
+ * state there is nothing to refresh (the SDK queries fetch fresh data once
+ * ready), so skip silently.
+ *
+ * Sync throws from an initialized client (urql internals mid-operation) are
+ * also swallowed on purpose: the refresh is best-effort cache warming and a
+ * failed warm-up must not surface as listener noise. The RQ invalidation next
+ * to the call sites is the source of truth for the fallback path and is not
+ * affected.
+ */
+function safeRefreshQueryWhere(client: RefreshableClient | undefined, document: unknown, predicate: unknown): void {
+  try {
+    client?.refreshQueryWhere?.(document, predicate as never);
+  } catch {
+    // Intentionally swallowed — see docstring.
+  }
+}
+
 export function buildV3SdkArgs(
   enabled: boolean,
   account: `0x${string}` | undefined,
@@ -422,10 +447,12 @@ export function useUserPositionsSdk(
       // 42 chars; `toLowerCase` is a single pass and adds no measurable
       // cost over the predicate call.
       const v3Matches = (user: unknown) => typeof user === 'string' && user.toLowerCase() === address.toLowerCase();
-      void v3Client.refreshQueryWhere(V3UserSuppliesQuery, ((variables: { request: { user: unknown } }) =>
-        v3Matches(variables.request.user)) as never);
-      void v3Client.refreshQueryWhere(V3UserBorrowsQuery, ((variables: { request: { user: unknown } }) =>
-        v3Matches(variables.request.user)) as never);
+      safeRefreshQueryWhere(v3Client, V3UserSuppliesQuery, (variables: { request: { user: unknown } }) =>
+        v3Matches(variables.request.user),
+      );
+      safeRefreshQueryWhere(v3Client, V3UserBorrowsQuery, (variables: { request: { user: unknown } }) =>
+        v3Matches(variables.request.user),
+      );
 
       // V4: `request.query` is a union of `userChains` and `userSpoke`.
       // The app always uses `userChains` (see `buildV4SdkArgs`), but we
@@ -436,8 +463,8 @@ export function useUserPositionsSdk(
         const q = variables.request.query;
         return v3Matches(q.userChains?.user) || v3Matches(q.userSpoke?.user);
       };
-      void v4Client.refreshQueryWhere(V4UserSuppliesQuery, matchesV4User as never);
-      void v4Client.refreshQueryWhere(V4UserBorrowsQuery, matchesV4User as never);
+      safeRefreshQueryWhere(v4Client, V4UserSuppliesQuery, matchesV4User);
+      safeRefreshQueryWhere(v4Client, V4UserBorrowsQuery, matchesV4User);
     });
     // Deps rationale:
     //   * `address` — must re-subscribe on wallet change so the captured

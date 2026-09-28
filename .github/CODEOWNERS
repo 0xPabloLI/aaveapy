@@ -1,7 +1,8 @@
-# CODEOWNERS — main branch protection
-# These paths require code owner review before merge to main.
-# This prevents bot PRs (openapi-sync, token-icon-sync, hardcode-sync)
-# from auto-merging changes to critical files without human review.
+# CODEOWNERS — high-risk path inventory for main.
+# Code-owner review is NOT enforced (require_code_owner_reviews=false);
+# rationale and the self-approval deadlock blocking enablement:
+# docs/conventions/branch-protection.md (Layer 2).
+# Bot PRs to main stay manual via Layer 1 (no automerge label on main).
 
 # ===== Link / Explorer paths (phishing risk) =====
 /src/lib/poolExplorerLinks.ts    @0xPabloLI

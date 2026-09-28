@@ -11,7 +11,11 @@
 
 import { expect, type Page } from '@playwright/test';
 
-/** Primary wallet — holds Aave V3 positions on mainnet and Celo. */
+/**
+ * Primary wallet — currently holds an Aave V3 supply position on Celo only;
+ * mainnet balance verified zero on-chain (2026-09-25). Positions can drift at
+ * any time: verify on-chain before relying on a specific chain in a test.
+ */
 export const DEFAULT_WATCH_ADDRESS = '0x4D1c0C87D6f3Bcc4698BBd88A9Da5e4f92B65314';
 
 /** Convenience: read from env or fall back to the default. */

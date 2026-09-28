@@ -100,7 +100,7 @@
     ]
   },
   "dependencies": {
-    "@aave-dao/aave-address-book": "^4.57.2",
+    "@aave-dao/aave-address-book": "^4.68.0",
     "@aave/react": "^6.5.0",
     "@aave/react-v3": "npm:@aave/react@^0.9.1",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -116,6 +116,7 @@
     "@tanstack/react-query": "^5.100.14",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "@walletconnect/ethereum-provider": "^2.21.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
@@ -124,7 +125,7 @@
     "i18next": "^26.3.6",
     "lucide-react": "^1.33.0",
     "next-themes": "^0.4.6",
-    "playwright": "^1.61.0",
+    "playwright": "1.62.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-helmet-async": "^3.0.0",
@@ -153,11 +154,13 @@
     "ws": "8.21.0",
     "@zodios/core": {
       "zod": "$zod"
-    }
+    },
+    "qr": "0.5.5",
+    "@base-org/account": "^2.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "1.62.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
