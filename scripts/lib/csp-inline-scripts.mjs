@@ -20,7 +20,9 @@ const EXECUTABLE_TYPES = new Set(['module', 'text/javascript', 'application/java
 // `i` flag: HTML tag names are case-insensitive (`<SCRIPT>` is valid), and a
 // case-sensitive match would silently skip an inline script — leaving it
 // unhashed while the gate still reported success.
-const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+// `\s*` before the end-tag `>`: `</script >` is valid HTML; missing it would
+// truncate the captured content and hash the wrong bytes.
+const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
 // `\s` prefix so `data-src=` / `form-src=` don't read as external-src markers
 // (a false external match would silently skip an executable inline script).
 const HAS_SRC_RE = /(?:^|\s)src\s*=/i;

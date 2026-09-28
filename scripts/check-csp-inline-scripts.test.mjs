@@ -108,6 +108,12 @@ describe('extractInlineScripts', () => {
     assert.equal(scripts.length, 1);
     assert.equal(scripts[0].content, 'upper()');
   });
+
+  it('matches end tags containing whitespace (</script > is valid HTML)', () => {
+    const scripts = extractInlineScripts('<script>spaced()</script >');
+    assert.equal(scripts.length, 1);
+    assert.equal(scripts[0].content, 'spaced()');
+  });
 });
 
 describe('checkCsp', () => {
