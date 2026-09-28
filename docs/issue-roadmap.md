@@ -35,7 +35,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 | **AAV-1275** | AMOUNT 变体 APR 单位非百分比，易误导用户 | **复合展示策略（Option A+）**：主表格无法换算 USD 年化时展示 `—` 且不计入净 APR；Tooltip 完整展示每日代币数与固定发放规则说明。 | 明确产品决策方案 |
 | **AAV-1301** | @eslint/js 10 peer 强依赖 eslint 10，但 react-hooks / import 等插件尚未适配 | **暂缓升级**：当前 React 生态关键插件（eslint-plugin-react-hooks）peer 仍锁 v9，强升 overrides 引发 CI 脆弱性且业务收益低。待上游发布后跟进。 | 降级至 Low 并转入 Backlog，暂缓合入 #653 |
 | **AAV-1302** | release-drafter v7 在 PR 阶段属假绿灯；autolabeler 拆分且弃用旧 category 配置 | **配置模型迁移 + 拆分契约适配**：重构 `.github/release-drafter.yml` 消除弃用警告；按 v7 规范适配 autolabeler 逻辑，保证 draft release 分组准确。 | 维持 Low / Todo，排期实施并闭环 #656 |
-| **AAV-1303** | Merit 后端已下线导致 openapi-sync 自动生成与前端代码引用脱节（TS2551/TS2339） | **前端 Merit 退役清理**：移除契约 wrapper 与 types.ts 中 Merit 残留引用；统一 types.ts 维护方式（自动化或 header 文档对齐），恢复 openapi-sync CI 绿灯。 | Backlog，待前端-后端协同部署后处理 |
+| **AAV-1303** | Merit 后端已下线导致 openapi-sync 自动生成与前端代码引用脱节（TS2551/TS2339） | **前端 Merit 退役清理**：移除契约 wrapper 与 types.ts 中 Merit 残留引用；统一 types.ts 维护方式（自动化或 header 文档对齐），恢复 openapi-sync CI 绿灯。 | Todo（2026-09-28 从 Backlog 领出，已入当前 cycle；「待协同部署」前置已成熟，代码未动） |
 | **AAV-1304** | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 标签字重不一致 | **空态友好化 + 样式归一**：Lowest HF 链上查询恢复后，补充无债务时空态说明（如隐藏或 tooltip 说明）；统一 Advanced 区域同级标签的 Typography token。 | Backlog，Low 优先级排期 |
 | **AAV-1305** | 生产钱包仓位导入失败双层根因（SDK GraphQL 网络不可达 + MULTICALL3 常量缺字符 + Pool 移除 getUserReserveData） | **双阶段分治修复**：第一阶段已修正 `MULTICALL3_ADDRESS` 常量（`1061bd14`）打通 viem 校验；第二阶段已将 `getV3UserPositionsOnChain` 目标由 `Pool` 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（`2d6e70fb`），watch-reentry 噪音修复（`5f928681`）。 | 已交付（2026-09-27，双阶段完成，见 Linear 交付记录） |
 | **AAV-1280** | 测试侧 discovery 只累加 raw `campaignApr`，未镜像 UI 渲染门控（时间窗/白名单/AMOUNT 变体），选中 UI 渲染 `—` 的 reserve 致 baseline 断言失败 | **测试侧加固**：`isComputableMerklCampaign` 收紧（缺失边界/date-only 规范化/whitelistOnly 排除）+ `discoverOffsetScenarios` 纯函数抽取 + 单测锚定每条门控。UI 侧静态审查三道门均为设计行为，无缺口。 | 已交付（测试侧）；原始触发数据已消失不复现 |
@@ -69,7 +69,8 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1303 | Medium | Backlog | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（frontier；staging spec 已删 Merit，prod 未删） |
+| AAV-1303 | Medium | Todo | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（frontier；staging spec 已删 Merit，prod 未删） |
+| AAV-1320 | Medium | Backlog (ready-for-agent) | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起） |
 | AAV-1316 | Medium | Backlog (ready-for-agent) | [e2e] AAV-895 cross-asset-pairing 用例从未真实执行过：注入 synthetic 载荷证明 min(1,2) 链路可达 |
 | AAV-1317 | Medium | Backlog (ready-for-agent) | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 |
 | AAV-1318 | Medium | Backlog (ready-for-agent) | [e2e] offset discovery 未查借出空间与 LTV 融资额度（AAV-1308 同族缺口，底座已就绪） |
