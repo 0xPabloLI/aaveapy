@@ -67,6 +67,8 @@
 ### Mandatory Implementation Workflow
 每次改代码之前必须走完以下工作流，不得跳步：
 
+**Skill 加载方式**：下面点名的部分 skill（`grill-with-docs` / `to-spec` / `to-tickets` / `implement` 等）带 `disable-model-invocation: true`，设计上只由人类斜杠命令唤起。Agent 走同一条流程：直接读 `~/.agents/skills/<name>/SKILL.md` 并照其内容执行。
+
 1. **Grill with Docs** — 用 `grill-with-docs` skill 审视方案。**必须主动做场景风险分析**：按 `docs/conventions/scenario-enumeration-checklist.md` 逐类**穷举**边界场景（含跨 step 接口契约验证），验证跨消费者一致性。格式见 `docs/conventions/scenario-matrix.md`。
 2. **To Spec** — 用 `to-spec` skill 合成 spec。**必须包含 Scenario & Risk Verification 章节**（场景矩阵），矩阵行直接成为 TDD 测试用例。**无矩阵 = spec 不完整**。
 3. **To Tickets** — 用 `to-tickets` skill 将 spec 拆分为带依赖边的 tracer-bullet tickets
@@ -96,15 +98,13 @@
 - **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
 
 ## Validation Gate (修改后必跑 — 强制)
-每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
+两道门，命令清单以它们为准（本文件不复述清单，复述出去迟早与实际漂移）：提交时过 `.husky/pre-commit`，推送前过 `npm run ci:remote`（含 build 与 e2e 子集）。任一失败 → 修根因 → 从头重跑。
 
-```bash
-npm run lint && npm test && npm run build && npx tsc --noEmit
-```
+类型门是 `npm run typecheck`。根 `tsconfig.json` 是 solution-style（`files: []` + 两个 references），裸 `tsc --noEmit` 在其中一个文件都不检查却退出 0——本文件曾把它列为门禁项，那张**假绿灯**一直亮着。`e2e/` 也不在 lint 与 typecheck 的覆盖范围内：改了 `e2e` 下未被任何测试 import 的文件（spec、helper），就对那几个文件显式跑 tsc，否则类型错误靠运行时侥幸长期存活。
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
-**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需手动探索交互时用 `playwright-interactive`。
+**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需从终端手动探索交互时用 `playwright`。
 
 ## Commit Cadence (并行 agent 安全)
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
