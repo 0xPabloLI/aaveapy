@@ -10,7 +10,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 > **Last inventory**: 2026-09-28(AAV-1308 经 `09b42aa4` + `8b27e1fc` 交付关闭(Done):cross-asset-pairing e2e discovery 抽成 `e2e/reserveDiscovery.ts` 纯函数,`merklSupplys`/`merklBorrows` 两侧统一过 `isComputableMerklCampaign`,并补 runner 真正依赖的仓位可行性门(`getBorrowRoomUsd` + supply/borrow room ≥ $5000 + LTV 融资额度);排除自配对与同 symbol 组合;缺身份字段只 skip 不抛错。双轴 review 另揪并修两处既有镜像失真:`getMarketChipLabel` 对 V4 非 Ethereum 市场返回 chainName(UI 只从 marketName 派生→Add 按钮匹配不到就退回 `.first()` 选错行,现加 39 个现网 marketName 一致性测试),以及 Aave `cap=0` 是「无上限」而非「零空间」。97 单测 / 3849 全量 / Playwright 12 passed·20 skipped。按票建出四张 follow-up AAV-1316–1319。此前 09-27:AAV-1310 经 `9552fe60` + `4f93ca0b` 交付关闭;AAV-1311 经 `084131f5` 修复关闭。)
 >
-> **frontier** = AAV-1303(Medium,Merit 退役清理)。开票时的「待协同部署」前置条件已成熟并可实测:2026-09-28 直取后端 spec,`https://api.aaveapy.com/api/docs/openapi.json` 仍含 Merit 24 处 / `ApiMeritCampaign` 14 处,而 `https://staging-api.aaveapy.com/api/docs/openapi.json` 已全部删除(0 处),仓内 `public/openapi.json` 停在 24 处——openapi-sync 红灯与前端 TS2551/2339 同此一根源(与 wb-0928a 记录的"已知非阻塞噪声"合流)。同批候选:AAV-1316(stub 注入证明 AAV-895 用例可达)/ AAV-1318(offset discovery 复用 room·LTV 门)——两张均 ready-for-agent 且无外部依赖;AAV-1295/1292 依赖 CI 与部署窗口;AAV-1319 需先认可 AGENTS.md 验证门改动。
+> **next pick = AAV-1320**（GA4 被 `vercel.json` 的 `script-src` 拦死，生产自 09-14 起零上报——每天在丢真实数据、修复面仅一行 config + 一次上报验证），排在 AAV-1303 之前。frontier 之后才是 **AAV-1303**(Medium,**Todo**，已由 qoder-0928b 领出，代码未动)。2026-09-28 复核补强三条事实：(1) 直取后端 spec，production `api.aaveapy.com/api/docs/openapi.json` 仍含 Merit 24 处 / `ApiMeritCampaign` 14 处，staging 已全部删除(0 处)，仓内 `public/openapi.json` 停在 24 处——openapi-sync 红灯、wb-0928a 的"已知非阻塞噪声"与前端 TS2551/2339 同此一根源；(2) **但 production `/markets` 实际已不输出 merit 字段（实测 0 处，与 staging 一致）**，故票面「生产运行时不受影响、prod 前后端世界都有 Merit」的前提已推进为「两端数据都为零」，前端清理无运行时风险，不必等后端 prod spec 收敛；(3) 前端引用面实测落在高风险区：`incentiveAggregation.ts` 20 处、`IncentiveTooltip.tsx` 13、`SimulationSubRow.tsx` 7、`types/aave.ts` 5、`merit.ts`/`meritForecast.ts` 及各自测试；**另有一类不在代码链里的东西——`src/locales/*/landing.json`(4 处) 与 `ui.json`(1 处) 的对外文案仍把 Merit 当卖点宣传**，属产品/SEO 决策，应与拆除链分开拍板（AAV-1289 只拆了后端与 worker，前端镜像正是本票）。
+> 同批候选:AAV-1316(stub 注入证明 AAV-895 用例可达)/ AAV-1318(offset discovery 复用 room·LTV 门)——均 ready-for-agent 且无外部依赖;AAV-1295/1292 依赖 CI 与部署窗口;AAV-1319 需先认可 AGENTS.md 验证门改动。
+
 
 
 ---
@@ -69,7 +71,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1303 | Medium | Todo | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（frontier；staging spec 已删 Merit，prod 未删） |
+| AAV-1303 | Medium | Todo | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（next-after-1320；prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
 | AAV-1320 | Medium | Backlog (ready-for-agent) | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起） |
 | AAV-1316 | Medium | Backlog (ready-for-agent) | [e2e] AAV-895 cross-asset-pairing 用例从未真实执行过：注入 synthetic 载荷证明 min(1,2) 链路可达 |
 | AAV-1317 | Medium | Backlog (ready-for-agent) | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 |
