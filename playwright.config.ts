@@ -53,6 +53,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: [/scenario-input-modes\.mobile\.spec\.ts/],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1600, height: 1200 },
@@ -63,6 +64,7 @@ export default defineConfig({
       testIgnore: [
         /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
         /reserves-table-simulation-nested-scroll\.spec\.ts/,
+        /scenario-input-modes\.desktop\.spec\.ts/,
       ],
       use: {
         ...devices['Pixel 7'],

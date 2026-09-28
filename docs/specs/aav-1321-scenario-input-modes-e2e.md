@@ -15,7 +15,7 @@
 
 ## Solution
 
-新增 `e2e/scenario-input-modes.spec.ts`，三个 describe 块：
+新增 `e2e/scenario-input-modes*.spec.ts`（2026-09-28 收尾时按平台拆成三个文件 + 一个共享 helper 模块，`playwright.config.ts` 用 `testIgnore` 各归其 project —— 取代交付初版的 `test.skip(testInfo.project.name …)`，那是 AGENTS.md 明令禁止的平台互斥 skip 形态），三个用例组：
 
 1. **双平台共用**（`chromium` + `mobile-chromium` 实跑，无平台互斥 skip）：模式切换与清空、场景→重算、Token 单位语义、空/零边界。
 2. **桌面专属**：整行 `<tr>` 展开子行 + Market 芯片不触发展开。
@@ -49,7 +49,10 @@
 
 ### Modified Files Impact
 
-N/A —— 本次只新增 `e2e/scenario-input-modes.spec.ts` 与本 spec 文档，不修改任何既有产品代码或既有测试，无下游消费者。
+| 文件 | 修改内容 | 风险等级 | 评估 |
+| --- | --- | --- | --- |
+| `e2e/scenario-input-modes.{spec,desktop.spec,mobile.spec,helpers}.ts` | 新增：三个 spec 按平台分文件，共用 helper 模块 | Low | 纯新增测试，不触碰产品代码 |
+| `playwright.config.ts` | 加两条 `testIgnore`（2026-09-28 收尾补做，取代交付初版的平台互斥 `test.skip`） | Low | 影响面限于新增文件自身：chromium 实跑 7 条、mobile-chromium 实跑 4 条，0 skipped |
 
 ### 残留（不在本票，已识别）
 
