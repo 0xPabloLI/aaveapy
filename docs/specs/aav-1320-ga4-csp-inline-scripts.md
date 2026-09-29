@@ -115,7 +115,7 @@ PR #692（lovable → dev）的 Vercel preview，CDP Chrome（专用 profile 含
 | 站点自身 CSP violation | 2 个：next-themes 主题脚本（矩阵 #14，有意不放行）+ vendor chunk eval（票外既有）。其余 1074 条来自专用 profile 的 Chrome 扩展（`chrome-extension://`），与站点无关 |
 | 主题功能 | 暗色仿真下 `html class="dark"` 正常（class 由 React effect 应用）✓ |
 
-**CI 反馈修复**：CodeQL 报 2 项 high —— ① `SCRIPT_RE` 缺 `i` flag（静默跳过 `<SCRIPT>` 大写下会让门禁漏检仍报绿，属真实健壮性缺口）；② 测试用 URL `includes` 被判为不完整 URL 校验。均已修（`999ac53f`），补大写标签用例锚定。
+**CI 反馈修复**：CodeQL `js/bad-tag-filter` 三连（同一正则逐层暴露 HTML 边角）：① 缺 `i` flag（`<SCRIPT>` 大写静默漏检）→ `999ac53f`；② `</script >` 结束标签内含空白 → `f7708c9b`；③ `</script\t\n foo="bar">` 属性式垃圾 → 终版改为 `<\/script[^>]*>`（忠实 HTML 分词器语义：元素终止于 `</script` 后首个 `>`，`[^>]*` 恰为该语义），25 单测全绿。测试侧 URL `includes` 判定同步改 `Set.has` 精确匹配。
 
 ## Out of scope
 

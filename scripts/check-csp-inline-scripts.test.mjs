@@ -114,6 +114,12 @@ describe('extractInlineScripts', () => {
     assert.equal(scripts.length, 1);
     assert.equal(scripts[0].content, 'spaced()');
   });
+
+  it('matches end tags with attribute-like garbage (element closes at first >)', () => {
+    const scripts = extractInlineScripts('<script>g()</script\t\n foo="bar">trailing');
+    assert.equal(scripts.length, 1);
+    assert.equal(scripts[0].content, 'g()');
+  });
 });
 
 describe('checkCsp', () => {
