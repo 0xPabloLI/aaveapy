@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "baseBranchPatterns": ["dev"],
+  "enabledManagers": ["github-actions"],
+  "lockFileMaintenance": { "enabled": false },
+  "schedule": ["before 6am on monday"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Non-major Action bumps: Renovate opens the PR, but the merge stays with .github/workflows/automerge.yml via the automerge label (PAT path + SQUASH policy).",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": false,
+      "labels": ["dependencies", "github_actions", "automerge", "safe-update"]
+    },
+    {
+      "description": "Major bumps need a human decision.",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "github_actions", "manual-review"]
+    }
+  ]
+}
