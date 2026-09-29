@@ -104,6 +104,7 @@ _Last inventory pass: 2026-09-28._
 - Canonical: `docs/specs/aav-1310-rpc-rotation-exhaustion.md` (RPC 轮换耗尽语义分流:createClientWithRpcRotation 轮换耗尽改 throw RpcRotationExhaustedError,null 语义收紧为 registry 无 RPC;V3/V4 multichain errors 通道 + HF 消费方降级对齐; AAV-1310)
 - Canonical: `docs/specs/aav-1321-scenario-input-modes-e2e.md` (场景模拟交互链路 e2e 覆盖 spec:USD↔Token 模式切换与清空语义 / 相对断言抗 staging 漂移 / 净借贷开关走 label 且验可逆 / 桌面整行展开 vs Market 芯片筛选;含 14 行场景矩阵; AAV-1321)
 - Canonical: `docs/specs/aav-1320-ga4-csp-inline-scripts.md` (GA4 CSP 修复:consent 内联块 sha256 放行 + googletagmanager/google-analytics origin + 构建期 hash 校验门接 npm run build;含 16 行场景矩阵与运行时 probe 证据; AAV-1320)
+- Canonical: `docs/specs/e2e-parallel-port-isolation.md` (本地 e2e webServer 端口按 run 动态分配:固定 4173 + reuseExistingServer 导致并发门禁互相打断的根因与不变量（CI 固定端口 / origin ≡ baseURL / 分配只算一次）;含 13 行场景矩阵; 无 issue 票)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)
@@ -161,6 +162,7 @@ _Last inventory pass: 2026-09-28._
 | `docs/specs/aav-1321-scenario-input-modes-e2e.md` | 场景模拟交互链路 e2e 覆盖 spec（USD/Token 双模式 + 净借贷开关 + 展开子行；14 行场景矩阵；相对断言抗 staging 数据漂移；发现并登记 AAV-1322 桌面收起缺陷） | 2026-09-28 | Canonical | `e2e/scenario-input-modes.spec.ts` | keep |
 | `docs/specs/aav-1320-ga4-csp-inline-scripts.md` | GA4 CSP 修复 spec（consent 内联块 sha256 放行 + GA origin + 构建期 hash 校验门；16 行场景矩阵；含运行时 probe 证据与双轴 review 闭环） | 2026-09-28 | Canonical | `vercel.json`, `scripts/check-csp-inline-scripts.mjs`, `scripts/lib/csp-inline-scripts.mjs` | keep |
 | `docs/specs/aav-1311-onchain-fallback-decimals.md` | onchain fallback 非 18-dec USD 缩水修复 spec（rawToHuman 两段法 / amountWad 原生 raw 语义 / fixture 形态契约 / 量级 invariant；含场景矩阵与实测证据） | 2026-09-27 | Canonical | `src/lib/userData/userPositionMapper.ts`, `src/test/userPositionConsistency.test.ts` | keep |
+| `docs/specs/e2e-parallel-port-isolation.md` | 本地 e2e webServer 端口按 run 动态分配 spec（固定 4173 × `reuseExistingServer` 的并发互断根因；CI 固定端口 / origin ≡ baseURL / 分配只算一次三条不变量；13 行场景矩阵，含 4173 被占位下的运行时证据与正对照） | 2026-09-29 | Canonical | `scripts/lib/e2e-port.mjs`, `scripts/e2e-port.test.mjs`, `playwright.config.ts`, `e2e/playwright.fields.config.ts` | keep |
 | `docs/specs/chainlink-arc-v4-chain-onboarding.md` | Chainlink Arc (chainId 5042) 新链接入 spec（registry/icon map/manifest 四件套原子性；含场景矩阵与实测取证方法；2026-09-27 slug 对齐上游 `arc` + 官方 logo 替换占位图） | 2026-09-16 | Canonical | `src/lib/chainIconMap.ts`, `scripts/check-chain-icon-map-upstream.mjs`, `public/icons/networks/arc.svg` | keep |
 | `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |
 | `docs/archive/2026-08-29-fcp-chunk-defer-tickets.md` | FCP Round 2 tickets（全部完成） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |

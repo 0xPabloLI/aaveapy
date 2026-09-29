@@ -13,7 +13,10 @@ import { chromium, type FullConfig } from '@playwright/test';
  * workers then hit a warm cache.
  */
 export default async function globalSetup(config: FullConfig) {
-  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://127.0.0.1:4173';
+  // Taken from the config rather than defaulted: this run's port is allocated per
+  // run, so a fallback literal here would silently prewarm a different server.
+  const baseURL = config.projects[0]?.use?.baseURL;
+  if (!baseURL) throw new Error('globalSetup: no baseURL resolved from the Playwright config');
   const browser = await chromium.launch();
   try {
     // One visit per layout: desktop table and mobile cards pull in the
