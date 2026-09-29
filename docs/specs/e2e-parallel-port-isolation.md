@@ -55,8 +55,9 @@
 ## 证据
 
 1. **automated**：`node --test scripts/e2e-port.test.mjs` → 10 tests / 10 pass，覆盖第 1–8、10–12 行；先 red（模块不存在时 import 失败）后 green。第 13 行无独立单测，依 static + 每次运行必经该路径。
-2. **runtime smoke（第 9 行）**：在 4173 上挂一个返回 HTTP 200 的占位 server（并统计入站请求数），跑 `npx playwright test e2e/segmented-toggle.spec.ts --project=chromium --workers=1` → `rc=0 / 3 passed / 3 skipped`，占位 server 计数 `STUB_HITS=0`。正对照同仪器：手工 `curl` 一次 → `STUB_HITS=1`，证明 0 不是计数器坏了。**注意口径**：这是单个 spec，不是 spec 点名的整条 `npm run test:e2e:pre-push`（约 200 例）；整条门禁的实际执行发生在下面的推送 attempt，结果需回填本行。
-3. **static**：`npm run typecheck` / `npm run lint` / `npm run knip` / `npm run dup:check` 均 rc=0（knip 未把新文件判为 unused）；`npx playwright test --list` 与 `--config=e2e/playwright.fields.config.ts --list` 均成功加载 Promise 式配置（Playwright 1.62.1）。两份配置另按 AGENTS.md 要求显式跑 `tsc --noEmit`（它们不在 lint/typecheck 覆盖内）。
+2. **runtime smoke（第 9 行）**：在 4173 上挂一个返回 HTTP 200 的占位 server（并统计入站请求数），跑 `npx playwright test e2e/segmented-toggle.spec.ts --project=chromium --workers=1` → `rc=0 / 3 passed / 3 skipped`，占位 server 计数 `STUB_HITS=0`。正对照同仪器：手工 `curl` 一次 → `STUB_HITS=1`，证明 0 不是计数器坏了。命令构造重构后复跑，结果一致。
+3. **整条门禁（第 9 行的全量版本）**：`npm run test:e2e:pre-push`（desktop chromium，2 workers，排除外部依赖用例）实跑 → **60 passed / 3 flaky / 29 skipped / 0 failed**，14.7m，整份日志 `ERR_CONNECTION_REFUSED` 计数 **0**；这 3 个 flaky 是首轮失败、`--retries=1` 后通过（gate 判定放行）。对照修复前同一条门禁：87 例失败，86 例为 `ERR_CONNECTION_REFUSED at 127.0.0.1:4173`。
+4. **static**：`npm run typecheck` / `npm run lint` / `npm run knip` / `npm run dup:check` 均 rc=0（knip 未把新文件判为 unused）；`npx playwright test --list` 与 `--config=e2e/playwright.fields.config.ts --list` 均成功加载 Promise 式配置（Playwright 1.62.1）。两份配置另按 AGENTS.md 要求显式跑 `tsc --noEmit`（它们不在 lint/typecheck 覆盖内，`tsconfig.node.json` 的 `include` 实测只有 `vite.config.ts`）。
 
 ## 未纳入本改动
 
