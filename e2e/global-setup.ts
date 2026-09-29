@@ -23,7 +23,12 @@ export default async function globalSetup(config: FullConfig) {
       { width: 412, height: 915 },
     ]) {
       const page = await browser.newPage({ viewport });
-      await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+      // Explicit 120s (not the 30s default): this first navigation is exactly
+      // the cold-start burst the comment above describes, so it needs the same
+      // budget as the app-ready wait below. A genuinely broken app still fails
+      // here — this only stops the warm-up step from timing out on its own
+      // queueing while the assertion below is the real readiness gate.
+      await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
       // App-ready signal (same canonical signal as the test helpers): the
       // toggle renders only after market data loads and the app shell
       // commits, i.e. the critical module graph is fully served.
