@@ -19,6 +19,7 @@
 
 > 不属 core 偏离登记——本机环境事实，住这里避免 AGENTS.md 常驻载入膨胀。
 
+- **网络出口（直连不可达）**：`*.vercel.app` 直连解析到异常 IP（connection refused / timeout）；`git push` 直连 GitHub 会被 `Connection reset by peer`、`SSL_ERROR_SYSCALL` 中断。两者都走本机 SOCKS5 隧道 `127.0.0.1:7891`：浏览器加 `--proxy-server="socks5://127.0.0.1:7891"`（Playwright 用 `E2E_PROXY=http://127.0.0.1:7891`，见 `playwright.config.ts`）；git 用 `git -c http.proxy=socks5h://127.0.0.1:7891 push`（临时 `-c`，不动全局配置）。生产站 `aaveapy.com` 直连可达。
 - **专用 profile**：`/Users/pabloli/chrome-tiktok-profile`（用户维护，内含 Vercel SSO 登录态）。
 - **启动 + 附着**：`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/Users/pabloli/chrome-tiktok-profile --remote-debugging-port=9333 --no-first-run` 起可见窗口，`chromium.connectOverCDP('http://127.0.0.1:9333')` 附着；`browser.newContext({ ...devices['Pixel 7'] })` 可叠加移动端仿真。
 - **staging 鉴权墙备选**：Vercel 项目 `protectionBypass` 密钥加 `x-vercel-protection-bypass` 请求头（配 `x-vercel-set-bypass-mode: persist`），免登录过墙。

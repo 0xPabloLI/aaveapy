@@ -6,6 +6,12 @@ import { defineConfig, devices } from '@playwright/test';
 // proxies loopback, so the local dev server is unaffected.
 const browserProxy = process.env.E2E_PROXY ? { proxy: { server: process.env.E2E_PROXY } } : {};
 
+// Pre-push runs the whole desktop suite against a dev server. Recording video
+// and trace for every test is debug-only overhead there, and it is a known
+// contributor to load-flaky timing tests (AAV-1307 family). CI keeps both
+// artifacts so failures stay diagnosable.
+const recordingOff = process.env.E2E_NO_RECORDING === '1';
+
 export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
@@ -37,9 +43,9 @@ export default defineConfig({
         },
       ],
     },
-    trace: 'retain-on-failure',
+    trace: recordingOff ? 'off' : 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: recordingOff ? 'off' : 'retain-on-failure',
     ...browserProxy,
   },
   webServer: {
@@ -53,6 +59,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: [/scenario-input-modes\.mobile\.spec\.ts/],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1600, height: 1200 },
@@ -63,6 +70,7 @@ export default defineConfig({
       testIgnore: [
         /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
         /reserves-table-simulation-nested-scroll\.spec\.ts/,
+        /scenario-input-modes\.desktop\.spec\.ts/,
       ],
       use: {
         ...devices['Pixel 7'],

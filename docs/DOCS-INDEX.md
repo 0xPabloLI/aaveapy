@@ -7,7 +7,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
-_Last inventory pass: 2026-09-27._
+_Last inventory pass: 2026-09-28._
 
 ## Canonical Structure
 
@@ -100,7 +100,10 @@ _Last inventory pass: 2026-09-27._
 - Canonical: `docs/specs/aav-1280-offset-discovery-computability.md` (offset e2e 场景 discovery 对齐 UI 渲染门控：isComputableMerklCampaign 收紧 + discoverOffsetScenarios 纯函数抽取; AAV-1280)
 - Canonical: `docs/specs/aav-1305-v3-dataprovider-migration.md` (V3 仓位读取迁移 AAVE_PROTOCOL_DATA_PROVIDER：9 字段 ABI 布局互证 + positional tuple 解码 + watch-reentry listener 加固; AAV-1305 P2)
 - Canonical: `docs/specs/aav-1311-onchain-fallback-decimals.md` (onchain fallback 非 18-dec 代币 USD 缩水修复：rawToHuman 按 meta.decimals 换算 + amountWad 原生 raw 语义文档化 + 一致性测试量级 invariant; AAV-1311)
+- Canonical: `docs/specs/aav-1308-cross-asset-pairing-discovery.md` (cross-asset-pairing e2e discovery 对齐 UI 门控：两端可算性 + 仓位可行性 room/LTV 门 + label 镜像与 cap=0 修正; AAV-1308)
 - Canonical: `docs/specs/aav-1310-rpc-rotation-exhaustion.md` (RPC 轮换耗尽语义分流:createClientWithRpcRotation 轮换耗尽改 throw RpcRotationExhaustedError,null 语义收紧为 registry 无 RPC;V3/V4 multichain errors 通道 + HF 消费方降级对齐; AAV-1310)
+- Canonical: `docs/specs/aav-1321-scenario-input-modes-e2e.md` (场景模拟交互链路 e2e 覆盖 spec:USD↔Token 模式切换与清空语义 / 相对断言抗 staging 漂移 / 净借贷开关走 label 且验可逆 / 桌面整行展开 vs Market 芯片筛选;含 14 行场景矩阵; AAV-1321)
+- Canonical: `docs/specs/aav-1320-ga4-csp-inline-scripts.md` (GA4 CSP 修复:consent 内联块 sha256 放行 + googletagmanager/google-analytics origin + 构建期 hash 校验门接 npm run build;含 16 行场景矩阵与运行时 probe 证据; AAV-1320)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)
@@ -153,7 +156,10 @@ _Last inventory pass: 2026-09-27._
 | `docs/specs/aav-1282-mobile-connect-modal-rainbowkit-wallets.md` | 移动端 Connect 弹窗修复 spec（connectorsForWallets / rkDetails 契约 / FCP 不变量；含场景矩阵） | 2026-09-25 | Canonical | `src/lib/wagmi/config.ts`, `src/lib/wagmi/config.test.ts`, `playwright.config.ts` | keep |
 | `docs/specs/aav-1280-offset-discovery-computability.md` | offset e2e discovery 对齐 UI 渲染门控 spec（谓词收紧 / 纯函数抽取 / dedup 语义；含场景矩阵） | 2026-09-26 | Canonical | `e2e/reserveDiscovery.ts`, `e2e/portfolio-cross-reserve-offset.spec.ts`, `src/test/reserveDiscovery.test.ts` | keep |
 | `docs/specs/aav-1305-v3-dataprovider-migration.md` | V3 仓位读取 DataProvider 迁移 spec（9 字段 ABI 布局 / positional tuple 解码 / 降级矩阵 / watch-reentry 加固；含场景矩阵与实测证据） | 2026-09-27 | Canonical | `src/lib/chainRegistry.ts`, `src/lib/userData/aaveV3UserClient.ts`, `src/hooks/useUserPositionsSdk.ts` | keep |
+| `docs/specs/aav-1308-cross-asset-pairing-discovery.md` | cross-asset-pairing e2e discovery spec（纯函数抽离 / 两端可算性门 / supply+borrow room 与 LTV 额度门 / label 镜像与 cap=0 修正；含场景矩阵与验证证据） | 2026-09-28 | Canonical | `e2e/reserveDiscovery.ts`, `e2e/portfolio-cross-asset-pairing.spec.ts`, `src/test/reserveDiscovery.test.ts` | keep |
 | `docs/specs/aav-1310-rpc-rotation-exhaustion.md` | RPC 轮换耗尽语义分流 spec(RpcRotationExhaustedError / null 语义收紧 / errors 通道 / HF 降级;含场景矩阵与 review 闭环) | 2026-09-27 | Canonical | `src/lib/userData/rpcResilience.ts`, `src/lib/userData/aaveV3UserClient.ts`, `src/lib/userData/aaveV4UserClient.ts`, `src/hooks/useOnchainHealthFactor.ts` | keep |
+| `docs/specs/aav-1321-scenario-input-modes-e2e.md` | 场景模拟交互链路 e2e 覆盖 spec（USD/Token 双模式 + 净借贷开关 + 展开子行；14 行场景矩阵；相对断言抗 staging 数据漂移；发现并登记 AAV-1322 桌面收起缺陷） | 2026-09-28 | Canonical | `e2e/scenario-input-modes.spec.ts` | keep |
+| `docs/specs/aav-1320-ga4-csp-inline-scripts.md` | GA4 CSP 修复 spec（consent 内联块 sha256 放行 + GA origin + 构建期 hash 校验门；16 行场景矩阵；含运行时 probe 证据与双轴 review 闭环） | 2026-09-28 | Canonical | `vercel.json`, `scripts/check-csp-inline-scripts.mjs`, `scripts/lib/csp-inline-scripts.mjs` | keep |
 | `docs/specs/aav-1311-onchain-fallback-decimals.md` | onchain fallback 非 18-dec USD 缩水修复 spec（rawToHuman 两段法 / amountWad 原生 raw 语义 / fixture 形态契约 / 量级 invariant；含场景矩阵与实测证据） | 2026-09-27 | Canonical | `src/lib/userData/userPositionMapper.ts`, `src/test/userPositionConsistency.test.ts` | keep |
 | `docs/specs/chainlink-arc-v4-chain-onboarding.md` | Chainlink Arc (chainId 5042) 新链接入 spec（registry/icon map/manifest 四件套原子性；含场景矩阵与实测取证方法；2026-09-27 slug 对齐上游 `arc` + 官方 logo 替换占位图） | 2026-09-16 | Canonical | `src/lib/chainIconMap.ts`, `scripts/check-chain-icon-map-upstream.mjs`, `public/icons/networks/arc.svg` | keep |
 | `docs/archive/2026-08-29-fcp-optimization-handoff.md` | FCP 优化 session 交接（已被 spec 取代） | 2026-08-29 | Historical archive | `docs/specs/fcp-optimization.md` | keep |

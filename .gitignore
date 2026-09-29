@@ -68,6 +68,7 @@ agent/
 .github/hooks/
 .impeccable/
 .opencode/
+.workbuddy/
 skills-lock.json
 
 # Debug scripts and pages (development-only, not committed)

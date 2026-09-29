@@ -30,7 +30,7 @@
     "dev:production": "vite --mode production",
     "ci:remote": "npm run lint && npm run check:react-singleton && npm test && npm run build && (npm audit --omit=dev --audit-level=high || echo '⚠️  npm audit found vulnerabilities (see CI security-audit job for details)')",
     "ci:auto-fix": "npm audit fix --omit=dev || true && npm ci",
-    "build": "node scripts/generate-icon-manifests.mjs && node scripts/generate-health-json.mjs && vite build",
+    "build": "node scripts/generate-icon-manifests.mjs && node scripts/generate-health-json.mjs && vite build && node scripts/check-csp-inline-scripts.mjs",
     "build:metrics": "node scripts/measure-build.mjs",
     "build:dev": "node scripts/generate-icon-manifests.mjs && vite build --mode development",
     "scan": "npm run scan:code && npm run scan:deps",
