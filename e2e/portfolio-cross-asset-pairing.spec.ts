@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { discoverCrossAssetPairingScenarios, type CrossAssetScenario } from './reserveDiscovery';
 import {
   addReserveToPortfolio,
   fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
-  getMarketChipLabel,
   readIncentiveAfter,
   setupPortfolioMode,
 } from './test-reserves';
@@ -25,117 +25,25 @@ import {
  * 4. Add paired reserve with supply/borrow position
  * 5. Verify incentive changes proportionally to min() formula
  *
+ * Scenario selection lives in ./reserveDiscovery (AAV-1308): both rate sides
+ * are scanned and each group is gated by the UI's own render gates
+ * (computable campaign, position room, LTV funding), so a selected scenario
+ * always renders a numeric incentive and never a clamped position — the two
+ * ways this spec could otherwise go quietly false-green. Self-pairings and
+ * same-symbol pairs are excluded because the fill helpers type into inputs
+ * located by token symbol. Unit-tested in src/test/reserveDiscovery.test.ts.
+ *
  * If no crossAssetPairing campaigns are found in staging data, all tests skip.
  * Desktop + mobile variants are generated from the same scenario list.
  */
 
-// ─── Types ─────────────────────────────────────────────────────────
-
-interface CrossAssetScenario {
-  sourceSymbol: string;
-  sourceMarketLabel: string;
-  sourceReserveId: string;
-  sourceSide: 'supply' | 'borrow';
-  pairedSymbol: string;
-  pairedMarketLabel: string;
-  pairedReserveId: string;
-  pairedSide: 'supply' | 'borrow';
-  discountFactor: number;
-  chainName: string;
-  apr: number;
-}
-
-// ─── API Discovery ─────────────────────────────────────────────────
-
-// API base comes from the shared env-resolving fetcher (AAV-1280 leftover):
-// CI sets VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
-async function discoverCrossAssetScenarios(): Promise<CrossAssetScenario[]> {
-  try {
-    const reserves = await fetchStagingReserves();
-    const idMap: Record<string, Record<string, unknown>> = {};
-    for (const r of reserves) idMap[r.reserveId as string] = r;
-
-    const scenarios: CrossAssetScenario[] = [];
-    const seen = new Set<string>();
-
-    // Check both merklSupplys and merklBorrows for crossAssetPairing
-    for (const r of reserves) {
-      if (r.isFrozen || r.isPaused || r.isActive === false) continue;
-
-      const sides: Array<{ key: string; side: 'supply' | 'borrow' }> = [
-        { key: 'merklSupplys', side: 'supply' },
-        { key: 'merklBorrows', side: 'borrow' },
-      ];
-
-      for (const { key, side } of sides) {
-        const groups = (r[key] ?? []) as Record<string, unknown>[];
-        for (const g of groups) {
-          const pairing = g.crossAssetPairing as
-            | {
-                sourceSide: 'supply' | 'borrow';
-                pairedReserveId: string;
-                pairedSide: 'supply' | 'borrow';
-                discountFactor: number;
-              }
-            | null
-            | undefined;
-          if (!pairing) continue;
-
-          // Get APR from breakdowns
-          const breakdowns = (g.breakdowns ?? []) as { campaignApr?: number }[];
-          const apr = breakdowns.reduce((s, b) => s + (b.campaignApr ?? 0), 0);
-          if (apr <= 0) continue;
-
-          // Look up paired reserve
-          const pairedReserve = idMap[pairing.pairedReserveId];
-          if (!pairedReserve) continue;
-          if (pairedReserve.isFrozen || pairedReserve.isPaused || pairedReserve.isActive === false) continue;
-
-          // Check that source reserve can be borrowed/supplied
-          if (side === 'supply' && r.supplyDisabled === true) continue;
-          if (side === 'borrow' && r.borrowDisabled === true) continue;
-          // Need ltv > 0 for portfolio borrow to work (AAV-1250 LTV clamping)
-          if (!r.ltv || r.ltv === 0) continue;
-
-          // Check paired reserve can be supplied/borrowed
-          if (pairing.pairedSide === 'supply' && pairedReserve.supplyDisabled === true) continue;
-          if (pairing.pairedSide === 'borrow' && pairedReserve.borrowDisabled === true) continue;
-          if (!pairedReserve.ltv || pairedReserve.ltv === 0) continue;
-
-          const dedupKey = `${r.reserveId}:${side}`;
-          if (seen.has(dedupKey)) continue;
-          seen.add(dedupKey);
-
-          scenarios.push({
-            sourceSymbol: r.tokenSymbol as string,
-            sourceMarketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
-            sourceReserveId: r.reserveId as string,
-            sourceSide: side,
-            pairedSymbol: pairedReserve.tokenSymbol as string,
-            pairedMarketLabel: getMarketChipLabel(
-              pairedReserve.marketName as string,
-              pairedReserve.chainName as string,
-            ),
-            pairedReserveId: pairedReserve.reserveId as string,
-            pairedSide: pairing.pairedSide,
-            discountFactor: pairing.discountFactor,
-            chainName: r.chainName as string,
-            apr,
-          });
-        }
-      }
-    }
-
-    // Sort by APR descending — test highest-impact scenarios first
-    scenarios.sort((a, b) => b.apr - a.apr);
-    return scenarios;
-  } catch {
-    return [];
-  }
-}
-
-// Discover at module load (top-level await — Playwright supports ESM TLA)
-const allScenarios = await discoverCrossAssetScenarios();
+// Discover at module load (top-level await — Playwright supports ESM TLA).
+// API base comes from the shared env-resolving fetcher; CI sets
+// VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
+const allScenarios: CrossAssetScenario[] = discoverCrossAssetPairingScenarios(
+  await fetchStagingReserves(),
+  new Date().toISOString(),
+);
 // Limit to top 2 scenarios to keep CI runtime reasonable
 const scenarios = allScenarios.slice(0, 2);
 const hasScenarios = scenarios.length > 0;
@@ -232,7 +140,7 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
 
     if (!hasScenarios) {
       test('no cross-asset pairing scenarios found in staging data', () => {
-        test.skip('No crossAssetPairing campaigns found in current staging data');
+        test.skip(true, 'No crossAssetPairing campaigns found in current staging data');
       });
     }
 
@@ -254,7 +162,7 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
 
     if (!hasScenarios) {
       test('no cross-asset pairing scenarios found in staging data', () => {
-        test.skip('No crossAssetPairing campaigns found in current staging data');
+        test.skip(true, 'No crossAssetPairing campaigns found in current staging data');
       });
     }
 

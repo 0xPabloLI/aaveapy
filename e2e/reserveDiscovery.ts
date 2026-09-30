@@ -65,6 +65,22 @@ export const AMOUNT_VARIANT_CAMPAIGN_TYPES: readonly string[] = [
   'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT',
 ];
 
+/**
+ * Minimum USD of position room a reserve must offer for the cross-asset-pairing
+ * runner to use it: the largest single amount that runner types on one reserve
+ * (the 500 → 2000 → 5000 paired ladder in portfolio-cross-asset-pairing.spec.ts).
+ * Room below this is not merely "small" — it clamps every ladder step onto the
+ * same value, so the relative assertions go false-green (AAV-1308).
+ * Keep in sync with the amounts typed by that runner.
+ */
+export const PAIRING_SIM_MIN_ROOM_USD = 5_000;
+
+/** USD the runner supplies to create borrowing power before a typed borrow. */
+const PAIRING_SIM_FUNDING_USD = 100_000;
+
+/** Reserve fields holding a native-unit amount that the room getters convert. */
+type NativeRoomField = 'suppliable' | 'supplyCap' | 'supplied' | 'borrowable' | 'borrowCap' | 'borrowed';
+
 // ─── Campaign predicates ─────────────────────────────────────────────
 
 const parseTime = (iso: string | undefined): number | null => {
@@ -122,13 +138,26 @@ export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): bo
 
 // ─── Reserve predicates ──────────────────────────────────────────────
 
-function merklSupplyBreakdowns(r: DiscoveryReserve): MerklBreakdown[] {
-  const groups = r.merklSupplys;
-  if (!Array.isArray(groups)) return [];
-  return groups.flatMap((g) => {
-    const breakdowns = (g as { breakdowns?: unknown })?.breakdowns;
-    return Array.isArray(breakdowns) ? (breakdowns as MerklBreakdown[]) : [];
-  });
+/** The Merkl opportunity-group array for a rate side (AAV-1308). */
+function merklGroupsForSide(r: DiscoveryReserve, side: 'supply' | 'borrow'): unknown[] {
+  const groups = side === 'supply' ? r.merklSupplys : r.merklBorrows;
+  return Array.isArray(groups) ? groups : [];
+}
+
+function breakdownsOfGroup(group: unknown): MerklBreakdown[] {
+  const breakdowns = (group as { breakdowns?: unknown })?.breakdowns;
+  return Array.isArray(breakdowns) ? (breakdowns as MerklBreakdown[]) : [];
+}
+
+function merklBreakdownsForSide(r: DiscoveryReserve, side: 'supply' | 'borrow'): MerklBreakdown[] {
+  return merklGroupsForSide(r, side).flatMap(breakdownsOfGroup);
+}
+
+/** Sum of the breakdown APRs the UI can actually render (percent points). */
+function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): number {
+  return breakdowns
+    .filter((b) => isComputableMerklCampaign(b, nowIso))
+    .reduce((acc, b) => acc + parseApr(b.campaignApr), 0);
 }
 
 /**
@@ -137,7 +166,7 @@ function merklSupplyBreakdowns(r: DiscoveryReserve): MerklBreakdown[] {
  * (Merit was fully retired — AAV-1289).
  */
 export function hasComputableSupplyIncentive(r: DiscoveryReserve, nowIso: string): boolean {
-  return merklSupplyBreakdowns(r).some((b) => isComputableMerklCampaign(b, nowIso));
+  return merklBreakdownsForSide(r, 'supply').some((b) => isComputableMerklCampaign(b, nowIso));
 }
 
 /**
@@ -146,11 +175,7 @@ export function hasComputableSupplyIncentive(r: DiscoveryReserve, nowIso: string
  * numeric values.
  */
 export function computeSupplyNetApyPercent(r: DiscoveryReserve, nowIso: string): number {
-  const native = parseApr(r.supplyApy);
-  const incentive = merklSupplyBreakdowns(r)
-    .filter((b) => isComputableMerklCampaign(b, nowIso))
-    .reduce((acc, b) => acc + parseApr(b.campaignApr), 0);
-  return native + incentive;
+  return parseApr(r.supplyApy) + computableAprPercent(merklBreakdownsForSide(r, 'supply'), nowIso);
 }
 
 function isUsableReserve(r: DiscoveryReserve): boolean {
@@ -160,34 +185,107 @@ function isUsableReserve(r: DiscoveryReserve): boolean {
   return typeof ltv === 'number' && ltv > 0;
 }
 
-// ─── Supply room (mirrors app's marketMetrics fallback) ──────────────
+/** Reserve lookup by canonical `reserveId` (shared by both discovery paths). */
+function indexReservesById(reserves: DiscoveryReserve[]): Map<string, DiscoveryReserve> {
+  const idMap = new Map<string, DiscoveryReserve>();
+  for (const r of reserves) {
+    if (typeof r.reserveId === 'string' && r.reserveId) idMap.set(r.reserveId, r);
+  }
+  return idMap;
+}
 
 /**
- * USD supply room — mirrors `availableSupplyRoomUsd` in
- * rateSimulationCalculator.ts (`nativeToUsd(suppliable)` preferred, else
- * `max(supplyCap − supplied, 0)`). Reserves with zero room clamp manual
- * positions to 0, rendering every portfolio cell as '—'.
+ * Whether a reserve carries every identity field the runner types into a
+ * locator. `/markets` JSON is consumed unvalidated here, so a reserve missing
+ * one must be skipped rather than thrown at module load — a throw fails the
+ * whole spec file where a skip only loses a scenario.
+ */
+function hasRunnerIdentity(r: DiscoveryReserve): boolean {
+  return (
+    typeof r.reserveId === 'string' &&
+    r.reserveId.length > 0 &&
+    typeof r.tokenSymbol === 'string' &&
+    r.tokenSymbol.length > 0 &&
+    typeof r.marketName === 'string' &&
+    r.marketName.length > 0 &&
+    typeof r.chainName === 'string' &&
+    r.chainName.length > 0
+  );
+}
+
+// ─── Position room (mirrors the app's marketMetrics / rateSimulation fallback) ──
+
+/** Native-unit field of a reserve converted to USD, or null when unusable. */
+function nativeFieldToUsd(r: DiscoveryReserve, field: NativeRoomField): number | null {
+  const price = r.tokenPrice as number | undefined;
+  if (price == null || !Number.isFinite(price) || price <= 0) return null;
+  const raw = r[field];
+  if (raw === null || raw === undefined || raw === '') return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return null;
+  const decimals = (r.decimals as number | undefined) ?? 18;
+  return (value / Math.pow(10, decimals)) * price;
+}
+
+/**
+ * Cap-minus-used fallback. A cap of 0 means UNLIMITED in Aave, so the app
+ * guards this branch with `capUsd > 0` (rateSimulationCalculator.ts) and so do
+ * we: without the guard a `borrowCap: '0'` reserve would read as "zero room".
+ */
+function capRemainingUsd(r: DiscoveryReserve, capField: NativeRoomField, usedField: NativeRoomField): number | null {
+  const capUsd = nativeFieldToUsd(r, capField);
+  const usedUsd = nativeFieldToUsd(r, usedField);
+  if (capUsd === null || usedUsd === null || capUsd <= 0) return null;
+  return Math.max(capUsd - usedUsd, 0);
+}
+
+/**
+ * USD supply room — the constraint that clamps a manual supply to 0, rendering
+ * every portfolio cell as '—'. Mirrors the `availableSupplyRoomUsd` fallback
+ * chain in rateSimulationCalculator.ts: `suppliable` preferred, else
+ * `supplyCap − supplied` (only when a real cap is set).
  * Returns null when data is insufficient (treated as "don't exclude").
  */
 export function getSupplyRoomUsd(r: DiscoveryReserve): number | null {
-  const decimals = (r.decimals as number | undefined) ?? 18;
-  const price = r.tokenPrice as number | undefined;
-  if (price == null || !Number.isFinite(price) || price <= 0) return null;
-  const toUsd = (raw: unknown): number | null => {
-    if (raw === null || raw === undefined || raw === '') return null;
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) return null;
-    return (value / Math.pow(10, decimals)) * price;
-  };
-  const suppliableUsd = toUsd(r.suppliable);
-  if (suppliableUsd !== null) return suppliableUsd;
-  const capUsd = toUsd(r.supplyCap);
-  const suppliedUsd = toUsd(r.supplied);
-  if (capUsd !== null && suppliedUsd !== null) return Math.max(capUsd - suppliedUsd, 0);
-  return null;
+  return nativeFieldToUsd(r, 'suppliable') ?? capRemainingUsd(r, 'supplyCap', 'supplied');
 }
 
-// ─── Market label (mirrors src/lib/marketLabels.ts) ──────────────────
+/**
+ * USD borrow room — the constraint that clamps a portfolio borrow to 0
+ * (AAV-1308). Mirrors the data the app's `availableBorrowRoomUsd` reads from:
+ * `borrowable` preferred, else `borrowCap − borrowed` (only when a real cap is
+ * set). Deliberately narrower than the app formula: the app also min()s with
+ * live liquidity plus the simulated supply, which depends on runner input that
+ * isn't known at discovery time. Returns null when data is insufficient
+ * (treated as "don't exclude", same contract as getSupplyRoomUsd).
+ */
+export function getBorrowRoomUsd(r: DiscoveryReserve): number | null {
+  return nativeFieldToUsd(r, 'borrowable') ?? capRemainingUsd(r, 'borrowCap', 'borrowed');
+}
+
+/**
+ * Whether a reserve can hold the positions the pairing runner types on it.
+ *
+ * The runner always supplies on both endpoints (`PAIRING_SIM_FUNDING_USD` where
+ * a borrow follows, to create borrowing power) and borrows up to
+ * `PAIRING_SIM_MIN_ROOM_USD` on the side that carries the position. A room
+ * below that floor clamps the ladder onto one value — a false green (AAV-1308).
+ * `min(supplyRoom, PAIRING_SIM_FUNDING_USD) × ltv` is the LTV-clamped borrowing
+ * power (AAV-1250): a low-LTV reserve cannot fund the typed borrow.
+ */
+function usableForSimulatedPosition(r: DiscoveryReserve, side: 'supply' | 'borrow'): boolean {
+  if (r.isFrozen || r.isPaused || r.isActive === false) return false;
+  if (typeof r.ltv !== 'number' || r.ltv <= 0) return false;
+  if (r.supplyDisabled === true) return false;
+  const supplyRoom = getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY;
+  if (supplyRoom < PAIRING_SIM_MIN_ROOM_USD) return false;
+  if (side === 'supply') return true;
+  if (r.borrowDisabled === true) return false;
+  if ((getBorrowRoomUsd(r) ?? Number.POSITIVE_INFINITY) < PAIRING_SIM_MIN_ROOM_USD) return false;
+  return Math.min(supplyRoom, PAIRING_SIM_FUNDING_USD) * (r.ltv / 100) >= PAIRING_SIM_MIN_ROOM_USD;
+}
+
+// ─── Market label (mirrors getSubMarketLabel in src/lib/marketLabels.ts) ──
 
 const ETHEREUM_MARKET_NAMES: Record<string, string> = {
   AaveV3Ethereum: 'Core',
@@ -196,13 +294,20 @@ const ETHEREUM_MARKET_NAMES: Record<string, string> = {
   AaveV3EthereumEtherFi: 'EtherFi',
 };
 
-export function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
+/**
+ * The label the Add button in the portfolio search renders for a market — the
+ * runner matches on it, so a divergent copy selects the wrong row. Derived from
+ * `marketName` alone (the app ignores `chainName` for API stability); a
+ * parity test against `src/lib/marketLabels.ts` anchors this mirror.
+ */
+export function getMarketChipLabel(marketName: string, chainName?: string): string {
+  void chainName;
   if (ETHEREUM_MARKET_NAMES[marketName]) return ETHEREUM_MARKET_NAMES[marketName];
-  if (marketName.startsWith('AaveV4')) {
-    return marketName.replace(/^AaveV4/i, '').replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-  return marketName;
+  const stripped = marketName
+    .replace(/^AaveV[34]/i, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+  return stripped || marketName;
 }
 
 // ─── Selection ───────────────────────────────────────────────────────
@@ -277,10 +382,7 @@ function usableForOffsetPosition(r: DiscoveryReserve): boolean {
  * addable and borrowable (active, ltv > 0, borrow enabled, supply room).
  */
 export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: string): OffsetScenario[] {
-  const idMap = new Map<string, DiscoveryReserve>();
-  for (const r of reserves) {
-    if (typeof r.reserveId === 'string' && r.reserveId) idMap.set(r.reserveId, r);
-  }
+  const idMap = indexReservesById(reserves);
 
   const scenarios: OffsetScenario[] = [];
   const seen = new Set<string>();
@@ -296,9 +398,7 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
       if (!Array.isArray(offsets)) continue;
       const nonSelf = offsets.filter((id) => id !== r.reserveId);
       const breakdowns = Array.isArray(g.breakdowns) ? (g.breakdowns as MerklBreakdown[]) : [];
-      const apr = breakdowns
-        .filter((b) => isComputableMerklCampaign(b, nowIso))
-        .reduce((sum, b) => sum + parseApr(b.campaignApr), 0);
+      const apr = computableAprPercent(breakdowns, nowIso);
       if (apr <= 0) continue;
 
       const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
@@ -339,4 +439,104 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
   });
 
   return scenarios;
+}
+
+// ─── Cross-asset pairing scenarios (AAV-1308) ──────────────────────
+
+/** Wire shape of a Merkl min(1,2) cross-asset pairing constraint. */
+interface CrossAssetPairing {
+  sourceSide?: 'supply' | 'borrow';
+  pairedReserveId: string;
+  pairedSide: 'supply' | 'borrow';
+  discountFactor: number;
+}
+
+/** A portfolio cross-asset pairing scenario to exercise in e2e. */
+export interface CrossAssetScenario {
+  sourceSymbol: string;
+  sourceMarketLabel: string;
+  sourceReserveId: string;
+  sourceSide: 'supply' | 'borrow';
+  pairedSymbol: string;
+  pairedMarketLabel: string;
+  pairedReserveId: string;
+  pairedSide: 'supply' | 'borrow';
+  discountFactor: number;
+  chainName: string;
+  /** Sum of computable breakdown APRs (percent points) — ranking only. */
+  apr: number;
+}
+
+const PAIRING_SIDES: Array<'supply' | 'borrow'> = ['supply', 'borrow'];
+
+/**
+ * Discover Merkl cross-asset pairing (min(1,2)) scenarios from /markets
+ * reserves (ported from portfolio-cross-asset-pairing.spec.ts — AAV-1308).
+ *
+ * Two gate families, both mirroring the app rather than importing it:
+ * 1. Renderability — both rate sides are scanned (`merklSupplys` and
+ *    `merklBorrows`) and every candidate group is summed through
+ *    `isComputableMerklCampaign`, so a selected scenario renders a numeric
+ *    incentive, never the '—' shape that made AAV-1280 flaky.
+ * 2. Position feasibility — `usableForSimulatedPosition` on both endpoints, so
+ *    no ladder step is clamped into a false green.
+ *
+ * The UI ignores `pairing.sourceSide` (`computeCrossAssetNetEligible` scales the
+ * current side's gross), and so does discovery.
+ */
+export function discoverCrossAssetPairingScenarios(reserves: DiscoveryReserve[], nowIso: string): CrossAssetScenario[] {
+  const idMap = indexReservesById(reserves);
+
+  const scenarios: CrossAssetScenario[] = [];
+  const seen = new Set<string>();
+
+  for (const r of reserves) {
+    const sourceReserveId = r.reserveId;
+    if (typeof sourceReserveId !== 'string' || sourceReserveId === '') continue;
+    if (!hasRunnerIdentity(r)) continue;
+    for (const side of PAIRING_SIDES) {
+      if (!usableForSimulatedPosition(r, side)) continue;
+
+      for (const group of merklGroupsForSide(r, side)) {
+        const pairing = (group as { crossAssetPairing?: CrossAssetPairing | null }).crossAssetPairing;
+        if (!pairing || typeof pairing.pairedReserveId !== 'string') continue;
+        // A self-pair would make the runner add the reserve twice and overwrite
+        // its own source position on the next fill.
+        if (pairing.pairedReserveId === sourceReserveId) continue;
+        const pairedSide = pairing.pairedSide;
+        if (pairedSide !== 'supply' && pairedSide !== 'borrow') continue;
+
+        const apr = computableAprPercent(breakdownsOfGroup(group), nowIso);
+        if (apr <= 0) continue;
+
+        const paired = idMap.get(pairing.pairedReserveId);
+        if (!paired || !hasRunnerIdentity(paired)) continue;
+        // The fill helpers locate portfolio inputs by accessible name (token
+        // symbol), so a same-symbol pair types into whichever row comes first.
+        if (paired.tokenSymbol === r.tokenSymbol) continue;
+        if (!usableForSimulatedPosition(paired, pairedSide)) continue;
+
+        const dedupKey = `${sourceReserveId}:${side}`;
+        if (seen.has(dedupKey)) continue;
+        seen.add(dedupKey);
+
+        scenarios.push({
+          sourceSymbol: r.tokenSymbol as string,
+          sourceMarketLabel: getMarketChipLabel(r.marketName as string, r.chainName as string),
+          sourceReserveId,
+          sourceSide: side,
+          pairedSymbol: paired.tokenSymbol as string,
+          pairedMarketLabel: getMarketChipLabel(paired.marketName as string, paired.chainName as string),
+          pairedReserveId: pairing.pairedReserveId,
+          pairedSide,
+          discountFactor: pairing.discountFactor,
+          chainName: r.chainName as string,
+          apr,
+        });
+      }
+    }
+  }
+
+  // Highest-impact scenarios first — the spec keeps the top two.
+  return scenarios.sort((a, b) => b.apr - a.apr);
 }

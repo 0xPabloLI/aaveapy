@@ -30,7 +30,7 @@
     "dev:production": "vite --mode production",
     "ci:remote": "npm run lint && npm run check:react-singleton && npm test && npm run build && (npm audit --omit=dev --audit-level=high || echo '⚠️  npm audit found vulnerabilities (see CI security-audit job for details)')",
     "ci:auto-fix": "npm audit fix --omit=dev || true && npm ci",
-    "build": "node scripts/generate-icon-manifests.mjs && node scripts/generate-health-json.mjs && vite build",
+    "build": "node scripts/generate-icon-manifests.mjs && node scripts/generate-health-json.mjs && vite build && node scripts/check-csp-inline-scripts.mjs",
     "build:metrics": "node scripts/measure-build.mjs",
     "build:dev": "node scripts/generate-icon-manifests.mjs && vite build --mode development",
     "scan": "npm run scan:code && npm run scan:deps",
@@ -70,6 +70,7 @@
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
     "check:coingecko-platform-map-upstream": "node scripts/check-coingecko-platform-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
+    "check:e2e-market-names": "node scripts/check-e2e-hardcoded-market-names.mjs",
     "test": "node scripts/generate-icon-manifests.mjs && vitest run && node --test \"scripts/**/*.test.mjs\"",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
@@ -113,7 +114,7 @@
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@sentry/react": "^10.73.0",
     "@supabase/supabase-js": "^2.99.3",
-    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query": "^5.104.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "@walletconnect/ethereum-provider": "^2.21.1",
@@ -142,11 +143,12 @@
     "@types/react": "$@types/react",
     "@types/react-dom": "$@types/react-dom",
     "minimatch@3": {
-      "brace-expansion": "1.1.18"
+      "brace-expansion": "1.1.21"
     },
     "minimatch@10": {
-      "brace-expansion": "5.0.9"
+      "brace-expansion": "5.0.12"
     },
+    "fast-uri": "3.1.8",
     "js-yaml": "4.3.2",
     "react": "$react",
     "react-dom": "$react-dom",
@@ -176,14 +178,14 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.12.0",
-    "happy-dom": "^20.9.0",
+    "happy-dom": "^20.14.5",
     "husky": "^9.1.7",
     "jscpd": "^5.2.0",
     "knip": "^6.35.1",
     "lint-staged": "^17.5.1",
-    "lovable-tagger": "^1.3.3",
+    "lovable-tagger": "^1.3.5",
     "openapi-zod-client": "^1.18.3",
-    "postcss": "^8.5.26",
+    "postcss": "^8.5.28",
     "prettier": "^3.9.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
