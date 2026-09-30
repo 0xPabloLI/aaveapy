@@ -143,11 +143,12 @@
     "@types/react": "$@types/react",
     "@types/react-dom": "$@types/react-dom",
     "minimatch@3": {
-      "brace-expansion": "1.1.18"
+      "brace-expansion": "1.1.21"
     },
     "minimatch@10": {
-      "brace-expansion": "5.0.9"
+      "brace-expansion": "5.0.12"
     },
+    "fast-uri": "3.1.8",
     "js-yaml": "4.3.2",
     "react": "$react",
     "react-dom": "$react-dom",
