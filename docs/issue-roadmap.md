@@ -71,8 +71,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1324 | High | Backlog | [e2e] `Filter by ` 前缀被 hub/market 两颗 chip 共用（`DesktopReserveRow.tsx:450` vs `:483`），实盘出现 `Plus` hub 后 strict mode 撞车 → dev 3 个 e2e 分片红（run 36658454356 / #699 合并后）；与 AAV-1323 同族不同形态 |
-| AAV-1323 | Medium | Backlog | [e2e] market-filter-pin 用例 (5) 用绝对几何阈值卡实盘数据 → CI 隔频报红（首跑与 Retry 数值逐位相同，非时序；同族 AAV-1307 是另一种形态） |
+| AAV-1323 | Medium | Backlog | [e2e] market-filter-pin 用例 (5) 用绝对几何阈值卡实盘数据 → CI 隔频报红（首跑与 Retry 数值逐位相同，非时序；同族 AAV-1307 是另一种形态。⚠️ AAV-1324 已由 #701 修掉选择器歧义，但本票的阈值假设未动，勿一并关闭） |
 | AAV-1303 | Medium | Todo | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（next-after-1320；prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
 | AAV-1320 | Medium | In Review | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起）— **交付完成** `567823ec`…`b1262489`（CSP 放行 + 构建期 hash 校验门 + CodeQL 三连修复 + pre-push e2e 处置）；PR #692 lovable→dev 已合并（09-29）；**PR #693 dev→main 已建未合并，等用户 GitHub UI 操作**，合并后生产复验 GA 上报即关闭 |
 | AAV-1316 | Medium | Backlog (ready-for-agent) | [e2e] AAV-895 cross-asset-pairing 用例从未真实执行过：注入 synthetic 载荷证明 min(1,2) 链路可达 |
