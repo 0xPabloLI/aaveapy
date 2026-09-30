@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 const strictStickAssertEnabled = process.env.STRICT_STICK_ASSERT === 'true';
 
-async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
+async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
-async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getPinnedTopY(page: Page): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
   const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   const scenarioCount = await scenario.count();
@@ -23,12 +24,10 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom > 0 ? maxBottom + 8 : 16;
 }
 
-// Rows carry both `Filter by <hub> hub` and `Filter by <market> market` chips; anchor the
-// suffix so this keeps selecting the market chip (strict mode otherwise matches both).
-function marketChipForReserve(page: Parameters<typeof test>[0]['page'], reserveId: string) {
-  return page.locator(
-    `tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "][aria-label$=" market"]`,
-  );
+// Both chips share the "Filter by " label prefix, so locate by data-chip-kind: a label
+// prefix match hits hub+market together (AAV-1324) and breaks strict mode.
+function marketChipForReserve(page: Page, reserveId: string) {
+  return page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[data-chip-kind="market"]`);
 }
 
 interface ExpandedReserveStickSnapshot {
@@ -40,10 +39,7 @@ interface ExpandedReserveStickSnapshot {
   viewportHeight: number;
 }
 
-async function readExpandedReserveStickSnapshot(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-): Promise<ExpandedReserveStickSnapshot> {
+async function readExpandedReserveStickSnapshot(page: Page, reserveId: string): Promise<ExpandedReserveStickSnapshot> {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(mainRow, `main row ${reserveId} must exist`).toBeVisible();
   const box = await mainRow.boundingBox();
@@ -64,7 +60,7 @@ async function readExpandedReserveStickSnapshot(
 
 /** Same expanded reserve: main row stays in viewport and aligns to the sticky pin band (desktop). */
 async function assertStrictStickAfterReorder(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   reserveId: string,
   before: ExpandedReserveStickSnapshot,
 ): Promise<ExpandedReserveStickSnapshot> {
@@ -133,7 +129,7 @@ test.describe('Reserves table stick behavior', () => {
     if (!preBox) throw new Error('Cannot read expanded row position before scenario change');
 
     // Trigger deterministic reorder path through row market filter.
-    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "][aria-label$=" market"]').first();
+    const rowMarketButton = page.locator('tbody button[data-chip-kind="market"]').first();
     await rowMarketButton.click();
 
     const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);

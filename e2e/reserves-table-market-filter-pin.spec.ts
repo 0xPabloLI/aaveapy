@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
+async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
-async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getPinnedTopY(page: Page): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
   const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   const scenarioCount = await scenario.count();
@@ -21,25 +22,19 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom > 0 ? maxBottom + 8 : 16;
 }
 
-// Rows carry both `Filter by <hub> hub` and `Filter by <market> market` chips; anchor the
-// suffix so this keeps selecting the market chip (strict mode otherwise matches both).
-function marketChipForReserve(page: Parameters<typeof test>[0]['page'], reserveId: string) {
-  return page.locator(
-    `tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "][aria-label$=" market"]`,
-  );
+// Both chips share the "Filter by " label prefix, so locate by data-chip-kind: a label
+// prefix match hits hub+market together (AAV-1324) and breaks strict mode.
+function marketChipForReserve(page: Page, reserveId: string) {
+  return page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[data-chip-kind="market"]`);
 }
 
-async function getRowTopY(page: Parameters<typeof test>[0]['page'], reserveId: string): Promise<number> {
+async function getRowTopY(page: Page, reserveId: string): Promise<number> {
   const row = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   const box = await row.boundingBox();
   return box?.y ?? -1;
 }
 
-async function scrollExpandedRowOffPinAnchor(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-  minAbsDeltaPx = 7,
-): Promise<void> {
+async function scrollExpandedRowOffPinAnchor(page: Page, reserveId: string, minAbsDeltaPx = 7): Promise<void> {
   const simulationRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`);
   await expect(simulationRow).toBeVisible();
   // Let smooth pin scroll from expand finish before we move off the pin band.
@@ -63,7 +58,7 @@ async function scrollExpandedRowOffPinAnchor(
 }
 
 async function scrollExpandedRowIntoAnchorBand(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   reserveId: string,
   pinnedTopY: number,
   tolerancePx = 12,
@@ -81,10 +76,7 @@ async function scrollExpandedRowIntoAnchorBand(
   throw new Error('Could not scroll expanded row into anchor band');
 }
 
-async function assertExpandedRowPinnedToAnchor(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-): Promise<void> {
+async function assertExpandedRowPinnedToAnchor(page: Page, reserveId: string): Promise<void> {
   const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(targetRow).toBeVisible();
   const pinnedTopY = await getPinnedTopY(page);

@@ -38,8 +38,11 @@
 | `.husky/pre-commit` | 增加 `npm run check:e2e-market-names` | Medium | 纯本地文件扫描，耗时 <1s；不把红推给推送阶段才发现 |
 | `e2e/marketChips.ts` | 新建 `pickChainChip()` seam | Low | 取代两处各写一遍的"跳过 All 芯片"循环 |
 | `e2e/reserves-table-mobile-interactions.spec.ts` | Arbitrum 字面量 → `pickChainChip()` | Medium | 断言语义不变（切换市场后展开态不悬空），只换选芯片的方式 |
-| `e2e/reserves-table-interactions.spec.ts` | Celo 字面量 → `pickChainChip()`；取消筛选改点 `All` 复位芯片；3 处 `Filter by ` 前缀补 `$=" market"` 后缀 | Medium | 位置化芯片在选中后列表可能重排，改点 `All` 更稳；后缀锚定防 hub 芯片串味 |
-| `e2e/reserves-table-market-filter-pin.spec.ts`、`e2e/reserves-table-stick.spec.ts` | `marketChipForReserve()` 与 1 处前缀选择器补 ` market` 后缀 | Medium | **行为改变**：此前它们可能点中的是 hub 芯片（即测错了对象）。改后测的是市场芯片，11 条用例转绿 |
+| `e2e/reserves-table-interactions.spec.ts` | Celo 字面量 → `pickChainChip()`；取消筛选改点 `All` 复位芯片；3 处行芯片选择器改用 `data-chip-kind` | Medium | 位置化芯片在选中后列表可能重排，改点 `All` 更稳；芯片身份改由属性承载，不再靠文案匹配 |
+| `e2e/reserves-table-market-filter-pin.spec.ts`、`e2e/reserves-table-stick.spec.ts` | `marketChipForReserve()` 与 1 处行芯片选择器改用 `data-chip-kind` | Medium | **行为改变**：此前它们可能点中的是 hub 芯片（即测错了对象）。改后测的是市场芯片，11 条用例转绿 |
+| `src/components/dashboard/DesktopReserveRow.tsx` | hub / market 两颗按钮各加 `data-chip-kind`；aria-label、title、onClick、样式一字未动 | Low | 用户可见行为与读屏文本不变。选属性而不改文案：改文案会连带 tooltip 与 3 个单测断言，而对读屏用户 `… hub` / `… market` 本就分得开——冲突只在"前缀子串匹配"这一侧 |
+| `src/components/dashboard/DesktopReserveRow.test.tsx` | 断言两颗芯片各带正确的 `data-chip-kind` | Low | 属性被重构弄丢时红在单元层，而不是红成 e2e 定位器超时（本次事故的形状） |
+| 7 个 e2e spec（41 处） | `Parameters<typeof test>[0]['page']` → `import type { Page }` | Low | 纯类型位替换，Playwright 只剥类型，运行时等价；由 `e2e/*.ts` 显式 tsc 归零证明 |
 
 ## Section 2: Behavioral Scenarios
 
@@ -63,11 +66,23 @@
 1. `node --test scripts/check-e2e-hardcoded-market-names.test.mjs` → **11/11**（先 red：引号配对版实现漏掉反引号嵌套的字面量，row 3 失败后改成整行 + 严格词边界）。
 2. 正对照：对 `git show 0b6ed5e3:e2e/reserves-table-mobile-interactions.spec.ts` 运行扫描 → 命中 `line 37 [Arbitrum]`，即守卫会挡住本次事故形态，而不是只跟着修好的代码绿。
 3. 现网全量：`npm run check:e2e-market-names` → `29 specs scanned, 22 names in vocabulary`，rc=0。
-4. 运行时用例：mobile spec 2 passed；`reserves-table-interactions` + `market-filter-pin` + `stick` 合计 **11 passed / 1 skipped**（改前三处红：strict mode violation 与 `Filter by Plus hub` 解析异常）。
-5. 静态门：`npm run typecheck` / `lint` / `knip` / `dup:check` 见提交说明。
+4. 运行时用例：mobile spec 2 passed；`reserves-table-interactions` + `market-filter-pin` + `stick` 合计 **11 passed / 1 skipped**（改前三处红：strict mode violation 与 `Filter by Plus hub` 解析异常）。其中 1 条在满载 workers=2 下偶发失败，单跑两次通过（52s / 27s）→ 既存负载 flake（`waitForTableReady` 的 30s 预算，AAV-1307 同族），与芯片改动无关。
+5. 静态门：`npm run typecheck` / `lint` / `knip` / `dup:check` / `check:agents-md` / `check:todos` 见提交说明；e2e 显式类型门命令是
+   `npx tsc --noEmit --target ES2022 --module ESNext --moduleResolution bundler --skipLibCheck --strict e2e/*.ts` → **0 error**（改前 45 个）。
+   `--target ES2022` 不可省：默认落回 ES5 lib，`Promise` / top-level await 会假报 9 个错——这条命令本身要照抄，别手搓。
+
+## 顺带修掉的既存类型问题（同一根因：e2e 不在任何 tsconfig 覆盖内）
+
+`tsconfig.app.json` 的 `include` 只有 `["src"]`，`tsconfig.node.json` 只有 `["vite.config.ts"]`，所以 e2e 的类型从来没被检查过。裸 tsc 一照：
+
+- **41 处 `Parameters<typeof test>[0]['page']`**（7 个 spec）：该表达式解析到 Playwright `test` 的重载之一，首参是标题字符串，所以 `['page']` 根本不存在；运行时靠"类型被剥掉"侥幸活着。改为 `import type { Page }`。
+- **`test.skip('字符串')`**（cross-reserve-offset，2 处）：`skip` 的第一参数是 condition，传字符串等于靠真值侥幸跳过，且 description 丢失。改为 `test.skip(true, '…')`。
+- **`fill(alternateAddress)` 传 `string | undefined`**（watch-resubmit）：上一行已有 `test.skip` 守卫但跨不过闭包窄化，沿用该文件自己的 `!` 约定。
+- **`injectEip1193Mock` 声明 `Promise<void>` 却 return `Promise<Disposable>`**：改成 `async` + `await`，调用方等待语义不变。
+
+这四项都是类型层，运行时等价；证据是 tsc 归零 + 受影响 spec 实跑 5 passed / 3 skipped + `--list` 204 条照常加载。**没有**把 e2e 纳入 CI 类型门（需要先决定 tsconfig 归属，另案）。
 
 ## 未纳入本改动（如实记录）
 
-- **e2e 里 42 处 `Parameters<typeof test>[0]['page']` 是类型错误**（该表达式解析到 Playwright `test` 的重载之一，首参是标题字符串，所以 `['page']` 不存在；正确写法是 `import type { Page }`）。横跨 8 个 spec，`tsconfig.app.json` 的 `include` 只有 `src`，所以仓库从未看见。本改动只在裸 `tsc` 下把它照出来，**未修**，应单独开票。
 - `pickAlternateVisibleMarket`（interactions 内私有）与新 `pickChainChip` 形态部分重叠，未合并，避免本次范围外扩。
 - hub 名、以及"名字今天是否还在数据里"不在守卫射程内（见「已知覆盖边界」）。

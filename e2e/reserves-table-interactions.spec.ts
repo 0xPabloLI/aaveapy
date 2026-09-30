@@ -1,14 +1,12 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { pickChainChip } from './marketChips';
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function pickAlternateVisibleMarket(
-  page: Parameters<typeof test>[0]['page'],
-  selectedMarket: string,
-): Promise<string | null> {
+async function pickAlternateVisibleMarket(page: Page, selectedMarket: string): Promise<string | null> {
   const allButtons = page.getByRole('button');
   const count = await allButtons.count();
   for (let i = 0; i < count; i += 1) {
@@ -27,12 +25,12 @@ async function pickAlternateVisibleMarket(
   return null;
 }
 
-async function waitForTableReady(page: Parameters<typeof test>[0]['page']) {
+async function waitForTableReady(page: Page) {
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
-async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise<string> {
+async function expandFirstRow(page: Page): Promise<string> {
   const firstRow = page.locator('tbody tr[data-reserve-id]').first();
   const reserveId = await firstRow.getAttribute('data-reserve-id');
   if (!reserveId) {
@@ -45,7 +43,7 @@ async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise
   return reserveId;
 }
 
-async function expectExpandedRowInViewport(page: Parameters<typeof test>[0]['page'], reserveId: string) {
+async function expectExpandedRowInViewport(page: Page, reserveId: string) {
   const expandedRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(expandedRow).toHaveClass(/bg-muted\/30/);
   await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toHaveCount(1);
@@ -85,10 +83,10 @@ test.describe('Reserves table interaction matrix', () => {
   test('market filter preserves expansion for same market and clears when switching market', async ({ page }) => {
     await expandFirstRow(page);
 
-    // Anchor on the market chip: rows also carry a hub chip labelled `Filter by <hub> hub`,
-    // and now that hubName returns Plus/Global Dollar the prefix-only selector can pick that
-    // one first — which would either break the `... market` parse or silently test the hub.
-    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "][aria-label$=" market"]').first();
+    // Locate by data-chip-kind: hub and market chips share the "Filter by " label prefix, so a
+    // prose match can pick either (AAV-1324 turned that into a strict-mode collision once
+    // hubName started returning Plus).
+    const rowMarketButton = page.locator('tbody button[data-chip-kind="market"]').first();
     const rowMarketLabel = await rowMarketButton.getAttribute('aria-label');
     if (!rowMarketLabel) {
       throw new Error('Cannot read row market aria-label');
@@ -176,17 +174,17 @@ test.describe('Reserves table interaction matrix', () => {
   test('market chip toggle keeps expanded row visible when applying and clearing same filter', async ({ page }) => {
     const reserveId = await expandFirstRow(page);
 
-    // Anchor on the market chip: rows also carry a hub chip labelled `Filter by <hub> hub`,
-    // and now that hubName returns Plus/Global Dollar the prefix-only selector can pick that
-    // one first — which would either break the `... market` parse or silently test the hub.
-    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "][aria-label$=" market"]').first();
+    // Locate by data-chip-kind: hub and market chips share the "Filter by " label prefix, so a
+    // prose match can pick either (AAV-1324 turned that into a strict-mode collision once
+    // hubName started returning Plus).
+    const rowMarketButton = page.locator('tbody button[data-chip-kind="market"]').first();
     await rowMarketButton.click();
     await page.waitForTimeout(450);
     await expectExpandedRowInViewport(page, reserveId);
 
     // Click the same row chip again to clear that market filter.
     const sameRowMarketButton = page
-      .locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "][aria-label$=" market"]`)
+      .locator(`tbody tr[data-reserve-id="${reserveId}"] button[data-chip-kind="market"]`)
       .first();
     await sameRowMarketButton.click();
     await page.waitForTimeout(450);

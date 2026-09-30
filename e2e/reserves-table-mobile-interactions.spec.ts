@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { pickChainChip } from './marketChips';
 
-async function waitForMobileReservesReady(page: Parameters<typeof test>[0]['page']) {
+async function waitForMobileReservesReady(page: Page) {
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: /Expand details panel/i }).first()).toBeVisible({ timeout: 30_000 });
 }
