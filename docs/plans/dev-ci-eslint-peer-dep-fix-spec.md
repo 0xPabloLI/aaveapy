@@ -1,5 +1,7 @@
 # Spec: dev CI 修复 — @eslint/js 与 eslint 主版本对齐
 
+> **状态（2026-09-29）**：本 spec 的方案已执行两次——`0e85f4d7`（首次）与 **#697**（#653 被重新合入后的二次回归）。#697 顺手做完本 spec 标为 out-of-scope 的 `dependabot-resolve-peer-conflicts.yml` 整改（改报告制）。机制与复发面见 `docs/lessons/infrastructure.md` § peer 版本错位的方向不可自动判定。
+
 ## Problem Statement
 
 dev 分支 CI 自 2026-08-24 起持续失败（lint + peer-dep-check 两个 job），阻塞 Production PR #607（dev → main）的合并，进而阻塞 main 上积压的 3 个 open PR 的发布链路。根因：`@eslint/js` 被升到 `^10.0.1` 而 `eslint` 仍为 `^9.39.4`——两者 peer 要求不兼容（@eslint/js v10 要求 eslint@^10），且 @eslint/js v10 的 recommended 规则集新增 `no-useless-assignment`，在现有测试代码上直接报 error。

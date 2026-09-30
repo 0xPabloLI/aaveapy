@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
+async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 60_000 });
 }
 
-async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getPinnedTopY(page: Page): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
   const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   let maxBottom = 0;
@@ -19,11 +20,7 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom > 0 ? maxBottom + 8 : 16;
 }
 
-async function expectRowPinnedNearStickyBand(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-  label: string,
-) {
+async function expectRowPinnedNearStickyBand(page: Page, reserveId: string, label: string) {
   const expandedRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(expandedRow).toBeVisible({ timeout: 10_000 });
 
@@ -39,11 +36,7 @@ async function expectRowPinnedNearStickyBand(
     .toBeLessThanOrEqual(pinnedTopY + 24);
 }
 
-async function expectPinnedWithExpandedBlockVisible(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-  label: string,
-) {
+async function expectPinnedWithExpandedBlockVisible(page: Page, reserveId: string, label: string) {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   const simulationRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`);
   const nextMainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr + tr[data-reserve-id]`).first();
@@ -70,10 +63,7 @@ async function expectPinnedWithExpandedBlockVisible(
   expect(next.y, `next row top should remain visible after pin (${label})`).toBeLessThanOrEqual(viewportHeight - 1);
 }
 
-async function getMainRowOffsetFromPinBand(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-): Promise<number> {
+async function getMainRowOffsetFromPinBand(page: Page, reserveId: string): Promise<number> {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   const pinnedTopY = await getPinnedTopY(page);
   const box = await mainRow.boundingBox();
@@ -81,11 +71,7 @@ async function getMainRowOffsetFromPinBand(
   return box.y - pinnedTopY;
 }
 
-async function moveExpandedRowAwayFromPinBand(
-  page: Parameters<typeof test>[0]['page'],
-  reserveId: string,
-  minDeltaPx = 180,
-) {
+async function moveExpandedRowAwayFromPinBand(page: Page, reserveId: string, minDeltaPx = 180) {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(mainRow).toBeVisible({ timeout: 10_000 });
 
@@ -108,7 +94,7 @@ async function moveExpandedRowAwayFromPinBand(
   ).toBeGreaterThanOrEqual(minDeltaPx);
 }
 
-async function getVisibleReserveOrder(page: Parameters<typeof test>[0]['page']): Promise<string[]> {
+async function getVisibleReserveOrder(page: Page): Promise<string[]> {
   return page
     .locator('tbody tr[data-reserve-id]')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0));
@@ -122,7 +108,7 @@ function didReorder(beforeOrder: string[], afterOrder: string[], reserveId: stri
   return beforeOrder.some((id, idx) => id !== afterOrder[idx]);
 }
 
-async function setScenarioInputs(page: Parameters<typeof test>[0]['page'], values: { supply: string; borrow: string }) {
+async function setScenarioInputs(page: Page, values: { supply: string; borrow: string }) {
   await page.evaluate(({ supply, borrow }) => {
     const supplyInput = document.querySelector<HTMLInputElement>(
       '[data-reserves-sticky-scenario] input[aria-label="Supply amount"]',
@@ -143,7 +129,7 @@ async function setScenarioInputs(page: Parameters<typeof test>[0]['page'], value
   }, values);
 }
 
-async function maybeExpandDesktopRowsToFullList(page: Parameters<typeof test>[0]['page']) {
+async function maybeExpandDesktopRowsToFullList(page: Page) {
   const showMore = page.getByRole('button', { name: /Show \d+ More Reserves/i }).first();
   if ((await showMore.count()) === 0) return;
   await showMore.scrollIntoViewIfNeeded();
@@ -152,7 +138,7 @@ async function maybeExpandDesktopRowsToFullList(page: Parameters<typeof test>[0]
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));
 }
 
-async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+async function installScrollByProbe(page: Page) {
   await page.evaluate(() => {
     type ProbedWindow = Window & {
       __e2eScrollByCalls?: number;
@@ -172,14 +158,14 @@ async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
   });
 }
 
-async function resetScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+async function resetScrollByProbe(page: Page) {
   await page.evaluate(() => {
     type ProbedWindow = Window & { __e2eScrollByCalls?: number };
     (window as ProbedWindow).__e2eScrollByCalls = 0;
   });
 }
 
-async function getScrollByProbeCount(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getScrollByProbeCount(page: Page): Promise<number> {
   return page.evaluate(() => {
     type ProbedWindow = Window & { __e2eScrollByCalls?: number };
     return (window as ProbedWindow).__e2eScrollByCalls ?? 0;
@@ -190,7 +176,7 @@ async function getScrollByProbeCount(page: Parameters<typeof test>[0]['page']): 
 // before/after DOM snapshot misses intermediate reorders that restore before
 // the next read (seen in a pre-push trace: schedule fired while the final DOM
 // order equalled the baseline). This observer closes that detection gap.
-async function armOrderProbe(page: Parameters<typeof test>[0]['page']) {
+async function armOrderProbe(page: Page) {
   await page.evaluate(() => {
     type OrderProbeWindow = Window & {
       __e2eOrderBaseline?: string[];
@@ -220,7 +206,7 @@ async function armOrderProbe(page: Parameters<typeof test>[0]['page']) {
   });
 }
 
-async function getOrderProbeReordered(page: Parameters<typeof test>[0]['page']): Promise<boolean> {
+async function getOrderProbeReordered(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     type OrderProbeWindow = Window & { __e2eOrderReordered?: boolean };
     return (window as OrderProbeWindow).__e2eOrderReordered ?? false;

@@ -114,8 +114,10 @@ function eip1193MockScript(address: string) {
  * Returns the registration promise so callers can await it and guarantee
  * ordering.
  */
-export function injectEip1193Mock(page: Page): Promise<void> {
+export async function injectEip1193Mock(page: Page): Promise<void> {
   // `!` matches test-wallets.ts's own usage: WATCH_ADDRESS is env-overridable
   // in its type but always defined at runtime (DEFAULT_WATCH_ADDRESS fallback).
-  return page.addInitScript(eip1193MockScript, WATCH_ADDRESS!);
+  // Awaited rather than returned: addInitScript resolves to a Disposable, and the
+  // declared contract here is void.
+  await page.addInitScript(eip1193MockScript, WATCH_ADDRESS!);
 }

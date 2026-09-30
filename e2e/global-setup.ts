@@ -13,7 +13,10 @@ import { chromium, type FullConfig } from '@playwright/test';
  * workers then hit a warm cache.
  */
 export default async function globalSetup(config: FullConfig) {
-  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://127.0.0.1:4173';
+  // Taken from the config rather than defaulted: this run's port is allocated per
+  // run, so a fallback literal here would silently prewarm a different server.
+  const baseURL = config.projects[0]?.use?.baseURL;
+  if (!baseURL) throw new Error('globalSetup: no baseURL resolved from the Playwright config');
   const browser = await chromium.launch();
   try {
     // One visit per layout: desktop table and mobile cards pull in the
@@ -23,7 +26,12 @@ export default async function globalSetup(config: FullConfig) {
       { width: 412, height: 915 },
     ]) {
       const page = await browser.newPage({ viewport });
-      await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
+      // Explicit 120s (not the 30s default): this first navigation is exactly
+      // the cold-start burst the comment above describes, so it needs the same
+      // budget as the app-ready wait below. A genuinely broken app still fails
+      // here — this only stops the warm-up step from timing out on its own
+      // queueing while the assertion below is the real readiness gate.
+      await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
       // App-ready signal (same canonical signal as the test helpers): the
       // toggle renders only after market data loads and the app shell
       // commits, i.e. the critical module graph is fully served.

@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { pickChainChip } from './marketChips';
 
-async function waitForMobileReservesReady(page: Parameters<typeof test>[0]['page']) {
+async function waitForMobileReservesReady(page: Page) {
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: /Expand details panel/i }).first()).toBeVisible({ timeout: 30_000 });
 }
@@ -34,9 +36,10 @@ test.describe('Reserves mobile interaction matrix', () => {
     await expandButton.click();
     await expect(page.getByRole('button', { name: /Collapse details panel/i })).toHaveCount(1);
 
-    const arbitrumChip = page.locator('button:has-text("Arbitrum")').first();
-    await expect(arbitrumChip).toBeVisible();
-    await arbitrumChip.click();
+    // Chain names drift with backend data (Arbitrum left /markets entirely on 2026-09-30), so the
+    // chip is taken from the rendered markets row rather than named — see e2e/marketChips.ts.
+    const chainChip = await pickChainChip(page);
+    await chainChip.click();
 
     const expandedCountAfterMarket = await page.getByRole('button', { name: /Collapse details panel/i }).count();
     expect(expandedCountAfterMarket).toBeLessThanOrEqual(1);

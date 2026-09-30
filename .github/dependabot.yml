@@ -12,6 +12,12 @@ updates:
       interval: weekly
     target-branch: dev
     open-pull-requests-limit: 5
+    ignore:
+      # AAV-1301: @eslint/js v10 的 peer 要求 eslint ^10，但 eslint-plugin-import /
+      # eslint-plugin-react-hooks 的 peer 上限仍是 ^9，整条 eslint 工具链需协调升级。
+      # 该 bump 已两次让 dev 的 peer-dep-check + lint 变红（#653 合入后二次回归）。
+      - dependency-name: "@eslint/js"
+        versions: [">= 10.0.0"]
 
   - package-ecosystem: github-actions
     directory: "/"

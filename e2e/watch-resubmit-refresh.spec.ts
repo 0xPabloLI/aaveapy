@@ -203,7 +203,7 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
     // `useWatchModeConnect`, which still routes through `refetchEvent`.
     await openViewAddress(page);
     const addrInput2 = page.getByRole('textbox', { name: /address/i }).first();
-    await addrInput2.fill(alternateAddress);
+    await addrInput2.fill(alternateAddress!);
     await addrInput2.press('Enter');
     await expect(page.getByRole('button', { name: /Viewing 0x/i }).first()).toBeVisible({
       timeout: 10_000,

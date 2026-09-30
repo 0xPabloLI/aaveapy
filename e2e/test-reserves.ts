@@ -2,7 +2,6 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
   getMarketChipLabel,
-  getSupplyRoomUsd,
   pickIncentiveReserve,
   type DiscoveryReserve,
   type PickedReserve,
@@ -32,9 +31,6 @@ import {
 const STAGING_API = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 
 export type TestReserve = PickedReserve;
-
-// Pure helpers re-exported for cross-reserve / cross-asset specs.
-export { getMarketChipLabel, getSupplyRoomUsd };
 
 // ─── API fetch with cache ────────────────────────────────────────────
 

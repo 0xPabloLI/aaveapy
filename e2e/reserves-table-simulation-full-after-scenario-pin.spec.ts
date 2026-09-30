@@ -1,12 +1,13 @@
 import { expect, test, type Locator } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /** Desktop table mounted (not mobile cards, not full-page LoadingState skeleton). */
-async function waitDesktopReservesReady(page: Parameters<typeof test>[0]['page']) {
+async function waitDesktopReservesReady(page: Page) {
   await expect(page.locator('[data-reserves-sticky-thead]')).toBeVisible({ timeout: 120_000 });
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 60_000 });
 }
 
-async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getPinnedTopY(page: Page): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
   const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   await expect(scenario).toBeVisible();
@@ -22,7 +23,7 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom + 8;
 }
 
-async function getVisibleReserveOrder(page: Parameters<typeof test>[0]['page']): Promise<string[]> {
+async function getVisibleReserveOrder(page: Page): Promise<string[]> {
   return page
     .locator('tbody tr[data-reserve-id]')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0));
@@ -32,12 +33,12 @@ function didReorder(beforeOrder: string[], afterOrder: string[]): boolean {
   return beforeOrder.length !== afterOrder.length || beforeOrder.some((id, index) => id !== afterOrder[index]);
 }
 
-async function setScenarioInputs(page: Parameters<typeof test>[0]['page'], values: { supply: string; borrow: string }) {
+async function setScenarioInputs(page: Page, values: { supply: string; borrow: string }) {
   await page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]').fill(values.supply);
   await page.locator('[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]').fill(values.borrow);
 }
 
-async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+async function installScrollByProbe(page: Page) {
   await page.evaluate(() => {
     type ProbedWindow = Window & {
       __e2eScrollByCalls?: number;
@@ -55,21 +56,21 @@ async function installScrollByProbe(page: Parameters<typeof test>[0]['page']) {
   });
 }
 
-async function resetScrollByProbe(page: Parameters<typeof test>[0]['page']) {
+async function resetScrollByProbe(page: Page) {
   await page.evaluate(() => {
     type ProbedWindow = Window & { __e2eScrollByCalls?: number };
     (window as ProbedWindow).__e2eScrollByCalls = 0;
   });
 }
 
-async function getScrollByProbeCount(page: Parameters<typeof test>[0]['page']): Promise<number> {
+async function getScrollByProbeCount(page: Page): Promise<number> {
   return page.evaluate(() => {
     type ProbedWindow = Window & { __e2eScrollByCalls?: number };
     return (window as ProbedWindow).__e2eScrollByCalls ?? 0;
   });
 }
 
-async function moveRowAwayFromPinBand(page: Parameters<typeof test>[0]['page'], reserveId: string) {
+async function moveRowAwayFromPinBand(page: Page, reserveId: string) {
   const mainRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).first();
   const pinnedTopY = await getPinnedTopY(page);
   for (let attempt = 0; attempt < 8; attempt += 1) {

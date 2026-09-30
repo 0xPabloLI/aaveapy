@@ -1,18 +1,20 @@
-# When a Dependabot PR has peer dependency conflicts (e.g. npm install fails),
-# automatically run npm install --legacy-peer-deps and push the updated lockfile
-# so CI and Vercel preview can pass. No package-specific rules; applies to any conflict.
-name: Dependabot – resolve peer conflicts
+# Dependabot PR 上只检测并报告 peer dependency 冲突，不改 package.json / lockfile，也不 push。
+# 原因：原来两条自动修复路径都判断不了对齐方向——`npm install --legacy-peer-deps` 会把主版本错位
+# 强推进 lockfile（@eslint/js v10 即由此进入 dev），`npm install <pkg>@latest` 则会去升级提出 peer
+# 要求的那一方（把 eslint 拉到 10，反而撞 eslint-plugin-import / react-hooks 的 ^9 上限）。真正的
+# 修法经常是回退被升的那一方，这需要人判断（AAV-1301）。
+name: Dependabot – report peer conflicts
 
 on:
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  resolve-peer-conflicts:
+  report-peer-conflicts:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout PR head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,87 +32,25 @@ jobs:
         run: npm ci
         continue-on-error: true
 
-      - name: Resolve peer dependency conflicts
-        if: steps.install.outcome == 'failure'
+      - name: Report peer dependency conflicts
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
         run: |
-          npm install --legacy-peer-deps
-          if git diff --quiet package-lock.json; then
-            echo "No lockfile change, skipping push"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore(deps): resolve peer dependency conflicts (legacy-peer-deps)"
-          git push
-
-      - name: Check peer dependencies (npm ci succeeded)
-        id: peer-check
-        if: steps.install.outcome == 'success'
-        run: |
-          npm ls --all 2>&1 | grep -i "invalid" | grep -v "wagmi@3" > invalid-deps.txt || true
-          if [ -s invalid-deps.txt ]; then
-            echo "has_invalid=true" >> "$GITHUB_OUTPUT"
-            echo "Found peer dependency issues:"
-            cat invalid-deps.txt
-          else
-            echo "has_invalid=false" >> "$GITHUB_OUTPUT"
-            echo "No peer dependency issues detected"
+          if [ "$INSTALL_OUTCOME" = "failure" ]; then
+            echo "::error title=npm ci failed::严格安装失败（peer 冲突）。对齐方向需人工决定，本 workflow 不再自动改写 lockfile。"
+            exit 1
           fi
 
-      - name: Fix peer dependency mismatches
-        if: steps.install.outcome == 'success' && steps.peer-check.outputs.has_invalid == 'true'
-        run: |
-          # Extract unique invalid package names from npm ls output.
-          # Lines look like: "│ ├─┬ esbuild@0.25.12 invalid: ..." or
-          # "npm error invalid: esbuild@0.25.12 /path/to/pkg".
-          # Greedy match up to last " <name>@" captures scoped names too.
-          PKGS=$(sed -E 's/.* ([a-z@][a-z0-9._@/-]+)@[0-9].*/\1/' invalid-deps.txt \
-                 | grep -E '^@?[a-z]' \
-                 | sort -u || true)
-
-          if [ -z "$PKGS" ]; then
-            echo "No parseable invalid packages found"
-            exit 0
+          INVALID=$(npm ls --all 2>&1 | grep -i "invalid" | grep -v "wagmi@3" || true)
+          if [ -n "$INVALID" ]; then
+            {
+              echo "### Peer dependency conflicts"
+              echo '```'
+              echo "$INVALID"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=npm ls reports invalid peers::发现 peer 版本错位，明细见 step summary。"
+            exit 1
           fi
 
-          echo "Will fix the following peer dependencies:"
-          echo "$PKGS"
-
-          fixed=0
-          for pkg in $PKGS; do
-            echo "Fixing: $pkg"
-            # Promote the transitive dep to a direct dependency at a version
-            # that satisfies the peer constraint. Updates package.json + lockfile.
-            if npm install "${pkg}@latest"; then
-              fixed=$((fixed + 1))
-            else
-              echo "::warning::Failed to fix $pkg"
-            fi
-          done
-
-          if [ "$fixed" -eq 0 ]; then
-            echo "No packages were fixed"
-            exit 0
-          fi
-
-          # Verify the fix
-          npm ls --all 2>&1 | grep -i "invalid" | grep -v "wagmi@3" > /tmp/verify-deps.txt || true
-          if [ -s /tmp/verify-deps.txt ]; then
-            echo "::warning::Some peer dep issues remain after fix:"
-            cat /tmp/verify-deps.txt
-          else
-            echo "All peer dependency issues resolved"
-          fi
-
-          if git diff --quiet package.json package-lock.json; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "chore(deps): fix peer dependency mismatches (promote to direct deps)"
-          git push
-          echo "Fixed $fixed peer dependency mismatch(es)"
+          echo "No peer dependency conflicts"
