@@ -63,3 +63,10 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **吞 rejection 的 shim 必须带正对照**：同环境放一条真实 `Promise.reject` 的用例，确认它仍然 exit 1，才能证明 shim 是窄口径而不是全局消音；验证完删掉临时用例。
 - **本地 `npm ls` 不等于 CI 的 `peer-dep-check`**：npm 11 与 npm 10 对 `^0.x` 这类畸形 range 判定不同，本机在未修改的绿分支上也会报 `axios` / `vitest` invalid。以 CI 运行结果为准。
 
+## dependabot.yml 是「一处无效 = 整份不解析」，且重复条目只有 check-run 会告诉你
+- **`ignore` 要求 `dependency-name` + `versions` 组合唯一**：写成两条相同条目，Dependabot 报 `The property '#/updates/0/ignore/1/versions' includes a duplicate`，结果是**整份配置不解析**——不是那一条被忽略，而是 npm 与 github-actions 两个生态一起停摆，连 security 更新都不开。
+- **只有默认分支的那份真正生效，但破坏是从那里开始计时的**：非默认分支上的坏配置当下无害（Dependabot 不读它），一旦被 `→ main` 的发布流带进默认分支就全局失效。所以往 dev/lovable 写 dependabot 改动时，必须把它当成「等着被 ship 的定时炸弹」看，别用「现在还在红/绿」判断影响面。
+- **验证信号只存在于 commit 的 check-run 里**：`.github/dependabot.yml` 那条校验不是必需检查、也不在 CI workflow 内，`gh pr checks` 的流水线全绿照样可能是无效配置。取证方式：`gh api repos/<r>/commits/<sha>/check-runs --jq '.check_runs[] | select(.conclusion=="failure")'`，正文在 `.output.summary`。写完 YAML 列表项要跑这一条，不能只看 lint。
+- **改 YAML 列表项要整块替换**：同一次 session 里两次 Edit（第一次注释被截断、第二次只补注释）很容易把 `- dependency-name` 整块重新插进去而留下旧副本——本仓就因此把重复条目带进了 dev（`7f7b4a18`）。列表项的新增/改写一次成型，改完立刻 `grep -c dependency-name` 数一遍条数。
+
+

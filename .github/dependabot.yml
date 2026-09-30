@@ -19,9 +19,6 @@ updates:
       - dependency-name: "@eslint/js"
         versions: [">= 10.0.0"]
 
-      - dependency-name: "@eslint/js"
-        versions: [">= 10.0.0"]
-
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
