@@ -382,6 +382,11 @@ describe('DesktopReserveRow', () => {
     );
     expect(html).toContain('Filter by Core hub');
     expect(html).toContain('hub-core');
+    // The e2e suite locates these chips by data-chip-kind, not by the shared
+    // "Filter by " label prefix; dropping the attribute must fail here, not as an
+    // e2e locator timeout (the shape of the AAV-1324 incident).
+    expect(html).toContain('data-chip-kind="hub"');
+    expect(html).toContain('data-chip-kind="market"');
   });
 
   describe('restricted reserve portfolio button', () => {

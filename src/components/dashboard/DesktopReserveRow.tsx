@@ -432,10 +432,14 @@ const DesktopReserveRow = memo(
           <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
             <div className="flex items-center justify-center">
               <div className={marketCellClassNames.stack}>
+                {/* data-chip-kind marks which of the two chips a test is targeting: both aria-labels
+                    start with "Filter by ", so prose matching breaks whenever a hub name appears
+                    (Plus/Global Dollar did, and the two chips collided under one selector). */}
                 {reserve.hubName && reserve.hubId && (
                   <div className={marketCellClassNames.hubShell}>
                     <button
                       type="button"
+                      data-chip-kind="hub"
                       onClick={(event) => {
                         event.stopPropagation();
                         onHubChipClick?.(reserveId);
@@ -474,6 +478,7 @@ const DesktopReserveRow = memo(
                 <div className={marketCellClassNames.marketShell}>
                   <button
                     type="button"
+                    data-chip-kind="market"
                     onClick={(event) => {
                       event.stopPropagation();
                       onMarketChipClick?.(reserveId);

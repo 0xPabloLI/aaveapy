@@ -89,6 +89,15 @@ third-party site state, pixel baselines, or live external services it cannot moc
 - Playwright `page.route` — network interception that replaces live integration.
 - Playwright geometry assertions — `boundingBox` / `getComputedStyle`.
 
+## Selectors must survive data drift
+
+Backend data changes under the suite. Two rules, enforced by `npm run check:e2e-market-names` (pre-commit + CI `repo-policy`):
+
+- **No chain name in a selector literal.** Pick the chip from the rendered row (`e2e/marketChips.ts`); a name in a *candidate list* that tolerates absence is fine. Arbitrum and Celo both left `/markets` and each took a spec down as a locator timeout that read like a flake.
+- **Locate row chips by `data-chip-kind`, not by label text.** A row renders both `Filter by <hub> hub` and `Filter by <market> market`; `[aria-label^="Filter by "]` matches both → strict mode violation, or silently testing the hub. Use `button[data-chip-kind="market"]`. The attribute is asserted in `DesktopReserveRow.test.tsx`, so dropping it fails at the unit layer.
+
+Escape hatch for legitimate label collisions: `market-name-guard: allow` on the line. Coverage limits (chain names only, no hub names, no live-data comparison) are in `docs/specs/e2e-hardcoded-market-name-guard.md`.
+
 ## Red flag
 
 A test that passes locally but fails in CI "because the network/environment drifted"

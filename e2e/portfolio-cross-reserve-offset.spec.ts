@@ -144,7 +144,7 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
 
     if (!hasScenarios) {
       test('no cross-offset scenarios found in staging data', () => {
-        test.skip('No cross-offset Merkl campaigns found in current staging data');
+        test.skip(true, 'No cross-offset Merkl campaigns found in current staging data');
       });
     }
 
@@ -172,7 +172,7 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
 
     if (!hasScenarios) {
       test('no cross-offset scenarios found in staging data', () => {
-        test.skip('No cross-offset Merkl campaigns found in current staging data');
+        test.skip(true, 'No cross-offset Merkl campaigns found in current staging data');
       });
     }
 

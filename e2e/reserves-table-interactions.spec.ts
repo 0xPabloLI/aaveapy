@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { pickChainChip } from './marketChips';
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function pickAlternateVisibleMarket(
-  page: Parameters<typeof test>[0]['page'],
-  selectedMarket: string,
-): Promise<string | null> {
+async function pickAlternateVisibleMarket(page: Page, selectedMarket: string): Promise<string | null> {
   const allButtons = page.getByRole('button');
   const count = await allButtons.count();
   for (let i = 0; i < count; i += 1) {
@@ -26,12 +25,12 @@ async function pickAlternateVisibleMarket(
   return null;
 }
 
-async function waitForTableReady(page: Parameters<typeof test>[0]['page']) {
+async function waitForTableReady(page: Page) {
   await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
 
-async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise<string> {
+async function expandFirstRow(page: Page): Promise<string> {
   const firstRow = page.locator('tbody tr[data-reserve-id]').first();
   const reserveId = await firstRow.getAttribute('data-reserve-id');
   if (!reserveId) {
@@ -44,7 +43,7 @@ async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise
   return reserveId;
 }
 
-async function expectExpandedRowInViewport(page: Parameters<typeof test>[0]['page'], reserveId: string) {
+async function expectExpandedRowInViewport(page: Page, reserveId: string) {
   const expandedRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
   await expect(expandedRow).toHaveClass(/bg-muted\/30/);
   await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toHaveCount(1);
@@ -84,7 +83,10 @@ test.describe('Reserves table interaction matrix', () => {
   test('market filter preserves expansion for same market and clears when switching market', async ({ page }) => {
     await expandFirstRow(page);
 
-    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "]').first();
+    // Locate by data-chip-kind: hub and market chips share the "Filter by " label prefix, so a
+    // prose match can pick either (AAV-1324 turned that into a strict-mode collision once
+    // hubName started returning Plus).
+    const rowMarketButton = page.locator('tbody button[data-chip-kind="market"]').first();
     const rowMarketLabel = await rowMarketButton.getAttribute('aria-label');
     if (!rowMarketLabel) {
       throw new Error('Cannot read row market aria-label');
@@ -172,14 +174,17 @@ test.describe('Reserves table interaction matrix', () => {
   test('market chip toggle keeps expanded row visible when applying and clearing same filter', async ({ page }) => {
     const reserveId = await expandFirstRow(page);
 
-    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "]').first();
+    // Locate by data-chip-kind: hub and market chips share the "Filter by " label prefix, so a
+    // prose match can pick either (AAV-1324 turned that into a strict-mode collision once
+    // hubName started returning Plus).
+    const rowMarketButton = page.locator('tbody button[data-chip-kind="market"]').first();
     await rowMarketButton.click();
     await page.waitForTimeout(450);
     await expectExpandedRowInViewport(page, reserveId);
 
     // Click the same row chip again to clear that market filter.
     const sameRowMarketButton = page
-      .locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`)
+      .locator(`tbody tr[data-reserve-id="${reserveId}"] button[data-chip-kind="market"]`)
       .first();
     await sameRowMarketButton.click();
     await page.waitForTimeout(450);
@@ -187,8 +192,10 @@ test.describe('Reserves table interaction matrix', () => {
   });
 
   test('AAV-1107: chain filter → expand → unfilter does not leave oversized scroll spacer', async ({ page }) => {
-    // 1. Select a chain filter (e.g., Celo) to reduce to a small set
-    const chainChip = page.locator('button:has-text("Celo")').first();
+    // 1. Select a chain filter to reduce to a small set. The chain is taken from the rendered
+    //    row, not named: Celo left /markets by 2026-09-30 and a literal would hang here as a
+    //    timeout instead of failing as drift.
+    const chainChip = await pickChainChip(page);
     await chainChip.click();
     const filteredRows = page.locator('tbody tr[data-reserve-id]');
     await expect(filteredRows.first()).toBeVisible({ timeout: 30_000 });
@@ -198,7 +205,9 @@ test.describe('Reserves table interaction matrix', () => {
 
     // 3. Remove the chain filter (unfilter) → all reserves shown.
     //    Wait for the full reserve list to render (pagination may resize).
-    await chainChip.click();
+    //    Remove the chain filter via the "All" chip — re-clicking the positional
+    //    chip would re-resolve against a list that may have reordered when it got selected.
+    await page.locator('[data-testid="markets-row"]').getByRole('button', { name: 'All', exact: true }).click();
     await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 
     // 4. The original AAV-1107 bug: after unfilter, the 100dvh scroll spacer
