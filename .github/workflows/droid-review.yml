@@ -29,3 +29,8 @@ jobs:
           factory_api_key: ${{ secrets.FACTORY_API_KEY }}
           automatic_review: true
           automatic_security_review: true
+          # Default policy ignores bot-authored PRs — Renovate PRs are exactly
+          # the ones we want reviewed.
+          allowed_bots: renovate[bot]
+          review_model: glm-5.3-flash
+          security_model: glm-5.3-flash
