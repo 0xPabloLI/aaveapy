@@ -3,6 +3,7 @@ npm run typecheck
 npm run lint
 npm run check:agents-md
 npm run check:todos
+npm run check:e2e-market-names
 npm run check:dep-age -- --staged
 npm test
 

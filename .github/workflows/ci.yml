@@ -358,11 +358,13 @@ jobs:
         with:
           ref: ${{ env.CI_REF }}
           fetch-depth: 0
-      # The three policy scripts are dependency-free node builtins — no npm ci.
+      # The four policy scripts are dependency-free node builtins — no npm ci.
       - name: Validate AGENTS.md references (commands + doc paths)
         run: npm run check:agents-md
       - name: Technical-debt marker policy (ratchet)
         run: npm run check:todos
+      - name: e2e selectors must not pin literal chain names (data-drift guard)
+        run: npm run check:e2e-market-names
       - name: Dependency release-age gate (lockfile PRs only)
         run: |
           if git diff --name-only "${{ env.BASE_REF }}...${{ env.CI_REF }}" -- package-lock.json | grep -q .; then

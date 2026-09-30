@@ -21,8 +21,12 @@ async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<
   return maxBottom > 0 ? maxBottom + 8 : 16;
 }
 
+// Rows carry both `Filter by <hub> hub` and `Filter by <market> market` chips; anchor the
+// suffix so this keeps selecting the market chip (strict mode otherwise matches both).
 function marketChipForReserve(page: Parameters<typeof test>[0]['page'], reserveId: string) {
-  return page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`);
+  return page.locator(
+    `tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "][aria-label$=" market"]`,
+  );
 }
 
 async function getRowTopY(page: Parameters<typeof test>[0]['page'], reserveId: string): Promise<number> {
