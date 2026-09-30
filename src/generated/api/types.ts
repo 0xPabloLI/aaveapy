@@ -12,8 +12,6 @@ import { schemas } from './schemas';
 
 // ── Campaign types ──
 export type ForecastCampaignTypeLite = z.infer<typeof schemas.ForecastCampaignTypeLite>;
-export type ApiMeritCampaignBreakdown = z.infer<typeof schemas.ApiMeritCampaignBreakdown>;
-export type ApiMeritCampaignGroup = z.infer<typeof schemas.ApiMeritCampaignGroup>;
 export type MerklCampaignBreakdown = z.infer<typeof schemas.MerklCampaignBreakdown>;
 export type ApiMerklOpportunityGroup = z.infer<typeof schemas.ApiMerklOpportunityGroup>;
 export type ApiBrevisBreakdown = z.infer<typeof schemas.ApiBrevisBreakdown>;
