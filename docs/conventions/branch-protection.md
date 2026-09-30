@@ -1,4 +1,4 @@
-# Branch Protection（main 5 层防御 + lovable 直推分级）
+# Branch Protection（main 5 层防御 + lovable 直推分级 + dev 必需检查）
 
 main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶意代码无法自动合并到 main：
 
@@ -38,7 +38,17 @@ main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶
 
 **为什么**：required checks 与直接 push 机制上不兼容——直推产生新 SHA，checks 只能后置，二者取一。lovable 是集成分支，选速度（直推）；main 是生产分支，选严格（`enforce_admins=true`，一切走 PR，见 Layer 2）。这个取舍由两层补偿控制撑住：
 
-1. **Shift-left**：pre-push hook 已在本地前置 `ci:remote`（lint/build/test/audit）+ osv/semgrep/knip/dup——远端 4 个 checks 中 lint / build / security-audit 已有本地等价物，peer-dep-check（CI 里跑 `npm ci` 验 lockfile）是唯一仅远端的 gate。
+1. **Shift-left**：pre-push hook 已在本地前置 `ci:remote`（lint/build/test/audit）+ osv/semgrep/knip/dup——远端 4 个 checks 中 lint / build / security-audit 已有本地等价物，peer-dep-check（`npm ci` 后再跑 `npm ls --all` 找 invalid）是唯一仅远端的 gate。
 2. **生产端隔离**：lovable 上的未验证 commit 流不到生产——Layer 5 branch-flow-guard 只放行 `dev → main`。
 
 **直推后的约定**：watch checks 直到收敛，红了就 revert 或 fix-forward 补修——bypass 授权的是"checks 后置"，checks 全绿仍是 commit 落地的标准。修改此分级时先改本节（决策 home），再动 GitHub 设置，保持文档与实际配置一致。
+
+## dev 必需检查：peer-dep-check 于 2026-09-29 补入
+
+dev 原本只 required `lint` + `build`。`peer-dep-check` 会跑、会红，但**不在必需列表里就挡不住 automerge**——这就是 #653（`@eslint/js` 10 对 `eslint` 9 的主版本错位）能带着红检查合进 dev、让 dev 连红的机制（首次 `7e6b46be`→`0e85f4d7`，二次 `20e7c23b`→#697；决策与证据见 AAV-1301）。
+
+现 required = `lint` / `build` / `peer-dep-check`，`strict=true`，`enforce_admins` 仍 false。
+
+- **改这一项走子端点**，不要重传整份保护配置：`gh api -X PUT repos/0xPabloLI/aaveapy/branches/dev/protection/required_status_checks/contexts -f 'contexts[]=lint' -f 'contexts[]=build' -f 'contexts[]=peer-dep-check'`。回滚即把数组改回 `lint` / `build`。
+- **为什么这一项非补不可**：根 `.npmrc` 的 `legacy-peer-deps=true` 让主版本错位的 lockfile 照样装得上（wagmi@3 + rainbowkit 的已知不兼容正依赖它，拆 `.npmrc` 会让所有人 `npm ci` 失败）。于是 install 成功不构成 peer 一致的证据，`npm ls` 那道 check 是唯一拦截点。
+
