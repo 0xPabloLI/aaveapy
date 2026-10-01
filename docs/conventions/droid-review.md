@@ -12,7 +12,7 @@
 ### droid-review.yml 配置(与 `inside-china-ai` 仓库对齐)
 
 - `automatic_review: true` — 生成式代码审查
-- `automatic_security_review: true` — 独立安全审查子代理,severity ≥ medium 才报告,critical 阻止合并
+- `automatic_security_review: true` — 独立安全审查子代理,severity ≥ medium 才报告;注意:workflow 未配置合并阻断门禁,critical 结论是否阻止合并取决于 branch protection 是否将该 check 设为 required(当前未启用)
 - `review_depth: deep` — 两遍流程(candidate 生成 + validator 复核),比 shallow 慢但误报率低
 - `allowed_bots: renovate[bot]` — 默认策略忽略 bot 作者的 PR;显式放行 Renovate,因为依赖升级 PR 正是需要审查的对象
 - `review_model: glm-5.3-flash` / `security_model: glm-5.3-flash` — 审查模型固定,防止默认模型漂移影响成本与输出稳定性
