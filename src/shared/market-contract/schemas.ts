@@ -34,21 +34,55 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
 );
 
 // ── Campaign breakdown schemas ──
-// Override: hand-written has campaignType as z.string() (looser than generated enum),
-// and aprCap as z.number().nullable() (generated has z.number() only).
-export const MeritCampaignBreakdownSchema = generated.ApiMeritCampaignBreakdown.extend({
+// Merit 的 schema 已从后端 OpenAPI 移除（AAV-1303），所以这里不再基于 generated 的
+// `.extend()`，改为手写 base；字段逐条对齐移除前的 `ApiMeritCampaignBreakdown` /
+// `CampaignGroupApiMeritCampaignBreakdown`。契约保留 merit 是有意的：`/markets` 在灰度
+// 或回滚窗口内仍可能带回 merit 字段，删掉定义会让它们被 strip 掉而静默丢数据。
+// 原先三处放宽全部沿用：campaignType 用 z.string()、aprCap 允许 null、group 的 link 可选
+// + message 走递归 IncentiveMessage + breakdowns 用本文件的 wrapper 版本。
+const MeritCampaignBreakdownBaseSchema = z.object({
+  campaignApr: z.number(),
+  campaignStartedAt: z.string(),
+  campaignEndedAt: z.string(),
+  campaignId: z.string(),
+  positionCapNative: z.string().optional(),
+  positionCapUsd: z.number().optional(),
+  isCombineCap: z.boolean().optional(),
+  message: z.string().optional(),
+  rewardTokenSymbol: z.string().optional(),
+  totalBudget: z.number().optional(),
+  latestTvl: z.number().optional(),
+});
+
+export const MeritCampaignBreakdownSchema = MeritCampaignBreakdownBaseSchema.extend({
   campaignType: z.string().optional(),
   aprCap: z.number().nullable().optional(),
 });
 
-// Override: hand-written has link as optional (generated has required),
-// uses IncentiveMessageSchema for message (generated uses z.string()),
-// and breakdowns must use wrapper version (generated uses ApiMeritCampaignBreakdown).
-export const MeritCampaignGroupSchema = generated.ApiMeritCampaignGroup.extend({
-  link: z.string().optional(),
-  message: IncentiveMessageSchema.optional(),
-  breakdowns: z.array(MeritCampaignBreakdownSchema),
-});
+export const MeritCampaignGroupSchema = z
+  .object({
+    name: z.string().optional(),
+    netPositionConstraint: z
+      .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
+      .optional(),
+    crossAssetPairing: z
+      .union([
+        z.object({
+          sourceSide: z.enum(['supply', 'borrow']),
+          pairedReserveId: z.string(),
+          pairedSide: z.enum(['supply', 'borrow']),
+          discountFactor: z.number(),
+        }),
+        z.null(),
+      ])
+      .optional(),
+    borrowBlacklist: z.boolean().optional(),
+  })
+  .extend({
+    link: z.string().optional(),
+    message: IncentiveMessageSchema.optional(),
+    breakdowns: z.array(MeritCampaignBreakdownSchema),
+  });
 
 // MerklCampaignBreakdown: generated schema is compatible, just override aprCap for nullable.
 export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown.extend({

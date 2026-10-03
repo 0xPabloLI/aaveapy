@@ -68,42 +68,6 @@ const ForecastCampaignTypeLite = z.enum([
   'FIX_REWARD_AMOUNT_PER_LIQUIDITY_AMOUNT',
   'MAX_REWARD_VALUE_PER_LIQUIDITY_AMOUNT',
 ]);
-const ApiMeritCampaignBreakdown = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  campaignType: ForecastCampaignTypeLite.optional(),
-  positionCapNative: z.string().optional(),
-  positionCapUsd: z.number().optional(),
-  isCombineCap: z.boolean().optional(),
-  message: z.string().optional(),
-  aprCap: z.number().optional(),
-  rewardTokenSymbol: z.string().optional(),
-  totalBudget: z.number().optional(),
-  latestTvl: z.number().optional(),
-});
-const CampaignGroupApiMeritCampaignBreakdown = z.object({
-  link: z.string(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  breakdowns: z.array(ApiMeritCampaignBreakdown),
-  netPositionConstraint: z
-    .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
-    .optional(),
-  crossAssetPairing: z
-    .union([
-      z.object({
-        sourceSide: z.enum(['supply', 'borrow']),
-        pairedReserveId: z.string(),
-        pairedSide: z.enum(['supply', 'borrow']),
-        discountFactor: z.number(),
-      }),
-      z.null(),
-    ])
-    .optional(),
-  borrowBlacklist: z.boolean().optional(),
-});
 const MerklCampaignBreakdown = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
@@ -187,8 +151,6 @@ const CampaignGroupApiBrevisBreakdown = z.object({
 const MarketWithSpread = z.object({
   supplyApy: z.union([z.number(), z.null()]).optional(),
   borrowApy: z.union([z.number(), z.null()]).optional(),
-  meritSupplys: z.array(CampaignGroupApiMeritCampaignBreakdown).optional(),
-  meritBorrows: z.array(CampaignGroupApiMeritCampaignBreakdown).optional(),
   merklSupplys: z.array(ApiMerklOpportunityGroup).optional(),
   merklBorrows: z.array(ApiMerklOpportunityGroup).optional(),
   merklHolds: z.array(ApiMerklOpportunityGroup).optional(),
@@ -235,7 +197,6 @@ const MarketWithSpread = z.object({
   ltv: z.number().optional(),
   liquidationThreshold: z.number().optional(),
 });
-const ApiMeritCampaignGroup = CampaignGroupApiMeritCampaignBreakdown;
 const ApiMerklBreakdown = MerklCampaignBreakdown;
 const ApiBrevisCampaignItem = CampaignGroupApiBrevisBreakdown;
 
@@ -246,14 +207,11 @@ export const schemas = {
   SideDataPayload,
   MarketsErrorResponse,
   ForecastCampaignTypeLite,
-  ApiMeritCampaignBreakdown,
-  CampaignGroupApiMeritCampaignBreakdown,
   MerklCampaignBreakdown,
   ApiMerklOpportunityGroup,
   ApiBrevisBreakdown,
   CampaignGroupApiBrevisBreakdown,
   MarketWithSpread,
-  ApiMeritCampaignGroup,
   ApiMerklBreakdown,
   ApiBrevisCampaignItem,
 };
