@@ -71,6 +71,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1327 | Medium | Backlog | [CSP] Cloudflare 自动注入的 beacon 内联块被 `script-src` 拦（生产每条加载 1 条 console error、RUM 静默失效）。**已证伪「加 hash」**：内联块里的 `r`/`t` 每请求都变（实测两次拉取不同值）。非 #1320 回归，1320 只枚举了 consent 块与 gtag.js 两类 |
 | AAV-1323 | Medium | Backlog | [e2e] market-filter-pin 用例 (5) 用绝对几何阈值卡实盘数据 → CI 隔频报红（首跑与 Retry 数值逐位相同，非时序；同族 AAV-1307 是另一种形态。⚠️ AAV-1324 已由 #701 修掉选择器歧义，但本票的阈值假设未动，勿一并关闭） |
 | AAV-1303 | Medium | Todo（**第一段已交付** #710/#711：`openapi-sync` 恢复绿、契约改手写 base + 13 例解析测试；剩第二段真删 Merit，含 5 语言 landing 文案需产品拍板） | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
 | AAV-1320 | Medium | In Review | [生产] GA4 被 `vercel.json` 的 CSP 拦死：`script-src` 未放 googletagmanager，同意横幅给了 Allow 也不上报（非 #686 引入，自 09-14 起）— **交付完成** `567823ec`…`b1262489`（CSP 放行 + 构建期 hash 校验门 + CodeQL 三连修复 + pre-push e2e 处置）；PR #692 lovable→dev 已合并（09-29）；**PR #693 dev→main 已建未合并，等用户 GitHub UI 操作**，合并后生产复验 GA 上报即关闭 |
