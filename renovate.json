@@ -2,22 +2,31 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "baseBranchPatterns": ["dev"],
-  "enabledManagers": ["github-actions"],
+  "enabledManagers": ["github-actions", "devcontainer"],
   "lockFileMaintenance": { "enabled": false },
-  "schedule": ["before 6am on monday"],
-  "prHourlyLimit": 0,
+  "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "packageRules": [
     {
-      "description": "Non-major Action bumps: Renovate opens the PR, but the merge stays with .github/workflows/automerge.yml via the automerge label (PAT path + SQUASH policy).",
+      "description": "Non-major Action bumps: one PR each, merged by .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait mirrors scripts/check-dep-release-age.mjs, whose lockfile diff cannot see workflow pins - this is the only place that policy can bind for actions.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "minimumReleaseAge": "7 days",
       "automerge": false,
       "labels": ["dependencies", "github_actions", "automerge", "safe-update"]
     },
     {
-      "description": "Major bumps need a human decision.",
+      "description": "Major Action bumps need a human decision.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["major"],
       "labels": ["dependencies", "github_actions", "manual-review"]
+    },
+    {
+      "description": "Dev Container image and features: mcr.microsoft.com and ghcr.io publish no tag push time (Docker datasource timestamps are Docker-Hub only), so no age gate here - it would hold these updates pending forever. Bumps are human-reviewed because the typescript-node tag must stay aligned with the node-version used by CI workflows.",
+      "matchManagers": ["devcontainer"],
+      "automerge": false,
+      "labels": ["dependencies", "manual-review"]
     }
   ]
 }
