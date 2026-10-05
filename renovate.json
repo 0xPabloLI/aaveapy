@@ -48,6 +48,14 @@
       "matchManagers": ["devcontainer"],
       "automerge": false,
       "labels": ["dependencies", "manual-review"]
+    },
+    {
+      "description": "Node lives in two places here - the workflow node-version (node datasource) and the Dev Container image tag (docker datasource). Nothing but a shared release makes them agree, so group them: a bump must move both or neither, otherwise CI runs a Node the Codespaces image does not have. Always human-reviewed.",
+      "matchDatasources": ["node", "docker"],
+      "matchPackageNames": ["node", "/typescript-node/"],
+      "groupName": "node runtime",
+      "automerge": false,
+      "labels": ["dependencies", "manual-review"]
     }
   ]
 }
