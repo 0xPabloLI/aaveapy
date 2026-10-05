@@ -480,11 +480,14 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({
       timeout: 10_000,
     });
-    await expect
-      .poll(() => getScrollByProbeCount(page), {
-        timeout: 9000,
-        message: 'clear button should eventually trigger pin scroll',
-      })
-      .toBeGreaterThan(0);
+    // The contract of the Clear path is "the expanded row ends pinned to the sticky anchor"
+    // (asserted above) "and its simulation stays open" (asserted above). Requiring the
+    // window.scrollBy probe to tick here too asserts a specific *mechanism*: when the re-sort
+    // removes rows above the target, the layout alone already lands it in the band and no
+    // scroll is needed. 2026-10-05 CI hit exactly that — both assertions passed, only this
+    // probe read 0. "Reorder scrolls, non-reorder does not" is owned by the
+    // `reorder pins and non-reorder scenario change does not force pin` case, so dropping the
+    // duplicate here loses no coverage; leaving it made the gate depend on which markets
+    // happened to sit above the row.
   });
 });
