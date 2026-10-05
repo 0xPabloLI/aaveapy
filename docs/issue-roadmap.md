@@ -73,7 +73,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1327 | Medium | Backlog | [CSP] Cloudflare 自动注入的 beacon 内联块被 `script-src` 拦（生产每条加载 1 条 console error、RUM 静默失效）。**已证伪「加 hash」**：内联块里的 `r`/`t` 每请求都变（实测两次拉取不同值）。非 #1320 回归，1320 只枚举了 consent 块与 gtag.js 两类 |
+| AAV-1327 | Medium | Backlog | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
 | AAV-1323 | Medium | Backlog | [e2e] market-filter-pin 用例 (5) 用绝对几何阈值卡实盘数据 → CI 隔频报红（首跑与 Retry 数值逐位相同，非时序；同族 AAV-1307 是另一种形态。⚠️ AAV-1324 已由 #701 修掉选择器歧义，但本票的阈值假设未动，勿一并关闭） |
 | AAV-1303 | Medium | Todo（**第一段已交付** #710/#711：`openapi-sync` 恢复绿、契约改手写 base + 13 例解析测试；剩第二段真删 Merit，含 5 语言 landing 文案需产品拍板） | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
 | AAV-1316 | Medium | Backlog (ready-for-agent) | [e2e] AAV-895 cross-asset-pairing 用例从未真实执行过：注入 synthetic 载荷证明 min(1,2) 链路可达 |

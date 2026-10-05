@@ -9,7 +9,7 @@
 1. **`index.html` 的 consent default-deny 内联块**（GA Consent Mode v2 前置）→ `dataLayer` 里永远没有 `['consent','default',…]`。用户点 Allow 后 `initAnalytics`（`gtag.ts`）自行兜底创建 gtag stub 并注入 gtag.js——**在无默认拒绝同意态下运行**，隐私姿态比"全拦"更差（评论区硬约束 #1）。
 2. **gtag.js**（`https://www.googletagmanager.com/gtag/js`）→ GA4 自 09-14 引入起生产零上报。
 
-生产上其实还有**第三类被拦的内联脚本，本票未覆盖**：Cloudflare 自动注入的 Web Analytics beacon bootstrap（`index.html` 末尾，非本仓代码）。它带每次请求都变的 `r`/`t` 参数，**hash 钉不住**，另案 AAV-1327。下次改 `vercel.json` 的 CSP 前先去看那张票，别把它当新发现。
+生产上其实还有**第三类被拦的内联脚本，本票未覆盖**：Cloudflare 边缘自动注入的 **JavaScript detections（bot 检测）** bootstrap（`index.html` 末尾，非本仓代码；块内写的是 `__CF$cv$params` + `/cdn-cgi/challenge-platform/scripts/jsd`，**不是** analytics beacon——本文件曾把它误记为 Web Analytics beacon，10-05 已由真浏览器 + 逐 inline script 字面量取证订正，见 AAV-1327 更正 #2）。它带每次请求都变的 `r`/`t` 参数，**hash 钉不住**；且 zone 在 Free 计划，按一手文档该检测不可关。另案 AAV-1327。下次改 `vercel.json` 的 CSP 前先去看那张票，别把它当新发现，也别试图为它放 `'unsafe-inline'`。
 
 ### 本地复现证据（2026-09-28，dist + vercel.json CSP 头模拟 + Playwright 干净 profile）
 
