@@ -1,0 +1,20 @@
+# osv-scanner 豁免清单（.husky/pre-push 的门读这个文件）
+#
+# 文件名必须是 `osv-scanner.toml`（不带点）：实测带点的 `.osv-scanner.toml` 不会被自动
+# 发现，门照旧红。hook 跑的是裸命令 `osv-scanner --lockfile package-lock.json`，靠的就是
+# 这个自动发现，所以改名的同时要一起改 hook。
+#
+# `ignoreUntil` 是真会执行的（实测：过去日期 → 重新报错；未来日期 → 放行），不是注释。
+# 每条都必须带理由 + 到期日；到期后门会重新挡，逼着回头看，而不是永久沉默豁免。
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+reason = """
+CVE-2026-93687 / braces 3.0.3。dev-only 传递依赖：tailwindcss@3.4.19 →
+chokidar@3.6.0 与 → micromatch@4.0.8，两边 dedupe 到同一个 braces；不在生产产物里。
+上游没有修复版可升：npm 上 braces 最新即 3.0.3（2024-05 发布），OSV 的 affected
+只有 last_affected=3.0.3、没有 fixed 事件，所以不能像 axios 那次用 overrides 抬版本
+（见 AAV-1328 与先例 #710/#711）。到期若上游仍无修复版，改走根治路线：换掉 tailwind v3
+的 watch/glob 依赖链。追踪 AAV-1328。
+"""
+ignoreUntil = "2027-01-31T00:00:00Z"

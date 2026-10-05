@@ -7,7 +7,13 @@
  *
  * Strategy:
  *   - Uses `dev:staging` webServer (Vite dev server, no build step → no OOM)
- *   - `--workers=2` to limit staging API load (default 6 causes timeouts)
+ *   - `--workers=1`: this path runs a cold dev server, and readiness waits
+ *     (`waitForTableReady`, `waitForLoadState('networkidle')`) were timing out
+ *     with 2 workers whenever another agent's gate shared the machine — two
+ *     such specs went red on unrelated pushes (2026-09-30), both green on a
+ *     quiet rerun. One worker serialises the load instead of teaching us to
+ *     ignore red. CI keeps its 2-shard split, which runs against a built
+ *     preview and is unaffected.
  *   - `--retries=1` for flaky tolerance
  *   - `--grep-invert` excludes tests that depend on external services or
  *     local-only resources that can't work in a pre-push context:
@@ -85,7 +91,7 @@ console.log('');
 const result = await new Promise((resolve) => {
   const child = spawn(
     'npx',
-    ['playwright', 'test', '--project=chromium', '--retries=1', '--workers=2', '--grep-invert', GREP_INVERT],
+    ['playwright', 'test', '--project=chromium', '--retries=1', '--workers=1', '--grep-invert', GREP_INVERT],
     {
       stdio: ['ignore', 'pipe', 'inherit'],
       // Recording is debug-only overhead on a full-suite local run; CI keeps it.
