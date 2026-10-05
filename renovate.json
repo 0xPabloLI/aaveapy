@@ -2,17 +2,18 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "baseBranchPatterns": ["dev"],
-  "enabledManagers": ["github-actions", "devcontainer"],
+  "enabledManagers": ["github-actions", "npm", "devcontainer"],
   "lockFileMaintenance": { "enabled": false },
-  "prHourlyLimit": 2,
-  "prConcurrentLimit": 5,
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "7 days",
   "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 5,
   "packageRules": [
     {
-      "description": "Non-major Action bumps: one PR each, merged by .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait mirrors scripts/check-dep-release-age.mjs, whose lockfile diff cannot see workflow pins - this is the only place that policy can bind for actions.",
+      "description": "Non-major Action bumps: Renovate opens the PR, merging stays with .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait binds here even though scripts/check-dep-release-age.mjs cannot see it - that gate diffs package-lock, which has no workflow pins.",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "minimumReleaseAge": "7 days",
       "automerge": false,
       "labels": ["dependencies", "github_actions", "automerge", "safe-update"]
     },
@@ -23,7 +24,27 @@
       "labels": ["dependencies", "github_actions", "manual-review"]
     },
     {
-      "description": "Dev Container image and features: mcr.microsoft.com and ghcr.io publish no tag push time (Docker datasource timestamps are Docker-Hub only), so no age gate here - it would hold these updates pending forever. Bumps are human-reviewed because the typescript-node tag must stay aligned with the node-version used by CI workflows.",
+      "description": "npm: only direct devDependencies may reach the automerge label - this is the equivalent of the dependency-type:direct:development condition dependabot-auto-triage.yml used to apply.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false,
+      "labels": ["dependencies", "javascript", "automerge", "safe-update"]
+    },
+    {
+      "description": "npm majors are human-decided, devDependencies included.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "javascript", "manual-review"]
+    },
+    {
+      "description": "Runtime dependencies never carry the automerge label: they ship to users.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "labels": ["dependencies", "javascript", "manual-review"]
+    },
+    {
+      "description": "Dev Container image/features: human-reviewed because the typescript-node tag must stay aligned with the node-version used by CI workflows.",
       "matchManagers": ["devcontainer"],
       "automerge": false,
       "labels": ["dependencies", "manual-review"]
