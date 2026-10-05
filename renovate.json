@@ -2,23 +2,66 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "baseBranchPatterns": ["dev"],
-  "enabledManagers": ["github-actions", "npm"],
+  "enabledManagers": ["github-actions", "npm", "devcontainer"],
   "lockFileMaintenance": { "enabled": false },
   "schedule": ["before 6am on monday"],
   "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 5,
   "packageRules": [
     {
-      "description": "Non-major Action bumps: Renovate opens the PR, but the merge stays with .github/workflows/automerge.yml via the automerge label (PAT path + SQUASH policy).",
+      "description": "Non-major Action bumps: Renovate opens the PR, merging stays with .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait binds here even though scripts/check-dep-release-age.mjs cannot see it - that gate diffs package-lock, which has no workflow pins.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": false,
       "labels": ["dependencies", "github_actions", "automerge", "safe-update"]
     },
     {
-      "description": "Major bumps need a human decision.",
+      "description": "Major Action bumps need a human decision.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["major"],
       "labels": ["dependencies", "github_actions", "manual-review"]
+    },
+    {
+      "description": "npm: only direct devDependencies may reach the automerge label - this is the equivalent of the dependency-type:direct:development condition dependabot-auto-triage.yml used to apply.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false,
+      "labels": ["dependencies", "javascript", "automerge", "safe-update"]
+    },
+    {
+      "description": "npm majors are human-decided, devDependencies included.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "javascript", "manual-review"]
+    },
+    {
+      "description": "AAV-1301 kept a Dependabot ignore for @eslint/js >= 10 because eslint-plugin-import and eslint-plugin-react-hooks still peer on eslint ^9 - that bump turned dev's peer-dep-check and lint red twice. Deleting dependabot.yml must not resurrect the proposal, so the ceiling moves here; 9.x minor/patch keep flowing.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@eslint/js"],
+      "allowedVersions": "<10"
+    },
+    {
+      "description": "Runtime dependencies never carry the automerge label: they ship to users.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "labels": ["dependencies", "javascript", "manual-review"]
+    },
+    {
+      "description": "Dev Container image/features: human-reviewed because the typescript-node tag must stay aligned with the node-version used by CI workflows.",
+      "matchManagers": ["devcontainer"],
+      "automerge": false,
+      "labels": ["dependencies", "manual-review"]
+    },
+    {
+      "description": "Node lives in two places here - the workflow node-version (node datasource) and the Dev Container image tag (docker datasource). Nothing but a shared release makes them agree, so group them: a bump must move both or neither, otherwise CI runs a Node the Codespaces image does not have. Always human-reviewed.",
+      "matchDatasources": ["node", "docker"],
+      "matchPackageNames": ["node", "/typescript-node/"],
+      "groupName": "node runtime",
+      "automerge": false,
+      "labels": ["dependencies", "manual-review"]
     }
   ]
 }
