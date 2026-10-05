@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@b2b27be233fcb2675a10ef67c1fc082a830695f2 # v0.12.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: 'https://aaveapy.com'
           allow_invite_world: false
