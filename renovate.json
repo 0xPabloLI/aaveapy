@@ -38,6 +38,12 @@
       "labels": ["dependencies", "javascript", "manual-review"]
     },
     {
+      "description": "AAV-1301 kept a Dependabot ignore for @eslint/js >= 10 because eslint-plugin-import and eslint-plugin-react-hooks still peer on eslint ^9 - that bump turned dev's peer-dep-check and lint red twice. Deleting dependabot.yml must not resurrect the proposal, so the ceiling moves here; 9.x minor/patch keep flowing.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@eslint/js"],
+      "allowedVersions": "<10"
+    },
+    {
       "description": "Runtime dependencies never carry the automerge label: they ship to users.",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
