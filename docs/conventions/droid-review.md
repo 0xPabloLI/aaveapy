@@ -13,7 +13,6 @@
 
 - `automatic_review: true` — 生成式代码审查
 - `automatic_security_review: true` — 独立安全审查子代理,severity ≥ medium 才报告;注意:workflow 未配置合并阻断门禁,critical 结论是否阻止合并取决于 branch protection 是否将该 check 设为 required(当前未启用)
-- `review_depth: deep` — 两遍流程(candidate 生成 + validator 复核),比 shallow 慢但误报率低
 - `allowed_bots: renovate[bot]` — 默认策略忽略 bot 作者的 PR;显式放行 Renovate,因为依赖升级 PR 正是需要审查的对象
 - `review_model: glm-5.3-flash` / `security_model: glm-5.3-flash` — 审查模型固定,防止默认模型漂移影响成本与输出稳定性
 - `concurrency` 按 PR 号取消旧运行 — 同一 PR 连续 push 时只保留最新一轮
@@ -36,7 +35,7 @@ Workflow 依赖 **`FACTORY_API_KEY` 仓库 secret**(经 `${{ secrets.FACTORY_API
 ## 成本与配额治理
 
 - 每 PR 上限 `max_runs_per_pr: 10`(action 默认值)
-- `security_scan_schedule: false` — 不跑周期性安全扫描,只在 PR 事件触发
+- 无 `schedule:` 触发器(workflow 只有 `on: pull_request`)——安全审查随 PR 事件跑,不做周期性扫描
 - 模型已固定(glm-5.3-flash);如需更换,同步修改两个 model 字段并说明理由
 
 ## 同仓库约定冲突点
