@@ -63,7 +63,15 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **吞 rejection 的 shim 必须带正对照**：同环境放一条真实 `Promise.reject` 的用例，确认它仍然 exit 1，才能证明 shim 是窄口径而不是全局消音；验证完删掉临时用例。
 - **本地 `npm ls` 不等于 CI 的 `peer-dep-check`**：npm 11 与 npm 10 对 `^0.x` 这类畸形 range 判定不同，本机在未修改的绿分支上也会报 `axios` / `vitest` invalid。以 CI 运行结果为准。
 
+## osv-scanner 的豁免只在 `osv-scanner.toml`（不带点），且 `ignoreUntil` 会真的过期
+- **本地门、非 CI 门**：osv-scanner 只在 `.husky/pre-push`（2026-09-06 由 `3b3fa47f`→`a07f2d2b`→`e27cd217` 分三步装成 BLOCKING，引用 #197 工具链）。CI 的 `security-audit` 是 `npm audit --omit=dev --audit-level=high` 且 `continue-on-error: true`。所以会出现「CI 全绿、所有人推不动」这种形态——排查推送失败时先看 hook，别看 PR checks。
+- **文件名不能带点**：hook 跑裸命令 `osv-scanner --lockfile package-lock.json`，靠自动发现读 **`osv-scanner.toml`**。实测 `.osv-scanner.toml`（带点）完全不生效，洞照旧报。改名同时要改 hook 的 `--config`。
+- **`ignoreUntil` 是真执行的时间闸**（需 RFC3339 带 T 与 Z，`2027-01-31` 这种裸日期会解析失败并**让整份配置加载失败**）。已实测两个方向：未来日期 → `No issues found`；过去日期 → 重新报该条。所以豁免不会永久沉默。
+- **`[[IgnoredVulns]]` 之外没有 `PackageVulnerabilities`**：v2.5.1 对未知键是**整份配置拒绝加载**（`unknown keys in config file: ...`），不是忽略那一条。写错一个键名的后果是"豁免全废"，改完必须跑一次原样命令确认 `No issues found`。
+- **上游没修复版时不要硬抬版本**：`braces 3.0.3`（GHSA-vfj7-8cjw-p6xm，dev-only 经 tailwind v3 的 chokidar/micromatch 传入）在 npm 上没有更高版本，OSV 的 ranges 只有 `last_affected` 没有 `fixed`。这类只能带理由+到期日地豁免，或换依赖链根治；对比 axios 1.18.1 有 1.20.0 可升，那条走 `overrides`（#710/#711）。**先查有没有 fixed 事件，再决定用哪种修法。**
+
 ## dependabot.yml 是「一处无效 = 整份不解析」，且重复条目只有 check-run 会告诉你
+
 - **`ignore` 要求 `dependency-name` + `versions` 组合唯一**：写成两条相同条目，Dependabot 报 `The property '#/updates/0/ignore/1/versions' includes a duplicate`，结果是**整份配置不解析**——不是那一条被忽略，而是 npm 与 github-actions 两个生态一起停摆，连 security 更新都不开。
 - **只有默认分支的那份真正生效，但破坏是从那里开始计时的**：非默认分支上的坏配置当下无害（Dependabot 不读它），一旦被 `→ main` 的发布流带进默认分支就全局失效。所以往 dev/lovable 写 dependabot 改动时，必须把它当成「等着被 ship 的定时炸弹」看，别用「现在还在红/绿」判断影响面。
 - **验证信号只存在于 commit 的 check-run 里**：`.github/dependabot.yml` 那条校验不是必需检查、也不在 CI workflow 内，`gh pr checks` 的流水线全绿照样可能是无效配置。取证方式：`gh api repos/<r>/commits/<sha>/check-runs --jq '.check_runs[] | select(.conclusion=="failure")'`，正文在 `.output.summary`。写完 YAML 列表项要跑这一条，不能只看 lint。
