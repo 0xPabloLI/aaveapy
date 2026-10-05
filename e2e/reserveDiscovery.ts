@@ -540,3 +540,18 @@ export function discoverCrossAssetPairingScenarios(reserves: DiscoveryReserve[],
   // Highest-impact scenarios first — the spec keeps the top two.
   return scenarios.sort((a, b) => b.apr - a.apr);
 }
+
+/**
+ * Index of a row deeper than the first whose market chip differs from the market of the
+ * first labelled row, or -1 when every visible row shares one market.
+ *
+ * Filtering by a market the whole page already belongs to cannot reorder anything, so an
+ * assertion of "the expanded row gets pinned to the top anchor" on such a row would encode
+ * which markets happened to sit on top of the live snapshot, not the pin behaviour.
+ */
+export function pickReorderCapableRowIndex(labels: (string | null)[]): number {
+  const clean = labels.map((l) => (l ?? '').trim());
+  const reference = clean.find((l) => l !== '');
+  if (reference === undefined) return -1;
+  return clean.findIndex((l, i) => i > 0 && l !== '' && l !== reference);
+}
