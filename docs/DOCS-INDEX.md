@@ -17,7 +17,7 @@ _Last inventory pass: 2026-09-28._
 - Canonical: `docs/ARCHITECTURE.md` (技术架构：目录结构、数据流、shared schema、simulation、错误处理模式)
 - Canonical: `docs/PR_ANALYSIS.md` (PR batching/automerge policy)
 - Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
-- Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)
+- Canonical: `docs/dependabot-behavior.md` (依赖自动化现状：Renovate 已接管版本升级 / security updates 仍在但不靠 dependabot.yml / `dependabot/*`→main 为何必然红 + 改 base 的正确命令)
 - Canonical: `docs/issue-roadmap.md` (Issue Roadmap: open issue 优先级排序与状态快照; GitHub issue 始终排最前; 与 `docs/agents/issue-tracker.md` 分工——本文件用户可见，issue-tracker.md agent 内部配置)
 
 ### Agent 内部契约（docs/agents/）
@@ -140,7 +140,7 @@ _Last inventory pass: 2026-09-28._
 | --- | --- | --- | --- | --- | --- |
 | `README.md` | Project onboarding and scripts | 2026-04-09 | Canonical | `docs/frontend-data-loading-matrix.md`, `docs/rate-calculation.md` | keep |
 | `docs/PR_ANALYSIS.md` | PR batching / automerge / when to split PRs | 2026-04-05 | Canonical | `docs/dependabot-behavior.md`; merge execution + review-thread rules live in `AGENTS.md` / `.claude/commands/merge.md` | keep |
-| `docs/dependabot-behavior.md` | Dependabot summary | 2026-04-01 | Derivative pointer | `.github/dependabot.yml`, `docs/PR_ANALYSIS.md` | keep |
+| `docs/dependabot-behavior.md` | 依赖自动化现状 + `dependabot/*`→main 卡点的处置 | 2026-10-06 | Canonical（guard 诊断与改 base 命令仅此一处） | `renovate.json`, `docs/PR_ANALYSIS.md` | keep |
 | `docs/frontend-data-loading-matrix.md` | Data-loading architecture | 2026-04-27 | Canonical | `README.md` freshness notes | keep |
 | `docs/rate-calculation.md` | Unified rate simulation formulas (native, Merkl, display, incentive caps) | 2026-04-28 | Canonical | none (consolidated) | keep |
 | `docs/fallback-reference.md` | Frontend variable fallback chains | 2026-04-28 | Canonical | `docs/rate-calculation.md` | keep |
