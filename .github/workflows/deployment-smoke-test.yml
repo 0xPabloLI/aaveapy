@@ -326,7 +326,7 @@ jobs:
 
       - name: Auto-close stale smoke-test-failure issues on success
         if: success()
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const env = '${{ env.ENV_LABEL }}';
@@ -484,7 +484,7 @@ jobs:
 
       - name: Create rollback notification issue
         if: always()
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const env = '${{ env.ENV_LABEL }}';
