@@ -12,6 +12,7 @@ import {
   hasComputableSupplyIncentive,
   isComputableMerklCampaign,
   pickIncentiveReserve,
+  pickReorderCapableRowIndex,
   type DiscoveryReserve,
 } from '../../e2e/reserveDiscovery';
 
@@ -831,5 +832,50 @@ describe('getMarketChipLabel mirror parity with src/lib/marketLabels (AAV-1308 r
     expect(getMarketChipLabel('AaveV4AVAXCorrelated', 'Avalanche')).toBe('AVAXCorrelated');
     expect(getMarketChipLabel('AaveV4CoinbaseStocks', 'Base')).toBe('Coinbase Stocks');
     expect(getMarketChipLabel('AaveV3EthereumLido', 'Ethereum')).toBe('Prime');
+  });
+});
+
+describe('pickReorderCapableRowIndex', () => {
+  // Scenario matrix for choosing a row whose market filter MUST change the list
+  // (reserves-table-market-filter-pin (5)). Labels are the market chip aria-labels in
+  // visible row order; null = that row rendered no market chip.
+  it('row 1: whole page is one market → no candidate', () => {
+    expect(pickReorderCapableRowIndex(['Filter by Ink market', 'Filter by Ink market', 'Filter by Ink market'])).toBe(
+      -1,
+    );
+  });
+
+  it('row 2: the difference sits deeper than index 1 → that index', () => {
+    expect(pickReorderCapableRowIndex(['Filter by Ink market', 'Filter by Ink market', 'Filter by Prime market'])).toBe(
+      2,
+    );
+  });
+
+  it('row 3: index 1 already differs → take the shallowest', () => {
+    expect(
+      pickReorderCapableRowIndex(['Filter by Core market', 'Filter by Prime market', 'Filter by Core market']),
+    ).toBe(1);
+  });
+
+  it('row 4: a single row cannot be reordered by its own market', () => {
+    expect(pickReorderCapableRowIndex(['Filter by Core market'])).toBe(-1);
+  });
+
+  it('row 5: empty page → no candidate', () => {
+    expect(pickReorderCapableRowIndex([])).toBe(-1);
+  });
+
+  it('row 6: rows without a market chip are never candidates', () => {
+    expect(pickReorderCapableRowIndex([null, null, null])).toBe(-1);
+    expect(pickReorderCapableRowIndex(['Filter by Core market', null, 'Filter by Prime market'])).toBe(2);
+  });
+
+  it('row 7: leading unlabelled rows still anchor on the first labelled market', () => {
+    expect(pickReorderCapableRowIndex([null, 'Filter by Core market', 'Filter by Core market'])).toBe(-1);
+    expect(pickReorderCapableRowIndex([null, 'Filter by Core market', 'Filter by Prime market'])).toBe(2);
+  });
+
+  it('row 8: label whitespace is not a market difference', () => {
+    expect(pickReorderCapableRowIndex(['Filter by Ink market ', 'Filter by Ink market'])).toBe(-1);
   });
 });

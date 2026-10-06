@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+import { pickReorderCapableRowIndex } from './reserveDiscovery';
+
 async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });
 }
@@ -181,11 +183,23 @@ test.describe('Market filter pin scroll (desktop)', () => {
     await page.goto('/');
     await waitDesktopTable(page);
 
-    // Pick a row deeper in the list (3rd visible row) so the row index
-    // changes after filter — guards against "first row only" assumptions.
+    // Pick a row whose MARKET differs from the first labelled row's, so that filtering by
+    // its chip must reorder. "The 3rd visible row" was an assumption about live data: on
+    // 2026-10-05 CI every visible row read "Filter by Ink market", the filter changed
+    // nothing, and the pin assertion measured a row still sitting third (y=376.75 against
+    // a 274.25 anchor) on both attempts.
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
-    const targetIndex = Math.min(2, rowCount - 1);
+    const labels: (string | null)[] = [];
+    for (let i = 0; i < Math.min(rowCount, 12); i++) {
+      const rid = await rows.nth(i).getAttribute('data-reserve-id');
+      labels.push(rid ? await marketChipForReserve(page, rid).first().getAttribute('aria-label') : null);
+    }
+    const targetIndex = pickReorderCapableRowIndex(labels);
+    test.skip(
+      targetIndex < 0,
+      'Every visible row shares one market — filtering it cannot reorder, so there is nothing to pin',
+    );
     const targetRow = rows.nth(targetIndex);
     const reserveId = await targetRow.getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id for row at index ${targetIndex}`);

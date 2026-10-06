@@ -115,6 +115,7 @@
 ## PR / Merge Guardrails
 - Commits: 简洁的 conventional 格式;不在 message 里放 URL。
 - 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
+- 自动 PR 审查: 新 PR 由 Droid 自动审查(code review + security review, deep)。仓库约定见 `docs/conventions/droid-review.md`;`FACTORY_API_KEY` secret 缺失时 workflow 静默跳过,详见 `docs/workflows/setup-github-actions-secret.md`。
 
 ## Cross-Branch Workflow（禁止本地切分支）
 **核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。场景和命令详见 `docs/workflows/cross-branch-workflow.md`。

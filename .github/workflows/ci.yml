@@ -40,7 +40,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Setup Socket Firewall
         uses: socketdev/action@v1
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -111,7 +111,7 @@ jobs:
       # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
       - name: Run ESLint (Reviewdog)
         if: github.event_name == 'pull_request'
-        uses: reviewdog/action-eslint@b6303df522851d0e9abaea654da0222037d97e75 # v1
+        uses: reviewdog/action-eslint@3ee2a450da17e060b9dfa4bffd53976906c6b2b0 # v1
         env:
           REVIEWDOG_VERSION: v0.20.3
         with:
@@ -136,7 +136,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
@@ -184,7 +184,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -229,7 +229,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -262,7 +262,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -291,7 +291,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -315,7 +315,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -338,7 +338,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -393,7 +393,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -434,7 +434,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
@@ -474,7 +474,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
 
       - name: Install dependencies
