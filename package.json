@@ -89,7 +89,8 @@
     "check:campaign-apr-reconcile": "node scripts/reconcile-campaign-apr.mjs",
     "ci:lockcheck": "npm ci",
     "check:react-singleton": "node scripts/check-react-singleton.mjs",
-    "prepare": "npx husky"
+    "check:hooks-path": "node scripts/husky-hooks-path.mjs --check",
+    "prepare": "npx husky && node scripts/husky-hooks-path.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs}": [

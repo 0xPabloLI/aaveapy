@@ -1,3 +1,12 @@
+# Needs the local toolchain; a linked git worktree without `npm install` has
+# none, and `npx lint-staged` would then reach over the network instead of
+# telling the truth about the missing install.
+if [ ! -d node_modules ]; then
+  echo "❌ [pre-commit] BLOCKED: node_modules 不存在于 $(pwd)"
+  echo "   这是 worktree 未装依赖的典型现场 —— 先在该 worktree 里 npm install，再提交。"
+  exit 1
+fi
+
 npx lint-staged
 npm run typecheck
 npm run lint
