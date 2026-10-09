@@ -14,9 +14,11 @@
 
 原 Dependabot 配置里的隐式门槛已在 Renovate 侧复刻，别把"配置文件没了"读成"策略也没了"：
 
-- `@eslint/js >= 10` 的忽略（AAV-1301 裁定）⇒ packageRule `allowedVersions: "<10"`。
-- npm 只有 `direct:development` 的 patch/minor 可自动合 ⇒ `matchManagers` + `matchDepTypes`。
+- eslint 上限（AAV-1301 裁定）⇒ packageRule `allowedVersions: "<10"`，`matchPackageNames` **必须同时含 `@eslint/js` 与 `eslint`**。只钉前者是半个上限：`eslint` 本体仍会被升，而 `eslint-plugin-import` 的 peer 只到 `^9`（实测 2026-10-09：`eslint-plugin-react-hooks@7` 与 `typescript-eslint@8` 已接受 `^10`）⇒ 严格 `npm ci` 失败，`peer-dep-check` 是 dev 与 main 都必填。这条由 `scripts/renovate-config.test.mjs` 守住（对照实验：把上限改回只管 `@eslint/js`，该用例变红）。
+- npm 只有 `direct:development` 的 patch/minor 可自动合 ⇒ `matchManagers` + `matchDepTypes`（同一测试守这条）。
 - 标签与 automerge 仍由本仓 [`automerge.yml`](../.github/workflows/automerge.yml) 的 PAT 路径执行（Renovate 自身 automerge 关），以保住「lovable→dev 用 MERGE、其余 SQUASH」。
+
+**生效路径提醒**：Renovate 只读**默认分支**的配置，所以 `renovate.json` 的改动要走到 main 才算数（本仓经 lovable→dev→main）。
 
 ## 仍然活着的两件事
 
