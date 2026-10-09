@@ -1,11 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import { e2eBaseUrl, e2eDevServerCommand, resolveE2ePort } from './scripts/lib/e2e-port.mjs';
+import { browserProxyArgs } from './e2e/browserProxy';
 
 // Live-SDK wallet tests (watch mode + Aave positions) hit api.v3.aave.com /
-// api.aave.com from inside the browser. On networks that require proxy
-// egress, run with `E2E_PROXY=http://127.0.0.1:<port>`; Chromium never
-// proxies loopback, so the local dev server is unaffected.
-const browserProxy = process.env.E2E_PROXY ? { proxy: { server: process.env.E2E_PROXY } } : {};
+// api.aave.com from inside the browser. On networks that require proxy egress,
+// run with `E2E_PROXY=http://127.0.0.1:<port>`; Chromium never proxies loopback,
+// so the local dev server is unaffected. The same value must also reach the
+// prewarm browser in e2e/global-setup.ts, so the decision lives in
+// e2e/browserProxy.ts rather than being spelled out twice.
+const browserProxy = browserProxyArgs();
 
 // Pre-push runs the whole desktop suite against a dev server. Recording video
 // and trace for every test is debug-only overhead there, and it is a known
