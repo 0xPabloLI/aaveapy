@@ -126,9 +126,15 @@ test.describe('Wallet connect via mock injected provider', () => {
 
     // Reload — the init script re-registers the mock idempotently and wagmi
     // auto-reconnects from the persisted session without any user gesture.
+    // Enter through the same canonical helper every other state transition in
+    // this file uses: it accepts any header affordance with the 30s budget the
+    // helper owns. Asserting the connected label alone with a private 15s
+    // timeout made this the only step in the spec that could not say *why* it
+    // was still waiting (disconnected affordance vs nothing rendered).
     await page.reload();
+    await waitForWalletControls(page);
     await expect(page.getByRole('button', { name: /Wallet 0x/i }).first()).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
     await expect(page.getByRole('button', { name: /Connect wallet/i })).not.toBeVisible();
 
