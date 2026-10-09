@@ -38,10 +38,17 @@
       "labels": ["dependencies", "javascript", "manual-review"]
     },
     {
-      "description": "AAV-1301 kept a Dependabot ignore for @eslint/js >= 10 because eslint-plugin-import and eslint-plugin-react-hooks still peer on eslint ^9 - that bump turned dev's peer-dep-check and lint red twice. Deleting dependabot.yml must not resurrect the proposal, so the ceiling moves here; 9.x minor/patch keep flowing.",
+      "description": "AAV-1301's eslint ceiling. The old Dependabot ignore covered @eslint/js >= 10 because that bump turned dev's peer-dep-check and lint red twice, and the ceiling moved here when dependabot.yml went away - but it only pinned @eslint/js while `eslint` itself stayed uncapped, which is half a ceiling: the pair must move together. Measured 2026-10-09 peer ranges: eslint-plugin-import allows up to ^9 (NO ^10 -> strict npm ci fails, and peer-dep-check is required on dev AND main), while eslint-plugin-react-hooks ^7 and typescript-eslint ^8 already allow ^10. So the blocker is eslint-plugin-import; 9.x minor/patch keep flowing, and scripts/renovate-config.test.mjs pins this range set so the ceiling cannot silently cover one package again.",
       "matchManagers": ["npm"],
-      "matchPackageNames": ["@eslint/js"],
+      "matchPackageNames": ["@eslint/js", "eslint"],
       "allowedVersions": "<10"
+    },
+    {
+      "description": "vitest and @vitest/* are one peer-locked family: each @vitest package's peerDependencies pin vitest to the exact same version, so bumping one alone fails the strict `npm ci` that ci.yml's peer-dep-check runs (required on dev AND main). Dependabot's #731 did exactly that - it raised vitest to 5.0.3 while @vitest/coverage-v8 stayed on ^4.1.11 - and could never merge, which is why the family must be reviewed together (same reasoning as the node runtime rule).",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["vitest", "/^@vitest\\//"],
+      "groupName": "vitest",
+      "groupSlug": "vitest"
     },
     {
       "description": "Runtime dependencies never carry the automerge label: they ship to users.",

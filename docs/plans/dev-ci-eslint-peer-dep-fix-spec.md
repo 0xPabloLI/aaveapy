@@ -1,6 +1,8 @@
 # Spec: dev CI 修复 — @eslint/js 与 eslint 主版本对齐
 
 > **状态（2026-09-29）**：本 spec 的方案已执行两次——`0e85f4d7`（首次）与 **#697**（#653 被重新合入后的二次回归）。#697 顺手做完本 spec 标为 out-of-scope 的 `dependabot-resolve-peer-conflicts.yml` 整改（改报告制）。机制与复发面见 `docs/lessons/infrastructure.md` § peer 版本错位的方向不可自动判定。
+>
+> **后续（2026-10-06）**：`dependabot-resolve-peer-conflicts.yml` 已删除。`.github/dependabot.yml` 随 #736 离开默认分支后 Dependabot 不再产版本 PR，这条报告路径失去输入；它的判断能力由 `ci.yml` 的 `peer-dep-check`（严格 `npm ci`，dev 与 main 均必填）承担，**"legacy-peer-deps 强推 lockfile"这条进入通道也随 workflow 一起消失**。现状与 `dependabot/*` PR 的处置见 `docs/dependabot-behavior.md`。本 spec 正文按原文保留（历史记录，含当时的事实错误）。
 
 ## Problem Statement
 
