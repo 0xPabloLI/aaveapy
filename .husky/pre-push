@@ -1,5 +1,14 @@
 #!/usr/bin/env sh
 
+# Every command below needs the toolchain, and a linked git worktree has none
+# until `npm install` runs there. Say so instead of letting `npm run ci:remote`
+# die on a missing binary (or `npx` quietly fetch one over the network).
+if [ ! -d node_modules ]; then
+  echo "❌ [pre-push] BLOCKED: node_modules 不存在于 $(pwd)"
+  echo "   这是 worktree 未装依赖的典型现场 —— 先在该 worktree 里 npm install，再推送。"
+  exit 1
+fi
+
 STASH_COUNT=$(git stash list | wc -l | tr -d ' ')
 if [ "$STASH_COUNT" -gt 3 ]; then
   echo ""

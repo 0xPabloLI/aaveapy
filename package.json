@@ -89,7 +89,8 @@
     "check:campaign-apr-reconcile": "node scripts/reconcile-campaign-apr.mjs",
     "ci:lockcheck": "npm ci",
     "check:react-singleton": "node scripts/check-react-singleton.mjs",
-    "prepare": "npx husky"
+    "check:hooks-path": "node scripts/husky-hooks-path.mjs --check",
+    "prepare": "npx husky && node scripts/husky-hooks-path.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs}": [
@@ -173,7 +174,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.3.3",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.3",
     "autoprefixer": "^10.5.4",
     "eslint": "^9.39.4",
     "eslint-plugin-import": "^2.32.0",
@@ -193,6 +194,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.71.0",
     "vite": "^8.2.2",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.3"
   }
 }
