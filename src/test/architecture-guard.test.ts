@@ -15,11 +15,20 @@ function loadOpenApiSpec(): Record<string, unknown> {
   return JSON.parse(raw);
 }
 
-function readFile(relativePath: string): string {
-  return readFileSync(resolve(SRC_DIR, relativePath), 'utf8');
-}
+/**
+ * Filesystem scans are memoised (AAV-1331). Nearly every describe here re-reads
+ * the tree: without caching, each of the five `star import` cases pays for its
+ * own walk of `src/` plus hundreds of `readFileSync` calls, which blows vitest's
+ * 5s default per-test timeout on a loaded machine (195 vitest workers, FS behind
+ * a broker) and reports a false red. The tree cannot change while the suite runs,
+ * so one walk per directory and one read per file are enough.
+ */
+const listingCache = new Map<string, string[]>();
 
 function globTsFiles(dir: string): string[] {
+  const cached = listingCache.get(dir);
+  if (cached) return cached;
+
   const results: string[] = [];
   for (const entry of readdirSync(resolve(SRC_DIR, dir))) {
     const full = resolve(SRC_DIR, dir, entry);
@@ -29,10 +38,47 @@ function globTsFiles(dir: string): string[] {
       results.push(`${dir}/${entry}`);
     }
   }
+
+  listingCache.set(dir, results);
   return results;
 }
 
+const contentCache = new Map<string, string>();
+
+function readFile(relativePath: string): string {
+  const cached = contentCache.get(relativePath);
+  if (cached !== undefined) return cached;
+
+  const content = readFileSync(resolve(SRC_DIR, relativePath), 'utf8');
+  contentCache.set(relativePath, content);
+  return content;
+}
+
+// Hoisted so the walk happens at import time instead of inside a test's 5s budget.
 const COMPONENT_FILES = globTsFiles('components');
+const LIB_FILES = globTsFiles('lib');
+const HOOK_FILES = globTsFiles('hooks');
+
+/**
+ * Read every guarded source once, at import time. Fixture loading is not test
+ * logic: left lazy, the first test that touches each directory pays for hundreds
+ * of `readFileSync` calls inside its own 5s budget and times out (AAV-1331 —
+ * observed as the first `star import` case failing while the next four passed on
+ * the warmed cache).
+ */
+[...COMPONENT_FILES, ...LIB_FILES, ...HOOK_FILES].forEach((file) => readFile(file));
+
+describe('Architecture guard: filesystem scans are memoised', () => {
+  it('a repeated directory scan returns the same listing', () => {
+    expect(globTsFiles('lib')).toBe(globTsFiles('lib'));
+  });
+
+  it('the hoisted listings are the memoised ones', () => {
+    expect(globTsFiles('components')).toBe(COMPONENT_FILES);
+    expect(globTsFiles('lib')).toBe(LIB_FILES);
+    expect(globTsFiles('hooks')).toBe(HOOK_FILES);
+  });
+});
 
 const KNOWN_DISABLE_TOOLTIP = new Set([
   'components/dashboard/CapProgressRing.tsx',
@@ -124,10 +170,8 @@ describe('Architecture guard: formatters must not re-import extracted module sym
 
   for (const { module, symbols } of EXTRACTED_MODULES) {
     it(`no consumer imports ${module} symbols via formatters (star import)`, () => {
-      const libFiles = globTsFiles('lib').filter((f) => !f.includes('formatters'));
-      const componentFiles = globTsFiles('components');
-      const hookFiles = globTsFiles('hooks');
-      const allFiles = [...libFiles, ...componentFiles, ...hookFiles];
+      const libFiles = LIB_FILES.filter((f) => !f.includes('formatters'));
+      const allFiles = [...libFiles, ...COMPONENT_FILES, ...HOOK_FILES];
       const violations: string[] = [];
       for (const file of allFiles) {
         const src = readFile(file);
@@ -198,7 +242,7 @@ describe('Architecture guard: all GET endpoints must define 429 and 503 response
 
 describe('Architecture guard: no lib→hook import direction violations', () => {
   it('lib files must not import from hooks', () => {
-    const libFiles = globTsFiles('lib');
+    const libFiles = LIB_FILES;
     const violations: string[] = [];
     for (const file of libFiles) {
       const src = readFile(file);
