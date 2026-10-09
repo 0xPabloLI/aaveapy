@@ -1,4 +1,5 @@
 import { chromium, type FullConfig } from '@playwright/test';
+import { browserProxyArgs } from './browserProxy';
 
 /**
  * Prewarm the web server before any worker starts.
@@ -11,13 +12,21 @@ import { chromium, type FullConfig } from '@playwright/test';
  * returned 200 in ~1s. Serializing one full page load per layout before the
  * parallel wave lets Vite finish dep-optimization + transforms once, so all
  * workers then hit a warm cache.
+ *
+ * "returned 200 in ~1s" is the part that later proved load-bearing: a 200 says
+ * nothing about transfer time. Measured 2026-10-07, `/markets` had a 1.6s TTFB
+ * but needed 82–150s to deliver 413KB over direct egress, so this prewarm —
+ * which used to launch its browser with no proxy while `playwright.config.ts`
+ * gave tests one — timed out on `portfolio-mode-toggle` and aborted the run
+ * before a single test started, ignoring `E2E_PROXY` entirely. Both browsers
+ * now take their proxy arguments from one place.
  */
 export default async function globalSetup(config: FullConfig) {
   // Taken from the config rather than defaulted: this run's port is allocated per
   // run, so a fallback literal here would silently prewarm a different server.
   const baseURL = config.projects[0]?.use?.baseURL;
   if (!baseURL) throw new Error('globalSetup: no baseURL resolved from the Playwright config');
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(browserProxyArgs());
   try {
     // One visit per layout: desktop table and mobile cards pull in the
     // module graph we want pre-transformed.
