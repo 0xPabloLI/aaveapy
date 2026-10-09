@@ -38,9 +38,9 @@
       "labels": ["dependencies", "javascript", "manual-review"]
     },
     {
-      "description": "AAV-1301 kept a Dependabot ignore for @eslint/js >= 10 because eslint-plugin-import and eslint-plugin-react-hooks still peer on eslint ^9 - that bump turned dev's peer-dep-check and lint red twice. Deleting dependabot.yml must not resurrect the proposal, so the ceiling moves here; 9.x minor/patch keep flowing.",
+      "description": "AAV-1301's eslint ceiling. The old Dependabot ignore covered @eslint/js >= 10 because that bump turned dev's peer-dep-check and lint red twice, and the ceiling moved here when dependabot.yml went away - but it only pinned @eslint/js while `eslint` itself stayed uncapped, which is half a ceiling: the pair must move together. Measured 2026-10-09 peer ranges: eslint-plugin-import allows up to ^9 (NO ^10 -> strict npm ci fails, and peer-dep-check is required on dev AND main), while eslint-plugin-react-hooks ^7 and typescript-eslint ^8 already allow ^10. So the blocker is eslint-plugin-import; 9.x minor/patch keep flowing, and scripts/renovate-config.test.mjs pins this range set so the ceiling cannot silently cover one package again.",
       "matchManagers": ["npm"],
-      "matchPackageNames": ["@eslint/js"],
+      "matchPackageNames": ["@eslint/js", "eslint"],
       "allowedVersions": "<10"
     },
     {
