@@ -15,6 +15,12 @@
  *   ruling is: only direct devDependencies, patch/minor);
  * - Node lives in two places (workflow `node-version` and the Dev Container
  *   image tag), and a bump that moved only one desynchronised CI from Codespaces.
+ * - the Dependency Dashboard was asked to be closed by hand. It cannot be: with
+ *   the dashboard on, Renovate's `ensureIssue()` recreates the card every run. The
+ *   two real levers are `dependencyDashboardAutoclose` (closes when the card has
+ *   nothing pending) and `dependencyDashboard: false` (takes `ensureIssueClosing`
+ *   and hides the queue) - we keep the card and take the first one, because the
+ *   eslint half-ceiling above was only noticed by reading this card.
  *
  * Config-only assertions: no network, no npm registry lookups.
  */
@@ -103,5 +109,29 @@ describe('renovate.json — ceilings and release gates', () => {
   it('config is read from the default branch, so baseBranchPatterns points at dev', () => {
     assert.deepEqual(config.baseBranchPatterns, ['dev']);
     assert.deepEqual(config.enabledManagers.sort(), ['devcontainer', 'github-actions', 'npm']);
+  });
+
+  it('the Dependency Dashboard stays on, but closes itself once the queue drains', () => {
+    assert.notEqual(
+      config.dependencyDashboard,
+      false,
+      'do not pull the off-switch: ensureDependencyDashboard() takes ensureIssueClosing() when nothing forces the card open, so the pending queue becomes invisible',
+    );
+    assert.equal(
+      config.dependencyDashboardAutoclose,
+      true,
+      'autoclose is the lever that empties the issue list without losing the ledger',
+    );
+
+    // autoclose only fires when there are no branches to show, so nothing here may
+    // park branches in the card permanently.
+    const forcesApprovalQueue =
+      config.prCreation === 'approval' ||
+      rules.some((r) => r.dependencyDashboardApproval === true || r.prCreation === 'approval');
+    assert.equal(
+      forcesApprovalQueue,
+      false,
+      'a dependencyDashboardApproval/prCreation:approval rule would keep branches pending and defeat autoclose',
+    );
   });
 });
