@@ -1,5 +1,19 @@
 name: Sync dev with main
 
+# After a dev → main release, main carries a commit dev does not: the release is
+# squashed, so dev never gets it as an ancestor. `main` runs with
+# `required_status_checks.strict = true`, which means the NEXT dev → main PR
+# cannot merge until dev contains main again. Until 2026-10-09 this workflow
+# skipped exactly that case ("content identical → skip"), so every release had to
+# be followed by a hand-made ancestry sync (PR #759 blocked, #760 created
+# manually and resolved in three files). This now decides on ancestry, not
+# content, and automates the clean case.
+#
+# Conflicts are deliberately NOT auto-resolved: main can legitimately hold
+# content dev lacks (approved bot sync PRs land on main directly), so picking a
+# side blindly would silently drop it. A conflicting sync still opens a PR and
+# warns with the file list.
+
 on:
   pull_request:
     types: [closed]
@@ -34,44 +48,133 @@ jobs:
             exit 0
           fi
 
-          if git diff origin/main origin/dev --quiet; then
-            echo "reason=Content identical (SHA differs only due to merge commit)" >> "$GITHUB_OUTPUT"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
+          # The only thing main's strict check needs is ancestry. Content being
+          # identical is therefore NOT a reason to skip — after a squashed
+          # release it is exactly the state that must be repaired.
           MERGE_BASE=$(git merge-base origin/main origin/dev)
           if [ "$MERGE_BASE" = "$MAIN_SHA" ]; then
-            echo "reason=dev is ahead of main" >> "$GITHUB_OUTPUT"
+            echo "reason=dev already contains main" >> "$GITHUB_OUTPUT"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          echo "main_only=$(git rev-list --count origin/dev..origin/main)" >> "$GITHUB_OUTPUT"
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
-      - name: Create sync PR
+      - name: Build ancestry sync branch
+        id: merge
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -u
+          BRANCH="sync/main-into-dev-$(git rev-parse --short=8 origin/main)"
+          git checkout -q -b "$BRANCH" origin/main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git merge --no-edit -m "Sync main → dev（补 ancestry，非内容变更）
+
+          dev→main 上线用 squash，dev 因此拿不到 main 上的发布提交；main 的必填检查
+          是 strict，所以下一次 dev→main 会 BEHIND/CONFLICTING。本提交只恢复祖先关系。
+          由 sync-dev-with-main.yml 在 dev→main 合并后自动创建。" origin/dev; then
+            # Show what main contributes: normally nothing (a squashed release
+            # leaves content equal), otherwise the reviewer sees the real delta.
+            {
+              echo "### ancestry 同步带入的内容"
+              if git diff --quiet origin/dev "$BRANCH"; then
+                echo '无差异 —— 纯 ancestry 修复。'
+              else
+                git diff --stat origin/dev "$BRANCH" | tail -20
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            git push -q origin "$BRANCH"
+            echo "mode=pr" >> "$GITHUB_OUTPUT"
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ' ')
+            git merge --abort
+            echo "mode=manual" >> "$GITHUB_OUTPUT"
+            echo "conflicts=${CONFLICTS}" >> "$GITHUB_OUTPUT"
+            {
+              echo "### 同步有冲突，需人工处理"
+              echo "main 独有 ${MAIN_ONLY:-?} 个提交；合并 \`origin/dev\` 时冲突于：${CONFLICTS:-见日志}"
+              echo "不自动选边（main 可能带 dev 没有的 bot 直落提交）。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=dev↔main 同步有冲突::冲突文件：${CONFLICTS:-见日志}。已退回 head=main 的 PR 等人工解决。"
+          fi
+        env:
+          MAIN_ONLY: ${{ steps.check.outputs.main_only }}
+
+      - name: Open sync PR
         if: steps.check.outputs.skip != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          MODE: ${{ steps.merge.outputs.mode }}
+          BRANCH: ${{ steps.merge.outputs.branch }}
+          CONFLICTS: ${{ steps.merge.outputs.conflicts }}
+          MAIN_ONLY: ${{ steps.check.outputs.main_only }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # PAT: GITHUB_TOKEN cannot enable auto-merge (maintainer-level mutation),
+          # which is why automerge.yml uses it too. Falls back to GITHUB_TOKEN.
+          github-token: ${{ secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || secrets.GITHUB_TOKEN }}
           script: |
-            const { data: prs } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              base: 'dev',
-              head: 'main',
-            });
-            if (prs.length > 0) {
-              core.info(`Sync PR already exists: #${prs[0].number}`);
+            const { owner, repo } = context.repo;
+            const mode = process.env.MODE || 'manual';
+            const head = mode === 'pr' ? process.env.BRANCH : 'main';
+
+            const open = (
+              await github.rest.pulls.list({ owner, repo, state: 'open', base: 'dev', per_page: 100 })
+            ).data;
+            const existing = open.find(
+              (p) => p.head.ref === head || p.head.ref === 'main' || p.head.ref.startsWith('sync/main-into-dev-'),
+            );
+            if (existing) {
+              core.info(`Sync PR already open: #${existing.number} (head=${existing.head.ref})`);
               return;
             }
+
+            const body =
+              mode === 'pr'
+                ? [
+                    '自动创建：dev→main 上线是 squash，dev 拿不到 main 的发布提交；main 的必填检查含 `strict`，所以**下一次**上线会 BEHIND/CONFLICTING。本 PR 只补 ancestry。',
+                    '',
+                    '判据见上一步的 step summary：与 dev 无内容差异即纯 ancestry；否则列出 main 独有内容。',
+                    '',
+                    '合并方式必须是 **MERGE**（squash 不建立祖先关系），因此已挂 auto-merge。',
+                  ].join('\n')
+                : [
+                    '自动创建，但**需要人工处理**：把 dev 并入 main 的快照时出现冲突，工作流没有自动选边。',
+                    '',
+                    `冲突文件：${process.env.CONFLICTS || '(见上一步日志)'}`,
+                    `main 独有提交数：${process.env.MAIN_ONLY || '?'}`,
+                    '',
+                    '解决后请**用 MERGE 合**（squash 不建立祖先关系）。',
+                  ].join('\n');
+
             const { data: pr } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Sync main → dev',
-              head: 'main',
+              owner,
+              repo,
+              title: mode === 'pr' ? 'Sync main → dev（补 ancestry，上线后自动）' : 'Sync main → dev（有冲突，需人工）',
+              head,
               base: 'dev',
-              body: 'Auto-created: sync main into dev after dev→main merge.',
+              body,
             });
-            core.info(`Created sync PR #${pr.number}`);
+            core.info(`Created sync PR #${pr.number} (head=${head}, mode=${mode})`);
+
+            if (mode !== 'pr') {
+              core.warning('冲突未解：PR 已创建但不挂 auto-merge，需人工解决后再合。');
+              return;
+            }
+
+            try {
+              await github.graphql(
+                `mutation($id: ID!) {
+                   enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: MERGE}) {
+                     pullRequest { number autoMergeRequest { enabledUntil } }
+                   }
+                 }`,
+                { id: pr.node_id },
+              );
+              core.info('Auto-merge (MERGE) enabled — dev regains main ancestry once dev checks pass.');
+            } catch (e) {
+              core.warning(`挂 auto-merge 失败：${e.message} —— PR 已创建，请在 UI 点 Merge（不要 Squash）。`);
+            }
