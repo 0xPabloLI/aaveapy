@@ -44,6 +44,13 @@
       "allowedVersions": "<10"
     },
     {
+      "description": "vitest and @vitest/* are one peer-locked family: each @vitest package's peerDependencies pin vitest to the exact same version, so bumping one alone fails the strict `npm ci` that ci.yml's peer-dep-check runs (required on dev AND main). Dependabot's #731 did exactly that - it raised vitest to 5.0.3 while @vitest/coverage-v8 stayed on ^4.1.11 - and could never merge, which is why the family must be reviewed together (same reasoning as the node runtime rule).",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["vitest", "/^@vitest\\//"],
+      "groupName": "vitest",
+      "groupSlug": "vitest"
+    },
+    {
       "description": "Runtime dependencies never carry the automerge label: they ship to users.",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
