@@ -21,7 +21,16 @@ if [ "$STASH_COUNT" -gt 3 ]; then
   echo ""
 fi
 
-npm run ci:remote && npm run test:e2e:pre-push
+# The `|| { ...; exit 1; }` is load-bearing, not decoration: husky runs this file as
+# `sh -e`, and errexit deliberately ignores a failure that happens *inside* an `&&`
+# list unless it is the command after the final `&&`. Without the guard, a red
+# `ci:remote` skipped the e2e step, stayed silent, and left the hook's exit code to
+# the gates below — so lint/typecheck/unit/build/audit failures could be pushed
+# (AAV-1330). scripts/hook-failure-propagation.test.mjs runs the real line against a
+# stubbed npm to keep that from coming back.
+# Keep the guard on ONE line: the test runs the real gate by extracting that line, and
+# a multi-line `|| {` block would be extracted as an incomplete (unterminated `{`) snippet.
+npm run ci:remote && npm run test:e2e:pre-push || { echo "❌ [pre-push] BLOCKED: ci:remote 或 e2e 失败 — 修根因，不要绕 hook。"; exit 1; }
 
 # ── Security scan (#197 toolchain: osv-scanner + semgrep) ──
 # Both gates BLOCKING (triaged + CVE-clean as of 2026-09-06).

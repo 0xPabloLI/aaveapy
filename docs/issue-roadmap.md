@@ -70,7 +70,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1330 | High | Backlog (ready-for-agent) | [pre-push] hook 吞掉 `ci:remote` / e2e 失败：`npm run ci:remote && npm run test:e2e:pre-push` 未带 `exit 1` 兜底，后四道门覆盖 `$?` ⇒ 实测三次 `rc=0` **假绿**（2026-10-09 由 AAV-1329 取证途中撞见；本轮不动公共 hook） |
+| AAV-1330 | High | 已交付待上线（`52e5ace1`，随下一笔 lovable→dev） | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） |
 
 ### Medium
 
