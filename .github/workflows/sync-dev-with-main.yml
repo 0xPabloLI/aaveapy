@@ -165,16 +165,29 @@ jobs:
               return;
             }
 
+            // Selection-set fields must exist on the AutoMergeRequest *type*; an unknown
+            // field rejects the whole GraphQL document, so the mutation silently never
+            // runs while this step still reports success. scripts/lib/workflow-graphql-fields.mjs
+            // pins the field list against introspection.
+            //
+            // A UNPROCESSABLE "Pull request is in clean status" here is NOT a failure to
+            // chase: GitHub refuses to queue auto-merge on a PR whose required checks are
+            // already all green, because it can be merged as-is. That happens when dev's
+            // checks finish before this step runs.
             try {
               await github.graphql(
                 `mutation($id: ID!) {
                    enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: MERGE}) {
-                     pullRequest { number autoMergeRequest { enabledUntil } }
+                     pullRequest { number autoMergeRequest { enabledAt mergeMethod } }
                    }
                  }`,
                 { id: pr.node_id },
               );
               core.info('Auto-merge (MERGE) enabled — dev regains main ancestry once dev checks pass.');
             } catch (e) {
+              if (/in clean status/i.test(e.message)) {
+                core.info(`PR #${pr.number} 已全部必填检查通过、无需排队：直接合并即可（${e.message}）。`);
+                return;
+              }
               core.warning(`挂 auto-merge 失败：${e.message} —— PR 已创建，请在 UI 点 Merge（不要 Squash）。`);
             }
