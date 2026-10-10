@@ -33,6 +33,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
+import { archiveFailingResults, findFailingResultDirs } from './lib/e2e-artifacts.mjs';
 
 // --- 1. Determine Playwright browser cache path ---
 const browserCache =
@@ -127,6 +128,23 @@ const flakyCount = flakyMatch ? parseInt(flakyMatch[1], 10) : 0;
 
 console.log('');
 
+/**
+ * Copy whatever Playwright left behind (aria snapshot, screenshot, trace) into a
+ * timestamped archive, because the next run wipes `test-results/` and an
+ * unreproducible failure then has no evidence left to diagnose from. Logic and
+ * its contract live in `scripts/lib/e2e-artifacts.mjs`.
+ */
+function archiveFailureArtifacts() {
+  const { count, dest } = archiveFailingResults({
+    resultsDir: 'test-results',
+    archiveRoot: 'test-results-archive',
+  });
+  if (count === 0) return 0;
+  console.log(`📦 失败现场已存进 ${dest}/（下一次运行会清空 test-results/，不复制就永久丢失）`);
+  for (const entry of findFailingResultDirs('test-results')) console.log(`   · ${entry}`);
+  return count;
+}
+
 if (result.code === 0) {
   console.log('✅ e2e tests passed.');
   console.log('');
@@ -135,6 +153,7 @@ if (result.code === 0) {
 
 // Non-zero exit — distinguish actual failures from flaky-only.
 if (failedCount > 0) {
+  archiveFailureArtifacts();
   console.error(`❌ e2e tests failed — ${failedCount} test(s) failed after retry. Push blocked.`);
   console.error('   Fix the failing tests, or use `git push --no-verify` to skip (not recommended).');
   console.error('');
@@ -142,6 +161,9 @@ if (failedCount > 0) {
 }
 
 if (flakyCount > 0) {
+  // A flaky is the interesting case: it passed on retry, so nothing on disk will
+  // show it ever failed once the next run clears the directory.
+  archiveFailureArtifacts();
   console.log(`⚠️  ${flakyCount} flaky test(s) passed on retry — push allowed.`);
   console.log('   Consider fixing flaky tests to improve CI stability.');
   console.log('');
@@ -149,6 +171,7 @@ if (flakyCount > 0) {
 }
 
 // Non-zero exit with no recognisable summary — treat conservatively.
+archiveFailureArtifacts();
 console.error('❌ e2e tests exited abnormally — push blocked.');
 console.error('   Investigate the output above, or use `git push --no-verify` to skip (not recommended).');
 console.error('');

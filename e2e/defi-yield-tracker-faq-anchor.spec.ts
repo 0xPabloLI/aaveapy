@@ -40,6 +40,18 @@ async function assertTargetWellPositioned(page: Page, slug: string) {
   expect(box!.y).toBeGreaterThanOrEqual(0);
 }
 
+/**
+ * Page-owned readiness signal for the lazy-loaded /defi-yield-tracker route:
+ * H1 and the whole FAQ section (`h2#faq` + every anchor id) come from one
+ * synchronous render of the route chunk. `waitForLoadState('networkidle')`
+ * waited on unrelated app-wide prefetches instead — see
+ * docs/specs/aav-1329-faq-anchor-wait-strategy.md.
+ */
+async function waitForPageReady(page: Page) {
+  await expect(page.getByRole('heading', { level: 1, name: /DeFi Yield Tracker for Aave/i })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: /Frequently asked questions/i })).toBeVisible();
+}
+
 test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
 
@@ -49,7 +61,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
       test('clicking each Related FAQ link scrolls the target into view with correct offset', async ({ page }) => {
         await page.goto('/defi-yield-tracker', { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle');
+        await waitForPageReady(page);
         await expect(page.getByRole('heading', { level: 1, name: /DeFi Yield Tracker for Aave/i })).toBeVisible();
 
         for (const [label, question] of [
@@ -87,7 +99,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
       test('loading the page with a FAQ hash scrolls the target into view and focuses it', async ({ page }) => {
         const slug = faqSlug(FAQ_QUESTIONS.debank);
         await page.goto(`/defi-yield-tracker#${slug}`, { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle');
+        await waitForPageReady(page);
 
         const target = page.locator(`#${slug}`);
         await expect(target).toBeVisible({ timeout: 15_000 });
@@ -113,7 +125,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
 
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {
         await page.goto('/defi-yield-tracker#faq', { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle');
+        await waitForPageReady(page);
         const heading = page.locator('h2#faq');
         await expect(heading).toBeVisible({ timeout: 15_000 });
         // Explicitly scroll into view — lazy-loaded page may not have
