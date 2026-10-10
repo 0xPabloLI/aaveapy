@@ -9,6 +9,7 @@
   "minimumReleaseAgeBehaviour": "timestamp-optional",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 5,
+  "dependencyDashboardAutoclose": true,
   "packageRules": [
     {
       "description": "Non-major Action bumps: Renovate opens the PR, merging stays with .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait binds here even though scripts/check-dep-release-age.mjs cannot see it - that gate diffs package-lock, which has no workflow pins.",
