@@ -1,4 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import {
+  AAV1316_STUB_INJECTION,
+  CROSS_ASSET_PAIRING_FIXTURE_URL,
+  buildCrossAssetPairingStub,
+} from './crossAssetPairingStub';
 import { discoverCrossAssetPairingScenarios, type CrossAssetScenario } from './reserveDiscovery';
 import {
   addReserveToPortfolio,
@@ -35,6 +41,17 @@ import {
  *
  * If no crossAssetPairing campaigns are found in staging data, all tests skip.
  * Desktop + mobile variants are generated from the same scenario list.
+ *
+ * AAV-1316 stub variant: because staging has never carried a crossAssetPairing
+ * campaign, the live tests above have never actually executed. The `stub`
+ * describes below inject a synthetic pairing into a committed real-payload
+ * fixture, serve it through page.route (the app validates the payload with the
+ * same schema as a live response), and run the SAME runner — proving the
+ * min(1,2) chain (baseline 0 → ladder → clamp) is reachable end to end,
+ * hermetically (no real network), in CI and locally. The scenario is selected
+ * by the real discovery gates on the injected payload
+ * (e2e/crossAssetPairingStub.ts, unit-tested in
+ * src/test/crossAssetPairingStub.test.ts).
  */
 
 // Discover at module load (top-level await — Playwright supports ESM TLA).
@@ -48,9 +65,55 @@ const allScenarios: CrossAssetScenario[] = discoverCrossAssetPairingScenarios(
 const scenarios = allScenarios.slice(0, 2);
 const hasScenarios = scenarios.length > 0;
 
+// ─── Stub variant (AAV-1316) ─────────────────────────────────────
+
+// Built once at module load from the committed fixture. A throw here is a
+// fixture/injection bug and fails the whole file loudly on purpose — the stub
+// variant exists to replace silent skips with real executions (SY3/SY4).
+const stub = buildCrossAssetPairingStub(
+  JSON.parse(readFileSync(CROSS_ASSET_PAIRING_FIXTURE_URL, 'utf8')) as unknown,
+  AAV1316_STUB_INJECTION,
+);
+const stubScenario: CrossAssetScenario = stub.scenarios[0];
+
+/**
+ * Serve the stub payload to the browser: `/markets` returns the injected
+ * payload, `/meta/side-data` a minimal deterministic body (only `generatedAt`
+ * is required by the schema; empty forecast/campaignAccess keep the incentive
+ * math on the breakdown-APR path instead of forecast-TV recomputation).
+ * Pathname matching is host-agnostic on purpose: the app's API base differs
+ * between dev (staging host from apiBase.ts) and CI (VITE_API_BASE_URL), and
+ * both end in /markets and /meta/side-data.
+ */
+async function installStubRoutes(page: Page) {
+  await page.route(
+    (url) => url.pathname.endsWith('/markets'),
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(stub.payload),
+      }),
+  );
+  await page.route(
+    (url) => url.pathname.endsWith('/meta/side-data'),
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ generatedAt: '2026-01-01T00:00:00.000Z' }),
+      }),
+  );
+}
+
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossAssetPairingScenario(page: Page, s: CrossAssetScenario, isMobile: boolean) {
+async function runCrossAssetPairingScenario(
+  page: Page,
+  s: CrossAssetScenario,
+  isMobile: boolean,
+  opts?: { expectZeroBaseline?: boolean },
+) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
@@ -77,10 +140,16 @@ async function runCrossAssetPairingScenario(page: Page, s: CrossAssetScenario, i
   await fillSourcePosition('1000');
   const baselineAfter = await readIncentiveAfter(page, s.sourceReserveId, s.sourceSide, isMobile);
 
-  // Baseline: without paired asset, incentive should be 0 or very low
-  // because min(source, 0 × discountFactor) = 0
-  // The incentive cell might show 0 or a very small value
-  expect(baselineAfter, 'Baseline incentive without paired position').not.toBeNaN();
+  // Baseline: without paired asset, min(source, 0 × discountFactor) = 0.
+  // The live variant only asserts non-NaN (real reserves may carry other
+  // incentives); the stub variant's fixture guarantees the injected group is
+  // the source reserve's ONLY computable supply-side incentive, so the
+  // AAV-1316 acceptance baseline — paired = 0 ⇒ incentive = 0 — is assertable.
+  if (opts?.expectZeroBaseline) {
+    expect(baselineAfter, 'Stub baseline: no paired position ⇒ zero incentive').toBeCloseTo(0, 6);
+  } else {
+    expect(baselineAfter, 'Baseline incentive without paired position').not.toBeNaN();
+  }
 
   // Step 2: Add paired reserve with a position on the paired side
   const pairedAdded = await addReserveToPortfolio(page, s.pairedSymbol, s.pairedMarketLabel);
@@ -173,5 +242,35 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
         await runCrossAssetPairingScenario(page, s, true);
       });
     }
+  });
+
+  // ── Stub variant (AAV-1316) ──────────────────────────────────────
+  // Never gated on staging data: the fixture is committed, so these run in
+  // CI and locally regardless of what real campaigns exist today.
+
+  test.describe('stub desktop', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+    });
+
+    test(`cross-asset stub: ${stubScenario.sourceSymbol} [${stubScenario.sourceMarketLabel}] ${stubScenario.sourceSide} paired with ${stubScenario.pairedSymbol} ${stubScenario.pairedSide} (×${stubScenario.discountFactor})`, async ({
+      page,
+    }) => {
+      await installStubRoutes(page);
+      await runCrossAssetPairingScenario(page, stubScenario, false, { expectZeroBaseline: true });
+    });
+  });
+
+  test.describe('stub mobile', () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+    });
+
+    test(`cross-asset stub: ${stubScenario.sourceSymbol} [${stubScenario.sourceMarketLabel}] ${stubScenario.sourceSide} paired with ${stubScenario.pairedSymbol} ${stubScenario.pairedSide} (×${stubScenario.discountFactor})`, async ({
+      page,
+    }) => {
+      await installStubRoutes(page);
+      await runCrossAssetPairingScenario(page, stubScenario, true, { expectZeroBaseline: true });
+    });
   });
 });
