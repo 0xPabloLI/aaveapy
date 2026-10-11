@@ -30,10 +30,41 @@ import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels'
  * S10 sort by net supply APR desc
  *
  * AAV-1280 — discovery/UI render-gate alignment (isComputableMerklCampaign M1-M5,
- * discoverOffsetScenarios O1-O14): see docs/specs/aav-1280-offset-discovery-computability.md
+ * discoverOffsetScenarios O1-O11): see docs/specs/aav-1280-offset-discovery-computability.md
+ *
+ * AAV-1318 — position-feasibility gating for offset scenarios (borrow room +
+ * LTV funding power), matrix rows O12-O22: see
+ * docs/specs/aav-1318-offset-position-feasibility-gating.md
  */
 
 const NOW = '2026-09-24T12:00:00Z';
+
+/**
+ * Room floor the discovery requires, i.e. the largest single amount a runner
+ * types on one reserve. Imported so a runner amount change moves the boundary
+ * tests with it; the gate relation (below floor → excluded, at floor → kept) is
+ * what these tests pin, and `usd()` keeps the conversions off floats.
+ * Shared by the P (AAV-1308) and O (AAV-1318) series — declared before both so
+ * no fixture reads it through the temporal dead zone.
+ */
+const MIN_ROOM = PAIRING_SIM_MIN_ROOM_USD;
+
+/** Raw 6-dec units for a given USD notional at price 1. */
+const usd = (value: number) => String(BigInt(Math.round(value * 1e6)));
+
+/**
+ * Room shape every position-bearing fixture starts from: a 6-decimals token
+ * priced at 1 with room an order of magnitude above the floor. The pre-AAV-1318
+ * O fixtures inherited `reserve()`'s 18-decimals default, which turns
+ * `suppliable: '1000000000'` into ~$1e-9 — an artifact that would trip every
+ * feasibility gate for the wrong reason (AAV-1308 evidence-hygiene rule).
+ */
+const realisticRoom = {
+  decimals: 6,
+  tokenPrice: 1,
+  suppliable: usd(MIN_ROOM * 10),
+  borrowable: usd(MIN_ROOM * 10),
+} as const;
 
 function breakdown(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -243,7 +274,21 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
       tokenSymbol: 'USDT',
       chainName: 'Celo',
       marketName: 'AaveV4Celo',
+      ...realisticRoom,
       merklSupplys: [offsetGroup([SELF], breakdown({ campaignApr: 2 }))],
+      ...overrides,
+    });
+
+  /** A target whose constraint points at a different reserve (cross-reserve). */
+  const crossTarget = (overrides: Record<string, unknown> = {}): DiscoveryReserve =>
+    targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))], ...overrides });
+
+  /** The offset side: never carries a campaign of its own, but must hold a borrow. */
+  const offsetReserve = (overrides: Record<string, unknown> = {}): DiscoveryReserve =>
+    reserve({
+      reserveId: OTHER,
+      ...realisticRoom,
+      merklSupplys: [],
       ...overrides,
     });
 
@@ -260,12 +305,10 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
   });
 
   it('O2: discovers a cross-reserve scenario using nonSelf[0] as offset', () => {
-    const offset = reserve({
-      reserveId: OTHER,
+    const offset = offsetReserve({
       tokenSymbol: 'WETH',
       chainName: 'Celo',
       marketName: 'AaveV4Celo',
-      merklSupplys: [],
     });
     const target = targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))] });
     const scenarios = discoverOffsetScenarios([target, offset], NOW);
@@ -331,17 +374,17 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     expect(discoverOffsetScenarios([targetReserve({ isActive: false })], NOW)).toEqual([]);
     expect(discoverOffsetScenarios([targetReserve({ supplyDisabled: true })], NOW)).toEqual([]);
     expect(discoverOffsetScenarios([targetReserve({ ltv: 0 })], NOW)).toEqual([]);
-    const noRoom = targetReserve({ suppliable: '0', supplyCap: '1000', supplied: '1000' });
+    const noRoom = targetReserve({ suppliable: usd(0), supplyCap: usd(1000), supplied: usd(1000) });
     expect(discoverOffsetScenarios([noRoom], NOW)).toEqual([]);
   });
 
   it('O7: skips cross-reserve when offset reserve is unusable/unborrowable/missing', () => {
-    const target = targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))] });
+    const target = crossTarget();
     const cases = [
-      reserve({ reserveId: OTHER, merklSupplys: [], isFrozen: true }),
-      reserve({ reserveId: OTHER, merklSupplys: [], ltv: 0 }),
-      reserve({ reserveId: OTHER, merklSupplys: [], borrowDisabled: true }),
-      reserve({ reserveId: OTHER, merklSupplys: [], suppliable: '0', supplyCap: '5', supplied: '5' }),
+      offsetReserve({ isFrozen: true }),
+      offsetReserve({ ltv: 0 }),
+      offsetReserve({ borrowDisabled: true }),
+      offsetReserve({ suppliable: usd(0), supplyCap: usd(5), supplied: usd(5) }),
     ];
     for (const offset of cases) {
       expect(discoverOffsetScenarios([target, offset], NOW)).toEqual([]);
@@ -368,7 +411,7 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
       reserveId: 'c',
       merklSupplys: [offsetGroup(['c', 'other'], breakdown({ campaignApr: 0.5 }))],
     });
-    const offsetOther = reserve({ reserveId: 'other', merklSupplys: [] });
+    const offsetOther = offsetReserve({ reserveId: 'other' });
     const scenarios = discoverOffsetScenarios([a, b, c, offsetOther], NOW);
     expect(scenarios.map((s) => `${s.type}:${s.targetReserveId}`)).toEqual([
       'cross-reserve:c',
@@ -384,10 +427,92 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
   });
 
   it('O11: derives targetMarketLabel via getMarketChipLabel (Ethereum Core)', () => {
-    const r = reserve({ reserveId: 'eth', merklSupplys: [offsetGroup(['eth'], breakdown({ campaignApr: 1 }))] });
+    const r = targetReserve({
+      reserveId: 'eth',
+      chainName: 'Ethereum',
+      marketName: 'AaveV3Ethereum',
+      merklSupplys: [offsetGroup(['eth'], breakdown({ campaignApr: 1 }))],
+    });
     const scenarios = discoverOffsetScenarios([r], NOW);
     expect(scenarios).toHaveLength(1);
     expect(scenarios[0].targetMarketLabel).toBe('Core');
+  });
+
+  // ─── AAV-1318: position feasibility (borrow room + LTV funding power) ──
+
+  it('O12: cross-reserve offset without borrow room is not selectable (ticket shape: sAVAX borrowRoom = $0)', () => {
+    const offset = offsetReserve({ borrowable: usd(0) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O13: cross-reserve offset exactly at the borrow-room floor stays selectable', () => {
+    const offset = offsetReserve({ borrowable: usd(MIN_ROOM) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toHaveLength(1);
+  });
+
+  it('O14: cross-reserve offset with no borrow-room data stays selectable (null = do not exclude)', () => {
+    const offset = offsetReserve({ borrowable: undefined, borrowCap: undefined, borrowed: undefined });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toHaveLength(1);
+  });
+
+  it('O15: a borrow-disabled offset reserve is still excluded after the predicate swap', () => {
+    const offset = offsetReserve({ borrowDisabled: true });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O16: an offset reserve with ample rooms but a low LTV cannot fund the borrow', () => {
+    const offset = offsetReserve({ ltv: 1 });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  // The supply-room floor and the LTV term cannot be separated here: the LTV
+  // term is `min(supplyRoom, 100k) × ltv/100`, so a supply room under the floor
+  // drags it below the floor too. O16 pins the LTV term on its own (ample rooms,
+  // low LTV); this row pins that `> 0` is no longer enough.
+  it('O17: an offset reserve below the supply-room floor is excluded (the old gate only checked > 0)', () => {
+    const offset = offsetReserve({ suppliable: usd(MIN_ROOM - 1) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O18: a self-loop target without borrow room is not selectable (the borrow happens on the target)', () => {
+    expect(discoverOffsetScenarios([targetReserve({ borrowable: usd(0) })], NOW)).toEqual([]);
+  });
+
+  it('O19: a self-loop target whose LTV cannot fund the borrow is not selectable', () => {
+    expect(discoverOffsetScenarios([targetReserve({ ltv: 1 })], NOW)).toEqual([]);
+  });
+
+  it('O20: a self-loop target with no room data at all stays selectable', () => {
+    const r = targetReserve({
+      suppliable: undefined,
+      supplyCap: undefined,
+      supplied: undefined,
+      borrowable: undefined,
+      borrowCap: undefined,
+      borrowed: undefined,
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toHaveLength(1);
+  });
+
+  it('O21: the cross-reserve TARGET keeps its supply-side gate — a borrow-less target is still selectable', () => {
+    for (const target of [crossTarget({ borrowable: usd(0) }), crossTarget({ borrowDisabled: true })]) {
+      const scenarios = discoverOffsetScenarios([target, offsetReserve()], NOW);
+      expect(scenarios).toHaveLength(1);
+      expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetReserveId: SELF });
+    }
+  });
+
+  it('O22: a self-loop rejected by the borrow gate does not sink a cross-reserve group on the same reserve', () => {
+    const r = targetReserve({
+      borrowable: usd(0),
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'self', campaignApr: 9 })),
+        offsetGroup([SELF, OTHER], breakdown({ campaignId: 'cross', campaignApr: 2 })),
+      ],
+    });
+    const scenarios = discoverOffsetScenarios([r, offsetReserve()], NOW);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetApr: 2 });
   });
 });
 
@@ -398,23 +523,9 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
 // tokens with realistic room so the position-feasibility gates are exercised
 // against real data shapes (AAV-1280 evidence-hygiene rule).
 
-/**
- * Room floor the discovery requires, i.e. the largest amount the pairing runner
- * types on one reserve. Imported so a runner amount change moves the boundary
- * tests with it; the gate relation (below floor → excluded, at floor → kept) is
- * what these tests pin, and `usd()` below keeps the conversions off floats.
- */
-const MIN_ROOM = PAIRING_SIM_MIN_ROOM_USD;
-
-/** Raw 6-dec units for a given USD notional at price 1. */
-const usd = (value: number) => String(BigInt(Math.round(value * 1e6)));
-
 function pairingReserve(overrides: Record<string, unknown> = {}): DiscoveryReserve {
   return reserve({
-    decimals: 6,
-    tokenPrice: 1,
-    suppliable: usd(MIN_ROOM * 10),
-    borrowable: usd(MIN_ROOM * 10),
+    ...realisticRoom,
     merklSupplys: [],
     ...overrides,
   });

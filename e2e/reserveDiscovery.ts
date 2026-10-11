@@ -378,8 +378,14 @@ function usableForOffsetPosition(r: DiscoveryReserve): boolean {
  * renders as '—' (the AAV-1280 failure). Points-only groups stay excluded
  * (conservative: the proportional-offset assertions need percent APR).
  *
- * Cross-reserve scenarios additionally require the offset reserve to be
- * addable and borrowable (active, ltv > 0, borrow enabled, supply room).
+ * Position feasibility (AAV-1318) mirrors the app's clamping: a reserve that
+ * cannot hold the position the runner types degenerates into a false green,
+ * so both sides that carry a borrow go through `usableForSimulatedPosition`:
+ * - cross-reserve: the OFFSET reserve (the runner supplies on it to create
+ *   borrowing power, then borrows the offset ladder on it);
+ * - self-loop: the TARGET itself, because the borrow happens on the target.
+ * The cross-reserve TARGET only ever receives a supply, so it keeps the
+ * AAV-1280 supply-side gate (`usableForOffsetPosition`) unchanged.
  */
 export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: string): OffsetScenario[] {
   const idMap = indexReservesById(reserves);
@@ -402,6 +408,9 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
       if (apr <= 0) continue;
 
       const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
+      // Self-loop borrows on the target itself (AAV-1318): a target that cannot
+      // carry a borrow clamps the whole ladder to one value.
+      if (type === 'self-loop' && !usableForSimulatedPosition(r, 'borrow')) continue;
       const dedupKey = `${r.reserveId}:${type}`;
       if (seen.has(dedupKey)) continue;
 
@@ -417,8 +426,10 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
       if (type === 'cross-reserve') {
         const offsetReserve = idMap.get(nonSelf[0]);
         if (!offsetReserve) continue;
-        if (offsetReserve.borrowDisabled === true) continue;
-        if (!usableForOffsetPosition(offsetReserve)) continue;
+        // AAV-1318: replaces the old pair (`borrowDisabled === true` +
+        // `usableForOffsetPosition`) — one gate that subsumes both and adds
+        // borrow room plus LTV funding power.
+        if (!usableForSimulatedPosition(offsetReserve, 'borrow')) continue;
         scenario.offsetSymbol = offsetReserve.tokenSymbol as string;
         scenario.offsetMarketLabel = getMarketChipLabel(
           offsetReserve.marketName as string,
