@@ -86,6 +86,7 @@
    - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
    - [ ] Step 7 Commit 完成（有 commit hash）
    - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
+   - [ ] 产品视角结论完成（汇报先讲清 issue/feature 原本要什么、用户现在看到什么，再列 Step 1-8 完成情况与证据）
    - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
 ## Coding Conventions
