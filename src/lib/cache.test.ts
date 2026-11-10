@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment happy-dom
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearLegacyCacheEntries,
+  getCachedMarkets,
   isDeficitWithoutPrice,
   sanitizeDeficitWithoutPrice,
+  setCachedMarkets,
   updateSchemaFingerprintFromApi,
 } from './cache';
+import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 import type { MarketsResponse } from '@/types/aave';
 
 class MemoryStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
@@ -98,5 +102,56 @@ describe('updateSchemaFingerprintFromApi', () => {
     expect(storage.getItem('aave-schema-fingerprint')).toBe('old456:2');
     updateSchemaFingerprintFromApi('new789', storage);
     expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:2');
+  });
+});
+
+// ── Schema-fingerprint drift (AAV-1346) ──
+// `aave-schema-fingerprint` is the *only* thing that can invalidate entries
+// when the backend ships a new schema before the frontend is rebuilt (the
+// baked-in SCHEMA_FP cannot see that). It must therefore track the fingerprint
+// the API is currently serving — including while cache entries are being
+// written, which previously overwrote it with the bundle's own value.
+const FP_KEY = 'aave-schema-fingerprint';
+
+const marketsPayload = (schemaFingerprint: string): MarketsResponse =>
+  ({
+    snapshot: { lastUpdated: '2026-11-10T00:00:00.000Z', schemaFingerprint },
+    reserves: [],
+  }) as MarketsResponse;
+
+describe('schema fingerprint drift', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('keeps the API fingerprint when a cache entry is written afterwards', () => {
+    updateSchemaFingerprintFromApi('driftedFp');
+    setCachedMarkets(marketsPayload('driftedFp'));
+    expect(localStorage.getItem(FP_KEY)).toBe('driftedFp:2');
+  });
+
+  it('serves cache hits while the API fingerprint matches the bundle', () => {
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
+  });
+
+  it('drops entries cached before the API started reporting a different fingerprint', () => {
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
+
+    updateSchemaFingerprintFromApi('driftedFp');
+    expect(getCachedMarkets()).toBeNull();
+  });
+
+  it('recovers cache hits once the API fingerprint returns to the bundle value', () => {
+    updateSchemaFingerprintFromApi('driftedFp');
+    setCachedMarkets(marketsPayload('driftedFp'));
+    expect(getCachedMarkets()).toBeNull();
+
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
   });
 });

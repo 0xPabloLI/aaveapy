@@ -92,8 +92,11 @@ function setCacheEntry<T>(key: string, data: T): void {
       fp: effectiveFp,
     };
     localStorage.setItem(key, JSON.stringify(entry));
-    // Keep the lazy fingerprint key in sync for the secondary check
-    localStorage.setItem(SCHEMA_FP_KEY, effectiveFp);
+    // Deliberately does NOT touch SCHEMA_FP_KEY. That key records the
+    // fingerprint the API is currently serving (see
+    // updateSchemaFingerprintFromApi); writing effectiveFp here would overwrite
+    // it on every cache write and silently disable the drift check in
+    // getCacheEntry — the entry would always match itself (AAV-1346).
   } catch (error) {
     console.warn(`Failed to write cache for ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
   }
