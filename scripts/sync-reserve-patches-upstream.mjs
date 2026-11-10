@@ -315,7 +315,15 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack || error.message : String(error));
-  process.exit(1);
-});
+// Only run main() when invoked directly — test files import this module for
+// its pure helpers, and a top-level fetch side effect would make `node --test`
+// fail whenever the network is unreachable. Unguarded, it also ran the merge
+// during `npm test` and could rewrite src/ui-config/reservePatches.ts and
+// src/lib/tokenSymbolMap.ts on any machine that did have network.
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    process.exit(1);
+  });
+}
