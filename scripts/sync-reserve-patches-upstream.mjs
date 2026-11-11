@@ -234,7 +234,7 @@ export function syncAddressBookImports(content) {
   return { content: newContent, changed: true, addedImports: missing };
 }
 
-function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
+export function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
   const localBounds = findUnderlyingAssetMapBounds(localContent);
   const upstreamBounds = findUnderlyingAssetMapBounds(upstreamContent);
 
@@ -258,11 +258,22 @@ function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
     return { content: localContent, changed: false, addedCount: 0 };
   }
 
+  // Insert on the line before the closing brace, not at the brace character.
+  // Splitting at the brace leaves its leading indentation attached to the first
+  // inserted entry (one level too deep) and drops the brace itself to column 0.
+  const closeLineStart = localContent.lastIndexOf('\n', localBounds.closeIndex - 1) + 1;
+  const closeLinePrefix = localContent.slice(closeLineStart, localBounds.closeIndex);
+  const braceOnOwnLine = closeLinePrefix.trim() === '';
+  const insertAt = braceOnOwnLine ? closeLineStart : localBounds.closeIndex;
+
   const insertion = `${missingEntries.join(',\n')},\n`;
-  const beforeClose = localContent.slice(0, localBounds.closeIndex);
-  const afterClose = localContent.slice(localBounds.closeIndex);
+  const beforeClose = localContent.slice(0, insertAt);
+  const afterClose = localContent.slice(insertAt);
+  // Only the degenerate single-line-map case needs a newline; normally the last
+  // existing entry already ends the line.
+  const separator = beforeClose.endsWith('\n') ? '' : '\n';
   return {
-    content: `${beforeClose}${insertion}${afterClose}`,
+    content: `${beforeClose}${separator}${insertion}${afterClose}`,
     changed: true,
     addedCount: missingEntries.length,
   };
@@ -315,7 +326,15 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack || error.message : String(error));
-  process.exit(1);
-});
+// Only run main() when invoked directly — test files import this module for
+// its pure helpers, and a top-level fetch side effect would make `node --test`
+// fail whenever the network is unreachable. Unguarded, it also ran the merge
+// during `npm test` and could rewrite src/ui-config/reservePatches.ts and
+// src/lib/tokenSymbolMap.ts on any machine that did have network.
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    process.exit(1);
+  });
+}

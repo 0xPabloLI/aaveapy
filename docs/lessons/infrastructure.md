@@ -70,6 +70,36 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **`[[IgnoredVulns]]` 之外没有 `PackageVulnerabilities`**：v2.5.1 对未知键是**整份配置拒绝加载**（`unknown keys in config file: ...`），不是忽略那一条。写错一个键名的后果是"豁免全废"，改完必须跑一次原样命令确认 `No issues found`。
 - **上游没修复版时不要硬抬版本**：`braces 3.0.3`（GHSA-vfj7-8cjw-p6xm，dev-only 经 tailwind v3 的 chokidar/micromatch 传入）在 npm 上没有更高版本，OSV 的 ranges 只有 `last_affected` 没有 `fixed`。这类只能带理由+到期日地豁免，或换依赖链根治；对比 axios 1.18.1 有 1.20.0 可升，那条走 `overrides`（#710/#711）。**先查有没有 fixed 事件，再决定用哪种修法。**
 
+## 修 CVE 与 ≥7 天冷却期会互相打架：`^` 会替你选一个「太新」的版本，而本地门拦不住它
+
+- **OSV 库会自己变，锁文件不动也能让门从绿变红**：2026-11-10 一次推送被 osv 挡下（21 条 / 9 包），而 `git diff <base> -- package-lock.json` **为空**、上次成功推送是一个月前 ⇒ 与本次改动无关，是 OSV 库新增了通告。**判断「是不是我引入的」最快路径就是这条 diff**，别先怀疑自己的改动。
+- **`npm audit fix` 只保证「修了漏洞」，不保证「够老」**：`^` range 在 `npm install` 时解析到**最新的匹配版**，而修复版往往刚发布不久。实测：`vite@8.2.4` 已 35 天，而 `"^8.2.2"` 会解析到 `8.2.6`（1.1 天）；`follow-redirects` 最新修复版 1.16.3 是 1.8 天，1.16.2 是 15.6 天。**解 osv 门时要显式挑一个既修漏洞又过冷却期的版本**，不能盲信 `audit fix` 的结果。
+- **⚠️ `check-dep-release-age` 拦不住「已有包的版本变化」——别把冷却期政策的执行寄托在它身上**：`parseAddedLockEntries`（`scripts/lib/dep-release-age-parse.mjs`）原本只认**新增的锁文件块**——它要求 `+ "node_modules/x": {` 这一**块头本身就是新增行**，块头是 context 行时，后面那条 `+ "version": "8.2.4"` 因 `currentPackage` 为 `null` 被直接丢弃。实测一次含 7 个版本变化的升级（3 个 direct：`vite`/`happy-dom`/`zod`）：门只看到 2 条**全新包**（`deepmerge-ts`、`@isaacs/nonrecursive-glob-match`），7 个版本变化**全部漏检**，却照样打印「✅ All direct dependency versions are at least 7 day(s) old」。**已于 2026-11-11 修掉**（块头改为同时从 context 行追踪 + 遇 `@@`/`diff --git`/`index` 重置归属 + 非包块如根 `"": {` 清空归属，F 系列 6 例回归测试）；修后同一次升级门能看到 10 条（3 direct）。**教训是「门打印全绿」不等于「门检查过」**——给门写测试时要覆盖「块头不变、只改 version」这种最常见的真实形态。
+- **该门只挡 direct、transitive 只 warn**（脚本内 `directNames` 分类，源码注释写明「transitive 由 osv + Socket 覆盖」）。注意 `directNames` 只取 `dependencies`/`optionalDependencies`/`devDependencies`——**`overrides` 里的包一律算 transitive**，所以 override 抬版本不会被它挡（实测 `follow-redirects`/`fast-uri`/`minimatch@10`/`@vanilla-extract/css` 均只 warn）。
+- **`has unused ignores` 是信号不是噪音**：豁免条目的通告被 OSV 撤下/收窄后会变成死配置，每次推送都打印一行。本仓 `braces` 那条（GHSA-vfj7-8cjw-p6xm）已实测失效——`osv-scanner` 与 `api.osv.dev` 两个来源都确认 `braces@3.0.3` 不再被标记。**留着的风险是反向的**：若该通告将来重新发布，这条豁免会静默压住它直到 `ignoreUntil`。定期核对，别当它是背景噪音。
+- **豁免 = 记账，不是修**：加 `[[IgnoredVulns]]` 时必须同时开票（本次 AAV-1348），并在 reason 里写清「为什么不能真修」的一手证据 + 到期后的根治路线。只写「无法修复」不算理由——要写清是**上游没有可用版本**（附版本对照表）、还是**强行抬版本会破坏什么**（附命中数，如两个钱包 SDK 的 9 + 57 处单参 `z.record()`）。
+
+## e2e 发现逻辑必须复刻 UI 的**全部**渲染门——包括「reserve 自己缺字段」这一层
+
+- **现象**：`portfolio-incentive-calculation` / `portfolio-results-inline-delta` 两个 spec 在 CI（`6301e1cc`）与本地全量跑上稳定红、隔离跑却绿，看起来像 load-flake，实际是**确定性数据耦合**。
+- **三个真根因，没有一个与 forecast 有关**：① `data-current` 在 `metric.current === null` 时不渲染 ⇒ `getAttribute` 阻塞到 120s 测试超时；② `$/day` 单元格断言用了严格正则，而单元格可以合法是 `—`（desktop）/ `–`（mobile）；③ **reserve 缺 rate-calc 字段**（PR #811 review 才定位到，见下）。
+- **`—` 的真正来源是 reserve 级字段缺失**：`portfolioSimulator.ts` 解析 `reserveRateInput = hasRateCalcFields(reserve) ? {...reserve} : null`；为 `null` 时**根本不进 calculator**，走 `else` 分支累加扁平的 `reserve.supplyIncentives` 数组——而该数组在当前 API 上 **437 个 reserve 全部为空**（实测）⇒ 无论 campaign 多健康都渲染 `—`。同一条 reserve 在 Reserves 表里**渲染 6%**，因为那条路径直接调 calculator（`reserveRateInput: null` 也照样算 incentive）。8 个必需字段：`liquidity`/`borrowed`/`deficit`/`protocolFee`/`slopeBelowOptimal`/`slopeAboveOptimal`/`baseBorrowRate`/`optimalUtilization`。
+- **定位手法**：别靠读代码猜哪一步把值变 0，**在真实调用点插桩**。临时在 `if (reserveRateInput)` **之前**打一行日志（分支名 + 各 rate-calc 字段），Playwright 里 `page.on('console')` 收。第一版插桩放在 `if` **里面**，什么都没打印——这本身就是答案：走的是 `else` 分支。**日志不出现比日志出现更有信息量**，前提是插桩点选在分支之外。
+- **被推翻的归因（留作反例）**：本条曾断言「`/meta/side-data` 的 `forecast.errors` 里的 campaign 一律渲染 `—`，所以发现 predicate 必须把 errors 当排除信号」。**三重反证**：`forecastUnavailable` 只是驱动 `*` 标记的**标志**（`rateSimulationCalculator.ts` 声明、计数、汇总进 `forecastUnavailableCampaignCount`），**从不归零 APR**；`forecastMerklApr`（`merklForecast.ts`）在 `merged === null` 时返回 `currentApr` ⇒ campaign 照常贡献数值；`result.forecastErrors` 在测试之外**无人读取**。`—` 只在 `incentivePercent === 0` 时渲染。
+- **forecast 的两个语义要分开记**：`checkForecastAvailability(campaignType, campaignId, merged, forecastStates)`（`src/lib/incentiveCaps.ts`）只在 `isForecastRequiring`（`FORECAST_REQUIRING_CAMPAIGN_TYPES` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `TARGET_TOTAL_APR`）时被调用；它返回 `true` 的效果是打 `*` 与「No forecast data — using current APR」脚注，**不是**归零。它的真实含义是「这个值**不随仓位变化**」——forecast-requiring 的 campaign 没有 forecast state 时渲染常量 `currentApr`。所以发现侧跳过这类 campaign 的理由是**「它不能支撑『随仓位变化』的断言」**，**不能**写成「它渲染 `—`」。
+- **`forecast.errors` 是「后端算不出来」的记录，不是「UI 渲染不出来」的信号**——两者在本仓只是碰巧相关。把 errors 当排除集会**静默排除 UI 渲染正常的 reserve**。实测反例：`forecast.errors` 里那条 `DUTCH_AUCTION`（非 forecast-requiring）用 breakdown 自带的 `plannedDaily`/`latestTvl` 算出 6% → 输入 $1M 后 5.93%，**确实随仓位变化**。
+- **实现要点**：`forecast.items` 与 `forecast.errors` 的条目**都只带 `campaignId`、不带 type** ⇒ forecast-requiring 判断只能读 breakdown 上的 `campaignType`；发现侧读 **`forecast.items`**（可用集）而不是 `errors`（排除集），且**拉取失败时返回 `null` 表示「关掉这道门」**，而不是「排除一切」。
+- **两道门要分别建**：reserve 级（`hasRateCalcFields`）+ campaign 级（`isComputableMerklCampaign` + forecast gate）。写镜像时**用行为漂移测试钉住**：逐个删字段、看 app 自己的 predicate 是否翻转，翻转集合必须等于镜像列表。
+- **通用教训**：写「镜像 UI 门」的 predicate 时，**先读 UI 那个函数的真实语义**（返回值、调用条件、状态来自哪个端点），再决定 predicate 复刻什么；**别把「症状看起来相关」当成机制**。本次错误归因的代价是一份写进文档的假机制 + 一个会静默排除正常 reserve 的 gate。
+- **⚠️ 超时不是修法**：这条失败曾被我判成 load-flake，把 `portfolio-results-inline-delta.spec.ts` 的 delta 断言超时从 5s 提到 30s——**隔离跑（`--retries=0`）仍然确定性失败**。超时只掩盖症状；定位到「选错了 reserve」后恢复 5s 即绿。**先分清是慢还是错**：`--retries=0` 隔离跑仍红 = 错，不是慢。
+- **改 discovery 会换掉被测 reserve，必须重跑 e2e 全套**：本次选中项从 `AaveV4EthenaEcosystem`（缺 `protocolFee`，渲染 `—`）换成 `AaveV3Monad` GHO（rate-calc 字段齐全）。单测绿不代表 spec 绿。
+- **别把「隔离绿、全量红」直接判成 load-flake**：先看失败是否落在**同一处断言 + 同一错误文本**上。
+- **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
+- **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
+
+- **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
+- **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
+
 ## dependabot.yml 是「一处无效 = 整份不解析」，且重复条目只有 check-run 会告诉你
 
 - **`ignore` 要求 `dependency-name` + `versions` 组合唯一**：写成两条相同条目，Dependabot 报 `The property '#/updates/0/ignore/1/versions' includes a duplicate`，结果是**整份配置不解析**——不是那一条被忽略，而是 npm 与 github-actions 两个生态一起停摆，连 security 更新都不开。
@@ -78,3 +108,13 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **改 YAML 列表项要整块替换**：同一次 session 里两次 Edit（第一次注释被截断、第二次只补注释）很容易把 `- dependency-name` 整块重新插进去而留下旧副本——本仓就因此把重复条目带进了 dev（`7f7b4a18`）。列表项的新增/改写一次成型，改完立刻 `grep -c dependency-name` 数一遍条数。
 
 
+
+## happy-dom 的 `localStorage` 不走 `Storage.prototype`——spy 它等于什么都没测
+
+- **症状**：`vi.spyOn(Storage.prototype, 'setItem')` 装好了、测试全绿，但**被测代码根本没被拦截**——测试通过却不证明任何事。
+- **取证**：装 spy 前后都成立 `localStorage.setItem !== Storage.prototype.setItem`（而 `Object.getPrototypeOf(localStorage) === Storage.prototype` 却是 `true`、`hasOwnProperty(localStorage, 'setItem')` 是 `false`），直接调 `localStorage.setItem(...)` 也不命中 spy。实现里读到的 `storage.setItem` 与测试里 `Storage.prototype.setItem` 不是同一个函数对象。
+- **正确写法**：要模拟「storage 抛错」，用 `vi.stubGlobal('localStorage', { getItem, setItem, removeItem })` 换掉全局——模块在**调用时**读全局（`storage ?? localStorage`），所以 stub 生效；`finally` 里 `vi.unstubAllGlobals()`。
+- **⚠️ 但默认参数本身就是个陷阱（PR #811 第二轮 review）**：`storage: StorageLike = localStorage` 在**函数体之前**求值，所以把 `setItem` 包进 `try` **并不能**覆盖「读 `localStorage` 属性本身抛错」——opaque origin / storage 被拒时是**属性读取**抛 `SecurityError`，在方法被触达之前就逃出了这个 try。修法是**可选参数 + 在 try 内部解析**：`storage?: StorageLike` 然后 `(storage ?? localStorage).setItem(...)`。
+- **同一个缺陷会成对出现**：`updateSchemaFingerprintFromApi` 修了，`clearLegacyCacheEntries` 还留着同样的形状——而它在 `App.tsx` **模块作用域无条件调用**，抛错会让整个 app 在 React mount 前挂掉（比 review 报的那条更严重）。改一个「storage 会抛」的函数时，把同文件同族的都查一遍。
+- **测试要覆盖「属性访问抛错」而不只是「方法抛错」**：方法版用 `vi.stubGlobal` 就够，属性版必须用 `Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw ... } })`（`stubGlobal` 设的是值，拦不到 getter），并在 `finally` 里用保存的 descriptor 还原。两个测试都要各自验证能红。
+- **通用教训**：**验证「测试能红」比验证「测试能绿」更重要**。任何 mock/spy 装完，先把实现改回缺陷态跑一遍确认它变红；本次正是靠「移除 try/catch 后测试仍然全绿」才发现 spy 是空转的。

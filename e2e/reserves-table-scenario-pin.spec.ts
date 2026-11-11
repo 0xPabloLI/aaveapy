@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 60_000 });
@@ -98,6 +98,27 @@ async function getVisibleReserveOrder(page: Page): Promise<string[]> {
   return page
     .locator('tbody tr[data-reserve-id]')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-reserve-id') ?? '').filter((id) => id.length > 0));
+}
+
+/**
+ * Expand a row by clicking it, tolerating a click lost to a concurrent re-render.
+ *
+ * A `click` event only fires when mousedown and mouseup land on the same element.
+ * Under full-suite load the scenario recompute can re-render the row between the
+ * two, so no click fires and the row stays collapsed — the expansion-timing
+ * load-flake class the gate already excludes 'M9 点整行' for. This test failed
+ * that way in full-suite runs while passing in isolation (2026-11-11).
+ *
+ * The retry only clicks while the row is NOT expanded, so it can never toggle an
+ * expanded row back closed, and the assertion is unchanged: a row that genuinely
+ * refuses to expand still fails.
+ */
+async function expandRowResiliently(row: Locator) {
+  await expect(async () => {
+    const className = (await row.getAttribute('class')) ?? '';
+    if (!className.includes('bg-muted/30')) await row.click();
+    await expect(row).toHaveClass(/bg-muted\/30/, { timeout: 3_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 function didReorder(beforeOrder: string[], afterOrder: string[], reserveId: string): boolean {
@@ -225,24 +246,34 @@ test.describe('Scenario input pin scroll (desktop)', () => {
 
     const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
     await supplyInput.fill('100');
-    // Wait for scenario input to take effect (table re-sort).
+    // Wait for the table sort to stabilize (two consecutive reads with same order).
+    // Just checking order.length > 0 is insufficient — the sort may still be in
+    // progress, and clicking mid-sort expands whichever row sits at the index by
+    // then, while the assertion below keeps resolving that index to another row.
     await expect
-      .poll(async () => page.locator('tbody tr[data-reserve-id]').count(), {
-        timeout: 10_000,
-        message: 'table to re-sort after scenario input',
-      })
+      .poll(
+        async () => {
+          const order1 = await getVisibleReserveOrder(page);
+          await page.waitForTimeout(100);
+          const order2 = await getVisibleReserveOrder(page);
+          return order1.join(',') === order2.join(',') ? order1.length : 0;
+        },
+        { timeout: 15_000, message: 'table sort to stabilize after scenario input' },
+      )
       .toBeGreaterThan(0);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     const targetIndex = Math.min(2, rowCount - 1);
-    const targetRow = rows.nth(targetIndex);
-    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    const reserveId = await rows.nth(targetIndex).getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
 
+    // Bind to the row by identity: a later re-sort must not retarget the click
+    // or the assertion to whatever row lands at `targetIndex` next.
+    const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
-    await expect(targetRow).toHaveClass(/bg-muted\/30/);
+    await expandRowResiliently(targetRow);
     // Wait for the expanded simulation row to appear.
     await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 
@@ -277,13 +308,16 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     const targetIndex = Math.min(8, rowCount - 1);
-    const targetRow = rows.nth(targetIndex);
-    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    const reserveId = await rows.nth(targetIndex).getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
+    // Bind every later interaction to the id, never the index: the table
+    // re-sorts while the scenario steps below run, so a positional locator
+    // would drift onto a different reserve than the one these assertions pin.
+    const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
 
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
-    await expect(targetRow).toHaveClass(/bg-muted\/30/);
+    await expandRowResiliently(targetRow);
     // Wait for the expanded simulation row to appear.
     await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 
@@ -412,13 +446,16 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     const targetIndex = Math.min(8, rowCount - 1);
-    const targetRow = rows.nth(targetIndex);
-    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    const reserveId = await rows.nth(targetIndex).getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
+    // Bind every later interaction to the id, never the index: the table
+    // re-sorts while the scenario steps below run, so a positional locator
+    // would drift onto a different reserve than the one these assertions pin.
+    const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
 
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
-    await expect(targetRow).toHaveClass(/bg-muted\/30/);
+    await expandRowResiliently(targetRow);
     // Wait for the expanded simulation row to appear.
     await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({ timeout: 10_000 });
 

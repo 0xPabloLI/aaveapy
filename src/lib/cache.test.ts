@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment happy-dom
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearLegacyCacheEntries,
+  getCachedMarkets,
   isDeficitWithoutPrice,
   sanitizeDeficitWithoutPrice,
+  setCachedMarkets,
   updateSchemaFingerprintFromApi,
 } from './cache';
+import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 import type { MarketsResponse } from '@/types/aave';
 
 class MemoryStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
@@ -35,7 +39,35 @@ describe('clearLegacyCacheEntries', () => {
     expect(storage.getItem('aave-markets-list-cache')).toBeNull();
     expect(storage.getItem('aave-markets-cache')).toBe('{"active":true}');
   });
+
+  it('is best-effort when the localStorage property itself throws', () => {
+    withThrowingLocalStorage(() => {
+      expect(() => clearLegacyCacheEntries()).not.toThrow();
+    });
+  });
 });
+
+/**
+ * Replaces the `localStorage` global with a getter that throws, mirroring an
+ * opaque origin or a context where storage access is denied (SecurityError on
+ * property access, before any method is reached). Restores the original
+ * descriptor afterwards.
+ */
+function withThrowingLocalStorage(run: () => void): void {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() {
+      throw new Error('storage access denied');
+    },
+  });
+  try {
+    run();
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+    else delete (globalThis as { localStorage?: unknown }).localStorage;
+  }
+}
 
 describe('isDeficitWithoutPrice', () => {
   it('returns true when deficit exists but tokenPrice is null', () => {
@@ -98,5 +130,104 @@ describe('updateSchemaFingerprintFromApi', () => {
     expect(storage.getItem('aave-schema-fingerprint')).toBe('old456:2');
     updateSchemaFingerprintFromApi('new789', storage);
     expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:2');
+  });
+
+  // The helper owns the whole invariant: the stored value equals what the API is
+  // serving, or does not exist. MarketsResponseSchema allows omitting the field,
+  // and a stale value left behind would reject every entry this bundle writes —
+  // setCacheEntry tags entries with the bundle fingerprint and the secondary
+  // check compares against the stored value, so the cache and its offline
+  // fallback would both stay permanently cold.
+  it('removes the stored fingerprint when the API omits it', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('staleDrifted', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('staleDrifted:2');
+    updateSchemaFingerprintFromApi(undefined, storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBeNull();
+  });
+
+  it('treats an empty fingerprint as absent rather than storing a bare version', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('staleDrifted', storage);
+    updateSchemaFingerprintFromApi('', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBeNull();
+  });
+
+  // Storage can throw (Safari private mode, quota, blocked storage). This runs
+  // inside fetchMarkets' try block, so an escaping error would send a valid API
+  // response down the catch path where the fallback cache is equally
+  // unavailable — the user would see no markets at all (AAV-1346 review).
+  it('is best-effort: a throwing storage does not propagate', () => {
+    const throwingStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('storage blocked');
+      },
+      removeItem: () => {},
+    } as unknown as Storage;
+    expect(() => updateSchemaFingerprintFromApi('abc123', throwingStorage)).not.toThrow();
+  });
+
+  // The method can be fine and the *property access* can still throw: an opaque
+  // origin or a storage-denied context raises SecurityError while reading
+  // `localStorage`, before setItem is ever reached. A default parameter is
+  // evaluated before the function body, so resolving it there would put the
+  // throw outside this function's try and back inside fetchMarkets' — the
+  // original bug this guard exists to prevent.
+  it('is best-effort: a throwing localStorage property does not propagate', () => {
+    withThrowingLocalStorage(() => {
+      expect(() => updateSchemaFingerprintFromApi('abc123')).not.toThrow();
+    });
+  });
+});
+
+// ── Schema-fingerprint drift (AAV-1346) ──
+// `aave-schema-fingerprint` is the *only* thing that can invalidate entries
+// when the backend ships a new schema before the frontend is rebuilt (the
+// baked-in SCHEMA_FP cannot see that). It must therefore track the fingerprint
+// the API is currently serving — including while cache entries are being
+// written, which previously overwrote it with the bundle's own value.
+const FP_KEY = 'aave-schema-fingerprint';
+
+const marketsPayload = (schemaFingerprint: string): MarketsResponse =>
+  ({
+    snapshot: { lastUpdated: '2026-11-10T00:00:00.000Z', schemaFingerprint },
+    reserves: [],
+  }) as MarketsResponse;
+
+describe('schema fingerprint drift', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('keeps the API fingerprint when a cache entry is written afterwards', () => {
+    updateSchemaFingerprintFromApi('driftedFp');
+    setCachedMarkets(marketsPayload('driftedFp'));
+    expect(localStorage.getItem(FP_KEY)).toBe('driftedFp:2');
+  });
+
+  it('serves cache hits while the API fingerprint matches the bundle', () => {
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
+  });
+
+  it('drops entries cached before the API started reporting a different fingerprint', () => {
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
+
+    updateSchemaFingerprintFromApi('driftedFp');
+    expect(getCachedMarkets()).toBeNull();
+  });
+
+  it('recovers cache hits once the API fingerprint returns to the bundle value', () => {
+    updateSchemaFingerprintFromApi('driftedFp');
+    setCachedMarkets(marketsPayload('driftedFp'));
+    expect(getCachedMarkets()).toBeNull();
+
+    updateSchemaFingerprintFromApi(SCHEMA_FP);
+    setCachedMarkets(marketsPayload(SCHEMA_FP));
+    expect(getCachedMarkets()).not.toBeNull();
   });
 });

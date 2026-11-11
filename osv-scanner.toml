@@ -18,3 +18,29 @@ chokidar@3.6.0 与 → micromatch@4.0.8，两边 dedupe 到同一个 braces；�
 的 watch/glob 依赖链。追踪 AAV-1328。
 """
 ignoreUntil = "2027-01-31T00:00:00Z"
+
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+reason = """
+zod 内存耗尽（oversized constrained collections），影响 < 4.6.6。命中两条锁文件条目：
+`zod` 3.22.4（@reown/appkit-wallet 钉死的精确版本）与 `zod` 3.25.76
+（@coinbase/cdp-sdk ^3.25.76 与 dev-only 的 openapi-zod-client ^3.19.1）。
+
+**无真修路径**（2026-11-10 逐条取证，非推测）：
+- 三个消费者的最新版仍全部要 zod 3：appkit-wallet 最新 1.8.24 仍钉 `3.22.4`；
+  cdp-sdk 最新 1.61.0 仍要 `^3.25.76`；openapi-zod-client 最新 1.18.3 仍要 `^3.19.1`。
+  上游没有接受 zod 4 的版本，所以「升级消费者」这条路不存在。
+- 用 overrides 强推 zod 4 会在**运行时**炸：zod 4 要求 `z.record(keyType, valueType)`
+  两参，而这两个 SDK 大量使用单参形式——实测 @reown/appkit-wallet 9 处
+  （`z.record(userSchema)`、`z.record(valueType)` 等），@coinbase/cdp-sdk 57 处
+  （`z.record(z.any())`、`z.record(z.boolean())` 等）。本仓 `patch-generated-schemas.mjs`
+  存在的原因正是这个破坏性变更。这两个包是 wagmi/RainbowKit 钱包连接链上的运行时依赖，
+  强推等于让用户连不上钱包。
+- 受影响面：这是 DoS（攻击者需能控制被校验集合的规模），且 zod 在客户端做的是
+  **自产 API 响应**的校验（服务端是我们自己的 backend），不是解析不受信输入。
+
+**到期后的根治路线**（不是再续期）：跟上游要 zod 4 支持，或改用
+`zod@^3.25.76` 之外的兼容层；届时 `zod` 与 `@zodios/core` 的 override 要一起撤。
+追踪 AAV-1348。
+"""
+ignoreUntil = "2027-01-31T00:00:00Z"

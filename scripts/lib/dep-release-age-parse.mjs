@@ -19,6 +19,11 @@
  * "directness" cannot be derived from the block path — callers classify via
  * package.json instead.
  *
+ * An in-place upgrade keeps the block header as a *context* line and rewrites
+ * only the `version`/`resolved`/`integrity` lines, so headers must be tracked
+ * from context lines as well — otherwise every version bump of an existing
+ * package is silently skipped and the gate only ever sees brand-new packages.
+ *
  * @param {string} diffText
  * @returns {{ name: string, version: string }[]}
  */
@@ -26,52 +31,57 @@ export function parseAddedLockEntries(diffText) {
   const lines = diffText.split('\n');
   const results = [];
   let currentPackage = null;
-  let currentVersion = null;
 
   for (const line of lines) {
-    // Only added lines can introduce new packages/versions.
-    if (!line.startsWith('+')) {
-      // A context/removed line between an added package header and its added
-      // version line means the block boundary was interrupted — reset.
-      if (currentPackage !== null && !line.startsWith(' ')) {
-        // `-` lines belong to the changed block: keep tracking.
-        if (!line.startsWith('-')) {
-          if (currentVersion) results.push({ name: currentPackage, version: currentVersion });
-          currentPackage = null;
-          currentVersion = null;
-        }
-      }
+    // A hunk boundary breaks the block context: a header seen in one hunk must
+    // never be attributed to a version line in the next one.
+    if (line.startsWith('@@') || line.startsWith('diff --git') || line.startsWith('index ')) {
+      currentPackage = null;
       continue;
     }
+
+    // `-` lines belong to the block being replaced — keep tracking across them,
+    // but never start tracking from one (a removed header names a package that
+    // is going away).
+    if (line.startsWith('-')) continue;
+
+    const isAdded = line.startsWith('+');
+    if (!isAdded && !line.startsWith(' ')) continue;
 
     const body = line.slice(1);
 
-    const pkgMatch = body.match(/^\s*"(node_modules\/[^"]+)":\s*\{/);
-    if (pkgMatch) {
-      // Flush the previous added block before starting a new one.
-      if (currentPackage && currentVersion) {
-        results.push({ name: currentPackage, version: currentVersion });
+    // Block headers are tracked from *context* lines too: when npm upgrades a
+    // package in place it rewrites only `version`/`resolved`/`integrity`, so
+    // `"node_modules/x": {` stays unchanged and appears as a context line. Only
+    // reading added headers missed every version bump of an existing package.
+    // The path group must allow the empty string: the lockfile's root entry is
+    // `"": {`, and failing to recognise it would leave a stale attribution.
+    const headerMatch = body.match(/^\s*"([^"]*)":\s*\{/);
+    if (headerMatch) {
+      const path = headerMatch[1];
+      if (path.includes('node_modules/')) {
+        const segments = path.split('node_modules/');
+        currentPackage = segments[segments.length - 1];
+      } else {
+        // Any other object (e.g. the root `"": {` block, `"dependencies"`) is
+        // not a package block — drop the stale attribution rather than letting
+        // a following `"version"` line inherit it.
+        currentPackage = null;
       }
-      const segments = pkgMatch[1].split('node_modules/');
-      currentPackage = segments[segments.length - 1];
-      currentVersion = null;
       continue;
     }
 
+    if (!isAdded) continue;
+
     const versionMatch = body.match(/^\s*"version":\s*"([^"]+)"/);
     if (versionMatch && currentPackage) {
-      currentVersion = versionMatch[1];
-      // Lockfile v3 puts "version" as the first key of the block, so flush
-      // eagerly; a later "version" line for the same block (rare) overwrites.
-      results.push({ name: currentPackage, version: currentVersion });
+      // Lockfile v3 puts "version" as the first key of the block, so the
+      // nearest preceding header is this block's own header.
+      results.push({ name: currentPackage, version: versionMatch[1] });
       currentPackage = null;
-      currentVersion = null;
     }
   }
 
-  if (currentPackage && currentVersion) {
-    results.push({ name: currentPackage, version: currentVersion });
-  }
   return results;
 }
 

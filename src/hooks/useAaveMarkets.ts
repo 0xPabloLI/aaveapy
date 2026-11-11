@@ -7,7 +7,6 @@ import {
   sanitizeDeficitWithoutPrice,
   updateSchemaFingerprintFromApi,
 } from '@/lib/cache';
-import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { MarketsResponseSchema } from '@/lib/apiSchemas';
@@ -30,14 +29,19 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     sanitizeDeficitWithoutPrice(data);
     enrichReservesFromId(data);
 
-    // Runtime drift detection: if backend deployed a new schema before
-    // frontend was rebuilt, update the lazy fingerprint so cached entries
-    // from the old schema are invalidated on next access.
-    if (data.snapshot?.schemaFingerprint && data.snapshot.schemaFingerprint !== SCHEMA_FP) {
-      updateSchemaFingerprintFromApi(data.snapshot.schemaFingerprint);
-    }
-
     setCachedMarkets(data);
+
+    // Runtime drift detection: keep the lazy fingerprint equal to whatever the
+    // API is serving, so getCacheEntry can drop entries written under a schema
+    // this bundle no longer matches (backend deployed before frontend rebuilt).
+    // Runs on EVERY response rather than only on a mismatch: a value left over
+    // from an earlier drift would otherwise never be corrected, and the cache
+    // would stay cold for as long as that stale value survived (AAV-1346).
+    // Passed through unconditionally — the schema allows the field to be
+    // omitted, and the helper clears the reference in that case so a stale
+    // value cannot reject every entry this bundle writes.
+    updateSchemaFingerprintFromApi(data.snapshot?.schemaFingerprint);
+
     return data;
   } catch (error) {
     // Try to get from cache on failure
