@@ -111,7 +111,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
 | AAV-1354 | Low | Backlog | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
-| AAV-1359 | Low | Backlog | [后端] `@aave/client` v7 **删除 V3 数据模型**（`markets()` 从导出与类型里消失），V3 路径无法升级。实测（2026-11-11，经已安装的 v7 别名直连线上 API）：v7 `chains()` 只认 **4 条链**（1/5042/8453/43114），v0.12 认 **21 条**；`v7.reserves([137,10,42161])` → **0 行**、`spokes([137])` → **0 条**（Polygon/Optimism/Arbitrum 是 V3-only）；v7 返回的 **122 条全是 V4 hub/spoke**（`asset.hub`、`HubAssetSettings`、无 aToken/vToken），而 v0.12 仍有 **24 个 V3 市场**（`AaveV3Polygon` 单个就有 21 条 supply）。⇒ **数据没从 Aave API 消失，是 v7 的类型面砍掉了它**，所以「把调用点迁移过去」无路可走。已加 `renovate.json` ceiling 止住重复提案（⚠️ 用 `matchDepNames` 而非 `matchPackageNames`：后者匹配 `packageName`，而别名 `@aave/client-v4` 的 `packageName` 同名，会连带冻结 V4 路径；测试已断言这一点）。退出条件＝某个版本重新暴露 V3 市场 |
+| AAV-1359 | Low | Backlog | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） |
 | AAV-1322 | Low | Backlog | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
 | AAV-1312 | Low | Backlog (needs-triage) | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
 | AAV-1304 | Low | Backlog | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
