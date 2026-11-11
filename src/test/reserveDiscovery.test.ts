@@ -13,6 +13,7 @@ import {
   isComputableMerklCampaign,
   pickIncentiveReserve,
   pickReorderCapableRowIndex,
+  unavailableCampaignIdsFromSideData,
   type DiscoveryReserve,
 } from '../../e2e/reserveDiscovery';
 
@@ -35,6 +36,11 @@ import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels'
  * AAV-1318 — position-feasibility gating for offset scenarios (borrow room +
  * LTV funding power), matrix rows O12-O22: see
  * docs/specs/aav-1318-offset-position-feasibility-gating.md
+ *
+ * Forecast gate (F1-F7): `isComputableMerklCampaign` documents forecast gating
+ * but a breakdown carries no forecast state, so the gate is applied by the
+ * caller from `/meta/side-data`.forecast.errors — a campaign the backend could
+ * not forecast renders '—' however healthy its breakdown looks.
  */
 
 const NOW = '2026-09-24T12:00:00Z';
@@ -202,6 +208,70 @@ describe('hasComputableSupplyIncentive', () => {
   it('treats missing merklSupplys as no incentive', () => {
     const r = reserve({ merklSupplys: undefined });
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
+  });
+});
+
+describe('unavailableCampaignIdsFromSideData', () => {
+  it('F1: collects string ids and safe-integer ids from forecast.errors', () => {
+    const ids = unavailableCampaignIdsFromSideData({
+      forecast: { errors: [{ campaignId: '15691857351051442990' }, { campaignId: 42 }] },
+    });
+    expect([...ids].sort()).toEqual(['15691857351051442990', '42']);
+  });
+
+  it('F1b: drops an unsafe numeric id instead of matching on a mangled value', () => {
+    // Merkl ids exceed Number.MAX_SAFE_INTEGER: this one parses to …568000, so
+    // String() would never equal the id the breakdown carries. Written via
+    // Number() because the literal itself trips no-loss-of-precision.
+    const unsafeId = Number('8744230917896567712');
+    expect(Number.isSafeInteger(unsafeId)).toBe(false);
+    const ids = unavailableCampaignIdsFromSideData({ forecast: { errors: [{ campaignId: unsafeId }] } });
+    expect(ids.size).toBe(0);
+  });
+
+  it('F2: tolerates missing or malformed payloads', () => {
+    expect(unavailableCampaignIdsFromSideData(undefined).size).toBe(0);
+    expect(unavailableCampaignIdsFromSideData({}).size).toBe(0);
+    expect(unavailableCampaignIdsFromSideData({ forecast: {} }).size).toBe(0);
+    expect(unavailableCampaignIdsFromSideData({ forecast: { errors: 'nope' } }).size).toBe(0);
+    expect(unavailableCampaignIdsFromSideData({ forecast: { errors: [{}, null, { campaignId: '' }] } }).size).toBe(0);
+  });
+});
+
+describe('forecast gate — discovery must not select a campaign the UI renders as —', () => {
+  it('F3: excludes a reserve whose only campaign is unforecastable', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['broken']))).toBe(false);
+    // Without the gate the same reserve qualifies — the pre-fix behaviour.
+    expect(hasComputableSupplyIncentive(r, NOW)).toBe(true);
+  });
+
+  it('F4: keeps a reserve that still has a forecastable campaign', () => {
+    const r = reserve({
+      merklSupplys: [group(breakdown({ campaignId: 'broken' }), breakdown({ campaignId: 'ok' }))],
+    });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['broken']))).toBe(true);
+  });
+
+  it('F5: skips the unforecastable reserve and picks the next best one', () => {
+    const broken = reserve({
+      reserveId: 'broken-res',
+      supplyApy: 50,
+      merklSupplys: [group(breakdown({ campaignId: 'broken' }))],
+    });
+    const ok = reserve({ reserveId: 'ok-res', supplyApy: 1, merklSupplys: [group(breakdown({ campaignId: 'ok' }))] });
+    expect(pickIncentiveReserve([broken, ok], NOW)?.reserveId).toBe('broken-res');
+    expect(pickIncentiveReserve([broken, ok], NOW, new Set(['broken']))?.reserveId).toBe('ok-res');
+  });
+
+  it('F6: returns null when every candidate is unforecastable (specs skip)', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(pickIncentiveReserve([r], NOW, new Set(['broken']))).toBeNull();
+  });
+
+  it('F7: keeps a breakdown that carries no campaign id (cannot be matched)', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: undefined }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['c1']))).toBe(true);
   });
 });
 

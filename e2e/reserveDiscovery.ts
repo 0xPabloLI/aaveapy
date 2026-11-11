@@ -44,6 +44,7 @@ export interface PickedReserve {
 }
 
 export interface MerklBreakdown {
+  campaignId?: string;
   campaignApr?: number;
   campaignStartedAt?: string;
   campaignEndedAt?: string;
@@ -136,6 +137,43 @@ export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): bo
   return points > 0;
 }
 
+/** No forecast data supplied — every campaign counts as renderable. */
+const EMPTY_CAMPAIGN_IDS: ReadonlySet<string> = new Set<string>();
+
+/**
+ * Campaign ids the backend could NOT forecast, as listed by
+ * `/meta/side-data`.forecast.errors.
+ *
+ * The UI drops these when rendering: `checkForecastAvailability`
+ * (src/lib/incentiveCaps.ts) needs forecast data to compute a campaign's cap,
+ * so an unforecastable campaign renders '—' no matter how healthy its
+ * breakdown looks. `isComputableMerklCampaign` documents "forecast gating" but
+ * a breakdown alone carries no forecast state, so the gate has to be applied
+ * by the caller — otherwise discovery selects a reserve the UI renders as '—'.
+ */
+export function unavailableCampaignIdsFromSideData(sideData: unknown): Set<string> {
+  const errors = (sideData as { forecast?: { errors?: unknown } } | null | undefined)?.forecast?.errors;
+  const ids = new Set<string>();
+  if (!Array.isArray(errors)) return ids;
+  for (const entry of errors) {
+    const id = (entry as { campaignId?: unknown } | null | undefined)?.campaignId;
+    if (typeof id === 'string' && id) ids.add(id);
+    // The API sends ids as strings (they exceed Number.MAX_SAFE_INTEGER), so a
+    // numeric id is only usable when it survived JSON parsing exactly — drop it
+    // rather than match on a mangled value that would silently never match.
+    else if (typeof id === 'number' && Number.isSafeInteger(id)) ids.add(String(id));
+  }
+  return ids;
+}
+
+/** Whether a breakdown is both renderable and backed by a Merkl forecast. */
+function isForecastableBreakdown(b: MerklBreakdown, unavailableCampaignIds: ReadonlySet<string>): boolean {
+  // A breakdown with no id cannot be matched against the error list — keep it
+  // (the pre-existing behaviour) rather than dropping campaigns on a guess.
+  if (typeof b.campaignId !== 'string' || !b.campaignId) return true;
+  return !unavailableCampaignIds.has(b.campaignId);
+}
+
 // ─── Reserve predicates ──────────────────────────────────────────────
 
 /** The Merkl opportunity-group array for a rate side (AAV-1308). */
@@ -164,9 +202,19 @@ function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): num
  * Whether the reserve has at least one supply-side Merkl campaign the UI can
  * compute a numeric percent for. Merit arrays are deliberately NOT considered
  * (Merit was fully retired — AAV-1289).
+ *
+ * `unavailableCampaignIds` carries the forecast gate
+ * (`unavailableCampaignIdsFromSideData`); omit it only when forecast data is
+ * genuinely unavailable, since an unforecastable campaign renders as '—'.
  */
-export function hasComputableSupplyIncentive(r: DiscoveryReserve, nowIso: string): boolean {
-  return merklBreakdownsForSide(r, 'supply').some((b) => isComputableMerklCampaign(b, nowIso));
+export function hasComputableSupplyIncentive(
+  r: DiscoveryReserve,
+  nowIso: string,
+  unavailableCampaignIds: ReadonlySet<string> = EMPTY_CAMPAIGN_IDS,
+): boolean {
+  return merklBreakdownsForSide(r, 'supply').some(
+    (b) => isComputableMerklCampaign(b, nowIso) && isForecastableBreakdown(b, unavailableCampaignIds),
+  );
 }
 
 /**
@@ -315,10 +363,22 @@ export function getMarketChipLabel(marketName: string, chainName?: string): stri
 /**
  * Pick the best incentive reserve: usable, computable supply incentive,
  * preferring nonzero supply room, then highest net supply APR.
- * Returns null when no candidate qualifies (specs skip gracefully).
+ *
+ * `unavailableCampaignIds` is the forecast gate (see
+ * `unavailableCampaignIdsFromSideData`): a campaign the backend could not
+ * forecast renders '—' in the UI, so a reserve whose only campaign is
+ * unforecastable must not be picked — the specs consuming it would either skip
+ * or (before the guards in the spec) hang. Returns null when no candidate
+ * qualifies (specs skip gracefully).
  */
-export function pickIncentiveReserve(reserves: DiscoveryReserve[], nowIso: string): PickedReserve | null {
-  const candidates = reserves.filter((r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso));
+export function pickIncentiveReserve(
+  reserves: DiscoveryReserve[],
+  nowIso: string,
+  unavailableCampaignIds: ReadonlySet<string> = EMPTY_CAMPAIGN_IDS,
+): PickedReserve | null {
+  const candidates = reserves.filter(
+    (r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso, unavailableCampaignIds),
+  );
   if (candidates.length === 0) return null;
 
   const withRoom = candidates.filter((r) => (getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) > 0);

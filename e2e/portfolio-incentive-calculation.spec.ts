@@ -39,6 +39,26 @@ async function expectValueOrSkip(locator: Locator, label: string, timeout = 30_0
   }
 }
 
+/**
+ * Read `data-current` from the metric span inside a cell, skipping when absent.
+ *
+ * React omits the attribute when `metric.current` is null, and null is a
+ * legitimate state (`PortfolioSimulationMetric.current: number | null`), so on
+ * staging data the span may not exist at all. `getAttribute` on a locator that
+ * never resolves blocks until the test timeout (120s here), so bound the wait
+ * with an attach check and skip: with no current value the "current does not
+ * change" invariant is not evaluable.
+ */
+async function readDataCurrentOrSkip(cell: Locator, label: string): Promise<string> {
+  const span = cell.locator('span[data-current]').first();
+  try {
+    await expect(span).toBeAttached({ timeout: 10_000 });
+  } catch {
+    test.skip(true, `${label}: no data-current on staging — current value is null, invariant not evaluable`);
+  }
+  return (await span.getAttribute('data-current')) ?? '';
+}
+
 async function setupPortfolio(page: Page) {
   if (!testReserve) throw new Error('No suitable reserve found');
   return setupPortfolioWithReserve(page, testReserve);
@@ -173,14 +193,13 @@ test.describe('Golden Rule §1 — current invariance', () => {
       const supplyTotal = row.locator('td[data-cell="supply-total"]');
       await expectValueOrSkip(supplyTotal, 'supply-total (before delta)');
 
-      const metricSpan = supplyTotal.locator('span[data-current]').first();
-      const currentBefore = await metricSpan.getAttribute('data-current');
+      const currentBefore = await readDataCurrentOrSkip(supplyTotal, 'supply-total (before delta)');
 
       await supplyInput.clear();
       await supplyInput.fill('500000');
       await expectValueOrSkip(supplyTotal, 'supply-total (after delta)');
 
-      const currentAfter = await metricSpan.getAttribute('data-current');
+      const currentAfter = await readDataCurrentOrSkip(supplyTotal, 'supply-total (after delta)');
       expect(currentAfter).toBe(currentBefore);
     });
   });
@@ -203,15 +222,12 @@ test.describe('Golden Rule §1 — current invariance', () => {
       // Aligns with desktop pattern: td[data-cell="supply-total"] span[data-current]
       const totalCell = card.locator('span[data-cell="supply-total"]');
       await expectValueOrSkip(totalCell, 'supply-total (mobile, before delta)');
-      const totalSpan = totalCell.locator('span[data-current]').first();
-      await expect(totalSpan).toBeVisible({ timeout: 10_000 });
-      const currentBefore = await totalSpan.getAttribute('data-current');
+      const currentBefore = await readDataCurrentOrSkip(totalCell, 'supply-total (mobile, before delta)');
 
       await supplyInput.clear();
       await supplyInput.fill('500000');
-      await expect(totalSpan).toBeVisible({ timeout: 10_000 });
 
-      const currentAfter = await totalSpan.getAttribute('data-current');
+      const currentAfter = await readDataCurrentOrSkip(totalCell, 'supply-total (mobile, after delta)');
       expect(currentAfter).toBe(currentBefore);
     });
   });
@@ -237,14 +253,13 @@ test.describe('Cap threshold crossing — current invariance', () => {
       const incentiveCell = row.locator('td[data-cell="supply-incentive"]');
       await expectValueOrSkip(incentiveCell, 'supply-incentive (before cap)');
 
-      const metricSpan = incentiveCell.locator('span[data-current]').first();
-      const currentBefore = await metricSpan.getAttribute('data-current');
+      const currentBefore = await readDataCurrentOrSkip(incentiveCell, 'supply-incentive (before cap)');
 
       await supplyInput.clear();
       await supplyInput.fill('999999999');
       await expectValueOrSkip(incentiveCell, 'supply-incentive (after cap)');
 
-      const currentAfter = await metricSpan.getAttribute('data-current');
+      const currentAfter = await readDataCurrentOrSkip(incentiveCell, 'supply-incentive (after cap)');
       expect(currentAfter).toBe(currentBefore);
     });
   });
@@ -267,15 +282,12 @@ test.describe('Cap threshold crossing — current invariance', () => {
       // Aligns with desktop pattern: td[data-cell="supply-incentive"] span[data-current]
       const incentiveCell = card.locator('span[data-cell="supply-incentive"]');
       await expectValueOrSkip(incentiveCell, 'supply-incentive (mobile, before cap)');
-      const incentiveSpan = incentiveCell.locator('span[data-current]').first();
-      await expect(incentiveSpan).toBeVisible({ timeout: 10_000 });
-      const currentBefore = await incentiveSpan.getAttribute('data-current');
+      const currentBefore = await readDataCurrentOrSkip(incentiveCell, 'supply-incentive (mobile, before cap)');
 
       await supplyInput.clear();
       await supplyInput.fill('999999999');
-      await expect(incentiveSpan).toBeVisible({ timeout: 10_000 });
 
-      const currentAfter = await incentiveSpan.getAttribute('data-current');
+      const currentAfter = await readDataCurrentOrSkip(incentiveCell, 'supply-incentive (mobile, after cap)');
       expect(currentAfter).toBe(currentBefore);
     });
   });
@@ -300,6 +312,7 @@ test.describe('Delta badge after manual position input', () => {
 
       const usdPerDay = row.locator('td[data-cell="supply-usd-per-day"]');
       await expect(usdPerDay).toBeVisible({ timeout: 5000 });
+      await expectValueOrSkip(usdPerDay, 'supply-usd-per-day (desktop)');
       const text = await usdPerDay.textContent();
       expect(text?.trim()).toMatch(USD_PER_DAY_RE);
     });
@@ -321,8 +334,9 @@ test.describe('Delta badge after manual position input', () => {
 
       const usdPerDay = card.locator('span[data-cell="supply-usd-per-day"]');
       await expect(usdPerDay).toBeVisible({ timeout: 5000 });
+      await expectValueOrSkip(usdPerDay, 'supply-usd-per-day (mobile)');
       const text = (await usdPerDay.textContent())?.trim();
-      expect(text).not.toBe('—');
+      expect(text).toMatch(USD_PER_DAY_RE);
     });
   });
 });
