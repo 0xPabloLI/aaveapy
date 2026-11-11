@@ -38,7 +38,7 @@ const ASSET_RENAMES = {
   AaveV3Polygon: { USDC: 'USDCe' },
 };
 
-export function normalizeExpressionKey(value) {
+function normalizeExpressionKey(value) {
   return value.replace(/\s+/g, '');
 }
 
