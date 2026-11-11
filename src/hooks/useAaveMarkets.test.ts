@@ -61,4 +61,32 @@ describe('fetchMarkets — schema fingerprint drift sync (AAV-1346)', () => {
     expect(localStorage.getItem(FP_KEY)).toBe(`${SCHEMA_FP}:2`);
     expect(getCachedMarkets()).not.toBeNull();
   });
+
+  // Cache bookkeeping must never turn a successful fetch into a failure.
+  // Storage throws in Safari private mode / on quota; without the guard the
+  // error escapes into fetchMarkets' catch, the fallback cache is equally
+  // unavailable, and the valid response is re-thrown away (AAV-1346 review).
+  //
+  // The global is stubbed rather than spying on `Storage.prototype.setItem`:
+  // happy-dom's `localStorage` does not route property reads through
+  // `Storage.prototype` (verified: `localStorage.setItem !==
+  // Storage.prototype.setItem` before any spy is installed), so a prototype spy
+  // never intercepts and the test would pass without exercising anything.
+  it('still returns the API payload when storage throws', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('storage blocked');
+      },
+      removeItem: () => {},
+    });
+    try {
+      respondWith('driftedFp');
+      const data = await fetchMarkets();
+      expect(data.snapshot?.schemaFingerprint).toBe('driftedFp');
+      expect(data.reserves).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

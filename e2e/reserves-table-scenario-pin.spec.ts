@@ -308,9 +308,12 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     const targetIndex = Math.min(8, rowCount - 1);
-    const targetRow = rows.nth(targetIndex);
-    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    const reserveId = await rows.nth(targetIndex).getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
+    // Bind every later interaction to the id, never the index: the table
+    // re-sorts while the scenario steps below run, so a positional locator
+    // would drift onto a different reserve than the one these assertions pin.
+    const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
 
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();
@@ -443,9 +446,12 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
     const targetIndex = Math.min(8, rowCount - 1);
-    const targetRow = rows.nth(targetIndex);
-    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    const reserveId = await rows.nth(targetIndex).getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
+    // Bind every later interaction to the id, never the index: the table
+    // re-sorts while the scenario steps below run, so a positional locator
+    // would drift onto a different reserve than the one these assertions pin.
+    const targetRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
 
     await targetRow.scrollIntoViewIfNeeded();
     await targetRow.click();

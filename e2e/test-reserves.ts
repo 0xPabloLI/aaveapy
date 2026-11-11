@@ -3,7 +3,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import {
   getMarketChipLabel,
   pickIncentiveReserve,
-  unavailableCampaignIdsFromSideData,
+  forecastAvailableCampaignIdsFromSideData,
   type DiscoveryReserve,
   type PickedReserve,
 } from './reserveDiscovery';
@@ -58,29 +58,30 @@ export async function fetchStagingReserves(): Promise<DiscoveryReserve[]> {
   }
 }
 
-let unavailableCampaignIdsCache: Set<string> | null = null;
+let forecastAvailableCampaignIdsCache: Set<string> | null = null;
 
 /**
- * Campaign ids the backend could not forecast, read from `/meta/side-data`.
+ * Campaign ids the backend COULD forecast, read from `/meta/side-data`.
  *
- * The UI renders these as '—' however healthy their breakdown looks
- * (`checkForecastAvailability` needs forecast data to compute a campaign cap),
- * so incentive discovery has to exclude them or the specs that consume it
- * assert against a value that can never appear.
+ * The incentive specs assert that a value responds to position size, which
+ * requires forecast state: a forecast-requiring campaign absent from
+ * `forecast.items` renders a position-independent APR in the UI (it is NOT a
+ * '—' placeholder — see `forecastAvailableCampaignIdsFromSideData`). Discovery
+ * therefore prefers forecast-backed campaigns.
  *
- * A failed fetch degrades to "no exclusions" — the pre-existing behaviour —
- * rather than excluding everything: a degraded side-data endpoint must not
- * silently turn the incentive suites into no-ops.
+ * Returns `null` when the fetch fails, which DISABLES the gate: a degraded
+ * side-data endpoint must not silently turn the incentive suites into no-ops,
+ * and "nothing is available" would exclude every forecast-requiring campaign.
  */
-export async function fetchUnavailableCampaignIds(): Promise<Set<string>> {
-  if (unavailableCampaignIdsCache) return unavailableCampaignIdsCache;
+export async function fetchForecastAvailableCampaignIds(): Promise<Set<string> | null> {
+  if (forecastAvailableCampaignIdsCache) return forecastAvailableCampaignIdsCache;
   try {
     const resp = await fetch(`${STAGING_API}/meta/side-data`);
-    if (!resp.ok) return new Set();
-    unavailableCampaignIdsCache = unavailableCampaignIdsFromSideData(await resp.json());
-    return unavailableCampaignIdsCache;
+    if (!resp.ok) return null;
+    forecastAvailableCampaignIdsCache = forecastAvailableCampaignIdsFromSideData(await resp.json());
+    return forecastAvailableCampaignIdsCache;
   } catch {
-    return new Set();
+    return null;
   }
 }
 
@@ -106,14 +107,18 @@ function hasLtv(r: ReserveData): boolean {
  * A campaign qualifies only when the UI can render a numeric percent for it:
  * campaignApr > 0 (or points-based), active time window, and not an AMOUNT
  * variant (AAV-1275). Merit arrays are ignored (Merit retired — AAV-1289).
- * Campaigns the backend could not forecast are excluded too — the UI renders
- * those as '—' (see `fetchUnavailableCampaignIds`).
+ * Forecast-requiring campaigns absent from `forecast.items` are skipped too,
+ * because their APR does not respond to position size (see
+ * `fetchForecastAvailableCampaignIds`).
  * Prefers nonzero supply room, then highest net supply APR.
  * Returns null if no suitable reserve is found.
  */
 export async function findIncentiveReserve(): Promise<TestReserve | null> {
-  const [reserves, unavailableCampaignIds] = await Promise.all([fetchStagingReserves(), fetchUnavailableCampaignIds()]);
-  return pickIncentiveReserve(reserves, new Date().toISOString(), unavailableCampaignIds);
+  const [reserves, forecastAvailableCampaignIds] = await Promise.all([
+    fetchStagingReserves(),
+    fetchForecastAvailableCampaignIds(),
+  ]);
+  return pickIncentiveReserve(reserves, new Date().toISOString(), forecastAvailableCampaignIds);
 }
 
 /**

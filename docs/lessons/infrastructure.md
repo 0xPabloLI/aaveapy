@@ -82,8 +82,11 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 ## e2e 发现逻辑必须复刻 UI 的**全部**渲染门——包括状态存在别的端点里的那些
 
 - **现象**：`portfolio-incentive-calculation` / `portfolio-results-inline-delta` 两个 spec 在 CI（`6301e1cc`）与本地全量跑上稳定红、隔离跑却绿，看起来像 load-flake，实际是**确定性数据耦合**。
-- **根因**：`hasComputableSupplyIncentive` 只看 `/markets` 的 breakdown（时间窗、whitelist、AMOUNT 变体），但 UI 还多一道门——`checkForecastAvailability`（`src/lib/incentiveCaps.ts`）需要 **forecast 数据**才能算出 campaign 的 cap，所以**在 `/meta/side-data`.forecast.errors 里的 campaign 一律渲染 `—`**。该状态不在 breakdown 上，predicate 拿不到 ⇒ 选中了 `USDe | Ethena Ecosystem`，其 campaign 恰在 errors 里，于是单元格恒为 `—`。修法＝把 forecast 门补进发现链（`unavailableCampaignIdsFromSideData` + `test-reserves.ts` 拉一次 side-data），修后选中项变为 `GHO | Monad`（campaign 在 `forecast.items`）。
-- **通用教训**：写「镜像 UI 门」的发现/断言 predicate 时，**枚举门要把「状态来自其他端点」的门也算进去**，并在注释里点名它复刻的是哪个 UI 函数；否则 predicate 与 UI 会各自漂移，而症状（单元格是 `—`）离根因（另一个端点的一个数组）很远。
+- **真根因与本条主题无关**：① `data-current` 在 `metric.current === null` 时不渲染 ⇒ `getAttribute` 阻塞到 120s 测试超时；② `$/day` 单元格断言用了严格正则，而单元格可以合法是 `—`（desktop）/ `–`（mobile）。**没有一条失败是 forecast 造成的**——本条的原始归因是错的，见下。
+- **被推翻的归因（留作反例）**：本条曾断言「`/meta/side-data` 的 `forecast.errors` 里的 campaign 一律渲染 `—`，所以发现 predicate 必须把 errors 当排除信号」。**三重反证**：`forecastUnavailable` 只是驱动 `*` 标记的**标志**（`rateSimulationCalculator.ts` 声明、计数、汇总进 `forecastUnavailableCampaignCount`），**从不归零 APR**；`forecastMerklApr`（`merklForecast.ts`）在 `merged === null` 时返回 `currentApr` ⇒ campaign 照常贡献数值；`result.forecastErrors` 在测试之外**无人读取**。`—` 只在 `incentivePercent === 0` 时渲染。
+- **真正的门是什么**：`checkForecastAvailability(campaignType, campaignId, merged, forecastStates)`（`src/lib/incentiveCaps.ts`）= `!campaignType ? false : (merged == null || !forecastStates?.[String(campaignId)])`，且只在 `isForecastRequiring`（`FORECAST_REQUIRING_CAMPAIGN_TYPES` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `TARGET_TOTAL_APR`）时被调用。**跳过这些 campaign 的真实理由是**：没有 forecast state 时 APR 不随仓位变化，梯级断言 `after > current` **永远不可能成立**——不是「UI 渲染 `—`」。
+- **实现要点**：`forecast.items` 与 `forecast.errors` 的条目**都只带 `campaignId`、不带 type** ⇒ forecast-requiring 判断只能读 breakdown 上的 `campaignType`；发现侧读 **`forecast.items`**（可用集）而不是 `errors`（排除集），且**拉取失败时返回 `null` 表示「关掉这道门」**，而不是「排除一切」。
+- **通用教训**：写「镜像 UI 门」的 predicate 时，**先读 UI 那个函数的真实语义**（返回值、调用条件、状态来自哪个端点），再决定 predicate 复刻什么；**别把「症状看起来相关」当成机制**。本次错误归因的代价是一份写进文档的假机制 + 一个会静默排除正常 reserve 的 gate。
 - **别把「隔离绿、全量红」直接判成 load-flake**：先看失败是否落在**同一处断言 + 同一错误文本**上。本次三个失败里两个是确定性数据耦合（隔离跑也必红，我实测过），一个是真 load-flake（隔离跑绿）。
 - **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
 - **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
@@ -96,3 +99,10 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **改 YAML 列表项要整块替换**：同一次 session 里两次 Edit（第一次注释被截断、第二次只补注释）很容易把 `- dependency-name` 整块重新插进去而留下旧副本——本仓就因此把重复条目带进了 dev（`7f7b4a18`）。列表项的新增/改写一次成型，改完立刻 `grep -c dependency-name` 数一遍条数。
 
 
+
+## happy-dom 的 `localStorage` 不走 `Storage.prototype`——spy 它等于什么都没测
+
+- **症状**：`vi.spyOn(Storage.prototype, 'setItem')` 装好了、测试全绿，但**被测代码根本没被拦截**——测试通过却不证明任何事。
+- **取证**：装 spy 前后都成立 `localStorage.setItem !== Storage.prototype.setItem`（而 `Object.getPrototypeOf(localStorage) === Storage.prototype` 却是 `true`、`hasOwnProperty(localStorage, 'setItem')` 是 `false`），直接调 `localStorage.setItem(...)` 也不命中 spy。实现里读到的 `storage.setItem` 与测试里 `Storage.prototype.setItem` 不是同一个函数对象。
+- **正确写法**：要模拟「storage 抛错」，用 `vi.stubGlobal('localStorage', { getItem, setItem, removeItem })` 换掉全局——模块的默认参数 `storage: StorageLike = localStorage` 在**调用时**读全局，所以 stub 生效；`finally` 里 `vi.unstubAllGlobals()`。
+- **通用教训**：**验证「测试能红」比验证「测试能绿」更重要**。任何 mock/spy 装完，先把实现改回缺陷态跑一遍确认它变红；本次正是靠「移除 try/catch 后测试仍然全绿」才发现 spy 是空转的。

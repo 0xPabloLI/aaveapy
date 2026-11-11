@@ -17,11 +17,14 @@ import {
 } from './test-reserves';
 
 /**
- * Cross-asset pairing (min(1,2)) — E2E test for AAV-895.
+ * Shared fixture, route stub and runner for the cross-asset pairing
+ * (min(1,2)) E2E suite (AAV-895). Consumed by the two platform spec files:
+ * `portfolio-cross-asset-pairing.desktop.spec.ts` and
+ * `portfolio-cross-asset-pairing.mobile.spec.ts`.
  *
  * Merkl min(1,2) opportunities (e.g. "Borrow ETH using cbETH as collateral")
  * reward users based on min(sourcePos, pairedPos × discountFactor), NOT the
- * full position. This test verifies that the frontend correctly applies this
+ * full position. These tests verify that the frontend correctly applies this
  * formula in portfolio simulation mode.
  *
  * Test flow:
@@ -39,19 +42,23 @@ import {
  * same-symbol pairs are excluded because the fill helpers type into inputs
  * located by token symbol. Unit-tested in src/test/reserveDiscovery.test.ts.
  *
- * If no crossAssetPairing campaigns are found in staging data, all tests skip.
- * Desktop + mobile variants are generated from the same scenario list.
+ * If no crossAssetPairing campaigns are found in staging data, the live tests
+ * skip and only the stub variant runs.
  *
  * AAV-1316 stub variant: because staging has never carried a crossAssetPairing
- * campaign, the live tests above have never actually executed. The `stub`
- * describes below inject a synthetic pairing into a committed real-payload
- * fixture, serve it through page.route (the app validates the payload with the
- * same schema as a live response), and run the SAME runner — proving the
- * min(1,2) chain (baseline 0 → ladder → clamp) is reachable end to end,
- * hermetically (no real network), in CI and locally. The scenario is selected
- * by the real discovery gates on the injected payload
- * (e2e/crossAssetPairingStub.ts, unit-tested in
+ * campaign, the live tests have never actually executed. The stub injects a
+ * synthetic pairing into a committed real-payload fixture, serves it through
+ * page.route (the app validates the payload with the same schema as a live
+ * response), and runs the SAME runner — proving the min(1,2) chain (baseline 0
+ * → ladder → clamp) is reachable end to end, hermetically (no real network), in
+ * CI and locally. The scenario is selected by the real discovery gates on the
+ * injected payload (e2e/crossAssetPairingStub.ts, unit-tested in
  * src/test/crossAssetPairingStub.test.ts).
+ *
+ * Platform binding: the two spec files are separated by FILE and bound to their
+ * project through `playwright.config.ts`'s `testIgnore`, not by
+ * `test.skip(project)` — a platform rename then cannot silently convert a
+ * variant into a skip (AGENTS.md Coding Conventions).
  */
 
 // Discover at module load (top-level await — Playwright supports ESM TLA).
@@ -62,8 +69,8 @@ const allScenarios: CrossAssetScenario[] = discoverCrossAssetPairingScenarios(
   new Date().toISOString(),
 );
 // Limit to top 2 scenarios to keep CI runtime reasonable
-const scenarios = allScenarios.slice(0, 2);
-const hasScenarios = scenarios.length > 0;
+export const scenarios = allScenarios.slice(0, 2);
+export const hasScenarios = scenarios.length > 0;
 
 // ─── Stub variant (AAV-1316) ─────────────────────────────────────
 
@@ -74,7 +81,7 @@ const stub = buildCrossAssetPairingStub(
   JSON.parse(readFileSync(CROSS_ASSET_PAIRING_FIXTURE_URL, 'utf8')) as unknown,
   AAV1316_STUB_INJECTION,
 );
-const stubScenario: CrossAssetScenario = stub.scenarios[0];
+export const stubScenario: CrossAssetScenario = stub.scenarios[0];
 
 /**
  * Serve the stub payload to the browser: `/markets` returns the injected
@@ -85,7 +92,7 @@ const stubScenario: CrossAssetScenario = stub.scenarios[0];
  * between dev (staging host from apiBase.ts) and CI (VITE_API_BASE_URL), and
  * both end in /markets and /meta/side-data.
  */
-async function installStubRoutes(page: Page) {
+export async function installStubRoutes(page: Page) {
   await page.route(
     (url) => url.pathname.endsWith('/markets'),
     (route) =>
@@ -108,7 +115,7 @@ async function installStubRoutes(page: Page) {
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
-async function runCrossAssetPairingScenario(
+export async function runCrossAssetPairingScenario(
   page: Page,
   s: CrossAssetScenario,
   isMobile: boolean,
@@ -196,81 +203,3 @@ async function runCrossAssetPairingScenario(
     'Over-paired should clamp (no further change beyond source binding)',
   ).toBeLessThanOrEqual(0.05);
 }
-
-// ─── Tests ─────────────────────────────────────────────────────────
-
-test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)', () => {
-  // ── Desktop ──────────────────────────────────────────────────────
-
-  test.describe('desktop', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-    });
-
-    if (!hasScenarios) {
-      test('no cross-asset pairing scenarios found in staging data', () => {
-        test.skip(true, 'No crossAssetPairing campaigns found in current staging data');
-      });
-    }
-
-    for (const s of scenarios) {
-      test(`cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`, async ({
-        page,
-      }) => {
-        await runCrossAssetPairingScenario(page, s, false);
-      });
-    }
-  });
-
-  // ── Mobile ───────────────────────────────────────────────────────
-
-  test.describe('mobile', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-    });
-
-    if (!hasScenarios) {
-      test('no cross-asset pairing scenarios found in staging data', () => {
-        test.skip(true, 'No crossAssetPairing campaigns found in current staging data');
-      });
-    }
-
-    for (const s of scenarios) {
-      test(`cross-asset: ${s.sourceSymbol} [${s.sourceMarketLabel}] ${s.sourceSide} paired with ${s.pairedSymbol} ${s.pairedSide} (×${s.discountFactor})`, async ({
-        page,
-      }) => {
-        await runCrossAssetPairingScenario(page, s, true);
-      });
-    }
-  });
-
-  // ── Stub variant (AAV-1316) ──────────────────────────────────────
-  // Never gated on staging data: the fixture is committed, so these run in
-  // CI and locally regardless of what real campaigns exist today.
-
-  test.describe('stub desktop', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-    });
-
-    test(`cross-asset stub: ${stubScenario.sourceSymbol} [${stubScenario.sourceMarketLabel}] ${stubScenario.sourceSide} paired with ${stubScenario.pairedSymbol} ${stubScenario.pairedSide} (×${stubScenario.discountFactor})`, async ({
-      page,
-    }) => {
-      await installStubRoutes(page);
-      await runCrossAssetPairingScenario(page, stubScenario, false, { expectZeroBaseline: true });
-    });
-  });
-
-  test.describe('stub mobile', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-    });
-
-    test(`cross-asset stub: ${stubScenario.sourceSymbol} [${stubScenario.sourceMarketLabel}] ${stubScenario.sourceSide} paired with ${stubScenario.pairedSymbol} ${stubScenario.pairedSide} (×${stubScenario.discountFactor})`, async ({
-      page,
-    }) => {
-      await installStubRoutes(page);
-      await runCrossAssetPairingScenario(page, stubScenario, true, { expectZeroBaseline: true });
-    });
-  });
-});

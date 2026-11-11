@@ -103,6 +103,21 @@ describe('updateSchemaFingerprintFromApi', () => {
     updateSchemaFingerprintFromApi('new789', storage);
     expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:2');
   });
+
+  // Storage can throw (Safari private mode, quota, blocked storage). This runs
+  // inside fetchMarkets' try block, so an escaping error would send a valid API
+  // response down the catch path where the fallback cache is equally
+  // unavailable — the user would see no markets at all (AAV-1346 review).
+  it('is best-effort: a throwing storage does not propagate', () => {
+    const throwingStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('storage blocked');
+      },
+      removeItem: () => {},
+    } as unknown as Storage;
+    expect(() => updateSchemaFingerprintFromApi('abc123', throwingStorage)).not.toThrow();
+  });
 });
 
 // ── Schema-fingerprint drift (AAV-1346) ──

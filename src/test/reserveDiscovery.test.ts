@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AMOUNT_VARIANT_CAMPAIGN_TYPES,
+  FORECAST_REQUIRING_CAMPAIGN_TYPES,
   PAIRING_SIM_MIN_ROOM_USD,
   computeSupplyNetApyPercent,
   discoverCrossAssetPairingScenarios,
   discoverOffsetScenarios,
+  forecastAvailableCampaignIdsFromSideData,
   getBorrowRoomUsd,
   getMarketChipLabel,
   getSupplyRoomUsd,
@@ -13,13 +15,14 @@ import {
   isComputableMerklCampaign,
   pickIncentiveReserve,
   pickReorderCapableRowIndex,
-  unavailableCampaignIdsFromSideData,
   type DiscoveryReserve,
 } from '../../e2e/reserveDiscovery';
 
 // The UI label the portfolio Add button actually renders — the e2e mirror must
 // agree with it (AAV-1308 review).
 import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels';
+// The calculator's own forecast-requiring set — the e2e mirror must agree (F2b).
+import { FORECAST_REQUIRING_CAMPAIGN_TYPES as appForecastRequiringCampaignTypes } from '@/lib/rateSimulationCalculator';
 
 /**
  * AAV-1299 — e2e discovery robustness unit tests.
@@ -37,10 +40,12 @@ import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels'
  * LTV funding power), matrix rows O12-O22: see
  * docs/specs/aav-1318-offset-position-feasibility-gating.md
  *
- * Forecast gate (F1-F7): `isComputableMerklCampaign` documents forecast gating
+ * Forecast gate (F1-F8): `isComputableMerklCampaign` documents forecast gating
  * but a breakdown carries no forecast state, so the gate is applied by the
- * caller from `/meta/side-data`.forecast.errors — a campaign the backend could
- * not forecast renders '—' however healthy its breakdown looks.
+ * caller from `/meta/side-data`.forecast.items — the set the UI reads through
+ * `checkForecastAvailability`. A forecast-requiring campaign absent from
+ * `forecast.items` renders its breakdown APR plus a '*' marker and does NOT
+ * respond to position size, so discovery skips it in favour of one that does.
  */
 
 const NOW = '2026-09-24T12:00:00Z';
@@ -211,10 +216,10 @@ describe('hasComputableSupplyIncentive', () => {
   });
 });
 
-describe('unavailableCampaignIdsFromSideData', () => {
-  it('F1: collects string ids and safe-integer ids from forecast.errors', () => {
-    const ids = unavailableCampaignIdsFromSideData({
-      forecast: { errors: [{ campaignId: '15691857351051442990' }, { campaignId: 42 }] },
+describe('forecastAvailableCampaignIdsFromSideData', () => {
+  it('F1: collects string ids and safe-integer ids from forecast.items', () => {
+    const ids = forecastAvailableCampaignIdsFromSideData({
+      forecast: { items: [{ campaignId: '15691857351051442990' }, { campaignId: 42 }] },
     });
     expect([...ids].sort()).toEqual(['15691857351051442990', '42']);
   });
@@ -225,32 +230,60 @@ describe('unavailableCampaignIdsFromSideData', () => {
     // Number() because the literal itself trips no-loss-of-precision.
     const unsafeId = Number('8744230917896567712');
     expect(Number.isSafeInteger(unsafeId)).toBe(false);
-    const ids = unavailableCampaignIdsFromSideData({ forecast: { errors: [{ campaignId: unsafeId }] } });
+    const ids = forecastAvailableCampaignIdsFromSideData({ forecast: { items: [{ campaignId: unsafeId }] } });
     expect(ids.size).toBe(0);
   });
 
   it('F2: tolerates missing or malformed payloads', () => {
-    expect(unavailableCampaignIdsFromSideData(undefined).size).toBe(0);
-    expect(unavailableCampaignIdsFromSideData({}).size).toBe(0);
-    expect(unavailableCampaignIdsFromSideData({ forecast: {} }).size).toBe(0);
-    expect(unavailableCampaignIdsFromSideData({ forecast: { errors: 'nope' } }).size).toBe(0);
-    expect(unavailableCampaignIdsFromSideData({ forecast: { errors: [{}, null, { campaignId: '' }] } }).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData(undefined).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({}).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: {} }).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: { items: 'nope' } }).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: { items: [{}, null, { campaignId: '' }] } }).size).toBe(
+      0,
+    );
+  });
+
+  it('F2b: the local forecast-requiring set mirrors the app’s FORECAST_REQUIRING_CAMPAIGN_TYPES', () => {
+    // The gate is only correct while this list matches the calculator's. If the
+    // app adds a type, discovery must follow it or it starts excluding (or
+    // keeping) campaigns the UI treats differently.
+    expect([...FORECAST_REQUIRING_CAMPAIGN_TYPES].sort()).toEqual([...appForecastRequiringCampaignTypes].sort());
   });
 });
 
-describe('forecast gate — discovery must not select a campaign the UI renders as —', () => {
-  it('F3: excludes a reserve whose only campaign is unforecastable', () => {
+describe('forecast gate — discovery prefers campaigns the UI can forecast', () => {
+  it('F3: excludes a forecast-requiring campaign absent from forecast.items', () => {
     const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
-    expect(hasComputableSupplyIncentive(r, NOW, new Set(['broken']))).toBe(false);
-    // Without the gate the same reserve qualifies — the pre-fix behaviour.
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['other']))).toBe(false);
+    // Gate disabled ⇒ the same reserve qualifies.
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(true);
   });
 
-  it('F4: keeps a reserve that still has a forecastable campaign', () => {
+  it('F3b: keeps a forecast-requiring campaign that IS in forecast.items', () => {
+    // The corrected premise: presence in `forecast.items` is what the UI reads
+    // (checkForecastAvailability returns false ⇒ no '*' marker). Absence from
+    // `forecast.errors` is NOT the signal — campaigns listed in errors still
+    // render a numeric APR plus a '*' marker, so excluding on errors alone
+    // dropped reserves the UI renders fine.
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'ok' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['ok']))).toBe(true);
+  });
+
+  it('F4: keeps a reserve that still has a forecast-backed campaign', () => {
     const r = reserve({
       merklSupplys: [group(breakdown({ campaignId: 'broken' }), breakdown({ campaignId: 'ok' }))],
     });
-    expect(hasComputableSupplyIncentive(r, NOW, new Set(['broken']))).toBe(true);
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['ok']))).toBe(true);
+  });
+
+  it('F4b: a non-forecast-requiring campaign is unaffected by the gate', () => {
+    // Mirrors the UI's `isForecastRequiring` short-circuit: the gate only ever
+    // applies to FORECAST_REQUIRING_CAMPAIGN_TYPES.
+    const r = reserve({
+      merklSupplys: [group(breakdown({ campaignId: 'not-requiring', campaignType: 'SOME_OTHER_TYPE' }))],
+    });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set())).toBe(true);
   });
 
   it('F5: skips the unforecastable reserve and picks the next best one', () => {
@@ -261,17 +294,26 @@ describe('forecast gate — discovery must not select a campaign the UI renders 
     });
     const ok = reserve({ reserveId: 'ok-res', supplyApy: 1, merklSupplys: [group(breakdown({ campaignId: 'ok' }))] });
     expect(pickIncentiveReserve([broken, ok], NOW)?.reserveId).toBe('broken-res');
-    expect(pickIncentiveReserve([broken, ok], NOW, new Set(['broken']))?.reserveId).toBe('ok-res');
+    expect(pickIncentiveReserve([broken, ok], NOW, new Set(['ok']))?.reserveId).toBe('ok-res');
   });
 
-  it('F6: returns null when every candidate is unforecastable (specs skip)', () => {
+  it('F6: returns null when every candidate lacks a forecast (specs skip)', () => {
     const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
-    expect(pickIncentiveReserve([r], NOW, new Set(['broken']))).toBeNull();
+    expect(pickIncentiveReserve([r], NOW, new Set(['other']))).toBeNull();
   });
 
   it('F7: keeps a breakdown that carries no campaign id (cannot be matched)', () => {
     const r = reserve({ merklSupplys: [group(breakdown({ campaignId: undefined }))] });
     expect(hasComputableSupplyIncentive(r, NOW, new Set(['c1']))).toBe(true);
+  });
+
+  it('F8: a null gate (side-data unavailable) applies no filtering', () => {
+    // Degrading to "everything excluded" would turn the incentive suites into
+    // no-ops whenever /meta/side-data hiccups; degrading to "nothing excluded"
+    // keeps the pre-existing selection behaviour.
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, null)).toBe(true);
+    expect(pickIncentiveReserve([r], NOW, null)?.reserveId).toBe('r1');
   });
 });
 

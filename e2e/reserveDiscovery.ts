@@ -19,6 +19,12 @@
  *    `isCampaignActive` with allowOpenEnd=false — AAV-1280)
  * 3. campaignType is not an AMOUNT variant
  * 4. not whitelist-only (e2e never opts in — AAV-1280)
+ *
+ * Renderability is not the whole story for the incentive specs, which assert
+ * that a value RESPONDS to position size. That needs forecast data, which lives
+ * on another endpoint, so `forecastAvailableCampaignIdsFromSideData` supplies it
+ * and the predicates take it as an optional argument — see that function's
+ * docstring for why `forecast.items`, not `forecast.errors`, is the signal.
  */
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -110,7 +116,12 @@ const parseApr = (value: unknown): number => (typeof value === 'number' && Numbe
 
 /**
  * Whether a single Merkl breakdown can produce a numeric incentive percent
- * in the UI at time `nowIso` (mirrors getMerklBreakdownApr + forecast gating).
+ * in the UI at time `nowIso` (mirrors getMerklBreakdownApr).
+ *
+ * Forecast state is deliberately NOT part of this predicate: a campaign the
+ * backend could not forecast still renders its breakdown APR numerically (see
+ * `forecastAvailableCampaignIdsFromSideData`), so it belongs to a separate,
+ * caller-supplied gate.
  *
  * AAV-1280: the gate chain must mirror the UI's render gates exactly
  * (sumMerklIncentiveApr in src/lib/incentiveAggregation.ts):
@@ -137,25 +148,48 @@ export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): bo
   return points > 0;
 }
 
-/** No forecast data supplied — every campaign counts as renderable. */
-const EMPTY_CAMPAIGN_IDS: ReadonlySet<string> = new Set<string>();
+/**
+ * Merkl campaign types whose forecast state the UI requires.
+ *
+ * Mirror of `FORECAST_REQUIRING_CAMPAIGN_TYPES` in
+ * src/lib/rateSimulationCalculator.ts, duplicated rather than imported to keep
+ * this module dependency-free (see the file header). The drift is pinned by
+ * unit test F2b, which compares this set against the calculator's.
+ */
+export const FORECAST_REQUIRING_CAMPAIGN_TYPES: ReadonlySet<string> = new Set([
+  'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'TARGET_TOTAL_APR',
+]);
 
 /**
- * Campaign ids the backend could NOT forecast, as listed by
- * `/meta/side-data`.forecast.errors.
+ * Campaign ids the backend COULD forecast, as listed by
+ * `/meta/side-data`.forecast.items.
  *
- * The UI drops these when rendering: `checkForecastAvailability`
- * (src/lib/incentiveCaps.ts) needs forecast data to compute a campaign's cap,
- * so an unforecastable campaign renders '—' no matter how healthy its
- * breakdown looks. `isComputableMerklCampaign` documents "forecast gating" but
- * a breakdown alone carries no forecast state, so the gate has to be applied
- * by the caller — otherwise discovery selects a reserve the UI renders as '—'.
+ * This is the set the UI reads: `checkForecastAvailability`
+ * (src/lib/incentiveCaps.ts) returns `!forecastStates[campaignId]` for a
+ * forecast-requiring campaign, and `useRateSimulation` builds `forecastStates`
+ * from `forecast.items`.
+ *
+ * Note what the UI does with that answer: a campaign absent from `items` still
+ * renders its breakdown APR numerically — `forecastMerklApr`
+ * (src/lib/merklForecast.ts) returns `currentApr` when there is no merged
+ * state — and merely gains a '*' marker plus the "No forecast data — using
+ * current APR" footnote. `forecast.errors` is therefore NOT the exclusion
+ * signal: it is built into a `forecastErrors` map that nothing outside tests
+ * ever reads.
+ *
+ * Discovery still skips those campaigns, for a different reason than "renders
+ * '—'": with no forecast state the APR does not respond to position size, so
+ * the ladder assertions (`after > current`) in the pairing/offset specs could
+ * never hold. Preferring forecast-backed campaigns selects data those specs can
+ * actually exercise.
  */
-export function unavailableCampaignIdsFromSideData(sideData: unknown): Set<string> {
-  const errors = (sideData as { forecast?: { errors?: unknown } } | null | undefined)?.forecast?.errors;
+export function forecastAvailableCampaignIdsFromSideData(sideData: unknown): Set<string> {
+  const items = (sideData as { forecast?: { items?: unknown } } | null | undefined)?.forecast?.items;
   const ids = new Set<string>();
-  if (!Array.isArray(errors)) return ids;
-  for (const entry of errors) {
+  if (!Array.isArray(items)) return ids;
+  for (const entry of items) {
     const id = (entry as { campaignId?: unknown } | null | undefined)?.campaignId;
     if (typeof id === 'string' && id) ids.add(id);
     // The API sends ids as strings (they exceed Number.MAX_SAFE_INTEGER), so a
@@ -166,12 +200,26 @@ export function unavailableCampaignIdsFromSideData(sideData: unknown): Set<strin
   return ids;
 }
 
-/** Whether a breakdown is both renderable and backed by a Merkl forecast. */
-function isForecastableBreakdown(b: MerklBreakdown, unavailableCampaignIds: ReadonlySet<string>): boolean {
-  // A breakdown with no id cannot be matched against the error list — keep it
+/**
+ * Whether a breakdown can back a position-responsive incentive, i.e. mirrors
+ * the UI's `isForecastRequiring && checkForecastAvailability` short-circuit.
+ *
+ * `forecastAvailableCampaignIds` is the set from `forecast.items`; pass `null`
+ * when side-data is unavailable, which disables the gate entirely (degrading to
+ * "exclude everything" would turn the incentive suites into no-ops).
+ */
+function isForecastBackedBreakdown(
+  b: MerklBreakdown,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null | undefined,
+): boolean {
+  if (forecastAvailableCampaignIds == null) return true;
+  // Non-forecast-requiring campaigns never carry a forecast marker in the UI,
+  // so the gate must not touch them.
+  if (!b.campaignType || !FORECAST_REQUIRING_CAMPAIGN_TYPES.has(b.campaignType)) return true;
+  // A breakdown with no id cannot be matched against the item list — keep it
   // (the pre-existing behaviour) rather than dropping campaigns on a guess.
   if (typeof b.campaignId !== 'string' || !b.campaignId) return true;
-  return !unavailableCampaignIds.has(b.campaignId);
+  return forecastAvailableCampaignIds.has(b.campaignId);
 }
 
 // ─── Reserve predicates ──────────────────────────────────────────────
@@ -203,17 +251,17 @@ function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): num
  * compute a numeric percent for. Merit arrays are deliberately NOT considered
  * (Merit was fully retired — AAV-1289).
  *
- * `unavailableCampaignIds` carries the forecast gate
- * (`unavailableCampaignIdsFromSideData`); omit it only when forecast data is
- * genuinely unavailable, since an unforecastable campaign renders as '—'.
+ * `forecastAvailableCampaignIds` carries the forecast gate
+ * (`forecastAvailableCampaignIdsFromSideData`); pass `null` only when side-data
+ * is genuinely unavailable, which disables the gate.
  */
 export function hasComputableSupplyIncentive(
   r: DiscoveryReserve,
   nowIso: string,
-  unavailableCampaignIds: ReadonlySet<string> = EMPTY_CAMPAIGN_IDS,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
 ): boolean {
   return merklBreakdownsForSide(r, 'supply').some(
-    (b) => isComputableMerklCampaign(b, nowIso) && isForecastableBreakdown(b, unavailableCampaignIds),
+    (b) => isComputableMerklCampaign(b, nowIso) && isForecastBackedBreakdown(b, forecastAvailableCampaignIds),
   );
 }
 
@@ -364,20 +412,21 @@ export function getMarketChipLabel(marketName: string, chainName?: string): stri
  * Pick the best incentive reserve: usable, computable supply incentive,
  * preferring nonzero supply room, then highest net supply APR.
  *
- * `unavailableCampaignIds` is the forecast gate (see
- * `unavailableCampaignIdsFromSideData`): a campaign the backend could not
- * forecast renders '—' in the UI, so a reserve whose only campaign is
- * unforecastable must not be picked — the specs consuming it would either skip
- * or (before the guards in the spec) hang. Returns null when no candidate
- * qualifies (specs skip gracefully).
+ * `forecastAvailableCampaignIds` is the forecast gate (see
+ * `forecastAvailableCampaignIdsFromSideData`): a forecast-requiring campaign
+ * absent from `forecast.items` renders a position-independent APR, so a reserve
+ * whose only campaign is unforecastable must not be picked — the specs
+ * consuming it assert that the incentive responds to position size. Pass `null`
+ * to disable the gate. Returns null when no candidate qualifies (specs skip
+ * gracefully).
  */
 export function pickIncentiveReserve(
   reserves: DiscoveryReserve[],
   nowIso: string,
-  unavailableCampaignIds: ReadonlySet<string> = EMPTY_CAMPAIGN_IDS,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
 ): PickedReserve | null {
   const candidates = reserves.filter(
-    (r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso, unavailableCampaignIds),
+    (r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso, forecastAvailableCampaignIds),
   );
   if (candidates.length === 0) return null;
 

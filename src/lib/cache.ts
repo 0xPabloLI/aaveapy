@@ -111,9 +111,20 @@ function normalizeSymbolKey(symbol: string): string {
 // reference so getCacheEntry's secondary check invalidates stale
 // entries on next access. This handles "backend deployed new schema
 // but frontend hasn't rebuilt yet".
+//
+// Best-effort on purpose, like setCacheEntry: storage can throw (Safari
+// private mode, quota, blocked third-party storage) and this runs inside
+// fetchMarkets' try block. Letting it escape would send a perfectly good API
+// response down the catch path, where the fallback cache is equally
+// unavailable — the user would see no markets at all because cache
+// bookkeeping failed (AAV-1346 review).
 export function updateSchemaFingerprintFromApi(apiFp: string, storage: StorageLike = localStorage): void {
-  const newFp = `${apiFp}:${CACHE_VERSION}`;
-  storage.setItem(SCHEMA_FP_KEY, newFp);
+  try {
+    const newFp = `${apiFp}:${CACHE_VERSION}`;
+    storage.setItem(SCHEMA_FP_KEY, newFp);
+  } catch (error) {
+    console.warn('Failed to persist schema fingerprint:', error); // nosemgrep: unsafe-formatstring — object argument, not a printf-style format string
+  }
 }
 
 export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {

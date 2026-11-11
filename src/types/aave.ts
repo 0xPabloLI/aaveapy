@@ -236,8 +236,13 @@ export interface MarketsResponse {
     lastUpdated: string;
     version?: string;
     staleTimeMs?: number;
-    /** Kept: frontend uses hardcoded SCHEMA_FP for cache invalidation, not this backend value. Mechanism preserved. */
-    schemaFingerprint?: string; // Hash of API response field names; changes when shape changes
+    /**
+     * Hash of API response field names; changes when the shape changes.
+     * The frontend reads it: the bundle's own `SCHEMA_FP` is the primary cache
+     * check, and the value reported here is the lazy secondary one that drops
+     * entries written under a schema this bundle no longer matches (AAV-1346).
+     */
+    schemaFingerprint?: string;
   };
   reserves: ReserveWithSpread[];
 }
