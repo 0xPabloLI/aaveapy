@@ -118,19 +118,27 @@ function normalizeSymbolKey(symbol: string): string {
 // response down the catch path, where the fallback cache is equally
 // unavailable — the user would see no markets at all because cache
 // bookkeeping failed (AAV-1346 review).
-export function updateSchemaFingerprintFromApi(apiFp: string, storage: StorageLike = localStorage): void {
+//
+// `storage` is optional rather than defaulting to `localStorage` because a
+// default parameter is evaluated before the body, which would put the global
+// lookup outside this try: reading the `localStorage` property itself throws in
+// an opaque origin or a storage-denied context, before any method is reached.
+export function updateSchemaFingerprintFromApi(apiFp: string, storage?: StorageLike): void {
   try {
     const newFp = `${apiFp}:${CACHE_VERSION}`;
-    storage.setItem(SCHEMA_FP_KEY, newFp);
+    (storage ?? localStorage).setItem(SCHEMA_FP_KEY, newFp);
   } catch (error) {
     console.warn('Failed to persist schema fingerprint:', error); // nosemgrep: unsafe-formatstring — object argument, not a printf-style format string
   }
 }
 
-export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
+// Same optional-parameter shape as updateSchemaFingerprintFromApi, for the same
+// reason: this is called unguarded at module scope in App.tsx, so a throw while
+// reading `localStorage` would take the whole app down before React mounts.
+export function clearLegacyCacheEntries(storage?: StorageLike): void {
   for (const key of LEGACY_CACHE_KEYS) {
     try {
-      storage.removeItem(key);
+      (storage ?? localStorage).removeItem(key);
     } catch (error) {
       console.warn(`Failed to remove legacy cache key ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     }

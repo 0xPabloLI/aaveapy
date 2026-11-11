@@ -113,5 +113,8 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 
 - **症状**：`vi.spyOn(Storage.prototype, 'setItem')` 装好了、测试全绿，但**被测代码根本没被拦截**——测试通过却不证明任何事。
 - **取证**：装 spy 前后都成立 `localStorage.setItem !== Storage.prototype.setItem`（而 `Object.getPrototypeOf(localStorage) === Storage.prototype` 却是 `true`、`hasOwnProperty(localStorage, 'setItem')` 是 `false`），直接调 `localStorage.setItem(...)` 也不命中 spy。实现里读到的 `storage.setItem` 与测试里 `Storage.prototype.setItem` 不是同一个函数对象。
-- **正确写法**：要模拟「storage 抛错」，用 `vi.stubGlobal('localStorage', { getItem, setItem, removeItem })` 换掉全局——模块的默认参数 `storage: StorageLike = localStorage` 在**调用时**读全局，所以 stub 生效；`finally` 里 `vi.unstubAllGlobals()`。
+- **正确写法**：要模拟「storage 抛错」，用 `vi.stubGlobal('localStorage', { getItem, setItem, removeItem })` 换掉全局——模块在**调用时**读全局（`storage ?? localStorage`），所以 stub 生效；`finally` 里 `vi.unstubAllGlobals()`。
+- **⚠️ 但默认参数本身就是个陷阱（PR #811 第二轮 review）**：`storage: StorageLike = localStorage` 在**函数体之前**求值，所以把 `setItem` 包进 `try` **并不能**覆盖「读 `localStorage` 属性本身抛错」——opaque origin / storage 被拒时是**属性读取**抛 `SecurityError`，在方法被触达之前就逃出了这个 try。修法是**可选参数 + 在 try 内部解析**：`storage?: StorageLike` 然后 `(storage ?? localStorage).setItem(...)`。
+- **同一个缺陷会成对出现**：`updateSchemaFingerprintFromApi` 修了，`clearLegacyCacheEntries` 还留着同样的形状——而它在 `App.tsx` **模块作用域无条件调用**，抛错会让整个 app 在 React mount 前挂掉（比 review 报的那条更严重）。改一个「storage 会抛」的函数时，把同文件同族的都查一遍。
+- **测试要覆盖「属性访问抛错」而不只是「方法抛错」**：方法版用 `vi.stubGlobal` 就够，属性版必须用 `Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw ... } })`（`stubGlobal` 设的是值，拦不到 getter），并在 `finally` 里用保存的 descriptor 还原。两个测试都要各自验证能红。
 - **通用教训**：**验证「测试能红」比验证「测试能绿」更重要**。任何 mock/spy 装完，先把实现改回缺陷态跑一遍确认它变红；本次正是靠「移除 try/catch 后测试仍然全绿」才发现 spy 是空转的。

@@ -39,7 +39,35 @@ describe('clearLegacyCacheEntries', () => {
     expect(storage.getItem('aave-markets-list-cache')).toBeNull();
     expect(storage.getItem('aave-markets-cache')).toBe('{"active":true}');
   });
+
+  it('is best-effort when the localStorage property itself throws', () => {
+    withThrowingLocalStorage(() => {
+      expect(() => clearLegacyCacheEntries()).not.toThrow();
+    });
+  });
 });
+
+/**
+ * Replaces the `localStorage` global with a getter that throws, mirroring an
+ * opaque origin or a context where storage access is denied (SecurityError on
+ * property access, before any method is reached). Restores the original
+ * descriptor afterwards.
+ */
+function withThrowingLocalStorage(run: () => void): void {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() {
+      throw new Error('storage access denied');
+    },
+  });
+  try {
+    run();
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+    else delete (globalThis as { localStorage?: unknown }).localStorage;
+  }
+}
 
 describe('isDeficitWithoutPrice', () => {
   it('returns true when deficit exists but tokenPrice is null', () => {
@@ -117,6 +145,18 @@ describe('updateSchemaFingerprintFromApi', () => {
       removeItem: () => {},
     } as unknown as Storage;
     expect(() => updateSchemaFingerprintFromApi('abc123', throwingStorage)).not.toThrow();
+  });
+
+  // The method can be fine and the *property access* can still throw: an opaque
+  // origin or a storage-denied context raises SecurityError while reading
+  // `localStorage`, before setItem is ever reached. A default parameter is
+  // evaluated before the function body, so resolving it there would put the
+  // throw outside this function's try and back inside fetchMarkets' — the
+  // original bug this guard exists to prevent.
+  it('is best-effort: a throwing localStorage property does not propagate', () => {
+    withThrowingLocalStorage(() => {
+      expect(() => updateSchemaFingerprintFromApi('abc123')).not.toThrow();
+    });
   });
 });
 
