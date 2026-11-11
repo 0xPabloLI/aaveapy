@@ -17,7 +17,7 @@ interface ScenarioKeyInputs {
   supplyInput: string;
   borrowInput: string;
   inputMode: ScenarioInputMode;
-  meritMerklNetPosition: boolean;
+  merklNetPosition: boolean;
 }
 
 interface UseScenarioPinScrollOptions {
@@ -182,8 +182,8 @@ export function useScenarioPinScroll({
    * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
    */
   useEffect(() => {
-    const { supplyInput, borrowInput, inputMode, meritMerklNetPosition } = scenarioKey;
-    const composedKey = `${supplyInput}\0${borrowInput}\0${inputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
+    const { supplyInput, borrowInput, inputMode, merklNetPosition } = scenarioKey;
+    const composedKey = `${supplyInput}\0${borrowInput}\0${inputMode}\0${merklNetPosition ? '1' : '0'}`;
     const ids = sortedData.map((r) => getReserveSimulationId(r));
     const expandedIndex = expandedReserveId
       ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)

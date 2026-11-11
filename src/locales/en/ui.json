@@ -16,7 +16,7 @@
   "features": {
     "incentives": {
       "title": "All incentives in one place",
-      "body": "Merit, Merkl, and Brevis rewards merged into a single effective APY so you see real yield, not headline rates."
+      "body": "Merkl and Brevis rewards merged into a single effective APY so you see real yield, not headline rates."
     },
     "multichain": {
       "title": "{chainCount} chains, one view",

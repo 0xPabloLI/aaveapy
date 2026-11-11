@@ -30,7 +30,7 @@ const content: RatesPageContent = {
     "Comparez les taux (APY) de dépôt et d'emprunt d'Aave V3 sur toutes les blockchains, comprenez le fonctionnement du protocole Aave et l'impact des incitations sur le rendement DeFi réel.",
   h1: 'Taux et APY Aave V3 : comprendre le rendement DeFi',
   intro:
-    "Guide clair sur les taux d'Aave : ce qu'est l'APY, comment le protocole fixe les intérêts de dépôt et d'emprunt, ce que change la V3 et comment les programmes Merit, Merkl et Brevis s'ajoutent au rendement réel. Les chiffres en direct sont dans le tableau de bord, actualisés chaque minute.",
+    "Guide clair sur les taux d'Aave : ce qu'est l'APY, comment le protocole fixe les intérêts de dépôt et d'emprunt, ce que change la V3 et comment les programmes Merkl et Brevis s'ajoutent au rendement réel. Les chiffres en direct sont dans le tableau de bord, actualisés chaque minute.",
   cta: { label: 'Voir les taux Aave en direct', to: '/' },
   breadcrumb: {
     ariaLabel: "Fil d'Ariane",
@@ -59,7 +59,7 @@ const content: RatesPageContent = {
       h2: 'Exemple chiffré : 10 000 € en USDC sur Base',
       paragraphs: [
         "Prenons un dépôt de 10 000 € convertis en USDC sur Base. Si l'APY de dépôt affiché est de 4,2 %, le rendement brut sur un an est d'environ 420 €, soit près de 35 € par mois — à condition que le taux reste stable, ce qui n'arrive jamais vraiment.",
-        "Ajoutez maintenant une incitation Merit de 1,8 % d'APR sur la même réserve : le rendement effectif passe à environ 6 %, soit à peu près 600 € sur l'année. C'est exactement l'écart que le tableau de bord affiche entre « taux de base » et « APY effectif ».",
+        "Ajoutez maintenant une incitation Merkl de 1,8 % d'APR sur la même réserve : le rendement effectif passe à environ 6 %, soit à peu près 600 € sur l'année. C'est exactement l'écart que le tableau de bord affiche entre « taux de base » et « APY effectif ».",
         "Côté emprunt, si vous déposez 10 000 € d'ETH en garantie et empruntez 4 000 € d'USDC à 5,5 % d'APY, le coût annuel est d'environ 220 €. Votre health factor reste confortable tant que l'ETH ne chute pas brutalement ; en dessous de 1, la position devient liquidable. Les frais de gaz sur un L2 comme Base restent de l'ordre de quelques centimes par transaction, donc négligeables face à ces montants — ce ne serait pas le cas sur le mainnet Ethereum pour un petit dépôt.",
       ],
     },
@@ -99,7 +99,7 @@ const content: RatesPageContent = {
       },
       {
         title: 'Incitations externes',
-        body: 'Merit, Merkl et Brevis ajoutent un APR par-dessus le taux de base. Un pool au taux modeste peut offrir le meilleur rendement effectif du marché grâce aux incitations.',
+        body: 'Merkl et Brevis ajoutent un APR par-dessus le taux de base. Un pool au taux modeste peut offrir le meilleur rendement effectif du marché grâce aux incitations.',
       },
     ],
   },
@@ -133,7 +133,7 @@ const content: RatesPageContent = {
         a: "Parce que le taux est une fonction de l'utilisation (total emprunté ÷ total déposé). Un gros dépôt fait baisser l'utilisation et donc les taux ; une forte demande d'emprunt fait grimper l'utilisation et les taux s'envolent au-dessus du point optimal.",
       },
       {
-        q: 'Que sont Merit, Merkl et Brevis ?',
+        q: 'Que sont Merkl et Brevis ?',
         a: "Ce sont des programmes de récompense en tokens qui distribuent des incitations supplémentaires aux déposants ou aux emprunteurs de certaines réserves. Ils ne font pas partie du taux de base d'Aave mais influencent le rendement réel : nous affichons l'APY effectif = APY de base + incitations, en plus du taux de base isolé.",
       },
       {
@@ -166,7 +166,7 @@ const content: RatesPageContent = {
       },
       {
         q: 'Quel est le meilleur rendement stablecoin en DeFi aujourd’hui ?',
-        a: "Il n'y a pas de réponse figée : le classement change plusieurs fois par jour. En pratique, les réserves USDC et USDT sur les L2 offrent le meilleur compromis rendement / liquidité, et les incitations Merit ou Merkl font souvent la différence finale. Triez le tableau de bord par APY effectif et vérifiez la date de fin des programmes avant de vous décider.",
+        a: "Il n'y a pas de réponse figée : le classement change plusieurs fois par jour. En pratique, les réserves USDC et USDT sur les L2 offrent le meilleur compromis rendement / liquidité, et les incitations Merkl font souvent la différence finale. Triez le tableau de bord par APY effectif et vérifiez la date de fin des programmes avant de vous décider.",
       },
       {
         q: 'Le rendement DeFi affiché est-il garanti ?',

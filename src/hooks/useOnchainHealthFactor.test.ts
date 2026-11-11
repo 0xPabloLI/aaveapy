@@ -50,8 +50,6 @@ const makeReserve = (overrides: Partial<ReserveWithSpread & RateCalcInput> = {})
     utilizationPct: 40,
     supplyIncentives: [],
     borrowIncentives: [],
-    meritSupplys: [],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [],
     brevisSupplys: [],

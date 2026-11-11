@@ -30,7 +30,7 @@ const content: RatesPageContent = {
     'Vergleiche die Aave-V3-Zinsen (APY) für Einlagen und Kredite über alle Netzwerke, verstehe wie das Aave-Protokoll funktioniert und wie Anreizprogramme die reale Rendite verändern.',
   h1: 'Aave Zinsen und APY in V3: so entsteht die Rendite',
   intro:
-    'Kompakter Leitfaden zu den Zinsen von Aave: was APY bedeutet, wie das Protokoll Einlage- und Kreditzinsen bestimmt, was sich mit V3 ändert und wie Merit, Merkl und Brevis auf die reale Rendite einzahlen. Die Live-Zahlen stehen im Dashboard und werden jede Minute aktualisiert.',
+    'Kompakter Leitfaden zu den Zinsen von Aave: was APY bedeutet, wie das Protokoll Einlage- und Kreditzinsen bestimmt, was sich mit V3 ändert und wie Merkl und Brevis auf die reale Rendite einzahlen. Die Live-Zahlen stehen im Dashboard und werden jede Minute aktualisiert.',
   cta: { label: 'Aave Zinsen live ansehen', to: '/' },
   breadcrumb: {
     ariaLabel: 'Brotkrumen-Navigation',
@@ -59,7 +59,7 @@ const content: RatesPageContent = {
       h2: 'Rechenbeispiel: 10.000 € in USDC auf Base',
       paragraphs: [
         'Angenommen, du legst 10.000 € als USDC auf Base ein. Bei einem angezeigten Einlage-APY von 4,2 % ergibt das rund 420 € Bruttoertrag im Jahr, also etwa 35 € pro Monat — vorausgesetzt, der Zins bliebe konstant, was in der Praxis nie der Fall ist.',
-        'Kommt auf dieselbe Reserve ein Merit-Anreiz von 1,8 % APR dazu, liegt die effektive Rendite bei etwa 6 %, also grob 600 € im Jahr. Genau diese Differenz zeigt das Dashboard als Unterschied zwischen Basiszins und effektivem APY.',
+        'Kommt auf dieselbe Reserve ein Merkl-Anreiz von 1,8 % APR dazu, liegt die effektive Rendite bei etwa 6 %, also grob 600 € im Jahr. Genau diese Differenz zeigt das Dashboard als Unterschied zwischen Basiszins und effektivem APY.',
         'Auf der Kreditseite: 10.000 € ETH als Sicherheit, davon 4.000 € USDC geliehen zu 5,5 % Kredit-APY, kostet rund 220 € im Jahr. Der Health Factor bleibt komfortabel, solange ETH nicht stark einbricht; unter 1 wird die Position liquidierbar. Die Transaktionsgebühren auf einem L2 wie Base liegen im Cent-Bereich und fallen gegenüber diesen Beträgen nicht ins Gewicht — auf dem Ethereum-Mainnet wäre das bei kleinen Summen anders.',
       ],
     },
@@ -68,7 +68,7 @@ const content: RatesPageContent = {
       h2: 'Aave Kurs und Aave Zinsen: was zusammenhängt und was nicht',
       paragraphs: [
         'Der Aave Kurs ist der Preis des AAVE-Tokens an den Börsen. Die Zinsen im Protokoll entstehen dagegen völlig unabhängig davon: Sie ergeben sich aus der Auslastung des jeweiligen Pools, also aus dem Verhältnis von geliehenem zu bereitgestelltem Kapital. Ein steigender Token-Kurs erhöht Ihre Einlagenzinsen nicht.',
-        'Indirekt gibt es trotzdem eine Verbindung. Steigt der Kurs von Anreiz-Token, die über Merit, Merkl oder Brevis ausgeschüttet werden, steigt auch der in Euro gemessene Wert dieser Belohnungen — und damit die effektive Rendite einer Reserve, obwohl der Basiszins gleich bleibt.',
+        'Indirekt gibt es trotzdem eine Verbindung. Steigt der Kurs von Anreiz-Token, die über Merkl oder Brevis ausgeschüttet werden, steigt auch der in Euro gemessene Wert dieser Belohnungen — und damit die effektive Rendite einer Reserve, obwohl der Basiszins gleich bleibt.',
       ],
     },
     {
@@ -98,7 +98,7 @@ const content: RatesPageContent = {
       },
       {
         title: 'Externe Anreize',
-        body: 'Merit, Merkl und Brevis addieren APR auf den Basiszins. Ein Pool mit moderatem Basis-APY kann dank Anreizen die beste effektive Rendite im Markt liefern.',
+        body: 'Merkl und Brevis addieren APR auf den Basiszins. Ein Pool mit moderatem Basis-APY kann dank Anreizen die beste effektive Rendite im Markt liefern.',
       },
     ],
   },
@@ -132,7 +132,7 @@ const content: RatesPageContent = {
         a: 'Weil er eine Funktion der Auslastung ist (geliehene Summe ÷ eingezahlte Summe). Eine große Einzahlung senkt die Auslastung und damit die Zinsen; hohe Kreditnachfrage treibt Auslastung und Zinsen über den optimalen Punkt hinaus.',
       },
       {
-        q: 'Was sind Merit, Merkl und Brevis?',
+        q: 'Was sind Merkl und Brevis?',
         a: 'Token-Belohnungsprogramme, die zusätzliche Anreize an Einleger oder Kreditnehmer bestimmter Reserven ausschütten. Sie gehören nicht zum Basiszins, verändern aber die reale Rendite. Deshalb zeigen wir effektiven APY = Basis-APY + Anreize sowie den isolierten Basiszins.',
       },
       {

@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet-async';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const FAQ_PLAIN_ANSWERS: Record<string, string> = {
-  'What are incentives (Merit / Merkl / Brevis) and the INK Incentive Calculator?':
-    'Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. The INK Incentive Calculator lets you adjust the assumed FDV of the INK token to see how it affects the incentive APR on Ink-chain markets.',
+  'What are incentives (Merkl / Brevis) and the INK Incentive Calculator?':
+    'Incentives are additional reward programs layered on top of native Aave rates. Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. The INK Incentive Calculator lets you adjust the assumed FDV of the INK token to see how it affects the incentive APR on Ink-chain markets.',
   'How does the Scenario Simulation work?':
     'Click any reserve row to expand it, then enter a hypothetical supply or borrow amount. The simulator recalculates interest rates based on the new utilization, showing you how your deposit or borrow would shift the market rate.',
   'What is APY vs APR?':
@@ -19,13 +19,13 @@ const FAQ_PLAIN_ANSWERS: Record<string, string> = {
 
 const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   {
-    q: 'What are incentives (Merit / Merkl / Brevis) and the INK Incentive Calculator?',
+    q: 'What are incentives (Merkl / Brevis) and the INK Incentive Calculator?',
     a: (
       <div className="space-y-[var(--ds-space-2)]">
         <p>
-          Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users,
-          Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the
-          incentive badges on any reserve to see details.
+          Incentives are additional reward programs layered on top of native Aave rates. Merkl distributes token
+          incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any
+          reserve to see details.
         </p>
         <p>
           The INK Incentive Calculator is a special case: it lets you adjust the assumed FDV (Fully Diluted Valuation)

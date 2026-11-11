@@ -36,8 +36,6 @@ const merklPointsReserve = (rewardTokenSymbol?: string): ReserveWithSpread => ({
   borrowDisabled: false,
   supplyIncentives: [],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [
     {
       name: 'Merkl Test',
@@ -152,8 +150,6 @@ describe('getIncentiveSources', () => {
     borrowDisabled: false,
     supplyIncentives: [1, 2],
     borrowIncentives: [3],
-    meritSupplys: [{ message: { action: 'test', text: 'test' }, breakdowns: [] }],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [{ name: 'Merkl Borrow', link: '', breakdowns: [] }],
     brevisSupplys: [],
@@ -165,7 +161,6 @@ describe('getIncentiveSources', () => {
     const reserve = makeReserve();
     const sources = getIncentiveSources(reserve, 'supply');
     expect(sources.protocol).toEqual([1, 2]);
-    expect(sources.merit).toEqual(reserve.meritSupplys);
     expect(sources.merkl).toEqual(reserve.merklSupplys);
     expect(sources.brevis).toEqual(reserve.brevisSupplys);
   });
@@ -174,7 +169,6 @@ describe('getIncentiveSources', () => {
     const reserve = makeReserve();
     const sources = getIncentiveSources(reserve, 'borrow');
     expect(sources.protocol).toEqual([3]);
-    expect(sources.merit).toEqual(reserve.meritBorrows);
     expect(sources.merkl).toEqual(reserve.merklBorrows);
     expect(sources.brevis).toEqual(reserve.brevisBorrows);
   });
@@ -182,13 +176,11 @@ describe('getIncentiveSources', () => {
   it('returns undefined arrays when reserve fields are missing', () => {
     const reserve = makeReserve({
       supplyIncentives: undefined,
-      meritSupplys: undefined,
       merklSupplys: undefined,
       brevisSupplys: undefined,
     });
     const sources = getIncentiveSources(reserve, 'supply');
     expect(sources.protocol).toBeUndefined();
-    expect(sources.merit).toBeUndefined();
     expect(sources.merkl).toBeUndefined();
     expect(sources.brevis).toBeUndefined();
   });

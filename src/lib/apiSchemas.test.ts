@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MarketsResponseSchema, SideDataMetaResponseSchema } from './apiSchemas';
 
-const buildMarketsPayload = (message: unknown) => ({
+const buildMarketsPayloadWithRetiredMeritFields = () => ({
   snapshot: {
     lastUpdated: '2026-03-09T00:00:00.000Z',
     version: '1.0.0',
@@ -20,7 +20,7 @@ const buildMarketsPayload = (message: unknown) => ({
       meritSupplys: [
         {
           link: 'https://app.merit.systems/campaign',
-          message,
+          message: [{ action: 'Supply USDT', description: 'Rewards are distributed' }],
           breakdowns: [
             {
               campaignApr: 4.16,
@@ -32,34 +32,17 @@ const buildMarketsPayload = (message: unknown) => ({
           ],
         },
       ],
+      meritBorrows: [],
     },
   ],
 });
 
 describe('apiSchemas', () => {
-  it('rejects Merit message payloads that are not strings, objects, or arrays', () => {
-    const result = MarketsResponseSchema.safeParse(buildMarketsPayload(123));
+  it('strips the retired merit campaign fields from /markets', () => {
+    const parsed = MarketsResponseSchema.parse(buildMarketsPayloadWithRetiredMeritFields());
 
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts structured Merit message payloads used by staging responses', () => {
-    const result = MarketsResponseSchema.safeParse(
-      buildMarketsPayload([
-        {
-          action: 'Supply USDT',
-          description:
-            'Rewards are distributed using the following formula: f(USDT aToken Holding - USDT vToken Holding / USDT Liquidation Threshold)',
-        },
-        {
-          action: 'Self Authentication',
-          description:
-            'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
-        },
-      ]),
-    );
-
-    expect(result.success).toBe(true);
+    expect(parsed.reserves[0]).not.toHaveProperty('meritSupplys');
+    expect(parsed.reserves[0]).not.toHaveProperty('meritBorrows');
   });
 
   it('preserves Merkl breakdown forecast fields from /markets', () => {

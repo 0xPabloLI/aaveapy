@@ -42,7 +42,7 @@ function IncentiveNetCheckboxTooltip({
               DS_NATIVE_CHECKBOX_CLASS,
               'mt-0 accent-muted-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
             )}
-            aria-label="Net lending and borrowing for incentives (Merit/Merkl); Brevis unchanged"
+            aria-label="Net lending and borrowing for incentives (Merkl); Brevis unchanged"
           />
           <span className={cn(labelTextClassName, 'whitespace-nowrap')}>Net lending &amp; borrowing</span>
         </label>
@@ -80,8 +80,8 @@ export interface ScenarioControlsHandle {
 interface ScenarioControlsProps {
   onDebouncedChange: (supply: string, borrow: string, mode: ScenarioInputMode) => void;
   /** When true, non-Brevis incentive simulation uses net lending (supply minus borrow) and net borrowing (borrow minus supply); when false, gross supply and gross borrow per side. Brevis is unchanged. */
-  meritMerklNetPosition?: boolean;
-  onMeritMerklNetPositionChange?: (value: boolean) => void;
+  merklNetPosition?: boolean;
+  onMerklNetPositionChange?: (value: boolean) => void;
   /** Controlled mobile net-open state — when provided, the SlidersHorizontal toggle is rendered externally and this component uses the supplied value. */
   mobileNetOpen?: boolean;
   onMobileNetToggle?: () => void;
@@ -170,8 +170,8 @@ const ScenarioControls = memo(
     (
       {
         onDebouncedChange,
-        meritMerklNetPosition = true,
-        onMeritMerklNetPositionChange,
+        merklNetPosition = true,
+        onMerklNetPositionChange,
         mobileNetOpen: controlledMobileNetOpen,
         onMobileNetToggle,
       },
@@ -230,9 +230,9 @@ const ScenarioControls = memo(
         debounceMs: INPUT_DEBOUNCE_MS,
       });
 
-      const handleMeritMerklNetPositionChange = useCallback(
+      const handleMerklNetPositionChange = useCallback(
         (next: boolean) => {
-          if (!onMeritMerklNetPositionChange) return;
+          if (!onMerklNetPositionChange) return;
           if (!next && !isMobile) {
             toast('Incentives usually follow net lending & borrowing', {
               description:
@@ -240,9 +240,9 @@ const ScenarioControls = memo(
               duration: 4500,
             });
           }
-          onMeritMerklNetPositionChange(next);
+          onMerklNetPositionChange(next);
         },
-        [onMeritMerklNetPositionChange, isMobile],
+        [onMerklNetPositionChange, isMobile],
       );
 
       useImperativeHandle(ref, () => ({
@@ -271,8 +271,8 @@ const ScenarioControls = memo(
       const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
       const segmentedActiveTextClass = 'text-foreground';
 
-      const showMeritMerklMode = typeof onMeritMerklNetPositionChange === 'function';
-      const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
+      const showMerklNetMode = typeof onMerklNetPositionChange === 'function';
+      const merklNetCheckboxId = 'scenario-merkl-net-lending-borrowing';
 
       if (isMobile) {
         return (
@@ -317,7 +317,7 @@ const ScenarioControls = memo(
                   compact
                 />
               </div>
-              {showMeritMerklMode && !isMobileNetOpenControlled ? (
+              {showMerklNetMode && !isMobileNetOpenControlled ? (
                 <button
                   type="button"
                   onClick={() => setInternalMobileNetOpen((prev) => !prev)}
@@ -335,17 +335,17 @@ const ScenarioControls = memo(
                 </button>
               ) : null}
             </div>
-            {showMeritMerklMode && mobileNetOpen ? (
+            {showMerklNetMode && mobileNetOpen ? (
               <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border/60 bg-card/95 px-1.5 py-1 backdrop-blur-sm">
                 <label
-                  htmlFor={meritMerklCheckboxId}
+                  htmlFor={merklNetCheckboxId}
                   className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-md px-1.5 py-0.5 transition-colors"
                 >
                   <input
-                    id={meritMerklCheckboxId}
+                    id={merklNetCheckboxId}
                     type="checkbox"
-                    checked={meritMerklNetPosition}
-                    onChange={(event) => handleMeritMerklNetPositionChange(event.target.checked)}
+                    checked={merklNetPosition}
+                    onChange={(event) => handleMerklNetPositionChange(event.target.checked)}
                     className={cn(
                       DS_NATIVE_CHECKBOX_CLASS,
                       'mt-0 accent-muted-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
@@ -414,11 +414,11 @@ const ScenarioControls = memo(
               />
 
               <div className="flex items-center gap-3 shrink-0">
-                {showMeritMerklMode ? (
+                {showMerklNetMode ? (
                   <IncentiveNetCheckboxTooltip
-                    id={meritMerklCheckboxId}
-                    checked={meritMerklNetPosition}
-                    onCheckedChange={handleMeritMerklNetPositionChange}
+                    id={merklNetCheckboxId}
+                    checked={merklNetPosition}
+                    onCheckedChange={handleMerklNetPositionChange}
                     labelClassName="shrink-0 min-w-0 py-0.5"
                     labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
                   />

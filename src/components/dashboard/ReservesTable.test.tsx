@@ -127,8 +127,6 @@ const reserveBase: Omit<ReserveWithSpread, 'reserveId' | 'marketName' | 'tokenSy
     borrowDisabled: false,
     supplyIncentives: [],
     borrowIncentives: [],
-    meritSupplys: [],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [],
     brevisSupplys: [],

@@ -6,7 +6,7 @@
  * still import files from there).
  *
  * Problem it solves: `findIncentiveReserve()` previously only checked
- * `merklSupplys.length > 0` (plus the retired Merit arrays). Campaigns with
+ * `merklSupplys.length > 0`. Campaigns with
  * APR=0, expired windows, AMOUNT variants (APR is token-amount semantics, not
  * percent — AAV-1275), or TARGET_TOTAL_APR with 0 apr render incentive cells
  * as '—' with no recovery — making `not.toContainText('—')` assertions fail

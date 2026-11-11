@@ -81,8 +81,8 @@ const UsaStablecoinApy = () => (
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">USA Stablecoin APY on Aave</h1>
           <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
             Compare live supply and borrow APYs for US-friendly stablecoins — USDC, USDT, DAI, and GHO — across every
-            Aave market on every chain. All Merit, Merkl, and Brevis incentives are baked into the effective yield, so
-            the numbers you see are what you'd actually earn.
+            Aave market on every chain. All Merkl and Brevis incentives are baked into the effective yield, so the
+            numbers you see are what you'd actually earn.
           </p>
         </header>
 
@@ -123,9 +123,8 @@ const UsaStablecoinApy = () => (
           <p className="text-muted-foreground leading-relaxed">
             Aave sets supply and borrow rates algorithmically based on pool utilization — the ratio of borrowed to
             supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike to
-            attract deposits. On top of the base rate, active incentive programs (Merit from Aave, Merkl from third
-            parties, Brevis on select chains) add token rewards that lift the effective APY beyond what the curve alone
-            would pay.
+            attract deposits. On top of the base rate, active incentive programs (Merkl for specific markets, Brevis on
+            select chains) add token rewards that lift the effective APY beyond what the curve alone would pay.
           </p>
         </section>
 

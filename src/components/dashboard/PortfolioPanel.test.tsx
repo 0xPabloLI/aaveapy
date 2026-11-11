@@ -71,8 +71,6 @@ const makeReserve = (symbol: string, market = 'AaveV3Ethereum'): ReserveWithSpre
   borrowDisabled: false,
   supplyIncentives: [],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],

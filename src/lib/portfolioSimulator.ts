@@ -341,8 +341,6 @@ function computeResultsFromGroups(
         crossReservePositions,
         walletCrossReservePositions: walletCrossReservePositions.size > 0 ? walletCrossReservePositions : undefined,
         reserveSymbolById,
-        hubSupplied,
-        hubBorrowed,
         portfolioScenarioActive,
       });
 
@@ -421,7 +419,7 @@ function computeResultsFromGroups(
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.supplyApy ?? 0;
         // AAV-1350: the incentive always comes from the campaign sources
-        // (Merkl/Brevis/Merit). The legacy flat `supplyIncentives` array has no
+        // (Merkl/Brevis). The legacy flat `supplyIncentives` array has no
         // producer in the API, so reading it rendered '—' for every reserve that
         // could not enter the rate-calculator branch.
         const incentive = getCampaignIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {

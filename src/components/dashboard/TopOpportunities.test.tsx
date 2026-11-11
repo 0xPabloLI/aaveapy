@@ -46,8 +46,6 @@ const reserve: ReserveWithSpread = {
   borrowDisabled: false,
   supplyIncentives: [8],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],

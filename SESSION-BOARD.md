@@ -79,7 +79,7 @@
 | 利率模拟 | `src/lib/rateSimulation.ts`, `src/hooks/useRateSimulation.ts` |
 | 储备表 | `src/components/reserves/ReservesTable.tsx`, `DesktopReserveRow.tsx` |
 | 移动端储备 | `src/components/reserves/MobileReserveCard.tsx`, `MobileExpandedReserveShell.tsx` |
-| 激励预测 | `src/lib/meritForecast.ts`, `src/lib/brevisForecast.ts`, `src/lib/merklForecast.ts` |
+| 激励预测 | `src/lib/brevisForecast.ts`, `src/lib/merklForecast.ts` |
 | 格式化 / 工具 | `src/lib/formatters.ts`, `src/lib/sorters.ts` |
 | 全局样式 | `src/index.css`, `src/App.css`, `tailwind.config.ts` |
 | 路由 / 页面 | `src/pages/Index.tsx` |

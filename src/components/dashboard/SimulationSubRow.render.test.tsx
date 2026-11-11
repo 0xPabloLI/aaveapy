@@ -36,8 +36,6 @@ const baseReserve: ReserveWithSpread = {
   isPaused: false,
   supplyIncentives: [],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],
@@ -67,7 +65,6 @@ const baseSimulation: RateSimulationResult = {
     hasInput: true,
     sources: {
       protocol: emptySource,
-      merit: emptySource,
       merkl: emptySource,
       brevis: emptySource,
     },
@@ -88,7 +85,6 @@ const baseSimulation: RateSimulationResult = {
     hasInput: true,
     sources: {
       protocol: emptySource,
-      merit: emptySource,
       merkl: emptySource,
       brevis: emptySource,
     },

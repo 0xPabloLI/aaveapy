@@ -1,6 +1,6 @@
 # Aave APY
 
-> Real-time Aave deposit and borrow APY/APR analytics across every supported chain and market, including Merit, Merkl, and Brevis incentive forecasts.
+> Real-time Aave deposit and borrow APY/APR analytics across every supported chain and market, including Merkl and Brevis incentive forecasts.
 
 Aave APY aggregates live reserve data from the Aave protocol (v3 and v4) and overlays incentive programs so users can compare effective yields, simulate position sizes, and plan portfolios across chains. All data is sourced from the public api.aaveapy.com backend.
 

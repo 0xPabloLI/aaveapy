@@ -14,7 +14,7 @@ describe('tokenSymbolNormalization', () => {
     expect(normalizeTokenSymbolBaseUpper(' USD₮ ')).toBe('USD₮');
   });
 
-  it('normalizes alias symbols borrowed from backend merit matching', () => {
+  it('normalizes alias symbols borrowed from backend campaign matching', () => {
     expect(normalizeTokenSymbolAliasesUpper('USD₮')).toBe('USDT');
     expect(normalizeTokenSymbolAliasesUpper('USD₮0')).toBe('USDT');
     expect(normalizeTokenSymbolAliasesUpper('USDT0')).toBe('USDT');

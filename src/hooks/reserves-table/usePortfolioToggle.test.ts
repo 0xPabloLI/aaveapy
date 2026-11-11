@@ -613,8 +613,6 @@ describe('usePortfolioToggle', () => {
         utilizationPct: 40,
         supplyIncentives: [],
         borrowIncentives: [],
-        meritSupplys: [],
-        meritBorrows: [],
         merklSupplys: [],
         merklBorrows: [],
         brevisSupplys: [],

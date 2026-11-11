@@ -3,6 +3,8 @@
 
 Frontend rate simulation documentation — consolidated from the former multi-file module docs.
 
+> **Merit removed (AAV-1303, 2026-11-11, commit `fa398a79`)**: the frontend no longer has a Merit source. Sections below that mention `meritForecast.ts`, `getMeritAnchorTvlUsd`, `selfPositionCapUsd`, `sr.merit`, or Merit-only cap semantics are historical; the live sources are Merkl, Brevis, and protocol. The fallback path and calculator wiring are current.
+
 ## Module Map
 
 | Module | Section |
@@ -241,7 +243,6 @@ Beyond the three unified display functions, the following locations also have V4
 
 | Location | What | V4 behavior |
 |---|---|---|
-| `useRateSimulation.ts` → `getMeritAnchorTvlUsd` | Merit incentive TVL anchor | Supply: `reserveSizeUsd` only if > 0, else `undefined`. Borrow: on-chain `totalVariableDebt` instead of `reserveSizeUsd × utilizationPct / 100`. |
 | `useRateSimulation.ts` → `currentReserveSizeUsd` | Supply cap room calculation | `null` when `reserveSizeUsd` is 0 or missing (disables cap constraint). |
 | `SimulationSubRow.tsx` → `currentSupplySizeUsd` | Supply cap exceeded check | `null` when `reserveSizeUsd` is 0 or missing (disables base-exceeded warning). |
 
@@ -674,7 +675,7 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `meritForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
+| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `merklForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
 
 ### Brevis position cap
 
@@ -706,7 +707,6 @@ This section groups cap semantics for Merit, Merkl, and Brevis.
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
 - `src/lib/merklForecast.ts` – Merkl + Brevis unified `forecastWithTVL` and progress flags
-- `src/lib/meritForecast.ts` – Merit forecast (base + self position cap)
 - `src/lib/incentiveCaps.ts` – Domain-layer cap effects → simulation `capNote` / `capWarning`
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
 - `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
@@ -734,18 +734,18 @@ For each group:
 
 1. **deep-copy**: `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`
 2. **Hub field resolution** (v4): if `reserve.hubId`, use `reserve.hubBorrowed` (SDK direct, Hub-level totalBorrowed) for `reserveRateInput.borrowed`/`.hubBorrowed`; use `hubAggregationMap` for `hubSupplied` only (aggregated Σ(spoke_supplied), error <0.001%)
-3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `meritMerklNetPosition` defaults to `true`
+3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `merklNetPosition` defaults to `true`
 4. **Extract per-position rate**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`. **Note**: `afterNative` is always APY regardless of `isApy` toggle — native rate never switches to APR (per AprApyToggle contract: "Only incentive annual % follows this switch; native stays APY"). Only `afterIncentive` follows the APR/APY toggle.
 5. **Build `PortfolioPositionResult`** via `buildPortfolioPositionResult`
 
 ### Fallback (simplified calculation)
 
-When `simulationContext` is not provided, or a reserve lacks rate calc fields:
+When `simulationContext` is not provided:
 
 - `nativePercent = reserve.supplyApy / borrowApy` (backend static value)
-- `incentivePercent = sum(reserve.supplyIncentives / borrowIncentives)` (raw array sum, no forecast)
+- `incentivePercent = getCampaignIncentiveValues(reserve, side, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates })` → `.apy` or `.apr` per the toggle — Merkl `breakdowns[].campaignApr` plus Brevis. It never reads the legacy flat `supplyIncentives` / `borrowIncentives` arrays, which have no backend producer (AAV-1350).
 
-This matches the pre-Phase-2 behavior exactly.
+A reserve that lacks rate-calc fields still goes through the calculator: `hasRateCalcFields` gates the **native rate curve** only. Incentive APR needs no curve, and a missing `protocolFee` means 0, not "no rate model" (AAV-1350).
 
 ### `simulationContext` fields
 
@@ -758,7 +758,7 @@ This matches the pre-Phase-2 behavior exactly.
 
 ### Hub aggregation in Portfolio
 
-Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed` comes from SDK direct (`reserve.hubBorrowed`) and replaces per-Spoke `borrowed`; `hubSupplied` comes from `hubAggregationMap` (Σ(spoke_supplied), error <0.001%) and replaces per-Spoke `supplied`. Together they affect both `simulateNativeRatesAfterActions` (utilization denominator) and `getMeritAnchorTvlUsd` (Merit anchor TVL). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
+Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed` comes from SDK direct (`reserve.hubBorrowed`) and replaces per-Spoke `borrowed`; `hubSupplied` comes from `hubAggregationMap` (Σ(spoke_supplied), error <0.001%) and replaces per-Spoke `supplied`. Together they affect `simulateNativeRatesAfterActions` (utilization denominator). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
 
 ---
 

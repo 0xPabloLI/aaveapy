@@ -30,7 +30,7 @@ import { FORECAST_REQUIRING_CAMPAIGN_TYPES as appForecastRequiringCampaignTypes 
  * Scenario matrix (from spec):
  * S1 valid campaign selected / S2 points-based selected / S3 apr=0 excluded /
  * S4 expired excluded / S5 not-started excluded / S6 AMOUNT variants excluded /
- * S7 merit-only excluded / S8 mixed campaigns pick effective / S9 empty data → null /
+ * S7 empty merkl arrays excluded / S8 mixed campaigns pick effective / S9 empty data → null /
  * S10 sort by net supply APR desc
  *
  * AAV-1280 — discovery/UI render-gate alignment (isComputableMerklCampaign M1-M5,
@@ -203,8 +203,8 @@ describe('hasComputableSupplyIncentive', () => {
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
   });
 
-  it('S7: excludes merit-only reserves (Merit is fully retired)', () => {
-    const r = reserve({ merklSupplys: [], meritSupplys: [breakdown()] });
+  it('S7: excludes reserves whose merkl arrays are empty', () => {
+    const r = reserve({ merklSupplys: [] });
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
   });
 
@@ -426,7 +426,7 @@ describe('pickIncentiveReserve', () => {
   it('returns null when no candidate has a computable incentive (S3/S4/S6/S7 combined)', () => {
     const candidates = [
       reserve({ reserveId: 'a', merklSupplys: [breakdown({ campaignApr: 0 })] }),
-      reserve({ reserveId: 'b', meritSupplys: [breakdown()], merklSupplys: [] }),
+      reserve({ reserveId: 'b', merklSupplys: [], brevisSupplys: [] }),
     ];
     expect(pickIncentiveReserve(candidates, NOW)).toBeNull();
   });

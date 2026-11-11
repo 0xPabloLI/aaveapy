@@ -4,7 +4,7 @@
  * Fetches real /markets data from localhost:3001 (preferred) or staging API,
  * then runs buildRateSimulationResult on every reserve with incentives to verify:
  *
- * 1. currentIncentive = Protocol + Merit + Merkl + Brevis per-source sum (Golden Rule §2)
+ * 1. currentIncentive = Protocol + Merkl + Brevis per-source sum (Golden Rule §2)
  * 2. afterIncentive = same per-source sum when inputs are provided (Golden Rule §2)
  * 3. currentIncentive does NOT change when simulation inputs change (Golden Rule §1)
  * 4. Portfolio currentIncentive does NOT change when delta crosses cap threshold (AAV-1120)
@@ -34,8 +34,6 @@ function hasIncentives(reserve: ReserveWithSpread): boolean {
   return (
     (reserve.supplyIncentives?.length ?? 0) > 0 ||
     (reserve.borrowIncentives?.length ?? 0) > 0 ||
-    (reserve.meritSupplys?.length ?? 0) > 0 ||
-    (reserve.meritBorrows?.length ?? 0) > 0 ||
     (reserve.merklSupplys?.length ?? 0) > 0 ||
     (reserve.merklBorrows?.length ?? 0) > 0 ||
     (reserve.brevisSupplys?.length ?? 0) > 0 ||
@@ -88,7 +86,7 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
   );
 
   it(
-    'Golden Rule §2: currentIncentive = Protocol + Merit + Merkl + Brevis (supply side)',
+    'Golden Rule §2: currentIncentive = Protocol + Merkl + Brevis (supply side)',
     async () => {
       reserves ??= await fetchReserves();
       const withIncentives = reserves.filter(hasIncentives);
@@ -103,10 +101,9 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         });
 
         const protocolCurrent = result.supply.sources.protocol?.current ?? 0;
-        const meritCurrent = result.supply.sources.merit?.current ?? 0;
         const merklCurrent = result.supply.sources.merkl?.current ?? 0;
         const brevisCurrent = result.supply.sources.brevis?.current ?? 0;
-        const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
+        const perSourceSum = protocolCurrent + merklCurrent + brevisCurrent;
 
         expect(perSourceSum).toBeCloseTo(result.supply.currentIncentive, 5);
         checked++;
@@ -119,13 +116,12 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
   );
 
   it(
-    'Golden Rule §2: currentIncentive = Protocol + Merit + Merkl + Brevis (borrow side)',
+    'Golden Rule §2: currentIncentive = Protocol + Merkl + Brevis (borrow side)',
     async () => {
       reserves ??= await fetchReserves();
       const withBorrowIncentives = reserves.filter(
         (r) =>
           (r.borrowIncentives?.length ?? 0) > 0 ||
-          (r.meritBorrows?.length ?? 0) > 0 ||
           (r.merklBorrows?.length ?? 0) > 0 ||
           (r.brevisBorrows?.length ?? 0) > 0,
       );
@@ -140,10 +136,9 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         });
 
         const protocolCurrent = result.borrow.sources.protocol?.current ?? 0;
-        const meritCurrent = result.borrow.sources.merit?.current ?? 0;
         const merklCurrent = result.borrow.sources.merkl?.current ?? 0;
         const brevisCurrent = result.borrow.sources.brevis?.current ?? 0;
-        const perSourceSum = protocolCurrent + meritCurrent + merklCurrent + brevisCurrent;
+        const perSourceSum = protocolCurrent + merklCurrent + brevisCurrent;
 
         expect(perSourceSum).toBeCloseTo(result.borrow.currentIncentive, 5);
         checked++;
@@ -176,10 +171,9 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API: incentive consistency on
         if (result.supply.afterIncentive === null) continue;
 
         const protocolAfter = result.supply.sources.protocol?.after ?? 0;
-        const meritAfter = result.supply.sources.merit?.after ?? 0;
         const merklAfter = result.supply.sources.merkl?.after ?? 0;
         const brevisAfter = result.supply.sources.brevis?.after ?? 0;
-        const perSourceSum = protocolAfter + meritAfter + merklAfter + brevisAfter;
+        const perSourceSum = protocolAfter + merklAfter + brevisAfter;
 
         expect(perSourceSum).toBeCloseTo(result.supply.afterIncentive, 5);
         checked++;

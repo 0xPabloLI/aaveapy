@@ -8,15 +8,6 @@ export type IncentiveMessage =
       [key: string]: IncentiveMessageScalar | IncentiveMessage;
     };
 
-export interface MeritCampaignBreakdown extends ForecastableBreakdown {
-  campaignId: string;
-  message?: IncentiveMessage;
-}
-
-export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {
-  message?: IncentiveMessage;
-}
-
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
@@ -211,10 +202,6 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   supplyIncentives?: number[];
   /** @deprecated See `supplyIncentives` (AAV-1350). */
   borrowIncentives?: number[];
-
-  // Merit APR incentives (CampaignGroup format)
-  meritSupplys?: MeritCampaignGroup[];
-  meritBorrows?: MeritCampaignGroup[];
 
   // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];

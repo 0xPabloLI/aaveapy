@@ -1,13 +1,13 @@
 {
   "meta": {
     "title": "AaveAPY France — Comparez les rendements DeFi en temps réel",
-    "description": "Comparez les taux de dépôt et d'emprunt Aave V3 sur toutes les chaînes prises en charge. Suivez les incitations Merit, Merkl et Brevis en direct. Gratuit, sans wallet.",
+    "description": "Comparez les taux de dépôt et d'emprunt Aave V3 sur toutes les chaînes prises en charge. Suivez les incitations Merkl et Brevis en direct. Gratuit, sans wallet.",
     "ogLocale": "fr_FR"
   },
   "hero": {
     "eyebrow": "Tableau de bord DeFi · France",
     "title": "Le cours et les meilleurs APY Aave en temps réel",
-    "subtitle": "Comparez les rendements de dépôt et coûts d'emprunt Aave V3 sur toutes les chaînes prises en charge, avec les incitations Merit, Merkl et Brevis déjà intégrées à l'APY effectif.",
+    "subtitle": "Comparez les rendements de dépôt et coûts d'emprunt Aave V3 sur toutes les chaînes prises en charge, avec les incitations Merkl et Brevis déjà intégrées à l'APY effectif.",
     "cta": "Ouvrir le tableau de bord",
     "secondaryCta": "Voir toutes les chaînes"
   },
@@ -19,7 +19,7 @@
   "features": [
     {
       "title": "Toutes les incitations en un seul endroit",
-      "body": "Récompenses Merit, Merkl et Brevis fusionnées dans un APY effectif unique, pour voir le vrai rendement et non le taux affiché. Affichage de l'APY effectif (base + incitations)."
+      "body": "Récompenses Merkl et Brevis fusionnées dans un APY effectif unique, pour voir le vrai rendement et non le taux affiché. Affichage de l'APY effectif (base + incitations)."
     },
     {
       "title": "Multichain, une seule vue",
@@ -45,10 +45,10 @@
     },
     {
       "q": "Quelle est la meilleure chaîne pour déposer sur Aave aujourd'hui ?",
-      "a": "Cela varie minute par minute. Les stablecoins (USDC, USDT, DAI) sur les L2 (Base, Arbitrum, Optimism) offrent généralement les APY les plus compétitifs grâce aux incitations Merit et Merkl actives."
+      "a": "Cela varie minute par minute. Les stablecoins (USDC, USDT, DAI) sur les L2 (Base, Arbitrum, Optimism) offrent généralement les APY les plus compétitifs grâce aux incitations Merkl actives."
     },
     {
-      "q": "Comment Merit, Merkl et Brevis affectent mon APY réel ?",
+      "q": "Comment Merkl et Brevis affectent mon APY réel ?",
       "a": "Ce sont des programmes de récompense en token qui s'ajoutent à l'APR de base d'un dépôt ou réduisent le coût d'un emprunt. Nous affichons l'APY effectif (base + incitations) pour des comparaisons honnêtes."
     },
     {
@@ -61,7 +61,7 @@
     },
     {
       "q": "Quelle chaîne a le coût d'emprunt le plus bas sur Aave ?",
-      "a": "Les L2 (Arbitrum, Base, Optimism) offrent généralement le gaz le moins cher et le coût effectif le plus bas, surtout lorsque des incitations Merit sont actives côté emprunteur. Utilisez le simulateur pour valider avec votre propre montant."
+      "a": "Les L2 (Arbitrum, Base, Optimism) offrent généralement le gaz le moins cher et le coût effectif le plus bas, surtout lorsque des incitations Merkl sont actives côté emprunteur. Utilisez le simulateur pour valider avec votre propre montant."
     }
   ]
 }

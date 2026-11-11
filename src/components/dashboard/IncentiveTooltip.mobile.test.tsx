@@ -37,8 +37,6 @@ const mockReserve: ReserveWithSpread = {
   borrowDisabled: false,
   supplyIncentives: [0.5],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],

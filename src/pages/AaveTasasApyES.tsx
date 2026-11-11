@@ -30,7 +30,7 @@ const content: RatesPageContent = {
     'Compara las tasas (APY) de depósito y préstamo de Aave V3 en todas las redes, entiende cómo funciona el protocolo Aave y cómo los incentivos afectan al rendimiento real del lending.',
   h1: 'Tasas y APY de Aave V3: cómo se forma el rendimiento',
   intro:
-    'Guía directa sobre las tasas de Aave: qué es el APY, cómo el protocolo fija los intereses de depósito y préstamo, qué cambia en la V3 y cómo Merit, Merkl y Brevis suman al rendimiento real. Los números en vivo están en el panel, actualizados cada minuto.',
+    'Guía directa sobre las tasas de Aave: qué es el APY, cómo el protocolo fija los intereses de depósito y préstamo, qué cambia en la V3 y cómo Merkl y Brevis suman al rendimiento real. Los números en vivo están en el panel, actualizados cada minuto.',
   cta: { label: 'Ver las tasas de Aave en vivo', to: '/' },
   breadcrumb: {
     ariaLabel: 'Ruta de navegación',
@@ -59,7 +59,7 @@ const content: RatesPageContent = {
       h2: 'Ejemplo con números: 10.000 € en USDC en Base',
       paragraphs: [
         'Supón un depósito de 10.000 € convertidos a USDC en Base. Con un APY de depósito del 4,2 %, el rendimiento bruto anual ronda los 420 €, unos 35 € al mes, siempre que la tasa se mantuviera estable — algo que en la práctica nunca ocurre.',
-        'Si a esa misma reserva se suma un incentivo Merit del 1,8 % de APR, el rendimiento efectivo sube a cerca del 6 %, aproximadamente 600 € al año. Esa es justo la diferencia que el panel muestra entre «tasa base» y «APY efectivo».',
+        'Si a esa misma reserva se suma un incentivo Merkl del 1,8 % de APR, el rendimiento efectivo sube a cerca del 6 %, aproximadamente 600 € al año. Esa es justo la diferencia que el panel muestra entre «tasa base» y «APY efectivo».',
         'En el lado del préstamo: con 10.000 € de ETH como garantía y 4.000 € de USDC prestados al 5,5 % de APY, el coste anual es de unos 220 €. El health factor se mantiene holgado mientras el ETH no caiga con fuerza; por debajo de 1 la posición pasa a ser liquidable. Las comisiones en una L2 como Base son de céntimos por transacción y resultan irrelevantes frente a estas cifras, algo que no sucede en la red principal de Ethereum con importes pequeños.',
       ],
     },
@@ -98,7 +98,7 @@ const content: RatesPageContent = {
       },
       {
         title: 'Incentivos externos',
-        body: 'Merit, Merkl y Brevis suman APR sobre la tasa base. Un pool con APY base modesto puede ofrecer el mejor rendimiento efectivo del mercado gracias a los incentivos.',
+        body: 'Merkl y Brevis suman APR sobre la tasa base. Un pool con APY base modesto puede ofrecer el mejor rendimiento efectivo del mercado gracias a los incentivos.',
       },
     ],
   },
@@ -132,7 +132,7 @@ const content: RatesPageContent = {
         a: 'Porque la tasa es función de la utilización (total prestado ÷ total depositado). Un depósito grande baja la utilización y las tasas; una fuerte demanda de préstamo sube la utilización y las tasas se disparan por encima del punto óptimo.',
       },
       {
-        q: '¿Qué son Merit, Merkl y Brevis?',
+        q: '¿Qué son Merkl y Brevis?',
         a: 'Son programas de recompensas en tokens que reparten incentivos adicionales a quienes depositan o toman prestado en ciertas reservas. No forman parte de la tasa base, pero afectan al rendimiento real: mostramos el APY efectivo = APY base + incentivos, además de la tasa base aislada.',
       },
       {

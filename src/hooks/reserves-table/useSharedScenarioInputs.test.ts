@@ -16,7 +16,7 @@ describe('useSharedScenarioInputs', () => {
     expect(result.current.debouncedSharedSupplyInput).toBe('');
     expect(result.current.debouncedSharedBorrowInput).toBe('');
     expect(result.current.sharedInputMode).toBe('usd');
-    expect(result.current.meritMerklNetPosition).toBe(true);
+    expect(result.current.merklNetPosition).toBe(true);
     expect(result.current.mobileNetOpen).toBe(false);
   });
 
@@ -83,12 +83,12 @@ describe('useSharedScenarioInputs', () => {
     });
   });
 
-  describe('setMeritMerklNetPosition', () => {
+  describe('setMerklNetPosition', () => {
     it('updates the toggle directly (used as the controlled checkbox onChange)', () => {
       const { result } = renderHook(() => useSharedScenarioInputs({ scenarioControlsRef: makeRef() }));
 
-      act(() => result.current.setMeritMerklNetPosition(false));
-      expect(result.current.meritMerklNetPosition).toBe(false);
+      act(() => result.current.setMerklNetPosition(false));
+      expect(result.current.merklNetPosition).toBe(false);
     });
   });
 

@@ -122,7 +122,7 @@ function formatNativeTokenAmount(positionCapNative: string, tokenSymbol: string,
 /**
  * Format position cap amount for display.
  * When `positionCapNative` + `tokenSymbol` are available (Merkl), shows native token amount + symbol.
- * Otherwise falls back to USD (Merit/Brevis).
+ * Otherwise falls back to USD (Brevis).
  */
 function formatPositionCapAmount(input: {
   positionCapUsd: number;
@@ -149,7 +149,7 @@ export function formatPositionCapNativeDisplay(
   return formatNativeTokenAmount(positionCapNative, tokenSymbol, decimals);
 }
 
-/** Per-user position cap. Shared by Brevis and Merit (via `applyPositionCapToForecastResult`). */
+/** Per-user position cap. Shared by Brevis and the per-campaign forecast rows (via `applyPositionCapToForecastResult`). */
 export function buildPositionCapEffect(input: {
   positionCapUsd: number;
   positionCapNative?: string;
@@ -321,9 +321,9 @@ export function buildCrossAssetPairingNote(input: CrossAssetPairingNoteInput): s
  * Check if a reserve has any position cap across all incentive sources for a given side.
  * Used by Reserve table to show a position-cap indicator dot next to incentive buttons.
  *
- * Checks: merklSupplys/borrows, meritSupplys/borrows, brevisSupplys/borrows.
+ * Checks: merklSupplys/borrows, brevisSupplys/borrows.
  * For Brevis, positionCapUsd can be at the top level (legacy) or in breakdowns.
- * For Merkl/Merit, positionCapUsd is in breakdowns.
+ * For Merkl, positionCapUsd is in breakdowns.
  * positionCapNative is also checked (can be resolved to USD).
  */
 export function hasPositionCap(reserve: ReserveWithSpread, side: 'supply' | 'borrow'): boolean {
@@ -334,17 +334,6 @@ export function hasPositionCap(reserve: ReserveWithSpread, side: 'supply' | 'bor
   const merklGroups = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   if (
     merklGroups?.some((g) =>
-      g.breakdowns?.some(
-        (b) => resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null,
-      ),
-    )
-  )
-    return true;
-
-  // Merit
-  const meritGroups = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-  if (
-    meritGroups?.some((g) =>
       g.breakdowns?.some(
         (b) => resolvePositionCapUsd(b.positionCapNative, b.positionCapUsd, tokenPrice, decimals) != null,
       ),

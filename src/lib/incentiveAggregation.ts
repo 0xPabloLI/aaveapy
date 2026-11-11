@@ -1,6 +1,5 @@
 import {
   type BrevisIncentive,
-  type MeritCampaignGroup,
   type MerklOpportunityGroup,
   type ReserveWithSpread,
   MerklForecastWireItem,
@@ -36,7 +35,6 @@ export interface IncentiveCalculationOptions {
 
 export interface IncentiveSources {
   protocol?: number[];
-  merit?: MeritCampaignGroup[];
   merkl?: MerklOpportunityGroup[];
   brevis?: BrevisIncentive[];
 }
@@ -44,7 +42,6 @@ export interface IncentiveSources {
 export function getIncentiveSources(reserve: ReserveWithSpread, side: 'supply' | 'borrow'): IncentiveSources {
   return {
     protocol: side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives,
-    merit: side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows,
     merkl: side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows,
     brevis: side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows,
   };
@@ -55,29 +52,6 @@ const sumNumberArray = (arr?: number[]): number => {
   return arr.reduce((sum, val) => {
     return !isNaN(val) && val >= 0 ? sum + val : sum;
   }, 0);
-};
-
-export const sumMeritIncentiveApr = (meritGroups?: MeritCampaignGroup[]): number => {
-  return sumActiveCampaignBreakdownValues(meritGroups, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, b) => b.campaignStartedAt,
-    getEndDate: (_group, b) => b.campaignEndedAt,
-    include: () => true,
-    mapValue: (_group, b) => (!isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0),
-  });
-};
-
-const sumMeritIncentiveApy = (meritGroups?: MeritCampaignGroup[]): number => {
-  return sumActiveCampaignBreakdownValues(meritGroups, {
-    getBreakdowns: (group) => group.breakdowns,
-    getStartDate: (_group, b) => b.campaignStartedAt,
-    getEndDate: (_group, b) => b.campaignEndedAt,
-    include: () => true,
-    mapValue: (_group, b) => {
-      const apr = !isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0;
-      return convertAprToApy(apr);
-    },
-  });
 };
 
 export const sumMerklIncentiveApr = (
@@ -239,30 +213,26 @@ export const sumBrevisIncentiveApy = (
 };
 
 export const calculateTotalIncentiveApr = (
-  meritGroups?: MeritCampaignGroup[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {},
 ): number => {
-  const meritApr = sumMeritIncentiveApr(meritGroups);
   const merklApr = sumMerklIncentiveApr(merklOpportunities, tydroPointToUsdRate, options);
   const protocolApr = sumNumberArray(protocolIncentives);
   const brevisAprValue = sumBrevisIncentiveApr(brevisIncentives, options.forecastStates);
 
-  return meritApr + merklApr + protocolApr + brevisAprValue;
+  return merklApr + protocolApr + brevisAprValue;
 };
 
 export const calculateTotalIncentiveApy = (
-  meritGroups?: MeritCampaignGroup[],
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {},
 ): number => {
-  const meritApy = sumMeritIncentiveApy(meritGroups);
   const merklApy = sumMerklIncentiveApy(merklOpportunities, tydroPointToUsdRate, options);
 
   let protocolApy = 0;
@@ -276,7 +246,7 @@ export const calculateTotalIncentiveApy = (
 
   const brevisApy = sumBrevisIncentiveApy(brevisIncentives, options.forecastStates);
 
-  return meritApy + merklApy + protocolApy + brevisApy;
+  return merklApy + protocolApy + brevisApy;
 };
 
 export function getReserveIncentiveValues(
@@ -287,14 +257,12 @@ export function getReserveIncentiveValues(
 ): { apr: number; apy: number } {
   const {
     protocol: protocolIncentives,
-    merit: meritGroups,
     merkl: merklOpportunities,
     brevis: brevisIncentives,
   } = getIncentiveSources(reserve, side);
 
   return {
     apr: calculateTotalIncentiveApr(
-      meritGroups,
       merklOpportunities,
       brevisIncentives,
       protocolIncentives,
@@ -302,7 +270,6 @@ export function getReserveIncentiveValues(
       options,
     ),
     apy: calculateTotalIncentiveApy(
-      meritGroups,
       merklOpportunities,
       brevisIncentives,
       protocolIncentives,
@@ -313,7 +280,7 @@ export function getReserveIncentiveValues(
 }
 
 /**
- * Campaign-only incentive values: Merit + Merkl + Brevis.
+ * Campaign-only incentive values: Merkl + Brevis.
  *
  * Unlike `getReserveIncentiveValues`, this ignores the deprecated flat
  * `supplyIncentives` / `borrowIncentives` arrays. Those have no producer in the
@@ -326,29 +293,11 @@ export function getCampaignIncentiveValues(
   tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {},
 ): { apr: number; apy: number } {
-  const {
-    merit: meritGroups,
-    merkl: merklOpportunities,
-    brevis: brevisIncentives,
-  } = getIncentiveSources(reserve, side);
+  const { merkl: merklOpportunities, brevis: brevisIncentives } = getIncentiveSources(reserve, side);
 
   return {
-    apr: calculateTotalIncentiveApr(
-      meritGroups,
-      merklOpportunities,
-      brevisIncentives,
-      undefined,
-      tydroPointToUsdRate,
-      options,
-    ),
-    apy: calculateTotalIncentiveApy(
-      meritGroups,
-      merklOpportunities,
-      brevisIncentives,
-      undefined,
-      tydroPointToUsdRate,
-      options,
-    ),
+    apr: calculateTotalIncentiveApr(merklOpportunities, brevisIncentives, undefined, tydroPointToUsdRate, options),
+    apy: calculateTotalIncentiveApy(merklOpportunities, brevisIncentives, undefined, tydroPointToUsdRate, options),
   };
 }
 
@@ -361,23 +310,11 @@ export function reserveHasIncentiveTooltipSources(
 ): boolean {
   const {
     protocol: protocolIncentives,
-    merit: meritGroups,
     merkl: opportunities,
     brevis: brevisIncentives,
   } = getIncentiveSources(reserve, side);
   if (protocolIncentives && protocolIncentives.length > 0) {
     return true;
-  }
-
-  if (meritGroups?.length) {
-    const meritApr = sumActiveCampaignBreakdownValues(meritGroups, {
-      getBreakdowns: (group) => group.breakdowns,
-      getStartDate: (_group, b) => b.campaignStartedAt,
-      getEndDate: (_group, b) => b.campaignEndedAt,
-      include: () => true,
-      mapValue: (_group, b) => (!isNaN(b.campaignApr) && b.campaignApr >= 0 ? b.campaignApr : 0),
-    });
-    if (meritApr > 0) return true;
   }
 
   if (brevisIncentives?.length) {
