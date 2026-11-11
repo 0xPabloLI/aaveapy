@@ -118,3 +118,19 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **同一个缺陷会成对出现**：`updateSchemaFingerprintFromApi` 修了，`clearLegacyCacheEntries` 还留着同样的形状——而它在 `App.tsx` **模块作用域无条件调用**，抛错会让整个 app 在 React mount 前挂掉（比 review 报的那条更严重）。改一个「storage 会抛」的函数时，把同文件同族的都查一遍。
 - **测试要覆盖「属性访问抛错」而不只是「方法抛错」**：方法版用 `vi.stubGlobal` 就够，属性版必须用 `Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw ... } })`（`stubGlobal` 设的是值，拦不到 getter），并在 `finally` 里用保存的 descriptor 还原。两个测试都要各自验证能红。
 - **通用教训**：**验证「测试能红」比验证「测试能绿」更重要**。任何 mock/spy 装完，先把实现改回缺陷态跑一遍确认它变红；本次正是靠「移除 try/catch 后测试仍然全绿」才发现 spy 是空转的。
+
+## 依赖包重命名 `ASSETS` 里的 key，会让 `reservePatches.ts` 整张表求值失败（#770）
+
+- **现象**：Hardcode Sync 在 `dev`/`main`/`lovable` 三个分支每天全红（实测 2026-09-16～2026-11-10 之间 41 天连续失败）。日志只有一行 `TypeError: Cannot read properties of undefined (reading 'UNDERLYING')`。
+- **⚠️ 堆栈会指错文件**：栈顶是 `collectRequiredIconSymbols (scripts/lib/token-icon-symbols.mjs:181)` 与 `getMissingSymbols (scripts/sync-token-icons.mjs:219)`，真凶在 `src/ui-config/reservePatches.ts` 的 key 表达式——`Function(...keys, 'return (...)')` 求值失败时，抛出点落在**调用方**，不在被求值的字面量里。
+- **机制**：`underlyingAssetMap` 的 key 是**对 address book 求值的表达式**（`[AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]`）。只要 `ASSETS` 里少一个名字，表达式就变成 `undefined.UNDERLYING`，**整张表**求值失败。地址簿每次发版都可能改名，而 CI 每天都 `npm update`。
+- **⚠️ 本地测不出来，差异只存在于 CI**：workflow 第 60 行是 `npm update @aave-dao/aave-address-book`，会拉到 **latest**；本地锁文件钉的是旧版。实测本地 `npm run sync-token-icons -- --check` 在 4.73.0 上 **exit 0**。**排查这类问题第一步先看 workflow 有没有主动升级依赖**，别在本地反复复现。
+- **本次的具体改名（已取证）**：`4.74.0` 把 Arbitrum/Optimism/Polygon 的**跨链 USDC** key 从 `USDC` 改成 `USDCe`。边界实测：`4.73.0` 有 `USDC` + `USDCn`，`4.74.0` 起是 `USDCe` + `USDCn`——**没有任何版本同时有两种拼写**，所以是改名不是别名。
+- **⚠️ 别改错成 `USDCn`（两个是不同的 token）**：用地址相等证明改名目标，不要靠名字猜。`USDC`/`USDCe` = `0xFF970A…`（Arbitrum，bridged，`symbol: 'USDC.e'`），`USDCn` = `0xaf88d0…`（native）。改成 `USDCn` 会把三条 patch 静默指向**另一个 token**，比崩溃更难发现。
+- **⚠️ 改名必须按 market 限定**：Ethereum/Base/Avalanche 等市场的 `USDC` 就是自己的 native USDC，全局替换会指错；Gnosis 同时有 `USDC` 与 `USDCe`。实测 4.77.6 只有那三个市场是 `USDCe + USDCn`。
+- **⚠️ 字符串比较的 key 是重命名的放大器（本次最隐蔽的一层）**：`check-reserve-patches-upstream.mjs` 与 `sync-reserve-patches-upstream.mjs` 都把表达式 key 当**字符串**比较（无法静态求值），于是同一条 reserve 在两侧拼写不同就变成两条。实测两个后果：① 漂移检查 **exit 2**，报 3 条**幻影 drift**；② sync 返回 `changed: true`，把上游的旧拼写**追加**回本地 map——**重新引入刚修掉的崩溃**。两处必须过同一张 canonical 映射表（`scripts/lib/reserve-patches-expr-keys.mjs`），单改 `.ts` 文件不够。
+- **验证手法**：改名后跑**真** sync（`npm run sync:reserve-patches-upstream`），断言 `reservePatches.ts` 的 **sha256 前后一致**（打印 "already aligned" 且文件未被重写）。只看 exit 0 不够——sync 的失败形态是"成功地把坏 key 写回去"。
+- **`tsc` 会直接给出正确名字**：本次 `error TS2551: Property 'USDC' does not exist on type '…'. Did you mean 'USDCe'?`。**依赖改名后先让类型检查器说话**，比去翻 changelog 快且准。
+- **红色历史不等于同一个原因**：实测 2026-09-14 那次 `Sync Round 1: true` / `Sync Round 2: true`（两轮 sync 都成功）却仍然失败，与 11 月的 `false`/`false` + TypeError 是**两种不同的失败**。统计失败天数前先按**错误签名**分组，别把整段红都算给当前这个 bug。
+- **通用教训**：依赖包重命名**导出结构**（而不是导出名）时，任何把它当**字符串**比较或做文本合并的地方都会静默错位。`tsc` 能拦住类型化的引用，拦不住"被拼进字符串再比较"的那一份。
+- **顺带发现**：`scripts/lib/` 下的 6 个 `.test.ts` 从来没跑过——vitest 的 `test.exclude` 有 `scripts/**`，而 `npm test` 的 `node --test` 只 glob `scripts/**/*.test.mjs`，两边都不覆盖 `.ts`。**「有测试文件」不等于「测试在跑」**：加测试目录时先确认 runner 的 glob 真的会捡到它。
