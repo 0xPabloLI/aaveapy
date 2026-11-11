@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 /* ─── Shared animation config ─── */

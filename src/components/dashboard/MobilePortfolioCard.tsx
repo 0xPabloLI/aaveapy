@@ -16,7 +16,7 @@
  */
 import { memo, useState } from 'react';
 import { Minus, EyeOff, Snowflake, PauseCircle, Ban, ChevronDown } from 'lucide-react';
-import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { cn } from '@/lib/utils';
 import {
   formatPercent,
