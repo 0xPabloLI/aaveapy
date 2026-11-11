@@ -70,6 +70,24 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **`[[IgnoredVulns]]` 之外没有 `PackageVulnerabilities`**：v2.5.1 对未知键是**整份配置拒绝加载**（`unknown keys in config file: ...`），不是忽略那一条。写错一个键名的后果是"豁免全废"，改完必须跑一次原样命令确认 `No issues found`。
 - **上游没修复版时不要硬抬版本**：`braces 3.0.3`（GHSA-vfj7-8cjw-p6xm，dev-only 经 tailwind v3 的 chokidar/micromatch 传入）在 npm 上没有更高版本，OSV 的 ranges 只有 `last_affected` 没有 `fixed`。这类只能带理由+到期日地豁免，或换依赖链根治；对比 axios 1.18.1 有 1.20.0 可升，那条走 `overrides`（#710/#711）。**先查有没有 fixed 事件，再决定用哪种修法。**
 
+## 修 CVE 与 ≥7 天冷却期会互相打架：`^` 会替你选一个「太新」的版本，而本地门拦不住它
+
+- **OSV 库会自己变，锁文件不动也能让门从绿变红**：2026-11-10 一次推送被 osv 挡下（21 条 / 9 包），而 `git diff <base> -- package-lock.json` **为空**、上次成功推送是一个月前 ⇒ 与本次改动无关，是 OSV 库新增了通告。**判断「是不是我引入的」最快路径就是这条 diff**，别先怀疑自己的改动。
+- **`npm audit fix` 只保证「修了漏洞」，不保证「够老」**：`^` range 在 `npm install` 时解析到**最新的匹配版**，而修复版往往刚发布不久。实测：`vite@8.2.4` 已 35 天，而 `"^8.2.2"` 会解析到 `8.2.6`（1.1 天）；`follow-redirects` 最新修复版 1.16.3 是 1.8 天，1.16.2 是 15.6 天。**解 osv 门时要显式挑一个既修漏洞又过冷却期的版本**，不能盲信 `audit fix` 的结果。
+- **⚠️ `check-dep-release-age` 拦不住「已有包的版本变化」——别把冷却期政策的执行寄托在它身上**：`parseAddedLockEntries`（`scripts/lib/dep-release-age-parse.mjs`）原本只认**新增的锁文件块**——它要求 `+ "node_modules/x": {` 这一**块头本身就是新增行**，块头是 context 行时，后面那条 `+ "version": "8.2.4"` 因 `currentPackage` 为 `null` 被直接丢弃。实测一次含 7 个版本变化的升级（3 个 direct：`vite`/`happy-dom`/`zod`）：门只看到 2 条**全新包**（`deepmerge-ts`、`@isaacs/nonrecursive-glob-match`），7 个版本变化**全部漏检**，却照样打印「✅ All direct dependency versions are at least 7 day(s) old」。**已于 2026-11-11 修掉**（块头改为同时从 context 行追踪 + 遇 `@@`/`diff --git`/`index` 重置归属 + 非包块如根 `"": {` 清空归属，F 系列 6 例回归测试）；修后同一次升级门能看到 10 条（3 direct）。**教训是「门打印全绿」不等于「门检查过」**——给门写测试时要覆盖「块头不变、只改 version」这种最常见的真实形态。
+- **该门只挡 direct、transitive 只 warn**（脚本内 `directNames` 分类，源码注释写明「transitive 由 osv + Socket 覆盖」）。注意 `directNames` 只取 `dependencies`/`optionalDependencies`/`devDependencies`——**`overrides` 里的包一律算 transitive**，所以 override 抬版本不会被它挡（实测 `follow-redirects`/`fast-uri`/`minimatch@10`/`@vanilla-extract/css` 均只 warn）。
+- **`has unused ignores` 是信号不是噪音**：豁免条目的通告被 OSV 撤下/收窄后会变成死配置，每次推送都打印一行。本仓 `braces` 那条（GHSA-vfj7-8cjw-p6xm）已实测失效——`osv-scanner` 与 `api.osv.dev` 两个来源都确认 `braces@3.0.3` 不再被标记。**留着的风险是反向的**：若该通告将来重新发布，这条豁免会静默压住它直到 `ignoreUntil`。定期核对，别当它是背景噪音。
+- **豁免 = 记账，不是修**：加 `[[IgnoredVulns]]` 时必须同时开票（本次 AAV-1348），并在 reason 里写清「为什么不能真修」的一手证据 + 到期后的根治路线。只写「无法修复」不算理由——要写清是**上游没有可用版本**（附版本对照表）、还是**强行抬版本会破坏什么**（附命中数，如两个钱包 SDK 的 9 + 57 处单参 `z.record()`）。
+
+## e2e 发现逻辑必须复刻 UI 的**全部**渲染门——包括状态存在别的端点里的那些
+
+- **现象**：`portfolio-incentive-calculation` / `portfolio-results-inline-delta` 两个 spec 在 CI（`6301e1cc`）与本地全量跑上稳定红、隔离跑却绿，看起来像 load-flake，实际是**确定性数据耦合**。
+- **根因**：`hasComputableSupplyIncentive` 只看 `/markets` 的 breakdown（时间窗、whitelist、AMOUNT 变体），但 UI 还多一道门——`checkForecastAvailability`（`src/lib/incentiveCaps.ts`）需要 **forecast 数据**才能算出 campaign 的 cap，所以**在 `/meta/side-data`.forecast.errors 里的 campaign 一律渲染 `—`**。该状态不在 breakdown 上，predicate 拿不到 ⇒ 选中了 `USDe | Ethena Ecosystem`，其 campaign 恰在 errors 里，于是单元格恒为 `—`。修法＝把 forecast 门补进发现链（`unavailableCampaignIdsFromSideData` + `test-reserves.ts` 拉一次 side-data），修后选中项变为 `GHO | Monad`（campaign 在 `forecast.items`）。
+- **通用教训**：写「镜像 UI 门」的发现/断言 predicate 时，**枚举门要把「状态来自其他端点」的门也算进去**，并在注释里点名它复刻的是哪个 UI 函数；否则 predicate 与 UI 会各自漂移，而症状（单元格是 `—`）离根因（另一个端点的一个数组）很远。
+- **别把「隔离绿、全量红」直接判成 load-flake**：先看失败是否落在**同一处断言 + 同一错误文本**上。本次三个失败里两个是确定性数据耦合（隔离跑也必红，我实测过），一个是真 load-flake（隔离跑绿）。
+- **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
+- **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
+
 ## dependabot.yml 是「一处无效 = 整份不解析」，且重复条目只有 check-run 会告诉你
 
 - **`ignore` 要求 `dependency-name` + `versions` 组合唯一**：写成两条相同条目，Dependabot 报 `The property '#/updates/0/ignore/1/versions' includes a duplicate`，结果是**整份配置不解析**——不是那一条被忽略，而是 npm 与 github-actions 两个生态一起停摆，连 security 更新都不开。
