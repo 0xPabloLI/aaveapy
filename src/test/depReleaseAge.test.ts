@@ -59,6 +59,77 @@ describe('parseAddedLockEntries', () => {
     expect(parseAddedLockEntries(diff)).toEqual([]);
   });
 
+  it('parses an in-place upgrade whose block header stays a context line', () => {
+    // The real shape of `npm install <pkg>@<newer>`: the header is unchanged, so
+    // it is emitted as a context line and only the version/resolved/integrity
+    // lines are added. Regression: this used to yield [] and the release-age
+    // gate never saw version bumps of existing packages at all.
+    const diff = [
+      'diff --git a/package-lock.json b/package-lock.json',
+      '@@ -3100,9 +3100,9 @@',
+      '     "node_modules/vite": {',
+      '-      "version": "8.2.2",',
+      '-      "resolved": "https://registry.npmjs.org/vite/-/vite-8.2.2.tgz",',
+      '-      "integrity": "sha512-old",',
+      '+      "version": "8.2.4",',
+      '+      "resolved": "https://registry.npmjs.org/vite/-/vite-8.2.4.tgz",',
+      '+      "integrity": "sha512-new",',
+      '       "dev": true,',
+    ].join('\n');
+    expect(parseAddedLockEntries(diff)).toEqual([{ name: 'vite', version: '8.2.4' }]);
+  });
+
+  it('parses several in-place upgrades in one hunk', () => {
+    const diff = [
+      '@@ -10,6 +10,6 @@',
+      '     "node_modules/happy-dom": {',
+      '-      "version": "20.14.5",',
+      '+      "version": "21.0.4",',
+      '     },',
+      '     "node_modules/zod": {',
+      '-      "version": "4.3.6",',
+      '+      "version": "4.6.7",',
+      '     },',
+    ].join('\n');
+    expect(parseAddedLockEntries(diff)).toEqual([
+      { name: 'happy-dom', version: '21.0.4' },
+      { name: 'zod', version: '4.6.7' },
+    ]);
+  });
+
+  it('does not carry a header across a hunk boundary', () => {
+    const diff = [
+      '@@ -10,4 +10,4 @@',
+      '     "node_modules/alpha": {',
+      '-      "integrity": "sha512-old",',
+      '+      "integrity": "sha512-new",',
+      '@@ -900,4 +900,4 @@',
+      '+      "version": "9.9.9",',
+    ].join('\n');
+    expect(parseAddedLockEntries(diff)).toEqual([]);
+  });
+
+  it('does not attribute a version line to a removed header', () => {
+    const diff = [
+      '-    "node_modules/gone": {',
+      '-      "version": "0.1.0",',
+      '-    },',
+      '+      "version": "9.9.9",',
+    ].join('\n');
+    expect(parseAddedLockEntries(diff)).toEqual([]);
+  });
+
+  it('drops attribution at a non-package block such as the root entry', () => {
+    const diff = [
+      '     "node_modules/alpha": {',
+      '       "version": "1.0.0",',
+      '     "": {',
+      '-      "version": "1.0.0",',
+      '+      "version": "1.1.0",',
+    ].join('\n');
+    expect(parseAddedLockEntries(diff)).toEqual([]);
+  });
+
   it('returns empty for an empty diff', () => {
     expect(parseAddedLockEntries('')).toEqual([]);
   });
