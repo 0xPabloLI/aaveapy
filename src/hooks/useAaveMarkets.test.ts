@@ -22,6 +22,15 @@ const respondWith = (schemaFingerprint: string) => {
   fetchWithTracingMock.mockResolvedValue({ ok: true, json: async () => payload });
 };
 
+/** `/markets` without `snapshot.schemaFingerprint` — the schema allows omitting it. */
+const respondWithoutFingerprint = () => {
+  const payload = {
+    snapshot: { lastUpdated: '2026-11-10T00:00:00.000Z' },
+    reserves: [],
+  } as MarketsResponse;
+  fetchWithTracingMock.mockResolvedValue({ ok: true, json: async () => payload });
+};
+
 describe('fetchMarkets — schema fingerprint drift sync (AAV-1346)', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -59,6 +68,28 @@ describe('fetchMarkets — schema fingerprint drift sync (AAV-1346)', () => {
     respondWith(SCHEMA_FP);
     await fetchMarkets();
     expect(localStorage.getItem(FP_KEY)).toBe(`${SCHEMA_FP}:2`);
+    expect(getCachedMarkets()).not.toBeNull();
+  });
+
+  // `schemaFingerprint` is optional in MarketsResponseSchema, so a valid
+  // response may omit it. Leaving a stale stored value in place would then
+  // reject every entry this bundle writes — setCacheEntry tags entries with the
+  // bundle fingerprint and the secondary check compares them against that stale
+  // value — leaving both the cache and the offline fallback permanently cold.
+  // With no value from the API, the bundle is the only truth, so the stale
+  // reference must go.
+  it('clears a stale stored fingerprint when the API omits the field', async () => {
+    localStorage.setItem(FP_KEY, 'staleDrifted:2');
+    respondWithoutFingerprint();
+    await fetchMarkets();
+    expect(localStorage.getItem(FP_KEY)).toBeNull();
+    expect(getCachedMarkets()).not.toBeNull();
+  });
+
+  it('leaves no fingerprint key behind when the API omits it and none was stored', async () => {
+    respondWithoutFingerprint();
+    await fetchMarkets();
+    expect(localStorage.getItem(FP_KEY)).toBeNull();
     expect(getCachedMarkets()).not.toBeNull();
   });
 

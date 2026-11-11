@@ -37,9 +37,10 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     // Runs on EVERY response rather than only on a mismatch: a value left over
     // from an earlier drift would otherwise never be corrected, and the cache
     // would stay cold for as long as that stale value survived (AAV-1346).
-    if (data.snapshot?.schemaFingerprint) {
-      updateSchemaFingerprintFromApi(data.snapshot.schemaFingerprint);
-    }
+    // Passed through unconditionally — the schema allows the field to be
+    // omitted, and the helper clears the reference in that case so a stale
+    // value cannot reject every entry this bundle writes.
+    updateSchemaFingerprintFromApi(data.snapshot?.schemaFingerprint);
 
     return data;
   } catch (error) {

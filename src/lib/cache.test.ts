@@ -132,6 +132,27 @@ describe('updateSchemaFingerprintFromApi', () => {
     expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:2');
   });
 
+  // The helper owns the whole invariant: the stored value equals what the API is
+  // serving, or does not exist. MarketsResponseSchema allows omitting the field,
+  // and a stale value left behind would reject every entry this bundle writes —
+  // setCacheEntry tags entries with the bundle fingerprint and the secondary
+  // check compares against the stored value, so the cache and its offline
+  // fallback would both stay permanently cold.
+  it('removes the stored fingerprint when the API omits it', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('staleDrifted', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('staleDrifted:2');
+    updateSchemaFingerprintFromApi(undefined, storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBeNull();
+  });
+
+  it('treats an empty fingerprint as absent rather than storing a bare version', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('staleDrifted', storage);
+    updateSchemaFingerprintFromApi('', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBeNull();
+  });
+
   // Storage can throw (Safari private mode, quota, blocked storage). This runs
   // inside fetchMarkets' try block, so an escaping error would send a valid API
   // response down the catch path where the fallback cache is equally

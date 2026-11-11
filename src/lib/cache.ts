@@ -112,6 +112,15 @@ function normalizeSymbolKey(symbol: string): string {
 // entries on next access. This handles "backend deployed new schema
 // but frontend hasn't rebuilt yet".
 //
+// This function owns the whole invariant — the stored value must equal what the
+// API is currently serving, or not exist at all — so callers just report what
+// they got. `apiFp` is optional because MarketsResponseSchema allows the field
+// to be omitted; when it is absent the reference is REMOVED rather than left
+// alone. Leaving a stale value would be worse than having none: setCacheEntry
+// tags every entry with this bundle's fingerprint, and the secondary check
+// compares that against the stored value, so a stale reference would reject
+// every entry the app writes — cache and offline fallback both permanently cold.
+//
 // Best-effort on purpose, like setCacheEntry: storage can throw (Safari
 // private mode, quota, blocked third-party storage) and this runs inside
 // fetchMarkets' try block. Letting it escape would send a perfectly good API
@@ -123,10 +132,11 @@ function normalizeSymbolKey(symbol: string): string {
 // default parameter is evaluated before the body, which would put the global
 // lookup outside this try: reading the `localStorage` property itself throws in
 // an opaque origin or a storage-denied context, before any method is reached.
-export function updateSchemaFingerprintFromApi(apiFp: string, storage?: StorageLike): void {
+export function updateSchemaFingerprintFromApi(apiFp?: string, storage?: StorageLike): void {
   try {
-    const newFp = `${apiFp}:${CACHE_VERSION}`;
-    (storage ?? localStorage).setItem(SCHEMA_FP_KEY, newFp);
+    const store = storage ?? localStorage;
+    if (apiFp) store.setItem(SCHEMA_FP_KEY, `${apiFp}:${CACHE_VERSION}`);
+    else store.removeItem(SCHEMA_FP_KEY);
   } catch (error) {
     console.warn('Failed to persist schema fingerprint:', error); // nosemgrep: unsafe-formatstring — object argument, not a printf-style format string
   }
