@@ -32,30 +32,66 @@ function isV4Module(name: string, mod: unknown): mod is V4AbModule {
   return typeof m?.CHAIN_ID === 'number' && !!m?.SPOKES && typeof m?.SPOKES === 'object';
 }
 
-export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = Object.fromEntries(
+/**
+ * One address-book module per chain, chosen without depending on enumeration order.
+ *
+ * The address book can ship several modules for the same chain: a base module plus
+ * curated variants. `AaveV4Ethereum` and `AaveV4EthereumSentoraCurated` are both
+ * `CHAIN_ID: 1`. Keying a `Record<chainId, …>` off every module let whichever one
+ * happened to be enumerated last win — when 4.74.0 added the Sentora module it
+ * silently replaced Ethereum's 27 spokes with that module's 7, so V4 positions on
+ * Ethereum went undiscovered (found via the 15 failing assertions in
+ * aaveV4UserClient.test.ts).
+ *
+ * The base module is the one whose name prefixes every other name for that chain, so
+ * this does not depend on order. Curated variants are skipped rather than merged:
+ * they redeploy spokes under names the base module already uses (`BLUECHIP_SPOKE`
+ * is a different address in each), and `deriveV4ReservesBySpoke`
+ * (src/lib/deriveOnchainConfig.ts) keys a Map by spoke name, so merging would
+ * conflate two spokes' reserves. Supporting curated modules needs that consumer to
+ * key by address first — tracked in AAV-1356.
+ */
+function selectModulesPerChain(modules: { name: string; mod: V4AbModule }[]): V4AbModule[] {
+  const byChain = new Map<number, { name: string; mod: V4AbModule }[]>();
+  for (const entry of modules) {
+    const group = byChain.get(entry.mod.CHAIN_ID);
+    if (group) group.push(entry);
+    else byChain.set(entry.mod.CHAIN_ID, [entry]);
+  }
+
+  return [...byChain.values()].map((group) => {
+    if (group.length === 1) return group[0].mod;
+    const base = group.find((candidate) => group.every((other) => other.name.startsWith(candidate.name)));
+    if (!base) {
+      throw new Error(
+        `Ambiguous AaveV4 address-book modules for chain ${group[0].mod.CHAIN_ID}: ` +
+          `${group.map((g) => g.name).join(', ')} — none prefixes the others, so there is no base module to prefer.`,
+      );
+    }
+    return base.mod;
+  });
+}
+
+const V4_MODULES_PER_CHAIN = selectModulesPerChain(
   Object.entries(ab)
     .filter(([name, mod]) => isV4Module(name, mod))
-    .map(([, mod]) => {
-      const m = mod as V4AbModule;
-      return [
-        m.CHAIN_ID,
-        Object.entries(m.SPOKES)
-          .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
-          .map(([name, address]) => ({ name, address: address as `0x${string}` })),
-      ];
-    }),
+    .map(([name, mod]) => ({ name, mod: mod as V4AbModule })),
+);
+
+export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = Object.fromEntries(
+  V4_MODULES_PER_CHAIN.map((m) => [
+    m.CHAIN_ID,
+    Object.entries(m.SPOKES)
+      .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
+      .map(([name, address]) => ({ name, address: address as `0x${string}` })),
+  ]),
 );
 
 export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = Object.fromEntries(
-  Object.entries(ab)
-    .filter(([name, mod]) => isV4Module(name, mod))
-    .map(([, mod]) => {
-      const m = mod as V4AbModule;
-      return [
-        m.CHAIN_ID,
-        Object.entries(m.HUBS).map(([name, address]) => ({ name, address: address as `0x${string}` })),
-      ];
-    }),
+  V4_MODULES_PER_CHAIN.map((m) => [
+    m.CHAIN_ID,
+    Object.entries(m.HUBS).map(([name, address]) => ({ name, address: address as `0x${string}` })),
+  ]),
 );
 
 export function getV4SpokeAddresses(chainId: number): V4SpokeEntry[] | undefined {
