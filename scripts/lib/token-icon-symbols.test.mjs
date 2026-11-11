@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import fs from 'fs';
 import path from 'path';
 import * as addressBook from '@aave-dao/aave-address-book';
@@ -23,7 +24,7 @@ describe('collectRequiredIconSymbols', () => {
       addressBookContext: addressBook,
     });
 
-    expect(symbols.has('acred')).toBe(true);
+    assert.ok(symbols.has('acred'));
   });
 
   it('prefers reservePatches iconSymbol by address over raw market symbol', () => {
@@ -39,8 +40,8 @@ describe('collectRequiredIconSymbols', () => {
       addressBookContext: addressBook,
     });
 
-    expect(symbols.has('ptusde')).toBe(true);
-    expect(symbols.has('pt-usde-7may2026')).toBe(false);
+    assert.ok(symbols.has('ptusde'));
+    assert.equal(symbols.has('pt-usde-7may2026'), false);
   });
 
   it('splits composite icon symbols into actual token icon lookup keys', () => {
@@ -56,10 +57,10 @@ describe('collectRequiredIconSymbols', () => {
       addressBookContext: addressBook,
     });
 
-    expect(symbols.has('uni')).toBe(true);
-    expect(symbols.has('aave')).toBe(true);
-    expect(symbols.has('weth')).toBe(true);
-    expect(symbols.has('uni_aave_weth')).toBe(false);
+    assert.ok(symbols.has('uni'));
+    assert.ok(symbols.has('aave'));
+    assert.ok(symbols.has('weth'));
+    assert.equal(symbols.has('uni_aave_weth'), false);
   });
 
   it('collects logoURI hints for icon symbols resolved by reserve patches', () => {
@@ -81,7 +82,7 @@ export function fetchIconSymbolAndName() {
       tokenLogoByAddress: new Map([['0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'https://example.com/foo.svg']]),
     });
 
-    expect(hints.get('foo')).toBe('https://example.com/foo.svg');
+    assert.equal(hints.get('foo'), 'https://example.com/foo.svg');
   });
 
   it('accepts tokenlist-derived symbol fallback when runtime markets are unavailable', () => {
@@ -93,6 +94,6 @@ export function fetchIconSymbolAndName() {
       addressBookContext: addressBook,
     });
 
-    expect(symbols.has('acred')).toBe(true);
+    assert.ok(symbols.has('acred'));
   });
 });

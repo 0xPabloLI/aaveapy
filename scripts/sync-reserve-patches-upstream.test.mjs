@@ -174,6 +174,21 @@ describe('applyUnderlyingAssetMapMerge', () => {
     assert.equal(result.content, local);
   });
 
+  it('recognises an upstream entry that differs only by a renamed asset key', () => {
+    // Upstream still writes ASSETS.USDC on Arbitrum/Optimism/Polygon while we
+    // write ASSETS.USDCe (the address book renamed it in 4.74.0). Appending
+    // upstream's copy would put back a key that throws on evaluation, which is
+    // how issue #770 kept every Hardcode Sync run red.
+    const entry = (asset) =>
+      `    [AaveV3Arbitrum.ASSETS.${asset}.UNDERLYING.toLowerCase()]: {\n      name: 'Bridged USDC',\n      symbol: 'USDC.e',\n      iconSymbol: 'USDC',\n    },`;
+    const local = makeNestedReservePatches(entry('USDCe'));
+    const result = applyUnderlyingAssetMapMerge(local, makeUpstreamMap(entry('USDC')));
+
+    assert.equal(result.changed, false);
+    assert.equal(result.addedCount, 0);
+    assert.equal(result.content, local);
+  });
+
   it('inserts a missing entry at the map entry indent, not the closing brace indent', () => {
     const local = makeNestedReservePatches(LOCAL_ENTRY);
     const result = applyUnderlyingAssetMapMerge(

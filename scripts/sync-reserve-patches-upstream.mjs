@@ -8,6 +8,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { canonicalizeExpressionKey } from './lib/reserve-patches-expr-keys.mjs';
 import { fetchWithTimeout } from './lib/fetch-utils.mjs';
 import { mergeSymbolMapInContent } from './lib/reserve-patches-symbol-map.mjs';
 
@@ -16,10 +17,6 @@ const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
 const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
 const LOCAL_TOKEN_SYMBOL_MAP_PATH = path.join(ROOT, 'src/lib/tokenSymbolMap.ts');
-
-function normalizeExpressionKey(value) {
-  return value.replace(/\s+/g, '');
-}
 
 export function findUnderlyingAssetMapBounds(content) {
   const marker = 'const underlyingAssetMap';
@@ -173,7 +170,10 @@ function extractEntryKey(entry) {
 
   const exprMatch = entry.match(/^\[([A-Za-z0-9_.\s]+\.toLowerCase\(\))\]\s*:/);
   if (exprMatch) {
-    return `expr:${normalizeExpressionKey(exprMatch[1])}`;
+    // Canonical, so an upstream entry spelled with a renamed asset name (e.g.
+    // `ASSETS.USDC` where we now write `ASSETS.USDCe`) is recognised as the same
+    // reserve instead of being appended as a duplicate that throws on evaluation.
+    return `expr:${canonicalizeExpressionKey(exprMatch[1])}`;
   }
 
   return null;

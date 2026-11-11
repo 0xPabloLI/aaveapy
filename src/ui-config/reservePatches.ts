@@ -90,17 +90,17 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       symbol: 'KNCL',
       iconSymbol: 'KNCL',
     },
-    [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Arbitrum.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
     },
-    [AaveV3Optimism.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Optimism.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
     },
-    [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Polygon.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
