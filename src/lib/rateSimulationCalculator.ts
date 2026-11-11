@@ -2128,9 +2128,12 @@ export function buildRateSimulationResult({
           ? deriveAvailableLiquidityUsd(computedReserveSizeUsd2, totalBorrowedUsd)
           : null;
 
+    // `protocolFee` is optional on RateCalcInput: absent means 0 (AAV-1350).
+    // typeof narrows `number | undefined`; Number.isFinite alone does not.
+    const rawProtocolFee = reserveRateInput.protocolFee;
     const protocolFee =
-      Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee >= 0
-        ? reserveRateInput.protocolFee
+      typeof rawProtocolFee === 'number' && Number.isFinite(rawProtocolFee) && rawProtocolFee >= 0
+        ? rawProtocolFee
         : (reserve.protocolFee ?? 0);
     const optimalUtilization =
       Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization >= 0

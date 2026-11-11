@@ -11,7 +11,12 @@ export interface RateCalcInput {
   liquidity: string;
   borrowed: string;
   deficit: string;
-  protocolFee: number;
+  /**
+   * Percent (e.g., 10 = 10%). Absent means 0: the API omits falsy values
+   * (zero-omission serializer), so a missing fee is a zero fee, not unknown.
+   * AAV-1350.
+   */
+  protocolFee?: number;
   slopeBelowOptimal: number;
   slopeAboveOptimal: number;
   baseBorrowRate: number;
@@ -21,13 +26,13 @@ export interface RateCalcInput {
 }
 
 /** Type guard: returns true when a reserve has all fields needed for rate calculation.
- *  decimals is optional — downstream defaults to 18 when missing. */
+ *  decimals is optional — downstream defaults to 18 when missing.
+ *  protocolFee is optional — absent means 0 (AAV-1350). */
 export function hasRateCalcFields(reserve: ReserveWithSpread): reserve is ReserveWithSpread & RateCalcInput {
   return (
     reserve.liquidity != null &&
     reserve.borrowed != null &&
     reserve.deficit != null &&
-    reserve.protocolFee != null &&
     reserve.slopeBelowOptimal != null &&
     reserve.slopeAboveOptimal != null &&
     reserve.baseBorrowRate != null &&
@@ -153,7 +158,8 @@ function computeRates(
   );
 
   // supplyRate = borrowRate * utilization * (1 - protocolFee / 100)
-  const protocolFeeFraction = Math.max(0, Math.min(100, rateInput.protocolFee)) / 100;
+  // Absent protocolFee = 0 (AAV-1350).
+  const protocolFeeFraction = Math.max(0, Math.min(100, rateInput.protocolFee ?? 0)) / 100;
   const supplyRatePct = borrowRatePct * (supplyUsageRatePct / 100) * (1 - protocolFeeFraction);
 
   return {

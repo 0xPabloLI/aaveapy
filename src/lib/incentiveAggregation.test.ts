@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getCampaignIncentiveValues,
   getReserveIncentiveValues,
   getIncentiveSources,
   sumBrevisIncentiveApr,
@@ -84,6 +85,44 @@ describe('getReserveIncentiveValues: per-campaign rate routing', () => {
     const reserve = merklPointsReserve('TydroInkPoints');
     const result = getReserveIncentiveValues(reserve, 'supply', 2.0);
     expect(result.apr).toBeCloseTo(2 * 2.0 * 36.5, 1);
+  });
+});
+
+describe('getCampaignIncentiveValues (AAV-1350)', () => {
+  const campaignReserve = (): ReserveWithSpread => ({
+    ...merklPointsReserve(),
+    // Deprecated flat arrays: must never contribute.
+    supplyIncentives: [99],
+    borrowIncentives: [99],
+    merklSupplys: [
+      {
+        name: 'Merkl Test',
+        link: 'https://merkl.angle.money',
+        breakdowns: [
+          { campaignId: 'aav-1350-s', campaignApr: 6, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' },
+        ],
+      },
+    ],
+    merklBorrows: [
+      {
+        name: 'Merkl Test',
+        link: 'https://merkl.angle.money',
+        breakdowns: [
+          { campaignId: 'aav-1350-b', campaignApr: 2, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' },
+        ],
+      },
+    ],
+  });
+
+  it('sums campaign APR per side and ignores supplyIncentives/borrowIncentives', () => {
+    const reserve = campaignReserve();
+    expect(getCampaignIncentiveValues(reserve, 'supply').apr).toBeCloseTo(6, 6);
+    expect(getCampaignIncentiveValues(reserve, 'borrow').apr).toBeCloseTo(2, 6);
+  });
+
+  it('compounds the same campaign APR into APY', () => {
+    const reserve = campaignReserve();
+    expect(getCampaignIncentiveValues(reserve, 'supply').apy).toBeCloseTo(convertAprToApy(6), 6);
   });
 });
 

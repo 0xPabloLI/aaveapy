@@ -19,6 +19,7 @@ import {
 } from '@/lib/portfolioCalculator';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+import { getCampaignIncentiveValues } from '@/lib/incentiveAggregation';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -419,8 +420,15 @@ function computeResultsFromGroups(
         const amountUsd = resolvedUsd > 0 ? resolvedUsd : (slot.sideData.walletValue ?? 0);
         const walletUsd = slot.sideData.walletValue;
         const nativePercent = reserve.supplyApy ?? 0;
-        const incentiveArr = reserve.supplyIncentives ?? [];
-        const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
+        // AAV-1350: the incentive always comes from the campaign sources
+        // (Merkl/Brevis/Merit). The legacy flat `supplyIncentives` array has no
+        // producer in the API, so reading it rendered '—' for every reserve that
+        // could not enter the rate-calculator branch.
+        const incentive = getCampaignIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
+          whitelistMerklCampaignIds,
+          forecastStates,
+        });
+        const incentivePercent = isApy ? incentive.apy : incentive.apr;
         results.push(
           buildPortfolioPositionResult(
             slot.reserveId,
@@ -445,8 +453,12 @@ function computeResultsFromGroups(
         const effectiveUsd = ltvCappedUsd != null ? Math.min(amountUsd, ltvCappedUsd) : amountUsd;
         const ltvClampedResult = ltvCappedUsd != null && ltvCappedUsd < amountUsd ? ltvCappedUsd : undefined;
         const nativePercent = reserve.borrowApy ?? 0;
-        const incentiveArr = reserve.borrowIncentives ?? [];
-        const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
+        // AAV-1350: same campaign-only source as the supply side above.
+        const incentive = getCampaignIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
+          whitelistMerklCampaignIds,
+          forecastStates,
+        });
+        const incentivePercent = isApy ? incentive.apy : incentive.apr;
         results.push(
           buildPortfolioPositionResult(
             slot.reserveId,

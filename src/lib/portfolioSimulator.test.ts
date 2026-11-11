@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
 import { getLowestHfDelta } from './portfolioCalculator';
@@ -663,6 +664,8 @@ describe('simulatePortfolioFromEntries', () => {
       tokenSymbol: 'USDC',
       supplyApy: 3.0,
       borrowApy: 5.0,
+      // The legacy flat arrays have no producer in the API (AAV-1350); filling
+      // them must not move the incentive, because nothing reads them anymore.
       supplyIncentives: [0.5],
       borrowIncentives: [],
       tokenPrice: 1,
@@ -680,7 +683,90 @@ describe('simulatePortfolioFromEntries', () => {
     const { results } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(results[0].nativePercent).toBe(3.0);
-    expect(results[0].incentivePercent).toBe(0.5);
+    expect(results[0].incentivePercent).toBe(0);
+  });
+
+  describe('AAV-1350: incentives survive a missing protocolFee', () => {
+    const activeCampaign = () => {
+      const now = new Date();
+      return {
+        campaignId: 'aav-1350-campaign',
+        campaignApr: 6,
+        campaignStartedAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
+        campaignEndedAt: new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString(),
+      };
+    };
+
+    it('computes the Merkl incentive when only protocolFee is missing (V4 zero-omission payload)', () => {
+      // Live payload shape: 10 V4 spokes omit `protocolFee` because the
+      // serializer drops falsy values; the field is 0, not unknown.
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [activeCampaign()] }],
+        }),
+        protocolFee: undefined,
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(true);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
+
+    it('fallback branch reads Merkl breakdowns instead of the deprecated supplyIncentives array', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [activeCampaign()] }],
+        }),
+        slopeBelowOptimal: undefined, // genuinely not rate-calculable -> fallback
+        supplyIncentives: [99], // must be ignored
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].nativePercent).toBe(2.5);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
+
+    it('fallback branch reads Merkl borrow breakdowns instead of borrowIncentives', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklBorrows: [{ breakdowns: [activeCampaign()] }],
+        }),
+        slopeBelowOptimal: undefined,
+        borrowIncentives: [99], // must be ignored
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
   });
 
   it('multiple reserves compute independently', () => {

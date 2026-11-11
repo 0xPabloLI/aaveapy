@@ -312,6 +312,46 @@ export function getReserveIncentiveValues(
   };
 }
 
+/**
+ * Campaign-only incentive values: Merit + Merkl + Brevis.
+ *
+ * Unlike `getReserveIncentiveValues`, this ignores the deprecated flat
+ * `supplyIncentives` / `borrowIncentives` arrays. Those have no producer in the
+ * API — 0 of 437 reserves on staging (2026-11-11) — so a reader that depends on
+ * them renders '—' forever (AAV-1350).
+ */
+export function getCampaignIncentiveValues(
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {},
+): { apr: number; apy: number } {
+  const {
+    merit: meritGroups,
+    merkl: merklOpportunities,
+    brevis: brevisIncentives,
+  } = getIncentiveSources(reserve, side);
+
+  return {
+    apr: calculateTotalIncentiveApr(
+      meritGroups,
+      merklOpportunities,
+      brevisIncentives,
+      undefined,
+      tydroPointToUsdRate,
+      options,
+    ),
+    apy: calculateTotalIncentiveApy(
+      meritGroups,
+      merklOpportunities,
+      brevisIncentives,
+      undefined,
+      tydroPointToUsdRate,
+      options,
+    ),
+  };
+}
+
 export function reserveHasIncentiveTooltipSources(
   reserve: ReserveWithSpread,
   side: 'supply' | 'borrow',

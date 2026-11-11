@@ -4,7 +4,6 @@ import {
   AMOUNT_VARIANT_CAMPAIGN_TYPES,
   FORECAST_REQUIRING_CAMPAIGN_TYPES,
   PAIRING_SIM_MIN_ROOM_USD,
-  RATE_CALC_FIELDS,
   computeSupplyNetApyPercent,
   discoverCrossAssetPairingScenarios,
   discoverOffsetScenarios,
@@ -13,7 +12,6 @@ import {
   getMarketChipLabel,
   getSupplyRoomUsd,
   hasComputableSupplyIncentive,
-  hasRateCalcFields,
   isComputableMerklCampaign,
   pickIncentiveReserve,
   pickReorderCapableRowIndex,
@@ -25,8 +23,6 @@ import {
 import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels';
 // The calculator's own forecast-requiring set — the e2e mirror must agree (F2b).
 import { FORECAST_REQUIRING_CAMPAIGN_TYPES as appForecastRequiringCampaignTypes } from '@/lib/rateSimulationCalculator';
-// The app's own rate-calc gate — the e2e mirror must agree (PR #811 review R4).
-import { hasRateCalcFields as appHasRateCalcFields } from '@/lib/interestRateCalculator';
 
 /**
  * AAV-1299 — e2e discovery robustness unit tests.
@@ -232,25 +228,32 @@ describe('hasComputableSupplyIncentive', () => {
 });
 
 /**
- * The gate that actually produces a '—' supply-incentive cell in Portfolio
- * mode (PR #811 review). Measured on staging: USDe | AaveV4EthenaEcosystem |
- * Avalanche carries a live 6% DUTCH_AUCTION campaign but no `protocolFee`, so
- * `portfolioSimulator` (src/lib/portfolioSimulator.ts:311) resolves
- * `hasRateCalcFields(reserve)` to false and takes the `else` branch, which sums
- * the flat `reserve.supplyIncentives` array — empty on all 437 reserves of the
- * payload. The cell renders '—' while the Reserves table, which calls the
- * calculator directly, renders 6%.
+ * AAV-1350: incentivability is a property of the campaign, not of the rate
+ * curve. Before the fix, a reserve missing `protocolFee` (which the API omits
+ * when it is 0) fell into a `portfolioSimulator` branch that summed the flat
+ * `supplyIncentives` array — always empty — so the cell rendered '—' while the
+ * Reserves table showed the campaign APR. The simulator now reads campaign
+ * breakdowns in that branch, so discovery must keep those reserves.
  */
-describe('rate-calc gate — the real reason a supply-incentive cell renders "—" (PR #811 review)', () => {
-  it('R1: excludes a reserve missing protocolFee even with a live campaign (measured case)', () => {
+describe('rate-calc fields do not gate the supply-incentive cell (AAV-1350)', () => {
+  it('R1: keeps a reserve missing protocolFee even with a live campaign (measured case)', () => {
     const r = reserve({ protocolFee: undefined });
-    expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
+    expect(hasComputableSupplyIncentive(r, NOW)).toBe(true);
   });
 
-  it('R2: requires every field of the app’s hasRateCalcFields', () => {
-    for (const field of RATE_CALC_FIELDS) {
-      expect(hasComputableSupplyIncentive(reserve({ [field]: undefined }), NOW)).toBe(false);
-      expect(hasComputableSupplyIncentive(reserve({ [field]: null }), NOW)).toBe(false);
+  it('R2: keeps a reserve missing any rate-calc field', () => {
+    const rateCalcFields = [
+      'liquidity',
+      'borrowed',
+      'deficit',
+      'slopeBelowOptimal',
+      'slopeAboveOptimal',
+      'baseBorrowRate',
+      'optimalUtilization',
+    ];
+    for (const field of rateCalcFields) {
+      expect(hasComputableSupplyIncentive(reserve({ [field]: undefined }), NOW)).toBe(true);
+      expect(hasComputableSupplyIncentive(reserve({ [field]: null }), NOW)).toBe(true);
     }
   });
 
@@ -258,36 +261,20 @@ describe('rate-calc gate — the real reason a supply-incentive cell renders "�
     expect(hasComputableSupplyIncentive(reserve(), NOW)).toBe(true);
   });
 
-  it('R4: mirrors the app’s hasRateCalcFields field for field', () => {
-    // Behavioural drift pin: the set of fields whose removal flips the app's own
-    // predicate must be exactly the set discovery gates on. Decoys guard against
-    // the mirror over- or under-collecting.
-    const decoys = ['decimals', 'tokenPrice', 'supplyApy', 'utilizationPct', 'suppliable'];
-    const flips = [...RATE_CALC_FIELDS, ...decoys].filter(
-      (field) => !appHasRateCalcFields(reserve({ [field]: undefined }) as never),
-    );
-    expect(new Set(flips)).toEqual(new Set(RATE_CALC_FIELDS));
-    for (const field of [...RATE_CALC_FIELDS, ...decoys]) {
-      // Dropping a required field flips the mirror to false; dropping anything
-      // else leaves it true.
-      expect(hasRateCalcFields(reserve({ [field]: undefined }))).toBe(!RATE_CALC_FIELDS.includes(field));
-    }
-  });
-
-  it('R5: pickIncentiveReserve skips the higher-APR reserve the UI cannot render', () => {
-    // Exact shape of the failure: ranking alone selected the unrenderable
-    // reserve because its campaign APR is the higher one.
-    const unrenderable = reserve({
-      reserveId: 'unrenderable',
+  it('R5: pickIncentiveReserve no longer skips the higher-APR reserve', () => {
+    // Exact shape of the old failure: ranking alone selected the higher-APR
+    // reserve, which then rendered '—' because it lacked protocolFee.
+    const higherApr = reserve({
+      reserveId: 'higher-apr',
       protocolFee: undefined,
       merklSupplys: [group(breakdown({ campaignApr: 6 }))],
     });
-    const renderable = reserve({
-      reserveId: 'renderable',
+    const lowerApr = reserve({
+      reserveId: 'lower-apr',
       merklSupplys: [group(breakdown({ campaignApr: 1 }))],
     });
-    expect(computeSupplyNetApyPercent(unrenderable, NOW)).toBeGreaterThan(computeSupplyNetApyPercent(renderable, NOW));
-    expect(pickIncentiveReserve([unrenderable, renderable], NOW)?.reserveId).toBe('renderable');
+    expect(computeSupplyNetApyPercent(higherApr, NOW)).toBeGreaterThan(computeSupplyNetApyPercent(lowerApr, NOW));
+    expect(pickIncentiveReserve([higherApr, lowerApr], NOW)?.reserveId).toBe('higher-apr');
   });
 });
 
