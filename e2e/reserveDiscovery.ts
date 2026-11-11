@@ -20,11 +20,20 @@
  * 3. campaignType is not an AMOUNT variant
  * 4. not whitelist-only (e2e never opts in — AAV-1280)
  *
- * Renderability is not the whole story for the incentive specs, which assert
- * that a value RESPONDS to position size. That needs forecast data, which lives
- * on another endpoint, so `forecastAvailableCampaignIdsFromSideData` supplies it
- * and the predicates take it as an optional argument — see that function's
- * docstring for why `forecast.items`, not `forecast.errors`, is the signal.
+ * Renderability is not the whole story. Two further gates apply, and only the
+ * first of them is about campaigns:
+ *
+ * - The reserve must carry every rate-calc field (`hasRateCalcFields`, below).
+ *   Without them Portfolio mode never reaches the calculator: it sums the flat
+ *   `supplyIncentives` array instead, which the API leaves empty, and renders
+ *   '—' however healthy the campaign is. This is the gate that produced the
+ *   PR #811 failure, and it is a property of the RESERVE, not the campaign.
+ * - For the specs that assert a value RESPONDS to position size, a
+ *   forecast-requiring campaign absent from `forecast.items` renders a constant
+ *   APR, so `forecastAvailableCampaignIdsFromSideData` supplies the forecast
+ *   set and the predicates take it as an optional argument — see that
+ *   function's docstring for why `forecast.items`, not `forecast.errors`, is
+ *   the signal.
  */
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -180,10 +189,14 @@ export const FORECAST_REQUIRING_CAMPAIGN_TYPES: ReadonlySet<string> = new Set([
  * ever reads.
  *
  * Discovery still skips those campaigns, for a different reason than "renders
- * '—'": with no forecast state the APR does not respond to position size, so
- * the ladder assertions (`after > current`) in the pairing/offset specs could
- * never hold. Preferring forecast-backed campaigns selects data those specs can
- * actually exercise.
+ * '—'": the UI itself declares them forecast-less (the '*' marker and the "No
+ * forecast data — using current APR" footnote), and the pairing/offset specs
+ * need a value whose response to position size is backed by a real forecast.
+ * Preferring forecast-backed campaigns selects data those specs can actually
+ * exercise. Do not restate this as "the APR cannot respond to size" — a
+ * campaign can respond from its own breakdown fields even with no forecast
+ * state (measured on a DUTCH_AUCTION campaign listed in `forecast.errors`:
+ * 6% → 5.93% after a $1M input).
  */
 export function forecastAvailableCampaignIdsFromSideData(sideData: unknown): Set<string> {
   const items = (sideData as { forecast?: { items?: unknown } } | null | undefined)?.forecast?.items;
@@ -201,8 +214,9 @@ export function forecastAvailableCampaignIdsFromSideData(sideData: unknown): Set
 }
 
 /**
- * Whether a breakdown can back a position-responsive incentive, i.e. mirrors
- * the UI's `isForecastRequiring && checkForecastAvailability` short-circuit.
+ * Whether a breakdown carries a forecast the UI considers available, i.e.
+ * mirrors the UI's `isForecastRequiring && checkForecastAvailability`
+ * short-circuit.
  *
  * `forecastAvailableCampaignIds` is the set from `forecast.items`; pass `null`
  * when side-data is unavailable, which disables the gate entirely (degrading to
@@ -247,6 +261,40 @@ function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): num
 }
 
 /**
+ * Rate-calc inputs the UI needs before it computes ANY incentive.
+ *
+ * Mirror of `hasRateCalcFields` in src/lib/interestRateCalculator.ts,
+ * duplicated rather than imported to keep this module dependency-free (see the
+ * file header). The drift is pinned by unit test R4, which compares the set of
+ * fields whose removal flips the app's predicate against this list.
+ *
+ * Why this gate exists (PR #811 review): `portfolioSimulator`
+ * (src/lib/portfolioSimulator.ts:311) resolves
+ * `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`. When
+ * it is null the incentive does NOT come from the calculator — the `else` branch
+ * sums the flat `reserve.supplyIncentives` array, which the current API never
+ * populates (measured 2026-11-11: 0 of 437 reserves). A reserve missing any
+ * field below therefore renders '—' in Portfolio mode no matter how healthy its
+ * Merkl campaigns are, while the Reserves table (which calls the calculator
+ * directly with `reserveRateInput: null`) renders the campaign APR.
+ */
+export const RATE_CALC_FIELDS: readonly string[] = [
+  'liquidity',
+  'borrowed',
+  'deficit',
+  'protocolFee',
+  'slopeBelowOptimal',
+  'slopeAboveOptimal',
+  'baseBorrowRate',
+  'optimalUtilization',
+];
+
+/** Whether the UI can compute a rate-based incentive for this reserve at all. */
+export function hasRateCalcFields(r: DiscoveryReserve): boolean {
+  return RATE_CALC_FIELDS.every((field) => r[field] != null);
+}
+
+/**
  * Whether the reserve has at least one supply-side Merkl campaign the UI can
  * compute a numeric percent for. Merit arrays are deliberately NOT considered
  * (Merit was fully retired — AAV-1289).
@@ -260,6 +308,7 @@ export function hasComputableSupplyIncentive(
   nowIso: string,
   forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
 ): boolean {
+  if (!hasRateCalcFields(r)) return false;
   return merklBreakdownsForSide(r, 'supply').some(
     (b) => isComputableMerklCampaign(b, nowIso) && isForecastBackedBreakdown(b, forecastAvailableCampaignIds),
   );
@@ -409,16 +458,15 @@ export function getMarketChipLabel(marketName: string, chainName?: string): stri
 // ─── Selection ───────────────────────────────────────────────────────
 
 /**
- * Pick the best incentive reserve: usable, computable supply incentive,
- * preferring nonzero supply room, then highest net supply APR.
+ * Pick the best incentive reserve: usable, carrying the rate-calc fields the UI
+ * needs, with a computable supply incentive; preferring nonzero supply room,
+ * then highest net supply APR.
  *
  * `forecastAvailableCampaignIds` is the forecast gate (see
- * `forecastAvailableCampaignIdsFromSideData`): a forecast-requiring campaign
- * absent from `forecast.items` renders a position-independent APR, so a reserve
- * whose only campaign is unforecastable must not be picked — the specs
- * consuming it assert that the incentive responds to position size. Pass `null`
- * to disable the gate. Returns null when no candidate qualifies (specs skip
- * gracefully).
+ * `forecastAvailableCampaignIdsFromSideData`): a reserve whose only qualifying
+ * campaign is forecast-requiring and unforecasted renders a constant APR, so it
+ * cannot back an assertion about position size. Pass `null` to disable the
+ * gate. Returns null when no candidate qualifies (specs skip gracefully).
  */
 export function pickIncentiveReserve(
   reserves: DiscoveryReserve[],

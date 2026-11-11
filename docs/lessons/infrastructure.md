@@ -79,15 +79,24 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 - **`has unused ignores` 是信号不是噪音**：豁免条目的通告被 OSV 撤下/收窄后会变成死配置，每次推送都打印一行。本仓 `braces` 那条（GHSA-vfj7-8cjw-p6xm）已实测失效——`osv-scanner` 与 `api.osv.dev` 两个来源都确认 `braces@3.0.3` 不再被标记。**留着的风险是反向的**：若该通告将来重新发布，这条豁免会静默压住它直到 `ignoreUntil`。定期核对，别当它是背景噪音。
 - **豁免 = 记账，不是修**：加 `[[IgnoredVulns]]` 时必须同时开票（本次 AAV-1348），并在 reason 里写清「为什么不能真修」的一手证据 + 到期后的根治路线。只写「无法修复」不算理由——要写清是**上游没有可用版本**（附版本对照表）、还是**强行抬版本会破坏什么**（附命中数，如两个钱包 SDK 的 9 + 57 处单参 `z.record()`）。
 
-## e2e 发现逻辑必须复刻 UI 的**全部**渲染门——包括状态存在别的端点里的那些
+## e2e 发现逻辑必须复刻 UI 的**全部**渲染门——包括「reserve 自己缺字段」这一层
 
 - **现象**：`portfolio-incentive-calculation` / `portfolio-results-inline-delta` 两个 spec 在 CI（`6301e1cc`）与本地全量跑上稳定红、隔离跑却绿，看起来像 load-flake，实际是**确定性数据耦合**。
-- **真根因与本条主题无关**：① `data-current` 在 `metric.current === null` 时不渲染 ⇒ `getAttribute` 阻塞到 120s 测试超时；② `$/day` 单元格断言用了严格正则，而单元格可以合法是 `—`（desktop）/ `–`（mobile）。**没有一条失败是 forecast 造成的**——本条的原始归因是错的，见下。
+- **三个真根因，没有一个与 forecast 有关**：① `data-current` 在 `metric.current === null` 时不渲染 ⇒ `getAttribute` 阻塞到 120s 测试超时；② `$/day` 单元格断言用了严格正则，而单元格可以合法是 `—`（desktop）/ `–`（mobile）；③ **reserve 缺 rate-calc 字段**（PR #811 review 才定位到，见下）。
+- **`—` 的真正来源是 reserve 级字段缺失**：`portfolioSimulator.ts` 解析 `reserveRateInput = hasRateCalcFields(reserve) ? {...reserve} : null`；为 `null` 时**根本不进 calculator**，走 `else` 分支累加扁平的 `reserve.supplyIncentives` 数组——而该数组在当前 API 上 **437 个 reserve 全部为空**（实测）⇒ 无论 campaign 多健康都渲染 `—`。同一条 reserve 在 Reserves 表里**渲染 6%**，因为那条路径直接调 calculator（`reserveRateInput: null` 也照样算 incentive）。8 个必需字段：`liquidity`/`borrowed`/`deficit`/`protocolFee`/`slopeBelowOptimal`/`slopeAboveOptimal`/`baseBorrowRate`/`optimalUtilization`。
+- **定位手法**：别靠读代码猜哪一步把值变 0，**在真实调用点插桩**。临时在 `if (reserveRateInput)` **之前**打一行日志（分支名 + 各 rate-calc 字段），Playwright 里 `page.on('console')` 收。第一版插桩放在 `if` **里面**，什么都没打印——这本身就是答案：走的是 `else` 分支。**日志不出现比日志出现更有信息量**，前提是插桩点选在分支之外。
 - **被推翻的归因（留作反例）**：本条曾断言「`/meta/side-data` 的 `forecast.errors` 里的 campaign 一律渲染 `—`，所以发现 predicate 必须把 errors 当排除信号」。**三重反证**：`forecastUnavailable` 只是驱动 `*` 标记的**标志**（`rateSimulationCalculator.ts` 声明、计数、汇总进 `forecastUnavailableCampaignCount`），**从不归零 APR**；`forecastMerklApr`（`merklForecast.ts`）在 `merged === null` 时返回 `currentApr` ⇒ campaign 照常贡献数值；`result.forecastErrors` 在测试之外**无人读取**。`—` 只在 `incentivePercent === 0` 时渲染。
-- **真正的门是什么**：`checkForecastAvailability(campaignType, campaignId, merged, forecastStates)`（`src/lib/incentiveCaps.ts`）= `!campaignType ? false : (merged == null || !forecastStates?.[String(campaignId)])`，且只在 `isForecastRequiring`（`FORECAST_REQUIRING_CAMPAIGN_TYPES` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `TARGET_TOTAL_APR`）时被调用。**跳过这些 campaign 的真实理由是**：没有 forecast state 时 APR 不随仓位变化，梯级断言 `after > current` **永远不可能成立**——不是「UI 渲染 `—`」。
+- **forecast 的两个语义要分开记**：`checkForecastAvailability(campaignType, campaignId, merged, forecastStates)`（`src/lib/incentiveCaps.ts`）只在 `isForecastRequiring`（`FORECAST_REQUIRING_CAMPAIGN_TYPES` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `TARGET_TOTAL_APR`）时被调用；它返回 `true` 的效果是打 `*` 与「No forecast data — using current APR」脚注，**不是**归零。它的真实含义是「这个值**不随仓位变化**」——forecast-requiring 的 campaign 没有 forecast state 时渲染常量 `currentApr`。所以发现侧跳过这类 campaign 的理由是**「它不能支撑『随仓位变化』的断言」**，**不能**写成「它渲染 `—`」。
+- **`forecast.errors` 是「后端算不出来」的记录，不是「UI 渲染不出来」的信号**——两者在本仓只是碰巧相关。把 errors 当排除集会**静默排除 UI 渲染正常的 reserve**。实测反例：`forecast.errors` 里那条 `DUTCH_AUCTION`（非 forecast-requiring）用 breakdown 自带的 `plannedDaily`/`latestTvl` 算出 6% → 输入 $1M 后 5.93%，**确实随仓位变化**。
 - **实现要点**：`forecast.items` 与 `forecast.errors` 的条目**都只带 `campaignId`、不带 type** ⇒ forecast-requiring 判断只能读 breakdown 上的 `campaignType`；发现侧读 **`forecast.items`**（可用集）而不是 `errors`（排除集），且**拉取失败时返回 `null` 表示「关掉这道门」**，而不是「排除一切」。
+- **两道门要分别建**：reserve 级（`hasRateCalcFields`）+ campaign 级（`isComputableMerklCampaign` + forecast gate）。写镜像时**用行为漂移测试钉住**：逐个删字段、看 app 自己的 predicate 是否翻转，翻转集合必须等于镜像列表。
 - **通用教训**：写「镜像 UI 门」的 predicate 时，**先读 UI 那个函数的真实语义**（返回值、调用条件、状态来自哪个端点），再决定 predicate 复刻什么；**别把「症状看起来相关」当成机制**。本次错误归因的代价是一份写进文档的假机制 + 一个会静默排除正常 reserve 的 gate。
-- **别把「隔离绿、全量红」直接判成 load-flake**：先看失败是否落在**同一处断言 + 同一错误文本**上。本次三个失败里两个是确定性数据耦合（隔离跑也必红，我实测过），一个是真 load-flake（隔离跑绿）。
+- **⚠️ 超时不是修法**：这条失败曾被我判成 load-flake，把 `portfolio-results-inline-delta.spec.ts` 的 delta 断言超时从 5s 提到 30s——**隔离跑（`--retries=0`）仍然确定性失败**。超时只掩盖症状；定位到「选错了 reserve」后恢复 5s 即绿。**先分清是慢还是错**：`--retries=0` 隔离跑仍红 = 错，不是慢。
+- **改 discovery 会换掉被测 reserve，必须重跑 e2e 全套**：本次选中项从 `AaveV4EthenaEcosystem`（缺 `protocolFee`，渲染 `—`）换成 `AaveV3Monad` GHO（rate-calc 字段齐全）。单测绿不代表 spec 绿。
+- **别把「隔离绿、全量红」直接判成 load-flake**：先看失败是否落在**同一处断言 + 同一错误文本**上。
+- **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
+- **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
+
 - **`getAttribute` 会等到测试超时**：React 对 `undefined` 属性不渲染，`locator('span[data-current]')` 在 `metric.current === null`（`PortfolioSimulationMetric` 类型上合法的状态）时永远解析不到元素，`getAttribute` 于是阻塞到 120s 测试超时、把一条本可 graceful skip 的用例变成 2 分钟的挂死。**取属性前先 `toBeAttached` 设个上限**，或改用 `expectValueOrSkip` 那类既有 helper。
 - **并发重渲染会吞掉 click**：`click` 事件要求 mousedown 与 mouseup 落在同一元素上；场景输入触发重排时，两次之间行被重渲染 ⇒ 不触发 click、行不展开。修法是**只在未展开时点**的重试（`expect(...).toPass()`），因为「无条件重试点击」会把已展开的行再关掉。
 

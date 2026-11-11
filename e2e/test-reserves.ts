@@ -63,10 +63,11 @@ let forecastAvailableCampaignIdsCache: Set<string> | null = null;
 /**
  * Campaign ids the backend COULD forecast, read from `/meta/side-data`.
  *
- * The incentive specs assert that a value responds to position size, which
- * requires forecast state: a forecast-requiring campaign absent from
- * `forecast.items` renders a position-independent APR in the UI (it is NOT a
- * '—' placeholder — see `forecastAvailableCampaignIdsFromSideData`). Discovery
+ * The incentive specs assert that a value responds to position size, and a
+ * forecast-backed campaign is the only way to know that response is real: a
+ * forecast-requiring campaign absent from `forecast.items` is one the UI marks
+ * with '*' and the "No forecast data — using current APR" footnote. It is NOT a
+ * '—' placeholder — see `forecastAvailableCampaignIdsFromSideData`. Discovery
  * therefore prefers forecast-backed campaigns.
  *
  * Returns `null` when the fetch fails, which DISABLES the gate: a degraded
