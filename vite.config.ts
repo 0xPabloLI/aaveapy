@@ -258,8 +258,14 @@ export default defineConfig(({ mode }) => ({
               name: 'vendor-react-libs',
               test: /node_modules[\\/](react-router|react-hook-form|react-day-picker)[\\/]/,
             },
-            // Animation libraries
-            { name: 'vendor-animation', test: /node_modules[\\/](framer-motion|embla-carousel)[\\/]/ },
+            // Animation libraries. `motion` is the current name for what used to
+            // be `framer-motion`, and it still ships the implementation in the
+            // `framer-motion` package — match both so the chunk survives either
+            // layout.
+            {
+              name: 'vendor-animation',
+              test: /node_modules[\\/](motion|framer-motion|embla-carousel)[\\/]/,
+            },
             // Radix UI components
             { name: 'vendor-radix', test: /node_modules[\\/]@radix-ui[\\/]/ },
             // Query & data fetching
