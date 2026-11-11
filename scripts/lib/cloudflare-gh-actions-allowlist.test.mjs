@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
 import { GITHUB_ACTIONS_RULE_NOTE_PREFIX, planGithubActionsAllowlistSync } from './cloudflare-gh-actions-allowlist.mjs';
 
@@ -28,8 +29,8 @@ describe('planGithubActionsAllowlistSync', () => {
       ],
     });
 
-    expect(plan.toCreate).toEqual(['4.148.0.0/14']);
-    expect(plan.toDelete).toEqual([
+    assert.deepEqual(plan.toCreate, ['4.148.0.0/14']);
+    assert.deepEqual(plan.toDelete, [
       {
         cidr: '140.82.112.0/20',
         id: 'delete-me',
@@ -56,7 +57,7 @@ describe('planGithubActionsAllowlistSync', () => {
       ],
     });
 
-    expect(plan.toCreate).toEqual(['4.148.0.0/14']);
-    expect(plan.toDelete).toEqual([]);
+    assert.deepEqual(plan.toCreate, ['4.148.0.0/14']);
+    assert.deepEqual(plan.toDelete, []);
   });
 });
