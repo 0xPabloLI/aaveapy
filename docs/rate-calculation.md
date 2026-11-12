@@ -3,7 +3,7 @@
 
 Frontend rate simulation documentation — consolidated from the former multi-file module docs.
 
-> **Merit removed (AAV-1303, 2026-11-11, commit `fa398a79`)**: the frontend no longer has a Merit source. Sections below that mention `meritForecast.ts`, `getMeritAnchorTvlUsd`, `selfPositionCapUsd`, `sr.merit`, or Merit-only cap semantics are historical; the live sources are Merkl, Brevis, and protocol. The fallback path and calculator wiring are current.
+> **Incentive sources: `protocol`, `merkl`, `brevis`.** Merit was retired in AAV-1303 and its subsystem deleted; this reference describes the live three-source model only.
 
 ## Module Map
 
@@ -28,103 +28,92 @@ This section covers the native Aave interest-rate math used for supply / borrow 
 
 | Term / Variable | Alias | Context | Description |
 |-----------------|-------|---------|-------------|
-| `liquidityRate` | `supplyRate` | Internal calculation | Aave protocol term for supplier yield |
-| `supplyAprPercent` | — | Output/display | Same as `liquidityRate`, converted to % |
-| `supplyApyPercent` | — | Output/display | `liquidityRate` with compounding, as % |
-| `reserveFactor` | Protocol fee | Input parameter | Fee deducted from interest (bps, 0-10000) |
-| `variableBorrowRate` | Borrow rate | Calculation | Interest rate charged to borrowers |
+| `borrowUsageRatePct` | Utilization | Calculation | `newBorrowed / (liquidity + borrowed + addedLiquidity) × 100`; drives the borrow curve and the displayed utilization |
+| `supplyUsageRatePct` | — | Calculation | same numerator; the denominator also adds `deficit` |
+| `borrowRatePct` | Borrow rate | Calculation | variable borrow APR, percent |
+| `supplyAprPercent` | `liquidityRate` (protocol term) | Output | `borrowRatePct × supplyUsageRatePct / 100 × (1 − protocolFee / 100)` |
+| `protocolFee` | `reserveFactor` (V3) / `liquidityFee` (V4) | Input, optional | Fee deducted from interest, percent 0–100; **absent = 0** (AAV-1350) |
+| `supplyApyPercent` | — | Output | `supplyAprPercent` with per-second compounding |
 
-**Key relationship**: `liquidityRate` (internal) = `supplyAprPercent` (output)
+The calculator works in **percent floats**. Variable names carry the on-chain vocabulary (`liquidityRate`, RAY-era names) but no RAY value is ever constructed, so the on-chain `rayMul` / `percentMul` sequence does not appear here.
 
 ### Constants
 
 | Name | Value | Usage |
 |------|-------|-------|
-| RAY | 10^27 | Aave fixed-point precision |
-| PERCENTAGE_FACTOR | 10000 | Basis points denominator |
-| SECONDS_PER_YEAR | 31536000 | 365 × 24 × 60 × 60 |
+| SECONDS_PER_YEAR | 31536000 | 365 × 24 × 60 × 60, APR → APY conversion |
+
+The on-chain constants (`RAY`, `PERCENTAGE_FACTOR`) belong to Part 1's source protocol math, not to this calculator; see `aaveapy-doc/aave-supply-borrow-rate-formula.md` for the contract-level formulas.
 
 ### Input Fields (from `/markets` reserves — `ReserveWithSpread` rate calc fields)
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
-| `availableLiquidity` | string (bigint) | token decimals | Available liquidity for borrowing |
-| `totalVariableDebt` | string (bigint) | token decimals | Total variable debt (already index-normalized) |
-| `deficit` | string (bigint) | token decimals | Reserve deficit from onchain/Aave API |
-| `reserveFactor` | string (bigint) | bps | Protocol fee on interest |
-| `optimalUsageRate` | string (bigint) | ray | Target utilization / kink |
-| `baseVariableBorrowRate` | string (bigint) | ray | Minimum borrow rate |
-| `variableRateSlope1` | string (bigint) | ray | Slope below kink |
-| `variableRateSlope2` | string (bigint) | ray | Slope above kink |
-| `decimals` | number | — | Token decimals for unit conversion |
+| `liquidity` | string (raw bigint) | token base units | Available liquidity for borrowing |
+| `borrowed` | string (raw bigint) | token base units | Total variable debt |
+| `deficit` | string (raw bigint) | token base units | Bad debt; inflates the supply denominator only |
+| `protocolFee` | number, optional | percent (0–100) | Clamped to 0–100; absent reads as 0 |
+| `optimalUtilization` | number | percent | Target utilization (kink) |
+| `baseBorrowRate` | number | percent | Minimum borrow rate |
+| `slopeBelowOptimal` | number | percent | Slope below the kink |
+| `slopeAboveOptimal` | number | percent | Slope above the kink |
+| `decimals` | number, optional | — | Token decimals; defaults to 18 |
 
 ### Calculation Steps
 
-#### 1. Parse inputs and apply user actions
+#### 1. Parse the user action
 
 ```text
-totalVariableDebt = baseTotalVariableDebt + borrowAmount
+addedLiquidity = parseUnits(supplyAmount, decimals)
+addedBorrow    = parseUnits(borrowAmount, decimals)
+newBorrowed    = borrowed + addedBorrow
 ```
 
-`baseTotalVariableDebt` comes from `rateInput.totalVariableDebt` (already index-normalized).
-
-#### 2. Compute usage rates
-
-| Rate | Formula | Purpose |
-|------|---------|---------|
-| `borrowUsageRate` | `totalVariableDebt / (availableLiquidity + baseTotalVariableDebt + supplyAmount)` | Borrow rate and displayed utilization |
-| `supplyUsageRate` | `totalVariableDebt / (availableLiquidity + baseTotalVariableDebt + deficit + supplyAmount)` | Liquidity rate, includes deficit |
+#### 2. Compute utilization as percent
 
 ```text
-borrowUsageRate = rayDiv(totalVariableDebt, availableLiquidity + baseTotalVariableDebt + supplyAmount)
-supplyUsageRate = rayDiv(totalVariableDebt, availableLiquidity + baseTotalVariableDebt + deficit + supplyAmount)
+borrowUsageRatePct = newBorrowed / (liquidity + borrowed + addedLiquidity) × 100
+supplyUsageRatePct = newBorrowed / (liquidity + borrowed + deficit + addedLiquidity) × 100
 ```
 
-`rayDiv(a, b) = (a × RAY + b/2) / b`
+The borrow denominator leaves `deficit` out; the supply denominator includes it, which is why the two utilization numbers differ.
 
-#### 3. Compute variable borrow rate
-
-If `borrowUsageRate ≤ optimalUsageRate`:
+#### 3. Compute the variable borrow rate
 
 ```text
-normalizedUsage = rayDiv(borrowUsageRate, optimalUsageRate)
-variableBorrowRate = baseVariableBorrowRate + rayMul(variableRateSlope1, normalizedUsage)
+optimal = max(optimalUtilization, 0.0001)
+
+if borrowUsageRatePct > optimal:
+  excessRatio     = (borrowUsageRatePct − optimal) / (100 − optimal)
+  borrowRatePct   = baseBorrowRate + slopeBelowOptimal + slopeAboveOptimal × max(excessRatio, 0)
+else:
+  normalizedUsage = max(borrowUsageRatePct, 0) / optimal
+  borrowRatePct   = baseBorrowRate + slopeBelowOptimal × normalizedUsage
 ```
 
-If `borrowUsageRate > optimalUsageRate`:
+#### 4. Compute the supply rate
 
 ```text
-excessRatio = rayDiv(borrowUsageRate - optimalUsageRate, RAY - optimalUsageRate)
-variableBorrowRate = baseVariableBorrowRate + variableRateSlope1 + rayMul(variableRateSlope2, excessRatio)
+protocolFeeFraction = clamp(protocolFee ?? 0, 0, 100) / 100
+supplyAprPercent    = borrowRatePct × (supplyUsageRatePct / 100) × (1 − protocolFeeFraction)
 ```
 
-#### 4. Compute liquidity rate
-
-```text
-liquidityRate = percentMul(rayMul(variableBorrowRate, supplyUsageRate), PERCENTAGE_FACTOR - reserveFactor)
-```
-
-`percentMul(v, pct) = (v × pct + 5000) / 10000`
+This is the whole protocol-fee effect in the calculator: the same field the API calls `protocolFee` holds V3's `reserveFactor` and V4's `liquidityFee`, so one formula serves both. A missing field means 0, which is how V4 spokes with no fee configured reach this step with an unmodified rate.
 
 #### 5. Convert APR to APY
 
 ```text
-ratePerSecond = aprRay / SECONDS_PER_YEAR
-apyRay = rayPow(RAY + ratePerSecond, SECONDS_PER_YEAR) - RAY
-```
-
-#### 6. Convert ray to percentage
-
-```text
-percent = Number(rayValue) / 1e25
+ratePerSecond = (aprPercent / 100) / SECONDS_PER_YEAR
+apyPercent    = ((1 + ratePerSecond) ^ SECONDS_PER_YEAR − 1) × 100
 ```
 
 ### Output Structure
 
 ```typescript
 interface NativeRateSimulation {
-  utilizationRateRay: string
+  utilizationRateRay: string        // name kept for compatibility; holds utilization as a percent string
   utilizationRatePercent: number
+  optimalUtilizationPercent: number
   supplyAprPercent: number
   borrowAprPercent: number
   supplyApyPercent: number
@@ -547,7 +536,7 @@ aprDecimal = aprPercent / 100
 apyPercent = ((1 + aprDecimal / 12) ^ 12 - 1) × 100
 ```
 
-Applied consistently to Merkl, Merit, Brevis, protocol incentive rows, and incentive totals.
+Applied consistently to Merkl, Brevis, protocol incentive rows, and incentive totals.
 
 ### Total rate composition
 
@@ -618,15 +607,13 @@ Toggling APR/APY display mode must **not** change `scenarioUsdAccrual` outputs. 
 
 ### Net Position Eligibility (Scenario Simulation)
 
-When both supply and borrow are present:
-
-- Merkl and Merit use net position
-- Brevis uses gross input
+Each Merkl opportunity declares its own eligibility rule; Brevis and protocol incentives have none.
 
 | Eligibility mode | Used by | Formula |
 |------------------|---------|---------|
-| Net | Merkl, Merit | `max(supply - borrow, 0)` / `max(borrow - supply, 0)` |
-| Gross | Brevis | `supply` / `borrow` |
+| Net | Merkl `netPositionConstraint` | `max(source − Σ offset, 0)` per side |
+| Paired | Merkl `crossAssetPairing` | `min(source, paired × discountFactor)` |
+| Gross | Merkl without a constraint, Brevis, protocol rows | `supply` / `borrow` |
 
 ```text
 eligibilityRatio = netInputUsd / grossInputUsd
@@ -641,60 +628,64 @@ When `eligibilityRatio < 1`, rows show a net eligibility hint via `capNote`.
 
 ## Part 4: Incentive Cap Reference
 
-This section groups cap semantics for Merit, Merkl, and Brevis.
+Three cap mechanisms are live: Merkl pool budget, Merkl APR cap, and the per-user position cap shared by Merkl and Brevis. Protocol rows are flat APRs with no cap.
 
 ### Naming layers
 
 | Layer | Role | Examples |
 |-------|------|----------|
-| API | Backend field names stay stable | `positionCap` |
+| API | Backend field names stay stable | `positionCapNative`, `positionCapUsd` |
 | Domain | Prefer `cap` vocabulary | `positionCapUsd`, `eligibleUsd` |
 | UI | Stable row diagnostics | `capNote`, `capWarning` |
 
 ### Field mapping
 
-| Source | Domain meaning | Notes |
-|--------|----------------|-------|
-| Brevis `positionCap` | Position cap | Keep API name; domain uses `positionCapUsd` |
-| Merit `positionCap` | Position cap | Domain uses `positionCapUsd`; only eligible portion earns incentive; applied as orthogonal overlay via `applyPositionCapToForecastResult` |
-| Simulation UI | Same diagnostics | Keep `cap*` props stable |
+| Source | API fields | Resolution |
+|--------|------------|------------|
+| Merkl breakdown | `positionCapNative`, `positionCapUsd`, `isCombineCap`, `aprCap` | `resolvePositionCapUsd(positionCapNative, positionCapUsd, tokenPrice, decimals)` — the native amount wins when the reserve price is known |
+| Brevis campaign | `positionCapUsd`, `isCombineCap` | used as-is |
+| Protocol row | `supplyIncentives` / `borrowIncentives` (`number[]`) | none |
+| Simulation UI | same diagnostics | `capNote`, `capWarning` |
+
+A cap whose USD value cannot be resolved is left unapplied rather than estimated.
 
 ### Unified simulation `capNote` strings
 
-| Incentive / branch | When shown | `capNote` pattern |
-|--------------------|------------|-------------------|
-| Merkl FIX | Scenario input exists and rewardable days resolved | `~Nd earn` |
-| Merkl MAX | APR capped for low TVL | `APR capped for low TVL` |
-| Brevis | Position cap exists | `Incentive on first $X` |
-| Merit Self | Position cap applies | `Incentive on first $Z` |
-| Merit Base | Net note only | `Net eligible $X of $Y` |
-| Merkl DUTCH_AUCTION | Net note only | `Net eligible $X of $Y` |
+Source: `src/lib/incentiveCaps.ts` (`capEffectToNote`).
+
+| `type` | When shown | Text |
+|--------|------------|------|
+| `position_cap` | A per-user cap applies | `Incentive limited to first $X`; appends `· combined supply + borrow` when `isCombineCap`, and `~Nd earn` when the budget horizon resolves |
+| `pool_budget` | Merkl FIX / TARGET horizon resolved | `~Nd earn` |
+| `apr_cap` | Merkl MAX with low TVL | `APR capped for low TVL` |
+| `net_eligible` | An opportunity-declared net constraint dilutes the rate | `$X of $Y net eligible` |
 
 ### Cap taxonomy
 
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
-| Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap | Per-user | `eligibleUsd = min(deposit, positionCapUsd)` | `merklForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
+| Pool budget | Pool-wide | `fixRewardableDays = remainingBudget / dailyRewards` | `merklForecast.ts` → `buildFixRewardCapEffect` |
+| APR cap | Pool-wide | MAX regime caps the APR when TVL is low | `merklForecast.ts` → `buildMaxRewardCapEffect` |
+| Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`; effective APR `= nominal × eligibleUsd / positionUsd` | `applyPositionCapToForecastResult` |
+
+Caps apply only where a position is known: the per-campaign rows and `sr.*` lanes of `rateSimulationCalculator.ts`, plus the Merkl aggregate sums in `incentiveAggregation.ts` when they receive `positionUsd`. `headlineIncentive` stays uncapped by design (Golden Rule 4).
+
+### Merkl position cap
+
+- A breakdown may cap the earning position: `eligibleUsd = min(positionUsd, cap)`, and the displayed APR dilutes to `nominal × eligibleUsd / positionUsd`.
+- `isCombineCap` shares one cap across the supply and borrow campaigns of the same opportunity.
+- The cap arrives as a native token amount, so the USD value needs `tokenPrice` + `decimals`. Every call site passes the reserve's own values, including the Portfolio fallback (AAV-1350): a cap applied without them silently reports the undiluted APR.
 
 ### Brevis position cap
 
-- `positionCap` is a **position cap** — only the first `$X` of deposit/debt earns incentive.
-- `positionCapUsd` = API `positionCap`; `eligibleUsd = min(deposit, positionCapUsd)`.
-- Effective APR: `nominalApr × eligibleUsd / deposit` (when cap binds, APR is diluted).
-- Missing `endDate` degrades gracefully to nominal APR.
-- Shared cap across supply/borrow requires the same `campaignId` and matching metadata.
+- `positionCapUsd` caps the earning position, so `eligibleUsd = min(positionUsd, positionCapUsd)` and the APR dilutes the same way as Merkl's.
+- `positionUsd = combinedDepositUsd ?? totalPositionUsd ?? inputUsd`; the combined value requires the same `campaignId` and matching metadata across supply and borrow.
+- Missing `endDate` degrades gracefully to the nominal APR.
 
 ### Merkl FIX reward cap
 
 - `fixRewardableDays` and `fixRewardableUntilTs` come from remaining budget divided by daily rewards.
 - This is a pool-level cap shared by all users.
-
-### Merit Base / Merit Self
-
-- Merit Base anchors to reserve TVL when available.
-- Merit Self uses `positionCapUsd` as a position cap — only the first `positionCapUsd` of deposit earns incentive.
-- Merit Base intentionally emits no per-row `capNote`.
 
 ### UI surfaces
 
@@ -975,15 +966,21 @@ Source: `src/lib/rateSimulationCalculator.ts`, `src/lib/portfolioSimulator.ts`.
 
 JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 
-### 7.5 Brevis Position Cap vs Merit Self Position Cap
+### 7.5 Brevis Position Cap vs Merkl Position Cap
 
-**Brevis `positionCap`** limits cumulative USD reward total, not position size. **Merit `selfPositionCapUsd`** limits position size. These are fundamentally different cap mechanisms. Brevis does **not** need `totalSupplyUsd` — denominator uses incremental `depositUsd`. Adding `totalPositionUsd` to Brevis would incorrectly apply Merit's position-cap logic.
+Both are per-user position caps and both dilute the APR by `eligible / position`; they differ in where the cap and the denominator come from.
+
+| | Merkl | Brevis |
+|---|---|---|
+| Cap field | `positionCapNative` (converted with `tokenPrice` + `decimals`) or `positionCapUsd` | `positionCapUsd` |
+| Position denominator | the opportunity's `positionUsd` (net-eligible when the opportunity declares a constraint) | `combinedDepositUsd ?? totalPositionUsd ?? inputUsd` |
+| Interaction | composes with the net/cross-asset constraint into one eligible principal (AAV-1164) | stands alone |
 
 ### 7.6 Wallet-Only Incentive Delta
 
 `buildIncentiveCurrent` accepts `walletSupplyUsd`/`walletBorrowUsd` (wallet position) separate from `depositUsd` (simulation input). When wallet exists but no manual input:
 
-- `walletSupplyUsd` > 0 → Merit position cap dilution still computed → `currentIncentive` is diluted value
+- `walletSupplyUsd` > 0 → position-cap dilution still computed → `currentIncentive` is the diluted value
 - `deltaIncentive = currentIncentive - headlineIncentive` (typically negative, showing dilution)
 - Without `walletSupplyUsd`: `currentIncentive = headlineIncentive` → `deltaIncentive = 0` → filtered by `formatDeltaPercent` threshold → delta not displayed
 
@@ -993,7 +990,7 @@ JSDoc on `buildRateSimulationResult` lists three caller contracts explicitly.
 
 ### 7.7 Per-Campaign Detail Row
 
-`buildMeritCampaignDetails`, `buildMerklCampaignDetails`, `buildBrevisCampaignDetails` all use `let after = null` initial declaration + explicit `else if (hasAnyInput) { after = null; }` branch. Brevis was missing this branch initially (AAV-771) — functionally correct due to initial `null`, but explicit branch is more defensive.
+`buildMerklCampaignDetails`, `buildBrevisCampaignDetails` all use `let after = null` initial declaration + explicit `else if (hasAnyInput) { after = null; }` branch. Brevis was missing this branch initially (AAV-771) — functionally correct due to initial `null`, but explicit branch is more defensive.
 
 ### 7.8 `SimulationLane` Field Names
 
@@ -1005,22 +1002,22 @@ Wallet position (`walletSupplyUsd`/`walletBorrowUsd`, derived as `totalSupplyUsd
 
 | # | Calculation Path | Wallet Included? | Variable | Rationale |
 |---|---|---|---|---|
-| 1 | Merit/Merkl forecast input (`meritMerklInputUsd`) | **No** (delta-only) | `supplyNetInputUsd` = max(supplyInput - borrowInput, 0) | Wallet already in `latestTvl`; adding to `inputUsd` → TVL double-count |
+| 1 | Merkl forecast input (`netPositionInputUsd`) | **No** (delta-only) | `netPositionInputUsd` = max(supplyInput - borrowInput, 0) | Wallet already in `latestTvl`; adding to `inputUsd` → TVL double-count |
 | 2 | Eligibility ratio (`sameReserveRatio`) | **Yes** (total-based) | `supplyGrossForEligibility` = totalSupplyUsd ?? supplyInputUsd | "What fraction of total position is net-eligible" — must use total |
 | 3 | Cross-reserve eligibility (`merklGroupMultiplier`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | AAV-1060: delta-only grossUsd=0 skipped cross-reserve scaling |
 | 4 | Cross-reserve note (`merklCrossReserveNote`) | **Yes** (total-based) | `grossUsd` = supplyGrossForEligibility | Shows "$X of $Y net eligible" with total position as $Y |
 | 5 | Current incentive — wallet branch | **Yes** (wallet-only, no delta) | `walletPositionUsd` = walletSupplyUsd | Current = "what wallet currently earns"; position cap dilution on existing position |
-| 6 | Current incentive — headline branch | **No** | Raw API data + forecast (same as current), no wallet param | Headline = undiluted API display value; both headline & current contain Merkl/Brevis forecast (cancels out in deltaIncentive), but headline lacks Merit position cap dilution |
+| 6 | Current incentive — headline branch | **No** | Raw API data + forecast (same as current), no wallet param | Headline = undiluted API display value; both headline & current contain the Merkl/Brevis forecast (cancels out in `deltaIncentive`), but headline carries no position-cap dilution |
 | 7 | After incentive | **Yes** (total-based) | `totalPositionUsd` = totalSupplyUsd | After = "what total position (wallet+delta) would earn" |
-| 8 | Merit position cap (per-campaign current) | **Yes** (wallet-only) | `walletPositionUsd` | Existing position subject to cap |
-| 9 | Merit position cap (per-campaign after) | **Yes** (total-based) | `totalPositionUsd ?? inputUsd` | Simulated total position subject to cap |
-| 10 | Brevis position cap | **Yes** (total-based) | `positionUsd` = combined ?? totalPositionUsd ?? inputUsd | AAV-1060 #10: Brevis cap is homologous to Merit position cap — both constrain per-user APR based on total position, not delta alone |
+| 8 | Position cap (per-campaign current) | **Yes** (wallet-only) | `walletPositionUsd` | Existing position subject to the cap |
+| 9 | Position cap (per-campaign after) | **Yes** (total-based) | `totalPositionUsd ?? inputUsd` | Simulated total position subject to the cap |
+| 10 | Brevis position cap | **Yes** (total-based) | `positionUsd` = combined ?? totalPositionUsd ?? inputUsd | AAV-1060 #10: the Brevis cap constrains per-user APR based on total position, not delta alone |
 | 11 | `deltaIncentive` — simulation path | **Indirect** | `afterIncentive - currentIncentive` | Wallet flows in via #5 (current) and #7 (after) |
-| 12 | `deltaIncentive` — wallet dilution gap path | **Indirect** | `currentIncentive - headlineIncentive` | Wallet only in current (#5), not in headline (#6) → gap = Merit position cap dilution. Merkl/Brevis forecast cancels out (both sides contain it). Merit forecast also cancels: current uses `sumForecastMeritIncentiveApr(depositUsd=0)` which skips forecast (only applies cap), headline uses `sumMeritIncentiveApr` (pure campaignApr, no forecast no cap) |
+| 12 | `deltaIncentive` — wallet dilution gap path | **Indirect** | `currentIncentive - headlineIncentive` | Wallet only in current (#5), not in headline (#6) → the gap is the wallet's position-cap dilution. The Merkl/Brevis forecast cancels out because both sides carry it |
 | 13 | `deltaIncentive` — no wallet path | **No** | `null` | No data to display |
 
 **Key semantic pairs**:
-- `meritMerklInputUsd` (delta) vs `supplyGrossForEligibility` (total): input drives rate curve; eligibility measures position composition
+- `netPositionInputUsd` (delta) vs `grossForEligibility` (total): input drives the rate curve; eligibility measures position composition
 - `walletPositionUsd` (current) vs `totalPositionUsd` (after): current reflects existing position; after reflects simulated total
 - `headlineIncentive` (no wallet) vs `currentIncentive` (wallet): gap between them = wallet dilution effect
 
@@ -1038,8 +1035,8 @@ Wallet position (`walletSupplyUsd`/`walletBorrowUsd`, derived as `totalSupplyUsd
 - **实现**：`walletEligibilityRatio` 和 `walletMerklGroupMul` 在无钱包时必须返回 identity（1.0），**不得 fallback 到 simulation inputs**。
 
 ### 2. Aggregate = Σ per-source：单一计算路径
-- `currentIncentive = protocolCurrent + sr.merit.current + sr.merkl.current + sr.brevis.current`
-- `afterIncentive = protocolCurrent + sr.merit.after + sr.merkl.after + sr.brevis.after`
+- `currentIncentive = protocolCurrent + sr.merkl.current + sr.brevis.current`
+- `afterIncentive = protocolCurrent + sr.merkl.after + sr.brevis.after`
 - **禁止**独立的 aggregate 计算路径（如已删除的 `buildIncentiveCurrent`/`buildIncentiveAfter`）。
 - Per-source `Math.min(afterRaw, current)` 在 dispatch map 循环内应用，aggregate 层不再加 `Math.min`。
 - `Math.min(a+b, c+d) ≠ Math.min(a,c) + Math.min(b,d)` — 两层 cap 产生不同结果。
