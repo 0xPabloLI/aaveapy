@@ -27,8 +27,6 @@ const baseReserve: ReserveWithSpread & RateCalcInput = {
   borrowApy: 6.5,
   supplyIncentives: [1.1],
   borrowIncentives: [0.4],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],
@@ -358,7 +356,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.borrow.currentIncentive).toBe(0.4);
   });
 
-  it('applies Merit/Merkl per-side USD when meritMerklNetPosition is false', () => {
+  it('applies Merkl per-side USD when merklNetPosition is false', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
       merklSupplys: [
@@ -402,8 +400,8 @@ describe('buildRateSimulationResult', () => {
       forecastStates: states,
     };
 
-    const netOn = buildRateSimulationResult({ ...common, meritMerklNetPosition: true });
-    const perSide = buildRateSimulationResult({ ...common, meritMerklNetPosition: false });
+    const netOn = buildRateSimulationResult({ ...common, merklNetPosition: true });
+    const perSide = buildRateSimulationResult({ ...common, merklNetPosition: false });
 
     const netRow = netOn.supply.sources.merkl.campaigns?.[0];
     const perRow = perSide.supply.sources.merkl.campaigns?.[0];
@@ -574,64 +572,6 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.currentIncentive).toBeGreaterThan(result.supply.sources.merkl.current!);
     expect(result.supply.afterIncentive).toBeGreaterThan(result.supply.sources.merkl.after!);
     expect(result.supply.afterIncentive).toBeLessThan(result.supply.currentIncentive);
-  });
-
-  it('recomputes merit incentives when a shared supply amount is present even without latest-round reward data', () => {
-    const reserve: ReserveWithSpread = {
-      ...baseReserve,
-      meritSupplys: [
-        {
-          link: 'https://apps.aavechan.com/merit/celo-supply-usdt',
-          name: 'Supply USDT',
-          message: [
-            {
-              action: 'Supply USDT',
-              description:
-                'Rewards are distributed using the following formula: f(USD. aToken Holding - USD. vToken Holding / USD. Liquidation Threshold)',
-            },
-            {
-              action: 'Self Authentication',
-              description:
-                'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
-            },
-          ] as unknown as string,
-          breakdowns: [
-            {
-              campaignApr: 4.084439890516138,
-              campaignStartedAt: '2020-01-01',
-              campaignEndedAt: '2099-01-01',
-              campaignId: 'merit-base-use-rate',
-            },
-            {
-              campaignApr: 4.084439890516138,
-              campaignStartedAt: '2020-01-01',
-              campaignEndedAt: '2099-01-01',
-              campaignId: 'merit-self-use-rate',
-              positionCapUsd: 1000,
-            },
-          ],
-        },
-      ],
-    };
-
-    const result = buildRateSimulationResult({
-      tydroPointToUsdRate: 0,
-      reserve,
-      reserveRateInput: baseReserve,
-      isApy: false,
-      whitelistMerklCampaignIds: new Set(),
-      pointRateMap: { tydroinkpoints: 1 },
-      tokenPrice: 1,
-      supplyInput: '100000',
-      borrowInput: '0',
-      inputMode: 'usd',
-      forecastStates: {},
-    });
-
-    expect(result.supply.sources.merit.current).toBeCloseTo(8.168879781032276, 10);
-    expect(result.supply.sources.merit.after).toBeLessThan(result.supply.sources.merit.current!);
-    expect(result.supply.sources.merit.after).toBeCloseTo(4.1252842894213, 10);
-    expect(result.supply.sources.merit.delta).toBeCloseTo(-4.043595491610976, 10);
   });
 
   it('keeps after values empty when the shared scenario is blank', () => {
@@ -1693,7 +1633,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
     });
     const withEmptyPositions = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
@@ -1706,7 +1646,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions: new Map(),
     });
     expect(withoutPositions.supply.afterIncentive).toBe(withEmptyPositions.supply.afterIncentive);
@@ -1730,7 +1670,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(4, 1);
@@ -1753,7 +1693,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
@@ -1776,7 +1716,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(0, 1);
@@ -1810,7 +1750,7 @@ describe('buildRateSimulationResult — merkl per-group cross-reserve net eligib
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
@@ -1856,7 +1796,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
       reserveSymbolById,
     });
@@ -1888,7 +1828,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
     });
     const merklCampaigns = result.supply.sources.merkl.campaigns;
@@ -1928,7 +1868,7 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions,
       reserveSymbolById,
     });
@@ -1997,7 +1937,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '600',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     // constrained: 10 * 0.4 = 4, unconstrained: 5 * 1 = 5, total = 9
@@ -2021,7 +1961,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '600',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     // 10 * 0.4 = 4
@@ -2045,18 +1985,18 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '600',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
   });
 
-  it('same reserve: meritMerklNetPosition=false ─ both groups full APR', () => {
+  it('same reserve: merklNetPosition=false ─ both groups full APR', () => {
     const reserve: ReserveWithSpread = {
       ...noIncentiveReserve,
       merklSupplys: [constrainedGroup, unconstrainedGroup],
     };
-    // meritMerklNetPosition=false → no eligibility scaling, no crossReservePositions needed
+    // merklNetPosition=false → no eligibility scaling, no crossReservePositions needed
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
       reserve,
@@ -2068,7 +2008,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '600',
       forecastStates: {},
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
     });
     // both groups get full APR: 10 + 5 = 15
     expect(result.supply.afterIncentive).toBeCloseTo(15, 1);
@@ -2092,7 +2032,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '1000',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     // constrained: 10 * 0 = 0, unconstrained: 5 * 1 = 5
@@ -2144,7 +2084,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '400',
       borrowInput: '1000',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     // constrained: 8 * 0.6 = 4.8, unconstrained: 3 * 1 = 3, total = 7.8
@@ -2218,7 +2158,7 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
       supplyInput: '1000',
       borrowInput: '600',
       forecastStates: {},
-      meritMerklNetPosition: true,
+      merklNetPosition: true,
       crossReservePositions,
     });
     // crossReserveRatio = max(1000 - 600 - 200, 0) / 1000 = 200/1000 = 0.2
@@ -2242,8 +2182,6 @@ describe('buildRateSimulationResult fallback behavior', () => {
     borrowApy: 5.0,
     supplyIncentives: [],
     borrowIncentives: [],
-    meritSupplys: [],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [],
     brevisSupplys: [],
@@ -2387,57 +2325,6 @@ describe('buildRateSimulationResult fallback behavior', () => {
     expect(result.marketMetrics.optimalUtilization).toBe(80);
   });
 
-  it('passes hubSupplied param to incentive calc (prefers over reserveRateInput.hubSupplied)', () => {
-    const reserveWithHub: ReserveWithSpread = {
-      ...reserveWithoutRateCalc,
-      hubId: 'hub-1',
-      decimals: 18,
-      supplied: '5000000000000000000000',
-      borrowed: '2000000000000000000000',
-    };
-    const rateInput: RateCalcInput = {
-      decimals: 18,
-      deficit: '0',
-      liquidity: '3000000000000000000000',
-      borrowed: '2000000000000000000000',
-      protocolFee: 10,
-      slopeBelowOptimal: 4,
-      slopeAboveOptimal: 60,
-      baseBorrowRate: 0,
-      optimalUtilization: 80,
-      hubSupplied: '6000000000000000000000',
-      hubBorrowed: '3000000000000000000000',
-    };
-    const resultWithOverride = buildRateSimulationResult({
-      tydroPointToUsdRate: 0,
-      reserve: reserveWithHub,
-      reserveRateInput: rateInput,
-      isApy: false,
-      whitelistMerklCampaignIds: new Set(),
-      pointRateMap: { tydroinkpoints: 1 },
-      tokenPrice: 1,
-      supplyInput: '1000',
-      borrowInput: '',
-      forecastStates: {},
-      hubSupplied: '9000000000000000000000',
-    });
-    const resultWithoutOverride = buildRateSimulationResult({
-      tydroPointToUsdRate: 0,
-      reserve: reserveWithHub,
-      reserveRateInput: rateInput,
-      isApy: false,
-      whitelistMerklCampaignIds: new Set(),
-      pointRateMap: { tydroinkpoints: 1 },
-      tokenPrice: 1,
-      supplyInput: '1000',
-      borrowInput: '',
-      forecastStates: {},
-    });
-    expect(resultWithOverride.supply.currentTotal).not.toBeNull();
-    expect(resultWithoutOverride.supply.currentTotal).not.toBeNull();
-    expect(resultWithOverride.supply.currentTotal).toEqual(resultWithoutOverride.supply.currentTotal);
-  });
-
   it('provides availableLiquidityForBorrowUsd from reserve.liquidity when reserveRateInput is null', () => {
     const result = buildRateSimulationResult({
       tydroPointToUsdRate: 0,
@@ -2471,8 +2358,6 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
     borrowApy: 5.0,
     supplyIncentives: [],
     borrowIncentives: [],
-    meritSupplys: [],
-    meritBorrows: [],
     merklBorrows: [],
     brevisSupplys: [],
     brevisBorrows: [],
@@ -2528,7 +2413,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates,
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions: undefined,
       reserveSymbolById: undefined,
     });
@@ -2579,7 +2464,7 @@ describe('buildRateSimulationResult — APR capped note only when cap actually r
       supplyInput: '1000',
       borrowInput: '0',
       forecastStates,
-      meritMerklNetPosition: false,
+      merklNetPosition: false,
       crossReservePositions: undefined,
       reserveSymbolById: undefined,
     });

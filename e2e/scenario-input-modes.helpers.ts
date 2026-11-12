@@ -18,8 +18,8 @@ export const supplyInput = (page: Page) => page.getByRole('textbox', { name: 'Su
 export const borrowInput = (page: Page) => page.getByRole('textbox', { name: 'Borrow amount' }).first();
 export const modeRadio = (page: Page, mode: 'USD' | 'Token') =>
   page.getByRole('radio', { name: mode, exact: true }).first();
-export const netCheckbox = (page: Page) => page.locator('#scenario-merit-merkl-net-lending-borrowing');
-export const netLabel = (page: Page) => page.locator('label[for="scenario-merit-merkl-net-lending-borrowing"]');
+export const netCheckbox = (page: Page) => page.locator('#scenario-merkl-net-lending-borrowing');
+export const netLabel = (page: Page) => page.locator('label[for="scenario-merkl-net-lending-borrowing"]');
 
 export async function openApp(page: Page) {
   await page.goto('/');

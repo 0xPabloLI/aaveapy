@@ -159,7 +159,7 @@ const ReservesTable = ({
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<ScenarioInputMode>('usd');
-  const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
+  const [merklNetPosition, setMerklNetPosition] = useState(true);
   const [mobileNetOpen, setMobileNetOpen] = useState(false);
   const handleMobileNetToggle = useCallback(() => setMobileNetOpen((prev) => !prev), []);
   const handleScenarioChange = useCallback((supply: string, borrow: string, mode: ScenarioInputMode) => {
@@ -272,7 +272,7 @@ const ReservesTable = ({
     supplyInput: isPortfolioMode ? '' : debouncedSharedSupplyInput,
     borrowInput: isPortfolioMode ? '' : debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
-    meritMerklNetPosition,
+    merklNetPosition,
     crossReservePositions,
     walletCrossReservePositions,
     reserveSymbolById,
@@ -527,7 +527,6 @@ const ReservesTable = ({
       getDisplaySpread,
       isSupplyDisabled,
       isBorrowDisabled,
-       
     }),
     [
       sortedDataSimGate,
@@ -589,7 +588,7 @@ const ReservesTable = ({
     if (expansionLen === currLen) return false;
     const threshold = Math.max(expansionLen, currLen, DEFAULT_VISIBLE_COUNT) * 0.5;
     return Math.abs(currLen - expansionLen) > threshold;
-  }, [sortedData.length]);  
+  }, [sortedData.length]);
 
   const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
     reserves,
@@ -605,7 +604,7 @@ const ReservesTable = ({
       supplyInput: debouncedSharedSupplyInput,
       borrowInput: debouncedSharedBorrowInput,
       inputMode: sharedInputMode,
-      meritMerklNetPosition,
+      merklNetPosition,
     },
   });
 
@@ -1000,8 +999,8 @@ const ReservesTable = ({
             <ScenarioControls
               ref={scenarioControlsRef}
               onDebouncedChange={handleScenarioChange}
-              meritMerklNetPosition={meritMerklNetPosition}
-              onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+              merklNetPosition={merklNetPosition}
+              onMerklNetPositionChange={setMerklNetPosition}
               {...(isMobile && { mobileNetOpen, onMobileNetToggle: handleMobileNetToggle })}
             />
           </div>

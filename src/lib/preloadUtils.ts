@@ -284,11 +284,9 @@ export function isImagePreloaded(src: string): boolean {
 export function preloadIncentiveIcons(): void {
   const incentiveIcons = [
     // Partner logos (light theme)
-    '/icons/partners/aci-black.svg',
     '/icons/partners/brevis-black.svg',
     '/icons/partners/merkl-black.svg',
     // Partner logos (dark theme)
-    '/icons/partners/aci-white.svg',
     '/icons/partners/brevis-white.svg',
     '/icons/partners/merkl-white.svg',
     // Protocol icon

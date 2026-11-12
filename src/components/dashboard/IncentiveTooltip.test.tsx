@@ -37,8 +37,6 @@ const mockReserve: ReserveWithSpread = {
   borrowDisabled: false,
   supplyIncentives: [0.5],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],
@@ -146,7 +144,6 @@ describe('IncentiveTooltip', () => {
       const noIncentiveReserve = {
         ...mockReserve,
         supplyIncentives: [],
-        meritSupplys: [],
         merklSupplys: [],
         brevisSupplys: [],
       };
@@ -179,64 +176,6 @@ describe('IncentiveTooltip', () => {
     it('renders protocol incentive when supplyIncentives exist', () => {
       const { container } = renderTooltip();
       expect(container.innerHTML).toContain('Protocol Incentive');
-    });
-
-    it('renders merit/ACI incentives when meritSupplys exist', () => {
-      const reserveWithMerit: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Merit Campaign',
-            link: 'https://example.com',
-            message: 'Earn extra rewards',
-            breakdowns: [
-              {
-                campaignApr: 2.5,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2026-12-31',
-                campaignId: 'merit-1',
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
-      expect(container.innerHTML).toContain('Merit Campaign');
-    });
-
-    it('renders multi-breakdown Merit group as one source with multiple campaign cards', () => {
-      const reserveWithMerit: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Supply USDT',
-            link: 'https://example.com',
-            message: 'Earn extra rewards',
-            breakdowns: [
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2026-12-31',
-                campaignId: 'celo-supply-usdt-base',
-                campaignType: 'DUTCH_AUCTION',
-              },
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2026-12-31',
-                campaignId: 'celo-supply-usdt-self',
-                campaignType: 'DUTCH_AUCTION',
-                positionCapUsd: 1000,
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithMerit });
-      expect(container.innerHTML).toContain('Supply USDT');
-      expect(container.textContent).toContain('7.73%');
-      expect(container.textContent).toContain('Incentive on first');
-      expect(container.textContent).toContain('Earn extra rewards');
     });
 
     it('renders Merkl incentives when merklSupplys exist', () => {
@@ -282,9 +221,9 @@ describe('IncentiveTooltip', () => {
     });
 
     it('excludes inactive campaigns based on date range', () => {
-      const reserveWithExpiredMerit: ReserveWithSpread = {
+      const reserveWithExpiredCampaign: ReserveWithSpread = {
         ...mockReserve,
-        meritSupplys: [
+        merklSupplys: [
           {
             name: 'Expired Campaign',
             link: 'https://example.com',
@@ -294,13 +233,13 @@ describe('IncentiveTooltip', () => {
                 campaignApr: 2.5,
                 campaignStartedAt: '2020-01-01',
                 campaignEndedAt: '2020-12-31',
-                campaignId: 'merit-expired',
+                campaignId: 'merkl-expired',
               },
             ],
           },
         ],
       };
-      const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithExpiredMerit });
+      const { container } = renderTooltip({ ...defaultProps, reserve: reserveWithExpiredCampaign });
       expect(container.innerHTML).not.toContain('Expired Campaign');
     });
   });
@@ -577,32 +516,6 @@ describe('IncentiveTooltip', () => {
       expect(container.textContent).not.toContain('Incentive on first');
     });
 
-    it('renders position cap for Merit self auth campaign', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Merit Campaign',
-            link: 'https://example.com',
-            message: [{ action: 'Self Authentication', description: 'Incentive on first $1,000 of deposit' }],
-            breakdowns: [
-              {
-                campaignApr: 1.0,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'merit-self',
-                positionCapUsd: 1000,
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Incentive on first');
-      expect(container.textContent).toContain('$1,000');
-      expect(container.textContent).toContain('of net supply − borrow only');
-    });
-
     it('renders position cap for Merkl with net position constraint', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
@@ -855,105 +768,6 @@ describe('IncentiveTooltip', () => {
   });
 
   describe('Message JSON.parse and breakdown-level rendering', () => {
-    it('parses JSON string message from Merit breakdown and renders structured content', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Supply USDT',
-            link: 'https://example.com',
-            breakdowns: [
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-base',
-                campaignType: 'DUTCH_AUCTION',
-                message:
-                  '[{"action":"Supply USDT","description":"Rewards are distributed using the following formula"}]',
-              },
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-self',
-                campaignType: 'DUTCH_AUCTION',
-                positionCapUsd: 1000,
-                message:
-                  '[{"action":"Self Authentication","description":"Double your yield by verifying your humanity"}]',
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      const text = container.textContent!;
-      expect(text).toContain('Supply USDT');
-      expect(text).toContain('Self Authentication');
-      expect(text).toContain('Double your yield');
-      expect(text).toContain('Rewards are distributed');
-      expect(text).not.toContain('[{"action"');
-      expect(text).not.toContain('"}]');
-    });
-
-    it('renders breakdown message below each campaign for Merit', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Supply USDT',
-            link: 'https://example.com',
-            message: 'Opportunity-level message',
-            breakdowns: [
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-base',
-                message: 'Base breakdown message',
-              },
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-self',
-                positionCapUsd: 1000,
-                message: 'Self breakdown message',
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      const text = container.textContent!;
-      expect(text).toContain('Base breakdown message');
-      expect(text).toContain('Self breakdown message');
-      expect(text).not.toContain('Opportunity-level message');
-    });
-
-    it('falls back to group.message when breakdown has no message', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Supply USDT',
-            link: 'https://example.com',
-            message: 'Group-level fallback',
-            breakdowns: [
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-base',
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Group-level fallback');
-    });
-
     it('still renders plain string messages (Merkl/Brevis) without JSON parsing', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
@@ -975,29 +789,6 @@ describe('IncentiveTooltip', () => {
       };
       const { container } = renderTooltip({ ...defaultProps, reserve });
       expect(container.textContent).toContain('Plain string message');
-    });
-
-    it('handles invalid JSON string as plain text', () => {
-      const reserve: ReserveWithSpread = {
-        ...mockReserve,
-        meritSupplys: [
-          {
-            name: 'Supply USDT',
-            link: 'https://example.com',
-            breakdowns: [
-              {
-                campaignApr: 3.8,
-                campaignStartedAt: '2026-01-01',
-                campaignEndedAt: '2027-12-31',
-                campaignId: 'celo-supply-usdt-base',
-                message: 'Not a JSON string',
-              },
-            ],
-          },
-        ],
-      };
-      const { container } = renderTooltip({ ...defaultProps, reserve });
-      expect(container.textContent).toContain('Not a JSON string');
     });
   });
 
@@ -1039,7 +830,7 @@ describe('IncentiveTooltip', () => {
     it('renders per-campaign APR in multi-campaign mode', () => {
       const reserve: ReserveWithSpread = {
         ...mockReserve,
-        meritSupplys: [
+        merklSupplys: [
           {
             name: 'Supply USDT',
             link: 'https://example.com',

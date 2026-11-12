@@ -29,7 +29,7 @@ const content: RatesPageContent = {
   ogLocale: 'zh_TW',
   title: 'Aave 利率與 APY 即時查詢 | Aave V3 存借利率',
   description:
-    '即時比較 Aave V3 各條鏈的存款與借款 APY，了解利率如何形成，以及 Merit、Merkl、Brevis 等獎勵對實際年化收益的影響。',
+    '即時比較 Aave V3 各條鏈的存款與借款 APY，了解利率如何形成，以及 Merkl、Brevis 等獎勵對實際年化收益的影響。',
   h1: 'Aave 利率與 APY：看懂 Aave V3 的存借收益',
   intro:
     'Aave 的利率會隨資金池使用率持續變動。這一頁說明 APY 到底代表什麼、V3 帶來哪些改變，以及該怎麼把獎勵計入實際年化收益。最新數字請直接看即時看板。',
@@ -61,7 +61,7 @@ const content: RatesPageContent = {
       id: 'composition',
       h2: '看板上的 APY 由什麼組成',
       paragraphs: [
-        '看板上的每個數字都可以拆成兩塊：協議的基礎利率，以及獎勵 APR。基礎利率由利率曲線算出，獎勵則來自 Merit、Merkl、Brevis 等分發計畫。',
+        '看板上的每個數字都可以拆成兩塊：協議的基礎利率，以及獎勵 APR。基礎利率由利率曲線算出，獎勵則來自 Merkl、Brevis 等分發計畫。',
         '獎勵有預算也有期限，不是長期穩定的收益來源。評估一個儲備池時，建議先單獨看基礎利率，再判斷活動結束後是否還值得續抱。',
       ],
     },
@@ -70,7 +70,7 @@ const content: RatesPageContent = {
       h2: '試算範例：在 Base 存入 10,000 USDC',
       paragraphs: [
         '假設在 Base 鏈存入 10,000 USDC，存款 APY 為 4.2%，一年的利息約 420 USDC，平均每月約 35 USDC。這是把利率固定住的推估，實際上利率每個區塊都可能變動。',
-        '若同一個儲備池另有 1.8% APR 的 Merit 獎勵，實際年化收益會提高到約 6%，一年約 600 USDC。看板上基礎利率與有效 APY 之間的差距，指的就是這一段。',
+        '若同一個儲備池另有 1.8% APR 的 Merkl 獎勵，實際年化收益會提高到約 6%，一年約 600 USDC。看板上基礎利率與有效 APY 之間的差距，指的就是這一段。',
         '借款端：以價值 10,000 USDC 的 ETH 作為抵押、借出 4,000 USDC，在借款 APY 5.5% 之下，一年利息成本約 220 USDC。Base 等 L2 一次操作的手續費只要幾美分，但在 Ethereum 主網，小額操作的手續費可能就吃掉大半收益。',
       ],
     },
@@ -79,7 +79,7 @@ const content: RatesPageContent = {
       h2: 'APY 是什麼？和 APR 差在哪裡',
       paragraphs: [
         'APY 是把複利算進去之後的年化報酬率，APR 則是不計複利的單利年率。同樣的利率之下，APY 會略高於 APR。在 Aave 存入資產後，aToken 的餘額會隨區塊持續增加，等於複利自動發生，不需要手動領取。',
-        '獎勵計畫（Merit、Merkl、Brevis）多半以 APR 公布數字，所以看板上提供 APR/APY 切換，讓你在同一個基準上比較基礎利率與獎勵。',
+        '獎勵計畫（Merkl、Brevis）多半以 APR 公布數字，所以看板上提供 APR/APY 切換，讓你在同一個基準上比較基礎利率與獎勵。',
         '舉例來說，存入約 100 萬新台幣等值的 USDC，若存款 APY 為 4.5 %，在利率不變的前提下一年約有 4.5 萬元利息，換算每月約 3,700 元；但實際利率每分鐘都在變動，這只是估算。',
       ],
     },
@@ -110,7 +110,7 @@ const content: RatesPageContent = {
       },
       {
         title: '外部獎勵',
-        body: 'Merit、Merkl、Brevis 的獎勵會疊加在基礎利率之上，且多半是限期活動；活動一結束，有效 APY 就會回落到基礎水準。',
+        body: 'Merkl、Brevis 的獎勵會疊加在基礎利率之上，且多半是限期活動；活動一結束，有效 APY 就會回落到基礎水準。',
       },
     ],
   },

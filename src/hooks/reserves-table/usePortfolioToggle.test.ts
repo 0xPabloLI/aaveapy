@@ -613,8 +613,6 @@ describe('usePortfolioToggle', () => {
         utilizationPct: 40,
         supplyIncentives: [],
         borrowIncentives: [],
-        meritSupplys: [],
-        meritBorrows: [],
         merklSupplys: [],
         merklBorrows: [],
         brevisSupplys: [],
@@ -659,6 +657,8 @@ describe('usePortfolioToggle', () => {
     });
 
     it('falls back to simplified calculation without simulationContext', () => {
+      // AAV-1350: the legacy `supplyIncentives` array has no producer in the API,
+      // so the fallback must not read it (it used to render 0.5 from this fixture).
       const reserve = makeRateCalcReserve({ supplyApy: 3.0, supplyIncentives: [0.5] });
       const entries = [makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null } })];
       const { result } = renderHook(() =>
@@ -670,7 +670,7 @@ describe('usePortfolioToggle', () => {
       );
       expect(result.current.portfolioResults).toHaveLength(1);
       expect(result.current.portfolioResults[0].nativePercent).toBe(3.0);
-      expect(result.current.portfolioResults[0].incentivePercent).toBe(0.5);
+      expect(result.current.portfolioResults[0].incentivePercent).toBe(0);
     });
 
     it('with simulationContext but empty forecastStates, still produces results', () => {

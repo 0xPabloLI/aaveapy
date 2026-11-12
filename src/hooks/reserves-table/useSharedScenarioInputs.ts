@@ -19,9 +19,9 @@ export interface UseSharedScenarioInputsResult {
   debouncedSharedBorrowInput: string;
   /** USD vs token interpretation of the inputs above. */
   sharedInputMode: ScenarioInputMode;
-  /** Merit / Merkl net-position toggle (default `true`). */
-  meritMerklNetPosition: boolean;
-  setMeritMerklNetPosition: Dispatch<SetStateAction<boolean>>;
+  /** Merkl net-position toggle (default `true`). */
+  merklNetPosition: boolean;
+  setMerklNetPosition: Dispatch<SetStateAction<boolean>>;
   /** Mobile-only collapsed state for the "advanced controls" sheet. */
   mobileNetOpen: boolean;
   /** Flip `mobileNetOpen`. */
@@ -36,7 +36,7 @@ export interface UseSharedScenarioInputsResult {
 
 /**
  * Owns the shared scenario input surface: the debounced supply/borrow
- * strings, the USD/token mode flag, the Merit/Merkl net-position toggle,
+ * strings, the USD/token mode flag, the Merkl net-position toggle,
  * the mobile sheet open/close state, plus the callbacks the
  * `ScenarioControls` instances bind to.
  */
@@ -46,7 +46,7 @@ export function useSharedScenarioInputs({
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<ScenarioInputMode>('usd');
-  const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
+  const [merklNetPosition, setMerklNetPosition] = useState(true);
   const [mobileNetOpen, setMobileNetOpen] = useState(false);
 
   const handleMobileNetToggle = useCallback(() => {
@@ -77,8 +77,8 @@ export function useSharedScenarioInputs({
     debouncedSharedSupplyInput,
     debouncedSharedBorrowInput,
     sharedInputMode,
-    meritMerklNetPosition,
-    setMeritMerklNetPosition,
+    merklNetPosition,
+    setMerklNetPosition,
     mobileNetOpen,
     handleMobileNetToggle,
     handleScenarioChange,

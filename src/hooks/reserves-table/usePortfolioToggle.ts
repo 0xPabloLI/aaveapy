@@ -16,6 +16,7 @@ import {
 } from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import { simulatePortfolioFromEntries } from '@/lib/portfolioSimulator';
+import { getCampaignIncentiveValues } from '@/lib/incentiveAggregation';
 import { isRestrictedReserve, getPrimaryReserveStatus } from '@/lib/reserveStatus';
 
 export interface PortfolioSimulationContext {
@@ -162,8 +163,9 @@ export const usePortfolioToggle = ({
           const amountUsd = resolvePositionAmountUsd(s, reserve);
           if (amountUsd <= 0) continue;
           const nativePercent = side === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
-          const incentiveArr = side === 'supply' ? (reserve.supplyIncentives ?? []) : (reserve.borrowIncentives ?? []);
-          const incentivePercent = incentiveArr.reduce((acc, v) => acc + v, 0);
+          // AAV-1350: campaign sources only. `supplyIncentives`/`borrowIncentives`
+          // have no producer in the API and always read as empty.
+          const incentivePercent = getCampaignIncentiveValues(reserve, side).apr;
           out.push(buildPortfolioPositionResult(e.reserveId, side, amountUsd, nativePercent, incentivePercent));
         }
         return out;

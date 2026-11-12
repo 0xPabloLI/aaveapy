@@ -10,7 +10,7 @@ Advanced DeFi users who have some blockchain experience and understand basic con
 
 - Daily monitoring of Aave V3 multi-chain markets
 - Comparing lending and borrowing rates across chains
-- Tracking incentive rewards from Merit/Merkl/Brevis programs
+- Tracking incentive rewards from Merkl/Brevis programs
 - Simulating rate changes and portfolio effects
 - Making cross-chain investment decisions
 
@@ -22,7 +22,7 @@ Aave APY is a React dashboard that provides comprehensive market data analysis f
 
 - Aggregate and normalize Aave V3 market data across all supported chains (Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, etc.)
 - Enable easy comparison of supply/borrow APYs to identify optimal yield opportunities
-- Track additional yield sources from incentive programs (Merit, Merkl, Brevis)
+- Track additional yield sources from incentive programs (Merkl, Brevis)
 - Provide forecasting tools for estimating potential returns
 - Serve as a decision-support tool for DeFi users managing multi-chain portfolios
 

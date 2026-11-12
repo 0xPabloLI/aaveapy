@@ -18,7 +18,7 @@ const baseScenarioKey = {
   supplyInput: '',
   borrowInput: '',
   inputMode: 'usd' as const,
-  meritMerklNetPosition: true,
+  merklNetPosition: true,
 };
 
 function makeOpts(overrides: Partial<Parameters<typeof useScenarioPinScroll>[0]> = {}) {

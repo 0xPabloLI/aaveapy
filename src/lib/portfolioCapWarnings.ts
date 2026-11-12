@@ -16,7 +16,7 @@ export interface ProtocolCapWarning {
 export interface IncentiveCapWarning {
   kind: 'incentive_cap';
   side: 'supply' | 'borrow';
-  source: 'brevis' | 'merit' | 'merkl';
+  source: 'brevis' | 'merkl';
   capUsd: number;
   isCapBinding: boolean;
   adjustToUsd: number;
@@ -27,7 +27,7 @@ export interface IncentiveCapWarning {
 export interface IncentiveOffsetWarning {
   kind: 'incentive_offset';
   side: 'supply' | 'borrow';
-  source: 'brevis' | 'merit' | 'merkl';
+  source: 'brevis' | 'merkl';
   notes?: import('./incentiveCaps').IncentiveNote[];
 }
 
@@ -101,13 +101,13 @@ export function extractCapWarnings(
 function extractIncentiveCapWarnings(
   reserveId: string,
   side: 'supply' | 'borrow',
-  sources: { merit: SimulationSourceDetail; brevis: SimulationSourceDetail; merkl: SimulationSourceDetail },
+  sources: { brevis: SimulationSourceDetail; merkl: SimulationSourceDetail },
   otherSideEntries: OtherSideEntry[],
 ): PortfolioCapWarning[] {
   const warnings: PortfolioCapWarning[] = [];
   const seenSourcesForCap = new Set<string>();
 
-  const sourceKeys = ['brevis', 'merit', 'merkl'] as const;
+  const sourceKeys = ['brevis', 'merkl'] as const;
   for (const sourceKey of sourceKeys) {
     const src = sources[sourceKey];
 

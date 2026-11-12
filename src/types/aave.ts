@@ -8,15 +8,6 @@ export type IncentiveMessage =
       [key: string]: IncentiveMessageScalar | IncentiveMessage;
     };
 
-export interface MeritCampaignBreakdown extends ForecastableBreakdown {
-  campaignId: string;
-  message?: IncentiveMessage;
-}
-
-export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {
-  message?: IncentiveMessage;
-}
-
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
@@ -189,6 +180,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   suppliable?: string;
   borrowable?: string;
   // Rate-model fields are percent numbers (e.g., 9 means 9%) for V3/V4 unified API.
+  // Absent protocolFee means 0: the API omits falsy values (AAV-1350).
   protocolFee?: number;
   slopeBelowOptimal?: number;
   slopeAboveOptimal?: number;
@@ -202,13 +194,14 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   ltv?: number;
   liquidationThreshold?: number;
 
-  // Protocol incentives (from Aave protocol, array of percentage values)
+  /**
+   * @deprecated No producer in the API (0 of 437 reserves on staging, 2026-11-11).
+   * Reward campaigns live in `merklSupplys[].breakdowns[]` / `brevisSupplys[]`.
+   * Kept only so older payload fixtures still type-check; do not read it (AAV-1350).
+   */
   supplyIncentives?: number[];
+  /** @deprecated See `supplyIncentives` (AAV-1350). */
   borrowIncentives?: number[];
-
-  // Merit APR incentives (CampaignGroup format)
-  meritSupplys?: MeritCampaignGroup[];
-  meritBorrows?: MeritCampaignGroup[];
 
   // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];

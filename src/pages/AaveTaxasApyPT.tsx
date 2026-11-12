@@ -39,7 +39,7 @@ const FAQS: Faq[] = [
     a: 'Porque a taxa é função da utilização (total emprestado ÷ total depositado). Quando alguém faz um depósito grande, a utilização cai e as taxas caem junto. Quando há muita demanda por empréstimo, a utilização sobe e as taxas disparam acima do ponto ótimo da curva.',
   },
   {
-    q: 'O que são Merit, Merkl e Brevis, e por que eles aparecem no APY?',
+    q: 'O que são Merkl e Brevis, e por que eles aparecem no APY?',
     a: 'São programas de recompensa em token que distribuem incentivos adicionais a quem deposita ou toma emprestado em determinadas reservas. Eles não fazem parte da taxa base da Aave, mas afetam o rendimento real. Por isso mostramos o APY efetivo = APY base + incentivos, além da taxa base isolada.',
   },
   {
@@ -83,7 +83,7 @@ const RATE_DRIVERS = [
   },
   {
     title: 'Incentivos externos',
-    body: 'Merit, Merkl e Brevis somam APR sobre a taxa base. Um pool com APY base modesto pode ter o melhor rendimento efetivo do mercado por causa dos incentivos.',
+    body: 'Merkl e Brevis somam APR sobre a taxa base. Um pool com APY base modesto pode ter o melhor rendimento efetivo do mercado por causa dos incentivos.',
   },
 ];
 
@@ -173,8 +173,8 @@ const AaveTaxasApyPT = () => {
             </h1>
             <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
               Guia direto sobre as taxas da Aave: o que é APY, como o protocolo Aave define os juros de depósito e de
-              empréstimo, o que muda na V3 e como os incentivos Merit, Merkl e Brevis entram no rendimento real. Os
-              números ao vivo estão no painel, atualizados a cada minuto.
+              empréstimo, o que muda na V3 e como os incentivos Merkl e Brevis entram no rendimento real. Os números ao
+              vivo estão no painel, atualizados a cada minuto.
             </p>
           </header>
 

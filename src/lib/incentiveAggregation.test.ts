@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getCampaignIncentiveValues,
   getReserveIncentiveValues,
   getIncentiveSources,
   sumBrevisIncentiveApr,
@@ -35,8 +36,6 @@ const merklPointsReserve = (rewardTokenSymbol?: string): ReserveWithSpread => ({
   borrowDisabled: false,
   supplyIncentives: [],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [
     {
       name: 'Merkl Test',
@@ -87,6 +86,44 @@ describe('getReserveIncentiveValues: per-campaign rate routing', () => {
   });
 });
 
+describe('getCampaignIncentiveValues (AAV-1350)', () => {
+  const campaignReserve = (): ReserveWithSpread => ({
+    ...merklPointsReserve(),
+    // Deprecated flat arrays: must never contribute.
+    supplyIncentives: [99],
+    borrowIncentives: [99],
+    merklSupplys: [
+      {
+        name: 'Merkl Test',
+        link: 'https://merkl.angle.money',
+        breakdowns: [
+          { campaignId: 'aav-1350-s', campaignApr: 6, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' },
+        ],
+      },
+    ],
+    merklBorrows: [
+      {
+        name: 'Merkl Test',
+        link: 'https://merkl.angle.money',
+        breakdowns: [
+          { campaignId: 'aav-1350-b', campaignApr: 2, campaignStartedAt: '2026-01-01', campaignEndedAt: '2027-12-31' },
+        ],
+      },
+    ],
+  });
+
+  it('sums campaign APR per side and ignores supplyIncentives/borrowIncentives', () => {
+    const reserve = campaignReserve();
+    expect(getCampaignIncentiveValues(reserve, 'supply').apr).toBeCloseTo(6, 6);
+    expect(getCampaignIncentiveValues(reserve, 'borrow').apr).toBeCloseTo(2, 6);
+  });
+
+  it('compounds the same campaign APR into APY', () => {
+    const reserve = campaignReserve();
+    expect(getCampaignIncentiveValues(reserve, 'supply').apy).toBeCloseTo(convertAprToApy(6), 6);
+  });
+});
+
 describe('getIncentiveSources', () => {
   const makeReserve = (overrides?: Partial<ReserveWithSpread>): ReserveWithSpread => ({
     reserveId: 'test-1',
@@ -113,8 +150,6 @@ describe('getIncentiveSources', () => {
     borrowDisabled: false,
     supplyIncentives: [1, 2],
     borrowIncentives: [3],
-    meritSupplys: [{ message: { action: 'test', text: 'test' }, breakdowns: [] }],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [{ name: 'Merkl Borrow', link: '', breakdowns: [] }],
     brevisSupplys: [],
@@ -126,7 +161,6 @@ describe('getIncentiveSources', () => {
     const reserve = makeReserve();
     const sources = getIncentiveSources(reserve, 'supply');
     expect(sources.protocol).toEqual([1, 2]);
-    expect(sources.merit).toEqual(reserve.meritSupplys);
     expect(sources.merkl).toEqual(reserve.merklSupplys);
     expect(sources.brevis).toEqual(reserve.brevisSupplys);
   });
@@ -135,7 +169,6 @@ describe('getIncentiveSources', () => {
     const reserve = makeReserve();
     const sources = getIncentiveSources(reserve, 'borrow');
     expect(sources.protocol).toEqual([3]);
-    expect(sources.merit).toEqual(reserve.meritBorrows);
     expect(sources.merkl).toEqual(reserve.merklBorrows);
     expect(sources.brevis).toEqual(reserve.brevisBorrows);
   });
@@ -143,13 +176,11 @@ describe('getIncentiveSources', () => {
   it('returns undefined arrays when reserve fields are missing', () => {
     const reserve = makeReserve({
       supplyIncentives: undefined,
-      meritSupplys: undefined,
       merklSupplys: undefined,
       brevisSupplys: undefined,
     });
     const sources = getIncentiveSources(reserve, 'supply');
     expect(sources.protocol).toBeUndefined();
-    expect(sources.merit).toBeUndefined();
     expect(sources.merkl).toBeUndefined();
     expect(sources.brevis).toBeUndefined();
   });

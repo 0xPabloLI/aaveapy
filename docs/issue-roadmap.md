@@ -87,6 +87,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1362 | High | Backlog | Hardcode Sync 结构性自相矛盾：第 61 行 `npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 门禁拦下 ⇒ 该 job 自 2026-10-09 起全红（#770 的 TypeError 已修掉，露出的是这层）；且门禁文案建议的 `MIN_RELEASE_AGE_DAYS=0` 出口在该 workflow 不存在（裸 `workflow_dispatch`，无 inputs）。需在「sync 也受冷却期」与「sync 显式豁免」之间选一条 |
 | AAV-1330 | High | 已交付待上线（`52e5ace1`，随下一笔 lovable→dev） | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） |
 
 ### Medium

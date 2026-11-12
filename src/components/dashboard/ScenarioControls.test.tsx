@@ -27,8 +27,8 @@ vi.mock('@/components/ui/tooltip', () => ({
 function renderControls(
   props: Partial<{
     onDebouncedChange: (supply: string, borrow: string, mode: ScenarioInputMode) => void;
-    meritMerklNetPosition: boolean;
-    onMeritMerklNetPositionChange: (value: boolean) => void;
+    merklNetPosition: boolean;
+    onMerklNetPositionChange: (value: boolean) => void;
     mobileNetOpen: boolean;
     onMobileNetToggle: () => void;
   }> = {},
@@ -379,9 +379,9 @@ describe('ScenarioControls', () => {
       });
     });
 
-    it('renders Net lending checkbox when onMeritMerklNetPositionChange is provided', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+    it('renders Net lending checkbox when onMerklNetPositionChange is provided', () => {
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       expect(screen.getByLabelText(/Net lending and borrowing for incentives/)).toBeInTheDocument();
     });
 
@@ -391,22 +391,22 @@ describe('ScenarioControls', () => {
     });
 
     it('does not render SlidersHorizontal button on desktop', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       expect(screen.queryByLabelText('Expand advanced controls')).toBeNull();
     });
 
-    it('calls onMeritMerklNetPositionChange when Net checkbox toggled', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+    it('calls onMerklNetPositionChange when Net checkbox toggled', () => {
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       const checkbox = screen.getByLabelText(/Net lending and borrowing for incentives/);
       fireEvent.click(checkbox);
-      expect(onMeritMerklNetPositionChange).toHaveBeenCalledWith(false);
+      expect(onMerklNetPositionChange).toHaveBeenCalledWith(false);
     });
 
     it('shows toast when turning off Net on desktop', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       const checkbox = screen.getByLabelText(/Net lending and borrowing for incentives/);
       fireEvent.click(checkbox);
       expect(mockToast).toHaveBeenCalled();
@@ -464,9 +464,9 @@ describe('ScenarioControls', () => {
       expect(borrowInput.value).toBe('');
     });
 
-    it('renders SlidersHorizontal button when onMeritMerklNetPositionChange is provided', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+    it('renders SlidersHorizontal button when onMerklNetPositionChange is provided', () => {
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       expect(screen.getByLabelText('Expand advanced controls')).toBeInTheDocument();
     });
 
@@ -476,8 +476,8 @@ describe('ScenarioControls', () => {
     });
 
     it('toggles Net panel when SlidersHorizontal clicked', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       const toggleBtn = screen.getByLabelText('Expand advanced controls');
       fireEvent.click(toggleBtn);
       expect(screen.getByLabelText('Collapse advanced controls')).toBeInTheDocument();
@@ -485,17 +485,17 @@ describe('ScenarioControls', () => {
     });
 
     it('collapses Net panel when SlidersHorizontal clicked again', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       fireEvent.click(screen.getByLabelText('Expand advanced controls'));
       fireEvent.click(screen.getByLabelText('Collapse advanced controls'));
       expect(screen.queryByLabelText('Net lending and borrowing for incentives')).toBeNull();
     });
 
     it('does not show toast when toggling Net on mobile', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
+      const onMerklNetPositionChange = vi.fn();
       mockUseIsMobile.mockReturnValue(true);
-      renderControls({ onMeritMerklNetPositionChange });
+      renderControls({ onMerklNetPositionChange });
       fireEvent.click(screen.getByLabelText('Expand advanced controls'));
       const checkbox = screen.getByLabelText('Net lending and borrowing for incentives');
       fireEvent.click(checkbox);
@@ -503,8 +503,8 @@ describe('ScenarioControls', () => {
     });
 
     it('does not render Net checkbox in main mobile layout (only in expanded panel)', () => {
-      const onMeritMerklNetPositionChange = vi.fn();
-      renderControls({ onMeritMerklNetPositionChange });
+      const onMerklNetPositionChange = vi.fn();
+      renderControls({ onMerklNetPositionChange });
       // Before expanding, no checkbox
       expect(screen.queryByLabelText('Net lending and borrowing for incentives')).toBeNull();
     });

@@ -6,7 +6,7 @@
  * still import files from there).
  *
  * Problem it solves: `findIncentiveReserve()` previously only checked
- * `merklSupplys.length > 0` (plus the retired Merit arrays). Campaigns with
+ * `merklSupplys.length > 0`. Campaigns with
  * APR=0, expired windows, AMOUNT variants (APR is token-amount semantics, not
  * percent — AAV-1275), or TARGET_TOTAL_APR with 0 apr render incentive cells
  * as '—' with no recovery — making `not.toContainText('—')` assertions fail
@@ -20,20 +20,23 @@
  * 3. campaignType is not an AMOUNT variant
  * 4. not whitelist-only (e2e never opts in — AAV-1280)
  *
- * Renderability is not the whole story. Two further gates apply, and only the
- * first of them is about campaigns:
+ * Renderability is not the whole story. One further gate applies, and it is
+ * about the campaign only:
  *
- * - The reserve must carry every rate-calc field (`hasRateCalcFields`, below).
- *   Without them Portfolio mode never reaches the calculator: it sums the flat
- *   `supplyIncentives` array instead, which the API leaves empty, and renders
- *   '—' however healthy the campaign is. This is the gate that produced the
- *   PR #811 failure, and it is a property of the RESERVE, not the campaign.
  * - For the specs that assert a value RESPONDS to position size, a
  *   forecast-requiring campaign absent from `forecast.items` renders a constant
  *   APR, so `forecastAvailableCampaignIdsFromSideData` supplies the forecast
  *   set and the predicates take it as an optional argument — see that
  *   function's docstring for why `forecast.items`, not `forecast.errors`, is
  *   the signal.
+ *
+ * History: until AAV-1350 this module also required every rate-calc field
+ * (`hasRateCalcFields`). That mirrored a `portfolioSimulator` bug where a
+ * reserve without the full rate curve fell into a branch that read the flat
+ * `supplyIncentives` array, which the API never populates, so the cell showed
+ * '—'. The simulator now reads campaign data in that branch too, which makes
+ * incentivability independent of the rate curve. The mirror was therefore
+ * deleted rather than kept in sync.
  */
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -261,43 +264,10 @@ function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): num
 }
 
 /**
- * Rate-calc inputs the UI needs before it computes ANY incentive.
- *
- * Mirror of `hasRateCalcFields` in src/lib/interestRateCalculator.ts,
- * duplicated rather than imported to keep this module dependency-free (see the
- * file header). The drift is pinned by unit test R4, which compares the set of
- * fields whose removal flips the app's predicate against this list.
- *
- * Why this gate exists (PR #811 review): `portfolioSimulator`
- * (src/lib/portfolioSimulator.ts:311) resolves
- * `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`. When
- * it is null the incentive does NOT come from the calculator — the `else` branch
- * sums the flat `reserve.supplyIncentives` array, which the current API never
- * populates (measured 2026-11-11: 0 of 437 reserves). A reserve missing any
- * field below therefore renders '—' in Portfolio mode no matter how healthy its
- * Merkl campaigns are, while the Reserves table (which calls the calculator
- * directly with `reserveRateInput: null`) renders the campaign APR.
- */
-export const RATE_CALC_FIELDS: readonly string[] = [
-  'liquidity',
-  'borrowed',
-  'deficit',
-  'protocolFee',
-  'slopeBelowOptimal',
-  'slopeAboveOptimal',
-  'baseBorrowRate',
-  'optimalUtilization',
-];
-
-/** Whether the UI can compute a rate-based incentive for this reserve at all. */
-export function hasRateCalcFields(r: DiscoveryReserve): boolean {
-  return RATE_CALC_FIELDS.every((field) => r[field] != null);
-}
-
-/**
  * Whether the reserve has at least one supply-side Merkl campaign the UI can
  * compute a numeric percent for. Merit arrays are deliberately NOT considered
- * (Merit was fully retired — AAV-1289).
+ * (Merit was fully retired — AAV-1289), and neither is `supplyIncentives`
+ * (no producer in the API — AAV-1350).
  *
  * `forecastAvailableCampaignIds` carries the forecast gate
  * (`forecastAvailableCampaignIdsFromSideData`); pass `null` only when side-data
@@ -308,7 +278,6 @@ export function hasComputableSupplyIncentive(
   nowIso: string,
   forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
 ): boolean {
-  if (!hasRateCalcFields(r)) return false;
   return merklBreakdownsForSide(r, 'supply').some(
     (b) => isComputableMerklCampaign(b, nowIso) && isForecastBackedBreakdown(b, forecastAvailableCampaignIds),
   );
@@ -458,9 +427,8 @@ export function getMarketChipLabel(marketName: string, chainName?: string): stri
 // ─── Selection ───────────────────────────────────────────────────────
 
 /**
- * Pick the best incentive reserve: usable, carrying the rate-calc fields the UI
- * needs, with a computable supply incentive; preferring nonzero supply room,
- * then highest net supply APR.
+ * Pick the best incentive reserve: usable, with a computable supply incentive;
+ * preferring nonzero supply room, then highest net supply APR.
  *
  * `forecastAvailableCampaignIds` is the forecast gate (see
  * `forecastAvailableCampaignIdsFromSideData`): a reserve whose only qualifying

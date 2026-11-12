@@ -1,13 +1,13 @@
 {
   "meta": {
     "title": "AaveAPY Türkiye — DeFi getirilerini canlı karşılaştır",
-    "description": "Aave V3 mevduat ve borçlanma faizlerini tüm desteklenen zincirlerde karşılaştırın. Merit, Merkl ve Brevis teşviklerini canlı izleyin. Ücretsiz, cüzdan gerektirmez.",
+    "description": "Aave V3 mevduat ve borçlanma faizlerini tüm desteklenen zincirlerde karşılaştırın. Merkl ve Brevis teşviklerini canlı izleyin. Ücretsiz, cüzdan gerektirmez.",
     "ogLocale": "tr_TR"
   },
   "hero": {
     "eyebrow": "DeFi Paneli · Türkiye",
     "title": "Aave APY'lerini tüm zincirlerde canlı karşılaştır",
-    "subtitle": "Tüm desteklenen blok zincirlerinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merit, Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
+    "subtitle": "Tüm desteklenen blok zincirlerinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
     "cta": "Canlı paneli aç",
     "secondaryCta": "Tüm zincirleri gör"
   },
@@ -19,7 +19,7 @@
   "features": [
     {
       "title": "Tüm teşvikler tek yerde",
-      "body": "Merit, Merkl ve Brevis ödülleri tek bir efektif APY'de birleştirilir; vitrin oranını değil gerçek getiriyi görürsünüz."
+      "body": "Merkl ve Brevis ödülleri tek bir efektif APY'de birleştirilir; vitrin oranını değil gerçek getiriyi görürsünüz."
     },
     {
       "title": "Çoklu zincir, tek görünüm",
@@ -45,7 +45,7 @@
     },
     {
       "q": "Bugün en iyi Aave APY'sini hangi zincir sunuyor?",
-      "a": "Anlık olarak değişir. Genelde L2'lerdeki (Base, Arbitrum, Optimism) stablecoin'ler (USDC, USDT) en rekabetçi APY'leri sunar; Merit ve Merkl teşvikleri aktifken farkı daha da açar."
+      "a": "Anlık olarak değişir. Genelde L2'lerdeki (Base, Arbitrum, Optimism) stablecoin'ler (USDC, USDT) en rekabetçi APY'leri sunar; Merkl teşvikleri aktifken farkı daha da açar."
     },
     {
       "q": "USDT için Aave'de en iyi mevduat fırsatı hangisi?",

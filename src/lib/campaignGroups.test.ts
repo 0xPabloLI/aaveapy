@@ -33,7 +33,7 @@ describe('parseCampaignBoundaryMs', () => {
   });
 });
 
-describe('isCampaignActive with ISO dates (Merit scenario)', () => {
+describe('isCampaignActive with ISO dates (campaign API scenario)', () => {
   it('returns true when endDate is ISO and still in the future', () => {
     expect(isCampaignActive('2026-06-04T00:00:00.000Z', '2026-06-18T23:59:59.999Z', NOW_MS)).toBe(true);
   });

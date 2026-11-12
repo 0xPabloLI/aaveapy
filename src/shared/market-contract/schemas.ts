@@ -14,75 +14,14 @@
 import { z } from 'zod';
 import { schemas as generated } from '../../generated/api/schemas.ts';
 
-// ── Frontend-specific recursive IncentiveMessage type ──
-// Generated schemas use z.string() for message fields; frontend needs recursive parsing.
-type IncentiveMessageScalar = string | number | boolean | null;
-type IncentiveMessage =
-  | string
-  | IncentiveMessage[]
-  | {
-      [key: string]: IncentiveMessageScalar | IncentiveMessage;
-    };
-
-const IncentiveMessageScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
-  z.union([
-    z.string(),
-    z.record(z.string(), z.union([IncentiveMessageScalarSchema, IncentiveMessageSchema])),
-    z.array(IncentiveMessageSchema),
-  ]),
-);
-
 // ── Campaign breakdown schemas ──
-// Merit 的 schema 已从后端 OpenAPI 移除（AAV-1303），所以这里不再基于 generated 的
-// `.extend()`，改为手写 base；字段逐条对齐移除前的 `ApiMeritCampaignBreakdown` /
-// `CampaignGroupApiMeritCampaignBreakdown`。契约保留 merit 是有意的：`/markets` 在灰度
-// 或回滚窗口内仍可能带回 merit 字段，删掉定义会让它们被 strip 掉而静默丢数据。
-// 原先三处放宽全部沿用：campaignType 用 z.string()、aprCap 允许 null、group 的 link 可选
-// + message 走递归 IncentiveMessage + breakdowns 用本文件的 wrapper 版本。
-const MeritCampaignBreakdownBaseSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  positionCapNative: z.string().optional(),
-  positionCapUsd: z.number().optional(),
-  isCombineCap: z.boolean().optional(),
-  message: z.string().optional(),
-  rewardTokenSymbol: z.string().optional(),
-  totalBudget: z.number().optional(),
-  latestTvl: z.number().optional(),
-});
-
-export const MeritCampaignBreakdownSchema = MeritCampaignBreakdownBaseSchema.extend({
-  campaignType: z.string().optional(),
-  aprCap: z.number().nullable().optional(),
-});
-
-export const MeritCampaignGroupSchema = z
-  .object({
-    name: z.string().optional(),
-    netPositionConstraint: z
-      .union([z.object({ sourceSide: z.enum(['supply', 'borrow']), offsetReserveIds: z.array(z.string()) }), z.null()])
-      .optional(),
-    crossAssetPairing: z
-      .union([
-        z.object({
-          sourceSide: z.enum(['supply', 'borrow']),
-          pairedReserveId: z.string(),
-          pairedSide: z.enum(['supply', 'borrow']),
-          discountFactor: z.number(),
-        }),
-        z.null(),
-      ])
-      .optional(),
-    borrowBlacklist: z.boolean().optional(),
-  })
-  .extend({
-    link: z.string().optional(),
-    message: IncentiveMessageSchema.optional(),
-    breakdowns: z.array(MeritCampaignBreakdownSchema),
-  });
+// The Merit schemas (`ApiMeritCampaignBreakdown` / `CampaignGroupApiMeritCampaignBreakdown`)
+// are gone: the backend retired the Merit subsystem on 2026-09-24 (AAV-1289) and
+// /api/markets now carries zero merit fields on staging and production (0 of 437
+// reserves, measured 2026-11-11). The interim copy of the definitions kept for the
+// rollback window was removed here (AAV-1303 second segment), so a merit key in the
+// payload is now stripped rather than silently accepted.
+// Merkl keeps its frontend loosenings: aprCap is nullable and group `link` is optional.
 
 // MerklCampaignBreakdown: generated schema is compatible, just override aprCap for nullable.
 export const MerklCampaignBreakdownSchema = generated.MerklCampaignBreakdown.extend({
@@ -189,8 +128,6 @@ export const ReserveWithSpreadSchema = generated.MarketWithSpread.extend({
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
   // Override nested arrays to use wrapper schemas
-  meritSupplys: z.array(MeritCampaignGroupSchema).optional(),
-  meritBorrows: z.array(MeritCampaignGroupSchema).optional(),
   merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
   merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
   merklHolds: z.array(MerklOpportunityGroupSchema).optional(),

@@ -18,11 +18,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What is DeFi yield farming?',
-    a: 'DeFi yield farming is the practice of depositing crypto assets into decentralized protocols to earn interest or rewards. On Aave, yield farming works by supplying liquidity to lending pools; borrowers pay interest, and suppliers earn a share of it. Additional reward programs like Merit, Merkl, and Brevis can boost the effective yield beyond the base rate.',
+    a: 'DeFi yield farming is the practice of depositing crypto assets into decentralized protocols to earn interest or rewards. On Aave, yield farming works by supplying liquidity to lending pools; borrowers pay interest, and suppliers earn a share of it. Additional reward programs like Merkl and Brevis can boost the effective yield beyond the base rate.',
   },
   {
     q: 'What are the best stablecoin APY rates today?',
-    a: 'Stablecoin APYs change minute to minute based on pool utilization and active incentives. USDC and USDT on L2s like Base, Arbitrum, and Polygon often offer the most competitive effective APYs once Merit and Merkl rewards are included. Use the dashboard to compare live stablecoin APYs across every supported chain side by side.',
+    a: 'Stablecoin APYs change minute to minute based on pool utilization and active incentives. USDC and USDT on L2s like Base, Arbitrum, and Polygon often offer the most competitive effective APYs once Merkl rewards are included. Use the dashboard to compare live stablecoin APYs across every supported chain side by side.',
   },
   {
     q: 'How does crypto staking work on DeFi platforms?',
@@ -46,11 +46,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How often is the APY data updated?',
-    a: 'Reserve rates refresh every minute from the Aave protocol. Incentive forecasts (Merit, Merkl, Brevis) update on their respective campaign cadences and are baked into the effective APY shown on every row.',
+    a: 'Reserve rates refresh every minute from the Aave protocol. Incentive forecasts (Merkl, Brevis) update on their respective campaign cadences and are baked into the effective APY shown on every row.',
   },
   {
     q: 'AaveAPY vs DeBank: which should I use?',
-    a: 'Use DeBank for a multi-protocol wallet overview across hundreds of dApps. Use AaveAPY when you need live Aave supply and borrow rates across every supported chain with Merit, Merkl, and Brevis incentives included, plus rate simulation before depositing. They complement each other: DeBank tracks what you hold, AaveAPY helps decide where to deposit next.',
+    a: 'Use DeBank for a multi-protocol wallet overview across hundreds of dApps. Use AaveAPY when you need live Aave supply and borrow rates across every supported chain with Merkl and Brevis incentives included, plus rate simulation before depositing. They complement each other: DeBank tracks what you hold, AaveAPY helps decide where to deposit next.',
   },
   {
     q: 'AaveAPY vs Zerion: what is the difference?',
@@ -228,7 +228,7 @@ const DefiYieldTracker = () => {
             <ul className="space-y-2">
               {[
                 'Live supply and borrow APYs for every Aave reserve across all supported chains',
-                'All active incentive programs (Merit, Merkl, Brevis) baked into the effective yield',
+                'All active incentive programs (Merkl, Brevis) baked into the effective yield',
                 'A portfolio simulator that estimates net effective APY and daily earnings for any combination of positions',
                 'An AaveAPY tracker with rate simulation — see how your deposit size changes the rate before you commit',
                 'An Aave analytics dashboard with utilization, caps, and incentive breakdowns per reserve',
@@ -345,8 +345,8 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see
-              how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into
-              the effective APY shown on every row. Try it on{' '}
+              how the curve responds before you commit on-chain. Incentives from Merkl and Brevis are baked into the
+              effective APY shown on every row. Try it on{' '}
               <Link to="/?chain=ethereum" className="text-primary underline-offset-4 hover:underline">
                 Ethereum
               </Link>
@@ -416,7 +416,7 @@ const DefiYieldTracker = () => {
                       'Partial — current positions only',
                       'Partial — current positions only',
                     ],
-                    ['All incentives baked in (Merit, Merkl, Brevis)', 'Yes', 'No', 'No'],
+                    ['All incentives baked in (Merkl, Brevis)', 'Yes', 'No', 'No'],
                     ['Rate simulation before depositing', 'Yes — per reserve', 'No', 'No'],
                     ['Portfolio simulation without a wallet', 'Yes', 'No — wallet required', 'No — wallet required'],
                     [
