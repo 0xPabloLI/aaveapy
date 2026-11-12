@@ -129,7 +129,7 @@
 **每次合并到 main 都必须走完以下流程，不得跳步。**
 
 - 分支映射：后端 `railway`（Staging）→ `main`（Production）；前端 `dev` → `main`
-- **`lovable` 已于 2026-11-12 从发布流程退役**（其内容全部并入 `dev`，PR #822）。`dev` 现在是前端首段：所有前端改动直接落在 `dev`，再由 `dev → main` 上线。分支本身保留作归档，但不再接收 PR、不再出现在任何 sync matrix 或 CI 触发条件里。曾以 `lovable` 为触发的 CI 失败告警已改挂 `dev`（标签 `ci-failure-dev`）。⚠️ **"不再接收 PR" 不是删分支保证的**（分支仍在），而是由会开 PR 的自动化 workflow 在运行时校验目标分支（只允许 `dev`/`main`）保证的：`token-icon-sync.yml` 与 `ci-auto-remediation.yml` 各有一个校验步骤，因为 sync matrix 与 `workflow_run.branches` 只约束自动路径，而 `workflow_dispatch` 的 `target_branch`/`branch` 输入与 `repository_dispatch` 的 `client_payload` 都不经过它们。守卫由 `scripts/automation-branch-guard.test.mjs` 从 workflow 里抽出真实脚本执行验证（含 `lovable`/近义值/命令替换 payload 的拒绝）。新增会开 PR 的 workflow 时同样要在 `checkout` 之前校验目标分支。
+- **`lovable` 已于 2026-11-12 退役**（内容全部并入 `dev`，PR #822）：`dev` 是前端首段，分支仅作归档。会开 PR 的自动化必须在 `checkout` 之前校验目标分支（只允许 `dev`/`main`），因为 `workflow_dispatch` 的输入与 `repository_dispatch` 的 payload 绕过 matrix；`scripts/automation-branch-guard.test.mjs` 从 workflow 源码抽出真实脚本执行验证。
 - Phase 1-5（后端 staging → 前端 staging sync → 前端 production → 后端 production → 切 production API）+ 无 API 变更简化流程 + Agent 行为约束 + Spec 自动化管道详见 `docs/workflows/frontend-backend-coordinated-deployment.md`。
 - **Agent 行为约束**：dev → main PR 只创建不合并，等用户明确说"合并"后才提示用户在 GitHub UI 操作。已在 AAV-556/562 两次违规合并，用户明确警告。
 

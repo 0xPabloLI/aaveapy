@@ -8,10 +8,6 @@ Canonical workflow: [`.github/workflows/deployment-smoke-test.yml`](../../.githu
 - **Production** (`main`): `SITE_URL` is the public site; Vercel target is `production`.
 - **Staging** (`dev`): `SITE_URL` is `https://staging.aaveapy.com`; Vercel target is `preview`.
 
-> **Note:** `lovable` was dropped from the trigger list on 2026-11-12 when the branch was retired
-> (its content moved to `dev`, PR #822). It had no bound custom domain in Vercel, so its
-> `site_check` was always skipped and only `deploy_url_check` + `api_check` ran.
-
 ## Secrets
 
 Configure in the GitHub repository:
