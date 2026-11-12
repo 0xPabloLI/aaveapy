@@ -305,6 +305,9 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'Circle Wrapped Bitcoin',
       symbol: 'cirBTC',
     },
+    '0x4e72025984424e52838cf8953e2863eff036b67a': {
+      iconSymbol: 'mwin',
+    },
   };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
