@@ -9,7 +9,7 @@
 
 ## Problem Statement
 
-Hardcode Sync CI 在 dev/main/lovable 三分支每日 fail（自 2026-09-10 起，#629 已积累 6 次报警）。根因：`@aave-dao/aave-address-book@4.68.0` 新增 `AaveV4Arc` 模块（Chainlink Arc 链，chainId **5042**，SPOKES 架构）。CI 每日 `npm update address-book` 后，`discoverMainnetChainIds()` 与运行时 chainRegistry 均将 5042 计入，但 `chainIconMap` 无 5042 条目 → verify 报 `chainRegistry ↔ chainIconMap chainId mismatch` → exit 1。
+Hardcode Sync CI 在 dev/main/lovable 三分支每日 fail（自 2026-09-10 起，#629 已积累 6 次报警）。根因：`@aave-dao/aave-address-book@4.68.0` 新增 `AaveV4Arc` 模块（Chainlink Arc 链，chainId **5042**，SPOKES 架构）。当时 CI 每日 `npm update address-book`（该步骤已于 2026-11-11 移除，现由 Renovate 负责）后，`discoverMainnetChainIds()` 与运行时 chainRegistry 均将 5042 计入，但 `chainIconMap` 无 5042 条目 → verify 报 `chainRegistry ↔ chainIconMap chainId mismatch` → exit 1。
 
 用户视角影响：CI 报警噪音；若不修复，未来后端返回 5042 市场数据时 UI 链图标缺失（fallback 行为）。
 

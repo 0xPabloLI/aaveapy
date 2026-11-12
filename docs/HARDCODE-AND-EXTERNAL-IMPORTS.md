@@ -1,10 +1,10 @@
 # 硬编码与外部依赖清单（前端）
 
-更新时间：2026-05-09  
+更新时间：2026-11-12  
 适用仓库：`aaveapy`（前端）
 
 > ⚠️ 2026-05-09：`@bgd-labs/aave-address-book` 已迁移至 `@aave-dao/aave-address-book`（v4.49.9）。
-> CI 已增加自动升级步骤（见 §2）。
+> ⚠️ 2026-11-12：CI 的自动升级步骤已**移除**（原因见 §2）——它每次采纳当天发布的上游版本，又被 7 天冷却期拦下，导致该 job 结构上不可能通过。address-book 的升级现由 Renovate 负责。
 
 ## 1. 本仓库实际消费的 interface 映射资源
 
@@ -25,19 +25,19 @@
 - `.github/workflows/hardcode-sync.yml`
 
 触发：
-- `schedule` / `workflow_dispatch` / `repository_dispatch`：使用 **matrix** 在 **`dev`** 与 **`main`** 上各跑一遍（两个 job）；PR 头分支为 `bot/hardcode-sync-dev` / `bot/hardcode-sync-main`，base 分别为对应分支。
+- `schedule` / `workflow_dispatch` / `repository_dispatch`：使用 **matrix** 在 **`dev`** / **`main`** / **`lovable`** 上各跑一遍；PR 头分支为 `bot/hardcode-sync-<branch>`，base 为对应分支。
 - `schedule` cron：`20 4 * * *`（每日 04:20 UTC）。
 
 执行步骤（核心）：
-1. `npm update @aave-dao/aave-address-book` → 升级到最新 4.x 版本
+1. `npm ci`（锁文件版本，见下方「为什么不再 `npm update`」）
 2. `npm run hardcode:sync`
 3. `npm run hardcode:verify`
 4. 失败后再做一轮 sync + verify
 5. verify 通过则自动建 PR；持续失败则建 issue 并 fail job
 
-> **为什么需要 `npm update`？**  
-> `npm ci` 从 lockfile 安装（版本锁定），不会自动获取上游新版本。  
-> 增加此步骤后，每次 sync 都基于最新 address-book，lockfile 变更也会一起打包进 bot PR。
+> **为什么不再 `npm update @aave-dao/aave-address-book`？**
+> 该步骤让本 workflow **结构上不可能通过**：它每次采纳当天发布的上游版本（0 天），而 pre-commit 的 `check:dep-age` 拦截任何未满 7 天的依赖 ⇒ sync 的提交在开 PR 之前就被拒；上游每 1–5 天发版，年龄永远追不到 7，于是自 2026-10-09 起每日必红（2026-11-11 移除）。
+> 现在该 bump 归 Renovate（npm manager、`minimumReleaseAge: 7 days`、`dependencies` → manual-review）；本 workflow 只从已安装版本重新生成产物，提交里只有生成文件、没有依赖变化，门自然无事可拦。
 
 只读校验（默认分支，无自动改文件）：`.github/workflows/hardcode-drift-check.yml`，`schedule` 当前为每日 **05:00 UTC**（晚于 sync，便于先出 bot PR）。**在合并该 PR 之前**，默认分支仍可能对「新链」报错——属于预期；合并后即与 live `/markets` 对齐。
 

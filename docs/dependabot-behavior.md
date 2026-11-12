@@ -4,7 +4,7 @@
 
 ## 现状：删掉配置文件 ≠ 管道停了
 
-`.github/dependabot.yml` 随 #736（2026-10-06 dev→main）离开默认分支，npm / github-actions / devcontainer 的升级改由 [`renovate.json`](../renovate.json) 负责，日常 npm 顺带更新仍走 `hardcode-sync`。
+`.github/dependabot.yml` 随 #736（2026-10-06 dev→main）离开默认分支，npm / github-actions / devcontainer 的升级改由 [`renovate.json`](../renovate.json) 负责，日常 npm 顺带更新也走 Renovate。`hardcode-sync` **不做任何依赖升级**（自 2026-11-11 起；此前它每天 `npm update @aave-dao/aave-address-book`，见 `HARDCODE-AND-EXTERNAL-IMPORTS.md` §2）：它只从锁文件安装、重新生成产物，所以等它的 bot PR 等不到 npm bump。
 
 但**不要据此认为 Dependabot 不再开版本 PR**——实测被证伪一次：#752 于 2026-10-07T11:16Z（配置离开 main 约 24 小时后）创建，标题 `build(deps-dev): bump the npm_and_yarn group…`、commit trailer 是 `dependency-type: indirect` + `dependency-group: npm_and_yarn`，即**版本升级 PR 的格式**，而且它复用的正是 #746 那条 `dependabot/npm_and_yarn/npm_and_yarn-784f71ca69` 分支、head commit 一模一样。机制层面这里没有权威解释（配置缓存生效延迟、或对"仍未满足"的更新继续提案都有可能），要守的是**判据**而不是推测：
 

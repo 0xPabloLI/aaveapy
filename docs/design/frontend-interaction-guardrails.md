@@ -800,7 +800,7 @@ The fallback path is **user-visible** when a reserve lacks on-chain rate model d
 
 ### Hub aggregation (v4)
 
-Portfolio simulation uses the same `hubAggregationMap` as single-reserve simulation. Per-reserve `reserveRateInput` is a shallow copy (`{ ...reserve }`) with `hubBorrowed`/`hubSupplied` overwritten. Multiple positions on the same reserve share one Hub-overwritten copy — no double-counting.
+Portfolio simulation shallow-copies the reserve (`{ ...reserve }`) and overwrites `borrowed` with `hubBorrowed` (the Hub-level debt) when it exists; `liquidity` already arrives Hub-level, so it needs no rewrite. Multiple positions on the same reserve share one copy, so the overwrite cannot double-count.
 
 ### Portfolio Toggle 交互统一 (AAV-752)
 

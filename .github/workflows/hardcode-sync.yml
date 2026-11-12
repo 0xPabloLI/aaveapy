@@ -56,9 +56,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Update address-book to latest
-        run: npm update @aave-dao/aave-address-book
+      # No `npm update @aave-dao/aave-address-book` here on purpose. It made this job
+      # structurally unpassable: the bump adopted whatever upstream published that day
+      # (0 days old), and the pre-commit gate `check:dep-age` blocks anything younger
+      # than 7 days — so the sync commit was rejected before a PR could open, every day,
+      # from 2026-10-09 to 2026-11-11. Upstream publishes every 1-5 days, so the age
+      # never reached 7. Renovate owns this bump now (npm manager, `minimumReleaseAge:
+      # 7 days`, `dependencies` -> manual-review); this job only regenerates artifacts
+      # from the installed version, so its commit changes generated files and no
+      # dependency, and the gate has nothing to block.
 
       - name: Round 1 sync
         id: sync_round1
