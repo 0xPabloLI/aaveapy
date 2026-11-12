@@ -144,8 +144,8 @@ Borrow Rate
 | Check | How |
 |-------|-----|
 | Utilization mismatch | Compare `utilizationRatePercent` vs market `utilizationPct` |
-| Rate mismatch | Verify slope params, reserveFactor values |
-| Ray precision | Parse inputs as bigint, not Number |
+| Rate mismatch | Verify the slope params and `protocolFee`; a missing `protocolFee` means 0%, not "no rate model" |
+| Precision | Inputs are raw base-unit strings; the calculator scales to token counts before the percent math |
 
 ### Borrow Availability Constraint
 
@@ -155,9 +155,9 @@ Available to Borrow = min(Available Liquidity + Supply Input, Borrow Cap Remaini
 
 Where:
 
-- Available Liquidity = `availableLiquidity` from `/markets` reserve (converted to USD)
+- Available Liquidity = `getReserveAvailableLiquidityUsd(reserve)` (`src/lib/scenarioSize.ts`), derived from the reserve's raw `liquidity`
 - Supply Input = user supply input
-- Borrow Cap Remaining = `borrowCapUsd - currentTotalBorrowedUsd`
+- Borrow Cap Remaining = `borrowCapUsd − getReserveTotalBorrowedUsd(reserve)`
 
 | Constraint | When Active | UI Message |
 |------------|-------------|------------|
@@ -166,83 +166,23 @@ Where:
 
 The simulation hook caps borrow input to the effective limit and surfaces which constraint binds.
 
-### V4-Aware Display Functions (V3 + V4)
+### Reserve Size, Liquidity, Borrowed (V3 + V4)
 
-Available liquidity, total borrowed, and reserve size displayed on the reserves table / row / mobile card use **V4-aware unified display functions** in `src/lib/scenarioSize.ts`. V3 and V4 share the same primary source (on-chain fields) but differ in fallback behavior.
+`/markets` ships raw amounts only (`supplied`, `liquidity`, `borrowed`, `supplyCap`, `borrowCap`, `deficit`, `decimals`, `tokenPrice`). No `*Usd` value is transported: `BannedReserveUsdFields` (`src/types/aave.ts`) types every one of them as `never`, so a reintroduced read fails the build.
 
-#### Unified display functions
+USD conversion lives in `src/lib/scenarioSize.ts`:
 
-| Function | V3 behavior | V4 behavior |
-|---|---|---|
-| `getDisplayTotalBorrowedUsd(reserve, version)` | on-chain `totalVariableDebt` ?? `reserveSizeUsd × utilizationPct / 100` | on-chain `totalVariableDebt` only (no derived fallback) |
-| `getDisplayAvailableLiquidityUsd(reserve, version)` | on-chain `availableLiquidity` ?? `reserveSizeUsd − totalBorrowedUsd` | on-chain `availableLiquidity` only (no derived fallback) |
-| `getDisplayReserveSizeUsd(reserve, version, scenario?)` | `reserveSizeUsd` + scenario input | `reserveSizeUsd` only if > 0; `null` if 0 or missing |
+| Helper | Input | Result |
+|--------|-------|--------|
+| `nativeToUsd(raw, decimals, tokenPrice)` | raw base units | USD or `null` |
+| `getReserveTotalBorrowedUsd({ borrowed, decimals, tokenPrice })` | reserve | USD or `null` |
+| `getReserveAvailableLiquidityUsd({ liquidity, decimals, tokenPrice })` | reserve | USD or `null` |
+| `getScenarioSupplySizeUsd({ reserveSizeUsd, supplyCapUsd, rawSupplyInput })` | base USD + scenario input | size after the input, capped |
+| `getSuppliableUsd` / `getBorrowableUsd` / `getAvailableToBorrowUsd` | caps + current values | remaining room |
 
-**Key principle**: The difference is only in the fallback. V3 can safely fall back to `reserveSizeUsd`-derived calculations; V4 cannot, because `reserveSizeUsd` may be 0 or a per-Spoke slice.
+Reserve size for display comes from `supplied` (`ReservesTable.getDisplayReserveSizeUsd` → `nativeToUsd` → `getScenarioSupplySizeUsd`).
 
-#### Internal architecture
-
-```
-UI component (DesktopReserveRow / MobileReserveCard / ReservesTable)
-  └→ getDisplayReserveSizeUsd(reserve, protocolVersion, scenarioInput?)
-       ├→ [V4 gate] reserveSizeUsd === 0? → return null
-       ├→ [no scenario input] → return reserveSizeUsd
-       └→ getScenarioSupplySizeUsd({ reserveSizeUsd, supplyCapUsd, rawSupplyInput, ... })
-            └→ reserveSizeUsd + supplyInputUsd (capped at supplyCapUsd)
-```
-
-- `getDisplayReserveSizeUsd` — **facade**: decides whether `reserveSizeUsd` is usable (V4: 0 → null), then delegates.
-- `getScenarioSupplySizeUsd` — **engine**: pure arithmetic, adds scenario input to base value, respects supply cap. Version-agnostic.
-
-#### On-chain computation (low-level helpers)
-
-```text
-totalBorrowedUsd = (Number(reserve.totalVariableDebt) / 10^reserve.decimals) × reserve.tokenPrice
-availableLiquidityUsd = (Number(reserve.availableLiquidity) / 10^reserve.decimals) × reserve.tokenPrice
-```
-
-`getReserveTotalBorrowedUsd` and `getReserveAvailableLiquidityUsd` perform this computation and return `null` when any input is missing/invalid, allowing the unified functions to decide whether to fall back.
-
-#### Why V4 cannot use derived fallbacks
-
-For V4 markets, `reserveSizeUsd` and the on-chain fields describe **different aggregation levels**:
-
-| Field | V3 meaning | V4 meaning |
-|---|---|---|
-| `reserveSizeUsd` | Total supplied USD for the asset in this market (matches the pool) | Total supplied USD for the asset **in this Spoke only** (per‑Spoke supply slice); can be 0 |
-| `availableLiquidity` | Free liquidity in the pool (raw token units) | Free liquidity in the **Hub** for the asset (raw token units) — shared across Spokes |
-| `totalVariableDebt` | Total variable debt in the pool (raw token units) | Total variable debt in the **Hub** for the asset (raw token units) |
-| `utilizationPct` | `borrowed / reserveSize` for the pool | Hub‑level utilization for the asset |
-
-Concrete example (snapshot 2026‑04‑27, AaveV4Bluechip USDT):
-
-| Field | Value |
-|---|---|
-| `reserveSizeUsd` (Spoke `Bluechip` supply) | 0 |
-| `totalVariableDebt` (Hub) | 1,037,279,054,299 raw ≈ $1,037,487 |
-| `availableLiquidity` (Hub free) | 76,610,908,377 raw ≈ $76,626 |
-| Derived `reserveSizeUsd × utilizationPct / 100` (wrong) | 0 |
-| Derived `reserveSizeUsd − totalBorrowed` (wrong) | −$1,037,487 |
-
-A single Hub aggregates supply from one or more Spokes; borrows are taken against the Hub's pooled liquidity. As a result `reserveSizeUsd` is a per‑Spoke supply ledger, while `availableLiquidity` / `totalVariableDebt` are Hub aggregates. Mixing them produces values that are off by orders of magnitude or even negative.
-
-#### Additional V4-aware fixes
-
-Beyond the three unified display functions, the following locations also have V4-specific handling for `reserveSizeUsd`:
-
-| Location | What | V4 behavior |
-|---|---|---|
-| `useRateSimulation.ts` → `currentReserveSizeUsd` | Supply cap room calculation | `null` when `reserveSizeUsd` is 0 or missing (disables cap constraint). |
-| `SimulationSubRow.tsx` → `currentSupplySizeUsd` | Supply cap exceeded check | `null` when `reserveSizeUsd` is 0 or missing (disables base-exceeded warning). |
-
-#### Frontend requirements until API improvement
-
-Until the API exposes a Hub‑level `reserveSizeUsd` (or a separate `hubSuppliedUsd`), the frontend must:
-
-1. Use on-chain `availableLiquidity` and `totalVariableDebt` (raw → token → USD) as the canonical source for available liquidity and total borrowed.
-2. Never fall back to `reserveSizeUsd`-derived calculations for V4 markets.
-3. Avoid presenting `reserveSizeUsd` as "total supplied" for V4 without qualifying it as the per‑Spoke supply slice.
-4. Keep simulation inputs aligned: `useRateSimulation` already feeds `availableLiquidity` into `interestRateCalculator`, so simulation outputs (`marketMetrics.availableLiquidityUsd*`) and the static base value share the same source of truth.
+**Hub aggregation.** For V4, `liquidity` is free Hub liquidity shared across Spokes while `supplied` is the per-Spoke slice. Deriving one from the other breaks: `supplied − borrowed` yields a per-Spoke remainder, not Hub liquidity, and can go negative. Simulation metrics carry the Hub-aggregated values as `marketMetrics.totalBorrowedUsd` / `marketMetrics.availableLiquidityUsd`.
 
 ---
 
@@ -724,7 +664,7 @@ Positions are grouped by `getReserveKey(reserve)` (= `reserveId.trim()`). Same-r
 For each group:
 
 1. **deep-copy**: `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`
-2. **Hub field resolution** (v4): if `reserve.hubId`, use `reserve.hubBorrowed` (SDK direct, Hub-level totalBorrowed) for `reserveRateInput.borrowed`/`.hubBorrowed`; use `hubAggregationMap` for `hubSupplied` only (aggregated Σ(spoke_supplied), error <0.001%)
+2. **Hub field resolution** (V4): replace `reserveRateInput.borrowed` with `reserve.hubBorrowed` (the SDK's Hub-level total borrowed) when it exists; `liquidity` already arrives Hub-level, so it needs no rewrite
 3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `merklNetPosition` defaults to `true`
 4. **Extract per-position rate**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`. **Note**: `afterNative` is always APY regardless of `isApy` toggle — native rate never switches to APR (per AprApyToggle contract: "Only incentive annual % follows this switch; native stays APY"). Only `afterIncentive` follows the APR/APY toggle.
 5. **Build `PortfolioPositionResult`** via `buildPortfolioPositionResult`
@@ -734,7 +674,7 @@ For each group:
 When `simulationContext` is not provided:
 
 - `nativePercent = reserve.supplyApy / borrowApy` (backend static value)
-- `incentivePercent = getCampaignIncentiveValues(reserve, side, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates })` → `.apy` or `.apr` per the toggle — Merkl `breakdowns[].campaignApr` plus Brevis. It never reads the legacy flat `supplyIncentives` / `borrowIncentives` arrays, which have no backend producer (AAV-1350).
+- `incentivePercent = getCampaignIncentiveValues(reserve, side, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates, positionUsd, tokenPrice: reserve.tokenPrice, decimals: reserve.decimals })` → `.apy` or `.apr` per the toggle — Merkl `breakdowns[].campaignApr` plus Brevis, with the position cap applied. The position, price, and decimals are what let a capped campaign dilute (AAV-1350); dropping them reports the undiluted APR. It never reads the legacy flat `supplyIncentives` / `borrowIncentives` arrays, which have no backend producer.
 
 A reserve that lacks rate-calc fields still goes through the calculator: `hasRateCalcFields` gates the **native rate curve** only. Incentive APR needs no curve, and a missing `protocolFee` means 0, not "no rate model" (AAV-1350).
 
@@ -749,7 +689,7 @@ A reserve that lacks rate-calc fields still goes through the calculator: `hasRat
 
 ### Hub aggregation in Portfolio
 
-Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed` comes from SDK direct (`reserve.hubBorrowed`) and replaces per-Spoke `borrowed`; `hubSupplied` comes from `hubAggregationMap` (Σ(spoke_supplied), error <0.001%) and replaces per-Spoke `supplied`. Together they affect `simulateNativeRatesAfterActions` (utilization denominator). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.
+V4 needs Hub-level debt inside the calculator: `reserveRateInput.borrowed` is overwritten with `reserve.hubBorrowed`, and `liquidity` is already a Hub-level figure. The overwrite happens once per reserve group, so several positions on the same reserve share it without double-counting.
 
 ---
 
