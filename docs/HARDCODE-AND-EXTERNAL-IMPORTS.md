@@ -129,7 +129,7 @@
 - `https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens/`（`sync-token-icons.mjs` 按 symbol 试 `svg` → `png` → `webp` → `jpg`；可用 `INTERFACE_TOKEN_ICONS_BASE` 覆盖 base）
 
 ### 5.4 外链（非数据依赖）
-- `app.aave.com`、`app.merkl.xyz`、`apps.aavechan.com`、`incentra.brevis.network`
+- `app.aave.com`、`app.merkl.xyz`、`incentra.brevis.network`
 - Ink 组件内 CoinGecko/CoinMarketCap/社媒链接
 
 ## 6. 有意保留的业务 hardcode（非上游镜像）

@@ -45,7 +45,6 @@ const DOMAIN_WHITELIST = new Set([
 
   // === Aave protocol ===
   'aave.com', // covers app.aave.com, pro.aave.com
-  'aavechan.com', // covers apps.aavechan.com
 
   // === Block explorers ===
   'etherscan.io', // covers optimistic.etherscan.io, mega.etherscan.io
