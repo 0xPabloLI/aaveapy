@@ -1,5 +1,7 @@
 import type { ReserveWithSpread } from '@/types/aave';
 import { getProtocolVersion } from '@/lib/protocolVersion';
+import { parseReserveId } from '@/lib/reserveIdParser';
+import { toV4SpokeKey } from '@/lib/reserveKey';
 
 export function decodeV4ReserveId(aaveProReserveId?: string): bigint | null {
   if (!aaveProReserveId) return null;
@@ -40,6 +42,15 @@ export function deriveV3AssetsByMarket(reserves: ReserveWithSpread[]): Record<st
   return result;
 }
 
+/**
+ * Groups V4 reserves by spoke address, keyed the way `getV4UserPositionsAllSpokes`
+ * looks them up (see `toV4SpokeKey`).
+ *
+ * The spoke address comes from `reserveId`, the canonical identity of a `/markets`
+ * reserve: the payload leaves `spokeAddress` undefined on every V4 reserve, so reading
+ * the property would depend on `enrichReservesFromId` having run first — and that
+ * helper only fills it when the reserveId carries a hub segment.
+ */
 export function deriveV4ReservesBySpoke(
   reserves: ReserveWithSpread[],
 ): Record<string, { reserveId: bigint; asset: `0x${string}` }[]> {
@@ -50,17 +61,17 @@ export function deriveV4ReservesBySpoke(
     const reserveId = decodeV4ReserveId(r.aaveProReserveId);
     if (reserveId === null) continue;
 
-    const spokeName = r.spokeName;
-    if (!spokeName) continue;
+    const spokeKey = toV4SpokeKey(parseReserveId(r.reserveId)?.poolOrSpokeAddress);
+    if (!spokeKey) continue;
 
-    const entries = map.get(spokeName) ?? [];
+    const entries = map.get(spokeKey) ?? [];
     entries.push({ reserveId, asset: r.tokenAddress as `0x${string}` });
-    map.set(spokeName, entries);
+    map.set(spokeKey, entries);
   }
 
   const result: Record<string, { reserveId: bigint; asset: `0x${string}` }[]> = {};
-  for (const [name, entries] of map) {
-    result[name] = entries;
+  for (const [spokeKey, entries] of map) {
+    result[spokeKey] = entries;
   }
   return result;
 }

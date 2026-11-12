@@ -36,6 +36,9 @@ import {
   buildReserveLookupByChainAndToken,
 } from '@/lib/userData/onchainPositionConverter';
 import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { getProtocolVersion } from '@/lib/protocolVersion';
+import { parseReserveId } from '@/lib/reserveIdParser';
+import { toV4SpokeKey } from '@/lib/reserveKey';
 import { convertWalletPositionsToEntries } from '@/lib/walletPositionToPortfolio';
 import { resolveLiveApiBase } from '@/lib/apiSchemas.live.helpers';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -117,6 +120,32 @@ function assertNoChainErrors(errors: { chainId?: number; spokeName?: string | nu
   ).toEqual([]);
 }
 
+/**
+ * AAV-1356 invariant：V4 兜底路径的 join 必须真的接通。修前生产方以 API 显示名
+ * （`Main`）作 Map key、消费方以地址簿 raw key（`MAIN_SPOKE`）查询 ⇒ 每条链 0 条
+ * spoke 被查询，本文件其余断言全部恒真。此处的地面真值取自 payload 自身（从每条 V4
+ * `reserveId` 解析 spoke 地址），独立于生产方 ⇒ 「静默跳过全部 spoke」不能再冒充通过。
+ */
+function assertV4SpokeJoinCoversPayload(
+  reserves: ReserveWithSpread[],
+  v4BySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
+  chainId: number,
+  label: string,
+) {
+  const spokeAddresses = new Set(
+    reserves
+      .filter((r) => r.chainId === chainId && getProtocolVersion(r.marketName) === 'v4')
+      .map((r) => toV4SpokeKey(parseReserveId(r.reserveId)?.poolOrSpokeAddress))
+      .filter((address): address is string => address !== null),
+  );
+
+  expect(spokeAddresses.size, `${label}: V4 reserveIds must name at least one spoke address`).toBeGreaterThan(0);
+  expect(
+    [...spokeAddresses].filter((address) => !(v4BySpoke[address] ?? []).length),
+    `${label}: every spoke address named by a reserveId must be a key of v4BySpoke`,
+  ).toEqual([]);
+}
+
 describe('On-chain user positions integration (live RPC + staging API)', () => {
   it('V3 Ethereum: positions resolve against /markets and stay chain-scoped', async () => {
     if (skipIfNoWallet()) return;
@@ -186,6 +215,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     if (Object.keys(v4BySpoke).length === 0) {
       throw new Error('staging /markets has no V4 spokes — failing loudly instead of silently passing');
     }
+    assertV4SpokeJoinCoversPayload(reserves, v4BySpoke, 1, 'V4');
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'V4');
@@ -214,6 +244,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     if (Object.keys(v4BySpoke).length === 0) {
       throw new Error('staging /markets has no V4 spokes — failing loudly instead of silently passing');
     }
+    assertV4SpokeJoinCoversPayload(reserves, v4BySpoke, 1, 'combined V4');
 
     const allPositions: WalletPosition[] = [];
 
