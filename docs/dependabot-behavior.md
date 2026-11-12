@@ -16,9 +16,9 @@
 
 - eslint 上限（AAV-1301 裁定）⇒ packageRule `allowedVersions: "<10"`，`matchPackageNames` **必须同时含 `@eslint/js` 与 `eslint`**。只钉前者是半个上限：`eslint` 本体仍会被升，而 `eslint-plugin-import` 的 peer 只到 `^9`（实测 2026-10-09：`eslint-plugin-react-hooks@7` 与 `typescript-eslint@8` 已接受 `^10`）⇒ 严格 `npm ci` 失败，`peer-dep-check` 是 dev 与 main 都必填。这条由 `scripts/renovate-config.test.mjs` 守住（对照实验：把上限改回只管 `@eslint/js`，该用例变红）。
 - npm 只有 `direct:development` 的 patch/minor 可自动合 ⇒ `matchManagers` + `matchDepTypes`（同一测试守这条）。
-- 标签与 automerge 仍由本仓 [`automerge.yml`](../.github/workflows/automerge.yml) 的 PAT 路径执行（Renovate 自身 automerge 关），以保住「lovable→dev 用 MERGE、其余 SQUASH」。
+- 标签与 automerge 仍由本仓 [`automerge.yml`](../.github/workflows/automerge.yml) 的 PAT 路径执行（Renovate 自身 automerge 关）。合并方式统一 **SQUASH** —— 2026-11-12 `lovable` 退役前，`lovable→dev` 是唯一的 MERGE 例外（为保住历史连通性），该场景已不存在。
 
-**生效路径提醒**：Renovate 只读**默认分支**的配置，所以 `renovate.json` 的改动要走到 main 才算数（本仓经 lovable→dev→main）。
+**生效路径提醒**：Renovate 只读**默认分支**的配置，所以 `renovate.json` 的改动要走到 main 才算数（本仓经 dev→main）。
 
 ## Dependency Dashboard 不是待办事项
 
@@ -40,7 +40,7 @@
 
 `branch-flow-guard` 是 main 的必填检查，只放行 head 为 `dev`（例外：`bot/hardcode-sync-*`、`bot/token-icon-sync-*`）。因此任何 `dependabot/*` → main 的 PR 都合不掉。只有两条真解：
 
-1. **把 base 改到 `dev`**，让它走 lovable→dev→main 的正常发布流。改 base 用 REST：`gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f base=dev`（`gh pr edit --base` 会因 Projects classic 已废弃而报错、base 不改）。改前先验合并结果只含预期文件：`git merge-tree --write-tree origin/dev origin/<head>` → `git diff --stat origin/dev <tree>`。GitHub 的 Files tab 会因 merge-base 早于某个 squash 合并而虚报大量文件，以 merge-tree 结果为准。
+1. **把 base 改到 `dev`**，让它走 dev→main 的正常发布流。改 base 用 REST：`gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f base=dev`（`gh pr edit --base` 会因 Projects classic 已废弃而报错、base 不改）。改前先验合并结果只含预期文件：`git merge-tree --write-tree origin/dev origin/<head>` → `git diff --stat origin/dev <tree>`。GitHub 的 Files tab 会因 merge-base 早于某个 squash 合并而虚报大量文件，以 merge-tree 结果为准。
 2. 给 guard 加 `dependabot/*` 白名单——那是**削弱 main 的防护层**，需 maintainer 明确批准，不作为默认处置。
 
 ## 已删除

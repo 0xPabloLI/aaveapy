@@ -7,7 +7,10 @@ on:
         description: 'Target base branch for the sync PR (default: dev). Scheduled runs use dev and main.'
         required: false
         default: 'dev'
-        type: string
+        type: choice
+        options:
+          - dev
+          - main
   repository_dispatch:
     types: [upstream-change]
   schedule:
@@ -32,8 +35,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target_branch: ${{ github.event_name == 'schedule' && fromJSON('["dev","main","lovable"]') || fromJSON(format('["{0}"]', (github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch) || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch) || 'dev')) }}
+        target_branch: ${{ github.event_name == 'schedule' && fromJSON('["dev","main"]') || fromJSON(format('["{0}"]', (github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch) || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch) || 'dev')) }}
     steps:
+      # First step on purpose: an unsupported target must not check out, install, sync
+      # or open a PR. `lovable` is archived (AGENTS.md) but still exists as a branch, so
+      # a dispatch naming it would otherwise check out cleanly and open a PR against it
+      # carrying the `automerge` label. The `choice` type on the input does not cover
+      # `repository_dispatch`, whose `client_payload.target_branch` bypasses the form.
+      - name: Validate target branch
+        env:
+          TARGET_BRANCH: ${{ matrix.target_branch }}
+        run: |
+          case "$TARGET_BRANCH" in
+            dev|main)
+              echo "Sync target: $TARGET_BRANCH"
+              ;;
+            *)
+              echo "::error::Unsupported sync target '$TARGET_BRANCH'. Active branches are dev and main; lovable was retired 2026-11-12 (see AGENTS.md)."
+              exit 1
+              ;;
+          esac
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
