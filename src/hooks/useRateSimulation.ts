@@ -259,18 +259,8 @@ export const useSharedRateSimulations = ({
       const effectiveBorrowInput = perReserve?.borrowInput ?? borrowInput;
       const effectiveInputMode = perReserve?.inputMode ?? inputMode;
       const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
-      let hubSupplied: string | undefined;
-      let hubBorrowed: string | undefined;
-      if (reserve.hubId) {
-        hubBorrowed = reserve.hubBorrowed;
-        hubSupplied = reserve.hubSupplied;
-        if (reserveRateInput && hubBorrowed) {
-          reserveRateInput.borrowed = hubBorrowed;
-          reserveRateInput.hubBorrowed = hubBorrowed;
-        }
-        if (reserveRateInput && hubSupplied) {
-          reserveRateInput.hubSupplied = hubSupplied;
-        }
+      if (reserve.hubId && reserveRateInput && reserve.hubBorrowed) {
+        reserveRateInput.borrowed = reserve.hubBorrowed;
       }
       const hasEffectiveInput =
         parseSignedNumberInput(effectiveSupplyInput) !== 0 || parseSignedNumberInput(effectiveBorrowInput) !== 0;

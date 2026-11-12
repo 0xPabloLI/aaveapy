@@ -1,13 +1,5 @@
 export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
 
-export type IncentiveMessageScalar = string | number | boolean | null;
-export type IncentiveMessage =
-  | string
-  | IncentiveMessage[]
-  | {
-      [key: string]: IncentiveMessageScalar | IncentiveMessage;
-    };
-
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
@@ -197,7 +189,9 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   /**
    * @deprecated No producer in the API (0 of 437 reserves on staging, 2026-11-11).
    * Reward campaigns live in `merklSupplys[].breakdowns[]` / `brevisSupplys[]`.
-   * Kept only so older payload fixtures still type-check; do not read it (AAV-1350).
+   * Kept only so older payload fixtures still type-check. The remaining readers
+   * are the legacy `protocol` source wiring in `incentiveAggregation`; it always
+   * evaluates to 0 today. New code must use `getCampaignIncentiveValues` (AAV-1350).
    */
   supplyIncentives?: number[];
   /** @deprecated See `supplyIncentives` (AAV-1350). */

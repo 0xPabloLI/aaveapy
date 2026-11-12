@@ -743,6 +743,29 @@ describe('simulatePortfolioFromEntries', () => {
       expect(results[0].incentivePercent).toBeCloseTo(6, 6);
     });
 
+    it('fallback branch applies the Merkl position cap to the position size', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [{ ...activeCampaign(), positionCapUsd: 5000 }] }],
+        }),
+        slopeBelowOptimal: undefined, // genuinely not rate-calculable -> fallback
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      // 6% APR capped at $5,000 of a $10,000 position -> 3%.
+      expect(results[0].incentivePercent).toBeCloseTo(3, 6);
+    });
+
     it('fallback branch reads Merkl borrow breakdowns instead of borrowIncentives', () => {
       const reserve = {
         ...makeRateCalcReserve({

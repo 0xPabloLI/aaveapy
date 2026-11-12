@@ -1,6 +1,7 @@
 /**
- * AAV-1316 — synthetic crossAssetPairing stub builder for
- * e2e/portfolio-cross-asset-pairing.spec.ts.
+ * AAV-1316 — synthetic crossAssetPairing stub builder for the cross-asset
+ * pairing runners (`portfolio-cross-asset-pairing.desktop.spec.ts` /
+ * `.mobile.spec.ts`, shared setup in `portfolio-cross-asset-pairing.helpers.ts`).
  *
  * `crossAssetPairing` (Merkl min(1,2) campaigns) has never appeared in real
  * staging data, so the pairing spec has always skipped. This module turns a

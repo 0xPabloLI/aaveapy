@@ -21,8 +21,6 @@ export interface RateCalcInput {
   slopeAboveOptimal: number;
   baseBorrowRate: number;
   optimalUtilization: number;
-  hubBorrowed?: string;
-  hubSupplied?: string;
 }
 
 /** Type guard: returns true when a reserve has all fields needed for rate calculation.

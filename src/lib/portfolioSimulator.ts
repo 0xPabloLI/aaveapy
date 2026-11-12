@@ -311,15 +311,8 @@ function computeResultsFromGroups(
 
     const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
 
-    const hubBorrowed = reserve.hubBorrowed;
-    const hubSupplied = reserve.hubSupplied;
-
-    if (reserveRateInput && hubBorrowed) {
-      reserveRateInput.borrowed = hubBorrowed;
-      reserveRateInput.hubBorrowed = hubBorrowed;
-    }
-    if (reserveRateInput && hubSupplied) {
-      reserveRateInput.hubSupplied = hubSupplied;
+    if (reserveRateInput && reserve.hubBorrowed) {
+      reserveRateInput.borrowed = reserve.hubBorrowed;
     }
 
     if (reserveRateInput) {
@@ -425,6 +418,9 @@ function computeResultsFromGroups(
         const incentive = getCampaignIncentiveValues(reserve, 'supply', tydroPointToUsdRate, {
           whitelistMerklCampaignIds,
           forecastStates,
+          positionUsd: amountUsd,
+          tokenPrice: reserve.tokenPrice,
+          decimals: reserve.decimals,
         });
         const incentivePercent = isApy ? incentive.apy : incentive.apr;
         results.push(
@@ -455,6 +451,9 @@ function computeResultsFromGroups(
         const incentive = getCampaignIncentiveValues(reserve, 'borrow', tydroPointToUsdRate, {
           whitelistMerklCampaignIds,
           forecastStates,
+          positionUsd: effectiveUsd,
+          tokenPrice: reserve.tokenPrice,
+          decimals: reserve.decimals,
         });
         const incentivePercent = isApy ? incentive.apy : incentive.apr;
         results.push(
