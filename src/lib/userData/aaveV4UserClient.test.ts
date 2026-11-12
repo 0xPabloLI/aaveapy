@@ -16,6 +16,9 @@ import {
 import { createPublicClient } from 'viem';
 import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
 import { getAllRpcUrls } from './chainDiscovery';
+import { deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { toV4SpokeKey } from '@/lib/reserveKey';
+import type { ReserveWithSpread } from '@/types/aave';
 
 vi.mock('./chainDiscovery', () => ({
   getAllRpcUrls: vi.fn().mockReturnValue([]),
@@ -95,13 +98,20 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
   });
 
   // deriveV4ReservesBySpoke (src/lib/deriveOnchainConfig.ts) keys a Map by spoke
-  // name, so two spokes sharing a name on one chain would have their reserves
-  // conflated. This is why curated variants are skipped rather than merged, and it
-  // is the invariant that has to hold before they can ever be merged (AAV-1356).
+  // ADDRESS since AAV-1356, so two spokes sharing a name would no longer have their
+  // reserves conflated — name uniqueness is only what the failure labels below rely on.
+  // The invariant the join itself relies on is address uniqueness.
   it('every spoke name is unique within its chain', () => {
     for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
       const names = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map((s) => s.name);
-      expect(new Set(names).size).toBe(names.length);
+      expect(new Set(names).size, `chain ${chainIdStr}`).toBe(names.length);
+    }
+  });
+
+  it('every spoke address is unique within its chain', () => {
+    for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
+      const addresses = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map(spokeKey);
+      expect(new Set(addresses).size, `chain ${chainIdStr}`).toBe(addresses.length);
     }
   });
 
@@ -188,6 +198,17 @@ const USER = '0x1111111111111111111111111111111111111111' as `0x${string}`;
 const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`;
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`;
 const MAIN_SPOKE = getV4SpokeAddresses(1)!.find((s) => s.name === 'MAIN_SPOKE')!;
+
+/** The join key `deriveV4ReservesBySpoke` produces and this module looks up (AAV-1356). */
+const spokeKey = (spoke: { address: string }) => spoke.address.toLowerCase();
+
+/** The API's display form of an address-book raw key: `MAIN_SPOKE` -> `Main`. */
+const displayNameOf = (rawKey: string) =>
+  rawKey
+    .replace(/_SPOKE$|_ESPOKE$/, '')
+    .split('_')
+    .map((word) => word[0] + word.slice(1).toLowerCase())
+    .join(' ');
 
 describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
   it('returns positions for reserves with non-zero balances', async () => {
@@ -365,7 +386,7 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
   it('filters spokes with no reserves', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      MAIN_SPOKE: [{ reserveId: 0n, asset: WETH }],
+      [spokeKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
     });
     expect(result.results.length + result.errors.length).toBe(1);
   });
@@ -373,6 +394,65 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
   it('skips spokes not in reservesBySpoke', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {});
     expect(result.results).toHaveLength(0);
+  });
+
+  // AAV-1356 regression gate: this module looks spokes up by address, so a map keyed by
+  // name — the API's display name or the address book's raw key — matches nothing and
+  // the V4 on-chain fallback silently queries zero spokes on every chain.
+  it('finds no spokes when the map is keyed by name instead of address', async () => {
+    const result = await getV4UserPositionsAllSpokes(1, USER, {
+      MAIN_SPOKE: [{ reserveId: 0n, asset: WETH }],
+      Main: [{ reserveId: 0n, asset: WETH }],
+    });
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('queries every address-book spoke that has reserves', async () => {
+    const spokes = getV4SpokeAddresses(1)!;
+    const reservesBySpoke = Object.fromEntries(spokes.map((s) => [spokeKey(s), [{ reserveId: 0n, asset: WETH }]]));
+
+    const result = await getV4UserPositionsAllSpokes(1, USER, reservesBySpoke);
+
+    expect(result.results).toHaveLength(spokes.length);
+  });
+
+  // The invariant that ties the two modules together: whatever key the producer emits
+  // must be the key this consumer looks up, for every spoke of every chain.
+  it('every address-book spoke is reachable by the key deriveV4ReservesBySpoke produces', () => {
+    const token = `0x${'ab'.repeat(20)}`;
+
+    for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
+      const chainId = Number(chainIdStr);
+      const spokes = V4_SPOKE_ADDRESSES[chainId];
+      // Reserves shaped like the real payload: `spokeName` is a display name and the
+      // spoke address appears only inside reserveId.
+      const reserves = spokes.map(
+        (s, i) =>
+          ({
+            reserveId: `${chainId}:${spokeKey(s)}:${token}:0xhub`,
+            marketName: `AaveV4Chain${chainId}`,
+            chainName: 'Test',
+            chainId,
+            tokenName: 'Token',
+            tokenSymbol: 'TKN',
+            tokenAddress: token,
+            spokeName: displayNameOf(s.name),
+            aaveProReserveId: Buffer.from(`${i + 1}::${token}`).toString('base64'),
+          }) as ReserveWithSpread,
+      );
+
+      const reservesBySpoke = deriveV4ReservesBySpoke(reserves);
+      const unreachable = spokes.filter((s) => {
+        const key = toV4SpokeKey(s.address);
+        return !key || (reservesBySpoke[key] ?? []).length === 0;
+      });
+
+      expect(
+        unreachable.map((s) => s.name),
+        `chain ${chainId}`,
+      ).toEqual([]);
+    }
   });
 });
 
@@ -399,7 +479,7 @@ describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
     rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      MAIN_SPOKE: [{ reserveId: 0n, asset: WETH }],
+      [spokeKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
     });
 
     expect(result.results).toHaveLength(0);
