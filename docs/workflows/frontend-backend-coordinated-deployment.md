@@ -64,7 +64,7 @@
 1. 创建 dev → main PR：`gh pr create --base main --head dev --title "Production: <概述>"`
 2. 等 Vercel Preview 部署完成（通常 1-2 分钟）→ 用 Playwright 打开 preview URL → 验证页面加载正常 + reserves 渲染 + 无 console error
 3. 验证通过后向用户汇报"PR 已创建，Preview 验证通过，等待你决定是否合并"
-4. 用户在 GitHub UI 手动合并 dev → main PR（main 要求签名 commit，GitHub UI merge 自动用 web-flow GPG key 签名）
+4. 用户在 GitHub UI 手动合并 dev → main PR（Agent 行为约束：dev → main 只创建不合并，等用户明确说"合并"）。签名不是理由——`required_signatures` 在 main 上仍是 **false**（见 `docs/conventions/branch-protection.md` Layer 4），签名的必要性待该层真正启用后才成立
 5. Vercel 自动部署 Production。有 API 变更时需先在 Vercel 将 `VITE_API_BASE_URL` 改为 staging API，无 API 变更时跳过此步（`.env.production` 已指向 production API）
 6. **验证 aaveapy.com 正常**，重点关注本次变更涉及的功能点
 7. 如有问题，回滚 main 分支，回到 Phase 2

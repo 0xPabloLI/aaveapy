@@ -18,22 +18,26 @@ npm run check:hooks-path   # verdict：gated / relative-hooks-path / broken / ho
 
 不想要这套行为就设 `HUSKY_HOOKS_PATH_ABSOLUTE=0`（只认字面量 `0`，写错不会静关掉）。副作用一条：绝对 hooksPath 下**执行的门来自主 checkout 的 `.husky/*` 文件**，所以改 hook 本身的 PR，其本地门用的是主 checkout 版本 —— 以 CI 为准。
 
-## 场景 1：需要向 main 提交改动（main 有分支保护，必须走 PR）
+## 场景 1：需要向 main 提交改动
+
+⚠️ **不能直接开 `fix/xxx → main` 的 PR。** `branch-flow-guard` 会 fail 掉任何 head 不是 `dev` 的 `→ main` PR（唯二例外是 `bot/hardcode-sync-*` 与 `bot/token-icon-sync-*`）。前端改动一律先落 `dev`（场景 5），再由 `dev → main` 上线（`docs/workflows/frontend-backend-coordinated-deployment.md` Phase 3）。
+
+要改 `main` 上独有的内容（例如 workflow 文件本身）时，仍然走同一条路：
+
 ```bash
 # 1. 创建 worktree（不会切换当前分支）
-git worktree add /tmp/aaveapy-main main
-# 2. 在 worktree 中操作
-cd /tmp/aaveapy-main
+git worktree add -b fix/xxx /tmp/aaveapy-dev origin/dev
+cd /tmp/aaveapy-dev
 npm install                     # ← 必做，否则本地门一条都不跑（见上一节）
-git checkout -b fix/xxx
-# 编辑文件、commit
+# 2. 编辑文件、commit
 git push -u origin fix/xxx
-gh pr create --title "fix: xxx" --body "..." --base main --head fix/xxx
-gh pr merge <PR_NUMBER> --squash --auto   # CI 通过后自动合并
-# 3. 清理 worktree
+gh pr create --title "fix: xxx" --body "..." --base dev --head fix/xxx
+# 3. 合并到 dev 后，另开 dev → main PR（Phase 3 流程）
 cd <original-repo>
-git worktree remove /tmp/aaveapy-main
+git worktree remove /tmp/aaveapy-dev
 ```
+
+唯一可以直开 `→ main` PR 的是两个 bot 同步分支（`bot/hardcode-sync-*` / `bot/token-icon-sync-*`），它们由 `branch-flow-guard` 显式豁免，且仍需人工合并。
 
 ## 场景 2：需要从其他分支 cherry-pick 到当前分支
 ```bash

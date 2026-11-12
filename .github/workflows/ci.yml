@@ -97,12 +97,6 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: Sync lock file (Lovable compat)
-        run: |
-          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
-            echo "Lovable commit detected – syncing lock file"
-            npm install --package-lock-only
-          fi
       - name: Install dependencies
         run: npm run ci:lockcheck
       # PR: one ESLint pass with Reviewdog annotations (avoids a duplicate workflow + second npm ci).
@@ -136,12 +130,6 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: Sync lock file (Lovable compat)
-        run: |
-          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
-            echo "Lovable commit detected – syncing lock file"
-            npm install --package-lock-only
-          fi
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Run build with performance measurement
