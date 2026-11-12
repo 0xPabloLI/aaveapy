@@ -165,7 +165,11 @@ export const usePortfolioToggle = ({
           const nativePercent = side === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
           // AAV-1350: campaign sources only. `supplyIncentives`/`borrowIncentives`
           // have no producer in the API and always read as empty.
-          const incentivePercent = getCampaignIncentiveValues(reserve, side).apr;
+          const incentivePercent = getCampaignIncentiveValues(reserve, side, undefined, {
+            positionUsd: amountUsd,
+            tokenPrice: reserve.tokenPrice,
+            decimals: reserve.decimals,
+          }).apr;
           out.push(buildPortfolioPositionResult(e.reserveId, side, amountUsd, nativePercent, incentivePercent));
         }
         return out;
