@@ -25,7 +25,7 @@
 - `.github/workflows/hardcode-sync.yml`
 
 触发：
-- `schedule` / `workflow_dispatch` / `repository_dispatch`：使用 **matrix** 在 **`dev`** / **`main`** / **`lovable`** 上各跑一遍；PR 头分支为 `bot/hardcode-sync-<branch>`，base 为对应分支。
+- `schedule` / `workflow_dispatch` / `repository_dispatch`：使用 **matrix** 在 **`dev`** / **`main`** 上各跑一遍；PR 头分支为 `bot/hardcode-sync-<branch>`，base 为对应分支。
 - `schedule` cron：`20 4 * * *`（每日 04:20 UTC）。
 
 执行步骤（核心）：

@@ -6,13 +6,11 @@ on:
       - main
       - dev
       - railway
-      - lovable
   push:
     branches:
       - main
       - dev
       - railway
-      - lovable
       - feature/**
   workflow_dispatch:
     inputs:
@@ -161,11 +159,6 @@ jobs:
     name: e2e-desktop (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # E2E tests depend on live staging API data and are inherently flaky.
-    # On `lovable` push (no PR review), make them non-blocking so transient
-    # failures don't trigger ci-failure-alert issues.  They remain blocking
-    # on PRs and on `dev`/`main` pushes.
-    continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/lovable' }}
     strategy:
       fail-fast: false
       matrix:
@@ -206,11 +199,6 @@ jobs:
     name: e2e-mobile (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # E2E tests depend on live staging API data and are inherently flaky.
-    # On `lovable` push (no PR review), make them non-blocking so transient
-    # failures don't trigger ci-failure-alert issues.  They remain blocking
-    # on PRs and on `dev`/`main` pushes.
-    continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/lovable' }}
     strategy:
       fail-fast: false
       matrix:
@@ -279,7 +267,7 @@ jobs:
 
   live-schema-validation:
     name: live-schema-validation
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lovable') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
@@ -302,7 +290,7 @@ jobs:
         run: bash scripts/ci-live-schema-validate.sh
   live-simulation-validation:
     name: live-simulation-validation
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lovable') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
@@ -449,7 +437,7 @@ jobs:
     name: openapi-sync
     needs:
       - openapi-check
-    # Bot PR 收敛 (AAV-1298): sync PRs target dev only, never lovable —
+    # Bot PR 收敛 (AAV-1298): sync PRs target dev only —
     # see docs/archive/2026-09-24-hardcode-sync-resilience.md §3. Branches
     # other than dev get read-only drift detection from openapi-check.
     # Schedule fires on the default branch ref, hence the explicit checkout/base below.

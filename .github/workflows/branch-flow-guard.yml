@@ -1,6 +1,6 @@
 name: Branch Flow Guard
 
-# Ensures lovable → dev → main flow. Any PR targeting main from a branch
+# Ensures dev → main flow. Any PR targeting main from a branch
 # other than dev will fail this check, preventing non-standard production
 # deployments. Add "branch-flow-guard" to main's required status checks.
 #
@@ -44,7 +44,7 @@ jobs:
           fi
 
           if [ "$HEAD_REF" != "dev" ]; then
-            echo "::error::Direct $HEAD_REF → $BASE_REF PR is not allowed. Standard flow: lovable → dev → main. Create a PR from dev to main instead."
+            echo "::error::Direct $HEAD_REF → $BASE_REF PR is not allowed. Standard flow: dev → main. Create a PR from dev to main instead."
             exit 1
           fi
           echo "✅ Source branch is dev — standard flow confirmed."

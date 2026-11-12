@@ -67,9 +67,9 @@ jobs:
               return;
             }
 
-            // lovable → dev uses MERGE to preserve history connectivity (AGENTS.md).
-            // All other PRs (bot sync, dev → main) use SQUASH.
-            const mergeMethod = (pr.head.ref === 'lovable' && pr.base.ref === 'dev') ? 'MERGE' : 'SQUASH';
+            // Every automerged PR is SQUASH now that `lovable` is retired and
+            // dev → main is the only promotion left (AGENTS.md).
+            const mergeMethod = 'SQUASH';
             // GitHub GraphQL API doesn't support MergeMethod as a variable type.
             // Inline the mergeMethod value directly into the mutation string.
             const enableAutoMergeMutation = `

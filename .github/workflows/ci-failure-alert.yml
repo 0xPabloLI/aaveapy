@@ -5,7 +5,7 @@ on:
     workflows: ['CI']
     types: [completed]
     branches:
-      - lovable
+      - dev
 
 permissions:
   issues: write
@@ -61,7 +61,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: 'ci-failure-lovable',
+              labels: 'ci-failure-dev',
               per_page: 5,
             });
             core.setOutput('has_open', String(issues.length > 0));
@@ -81,7 +81,7 @@ jobs:
             const failedJobs = '${{ steps.gather.outputs.failed_jobs }}';
             const runId = '${{ steps.gather.outputs.run_id }}';
 
-            const title = `🔥 Lovable CI failure: ${failedJobs}`;
+            const title = `🔥 Dev CI failure: ${failedJobs}`;
             const body = [
               `## CI Failure on \`${branch}\``,
               '',
@@ -99,7 +99,7 @@ jobs:
               '3. Close this issue',
             ].join('\n');
 
-            const labels = ['ci-failure-lovable'];
+            const labels = ['ci-failure-dev'];
 
             if ('${{ steps.dedup.outputs.has_open }}' === 'true') {
               const num = Number('${{ steps.dedup.outputs.issue_number }}');

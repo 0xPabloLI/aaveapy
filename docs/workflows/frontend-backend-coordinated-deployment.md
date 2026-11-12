@@ -17,11 +17,13 @@
 |--------|-------------|------|
 | `railway` | Staging | 后端 staging，包含所有最新变更 |
 | `main` | Production | 后端 production，稳定版本 |
-| `lovable` | — | 前端开发分支（GPT-engineer） |
-| `dev` | — | 前端集成分支（lovable → dev → main） |
+| `dev` | Staging (Vercel) | 前端首段，所有前端改动落点（dev → main） |
+
+> `lovable` 已于 2026-11-12 退役（内容并入 `dev`，PR #822）。分支保留作归档，不再接收 PR。
+> 它曾由 GPT-engineer 直接推送，因此有独立的 CI 失败告警；该告警现挂 `dev`（标签 `ci-failure-dev`）。
 
 ## 前置条件
-- lovable 分支代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
+- 前端代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
 - `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
 
 ## 部署流程
@@ -67,7 +69,7 @@
 6. **验证 aaveapy.com 正常**，重点关注本次变更涉及的功能点
 7. 如有问题，回滚 main 分支，回到 Phase 2
 
-> **注意**：lovable → dev 合并通过 PR（merge commit 方式），不要本地 `git checkout dev && git merge`。详见 `docs/workflows/cross-branch-workflow.md` 场景 5。
+> **注意**：前端改动通过 PR 落在 `dev` 上（squash 方式），不要本地 `git checkout dev && git merge`。详见 `docs/workflows/cross-branch-workflow.md` 场景 5。
 
 ### Phase 4: Backend Staging → Production
 
@@ -85,7 +87,7 @@
 
 ## 无 API 变更时的简化流程
 
-当前后端 spec 无变更时，跳过 Phase 1-2 的 spec 同步，直接从 Phase 2 的 lovable → dev PR 开始，然后走 Phase 3（dev → main PR）。Phase 4-5 跳过。
+当前后端 spec 无变更时，跳过 Phase 1-2 的 spec 同步，直接从 Phase 3（dev → main PR）开始。Phase 4-5 跳过。
 
 ## Agent 行为约束
 

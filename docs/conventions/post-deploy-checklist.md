@@ -77,7 +77,6 @@ print('\n'.join(ids))
 ### 5. 分支同步
 
 - [ ] **main ↔ dev** — `git log --oneline main..dev` 和 `git log --oneline dev..main` 无意外差异
-- [ ] **dev ↔ lovable** — 同上，确认同步状态
 
 ## 性能基线（可选但推荐）
 
