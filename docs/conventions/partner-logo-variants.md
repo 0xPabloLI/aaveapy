@@ -1,6 +1,6 @@
 # Partner Logo Dark/Light Variants
 
-Partner incentive logos (Merkl, ACI, Brevis, Tydro, etc.) use a **dual-variant** pattern for dark/light theme visibility.
+Partner incentive logos (Merkl, Brevis, Tydro, etc.) use a **dual-variant** pattern for dark/light theme visibility.
 
 ## File Naming
 
@@ -29,7 +29,7 @@ const src = isDark
 
 | Pattern | Example | Correct? |
 | --- | --- | --- |
-| No `fill` on root, no `fill` on path | `merkl-black.svg`, `aci-black.svg` | ✅ Inherits default `fill="black"` |
+| No `fill` on root, no `fill` on path | `merkl-black.svg` | ✅ Inherits default `fill="black"` |
 | `fill="none"` on root, explicit `fill` on path | `brevis-black.svg` (`fill="#2B303B"`) | ✅ Explicit fill wins |
 | `fill="none"` on root, **no** `fill` on path | ~~`tydro-black.svg` (broken)~~ | ❌ Inherits `none` → invisible |
 
