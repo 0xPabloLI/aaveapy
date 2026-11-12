@@ -583,8 +583,8 @@ Three cap mechanisms are live: Merkl pool budget, Merkl APR cap, and the per-use
 | Source | API fields | Resolution |
 |--------|------------|------------|
 | Merkl breakdown | `positionCapNative`, `positionCapUsd`, `isCombineCap`, `aprCap` | `resolvePositionCapUsd(positionCapNative, positionCapUsd, tokenPrice, decimals)` — the native amount wins when the reserve price is known |
-| Brevis campaign | `positionCapUsd`, `isCombineCap` | used as-is |
-| Protocol row | `supplyIncentives` / `borrowIncentives` (`number[]`) | none |
+| Brevis campaign | `positionCapUsd`, `isCombineCap` | used as-is; the fetcher always emits `isCombineCap: true` alongside a cap (`packages/aave-fetcher/src/brevis-api.ts`) |
+| Protocol row | `supplyIncentives` / `borrowIncentives` (`number[]`) | none, and neither has an API producer — the `protocol` lane evaluates to 0 on every live reserve (AAV-1350 deprecation in `src/types/aave.ts`) |
 | Simulation UI | same diagnostics | `capNote`, `capWarning` |
 
 A cap whose USD value cannot be resolved is left unapplied rather than estimated.
@@ -620,7 +620,13 @@ Caps apply only where a position is known: the per-campaign rows and `sr.*` lane
 
 - `positionCapUsd` caps the earning position, so `eligibleUsd = min(positionUsd, positionCapUsd)` and the APR dilutes the same way as Merkl's.
 - `positionUsd = combinedDepositUsd ?? totalPositionUsd ?? inputUsd`; the combined value requires the same `campaignId` and matching metadata across supply and borrow.
-- Missing `endDate` degrades gracefully to the nominal APR.
+- An open-ended campaign (no `campaignEndedAt`) still counts as active (`allowOpenEnd = true` in `hasActiveBrevisBreakdown`) and keeps its cap; only the `~Nd` horizon note is dropped, because `remainingDays` arrives as `null`.
+
+Brevis exposes no structured cap field. `extractPositionCapFromDescription()` (`packages/aave-fetcher/src/brevis-api.ts`) scrapes the campaign copy out of the Brevis frontend `_app` chunk and parses `/up to ([\d,]+)\s*(USDC|USD)/i`, so the copy is the semantic source and that regex is the contract. Live copy, 2026-11-12:
+
+> Eligible MetaMask Card users … may earn a fixed 2.4% reward APR when lending or borrowing USDC on Aave via Linea. This promotional rate applies to a combined total of up to 5000 USDC in collateral and/or debt per user.
+
+That sentence makes `positionCap` a principal ceiling spread across supply and debt; principal and payout coincide only because the APR is fixed. Two edges follow: a campaign whose copy capped the payout would land in the same field silently (none today — the only observed `type === 3001` family is MetaMask), and a reworded sentence breaks the scrape, since the chunk scan keys off the literal markers `Eligible MetaMask` and `per user.` and a miss only logs a warning. Campaign-level evidence: `docs/api/brevis-supplement.md` §2.5.
 
 ### Merkl FIX reward cap
 
@@ -912,7 +918,7 @@ Both are per-user position caps and both dilute the APR by `eligible / position`
 
 | | Merkl | Brevis |
 |---|---|---|
-| Cap field | `positionCapNative` (converted with `tokenPrice` + `decimals`) or `positionCapUsd` | `positionCapUsd` |
+| Cap field | `positionCapNative` (converted with `tokenPrice` + `decimals`) or `positionCapUsd` | `positionCapUsd`, scraped from the campaign copy (Part 4) |
 | Position denominator | the opportunity's `positionUsd` (net-eligible when the opportunity declares a constraint) | `combinedDepositUsd ?? totalPositionUsd ?? inputUsd` |
 | Interaction | composes with the net/cross-asset constraint into one eligible principal (AAV-1164) | stands alone |
 
