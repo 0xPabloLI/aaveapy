@@ -67,7 +67,7 @@ V4 仓位在 SDK 主路径失败时走 on-chain RPC 兜底。该路径**从未�
 | `src/lib/userData/aaveV4UserClient.ts` | 两处查询改走 `toV4SpokeKey(spoke.address)`;合并重复 filter;更新 `selectModulesPerChain` docstring 里「以 spoke name 作 key」的过时理由 | Medium | 查询键变化使该路径首次真正发 RPC;docstring 若不改则与新代码矛盾 |
 | `src/lib/deriveOnchainConfig.test.ts` | fixture 改为真实形态(`spokeName` 用显示名、`spokeAddress` 用合法 40-hex 地址);断言改按地址;新增同名不同地址、大小写归一、3 段 reserveId 用例 | Low | 修正 fixture 失真——本 bug 得以存活的直接原因 |
 | `src/lib/userData/aaveV4UserClient.test.ts` | 传参改按地址;新增「地址簿每个 spoke 都能在 map 里找到」的跨模块 invariant;名字唯一性断言改为地址唯一性 | Low | 新增的那条是本 bug 的回归门 |
-| `src/test/userPositionConsistency.test.ts` | V4 用例新增「实际查询的 spoke 数 = 该链地址簿 spoke 数」断言 | Low | live 测试(无 `WALLET_ADDRESS` 时 skip);补上恒真断言的缺口 |
+| `src/test/userPositionConsistency.test.ts` | V4 与 V3+V4 两条用例各新增两个断言:`assertV4SpokeJoinCoversPayload`(地面真值取自 payload 的 `reserveId` —— 每个被点名的 spoke 地址都必须是 `v4BySpoke` 的非空 key)与 `assertV4QueriedSpokeCount`(地面真值取自地址簿 —— 实际查询到的 spoke 数 = 该链地址簿 spoke 数,chain 1 为 13) | Low | live 测试(无 `WALLET_ADDRESS` 时 skip);两者方向互补,补上恒真断言的缺口 |
 
 最坏后果:key 归一化写错(如忘记 `toLowerCase`)导致检查和不匹配 ⇒ 回到「0 条 spoke」的当前行为,不会产生错误数据。注意**不会**因本改动而出现「仓位归属到错误 spoke」——地址 key 比名字 key 更细:两个 spoke 只可能被**漏掉**,不可能被**合并**。
 
@@ -90,7 +90,7 @@ V4 仓位在 SDK 主路径失败时走 on-chain RPC 兜底。该路径**从未�
 | V13 | 单条 spoke RPC 失败(轮换耗尽) | 错误进 `errors` 且 `spokeName` 归属**正确的那条** spoke(不因 filter 合并而错位) | High | automated test(既有 AAV-1310 用例) | 单一 `targeted` 数组使下标对应成结构性保证 |
 | V14 | 部分 spoke 失败 | 成功侧结果保留,失败侧进 `errors`(`allSettled` 既有语义) | Medium | automated test(既有用例) | — |
 | V15 | 下游契约 | `reservesBySpoke` 参数类型不变;调用点零改动;`spokeName` 不进入任何用户可见文案 | Medium | static-type-lint(tsc)+ `rg spokeName src/` 复核 | — |
-| V16 | live 数据端到端 | staging `/markets` + 真实地址簿:每链 `Object.keys(v4BySpoke)` 覆盖该链全部地址簿 spoke 地址 | High | runtime-real-data(`WALLET_ADDRESS` + RPC 跑 `userPositionConsistency`) | 需 RPC 可用;无 wallet 时 skip |
+| V16 | live 数据端到端 | staging `/markets` + 真实地址簿:实际查询到的 spoke 数 = 该链地址簿 spoke 数,且 `Object.keys(v4BySpoke)` 覆盖该链全部地址簿 spoke 地址 | High | runtime-real-data(`WALLET_ADDRESS` + RPC 跑 `userPositionConsistency` 的 `assertV4QueriedSpokeCount` + `assertV4SpokeJoinCoversPayload`) | 需 RPC 可用;无 wallet 时 skip |
 | V17 | 验证门 | lint + typecheck + vitest + build 全绿 | Medium | static-type-lint(CI gate) | — |
 
 ## Tickets（tracer-bullet 依赖边）

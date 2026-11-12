@@ -29,7 +29,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient';
-import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
+import { getV4SpokeAddresses, getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
@@ -146,6 +146,32 @@ function assertV4SpokeJoinCoversPayload(
   ).toEqual([]);
 }
 
+/**
+ * AAV-1356 invariant（地址簿一侧）：该链地址簿列出的每个 spoke 都必须**真的被查询到**。
+ *
+ * 上面那条以 payload 为准（parse 每个 `reserveId` 得到 spoke 地址），这一条反过来以
+ * 地址簿为准，两者方向互补：payload 点名了但 map 里没有 ⇒ 上一条红；地址簿有而
+ * payload 没点名 ⇒ 只有这一条能发现。修前该路径查询 0 条 spoke，本断言是它的直接
+ * 红灯（chain 1 地址簿 13 条）。
+ *
+ * 前置：必须已在同一链上通过 `assertNoChainErrors` —— 有失败时成功计数不再等于查询
+ * 计数，此时应当先由那条断言报错。
+ */
+function assertV4QueriedSpokeCount(results: readonly unknown[], chainId: number, label: string) {
+  const bookSpokes = (getV4SpokeAddresses(chainId) ?? [])
+    .map((spoke) => toV4SpokeKey(spoke.address))
+    .filter((address): address is string => address !== null);
+
+  expect(
+    bookSpokes.length,
+    `${label}: the address book must list at least one spoke for chain ${chainId}`,
+  ).toBeGreaterThan(0);
+  expect(
+    results.length,
+    `${label}: every address-book spoke must have been queried (call this after assertNoChainErrors)`,
+  ).toBe(bookSpokes.length);
+}
+
 describe('On-chain user positions integration (live RPC + staging API)', () => {
   it('V3 Ethereum: positions resolve against /markets and stay chain-scoped', async () => {
     if (skipIfNoWallet()) return;
@@ -219,6 +245,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'V4');
+    assertV4QueriedSpokeCount(v4Response.results, 1, 'V4');
 
     const positions = convertV4PositionsToWalletPositions(
       v4Response.results.flatMap((r) => r.positions),
@@ -260,6 +287,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'combined V4');
+    assertV4QueriedSpokeCount(v4Response.results, 1, 'combined V4');
     allPositions.push(
       ...convertV4PositionsToWalletPositions(
         v4Response.results.flatMap((r) => r.positions),
