@@ -1,5 +1,5 @@
 // BFF: forwards /seo/* requests to the Railway backend with the admin token.
-// Token lives in Lovable Cloud secret SEO_ADMIN_TOKEN and is never exposed to the browser.
+// Token lives in Supabase secret SEO_ADMIN_TOKEN and is never exposed to the browser.
 // Optional override: SEO_API_BASE (defaults to staging-api.aaveapy.com/api).
 
 const corsHeaders = {
