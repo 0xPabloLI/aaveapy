@@ -132,13 +132,12 @@ src/hooks/useRateSimulation.ts
 | Cap Type | Scope | Mechanism | Source |
 |----------|-------|-----------|--------|
 | Pool budget | Pool-wide | `dailyRewards = min(aprBasedDaily, remainingBudget)` | `merklForecast.ts` |
-| Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，共享 `applyPositionCap`，作为正交叠加层后处理。 | `meritForecast.ts` / `merklForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
+| Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`，共享 `applyPositionCap`，作为正交叠加层后处理。 | `merklForecast.ts` → `applyPositionCapToForecastResult`, `rateSimulationCalculator.ts` |
 
 **Position cap by source**:
 
 | Source | Data field | `isCombineCap` | Cap 语义 | 推导依据 |
 |--------|-----------|----------------|---------|---------|
-| Merit | `positionCapUsd` (API) | `false` (不设) | Supply-only cap — 只限制单个 side | Merit API 无 combine 语义 |
 | Merkl | `positionCapNative` (raw string, from `maxDeposit`) | `false` (硬编码) | Per-side per-user balance cap — 限制单侧 scoring balance，**不是** net position cap，也**不是** combine cap。`netPositionConstraint` 是独立的跨 reserve net scoring 概念，与 `isCombineCap` 无关 | `computeMethod="maxDeposit"` → 有 position cap；Merkl scoring 按 side 独立，maxDeposit 只 cap 单侧 balance |
 | Brevis | `positionCapUsd` (从描述提取) | `true` (从描述推断) | Combined supply+borrow cap — 两侧共享额度 | 描述文案含 "combined total of up to $X in collateral and/or debt" |
 
@@ -154,7 +153,7 @@ src/hooks/useRateSimulation.ts
 | `pointsPerThousandUsd` | Only Merkl's optional points path is treated as Tydro |
 | Tydro point-to-APR | `points × pointToUsdRate × 36.5` |
 
-**Note**: `Merit` / `Brevis` / protocol incentives are **not** Tydro points.
+**Note**: `Brevis` / protocol incentives are **not** Tydro points.
 
 ---
 

@@ -6,7 +6,7 @@
  * still import files from there).
  *
  * Problem it solves: `findIncentiveReserve()` previously only checked
- * `merklSupplys.length > 0` (plus the retired Merit arrays). Campaigns with
+ * `merklSupplys.length > 0`. Campaigns with
  * APR=0, expired windows, AMOUNT variants (APR is token-amount semantics, not
  * percent — AAV-1275), or TARGET_TOTAL_APR with 0 apr render incentive cells
  * as '—' with no recovery — making `not.toContainText('—')` assertions fail
@@ -19,6 +19,24 @@
  *    `isCampaignActive` with allowOpenEnd=false — AAV-1280)
  * 3. campaignType is not an AMOUNT variant
  * 4. not whitelist-only (e2e never opts in — AAV-1280)
+ *
+ * Renderability is not the whole story. One further gate applies, and it is
+ * about the campaign only:
+ *
+ * - For the specs that assert a value RESPONDS to position size, a
+ *   forecast-requiring campaign absent from `forecast.items` renders a constant
+ *   APR, so `forecastAvailableCampaignIdsFromSideData` supplies the forecast
+ *   set and the predicates take it as an optional argument — see that
+ *   function's docstring for why `forecast.items`, not `forecast.errors`, is
+ *   the signal.
+ *
+ * History: until AAV-1350 this module also required every rate-calc field
+ * (`hasRateCalcFields`). That mirrored a `portfolioSimulator` bug where a
+ * reserve without the full rate curve fell into a branch that read the flat
+ * `supplyIncentives` array, which the API never populates, so the cell showed
+ * '—'. The simulator now reads campaign data in that branch too, which makes
+ * incentivability independent of the rate curve. The mirror was therefore
+ * deleted rather than kept in sync.
  */
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -44,6 +62,7 @@ export interface PickedReserve {
 }
 
 export interface MerklBreakdown {
+  campaignId?: string;
   campaignApr?: number;
   campaignStartedAt?: string;
   campaignEndedAt?: string;
@@ -109,7 +128,12 @@ const parseApr = (value: unknown): number => (typeof value === 'number' && Numbe
 
 /**
  * Whether a single Merkl breakdown can produce a numeric incentive percent
- * in the UI at time `nowIso` (mirrors getMerklBreakdownApr + forecast gating).
+ * in the UI at time `nowIso` (mirrors getMerklBreakdownApr).
+ *
+ * Forecast state is deliberately NOT part of this predicate: a campaign the
+ * backend could not forecast still renders its breakdown APR numerically (see
+ * `forecastAvailableCampaignIdsFromSideData`), so it belongs to a separate,
+ * caller-supplied gate.
  *
  * AAV-1280: the gate chain must mirror the UI's render gates exactly
  * (sumMerklIncentiveApr in src/lib/incentiveAggregation.ts):
@@ -134,6 +158,85 @@ export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): bo
   // APR=0 is only renderable for points-based campaigns (Tydro formula).
   const points = parseApr(b.pointsPerThousandUsd);
   return points > 0;
+}
+
+/**
+ * Merkl campaign types whose forecast state the UI requires.
+ *
+ * Mirror of `FORECAST_REQUIRING_CAMPAIGN_TYPES` in
+ * src/lib/rateSimulationCalculator.ts, duplicated rather than imported to keep
+ * this module dependency-free (see the file header). The drift is pinned by
+ * unit test F2b, which compares this set against the calculator's.
+ */
+export const FORECAST_REQUIRING_CAMPAIGN_TYPES: ReadonlySet<string> = new Set([
+  'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'TARGET_TOTAL_APR',
+]);
+
+/**
+ * Campaign ids the backend COULD forecast, as listed by
+ * `/meta/side-data`.forecast.items.
+ *
+ * This is the set the UI reads: `checkForecastAvailability`
+ * (src/lib/incentiveCaps.ts) returns `!forecastStates[campaignId]` for a
+ * forecast-requiring campaign, and `useRateSimulation` builds `forecastStates`
+ * from `forecast.items`.
+ *
+ * Note what the UI does with that answer: a campaign absent from `items` still
+ * renders its breakdown APR numerically — `forecastMerklApr`
+ * (src/lib/merklForecast.ts) returns `currentApr` when there is no merged
+ * state — and merely gains a '*' marker plus the "No forecast data — using
+ * current APR" footnote. `forecast.errors` is therefore NOT the exclusion
+ * signal: it is built into a `forecastErrors` map that nothing outside tests
+ * ever reads.
+ *
+ * Discovery still skips those campaigns, for a different reason than "renders
+ * '—'": the UI itself declares them forecast-less (the '*' marker and the "No
+ * forecast data — using current APR" footnote), and the pairing/offset specs
+ * need a value whose response to position size is backed by a real forecast.
+ * Preferring forecast-backed campaigns selects data those specs can actually
+ * exercise. Do not restate this as "the APR cannot respond to size" — a
+ * campaign can respond from its own breakdown fields even with no forecast
+ * state (measured on a DUTCH_AUCTION campaign listed in `forecast.errors`:
+ * 6% → 5.93% after a $1M input).
+ */
+export function forecastAvailableCampaignIdsFromSideData(sideData: unknown): Set<string> {
+  const items = (sideData as { forecast?: { items?: unknown } } | null | undefined)?.forecast?.items;
+  const ids = new Set<string>();
+  if (!Array.isArray(items)) return ids;
+  for (const entry of items) {
+    const id = (entry as { campaignId?: unknown } | null | undefined)?.campaignId;
+    if (typeof id === 'string' && id) ids.add(id);
+    // The API sends ids as strings (they exceed Number.MAX_SAFE_INTEGER), so a
+    // numeric id is only usable when it survived JSON parsing exactly — drop it
+    // rather than match on a mangled value that would silently never match.
+    else if (typeof id === 'number' && Number.isSafeInteger(id)) ids.add(String(id));
+  }
+  return ids;
+}
+
+/**
+ * Whether a breakdown carries a forecast the UI considers available, i.e.
+ * mirrors the UI's `isForecastRequiring && checkForecastAvailability`
+ * short-circuit.
+ *
+ * `forecastAvailableCampaignIds` is the set from `forecast.items`; pass `null`
+ * when side-data is unavailable, which disables the gate entirely (degrading to
+ * "exclude everything" would turn the incentive suites into no-ops).
+ */
+function isForecastBackedBreakdown(
+  b: MerklBreakdown,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null | undefined,
+): boolean {
+  if (forecastAvailableCampaignIds == null) return true;
+  // Non-forecast-requiring campaigns never carry a forecast marker in the UI,
+  // so the gate must not touch them.
+  if (!b.campaignType || !FORECAST_REQUIRING_CAMPAIGN_TYPES.has(b.campaignType)) return true;
+  // A breakdown with no id cannot be matched against the item list — keep it
+  // (the pre-existing behaviour) rather than dropping campaigns on a guess.
+  if (typeof b.campaignId !== 'string' || !b.campaignId) return true;
+  return forecastAvailableCampaignIds.has(b.campaignId);
 }
 
 // ─── Reserve predicates ──────────────────────────────────────────────
@@ -163,10 +266,21 @@ function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): num
 /**
  * Whether the reserve has at least one supply-side Merkl campaign the UI can
  * compute a numeric percent for. Merit arrays are deliberately NOT considered
- * (Merit was fully retired — AAV-1289).
+ * (Merit was fully retired — AAV-1289), and neither is `supplyIncentives`
+ * (no producer in the API — AAV-1350).
+ *
+ * `forecastAvailableCampaignIds` carries the forecast gate
+ * (`forecastAvailableCampaignIdsFromSideData`); pass `null` only when side-data
+ * is genuinely unavailable, which disables the gate.
  */
-export function hasComputableSupplyIncentive(r: DiscoveryReserve, nowIso: string): boolean {
-  return merklBreakdownsForSide(r, 'supply').some((b) => isComputableMerklCampaign(b, nowIso));
+export function hasComputableSupplyIncentive(
+  r: DiscoveryReserve,
+  nowIso: string,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
+): boolean {
+  return merklBreakdownsForSide(r, 'supply').some(
+    (b) => isComputableMerklCampaign(b, nowIso) && isForecastBackedBreakdown(b, forecastAvailableCampaignIds),
+  );
 }
 
 /**
@@ -313,12 +427,23 @@ export function getMarketChipLabel(marketName: string, chainName?: string): stri
 // ─── Selection ───────────────────────────────────────────────────────
 
 /**
- * Pick the best incentive reserve: usable, computable supply incentive,
+ * Pick the best incentive reserve: usable, with a computable supply incentive;
  * preferring nonzero supply room, then highest net supply APR.
- * Returns null when no candidate qualifies (specs skip gracefully).
+ *
+ * `forecastAvailableCampaignIds` is the forecast gate (see
+ * `forecastAvailableCampaignIdsFromSideData`): a reserve whose only qualifying
+ * campaign is forecast-requiring and unforecasted renders a constant APR, so it
+ * cannot back an assertion about position size. Pass `null` to disable the
+ * gate. Returns null when no candidate qualifies (specs skip gracefully).
  */
-export function pickIncentiveReserve(reserves: DiscoveryReserve[], nowIso: string): PickedReserve | null {
-  const candidates = reserves.filter((r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso));
+export function pickIncentiveReserve(
+  reserves: DiscoveryReserve[],
+  nowIso: string,
+  forecastAvailableCampaignIds: ReadonlySet<string> | null = null,
+): PickedReserve | null {
+  const candidates = reserves.filter(
+    (r) => isUsableReserve(r) && hasComputableSupplyIncentive(r, nowIso, forecastAvailableCampaignIds),
+  );
   if (candidates.length === 0) return null;
 
   const withRoom = candidates.filter((r) => (getSupplyRoomUsd(r) ?? Number.POSITIVE_INFINITY) > 0);
@@ -378,8 +503,14 @@ function usableForOffsetPosition(r: DiscoveryReserve): boolean {
  * renders as '—' (the AAV-1280 failure). Points-only groups stay excluded
  * (conservative: the proportional-offset assertions need percent APR).
  *
- * Cross-reserve scenarios additionally require the offset reserve to be
- * addable and borrowable (active, ltv > 0, borrow enabled, supply room).
+ * Position feasibility (AAV-1318) mirrors the app's clamping: a reserve that
+ * cannot hold the position the runner types degenerates into a false green,
+ * so both sides that carry a borrow go through `usableForSimulatedPosition`:
+ * - cross-reserve: the OFFSET reserve (the runner supplies on it to create
+ *   borrowing power, then borrows the offset ladder on it);
+ * - self-loop: the TARGET itself, because the borrow happens on the target.
+ * The cross-reserve TARGET only ever receives a supply, so it keeps the
+ * AAV-1280 supply-side gate (`usableForOffsetPosition`) unchanged.
  */
 export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: string): OffsetScenario[] {
   const idMap = indexReservesById(reserves);
@@ -402,6 +533,9 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
       if (apr <= 0) continue;
 
       const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
+      // Self-loop borrows on the target itself (AAV-1318): a target that cannot
+      // carry a borrow clamps the whole ladder to one value.
+      if (type === 'self-loop' && !usableForSimulatedPosition(r, 'borrow')) continue;
       const dedupKey = `${r.reserveId}:${type}`;
       if (seen.has(dedupKey)) continue;
 
@@ -417,8 +551,10 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
       if (type === 'cross-reserve') {
         const offsetReserve = idMap.get(nonSelf[0]);
         if (!offsetReserve) continue;
-        if (offsetReserve.borrowDisabled === true) continue;
-        if (!usableForOffsetPosition(offsetReserve)) continue;
+        // AAV-1318: replaces the old pair (`borrowDisabled === true` +
+        // `usableForOffsetPosition`) — one gate that subsumes both and adds
+        // borrow room plus LTV funding power.
+        if (!usableForSimulatedPosition(offsetReserve, 'borrow')) continue;
         scenario.offsetSymbol = offsetReserve.tokenSymbol as string;
         scenario.offsetMarketLabel = getMarketChipLabel(
           offsetReserve.marketName as string,

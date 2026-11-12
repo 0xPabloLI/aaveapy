@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { fetchAndValidateMarkets } from './market-fetch.ts';
 
 describe('fetchAndValidateMarkets', () => {
@@ -20,17 +21,16 @@ describe('fetchAndValidateMarkets', () => {
 
     const originalFetch = globalThis.fetch;
     try {
-      globalThis.fetch = async () =>
-        ({
-          ok: true,
-          json: async () => validPayload,
-        }) as unknown as Response;
+      globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => validPayload,
+      });
 
       const result = await fetchAndValidateMarkets('https://example.com/markets');
 
-      expect(result.rows).toHaveLength(1);
-      expect(result.rows[0]).toMatchObject({ reserveId: '0x1', tokenSymbol: 'TEST' });
-      expect(result.snapshot).toMatchObject({ lastUpdated: '2024-01-01T00:00:00Z' });
+      assert.equal(result.rows.length, 1);
+      assert.partialDeepStrictEqual(result.rows[0], { reserveId: '0x1', tokenSymbol: 'TEST' });
+      assert.partialDeepStrictEqual(result.snapshot, { lastUpdated: '2024-01-01T00:00:00Z' });
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -41,15 +41,12 @@ describe('fetchAndValidateMarkets', () => {
 
     const originalFetch = globalThis.fetch;
     try {
-      globalThis.fetch = async () =>
-        ({
-          ok: true,
-          json: async () => legacyPayload,
-        }) as unknown as Response;
+      globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => legacyPayload,
+      });
 
-      await expect(fetchAndValidateMarkets('https://example.com/markets')).rejects.toThrow(
-        'Markets schema validation failed',
-      );
+      await assert.rejects(fetchAndValidateMarkets('https://example.com/markets'), /Markets schema validation failed/);
     } finally {
       globalThis.fetch = originalFetch;
     }

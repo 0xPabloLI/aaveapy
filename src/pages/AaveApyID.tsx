@@ -30,7 +30,7 @@ const content: RatesPageContent = {
     'APY adalah imbal hasil tahunan dengan bunga majemuk. Pelajari cara kerja protokol Aave, bandingkan bunga deposit dan pinjam Aave V3 di semua jaringan, plus efek insentif pada hasil nyata.',
   h1: 'APY adalah apa? Panduan bunga dan APY Aave V3',
   intro:
-    'Panduan ringkas soal bunga Aave: apa itu APY, bagaimana protokol menentukan bunga deposit dan pinjaman, apa yang berubah di V3, serta bagaimana Merit, Merkl, dan Brevis menambah imbal hasil nyata. Angka live tersedia di dasbor dan diperbarui setiap menit.',
+    'Panduan ringkas soal bunga Aave: apa itu APY, bagaimana protokol menentukan bunga deposit dan pinjaman, apa yang berubah di V3, serta bagaimana Merkl dan Brevis menambah imbal hasil nyata. Angka live tersedia di dasbor dan diperbarui setiap menit.',
   cta: { label: 'Lihat bunga Aave secara live', to: '/' },
   breadcrumb: {
     ariaLabel: 'Navigasi remah roti',
@@ -67,7 +67,7 @@ const content: RatesPageContent = {
       h2: 'Contoh hitungan: Rp 50 juta dalam USDC di Base',
       paragraphs: [
         'Misalnya Anda menaruh dana setara Rp 50 juta (sekitar 3.000 USDC) di jaringan Base. Bila APY deposit yang tampil 4,2 %, hasil kotor setahun sekitar Rp 2,1 juta atau kira-kira Rp 175 ribu per bulan — dengan asumsi bunganya diam di angka itu, yang pada praktiknya tidak pernah terjadi.',
-        'Tambahkan insentif Merit sebesar 1,8 % APR pada reserve yang sama, maka hasil efektifnya naik ke sekitar 6 %, atau kurang lebih Rp 3 juta setahun. Selisih inilah yang ditampilkan dasbor sebagai perbedaan antara bunga dasar dan APY efektif.',
+        'Tambahkan insentif Merkl sebesar 1,8 % APR pada reserve yang sama, maka hasil efektifnya naik ke sekitar 6 %, atau kurang lebih Rp 3 juta setahun. Selisih inilah yang ditampilkan dasbor sebagai perbedaan antara bunga dasar dan APY efektif.',
         'Di sisi pinjaman: jaminan ETH senilai Rp 50 juta dengan pinjaman USDC senilai Rp 20 juta pada APY pinjam 5,5 % berbiaya sekitar Rp 1,1 juta setahun. Health factor tetap aman selama harga ETH tidak anjlok tajam; di bawah 1, posisi bisa dilikuidasi. Biaya gas di L2 seperti Base hanya ratusan rupiah per transaksi sehingga tidak berpengaruh, berbeda dengan Ethereum mainnet yang bisa memakan puluhan hingga ratusan ribu rupiah untuk nominal kecil.',
       ],
     },
@@ -107,7 +107,7 @@ const content: RatesPageContent = {
       },
       {
         title: 'Insentif eksternal',
-        body: 'Merit, Merkl, dan Brevis menambah APR di atas bunga dasar. Pool dengan APY dasar biasa saja bisa memberi hasil efektif terbaik berkat insentif.',
+        body: 'Merkl dan Brevis menambah APR di atas bunga dasar. Pool dengan APY dasar biasa saja bisa memberi hasil efektif terbaik berkat insentif.',
       },
     ],
   },
@@ -141,7 +141,7 @@ const content: RatesPageContent = {
         a: 'Karena bunga adalah fungsi dari utilisasi (total dipinjam ÷ total didepositkan). Deposit besar menurunkan utilisasi sehingga bunga turun; permintaan pinjaman tinggi menaikkan utilisasi dan bunga melonjak melewati titik optimal.',
       },
       {
-        q: 'Apa itu Merit, Merkl, dan Brevis?',
+        q: 'Apa itu Merkl dan Brevis?',
         a: 'Program reward token yang membagikan insentif tambahan bagi pengguna yang deposit atau meminjam di reserve tertentu. Insentif ini bukan bagian dari bunga dasar Aave, tetapi memengaruhi hasil nyata. Karena itu kami menampilkan APY efektif = APY dasar + insentif, di samping bunga dasar.',
       },
       {

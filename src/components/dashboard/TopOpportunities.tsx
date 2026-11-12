@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol, TokenCategoryGroups } from '@/lib/tokenCategories';
 import { formatPercent, formatSpread } from '@/lib/formatters';
@@ -303,7 +303,7 @@ interface MiniReserveCardProps {
   getApyColorClass: (value: number | null) => string;
   getSpreadColorClass: (value: number | null, index?: number, total?: number) => string;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
-  itemVariants: import('framer-motion').Variants;
+  itemVariants: import('motion/react').Variants;
 }
 
 const MiniReserveCard = ({
@@ -417,7 +417,7 @@ interface ReserveItemProps {
   getApyColorClass: (value: number | null) => string;
   getSpreadColorClass: (value: number | null, index?: number, total?: number) => string;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
-  itemVariants: import('framer-motion').Variants;
+  itemVariants: import('motion/react').Variants;
 }
 
 const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function ReserveItem(
@@ -544,9 +544,9 @@ interface CategoryCardProps {
   isApy: boolean;
   isApyChanged: boolean;
   isRateDragging: boolean;
-  headerVariants: import('framer-motion').Variants;
-  iconVariants: import('framer-motion').Variants;
-  itemVariants: import('framer-motion').Variants;
+  headerVariants: import('motion/react').Variants;
+  iconVariants: import('motion/react').Variants;
+  itemVariants: import('motion/react').Variants;
   onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,

@@ -92,8 +92,11 @@ function setCacheEntry<T>(key: string, data: T): void {
       fp: effectiveFp,
     };
     localStorage.setItem(key, JSON.stringify(entry));
-    // Keep the lazy fingerprint key in sync for the secondary check
-    localStorage.setItem(SCHEMA_FP_KEY, effectiveFp);
+    // Deliberately does NOT touch SCHEMA_FP_KEY. That key records the
+    // fingerprint the API is currently serving (see
+    // updateSchemaFingerprintFromApi); writing effectiveFp here would overwrite
+    // it on every cache write and silently disable the drift check in
+    // getCacheEntry — the entry would always match itself (AAV-1346).
   } catch (error) {
     console.warn(`Failed to write cache for ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
   }
@@ -108,15 +111,44 @@ function normalizeSymbolKey(symbol: string): string {
 // reference so getCacheEntry's secondary check invalidates stale
 // entries on next access. This handles "backend deployed new schema
 // but frontend hasn't rebuilt yet".
-export function updateSchemaFingerprintFromApi(apiFp: string, storage: StorageLike = localStorage): void {
-  const newFp = `${apiFp}:${CACHE_VERSION}`;
-  storage.setItem(SCHEMA_FP_KEY, newFp);
+//
+// This function owns the whole invariant — the stored value must equal what the
+// API is currently serving, or not exist at all — so callers just report what
+// they got. `apiFp` is optional because MarketsResponseSchema allows the field
+// to be omitted; when it is absent the reference is REMOVED rather than left
+// alone. Leaving a stale value would be worse than having none: setCacheEntry
+// tags every entry with this bundle's fingerprint, and the secondary check
+// compares that against the stored value, so a stale reference would reject
+// every entry the app writes — cache and offline fallback both permanently cold.
+//
+// Best-effort on purpose, like setCacheEntry: storage can throw (Safari
+// private mode, quota, blocked third-party storage) and this runs inside
+// fetchMarkets' try block. Letting it escape would send a perfectly good API
+// response down the catch path, where the fallback cache is equally
+// unavailable — the user would see no markets at all because cache
+// bookkeeping failed (AAV-1346 review).
+//
+// `storage` is optional rather than defaulting to `localStorage` because a
+// default parameter is evaluated before the body, which would put the global
+// lookup outside this try: reading the `localStorage` property itself throws in
+// an opaque origin or a storage-denied context, before any method is reached.
+export function updateSchemaFingerprintFromApi(apiFp?: string, storage?: StorageLike): void {
+  try {
+    const store = storage ?? localStorage;
+    if (apiFp) store.setItem(SCHEMA_FP_KEY, `${apiFp}:${CACHE_VERSION}`);
+    else store.removeItem(SCHEMA_FP_KEY);
+  } catch (error) {
+    console.warn('Failed to persist schema fingerprint:', error); // nosemgrep: unsafe-formatstring — object argument, not a printf-style format string
+  }
 }
 
-export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
+// Same optional-parameter shape as updateSchemaFingerprintFromApi, for the same
+// reason: this is called unguarded at module scope in App.tsx, so a throw while
+// reading `localStorage` would take the whole app down before React mounts.
+export function clearLegacyCacheEntries(storage?: StorageLike): void {
   for (const key of LEGACY_CACHE_KEYS) {
     try {
-      storage.removeItem(key);
+      (storage ?? localStorage).removeItem(key);
     } catch (error) {
       console.warn(`Failed to remove legacy cache key ${key}:`, error); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
     }

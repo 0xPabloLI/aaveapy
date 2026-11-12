@@ -90,17 +90,17 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       symbol: 'KNCL',
       iconSymbol: 'KNCL',
     },
-    [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Arbitrum.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
     },
-    [AaveV3Optimism.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Optimism.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
     },
-    [AaveV3Polygon.ASSETS.USDC.UNDERLYING.toLowerCase()]: {
+    [AaveV3Polygon.ASSETS.USDCe.UNDERLYING.toLowerCase()]: {
       name: 'Bridged USDC',
       symbol: 'USDC.e',
       iconSymbol: 'USDC',
@@ -284,6 +284,26 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       symbol: 'PT sUSDe October 22nd 2026',
       name: 'PT sUSDe October 2026',
       iconSymbol: 'ptsusde',
+    },
+    '0x8b562578b2f9aa8c14ccda3c5d6cbcead3b06a57': {
+      symbol: 'PT AUSD December 17th 2026',
+      name: 'PT AUSD December 2026',
+      iconSymbol: 'ausd',
+    },
+    '0x9a09a9e491db3dd8ada5b1b889991ac9ad5fd362': {
+      symbol: 'PT USDG October 29th 2026',
+      name: 'PT USDG October 2026',
+      iconSymbol: 'ptusdg',
+    },
+    '0x5ea1f184af5ced57725213d8267b5c4c834557d4': {
+      symbol: 'PT USDG February 25th 2027',
+      name: 'PT USDG February 2027',
+      iconSymbol: 'ptusdg',
+    },
+    '0x72dfb2e44f59c5ad2bafe84314e5b99a7cd5075e': {
+      iconSymbol: 'cirbtc',
+      name: 'Circle Wrapped Bitcoin',
+      symbol: 'cirBTC',
     },
   };
 

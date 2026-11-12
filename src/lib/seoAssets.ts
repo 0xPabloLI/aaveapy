@@ -22,12 +22,12 @@ export const SEO_ASSETS: SeoAssetConfig[] = [
     symbolMatcher: 'USDC',
     title: 'Aave USDC APY — Live Supply & Borrow Rates on Every Chain',
     description:
-      'Track live Aave USDC supply and borrow APYs across every chain. All Merit, Merkl and Brevis incentives included in the effective yield.',
+      'Track live Aave USDC supply and borrow APYs across every chain. All Merkl and Brevis incentives included in the effective yield.',
     intro:
-      'USDC is the most-supplied stablecoin on Aave, with deep markets on Ethereum, Base, Arbitrum, Polygon, Optimism, Avalanche, and every other Aave deployment. This page shows live supply and borrow APYs for every USDC reserve, with all active incentive programs (Merit, Merkl, Brevis) baked into the effective yield.',
+      'USDC is the most-supplied stablecoin on Aave, with deep markets on Ethereum, Base, Arbitrum, Polygon, Optimism, Avalanche, and every other Aave deployment. This page shows live supply and borrow APYs for every USDC reserve, with all active incentive programs (Merkl, Brevis) baked into the effective yield.',
     highlights: [
       'Live USDC supply and borrow APYs on 15+ chains side by side',
-      'All Merit, Merkl and Brevis incentives folded into effective APY',
+      'All Merkl and Brevis incentives folded into effective APY',
       'Rate simulation — see how your deposit size moves the curve before you commit',
     ],
     topChains: ['ethereum', 'base', 'arbitrum', 'polygon', 'optimism', 'avalanche'],

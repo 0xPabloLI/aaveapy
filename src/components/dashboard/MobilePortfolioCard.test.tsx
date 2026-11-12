@@ -70,8 +70,6 @@ const makeReserve = (symbol: string): ReserveWithSpread => ({
   borrowDisabled: false,
   supplyIncentives: [],
   borrowIncentives: [],
-  meritSupplys: [],
-  meritBorrows: [],
   merklSupplys: [],
   merklBorrows: [],
   brevisSupplys: [],

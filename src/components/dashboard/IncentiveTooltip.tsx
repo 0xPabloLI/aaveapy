@@ -2,13 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import {
-  ReserveWithSpread,
-  MeritCampaignGroup,
-  MerklOpportunityGroup,
-  BrevisIncentive,
-  CampaignAccessStatus,
-} from '@/types/aave';
+import { ReserveWithSpread, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
 import { formatPercent, formatUsd } from '@/lib/formatters';
 import { convertAprToApy, apyToApr } from '@/lib/rateCalculations';
 import {
@@ -31,7 +25,6 @@ import {
 import { isCampaignActive } from '@/lib/campaignGroups';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
 import { resolvePositionCapUsd, formatPositionCapNativeDisplay } from '@/lib/incentiveCaps';
-import { extractActionLabelFromMeritMessage } from '@/lib/rateSimulationCalculator';
 import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -157,7 +150,7 @@ interface IncentiveSource {
   value: number;
   color: string;
   bgColor: string;
-  sourceType?: 'Protocol' | 'ACI' | 'Merkl' | 'Brevis';
+  sourceType?: 'Protocol' | 'Merkl' | 'Brevis';
   link?: string;
   message?: string | Record<string, unknown> | unknown[];
   requiredTokens?: string[] | string;
@@ -169,14 +162,12 @@ const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, str
   Protocol: '/icons/tokens/aave.svg',
   Brevis: '/icons/partners/brevis-black.svg',
   Merkl: '/icons/partners/merkl-black.svg',
-  ACI: '/icons/partners/aci-black.svg',
 };
 
 const darkSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
   Protocol: '/icons/tokens/aave.svg',
   Brevis: '/icons/partners/brevis-white.svg',
   Merkl: '/icons/partners/merkl-white.svg',
-  ACI: '/icons/partners/aci-white.svg',
 };
 
 const getSourceIcon = (sourceType?: IncentiveSource['sourceType'], isDark?: boolean) => {
@@ -340,13 +331,10 @@ function RecentlyEndedSection({ incentiveSources, isDark, isMobile }: RecentlyEn
       {expanded && (
         <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
           {groupedBySource.map((group, sourceIndex) => {
-            const iconSrc =
-              group.sourceType !== 'ACI'
-                ? getSourceIcon(
-                    group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined,
-                    isDark,
-                  )
-                : null;
+            const iconSrc = getSourceIcon(
+              group.sourceType === 'Merkl' ? 'Merkl' : group.sourceType === 'Brevis' ? 'Brevis' : undefined,
+              isDark,
+            );
 
             return (
               <div key={`ended-${sourceIndex}`} className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]">
@@ -562,7 +550,6 @@ const IncentiveTooltip = ({
     // Protocol incentives (number array)
     const {
       protocol: protocolIncentives,
-      merit: meritGroups,
       merkl: opportunities,
       brevis: brevisIncentives,
     } = getIncentiveSources(reserve, type);
@@ -583,57 +570,6 @@ const IncentiveTooltip = ({
           campaigns: [{ value: totalProtocol }],
         });
       }
-    }
-
-    // Merit incentives (MeritCampaignGroup array)
-    if (meritGroups && Array.isArray(meritGroups)) {
-      meritGroups.forEach((group) => {
-        const breakdowns = group.breakdowns ?? [];
-        const activeBreakdowns = breakdowns.filter((b) => isCampaignActive(b.campaignStartedAt, b.campaignEndedAt));
-        if (activeBreakdowns.length === 0) return;
-
-        const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = activeBreakdowns.map((breakdown, bdIndex) => {
-          const value = isApy ? convertAprToApy(breakdown.campaignApr) : breakdown.campaignApr;
-          const groupName = group.name?.trim() || 'Merit';
-          const bdActionLabel = extractActionLabelFromMeritMessage(breakdown.message);
-          const bdGroupLabel = extractActionLabelFromMeritMessage(group.message);
-          const bdLabel =
-            bdActionLabel ??
-            bdGroupLabel ??
-            (activeBreakdowns.length > 1
-              ? breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0
-                ? `${groupName} (double yield)`
-                : `${groupName} (base)`
-              : groupName);
-          return {
-            value,
-            startDate: breakdown.campaignStartedAt,
-            endDate: breakdown.campaignEndedAt,
-            message: breakdown.message ?? group.message,
-            sourceType: 'ACI',
-            campaignType: breakdown.campaignType,
-            ...(breakdown.positionCapUsd != null && breakdown.positionCapUsd > 0
-              ? {
-                  positionCapUsd: breakdown.positionCapUsd,
-                  isCombineCap: breakdown.isCombineCap ?? false,
-                  isNetPositionCap: true,
-                }
-              : {}),
-          };
-        });
-
-        const totalValue = meritCampaigns.reduce((sum, c) => sum + c.value, 0);
-
-        sources.push({
-          name: group.name || 'Merit Incentive',
-          value: totalValue,
-          color: 'text-foreground',
-          bgColor: 'bg-muted/60',
-          sourceType: 'ACI',
-          link: group.link,
-          campaigns: meritCampaigns,
-        });
-      });
     }
 
     // Brevis incentives (array)
@@ -1132,7 +1068,7 @@ const IncentiveTooltip = ({
     const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
     const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
     const isBrevis = source.sourceType === 'Brevis';
-    const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
+    const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'Merkl';
     const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
     const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
     const keyPrefix = animated ? `desktop-${index}` : `mobile-${index}`;

@@ -27,11 +27,11 @@ _Avoid_: Optimal Utilization
 ## Incentive Programs
 
 **Incentive Three-Level Hierarchy**:
-激励数据的三层结构，所有 source（Merit / Merkl / Brevis / Protocol）统一遵循：
+激励数据的三层结构，所有 source（Protocol / Merkl / Brevis）统一遵循：
 
-1. **Source** — 激励提供方（如 ACI/Merit/Brevis/Protocol）。Source 本身不携带数据，仅用于分组标识和图标/logo。
-2. **Opportunity** — 一个独立的激励机会，对应后端 API 的 `MeritCampaignGroup` / `MerklOpportunityGroup` / `BrevisIncentive`。每个 Opportunity 有独立的 `name`、`link`、`message`，下挂 1~N 个 Campaign。同一 token 可以有多个 Opportunity（不同 link = 不同 Opportunity）。Opportunity 级别的 `message` 描述该机会的通用规则（如 Merit 的 "Supply USDT" 和 "Self Authentication" 条目）。
-3. **Campaign** — Opportunity 内的一个子活动，对应后端的 `breakdown`（`MeritCampaignBreakdown` / `MerklCampaignBreakdown` / `BrevisCampaignBreakdown`）。每个 Campaign 有独立的 `campaignApr`、`campaignStartedAt`/`campaignEndedAt`、`campaignId`、`campaignType`，可选的 `positionCap`、`aprCap`。
+1. **Source** — 激励提供方（如 Protocol/Merkl/Brevis）。Source 本身不携带数据，仅用于分组标识和图标/logo。
+2. **Opportunity** — 一个独立的激励机会，对应后端 API 的 `MerklOpportunityGroup` / `BrevisIncentive`。每个 Opportunity 有独立的 `name`、`link`、`message`，下挂 1~N 个 Campaign。同一 token 可以有多个 Opportunity（不同 link = 不同 Opportunity）。Opportunity 级别的 `message` 描述该机会的通用规则。
+3. **Campaign** — Opportunity 内的一个子活动，对应后端的 `breakdown`（`MerklCampaignBreakdown` / `BrevisCampaignBreakdown`）。每个 Campaign 有独立的 `campaignApr`、`campaignStartedAt`/`campaignEndedAt`、`campaignId`、`campaignType`，可选的 `positionCap`、`aprCap`。
 
 前端 `IncentiveSource` 接口 = Opportunity 层级（不是 Source 层级），`IncentiveSource.campaigns` = Campaign 层级。同名同 link 的 Opportunity 视为同一个（`groupIncentiveSources` 合并，后进覆盖先进）。
 
@@ -75,18 +75,17 @@ _Avoid_: 把 AMOUNT 变体映射为 VALUE 变体（语义丢失）、把 `distri
 `campaignType` 是我们对 Merkl `distributionType` normalize 后的枚举值（`CampaignForecastType` / `ForecastCampaignTypeLite`），贯穿全链路（fetcher → backend → API → frontend）。`distributionType` 是 Merkl API 原始字段（6+ 种）。`rawDistributionType` 是 fetcher 内部暂存 Merkl 原始值的字段名，不透传到 API。`campaignType` 无其他含义，等价于 `normalize(distributionType)`。
 _Avoid_: 在 API 响应或前端使用 `distributionType`（原始值）、`rawDistributionType`（内部暂存）
 
-**Merit Program**:
-Aave 官方的 Merit 激励项目。`campaignType` = `DUTCH_AUCTION`（与 Merkl 统一命名）；self auth 部分有 position cap。Position cap 与 Brevis `positionCap` 同术语。Forecast 参数名统一为 `positionCapUsd`（原 `selfPositionCapUsd`，已重命名对齐 Brevis）。
-Forecast 估算有两种模式：`TVL_DILUTION`（基于 anchor TVL 或 last round reward 推算隐含 TVL，deposit 稀释后算 APR）和 `CURRENT_RATE`（无 TVL 数据时直接用当前 APR 作为估算）。Position cap 不在 forecast 内部处理，而是作为正交叠加层由 `applyPositionCapToForecastResult` 后处理。
-_Avoid_: Merit Reward, Merit Incentive, deposit ceiling, self cap（用 position cap 代替）、`MERIT_BASE`/`MERIT_SELF_CAP` mode（已移除，position cap 现在是正交叠加层）
+**Merit Program (retired)**:
+2026-09-24 后端下线（AAV-1289），2026-11-11 前端代码与文案移除（AAV-1303）。当前 IncentiveSource 只有 Protocol / Merkl / Brevis 三种；历史 ADR 与 lessons 里的 Merit 描述仅作背景。
+_Avoid_: 在新的类型、payload 或 UI 里引用 Merit（字段、source、campaign bridge 均已删除）
 
 **IncentiveSources**:
 统一 side→source accessor 函数 `getIncentiveSources(reserve, side)` 的返回类型。将 28 处 `side === 'supply' ? reserve.xxxSupplys : reserve.xxxBorrows` 模式收敛为一个调用点。新增第 4 种 source 时只需改 1 处而非 28 处。
 _Avoid_: 在消费端直接写 `side === 'supply' ? reserve.xxxSupplys : reserve.xxxBorrows`（用 `getIncentiveSources` 代替）
 
 **ForecastableBreakdown**:
-`BaseCampaignBreakdown` 的子类型，包含 forecast 相关字段（`campaignType`/`aprCap`/`latestTvl`/`totalBudget`/`plannedDaily`/`budgetBoundMode`/`pointsPerThousandUsd`/`whitelistOnly`）。`MerklCampaignBreakdown`、`BrevisCampaignBreakdown`、`MeritCampaignBreakdown` 均继承自此类型，消除重复字段声明。Brevis 不使用 `plannedDaily`/`budgetBoundMode`/`whitelistOnly` 等 Merkl 特有字段，但类型层面作为 optional 字段不造成运行时问题。
-_Avoid_: 在 Brevis/Merit breakdown 中独立声明 `campaignType`/`aprCap`/`latestTvl`/`totalBudget`（应继承自 `ForecastableBreakdown`）
+`BaseCampaignBreakdown` 的子类型，包含 forecast 相关字段（`campaignType`/`aprCap`/`latestTvl`/`totalBudget`/`plannedDaily`/`budgetBoundMode`/`pointsPerThousandUsd`/`whitelistOnly`）。`MerklCampaignBreakdown`、`BrevisCampaignBreakdown` 均继承自此类型，消除重复字段声明。Brevis 不使用 `plannedDaily`/`budgetBoundMode`/`whitelistOnly` 等 Merkl 特有字段，但类型层面作为 optional 字段不造成运行时问题。
+_Avoid_: 在 Brevis breakdown 中独立声明 `campaignType`/`aprCap`/`latestTvl`/`totalBudget`（应继承自 `ForecastableBreakdown`）
 
 **Brevis Incentive**:
 Brevis 协议分发的激励。有 per-user position cap 模型。`campaignType` = `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE`；`rewardTokenSymbol` 从 gRPC `RewardToken.symbol` 提取。
@@ -95,7 +94,7 @@ _Avoid_: 在 `rateSimulationCalculator.ts` 中新建 `sumBrevisIncentiveApr` 的
 _Avoid_: Brevis Campaign, Brevis Program, reward ceiling（用 position cap 代替）
 
 **Tydro Points**:
-仅 Merkl Campaign 的可选 points 路径产出的积分。转换公式：`points × pointToUsdRate × 36.5`。Merit / Brevis / 协议激励**不是** Tydro Points。
+仅 Merkl Campaign 的可选 points 路径产出的积分。转换公式：`points × pointToUsdRate × 36.5`。Brevis / 协议激励**不是** Tydro Points。
 _Avoid_: Points（太泛）
 
 **Reward Token Symbol**:
@@ -124,30 +123,24 @@ _Avoid_: Blocklist
 
 ## Limits
 
-**Eligible Deposit Cap (Merit Self Position Cap)**:
-Per-user 存款中可获 incentive 的金额上限。只有前 `selfPositionCapUsd` 部分的存款能获得 incentive，超出部分仍可存入但不获 incentive。
-提取层字段名 `selfPositionCapUsd`（从 Merit Self Auth message 解析，提取函数 `extractMeritSelfPositionCapUsd`）。缩放逻辑与 Brevis Position Cap 统一，共享 `applyPositionCap` 纯函数。
-UI 显示 `"Incentive on first $X"`。
-_Avoid_: Deposit Ceiling, Per-User Deposit Cap, Self Cap（作为领域术语；引用提取产物时可用 `selfPositionCapUsd`）
-
 **Position Cap (Brevis)**:
 Per-user 仓位中可获 incentive 的金额上限。Brevis 模型中限制单个用户能获得 incentive 的最大仓位金额（API 字段 `positionCap`，domain 层 `positionCapUsd`）。
-UI 显示 `"Incentive on first $X"`（与 Merit Self Position Cap 统一文案）。可能 shared（supply + borrow 共享）。
+UI 显示 `"Incentive on first $X"`（与 Merkl Position Cap 统一文案）。可能 shared（supply + borrow 共享）。
 _Avoid_: Reward Ceiling, Per-User Reward Cap（作为领域术语；引用 API 字段时可用 `positionCap`）
 
 **Position Cap (Merkl)**:
 Per-user 净仓位中可获 incentive 的金额上限。Merkl `maxDeposit` campaign 的 net position cap（`computeMethod === "maxDeposit"`），限制用户 net position（supply - borrow）中可获 incentive 的金额（API 字段 `positionCap`）。
 `isCombineCap` 固定为 `false`（Merkl 是单侧/净仓位 cap，非 supply+borrow 共享）。
 `positionUsd` 推导：当 `netPositionConstraint` 存在时用 `netForEligibility`（net position），否则用 `grossInputUsd ?? inputUsd`。
-与 Merit/Brevis 共享 `applyPositionCapToForecastResult`，统一 cap 叠加逻辑。
+与 Brevis 共享 `applyPositionCapToForecastResult`，统一 cap 叠加逻辑。
 _Avoid_: Max Deposit Cap（这是 Merkl API 字段名 `maxDeposit`，领域层统一用 Position Cap）
 
 **Supply Cap / Borrow Cap**:
-Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Merit Self Position Cap / Brevis Position Cap）是不同概念。
+Pool-wide 总量上限。Aave 协议参数，限制整个池子的存款/借款总量。与 per-user cap（Merkl Position Cap / Brevis Position Cap）是不同概念。
 _Avoid_: Supply Ceiling, Borrow Ceiling
 
 **Portfolio Cap Warning**:
-Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merit `selfPositionCapUsd`、Merkl `positionCap`；API 字段 `positionCap`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
+Portfolio simulation 输入达到或超过上限时，在 SideInput 下方显示的 amber 提醒。两种来源：(1) Protocol Supply/Borrow Cap（pool-wide，`availableSupplyRoomUsd`/`availableBorrowRoomUsd`），(2) Incentive Position Cap（per-user，Brevis `positionCapUsd`、Merkl `positionCap`；API 字段 `positionCap`）。提醒包含描述文字和 "Adjust" 按钮（将输入钳位到 max allowed）。Brevis shared cap（`isSharedSupplyBorrow`）的 Adjust 需减去对侧仓位。仅在 Portfolio 模式下显示，single simulation 不需要。数据流：从 `simulationsById`（已有 simulation 结果）取 `capMetrics`，经 `extractCapWarnings` 聚合，传入 `SideInput` 渲染。
 _Avoid_: Cap Error, Cap Alert（这不是错误/警告，是提醒）；red/danger 色（用 amber）
 
 ## Identity
@@ -398,14 +391,14 @@ _Avoid_: computeSimulation（"Prediction" 比 "Simulation" 更精确——本质
 
 ## Example Dialogue
 
-> **Dev**: 为什么 `meritForecast.ts` 里有 deposit ceiling 而 `merklForecast.ts` 里没有？
+> **Dev**: 为什么 Brevis 有 per-user position cap，而 Merkl 只有 campaign budget cap？
 >
-> **Domain Expert**: 因为 Merit Program 给每个用户设了存款上限（Deposit Ceiling），超出就不算奖励。Merkl Campaign 不限单用户存款，它限的是整个 campaign 的预算。
+> **Domain Expert**: 因为 Brevis 给每个用户设了仓位上限（Position Cap），超出部分不赚奖励。Merkl Campaign 不限单用户仓位，它限的是整个 campaign 的预算。
 >
-> **Dev**: 那 `supplyCapUsd` 也是上限，跟 Deposit Ceiling 有什么区别？
+> **Dev**: 那 `supplyCapUsd` 也是上限，跟 Position Cap 有什么区别？
 >
-> **Domain Expert**: Supply Cap 是 pool-wide 的——整个池子最多存这么多，Aave 协议参数。Deposit Ceiling 是 per-user 的——单个用户最多存这么多，Merit 自己的规则。两个完全不同的概念。
+> **Domain Expert**: Supply Cap 是 pool-wide 的——整个池子最多存这么多，Aave 协议参数。Position Cap 是 per-user 的——单个用户最多能算多少仓位，激励方的规则。两个完全不同的概念。
 >
-> **Dev**: 明白了。所以 ceiling 是 per-user，cap 是 pool-wide。
+> **Dev**: 明白了。所以 position cap 是 per-user，supply cap 是 pool-wide。
 >
 > **Domain Expert**: 对，这就是我们的命名约定。

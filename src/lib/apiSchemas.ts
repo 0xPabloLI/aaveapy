@@ -11,7 +11,6 @@ import { schemas as generated } from '../generated/api/schemas.ts';
 export {
   MarketsResponseSchema,
   ReserveWithSpreadSchema,
-  MeritCampaignGroupSchema,
   MerklCampaignBreakdownSchema,
   MerklOpportunityGroupSchema,
   BrevisIncentiveSchema,

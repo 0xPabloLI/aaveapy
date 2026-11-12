@@ -5,4 +5,10 @@
 // When the backend API response shape changes, the backend snapshot
 // test (apiSchemaFingerprint.test.ts) will fail. Update this value
 // to match the new fingerprint from the test output.
-export const SCHEMA_FP = '2d1059421baf';
+//
+// Current value matches the backend's generated
+// packages/aave-shared-config/schema-fingerprint.ts. The previous value
+// (2d1059421baf) was three months stale — it predates the incentive-source
+// retirement that dropped the Merit fields from the payload on 2026-09-16
+// (AAV-1289 / AAV-1346).
+export const SCHEMA_FP = '0f60c7e06ff5';

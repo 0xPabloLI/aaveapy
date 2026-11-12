@@ -8,7 +8,7 @@ export function hasMeaningfulIncentivePercent(value: number | null): boolean {
   return value !== null && Number.isFinite(value) && Math.abs(value) >= MEANINGFUL_INCENTIVE_PCT;
 }
 
-/** True if any non-zero finite contribution (catches Brevis/Merit slices below the display threshold but still in totals). */
+/** True if any non-zero finite contribution (catches Brevis slices below the display threshold but still in totals). */
 function hasNonZeroIncentivePercent(value: number | null): boolean {
   return value !== null && Number.isFinite(value) && Math.abs(value) > 1e-12;
 }
@@ -105,7 +105,7 @@ export function hasAnyIncentiveBreakdownHref(sources: IncentiveSourceRow[]): boo
 }
 
 /**
- * Maps one incentive source (protocol / merit / merkl / brevis) to table rows.
+ * Maps one incentive source (protocol / merkl / brevis) to table rows.
  * Campaign rows use `c.href ?? src.href` so Merkl group links apply when the API omits per-campaign URLs.
  */
 export function incentiveSourceToTableRows(

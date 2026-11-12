@@ -1,12 +1,13 @@
+import assert from 'node:assert/strict';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, it } from 'node:test';
 
 import { writeGeneratedFileIfChanged } from './write-generated-file-if-changed.mjs';
 
-const tempDirs: string[] = [];
+const tempDirs = [];
 
 function makeTempDir() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aaveapy-generated-file-'));
@@ -27,15 +28,15 @@ describe('writeGeneratedFileIfChanged', () => {
 
     const didWrite = writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n');
 
-    expect(didWrite).toBe(true);
-    expect(fs.readFileSync(filePath, 'utf8')).toBe('export const value = 1;\n');
+    assert.ok(didWrite);
+    assert.equal(fs.readFileSync(filePath, 'utf8'), 'export const value = 1;\n');
   });
 
   it('does not rewrite the file when content is unchanged', async () => {
     const dir = makeTempDir();
     const filePath = path.join(dir, 'manifest.generated.ts');
 
-    expect(writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n')).toBe(true);
+    assert.ok(writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n'));
     const before = fs.statSync(filePath).mtimeMs;
 
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -43,15 +44,15 @@ describe('writeGeneratedFileIfChanged', () => {
     const didWrite = writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n');
     const after = fs.statSync(filePath).mtimeMs;
 
-    expect(didWrite).toBe(false);
-    expect(after).toBe(before);
+    assert.equal(didWrite, false);
+    assert.equal(after, before);
   });
 
   it('rewrites the file when content changes', async () => {
     const dir = makeTempDir();
     const filePath = path.join(dir, 'manifest.generated.ts');
 
-    expect(writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n')).toBe(true);
+    assert.ok(writeGeneratedFileIfChanged(filePath, 'export const value = 1;\n'));
     const before = fs.statSync(filePath).mtimeMs;
 
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -59,8 +60,8 @@ describe('writeGeneratedFileIfChanged', () => {
     const didWrite = writeGeneratedFileIfChanged(filePath, 'export const value = 2;\n');
     const after = fs.statSync(filePath).mtimeMs;
 
-    expect(didWrite).toBe(true);
-    expect(after).toBeGreaterThan(before);
-    expect(fs.readFileSync(filePath, 'utf8')).toBe('export const value = 2;\n');
+    assert.ok(didWrite);
+    assert.ok(after > before);
+    assert.equal(fs.readFileSync(filePath, 'utf8'), 'export const value = 2;\n');
   });
 });

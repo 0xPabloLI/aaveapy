@@ -101,7 +101,6 @@ const DOMAIN_WHITELIST = new Set([
   'okx.com',
 
   // === Incentive/campaign platforms ===
-  'merit.systems',
   'merkl.xyz',
   'angle.money',
   'tydro.com',

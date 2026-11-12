@@ -32,7 +32,6 @@ import type { ReserveWithSpread, MerklOpportunityGroup, BrevisIncentive } from '
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-import { getFirstActiveMeritLink } from '@/lib/merit';
 import { getFirstActiveMerklLink } from '@/lib/merkl';
 import { getIncentiveSources } from '@/lib/incentiveAggregation';
 
@@ -254,12 +253,10 @@ const SimulationSubRow = ({
   const showBorrowCapWarning = (borrowCapExceeded || borrowCapBaseExceeded) && !borrowSideBlocked;
 
   const supplySources = getIncentiveSources(reserve, 'supply');
-  const supplyMeritLink = getFirstActiveMeritLink(supplySources.merit);
   const supplyMerklLink = getFirstActiveMerklLink(supplySources.merkl);
   const supplyBrevisLink = getFirstActiveBrevisLink(supplySources.brevis);
 
   const borrowSources = getIncentiveSources(reserve, 'borrow');
-  const borrowMeritLink = getFirstActiveMeritLink(borrowSources.merit);
   const borrowMerklLink = getFirstActiveMerklLink(borrowSources.merkl);
   const borrowBrevisLink = getFirstActiveBrevisLink(borrowSources.brevis);
 
@@ -269,11 +266,6 @@ const SimulationSubRow = ({
       label: incentiveLabel('Protocol Incentive', 'Protocol'),
       ...simulation.supply.sources.protocol,
       href: aaveUrl,
-    },
-    {
-      label: incentiveLabel('ACI Incentive', 'ACI'),
-      ...simulation.supply.sources.merit,
-      href: supplyMeritLink,
     },
     {
       label: incentiveLabel('Merkl Incentive', 'Merkl'),
@@ -293,11 +285,6 @@ const SimulationSubRow = ({
       label: incentiveLabel('Protocol Incentive', 'Protocol'),
       ...simulation.borrow.sources.protocol,
       href: aaveUrl,
-    },
-    {
-      label: incentiveLabel('ACI Incentive', 'ACI'),
-      ...simulation.borrow.sources.merit,
-      href: borrowMeritLink,
     },
     {
       label: incentiveLabel('Merkl Incentive', 'Merkl'),

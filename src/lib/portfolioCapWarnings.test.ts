@@ -29,7 +29,6 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     deltaTotal: -1.5,
     sources: {
       protocol: { current: 3, after: 2.5, delta: -0.5 },
-      merit: { current: 0, after: 0, delta: 0 },
       merkl: { current: 0, after: 0, delta: 0 },
       brevis: { current: 5, after: 4, delta: -1, campaigns: [] },
     },
@@ -51,7 +50,6 @@ const makeSimResult = (overrides?: Partial<RateSimulationComputedResult>): RateS
     deltaTotal: 0,
     sources: {
       protocol: { current: 5, after: 5, delta: 0 },
-      merit: { current: 0, after: 0, delta: 0 },
       merkl: { current: 0, after: 0, delta: 0 },
       brevis: { current: 0, after: 0, delta: 0 },
     },
@@ -198,32 +196,6 @@ describe('extractCapWarnings', () => {
     expect(icw.adjustToUsd).toBe(1000);
   });
 
-  it('returns IncentiveCapWarning for Merit position cap', () => {
-    const meritCampaign: SimulationCampaignDetail = {
-      id: 'merit-0-self',
-      label: 'Self',
-      current: 2,
-      after: 1,
-      delta: -1,
-      notes: [{ type: 'position_cap', text: 'Incentive limited to first $2,000.00', color: 'amber' }],
-      capMetrics: { positionCapUsd: 2000 },
-    };
-    const result = makeSimResult({
-      supply: {
-        ...makeSimResult().supply,
-        sources: {
-          ...makeSimResult().supply.sources,
-          merit: { current: 2, after: 1, delta: -1, campaigns: [meritCampaign] },
-        },
-      },
-    });
-    const warnings = extractCapWarnings('r1', 'supply', result, []);
-    const icw = warnings.find((w) => w.kind === 'incentive_cap') as IncentiveCapWarning;
-    expect(icw).toBeDefined();
-    expect(icw.source).toBe('merit');
-    expect(icw.capUsd).toBe(2000);
-  });
-
   it('handles Brevis shared supply+borrow cap: adjustToUsd subtracts other side', () => {
     const brevisCampaign: SimulationCampaignDetail = {
       id: 'brevis-0-b1',
@@ -364,7 +336,7 @@ describe('extractCapWarnings', () => {
     expect(icws[0].capUsd).toBe(1000);
   });
 
-  it('returns separate Brevis and Merit incentive caps', () => {
+  it('returns separate Brevis and Merkl incentive caps', () => {
     const brevisCampaign: SimulationCampaignDetail = {
       id: 'brevis-0-b1',
       label: 'Brevis',
@@ -374,8 +346,8 @@ describe('extractCapWarnings', () => {
       notes: [{ type: 'position_cap', text: 'Incentive limited to first $1,000.00', color: 'amber' }],
       capMetrics: { positionCapUsd: 1000 },
     };
-    const meritCampaign: SimulationCampaignDetail = {
-      id: 'merit-0-self',
+    const merklCampaign: SimulationCampaignDetail = {
+      id: 'merkl-0-self',
       label: 'Self',
       current: 2,
       after: 1,
@@ -389,7 +361,7 @@ describe('extractCapWarnings', () => {
         sources: {
           ...makeSimResult().supply.sources,
           brevis: { current: 5, after: 3, delta: -2, campaigns: [brevisCampaign] },
-          merit: { current: 2, after: 1, delta: -1, campaigns: [meritCampaign] },
+          merkl: { current: 2, after: 1, delta: -1, campaigns: [merklCampaign] },
         },
       },
     });
@@ -397,7 +369,7 @@ describe('extractCapWarnings', () => {
     const icws = warnings.filter((w) => w.kind === 'incentive_cap') as IncentiveCapWarning[];
     expect(icws).toHaveLength(2);
     expect(icws[0].source).toBe('brevis');
-    expect(icws[1].source).toBe('merit');
+    expect(icws[1].source).toBe('merkl');
   });
 
   it('handles shared cap when other side exceeds cap (adjustToUsd = 0)', () => {

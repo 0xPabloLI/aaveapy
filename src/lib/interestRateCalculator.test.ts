@@ -262,11 +262,23 @@ describe('hasRateCalcFields', () => {
     expect(hasRateCalcFields(withoutDecimals as ReserveWithSpread)).toBe(true);
   });
 
+  it('returns true when protocolFee is missing — absent means 0 (AAV-1350)', () => {
+    const { protocolFee: _, ...withoutFee } = fullReserve;
+    expect(hasRateCalcFields(withoutFee as ReserveWithSpread)).toBe(true);
+  });
+
+  it('treats a missing protocolFee as 0 in the rate math (AAV-1350)', () => {
+    const { protocolFee: _, ...withoutFee } = baseRateInput;
+    const asZero = simulateNativeRatesAfterSupply({ ...baseRateInput, protocolFee: 0 }, '0');
+    const asMissing = simulateNativeRatesAfterSupply(withoutFee as RateCalcInput, '0');
+    expect(asMissing.supplyAprPercent).toBeCloseTo(asZero.supplyAprPercent, 10);
+    expect(asMissing.borrowAprPercent).toBeCloseTo(asZero.borrowAprPercent, 10);
+  });
+
   const requiredFields = [
     'liquidity',
     'borrowed',
     'deficit',
-    'protocolFee',
     'slopeBelowOptimal',
     'slopeAboveOptimal',
     'baseBorrowRate',

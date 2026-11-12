@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchWithTimeout } from './lib/fetch-utils.mjs';
+import { extractExpressionKeys } from './lib/reserve-patches-expr-keys.mjs';
 import { checkSymbolMapAgainstUpstream } from './lib/reserve-patches-symbol-map.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,21 +18,6 @@ function extractAddressKeys(content) {
   let match = null;
   while ((match = regex.exec(content)) !== null) {
     values.add(match[1].toLowerCase());
-  }
-  return values;
-}
-
-/**
- * Extract expression-based keys like [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]:
- * These are compared as normalised string representations since their runtime values
- * cannot be resolved statically.
- */
-function extractExpressionKeys(content) {
-  const regex = /\[([A-Za-z0-9_.]+\.toLowerCase\(\))\]\s*:/g;
-  const values = new Set();
-  let match = null;
-  while ((match = regex.exec(content)) !== null) {
-    values.add(match[1].replace(/\s+/g, ''));
   }
   return values;
 }

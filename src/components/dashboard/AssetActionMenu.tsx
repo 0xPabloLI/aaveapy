@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { buildAaveUrl, buildAaveV4AssetUrl } from '@/lib/aaveLinks';
 import { buildTydroReserveUrl } from '@/lib/tydroLinks';

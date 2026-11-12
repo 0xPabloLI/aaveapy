@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildIncentiveCurrent } from '@/lib/rateSimulationCalculator';
 import { getLowestHfDelta } from './portfolioCalculator';
@@ -44,8 +45,6 @@ const makeRateCalcReserve = (overrides: Partial<ReserveWithSpread> = {}): Reserv
     utilizationPct: 40,
     supplyIncentives: [],
     borrowIncentives: [],
-    meritSupplys: [],
-    meritBorrows: [],
     merklSupplys: [],
     merklBorrows: [],
     brevisSupplys: [],
@@ -663,6 +662,8 @@ describe('simulatePortfolioFromEntries', () => {
       tokenSymbol: 'USDC',
       supplyApy: 3.0,
       borrowApy: 5.0,
+      // The legacy flat arrays have no producer in the API (AAV-1350); filling
+      // them must not move the incentive, because nothing reads them anymore.
       supplyIncentives: [0.5],
       borrowIncentives: [],
       tokenPrice: 1,
@@ -680,7 +681,113 @@ describe('simulatePortfolioFromEntries', () => {
     const { results } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(results[0].nativePercent).toBe(3.0);
-    expect(results[0].incentivePercent).toBe(0.5);
+    expect(results[0].incentivePercent).toBe(0);
+  });
+
+  describe('AAV-1350: incentives survive a missing protocolFee', () => {
+    const activeCampaign = () => {
+      const now = new Date();
+      return {
+        campaignId: 'aav-1350-campaign',
+        campaignApr: 6,
+        campaignStartedAt: new Date(now.getTime() - 24 * 3600 * 1000).toISOString(),
+        campaignEndedAt: new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString(),
+      };
+    };
+
+    it('computes the Merkl incentive when only protocolFee is missing (V4 zero-omission payload)', () => {
+      // Live payload shape: 10 V4 spokes omit `protocolFee` because the
+      // serializer drops falsy values; the field is 0, not unknown.
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [activeCampaign()] }],
+        }),
+        protocolFee: undefined,
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(true);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
+
+    it('fallback branch reads Merkl breakdowns instead of the deprecated supplyIncentives array', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [activeCampaign()] }],
+        }),
+        slopeBelowOptimal: undefined, // genuinely not rate-calculable -> fallback
+        supplyIncentives: [99], // must be ignored
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].nativePercent).toBe(2.5);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
+
+    it('fallback branch applies the Merkl position cap to the position size', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklSupplys: [{ breakdowns: [{ ...activeCampaign(), positionCapUsd: 5000 }] }],
+        }),
+        slopeBelowOptimal: undefined, // genuinely not rate-calculable -> fallback
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      // 6% APR capped at $5,000 of a $10,000 position -> 3%.
+      expect(results[0].incentivePercent).toBeCloseTo(3, 6);
+    });
+
+    it('fallback branch reads Merkl borrow breakdowns instead of borrowIncentives', () => {
+      const reserve = {
+        ...makeRateCalcReserve({
+          merklBorrows: [{ breakdowns: [activeCampaign()] }],
+        }),
+        slopeBelowOptimal: undefined,
+        borrowIncentives: [99], // must be ignored
+      } as unknown as ReserveWithSpread;
+      expect(hasRateCalcFields(reserve)).toBe(false);
+
+      const entries = [
+        makeEntry({
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
+        }),
+      ];
+      const { results } = simulatePortfolioFromEntries(
+        baseEntriesSimArgs({ entries, reserves: [reserve], isApy: false }),
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].incentivePercent).toBeCloseTo(6, 6);
+    });
   });
 
   it('multiple reserves compute independently', () => {
@@ -1034,15 +1141,15 @@ describe('simulatePortfolioFromEntries', () => {
       const reserve = makeRateCalcReserve({
         reserveId,
         tokenPrice: 1,
-        meritSupplys: [
+        merklSupplys: [
           {
-            link: 'https://merit.example/campaign',
+            link: 'https://merkl.example/campaign',
             breakdowns: [
               {
                 campaignApr: 5,
                 campaignStartedAt: recentPast,
                 campaignEndedAt: farFuture,
-                campaignId: 'merit-1',
+                campaignId: 'merkl-1',
               },
             ],
           },
@@ -1090,15 +1197,15 @@ describe('simulatePortfolioFromEntries', () => {
       const reserve = makeRateCalcReserve({
         reserveId,
         tokenPrice: 1,
-        meritSupplys: [
+        merklSupplys: [
           {
-            link: 'https://merit.example/campaign',
+            link: 'https://merkl.example/campaign',
             breakdowns: [
               {
                 campaignApr: 3,
                 campaignStartedAt: recentPast,
                 campaignEndedAt: farFuture,
-                campaignId: 'merit-2',
+                campaignId: 'merkl-2',
               },
             ],
           },
@@ -1119,7 +1226,6 @@ describe('simulatePortfolioFromEntries', () => {
       const supplyResult = results.find((r) => r.reserveId === reserveId && r.side === 'supply')!;
       expect(supplyResult).toBeDefined();
       // hasInput = false b incentivePercent must equal currentIncentive from buildIncentiveCurrent
-      // Note: exact value differs slightly due to anchor TVL from hub aggregation vs direct call
       const expectedCurrent = buildIncentiveCurrent(
         reserve,
         'supply',
@@ -1137,7 +1243,7 @@ describe('simulatePortfolioFromEntries', () => {
       expect(supplyResult.incentivePercent).toBeGreaterThan(0);
     });
 
-    it('wallet-only with position cap Merit: incentiveMetric.delta shows wallet dilution (AAV-771)', () => {
+    it('wallet-only with position cap: incentiveMetric.delta is null without scenario input (AAV-771)', () => {
       const reserveId = 'r-selfcap';
       const now = new Date();
       const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
@@ -1150,23 +1256,23 @@ describe('simulatePortfolioFromEntries', () => {
         tokenSymbol: 'USDT',
         chainName: 'Celo',
         supplied: '1000000000', // 1000 tokens
-        meritSupplys: [
+        merklSupplys: [
           {
-            link: 'https://merit.example/campaign',
-            name: 'Merit Self Cap',
-            message: [{ description: 'Base reward' }, { description: 'Self authentication. Cap: $1,000' }],
+            link: 'https://merkl.example/campaign',
+            name: 'Merkl Self Cap',
+            message: 'Self authentication. Cap: $1,000',
             breakdowns: [
               {
                 campaignApr: 10,
                 campaignStartedAt: recentPast,
                 campaignEndedAt: farFuture,
-                campaignId: 'merit-base-3',
+                campaignId: 'merkl-base-3',
               },
               {
                 campaignApr: 8,
                 campaignStartedAt: recentPast,
                 campaignEndedAt: farFuture,
-                campaignId: 'merit-self-3',
+                campaignId: 'merkl-self-3',
                 positionCapUsd: 1000,
               },
             ],
@@ -1215,7 +1321,6 @@ const makeLane = (overrides: Partial<SimulationLane> = {}): SimulationLane => ({
   deltaTotal: 0.3,
   sources: {
     protocol: { current: 0, after: 0, delta: 0 },
-    merit: { current: 0, after: 0, delta: 0 },
     merkl: { current: 0, after: 0, delta: 0 },
     brevis: { current: 0, after: 0, delta: 0 },
   },

@@ -1,22 +1,5 @@
 export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
 
-export type IncentiveMessageScalar = string | number | boolean | null;
-export type IncentiveMessage =
-  | string
-  | IncentiveMessage[]
-  | {
-      [key: string]: IncentiveMessageScalar | IncentiveMessage;
-    };
-
-export interface MeritCampaignBreakdown extends ForecastableBreakdown {
-  campaignId: string;
-  message?: IncentiveMessage;
-}
-
-export interface MeritCampaignGroup extends Omit<CampaignGroup<MeritCampaignBreakdown>, 'message'> {
-  message?: IncentiveMessage;
-}
-
 export interface BaseCampaignBreakdown {
   campaignApr: number;
   campaignStartedAt: string;
@@ -189,6 +172,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   suppliable?: string;
   borrowable?: string;
   // Rate-model fields are percent numbers (e.g., 9 means 9%) for V3/V4 unified API.
+  // Absent protocolFee means 0: the API omits falsy values (AAV-1350).
   protocolFee?: number;
   slopeBelowOptimal?: number;
   slopeAboveOptimal?: number;
@@ -202,13 +186,16 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   ltv?: number;
   liquidationThreshold?: number;
 
-  // Protocol incentives (from Aave protocol, array of percentage values)
+  /**
+   * @deprecated No producer in the API (0 of 437 reserves on staging, 2026-11-11).
+   * Reward campaigns live in `merklSupplys[].breakdowns[]` / `brevisSupplys[]`.
+   * Kept only so older payload fixtures still type-check. The remaining readers
+   * are the legacy `protocol` source wiring in `incentiveAggregation`; it always
+   * evaluates to 0 today. New code must use `getCampaignIncentiveValues` (AAV-1350).
+   */
   supplyIncentives?: number[];
+  /** @deprecated See `supplyIncentives` (AAV-1350). */
   borrowIncentives?: number[];
-
-  // Merit APR incentives (CampaignGroup format)
-  meritSupplys?: MeritCampaignGroup[];
-  meritBorrows?: MeritCampaignGroup[];
 
   // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];
@@ -236,8 +223,13 @@ export interface MarketsResponse {
     lastUpdated: string;
     version?: string;
     staleTimeMs?: number;
-    /** Kept: frontend uses hardcoded SCHEMA_FP for cache invalidation, not this backend value. Mechanism preserved. */
-    schemaFingerprint?: string; // Hash of API response field names; changes when shape changes
+    /**
+     * Hash of API response field names; changes when the shape changes.
+     * The frontend reads it: the bundle's own `SCHEMA_FP` is the primary cache
+     * check, and the value reported here is the lazy secondary one that drops
+     * entries written under a schema this bundle no longer matches (AAV-1346).
+     */
+    schemaFingerprint?: string;
   };
   reserves: ReserveWithSpread[];
 }

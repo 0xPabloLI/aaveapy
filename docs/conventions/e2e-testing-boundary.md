@@ -55,6 +55,35 @@ third-party site state, pixel baselines, or live external services it cannot moc
   must come after the ready wait — otherwise a slow load masquerades as
   absence and the test silently false-skips.
 
+## Egress: measure before triaging a red
+
+`tbody tr[data-reserve-id]` timing out at 30s reads like a load flake. On a host
+whose direct egress is degraded it is neither: `/markets` never finishes, so the
+table never renders and no waiting strategy can rescue it. Measure egress first;
+classify the red afterwards.
+
+Completion criterion — both numbers in hand before calling a red a flake:
+
+```sh
+curl -s -m 20 -o /dev/null -w '%{http_code} total=%{time_total}s size=%{size_download}\n' https://api.aaveapy.com/markets
+curl -s -m 20 -o /dev/null -w '%{http_code} total=%{time_total}s size=%{size_download}\n' -x http://127.0.0.1:<port> https://api.aaveapy.com/markets
+```
+
+| Direct vs proxied | Classification |
+| --- | --- |
+| Direct lands near the proxied figure | the red belongs to the suite — triage it as a defect |
+| Direct stalls (`http_code 000`, or `size` a fraction of the payload) while proxied completes in seconds | the red belongs to egress — fix the run, not the suite |
+
+Observed 2026-10-09/10 on one tree: direct took 37.9s for 412,891 bytes, then 90s
+to deliver 120,920 of them, then 20s for 0 bytes; the same payload through a local
+proxy arrived in 1.85s. The desktop suite moved from 50 passed / 3 failed / 10
+flaky in 36.7m direct to **64 passed / 0 failed in 3.9m** proxied. All three direct
+failures were that one selector.
+
+So rerun an isolated red with `E2E_PROXY=…` before filing it.
+`reserves-table-simulation-nested-scroll:38` reached the ticket queue on the
+strength of an isolated red; it passed 2/2 in 16.5s once proxied.
+
 ## Asserting on network requests
 
 - Cover **every** host the client talks to and **both** body shapes. The Aave SDK

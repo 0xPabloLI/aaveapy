@@ -56,7 +56,7 @@ interface UseRateSimulationParams {
   supplyInput: string;
   borrowInput: string;
   inputMode?: ScenarioInputMode;
-  meritMerklNetPosition?: boolean;
+  merklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
   walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
@@ -72,7 +72,7 @@ interface UseSharedRateSimulationsParams {
   supplyInput: string;
   borrowInput: string;
   inputMode?: ScenarioInputMode;
-  meritMerklNetPosition?: boolean;
+  merklNetPosition?: boolean;
   crossReservePositions?: Map<string, ReservePositions>;
   walletCrossReservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
@@ -89,7 +89,7 @@ export const useSharedRateSimulations = ({
   supplyInput,
   borrowInput,
   inputMode = 'token',
-  meritMerklNetPosition = true,
+  merklNetPosition = true,
   crossReservePositions,
   walletCrossReservePositions,
   reserveSymbolById,
@@ -259,18 +259,8 @@ export const useSharedRateSimulations = ({
       const effectiveBorrowInput = perReserve?.borrowInput ?? borrowInput;
       const effectiveInputMode = perReserve?.inputMode ?? inputMode;
       const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
-      let hubSupplied: string | undefined;
-      let hubBorrowed: string | undefined;
-      if (reserve.hubId) {
-        hubBorrowed = reserve.hubBorrowed;
-        hubSupplied = reserve.hubSupplied;
-        if (reserveRateInput && hubBorrowed) {
-          reserveRateInput.borrowed = hubBorrowed;
-          reserveRateInput.hubBorrowed = hubBorrowed;
-        }
-        if (reserveRateInput && hubSupplied) {
-          reserveRateInput.hubSupplied = hubSupplied;
-        }
+      if (reserve.hubId && reserveRateInput && reserve.hubBorrowed) {
+        reserveRateInput.borrowed = reserve.hubBorrowed;
       }
       const hasEffectiveInput =
         parseSignedNumberInput(effectiveSupplyInput) !== 0 || parseSignedNumberInput(effectiveBorrowInput) !== 0;
@@ -306,12 +296,10 @@ export const useSharedRateSimulations = ({
           borrowInput: effectiveBorrowInput,
           inputMode: effectiveInputMode,
           forecastStates,
-          meritMerklNetPosition,
+          merklNetPosition,
           crossReservePositions,
           walletCrossReservePositions,
           reserveSymbolById,
-          hubSupplied,
-          hubBorrowed,
           totalSupplyUsd: effectiveTotalSupplyUsd,
           totalBorrowUsd: effectiveTotalBorrowUsd,
           walletSupplyUsd: effectiveWalletSupplyUsd,
@@ -333,7 +321,7 @@ export const useSharedRateSimulations = ({
     whitelistMerklCampaignIds,
     inputMode,
     isApy,
-    meritMerklNetPosition,
+    merklNetPosition,
     perReserveInputs,
     reserves,
     supplyInput,
@@ -364,7 +352,7 @@ export const useRateSimulation = ({
   supplyInput,
   borrowInput,
   inputMode = 'token',
-  meritMerklNetPosition = true,
+  merklNetPosition = true,
   crossReservePositions,
   walletCrossReservePositions,
   reserveSymbolById,
@@ -380,7 +368,7 @@ export const useRateSimulation = ({
     supplyInput,
     borrowInput,
     inputMode,
-    meritMerklNetPosition,
+    merklNetPosition,
     crossReservePositions,
     walletCrossReservePositions,
     reserveSymbolById,
@@ -398,7 +386,7 @@ export const useRateSimulation = ({
       borrowInput,
       inputMode,
       forecastStates: {},
-      meritMerklNetPosition,
+      merklNetPosition,
     })
   );
 };

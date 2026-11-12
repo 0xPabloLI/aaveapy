@@ -563,7 +563,7 @@ const Index = () => {
         <title>Aave APY — Live Aave V3 &amp; V4 Rates by Chain</title>
         <meta
           name="description"
-          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track Merit, Merkl and Brevis incentives, and simulate your portfolio yield."
+          content="Live Aave APY data: compare Aave V3 and V4 supply and borrow rates across every chain, track Merkl and Brevis incentives, and simulate your portfolio yield."
         />
         <link rel="canonical" href={`${SITE_ORIGIN}/`} />
         <meta property="og:title" content="Aave APY — Live Aave V3 & V4 Rates by Chain" />
@@ -581,7 +581,7 @@ const Index = () => {
             applicationCategory: 'FinanceApplication',
             operatingSystem: 'Web',
             description:
-              'Live Aave APY tracker for Aave V3 and V4 supply and borrow rates across all supported chains, including Merit, Merkl and Brevis incentives.',
+              'Live Aave APY tracker for Aave V3 and V4 supply and borrow rates across all supported chains, including Merkl and Brevis incentives.',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
           })}
         </script>

@@ -30,7 +30,7 @@ const content: RatesPageContent = {
     'Confronta i tassi di deposito e prestito di Aave V3 su tutte le reti in tempo reale. Come funziona il protocollo, cosa determina gli APY e quanto pesano gli incentivi sul rendimento effettivo.',
   h1: 'Tassi Aave e APY: come leggere i rendimenti di Aave V3',
   intro:
-    'Gli APY di Aave cambiano di continuo con l’utilizzo delle pool. Qui trovi cosa significano i numeri, cosa è cambiato con la V3 e come incentivi come Merit, Merkl e Brevis modificano il rendimento reale. I valori aggiornati sono nella dashboard live.',
+    'Gli APY di Aave cambiano di continuo con l’utilizzo delle pool. Qui trovi cosa significano i numeri, cosa è cambiato con la V3 e come incentivi come Merkl e Brevis modificano il rendimento reale. I valori aggiornati sono nella dashboard live.',
   cta: { label: 'Vedi i tassi Aave in tempo reale', to: '/' },
   breadcrumb: {
     ariaLabel: 'Percorso di navigazione',
@@ -59,7 +59,7 @@ const content: RatesPageContent = {
       id: 'composizione',
       h2: 'Di cosa è fatto l’APY che vedi',
       paragraphs: [
-        'Ogni numero in dashboard si scompone in tasso base del protocollo e APR da incentivi. Il tasso base è calcolato dalla curva; gli incentivi arrivano da programmi come Merit, Merkl e Brevis.',
+        'Ogni numero in dashboard si scompone in tasso base del protocollo e APR da incentivi. Il tasso base è calcolato dalla curva; gli incentivi arrivano da programmi come Merkl e Brevis.',
         'Gli incentivi hanno un budget e una scadenza: non sono rendimento strutturale. Prima di scegliere una riserva conviene guardare il tasso base da solo e chiedersi se resta interessante una volta chiusa la campagna.',
       ],
     },
@@ -68,7 +68,7 @@ const content: RatesPageContent = {
       h2: 'Esempio: 10.000 € in USDC su Base',
       paragraphs: [
         'Con 10.000 € equivalenti in USDC depositati su Base e un APY di deposito del 4,2 %, gli interessi annui sono circa 420 €, poco più di 35 € al mese. È una proiezione a tasso fermo: nella realtà il tasso si muove a ogni blocco.',
-        'Se sulla stessa riserva è attivo un incentivo Merit dell’1,8 % APR, il rendimento effettivo sale intorno al 6 %, cioè circa 600 € l’anno. La differenza tra tasso base e APY effettivo è esattamente quella evidenziata in dashboard.',
+        'Se sulla stessa riserva è attivo un incentivo Merkl dell’1,8 % APR, il rendimento effettivo sale intorno al 6 %, cioè circa 600 € l’anno. La differenza tra tasso base e APY effettivo è esattamente quella evidenziata in dashboard.',
         'Lato prestito: con 10.000 € di collaterale in ETH e 4.000 € presi in prestito in USDC a un APY del 5,5 %, il costo è di circa 220 € l’anno. Su Base le commissioni di rete sono di pochi centesimi, mentre su Ethereum mainnet possono erodere il rendimento di importi contenuti.',
       ],
     },
@@ -107,7 +107,7 @@ const content: RatesPageContent = {
       },
       {
         title: 'Incentivi esterni',
-        body: 'Merit, Merkl e Brevis si sommano al tasso base. Sono temporanei: alla fine della campagna il rendimento effettivo torna al livello del solo tasso base.',
+        body: 'Merkl e Brevis si sommano al tasso base. Sono temporanei: alla fine della campagna il rendimento effettivo torna al livello del solo tasso base.',
       },
     ],
   },

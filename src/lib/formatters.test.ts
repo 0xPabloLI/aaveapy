@@ -8,7 +8,7 @@ import {
 } from './incentiveAggregation';
 import { convertAprToApy } from './rateCalculations';
 import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './merklWhitelist';
-import type { BrevisIncentive, MeritCampaignGroup, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import type { BrevisIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
 const daysFromNowIso = (days: number): string => {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -16,49 +16,7 @@ const daysFromNowIso = (days: number): string => {
 };
 
 describe('incentive calculations only include active campaigns', () => {
-  it('counts only active merit/merkl/brevis campaigns for APR totals', () => {
-    const meritIncentives: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com/active-merit',
-        breakdowns: [
-          {
-            campaignApr: 2,
-            campaignStartedAt: daysFromNowIso(-1),
-            campaignEndedAt: daysFromNowIso(1),
-            campaignId: 'merit-base',
-          },
-          {
-            campaignApr: 1,
-            campaignStartedAt: daysFromNowIso(-1),
-            campaignEndedAt: daysFromNowIso(1),
-            campaignId: 'merit-self',
-          },
-        ],
-      },
-      {
-        link: 'https://example.com/past-merit',
-        breakdowns: [
-          {
-            campaignApr: 10,
-            campaignStartedAt: daysFromNowIso(-10),
-            campaignEndedAt: daysFromNowIso(-5),
-            campaignId: 'merit-past',
-          },
-        ],
-      },
-      {
-        link: 'https://example.com/missing-merit-dates',
-        breakdowns: [
-          {
-            campaignApr: 5,
-            campaignStartedAt: '',
-            campaignEndedAt: '',
-            campaignId: 'merit-missing',
-          },
-        ],
-      },
-    ];
-
+  it('counts only active merkl/brevis campaigns for APR totals', () => {
     const merklOpportunities: MerklOpportunityGroup[] = [
       {
         breakdowns: [
@@ -115,44 +73,13 @@ describe('incentive calculations only include active campaigns', () => {
 
     const protocolIncentives = [1, 0, -2];
 
-    const apr = calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives);
+    const apr = calculateTotalIncentiveApr(merklOpportunities, brevisIncentives, protocolIncentives);
 
-    // active: merit (2 + 1) + merkl (4) + brevis (3) + protocol (1 + 0)
-    expect(apr).toBe(11);
+    // active: merkl (4) + brevis (3) + protocol (1 + 0)
+    expect(apr).toBe(8);
   });
 
   it('uses the same active-only scope for APY totals', () => {
-    const meritIncentives: MeritCampaignGroup[] = [
-      {
-        link: 'https://example.com/active-merit',
-        breakdowns: [
-          {
-            campaignApr: 2,
-            campaignStartedAt: daysFromNowIso(-1),
-            campaignEndedAt: daysFromNowIso(1),
-            campaignId: 'merit-base',
-          },
-          {
-            campaignApr: 1,
-            campaignStartedAt: daysFromNowIso(-1),
-            campaignEndedAt: daysFromNowIso(1),
-            campaignId: 'merit-self',
-          },
-        ],
-      },
-      {
-        link: 'https://example.com/past-merit',
-        breakdowns: [
-          {
-            campaignApr: 10,
-            campaignStartedAt: daysFromNowIso(-10),
-            campaignEndedAt: daysFromNowIso(-5),
-            campaignId: 'merit-past',
-          },
-        ],
-      },
-    ];
-
     const merklOpportunities: MerklOpportunityGroup[] = [
       {
         breakdowns: [
@@ -191,15 +118,9 @@ describe('incentive calculations only include active campaigns', () => {
 
     const protocolIncentives = [1, 0, -2];
 
-    const apy = calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives);
+    const apy = calculateTotalIncentiveApy(merklOpportunities, brevisIncentives, protocolIncentives);
 
-    const expected =
-      convertAprToApy(2) +
-      convertAprToApy(1) +
-      convertAprToApy(4) +
-      convertAprToApy(3) +
-      convertAprToApy(1) +
-      convertAprToApy(0);
+    const expected = convertAprToApy(4) + convertAprToApy(3) + convertAprToApy(1) + convertAprToApy(0);
 
     expect(apy).toBeCloseTo(expected, 10);
   });
@@ -227,12 +148,12 @@ describe('whitelist-only Merkl campaign handling', () => {
   ];
 
   it('excludes whitelist-only Merkl campaigns from APR by default', () => {
-    const apr = calculateTotalIncentiveApr([], merklOpportunities, [], []);
+    const apr = calculateTotalIncentiveApr(merklOpportunities);
     expect(apr).toBe(4);
   });
 
   it('includes whitelist-only Merkl campaigns when enabled', () => {
-    const apr = calculateTotalIncentiveApr([], merklOpportunities, [], [], undefined, {
+    const apr = calculateTotalIncentiveApr(merklOpportunities, [], [], undefined, {
       whitelistMerklCampaignIds: new Set(['whitelist-merkl']),
     });
     expect(apr).toBe(11);
@@ -252,9 +173,9 @@ describe('whitelist-only Merkl campaign handling', () => {
         ],
       },
     ];
-    const aprDefault = calculateTotalIncentiveApr([], orphanOpportunities, [], []);
+    const aprDefault = calculateTotalIncentiveApr(orphanOpportunities);
     expect(aprDefault).toBe(0);
-    const aprWithSentinel = calculateTotalIncentiveApr([], orphanOpportunities, [], [], undefined, {
+    const aprWithSentinel = calculateTotalIncentiveApr(orphanOpportunities, [], [], undefined, {
       whitelistMerklCampaignIds: new Set([MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL]),
     });
     expect(aprWithSentinel).toBe(3);
@@ -272,7 +193,7 @@ describe('Brevis open-ended campaign handling', () => {
         message: 'Open-ended Brevis',
       },
     ];
-    const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);
+    const apr = calculateTotalIncentiveApr([], brevisIncentives);
     expect(apr).toBe(5);
   });
 
@@ -286,7 +207,7 @@ describe('Brevis open-ended campaign handling', () => {
         message: 'Open-ended Brevis',
       },
     ];
-    const apy = calculateTotalIncentiveApy([], [], brevisIncentives, []);
+    const apy = calculateTotalIncentiveApy([], brevisIncentives);
     expect(apy).toBeCloseTo(convertAprToApy(5), 10);
   });
 
@@ -300,7 +221,7 @@ describe('Brevis open-ended campaign handling', () => {
         message: 'Future Brevis',
       },
     ];
-    const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);
+    const apr = calculateTotalIncentiveApr([], brevisIncentives);
     expect(apr).toBe(0);
   });
 });

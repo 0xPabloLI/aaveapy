@@ -80,6 +80,31 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     }
   });
 
+  // Regression: the address book can ship several modules for one chain — a base
+  // module plus curated variants (AaveV4Ethereum and AaveV4EthereumSentoraCurated
+  // are both CHAIN_ID 1). Spreading them into one Record<chainId, …> let whichever
+  // was enumerated last win, so adding the Sentora module in 4.74.0 silently
+  // replaced Ethereum's 27 spokes with its 7 and V4 positions on Ethereum went
+  // undiscovered. The base module must win, whatever the enumeration order.
+  it('is not shadowed by a curated module for the same chain', () => {
+    const names = V4_SPOKE_ADDRESSES[1].map((s) => s.name);
+    // Spokes that exist only on AaveV4Ethereum, not on the Sentora variant.
+    for (const baseOnly of ['MAIN_SPOKE', 'ETHENA_CORRELATED_SPOKE', 'GOLD_SPOKE', 'LIDO_ESPOKE']) {
+      expect(names).toContain(baseOnly);
+    }
+  });
+
+  // deriveV4ReservesBySpoke (src/lib/deriveOnchainConfig.ts) keys a Map by spoke
+  // name, so two spokes sharing a name on one chain would have their reserves
+  // conflated. This is why curated variants are skipped rather than merged, and it
+  // is the invariant that has to hold before they can ever be merged (AAV-1356).
+  it('every spoke name is unique within its chain', () => {
+    for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
+      const names = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map((s) => s.name);
+      expect(new Set(names).size).toBe(names.length);
+    }
+  });
+
   it('V4_HUB_ADDRESSES includes Ethereum (1)', () => {
     const chainIds = Object.keys(V4_HUB_ADDRESSES).map(Number);
     expect(chainIds).toContain(1);

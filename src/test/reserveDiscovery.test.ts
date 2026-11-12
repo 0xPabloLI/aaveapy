@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AMOUNT_VARIANT_CAMPAIGN_TYPES,
+  FORECAST_REQUIRING_CAMPAIGN_TYPES,
   PAIRING_SIM_MIN_ROOM_USD,
   computeSupplyNetApyPercent,
   discoverCrossAssetPairingScenarios,
   discoverOffsetScenarios,
+  forecastAvailableCampaignIdsFromSideData,
   getBorrowRoomUsd,
   getMarketChipLabel,
   getSupplyRoomUsd,
@@ -19,6 +21,8 @@ import {
 // The UI label the portfolio Add button actually renders — the e2e mirror must
 // agree with it (AAV-1308 review).
 import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels';
+// The calculator's own forecast-requiring set — the e2e mirror must agree (F2b).
+import { FORECAST_REQUIRING_CAMPAIGN_TYPES as appForecastRequiringCampaignTypes } from '@/lib/rateSimulationCalculator';
 
 /**
  * AAV-1299 — e2e discovery robustness unit tests.
@@ -26,14 +30,52 @@ import { getMarketChipLabel as appGetMarketChipLabel } from '@/lib/marketLabels'
  * Scenario matrix (from spec):
  * S1 valid campaign selected / S2 points-based selected / S3 apr=0 excluded /
  * S4 expired excluded / S5 not-started excluded / S6 AMOUNT variants excluded /
- * S7 merit-only excluded / S8 mixed campaigns pick effective / S9 empty data → null /
+ * S7 empty merkl arrays excluded / S8 mixed campaigns pick effective / S9 empty data → null /
  * S10 sort by net supply APR desc
  *
  * AAV-1280 — discovery/UI render-gate alignment (isComputableMerklCampaign M1-M5,
- * discoverOffsetScenarios O1-O14): see docs/specs/aav-1280-offset-discovery-computability.md
+ * discoverOffsetScenarios O1-O11): see docs/specs/aav-1280-offset-discovery-computability.md
+ *
+ * AAV-1318 — position-feasibility gating for offset scenarios (borrow room +
+ * LTV funding power), matrix rows O12-O22: see
+ * docs/specs/aav-1318-offset-position-feasibility-gating.md
+ *
+ * Forecast gate (F1-F8): `isComputableMerklCampaign` documents forecast gating
+ * but a breakdown carries no forecast state, so the gate is applied by the
+ * caller from `/meta/side-data`.forecast.items — the set the UI reads through
+ * `checkForecastAvailability`. A forecast-requiring campaign absent from
+ * `forecast.items` renders its breakdown APR plus a '*' marker and does NOT
+ * respond to position size, so discovery skips it in favour of one that does.
  */
 
 const NOW = '2026-09-24T12:00:00Z';
+
+/**
+ * Room floor the discovery requires, i.e. the largest single amount a runner
+ * types on one reserve. Imported so a runner amount change moves the boundary
+ * tests with it; the gate relation (below floor → excluded, at floor → kept) is
+ * what these tests pin, and `usd()` keeps the conversions off floats.
+ * Shared by the P (AAV-1308) and O (AAV-1318) series — declared before both so
+ * no fixture reads it through the temporal dead zone.
+ */
+const MIN_ROOM = PAIRING_SIM_MIN_ROOM_USD;
+
+/** Raw 6-dec units for a given USD notional at price 1. */
+const usd = (value: number) => String(BigInt(Math.round(value * 1e6)));
+
+/**
+ * Room shape every position-bearing fixture starts from: a 6-decimals token
+ * priced at 1 with room an order of magnitude above the floor. The pre-AAV-1318
+ * O fixtures inherited `reserve()`'s 18-decimals default, which turns
+ * `suppliable: '1000000000'` into ~$1e-9 — an artifact that would trip every
+ * feasibility gate for the wrong reason (AAV-1308 evidence-hygiene rule).
+ */
+const realisticRoom = {
+  decimals: 6,
+  tokenPrice: 1,
+  suppliable: usd(MIN_ROOM * 10),
+  borrowable: usd(MIN_ROOM * 10),
+} as const;
 
 function breakdown(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -61,6 +103,17 @@ function reserve(overrides: Record<string, unknown> = {}): DiscoveryReserve {
     supplyApy: 3,
     tokenPrice: 1,
     suppliable: '1000000000',
+    // Rate-calc inputs (src/lib/interestRateCalculator.ts hasRateCalcFields).
+    // Present on the real payload for every reserve whose incentive the UI
+    // computes; a fixture without them is not a reserve the UI can render.
+    liquidity: '1000000000',
+    borrowed: '0',
+    deficit: '0',
+    protocolFee: 25,
+    slopeBelowOptimal: 4,
+    slopeAboveOptimal: 60,
+    baseBorrowRate: 0,
+    optimalUtilization: 80,
     merklSupplys: [{ link: 'x', breakdowns: [breakdown()] }],
     ...overrides,
   } as DiscoveryReserve;
@@ -150,8 +203,8 @@ describe('hasComputableSupplyIncentive', () => {
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
   });
 
-  it('S7: excludes merit-only reserves (Merit is fully retired)', () => {
-    const r = reserve({ merklSupplys: [], meritSupplys: [breakdown()] });
+  it('S7: excludes reserves whose merkl arrays are empty', () => {
+    const r = reserve({ merklSupplys: [] });
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
   });
 
@@ -171,6 +224,158 @@ describe('hasComputableSupplyIncentive', () => {
   it('treats missing merklSupplys as no incentive', () => {
     const r = reserve({ merklSupplys: undefined });
     expect(hasComputableSupplyIncentive(r, NOW)).toBe(false);
+  });
+});
+
+/**
+ * AAV-1350: incentivability is a property of the campaign, not of the rate
+ * curve. Before the fix, a reserve missing `protocolFee` (which the API omits
+ * when it is 0) fell into a `portfolioSimulator` branch that summed the flat
+ * `supplyIncentives` array — always empty — so the cell rendered '—' while the
+ * Reserves table showed the campaign APR. The simulator now reads campaign
+ * breakdowns in that branch, so discovery must keep those reserves.
+ */
+describe('rate-calc fields do not gate the supply-incentive cell (AAV-1350)', () => {
+  it('R1: keeps a reserve missing protocolFee even with a live campaign (measured case)', () => {
+    const r = reserve({ protocolFee: undefined });
+    expect(hasComputableSupplyIncentive(r, NOW)).toBe(true);
+  });
+
+  it('R2: keeps a reserve missing any rate-calc field', () => {
+    const rateCalcFields = [
+      'liquidity',
+      'borrowed',
+      'deficit',
+      'slopeBelowOptimal',
+      'slopeAboveOptimal',
+      'baseBorrowRate',
+      'optimalUtilization',
+    ];
+    for (const field of rateCalcFields) {
+      expect(hasComputableSupplyIncentive(reserve({ [field]: undefined }), NOW)).toBe(true);
+      expect(hasComputableSupplyIncentive(reserve({ [field]: null }), NOW)).toBe(true);
+    }
+  });
+
+  it('R3: keeps a reserve carrying every rate-calc field', () => {
+    expect(hasComputableSupplyIncentive(reserve(), NOW)).toBe(true);
+  });
+
+  it('R5: pickIncentiveReserve no longer skips the higher-APR reserve', () => {
+    // Exact shape of the old failure: ranking alone selected the higher-APR
+    // reserve, which then rendered '—' because it lacked protocolFee.
+    const higherApr = reserve({
+      reserveId: 'higher-apr',
+      protocolFee: undefined,
+      merklSupplys: [group(breakdown({ campaignApr: 6 }))],
+    });
+    const lowerApr = reserve({
+      reserveId: 'lower-apr',
+      merklSupplys: [group(breakdown({ campaignApr: 1 }))],
+    });
+    expect(computeSupplyNetApyPercent(higherApr, NOW)).toBeGreaterThan(computeSupplyNetApyPercent(lowerApr, NOW));
+    expect(pickIncentiveReserve([higherApr, lowerApr], NOW)?.reserveId).toBe('higher-apr');
+  });
+});
+
+describe('forecastAvailableCampaignIdsFromSideData', () => {
+  it('F1: collects string ids and safe-integer ids from forecast.items', () => {
+    const ids = forecastAvailableCampaignIdsFromSideData({
+      forecast: { items: [{ campaignId: '15691857351051442990' }, { campaignId: 42 }] },
+    });
+    expect([...ids].sort()).toEqual(['15691857351051442990', '42']);
+  });
+
+  it('F1b: drops an unsafe numeric id instead of matching on a mangled value', () => {
+    // Merkl ids exceed Number.MAX_SAFE_INTEGER: this one parses to …568000, so
+    // String() would never equal the id the breakdown carries. Written via
+    // Number() because the literal itself trips no-loss-of-precision.
+    const unsafeId = Number('8744230917896567712');
+    expect(Number.isSafeInteger(unsafeId)).toBe(false);
+    const ids = forecastAvailableCampaignIdsFromSideData({ forecast: { items: [{ campaignId: unsafeId }] } });
+    expect(ids.size).toBe(0);
+  });
+
+  it('F2: tolerates missing or malformed payloads', () => {
+    expect(forecastAvailableCampaignIdsFromSideData(undefined).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({}).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: {} }).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: { items: 'nope' } }).size).toBe(0);
+    expect(forecastAvailableCampaignIdsFromSideData({ forecast: { items: [{}, null, { campaignId: '' }] } }).size).toBe(
+      0,
+    );
+  });
+
+  it('F2b: the local forecast-requiring set mirrors the app’s FORECAST_REQUIRING_CAMPAIGN_TYPES', () => {
+    // The gate is only correct while this list matches the calculator's. If the
+    // app adds a type, discovery must follow it or it starts excluding (or
+    // keeping) campaigns the UI treats differently.
+    expect([...FORECAST_REQUIRING_CAMPAIGN_TYPES].sort()).toEqual([...appForecastRequiringCampaignTypes].sort());
+  });
+});
+
+describe('forecast gate — discovery prefers campaigns the UI can forecast', () => {
+  it('F3: excludes a forecast-requiring campaign absent from forecast.items', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['other']))).toBe(false);
+    // Gate disabled ⇒ the same reserve qualifies.
+    expect(hasComputableSupplyIncentive(r, NOW)).toBe(true);
+  });
+
+  it('F3b: keeps a forecast-requiring campaign that IS in forecast.items', () => {
+    // The corrected premise: presence in `forecast.items` is what the UI reads
+    // (checkForecastAvailability returns false ⇒ no '*' marker). Absence from
+    // `forecast.errors` is NOT the signal — campaigns listed in errors still
+    // render a numeric APR plus a '*' marker, so excluding on errors alone
+    // dropped reserves the UI renders fine.
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'ok' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['ok']))).toBe(true);
+  });
+
+  it('F4: keeps a reserve that still has a forecast-backed campaign', () => {
+    const r = reserve({
+      merklSupplys: [group(breakdown({ campaignId: 'broken' }), breakdown({ campaignId: 'ok' }))],
+    });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['ok']))).toBe(true);
+  });
+
+  it('F4b: a non-forecast-requiring campaign is unaffected by the gate', () => {
+    // Mirrors the UI's `isForecastRequiring` short-circuit: the gate only ever
+    // applies to FORECAST_REQUIRING_CAMPAIGN_TYPES.
+    const r = reserve({
+      merklSupplys: [group(breakdown({ campaignId: 'not-requiring', campaignType: 'SOME_OTHER_TYPE' }))],
+    });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set())).toBe(true);
+  });
+
+  it('F5: skips the unforecastable reserve and picks the next best one', () => {
+    const broken = reserve({
+      reserveId: 'broken-res',
+      supplyApy: 50,
+      merklSupplys: [group(breakdown({ campaignId: 'broken' }))],
+    });
+    const ok = reserve({ reserveId: 'ok-res', supplyApy: 1, merklSupplys: [group(breakdown({ campaignId: 'ok' }))] });
+    expect(pickIncentiveReserve([broken, ok], NOW)?.reserveId).toBe('broken-res');
+    expect(pickIncentiveReserve([broken, ok], NOW, new Set(['ok']))?.reserveId).toBe('ok-res');
+  });
+
+  it('F6: returns null when every candidate lacks a forecast (specs skip)', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(pickIncentiveReserve([r], NOW, new Set(['other']))).toBeNull();
+  });
+
+  it('F7: keeps a breakdown that carries no campaign id (cannot be matched)', () => {
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: undefined }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, new Set(['c1']))).toBe(true);
+  });
+
+  it('F8: a null gate (side-data unavailable) applies no filtering', () => {
+    // Degrading to "everything excluded" would turn the incentive suites into
+    // no-ops whenever /meta/side-data hiccups; degrading to "nothing excluded"
+    // keeps the pre-existing selection behaviour.
+    const r = reserve({ merklSupplys: [group(breakdown({ campaignId: 'broken' }))] });
+    expect(hasComputableSupplyIncentive(r, NOW, null)).toBe(true);
+    expect(pickIncentiveReserve([r], NOW, null)?.reserveId).toBe('r1');
   });
 });
 
@@ -221,7 +426,7 @@ describe('pickIncentiveReserve', () => {
   it('returns null when no candidate has a computable incentive (S3/S4/S6/S7 combined)', () => {
     const candidates = [
       reserve({ reserveId: 'a', merklSupplys: [breakdown({ campaignApr: 0 })] }),
-      reserve({ reserveId: 'b', meritSupplys: [breakdown()], merklSupplys: [] }),
+      reserve({ reserveId: 'b', merklSupplys: [], brevisSupplys: [] }),
     ];
     expect(pickIncentiveReserve(candidates, NOW)).toBeNull();
   });
@@ -243,7 +448,21 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
       tokenSymbol: 'USDT',
       chainName: 'Celo',
       marketName: 'AaveV4Celo',
+      ...realisticRoom,
       merklSupplys: [offsetGroup([SELF], breakdown({ campaignApr: 2 }))],
+      ...overrides,
+    });
+
+  /** A target whose constraint points at a different reserve (cross-reserve). */
+  const crossTarget = (overrides: Record<string, unknown> = {}): DiscoveryReserve =>
+    targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))], ...overrides });
+
+  /** The offset side: never carries a campaign of its own, but must hold a borrow. */
+  const offsetReserve = (overrides: Record<string, unknown> = {}): DiscoveryReserve =>
+    reserve({
+      reserveId: OTHER,
+      ...realisticRoom,
+      merklSupplys: [],
       ...overrides,
     });
 
@@ -260,12 +479,10 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
   });
 
   it('O2: discovers a cross-reserve scenario using nonSelf[0] as offset', () => {
-    const offset = reserve({
-      reserveId: OTHER,
+    const offset = offsetReserve({
       tokenSymbol: 'WETH',
       chainName: 'Celo',
       marketName: 'AaveV4Celo',
-      merklSupplys: [],
     });
     const target = targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))] });
     const scenarios = discoverOffsetScenarios([target, offset], NOW);
@@ -331,17 +548,17 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     expect(discoverOffsetScenarios([targetReserve({ isActive: false })], NOW)).toEqual([]);
     expect(discoverOffsetScenarios([targetReserve({ supplyDisabled: true })], NOW)).toEqual([]);
     expect(discoverOffsetScenarios([targetReserve({ ltv: 0 })], NOW)).toEqual([]);
-    const noRoom = targetReserve({ suppliable: '0', supplyCap: '1000', supplied: '1000' });
+    const noRoom = targetReserve({ suppliable: usd(0), supplyCap: usd(1000), supplied: usd(1000) });
     expect(discoverOffsetScenarios([noRoom], NOW)).toEqual([]);
   });
 
   it('O7: skips cross-reserve when offset reserve is unusable/unborrowable/missing', () => {
-    const target = targetReserve({ merklSupplys: [offsetGroup([SELF, OTHER], breakdown({ campaignApr: 2 }))] });
+    const target = crossTarget();
     const cases = [
-      reserve({ reserveId: OTHER, merklSupplys: [], isFrozen: true }),
-      reserve({ reserveId: OTHER, merklSupplys: [], ltv: 0 }),
-      reserve({ reserveId: OTHER, merklSupplys: [], borrowDisabled: true }),
-      reserve({ reserveId: OTHER, merklSupplys: [], suppliable: '0', supplyCap: '5', supplied: '5' }),
+      offsetReserve({ isFrozen: true }),
+      offsetReserve({ ltv: 0 }),
+      offsetReserve({ borrowDisabled: true }),
+      offsetReserve({ suppliable: usd(0), supplyCap: usd(5), supplied: usd(5) }),
     ];
     for (const offset of cases) {
       expect(discoverOffsetScenarios([target, offset], NOW)).toEqual([]);
@@ -368,7 +585,7 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
       reserveId: 'c',
       merklSupplys: [offsetGroup(['c', 'other'], breakdown({ campaignApr: 0.5 }))],
     });
-    const offsetOther = reserve({ reserveId: 'other', merklSupplys: [] });
+    const offsetOther = offsetReserve({ reserveId: 'other' });
     const scenarios = discoverOffsetScenarios([a, b, c, offsetOther], NOW);
     expect(scenarios.map((s) => `${s.type}:${s.targetReserveId}`)).toEqual([
       'cross-reserve:c',
@@ -384,10 +601,92 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
   });
 
   it('O11: derives targetMarketLabel via getMarketChipLabel (Ethereum Core)', () => {
-    const r = reserve({ reserveId: 'eth', merklSupplys: [offsetGroup(['eth'], breakdown({ campaignApr: 1 }))] });
+    const r = targetReserve({
+      reserveId: 'eth',
+      chainName: 'Ethereum',
+      marketName: 'AaveV3Ethereum',
+      merklSupplys: [offsetGroup(['eth'], breakdown({ campaignApr: 1 }))],
+    });
     const scenarios = discoverOffsetScenarios([r], NOW);
     expect(scenarios).toHaveLength(1);
     expect(scenarios[0].targetMarketLabel).toBe('Core');
+  });
+
+  // ─── AAV-1318: position feasibility (borrow room + LTV funding power) ──
+
+  it('O12: cross-reserve offset without borrow room is not selectable (ticket shape: sAVAX borrowRoom = $0)', () => {
+    const offset = offsetReserve({ borrowable: usd(0) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O13: cross-reserve offset exactly at the borrow-room floor stays selectable', () => {
+    const offset = offsetReserve({ borrowable: usd(MIN_ROOM) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toHaveLength(1);
+  });
+
+  it('O14: cross-reserve offset with no borrow-room data stays selectable (null = do not exclude)', () => {
+    const offset = offsetReserve({ borrowable: undefined, borrowCap: undefined, borrowed: undefined });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toHaveLength(1);
+  });
+
+  it('O15: a borrow-disabled offset reserve is still excluded after the predicate swap', () => {
+    const offset = offsetReserve({ borrowDisabled: true });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O16: an offset reserve with ample rooms but a low LTV cannot fund the borrow', () => {
+    const offset = offsetReserve({ ltv: 1 });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  // The supply-room floor and the LTV term cannot be separated here: the LTV
+  // term is `min(supplyRoom, 100k) × ltv/100`, so a supply room under the floor
+  // drags it below the floor too. O16 pins the LTV term on its own (ample rooms,
+  // low LTV); this row pins that `> 0` is no longer enough.
+  it('O17: an offset reserve below the supply-room floor is excluded (the old gate only checked > 0)', () => {
+    const offset = offsetReserve({ suppliable: usd(MIN_ROOM - 1) });
+    expect(discoverOffsetScenarios([crossTarget(), offset], NOW)).toEqual([]);
+  });
+
+  it('O18: a self-loop target without borrow room is not selectable (the borrow happens on the target)', () => {
+    expect(discoverOffsetScenarios([targetReserve({ borrowable: usd(0) })], NOW)).toEqual([]);
+  });
+
+  it('O19: a self-loop target whose LTV cannot fund the borrow is not selectable', () => {
+    expect(discoverOffsetScenarios([targetReserve({ ltv: 1 })], NOW)).toEqual([]);
+  });
+
+  it('O20: a self-loop target with no room data at all stays selectable', () => {
+    const r = targetReserve({
+      suppliable: undefined,
+      supplyCap: undefined,
+      supplied: undefined,
+      borrowable: undefined,
+      borrowCap: undefined,
+      borrowed: undefined,
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toHaveLength(1);
+  });
+
+  it('O21: the cross-reserve TARGET keeps its supply-side gate — a borrow-less target is still selectable', () => {
+    for (const target of [crossTarget({ borrowable: usd(0) }), crossTarget({ borrowDisabled: true })]) {
+      const scenarios = discoverOffsetScenarios([target, offsetReserve()], NOW);
+      expect(scenarios).toHaveLength(1);
+      expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetReserveId: SELF });
+    }
+  });
+
+  it('O22: a self-loop rejected by the borrow gate does not sink a cross-reserve group on the same reserve', () => {
+    const r = targetReserve({
+      borrowable: usd(0),
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'self', campaignApr: 9 })),
+        offsetGroup([SELF, OTHER], breakdown({ campaignId: 'cross', campaignApr: 2 })),
+      ],
+    });
+    const scenarios = discoverOffsetScenarios([r, offsetReserve()], NOW);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetApr: 2 });
   });
 });
 
@@ -398,23 +697,9 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
 // tokens with realistic room so the position-feasibility gates are exercised
 // against real data shapes (AAV-1280 evidence-hygiene rule).
 
-/**
- * Room floor the discovery requires, i.e. the largest amount the pairing runner
- * types on one reserve. Imported so a runner amount change moves the boundary
- * tests with it; the gate relation (below floor → excluded, at floor → kept) is
- * what these tests pin, and `usd()` below keeps the conversions off floats.
- */
-const MIN_ROOM = PAIRING_SIM_MIN_ROOM_USD;
-
-/** Raw 6-dec units for a given USD notional at price 1. */
-const usd = (value: number) => String(BigInt(Math.round(value * 1e6)));
-
 function pairingReserve(overrides: Record<string, unknown> = {}): DiscoveryReserve {
   return reserve({
-    decimals: 6,
-    tokenPrice: 1,
-    suppliable: usd(MIN_ROOM * 10),
-    borrowable: usd(MIN_ROOM * 10),
+    ...realisticRoom,
     merklSupplys: [],
     ...overrides,
   });

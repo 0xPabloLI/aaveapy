@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { ListCollapse, PauseCircle, Plus, Snowflake, X, Ban } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
 import { getReserveMarketDisplayName } from '@/lib/marketLabels';
