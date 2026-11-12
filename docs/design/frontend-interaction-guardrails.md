@@ -277,7 +277,7 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
   - Keep row expansion for detail inspection, not as the only place where the scenario can be changed.
 - **Hide empty source rows in breakdown UIs**:
   - Summary rows such as `Native` / `Incentive total` can stay visible.
-  - Source rows like `Protocol Incentive`, `ACI`, `Merkl`, `Brevis` should disappear when both current and simulated values are effectively zero.
+  - Source rows like `Protocol Incentive`, `Merkl`, `Brevis` should disappear when both current and simulated values are effectively zero.
 - **Align placeholder state with numeric columns**:
   - Empty placeholders like `-` must use the same fixed column widths and alignment as real numbers.
   - Do not let `auto` width columns cause headers and placeholders to drift.
@@ -288,7 +288,7 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
 - **Shared same-side incentive monotonicity**:
   - In table-level shared simulation, adding `Supply` must not increase the simulated `Supply incentive` for that same row.
   - Likewise, adding `Borrow` must not increase that row's simulated `Borrow incentive`.
-  - Apply this rule both to the incentive total and each source breakdown row (`ACI`, `Merkl`) so totals and rows stay directionally consistent.
+  - Apply this rule both to the incentive total and each source breakdown row (`Merkl`, `Brevis`) so totals and rows stay directionally consistent.
 
 ### Merkl whitelist-only campaigns (per `campaignId`)
 
