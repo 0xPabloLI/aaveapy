@@ -32,18 +32,6 @@ main 是生产分支，直接面向用户。以下 5 层机制性保护确保恶
 - **启用步骤**：push workflow → 等 CI 运行一次 → 在 GitHub Settings → Branches → main required checks 中添加 `branch-flow-guard`
 - **Bot sync 例外**：`bot/hardcode-sync-*` 和 `bot/token-icon-sync-*` 分支可以绕过 branch-flow-guard 直接向 main 开 PR。这些是低风险的资产/地址/图标同步更新，仍然通过所有其他 CI 检查。Layer 1（main 不发 automerge label，automerge workflow 因此不会自动合并）确保这些 PR 仍需在 GitHub UI 人工 review + 手动合并
 
-## lovable 直推分级：已退役（2026-11-12）
-
-> **本节描述的设计已不存在。** `lovable` 曾是 GPT-engineer 直接推送的集成分支，配 4 个
-> required checks（lint / build / peer-dep-check / security-audit）+ `enforce_admins: false`，
-> 允许 admin 直推、checks 后置。2026-11-12 该分支从发布流程退役（内容全部并入 `dev`，PR #822），
-> 分支保留作归档但不再接收 PR，也不再有任何 workflow 触发它。
->
-> 退役后前端只有一条路径：改动 → PR → `dev` → `main`。**所有**前端改动现在都走 PR，
-> 因此"直推分级"这个取舍不再需要——`dev` 的 `required_pull_request_reviews` 为 `true`。
-> 保留本节是因为上面提到的补偿控制（pre-push `ci:remote`、Layer 5 隔离）仍然有效，
-> 且未来若再引入一个直推型分支，这里的取舍推理可以直接复用。
-
 ## dev 必需检查：peer-dep-check 于 2026-09-29 补入
 
 dev 原本只 required `lint` + `build`。`peer-dep-check` 会跑、会红，但**不在必需列表里就挡不住 automerge**——这就是 #653（`@eslint/js` 10 对 `eslint` 9 的主版本错位）能带着红检查合进 dev、让 dev 连红的机制（首次 `7e6b46be`→`0e85f4d7`，二次 `20e7c23b`→#697；决策与证据见 AAV-1301）。

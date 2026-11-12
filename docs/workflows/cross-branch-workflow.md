@@ -69,7 +69,3 @@ git diff main..dev -- path/to/file
 
 **禁止的操作**：
 - ❌ 不要用 worktree 直接 merge + push 绕过 PR（违反 dev 分支保护规则）
-
-> **历史说明（2026-11-12 前）**：本节曾描述 `lovable → dev` 的 merge-commit 同步流程。
-> `lovable` 由 GPT-engineer 直接推送、与 `dev` 历史不同源，所以当时必须用 merge commit 保持
-> 双向可追踪。该分支已退役（内容全部并入 `dev`，PR #822），这个场景不再存在。
