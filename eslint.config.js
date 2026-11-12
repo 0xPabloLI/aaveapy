@@ -7,16 +7,7 @@ import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
   {
-    ignores: [
-      'dist',
-      '.worktrees',
-      'e2e',
-      'scripts',
-      'test-results',
-      'src/integrations/supabase/client.ts',
-      'src/integrations/supabase/previewAuthStorage.ts',
-      'src/integrations/supabase/types.ts',
-    ],
+    ignores: ['dist', '.worktrees', 'e2e', 'scripts', 'test-results'],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

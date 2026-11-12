@@ -21,7 +21,7 @@
 | staging | https://staging.aaveapy.com/admin/aave-news-backlinks | Vercel 上 `dev` 分支的部署 |
 | production | https://aaveapy.com/admin/aave-news-backlinks | Vercel 上 `main` 分支的部署 |
 
-> **没有登录墙**——靠路径不公开 + `robots.txt` Disallow。链接谁拿到谁能看，不要外发。
+> **登录方式**：两个页面都包在 `SeoDashboardGate` 里，密码由 `seo-proxy` 在服务端比对 Supabase secret `SEO_DASHBOARD_PASSWORD`，输对后才落 sessionStorage 并随每个请求发 `X-Dashboard-Password`。没有密码只能看到登录框。路径同时不挂导航、不进 sitemap，`robots.txt` 对 `/admin/**` Disallow。
 
 ---
 
@@ -56,6 +56,7 @@ Railway 后端 (staging-api.aaveapy.com/api/seo/*)
 | Edge Function | `supabase/functions/seo-proxy/index.ts` |
 | `SEO_API_BASE`（Edge Function env，可选） | 未设 → 默认 `https://staging-api.aaveapy.com/api` |
 | `SEO_ADMIN_TOKEN`（Supabase secret） | 值只在 Supabase 项目里维护，本文不复述；与 Railway 同名变量必须一致 |
+| `SEO_DASHBOARD_PASSWORD`（Supabase secret） | 页面登录框校验的密码；`seo-proxy` 每次请求比对 |
 | Railway 后端 | staging，路由 `/api/seo/*`，校验同一个 token |
 | 数据 | Semrush 种子 ~33 条已灌库；GSC cron 跑满 ≥ 3 天后有数 |
 
@@ -75,12 +76,13 @@ Railway 后端 (staging-api.aaveapy.com/api/seo/*)
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | 401 from Edge Function gateway | 没带 anon key | 前端代码已自动带，检查 `VITE_SUPABASE_PUBLISHABLE_KEY` 是否注入 |
+| 登录框报 `Incorrect password` | 密码与 Supabase secret `SEO_DASHBOARD_PASSWORD` 不一致 | 清掉 sessionStorage 里的旧值，用正确密码重输 |
 | 401 from Railway | token 不匹配 | 比对 Supabase secret `SEO_ADMIN_TOKEN` 与 Railway 同名变量 |
 | 503 `SEO_ADMIN_TOKEN not configured` | Edge Function secret 未设 | 在 Supabase 项目里加 secret |
 | GSC tab 空 | cron 未跑满 / 站点无展示 | 等 cron 跑 ≥ 3 天，或手动触发后端 cron |
 | Semrush 数值显示 NaN | 后端 numeric 序列化成 string | 已在 `seoApi.ts` 用 `toNum()` 兜底 |
 | CORS 报错 | 后端 `SEO_ALLOWED_ORIGINS` 未含当前域名 | 加上 `https://staging.aaveapy.com`、`https://aaveapy.com` 这类精确域名 |
-| `Unexpected token '<'` JSON 解析报错 | 本地/Vercel 缺 `VITE_SUPABASE_URL`，请求打到 Vite dev server 返回 HTML | 在 `.env.local`（本地）或 Vercel 环境变量（部署）补上三个 Supabase 变量 |
+| `Unexpected token '<'` JSON 解析报错 | 本地/Vercel 缺 `VITE_SUPABASE_URL`，请求打到 Vite dev server 返回 HTML | 在 `.env.local`（本地）或 Vercel 环境变量（部署）补上 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY` |
 
 ---
 

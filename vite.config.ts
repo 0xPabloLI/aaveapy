@@ -221,7 +221,7 @@ export default defineConfig(({ mode }) => ({
         'src/providers/**',
         'src/shared/**',
       ],
-      exclude: ['src/generated/**', 'src/integrations/supabase/**', '**/*.test.*', '**/*.d.ts'],
+      exclude: ['src/generated/**', '**/*.test.*', '**/*.d.ts'],
       // Enforced floor (npm run test:coverage). Baseline 2026-09:
       // stmts 72.9 / branches 66.7 / funcs 64.1 / lines 74.9 — thresholds sit
       // just under so new untested code fails CI while debt gets paid down
