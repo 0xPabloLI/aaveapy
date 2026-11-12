@@ -132,7 +132,7 @@ sync 管道产出占位图后，换官方 logo 按此优先级手动取材：
 - Chainlink Arc 正式 logo 设计（后续替换 SVG 文件即可）
 - `MiscArc` / `ChainlinkArc` 模块（无 POOL/SPOKES，不进 registry）
 - `hardcode:sync` 其他子命令（reserve-patches / market-name-map 等）的 --write 语义
-- 本地 address-book lock 升级（走 CI npm update 自然演进）
+- 本地 address-book lock 升级（现由 Renovate 负责，`minimumReleaseAge: 7 days`）
 - 后端仓库侧改动
 
 ## Further Notes
