@@ -69,7 +69,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 | **AAV-1301** | @eslint/js 10 peer 强依赖 eslint 10，但 react-hooks / import 等插件尚未适配 | **暂缓升级**：当前 React 生态关键插件（eslint-plugin-react-hooks）peer 仍锁 v9，强升 overrides 引发 CI 脆弱性且业务收益低。待上游发布后跟进。 | Low / Backlog 维持。裁定被破：#653 于 2026-09-29 合入使 dev 二次变红（首次为 `7e6b46be`→`0e85f4d7`），已由 **#697** 回退 + 加 dependabot ignore + peer 冲突 workflow 改报告制 |
 | **AAV-1302** | release-drafter v7 在 PR 阶段属假绿灯；autolabeler 拆分且弃用旧 category 配置 | **配置模型迁移 + 拆分契约适配**：重构 `.github/release-drafter.yml` 消除弃用警告；按 v7 规范适配 autolabeler 逻辑，保证 draft release 分组准确。 | 维持 Low / Todo，排期实施并闭环 #656 |
 | **AAV-1303** | Merit 后端已下线导致 openapi-sync 自动生成与前端代码引用脱节（TS2551/TS2339） | **前端 Merit 退役清理**：移除契约 wrapper 与 types.ts 中 Merit 残留引用；统一 types.ts 维护方式（自动化或 header 文档对齐），恢复 openapi-sync CI 绿灯。 | Todo（2026-09-28 从 Backlog 领出，已入当前 cycle；「待协同部署」前置已成熟，代码未动） |
-| **AAV-1304** | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 标签字重不一致 | **空态友好化 + 样式归一**：Lowest HF 链上查询恢复后，补充无债务时空态说明（如隐藏或 tooltip 说明）；统一 Advanced 区域同级标签的 Typography token。 | Backlog，Low 优先级排期 |
+| **AAV-1304** | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 标签字重不一致 | **空态友好化 + 样式归一（已交付 2026-11-15）**：徽章改三态（computed/no-debt/unknown，`getLowestHfBadgeState` 纯函数；有债但不可算绝不误报 no debt）；空态 `—` 后跟 muted `no debt`（无 hover 依赖）；Advanced 三段组标签抽 `SECTION_HEADER_CLASS`，数值 bold、状态文案 medium。spec `docs/specs/aav-1304-portfolio-summary-empty-state.md`（9 行矩阵 E1–E9） | Done（grill 三决策用户拍板；发现 `ltv=0` 数据缺口另开 **AAV-1380**） |
 | **AAV-1305** | 生产钱包仓位导入失败双层根因（SDK GraphQL 网络不可达 + MULTICALL3 常量缺字符 + Pool 移除 getUserReserveData） | **双阶段分治修复**：第一阶段已修正 `MULTICALL3_ADDRESS` 常量（`1061bd14`）打通 viem 校验；第二阶段已将 `getV3UserPositionsOnChain` 目标由 `Pool` 迁移至 `AAVE_PROTOCOL_DATA_PROVIDER`（`2d6e70fb`），watch-reentry 噪音修复（`5f928681`）。 | 已交付（2026-09-27，双阶段完成，见 Linear 交付记录） |
 | **AAV-1280** | 测试侧 discovery 只累加 raw `campaignApr`，未镜像 UI 渲染门控（时间窗/白名单/AMOUNT 变体），选中 UI 渲染 `—` 的 reserve 致 baseline 断言失败 | **测试侧加固**：`isComputableMerklCampaign` 收紧（缺失边界/date-only 规范化/whitelistOnly 排除）+ `discoverOffsetScenarios` 纯函数抽取 + 单测锚定每条门控。UI 侧静态审查三道门均为设计行为，无缺口。 | 已交付（测试侧）；原始触发数据已消失不复现 |
 
@@ -121,12 +121,13 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1380 | Medium | Backlog (needs-triage) | [后端] `/markets` 的 `ltv` 字段 312/441 条为 0（`liquidationThreshold` 正常，生产+staging 一致）：Portfolio Borrow capacity 与 e2e LTV 融资额度门被钳零。典型：AaveV3Ethereum USDC `ltv=0/lt=78` 而 AAVE 69/WBTC 81/WETH 84 正常。待查字段映射与「真 0 vs 缺失」语义（AAV-1304 实施期发现） |
 | AAV-1379 | Low | Backlog | [后端] `concurrent-fetch.ts` 只用 `=== null` 判定「无借入侧」：`buildV3BaseDataset(markets: any[])` 入参是 `any`，若 SDK 省略 `borrowInfo` 键而非显式 `null`，该 reserve 会读成「可借但借入侧全零」。当前 441 条样本未观察到键缺失（`borrowDisabled` 142 / 无数字 19），定性为健壮性缺口而非线上故障；候选修法 1 行 `?? null` 收敛。**不要**对 `protocolFee` 做同类改动（缺席 = 0 是 AAV-1350 契约） |
 | AAV-1359 | Low | Backlog | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） |
 | AAV-1354 | Low | Backlog | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
 | AAV-1322 | Low | Backlog | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
 | AAV-1312 | Low | Backlog (needs-triage) | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
-| AAV-1304 | Low | Backlog | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
+| AAV-1304 | Low | Done（2026-11-15 交付：空态三态化 + Advanced 归一，spec `docs/specs/aav-1304-portfolio-summary-empty-state.md`；grocery 发现 `ltv=0` 缺口另开 AAV-1380） | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
 | AAV-1302 | Low | Todo | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 | AAV-1301 | Low | Backlog | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* |
 | AAV-1274 | Low | Backlog | RENAME: campaignType → distributionType (cross-repo API breaking change) *(降级：建议前端别名适配替代跨仓重命名)* |

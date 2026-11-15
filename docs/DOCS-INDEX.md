@@ -115,6 +115,7 @@ _Last inventory pass: 2026-09-28._
 - Canonical: `docs/specs/aav-1349-pre-push-e2e-browser-gate.md` (本地 pre-push e2e 门缺浏览器时必须失败:缺失 chromium 由静默 `exit 0` 改为 `exit 1` + 显式 `E2E_SKIP=1` opt-out + `PLAYWRIGHT_BROWSERS_PATH=0` 不误判;判定收进 `scripts/lib/e2e-browser-gate.mjs`;10 行场景矩阵 S1–S10; AAV-1349)
 - Canonical: `docs/specs/aav-1319-e2e-static-gates.md` (e2e 目录纳入静态门:`tsconfig.e2e.json` 覆盖 `e2e/**` 与根 `playwright.config.ts`、`typecheck:e2e` 并入 `typecheck`、`ci:remote` 前置类型门、PR CI 的 lint job 补 typecheck step(必须先生成 gitignored 的 icon manifests);eslint 不再忽略 e2e 并对 Playwright 空 fixture 关 `no-empty-pattern`、`_` 前缀豁免 unused-vars;12 行场景矩阵 E1–E12,含「include 漏写即假绿灯」的 mutation 负控; AAV-1319)
 - Canonical: `docs/specs/aav-1352-staging-discovery-fetch-outcome.md` (e2e discovery 拉取失败必须与数据缺口区分:`fetchStagingReserves` 返回 tagged outcome(失败不是空数组)+ 2 次×30s 重试 + 进程内缓存成功与失败 + `decideReserveGate` 把数据缺口判 skip、不可达判 fail(唯一出口 `E2E_ALLOW_STAGING_UNREACHABLE=1`);失败落在 live 测试而非模块加载,不依赖 staging 数据的 stub 变体照常执行;29 行场景矩阵 F/G/C/N; AAV-1352)
+- Canonical: `docs/specs/aav-1304-portfolio-summary-empty-state.md` (PortfolioSummaryBar supply-only 空态与 Advanced 归一:Lowest HF 徽章三态 computed/no-debt/unknown(`getLowestHfBadgeState` 纯函数,有债但不可算绝不误报 no debt)+ 三段组标签抽 `SECTION_HEADER_CLASS` + 数值 bold、状态文案 medium;9 行场景矩阵 E1–E9; AAV-1304)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)
