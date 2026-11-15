@@ -302,7 +302,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - [ ] 系统③：`DesktopTooltip` hover 正常出现/消失，`MobileTooltip` 点击正常
 - [ ] 排序下拉框：两端均使用 `w-max` 内容驱动宽度，无 `minWidth` 残留
 - [ ] 排序下拉框：桌面端 `max-w-[min(18rem,calc(100vw-2rem))]`，移动端 `max-w-[min(18rem,calc(100vw-1.5rem))]`
-- [ ] `npm run lint && npm test && npx tsc --noEmit && npm run build` 全过
+- [ ] `npm run lint && npm test && npm run typecheck && npm run build` 全过
 
 ---
 

@@ -172,7 +172,7 @@ npm test -- --run src/lib/explorerIcons.test.ts src/components/dashboard/AssetAc
 最后跑完整 validation gate：
 
 ```bash
-npm run lint && npm test && npm run build && npx tsc --noEmit
+npm run lint && npm test && npm run build && npm run typecheck
 ```
 
 ### Step 7: 更新文档

@@ -190,7 +190,7 @@ bash scripts/check-hardcoded-tokens.sh --strict
 2. **运行测试确认 RED**（因硬编码值仍存在而失败）
 3. **实施替换**（最小改动，1:1 值保持）
 4. **运行测试确认 GREEN**（全部通过）
-5. **运行完整验证门禁**：`npm run lint && npm test && npm run build && npx tsc --noEmit`
+5. **运行完整验证门禁**：`npm run lint && npm test && npm run build && npm run typecheck`
 6. **运行 grep 巡检**：`bash scripts/check-hardcoded-tokens.sh --strict`
 
 ## Shipping rule

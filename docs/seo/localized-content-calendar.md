@@ -36,7 +36,7 @@
 2. 对照该市场监管触发器，确认税务与合规措辞仍属谨慎、非确定性表述（不得给出确定性税务建议）。
 3. 用 Semrush 复核目标长尾词，必要时新增 1–2 条 FAQ；FAQ 总数保持 8–12 条。
 4. 检查内链（`related.links`）目标页仍存在且相关。
-5. 运行验证门槛：`npm run lint && npm test && npm run build && npx tsc --noEmit`。
+5. 运行验证门槛：`npm run lint && npm test && npm run build && npm run typecheck`。
 6. 在下方变更日志追加一行。
 
 ## 4. 年度排期表（模板，每年沿用）

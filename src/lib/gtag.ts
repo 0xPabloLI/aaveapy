@@ -1,8 +1,9 @@
 /**
  * Google Analytics (GA4) bootstrap.
  *
- * Loads gtag.js once at app startup. The property ID is fixed, and a build with no
- * `window` (tests, SSR) is a no-op, so analytics never breaks the app.
+ * Loads gtag.js once, only after analytics consent (first grant, or at boot for a
+ * previously-granted visitor — see src/lib/consent.ts, which owns the trigger). The
+ * property ID is fixed, and a build with no `window` (tests, SSR) is a no-op.
  */
 
 /** The AaveAPY property. No deployment overrides it, so this is the whole configuration. */

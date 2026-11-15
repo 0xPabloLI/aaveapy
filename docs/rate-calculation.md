@@ -604,8 +604,8 @@ Source: `src/lib/incentiveCaps.ts` (`capEffectToNote`).
 
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
-| Pool budget | Pool-wide | `fixRewardableDays = remainingBudget / dailyRewards` | `incentiveCaps.ts` → `buildFixRewardCapEffect` |
-| APR cap | Pool-wide | MAX regime caps the APR when TVL is low | `incentiveCaps.ts` → `buildMaxRewardCapEffect` |
+| Pool budget | Pool-wide | `fixRewardableDays = remainingBudget / dailyRewards`, clamped to the calendar days left | `incentiveMath.ts` → `computeBudgetRemainingDays`; `incentiveCaps.ts` only formats the `~Nd earn` note |
+| APR cap | Pool-wide | MAX regime: `dailyRewards = min(requiredDaily, aprBasedDaily)`; `capBinding` when the APR leg is the smaller one | `merklForecast.ts` (regime math); `incentiveCaps.ts` only formats the note |
 | Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`; effective APR `= nominal × eligibleUsd / positionUsd` | `applyPositionCapToForecastResult` |
 
 Caps apply only where a position is known: the per-campaign rows and `sr.*` lanes of `rateSimulationCalculator.ts`, plus the Merkl aggregate sums in `incentiveAggregation.ts` when they receive `positionUsd`. `headlineIncentive` stays uncapped by design (Golden Rule 4).
