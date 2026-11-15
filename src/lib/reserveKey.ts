@@ -76,6 +76,26 @@ export type ReserveChainTokenMap = Map<string, ReserveWithSpread & { _ambiguousF
 
 export { toChainTokenKey };
 
+const V4_SPOKE_ADDRESS_PATTERN = /^0x[0-9a-f]{40}$/;
+
+/**
+ * Canonical join key for a V4 spoke.
+ *
+ * The address book's `SPOKES` keys are constant names (`MAIN_SPOKE`); the API's
+ * `spokeName` is a display name (`Main`). Neither matches the other, so both sides key
+ * on the spoke address instead: `deriveV4ReservesBySpoke` reads it out of `reserveId`
+ * (which carries it lowercased) and `getV4UserPositionsAllSpokes` passes the address
+ * book's EIP-55 spelling. This normalises the two to one key (AAV-1356).
+ *
+ * Returns null when the value cannot be a spoke address, so callers skip the entry
+ * instead of storing a key that can never match.
+ */
+export function toV4SpokeKey(address: string | null | undefined): string | null {
+  if (!address) return null;
+  const normalized = address.trim().toLowerCase();
+  return V4_SPOKE_ADDRESS_PATTERN.test(normalized) ? normalized : null;
+}
+
 /**
  * Composes a reserveId string matching the backend format.
  *

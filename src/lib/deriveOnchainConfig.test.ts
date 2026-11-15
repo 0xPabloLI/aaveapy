@@ -18,22 +18,42 @@ const makeV3Reserve = (
     ...overrides,
   }) as ReserveWithSpread;
 
+// Real shapes: aave-address-book 4.76.1 + production /markets (2026-11-12).
+// The API's `spokeName` is a display name ("Main"); the address book's raw key is a
+// constant name ("MAIN_SPOKE"). Only `reserveId` relates the two, and the real payload
+// leaves `spokeAddress` undefined (`enrichReservesFromId` fills it later, and only when
+// the reserveId carries a hub segment). This fixture used to pass the raw key as
+// `spokeName`, which is exactly the wrong assumption that hid AAV-1356.
+const SPOKES = {
+  main: { name: 'Main', address: '0x94e7A5dCbE816e498b89aB752661904E2F56c485' },
+  bluechip: { name: 'Bluechip', address: '0x973a023A77420ba610f06b3858aD991Df6d85A08' },
+  // Chain 1 really carries two spokes named "Bluechip" (AaveV4Ethereum and
+  // AaveV4EthereumSentoraCurated) at different addresses.
+  bluechipSentora: { name: 'Bluechip', address: '0xA37e7cdC557f3C7f745FB3F337b6439979662c46' },
+  forex: { name: 'Forex', address: '0xD8B93635b8C6d0fF98CbE90b5988E3F2d1Cd9da1' },
+} as const;
+
+/** The join key both the producer and the consumer must agree on. */
+const keyOf = (spoke: { address: string }) => spoke.address.toLowerCase();
+
+const encode = (decoded: string) => Buffer.from(decoded).toString('base64');
+
 const makeV4Reserve = (
   chainId: number,
   tokenAddress: string,
-  spokeName: string,
+  spoke: { name: string; address: string },
   aaveProReserveId: string,
-  overrides?: Partial<ReserveWithSpread> & { spokeAddress?: string; hubAddress?: string },
+  overrides?: Partial<ReserveWithSpread>,
 ): ReserveWithSpread =>
   ({
-    reserveId: `${chainId}:${overrides?.spokeAddress ?? '0xspoke'}:${tokenAddress}:${overrides?.hubAddress ?? '0xhub'}`,
+    reserveId: `${chainId}:${keyOf(spoke)}:${tokenAddress}:0xhub`,
     marketName: `AaveV4Hub${chainId}`,
     chainName: 'Ethereum',
     chainId,
     tokenName: 'Token',
     tokenSymbol: 'TKN',
     tokenAddress,
-    spokeName,
+    spokeName: spoke.name,
     aaveProReserveId,
     ...overrides,
   }) as ReserveWithSpread;
@@ -93,8 +113,8 @@ describe('deriveV3AssetsByMarket', () => {
     expect(Object.keys(result).sort()).toEqual(['AaveV3Ethereum', 'AaveV3EthereumLido']);
   });
 
-  it('excludes V4 reserves (those with spokeName)', () => {
-    const reserves = [makeV3Reserve(1, '0xAa'), makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', 'encoded')];
+  it('excludes V4 reserves (AaveV4* marketName)', () => {
+    const reserves = [makeV3Reserve(1, '0xAa'), makeV4Reserve(1, '0xBb', SPOKES.main, 'encoded')];
     const result = deriveV3AssetsByMarket(reserves);
     expect(Object.keys(result)).toHaveLength(1);
   });
@@ -114,57 +134,105 @@ describe('deriveV3AssetsByMarket', () => {
 });
 
 describe('deriveV4ReservesBySpoke', () => {
-  it('groups V4 reserves by spokeName', () => {
-    const encoded1 = Buffer.from('1::0xAa').toString('base64');
-    const encoded2 = Buffer.from('2::0xBb').toString('base64');
+  // AAV-1356: the consumer (getV4UserPositionsAllSpokes) looks spokes up by the address
+  // book's address, so keying by the API's display name joined nothing and the V4
+  // on-chain fallback queried zero spokes on every chain.
+  it('keys by the spoke address, not by the API display name', () => {
+    const result = deriveV4ReservesBySpoke([makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'))]);
+    expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
+    expect(result[keyOf(SPOKES.main)]).toEqual([{ reserveId: 1n, asset: '0xAa' }]);
+  });
+
+  it('does not key by the display name or the address book raw key', () => {
+    const result = deriveV4ReservesBySpoke([makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'))]);
+    expect(result['Main']).toBeUndefined();
+    expect(result['MAIN_SPOKE']).toBeUndefined();
+  });
+
+  it('groups multiple reserves of one spoke', () => {
     const reserves = [
-      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', encoded1, { hubName: 'Core' }),
-      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', encoded2, { hubName: 'Core' }),
+      makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'), { hubName: 'Core' }),
+      makeV4Reserve(1, '0xBb', SPOKES.main, encode('2::0xBb'), { hubName: 'Core' }),
     ];
     const result = deriveV4ReservesBySpoke(reserves);
-    expect(Object.keys(result)).toEqual(['MAIN_SPOKE']);
-    expect(result['MAIN_SPOKE']).toHaveLength(2);
-    expect(result['MAIN_SPOKE'][0]).toEqual({ reserveId: 1n, asset: '0xAa' });
-    expect(result['MAIN_SPOKE'][1]).toEqual({ reserveId: 2n, asset: '0xBb' });
+    expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
+    expect(result[keyOf(SPOKES.main)]).toHaveLength(2);
+    expect(result[keyOf(SPOKES.main)][0]).toEqual({ reserveId: 1n, asset: '0xAa' });
+    expect(result[keyOf(SPOKES.main)][1]).toEqual({ reserveId: 2n, asset: '0xBb' });
   });
 
   it('separates reserves from different spokes', () => {
-    const encoded1 = Buffer.from('1::0xAa').toString('base64');
-    const encoded2 = Buffer.from('2::0xBb').toString('base64');
     const reserves = [
-      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', encoded1),
-      makeV4Reserve(1, '0xBb', 'BLUECHIP_SPOKE', encoded2),
+      makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa')),
+      makeV4Reserve(1, '0xBb', SPOKES.forex, encode('2::0xBb')),
     ];
     const result = deriveV4ReservesBySpoke(reserves);
-    expect(Object.keys(result).sort()).toEqual(['BLUECHIP_SPOKE', 'MAIN_SPOKE']);
+    expect(Object.keys(result).sort()).toEqual([keyOf(SPOKES.forex), keyOf(SPOKES.main)].sort());
+  });
+
+  it('keeps two spokes that share a display name apart', () => {
+    const reserves = [
+      makeV4Reserve(1, '0xAa', SPOKES.bluechip, encode('1::0xAa')),
+      makeV4Reserve(1, '0xBb', SPOKES.bluechipSentora, encode('2::0xBb')),
+    ];
+    const result = deriveV4ReservesBySpoke(reserves);
+    expect(Object.keys(result).sort()).toEqual([keyOf(SPOKES.bluechip), keyOf(SPOKES.bluechipSentora)].sort());
+    expect(result[keyOf(SPOKES.bluechip)]).toEqual([{ reserveId: 1n, asset: '0xAa' }]);
+    expect(result[keyOf(SPOKES.bluechipSentora)]).toEqual([{ reserveId: 2n, asset: '0xBb' }]);
+  });
+
+  it('normalises the EIP-55 and lowercase spellings of one address to a single key', () => {
+    const reserves = [
+      makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa')),
+      makeV4Reserve(1, '0xBb', { name: SPOKES.main.name, address: keyOf(SPOKES.main) }, encode('2::0xBb')),
+    ];
+    const result = deriveV4ReservesBySpoke(reserves);
+    expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
+    expect(result[keyOf(SPOKES.main)]).toHaveLength(2);
+  });
+
+  // The real payload has this shape on all 124 V4 reserves: the address lives only in
+  // reserveId, and `spokeAddress` stays undefined. Reading the property instead would
+  // depend on enrichReservesFromId having run first.
+  it('keys from reserveId without relying on a spokenAddress property', () => {
+    const reserve = makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'));
+    expect(reserve.spokeAddress).toBeUndefined();
+    expect(Object.keys(deriveV4ReservesBySpoke([reserve]))).toEqual([keyOf(SPOKES.main)]);
+  });
+
+  it('keys a 3-segment reserveId (no hub) — enrichReservesFromId leaves spokeAddress unset there', () => {
+    const reserves = [
+      makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'), { reserveId: `1:${keyOf(SPOKES.main)}:0xAa` }),
+    ];
+    expect(Object.keys(deriveV4ReservesBySpoke(reserves))).toEqual([keyOf(SPOKES.main)]);
+  });
+
+  it('skips a reserveId whose spoke segment is not an address', () => {
+    const reserves = [
+      makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'), { reserveId: '1:MAIN_SPOKE:0xAa:0xhub' }),
+    ];
+    expect(Object.keys(deriveV4ReservesBySpoke(reserves))).toHaveLength(0);
+  });
+
+  it('skips an unparseable reserveId', () => {
+    const reserves = [makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'), { reserveId: 'not-a-reserve-id' })];
+    expect(Object.keys(deriveV4ReservesBySpoke(reserves))).toHaveLength(0);
   });
 
   it('excludes V3 reserves', () => {
-    const reserves = [
-      makeV3Reserve(1, '0xAa'),
-      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', Buffer.from('1::0xBb').toString('base64')),
-    ];
+    const reserves = [makeV3Reserve(1, '0xAa'), makeV4Reserve(1, '0xBb', SPOKES.main, encode('1::0xBb'))];
     const result = deriveV4ReservesBySpoke(reserves);
-    expect(Object.keys(result)).toEqual(['MAIN_SPOKE']);
+    expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
   });
 
   it('skips V4 reserves without aaveProReserveId', () => {
-    const reserves = [makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', '')];
-    const result = deriveV4ReservesBySpoke(reserves);
-    expect(result['MAIN_SPOKE']).toBeUndefined();
+    const reserves = [makeV4Reserve(1, '0xAa', SPOKES.main, '')];
+    expect(Object.keys(deriveV4ReservesBySpoke(reserves))).toHaveLength(0);
   });
 
   it('skips V4 reserves with unparseable aaveProReserveId', () => {
-    const reserves = [makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', 'invalid!!!')];
-    const result = deriveV4ReservesBySpoke(reserves);
-    expect(result['MAIN_SPOKE']).toBeUndefined();
-  });
-
-  it('skips V4 reserves without spokeName', () => {
-    const encoded = Buffer.from('1::0xAa').toString('base64');
-    const reserves = [makeV4Reserve(1, '0xAa', '', encoded)];
-    const result = deriveV4ReservesBySpoke(reserves);
-    expect(Object.keys(result)).toHaveLength(0);
+    const reserves = [makeV4Reserve(1, '0xAa', SPOKES.main, 'invalid!!!')];
+    expect(Object.keys(deriveV4ReservesBySpoke(reserves))).toHaveLength(0);
   });
 
   it('returns empty record for empty reserves', () => {

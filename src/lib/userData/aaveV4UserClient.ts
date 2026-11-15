@@ -1,4 +1,5 @@
 import * as ab from '@aave-dao/aave-address-book';
+import { toV4SpokeKey } from '@/lib/reserveKey';
 
 type CallResult<T> =
   { status: 'success'; result: T; error?: undefined } | { status: 'failure'; result?: undefined; error: Error };
@@ -44,12 +45,14 @@ function isV4Module(name: string, mod: unknown): mod is V4AbModule {
  * aaveV4UserClient.test.ts).
  *
  * The base module is the one whose name prefixes every other name for that chain, so
- * this does not depend on order. Curated variants are skipped rather than merged:
- * they redeploy spokes under names the base module already uses (`BLUECHIP_SPOKE`
- * is a different address in each), and `deriveV4ReservesBySpoke`
- * (src/lib/deriveOnchainConfig.ts) keys a Map by spoke name, so merging would
- * conflate two spokes' reserves. Supporting curated modules needs that consumer to
- * key by address first — tracked in AAV-1356.
+ * this does not depend on order. Curated variants are still skipped rather than merged:
+ * they redeploy spokes under names the base module already uses (`BLUECHIP_SPOKE` is a
+ * different address in each), so a union would carry two entries sharing a `name`.
+ * Name collision is no longer what blocks the merge — `deriveV4ReservesBySpoke`
+ * (src/lib/deriveOnchainConfig.ts) keys by spoke address since AAV-1356, so two
+ * same-named spokes keep separate reserves. What is left is the union itself (RPC cost:
+ * +3 spokes on Ethereum) and telling two same-named entries apart in the failure labels.
+ * Tracked in AAV-1356.
  */
 function selectModulesPerChain(modules: { name: string; mod: V4AbModule }[]): V4AbModule[] {
   const byChain = new Map<number, { name: string; mod: V4AbModule }[]>();
@@ -319,25 +322,32 @@ export async function getV4UserPositionsAllSpokes(
   const spokes = getV4SpokeAddresses(chainId);
   if (!spokes) return { results: [], errors: [] };
 
+  // Looked up by spoke address: a map keyed by name — the address book's raw key or the
+  // API's display name — matches nothing here, and the fallback then silently queries
+  // zero spokes (AAV-1356). A single `targeted` array keeps each outcome aligned with
+  // the spoke it belongs to, so a failure is never attributed to a neighbour.
+  const targeted = spokes.flatMap((spoke) => {
+    const key = toV4SpokeKey(spoke.address);
+    const reserves = key ? reservesBySpoke[key] : undefined;
+    return reserves && reserves.length > 0 ? [{ spoke, reserves }] : [];
+  });
+
   const settled = await Promise.allSettled(
-    spokes
-      .filter((s) => reservesBySpoke[s.name] && reservesBySpoke[s.name].length > 0)
-      .map((spoke) =>
-        getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reservesBySpoke[spoke.name], client),
-      ),
+    targeted.map(({ spoke, reserves }) =>
+      getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reserves, client),
+    ),
   );
 
   const results: V4OnchainResult[] = [];
   const errors: V4OnchainError[] = [];
-  const filteredSpokes = spokes.filter((s) => reservesBySpoke[s.name] && reservesBySpoke[s.name].length > 0);
 
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === 'fulfilled') {
       results.push(outcome.value);
     } else {
-      console.error(`[onchain-v4] Spoke ${filteredSpokes[i].name} on chain ${chainId} failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
-      errors.push({ chainId, spokeName: filteredSpokes[i].name, error: outcome.reason });
+      console.error(`[onchain-v4] Spoke ${targeted[i].spoke.name} on chain ${chainId} failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      errors.push({ chainId, spokeName: targeted[i].spoke.name, error: outcome.reason });
     }
   }
 
