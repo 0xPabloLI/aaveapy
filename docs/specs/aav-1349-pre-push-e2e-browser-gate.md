@@ -211,6 +211,26 @@ PLAYWRIGHT_BROWSERS_PATH="$TMPD" E2E_SKIP=1 node scripts/pre-push-e2e.mjs # rc=0
   `exit 1` 由 T-S1 与 runtime smoke 固定，两段合起来即 S9。
 - 分支保护侧（e2e 是否提为必填检查）按票面 out of scope，未动。
 
+### 推送时的真实 pre-push（`dev`，`3d21c2ac..206372e8`）
+
+`git push origin dev:dev` 触发整条 hook，全门实跑：
+
+- `ci:remote`：lint / react-singleton / vitest **4253 passed | 14 skipped | 6 todo**（190 files）/ build + CSP hash 门 / audit（既有 11 high 警告，非阻塞）。
+- `test:e2e:pre-push`：**62 passed / 26 skipped / 0 failed（4.3m）**，`✅ e2e tests passed`——即
+  「浏览器齐全时行为不变」在真实推送路径上的第二次独立证据。
+- osv-scanner：`No issues found`；semgrep：无输出即通过；knip：pass；`dup:check`：**2.79%**（阈值 3%）。
+- 新增的 `pre-push e2e browser gate` 两组用例（纯决策 / 真脚本）随 `node --test` 在同一轮里跑绿。
+
+**过程取证**：第一次推送被 `vite:prepare-out-dir` 的 `[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]`
+（`dist/assets` 251 个文件 > 单轮阈值 50）挡下——这是本机沙箱 shim 的既有形态，与本 diff 无关；
+按既有记录的做法摘掉 `NODE_OPTIONS`（只去 shim，门禁一步不省）后同一条命令通过。
+
+### 顺带修掉的一处失真（同一文件）
+
+`scripts/pre-push-e2e.mjs` 的启动横幅写 `2 workers`，而命令行实际是 `--workers=1`（两年前
+改 worker 数时漏改的文案）。同一族的「打印出来的状态与真实状态不一致」，本轮一并改成
+`1 worker`；无断言依赖该字符串（`rg '2 workers'` 只命中该行与历史 spec）。
+
 ## Further Notes
 
 - 票面把「e2e 不是必填检查」列为 out of scope，但它是**同一个洞的另一半**：本次只堵本地这一半。

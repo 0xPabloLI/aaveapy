@@ -104,7 +104,7 @@ const GREP_INVERT = [
 ].join('|');
 
 console.log('');
-console.log('🧪 Running e2e tests (desktop chromium, 2 workers, staging API)...');
+console.log('🧪 Running e2e tests (desktop chromium, 1 worker, staging API)...');
 console.log(
   '   Excludes: explorer links, staging-smoke, visual, wallet-sync, watch-mode, wallet-reconnect, scenario-pin 8-step timing.',
 );
