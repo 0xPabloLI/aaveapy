@@ -112,13 +112,14 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1317 | Medium | Backlog (ready-for-agent) | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 |
 | AAV-1319 | Medium | Backlog (needs-triage) | [CI] e2e 目录不在常态 lint/typecheck 覆盖内；AGENTS.md 验证门 `npx tsc --noEmit` 实际检查 0 文件 |
 | AAV-1295 | Medium | Backlog | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过 |
-| AAV-1292 | Medium | Backlog | railway → main 正式晋升：三个定时工作流从未运行 |
+| AAV-1292 | Medium | Backlog（2026-11-15：railway 侧 canary 已首次整 run 绿 `43703832449`；main 仍缺 npm pin / 删 `npm ci --prefix` / build 先行 / 目标按 ref 四项，`2026-11-09` 周跑 `42639741627` 为 failure，`11-16` 预计再红。卡点只剩晋升本身） | railway → main 正式晋升：三个定时工作流从未运行 |
 | AAV-1275 | Medium | Backlog | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
 
 ### Low / No priority
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
+| AAV-1379 | Low | Backlog | [后端] `concurrent-fetch.ts` 只用 `=== null` 判定「无借入侧」：`buildV3BaseDataset(markets: any[])` 入参是 `any`，若 SDK 省略 `borrowInfo` 键而非显式 `null`，该 reserve 会读成「可借但借入侧全零」。当前 441 条样本未观察到键缺失（`borrowDisabled` 142 / 无数字 19），定性为健壮性缺口而非线上故障；候选修法 1 行 `?? null` 收敛。**不要**对 `protocolFee` 做同类改动（缺席 = 0 是 AAV-1350 契约） |
 | AAV-1359 | Low | Backlog | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） |
 | AAV-1354 | Low | Backlog | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
 | AAV-1322 | Low | Backlog | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
