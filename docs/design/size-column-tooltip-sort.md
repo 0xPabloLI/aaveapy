@@ -70,7 +70,7 @@ Cell:    supply ring (hover → Total supplied [↑↓] | Suppliable [↑↓] | 
 
 ### Phase 7: 全量验证 + 清理
 
-- lint + test + tsc --noEmit + build
+- lint + test + typecheck + build
 - 确认 ReservesTableDesktopHeader.test.tsx 更新
 
 ## 进度

@@ -2,7 +2,6 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
-import { componentTagger } from 'lovable-tagger';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reactRoot = path.resolve(__dirname, 'node_modules/react');
@@ -177,7 +176,6 @@ export default defineConfig(({ mode }) => ({
     deployShaMetaPlugin(),
     selectiveModulePreloadPlugin(),
     assertFirstPaintChunksPlugin(),
-    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
     include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
@@ -223,7 +221,7 @@ export default defineConfig(({ mode }) => ({
         'src/providers/**',
         'src/shared/**',
       ],
-      exclude: ['src/generated/**', 'src/integrations/supabase/**', '**/*.test.*', '**/*.d.ts'],
+      exclude: ['src/generated/**', '**/*.test.*', '**/*.d.ts'],
       // Enforced floor (npm run test:coverage). Baseline 2026-09:
       // stmts 72.9 / branches 66.7 / funcs 64.1 / lines 74.9 — thresholds sit
       // just under so new untested code fails CI while debt gets paid down
