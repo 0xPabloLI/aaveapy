@@ -177,12 +177,23 @@ MIN_RELEASE_AGE_DAYS=0 npm run check:dep-age -- --staged
 `npm run typecheck` → clean；`npx prettier --check`（全部改动文件）→ clean；
 `git diff --check` → clean。
 
+### Pre-push（推送 `7500586b` 时实跑）
+
+`git push origin dev:dev` → `eeca95d7..7500586b dev -> dev`。`.husky/pre-push`：
+
+- e2e: **62 passed / 26 skipped / 0 failed**（3.2m）。
+- osv-scanner: **No issues found**（既有 zod `GHSA-mrhx-c7xc-m3w5` 按
+  `osv-scanner.toml` 过滤；同时提示 `GHSA-vfj7-8cjw-p6xm` 的 ignore 已成
+  dead config，既有问题，不在本 diff）。
+- semgrep: `--quiet` 无输出、门继续执行 ⇒ exit 0。
+- knip: pass；`dup:check`: **2.79%**（阈值 3%）。
+
 ### Not yet verified
 
 - **S8**：2026-11-16 04:20 UTC 的真实 Hardcode Sync schedule 运行。用户选择不手动
-  dispatch；AAV-1362 保持 In Progress，待该 run 绿后再关票。
-- **pre-push**：本 spec 的证据记录于 commit 前；`.husky/pre-push` 在推送时执行
-  （`ci:remote` + e2e + osv + semgrep + knip + dup），结果以推送日志为准。
+  dispatch；AAV-1362 保持 In Progress，待该 run 绿后再关票。**该 run 读取 `main`
+  的 `b9c30868`，验证的是主修复（无 proactive bump），不是本轮文案；文案在 `dev`，
+  随下一次标准 `dev → main` 推广上线。**
 
 ## Further Notes
 
