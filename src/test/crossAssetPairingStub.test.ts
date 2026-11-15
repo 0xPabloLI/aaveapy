@@ -184,6 +184,10 @@ describe('AAV-1317 same-symbol injection', () => {
     // if a future append adds another WETH, the Add-flow label matching and
     // the row-order reasoning in AAV1317_SAME_SYMBOL_INJECTION must be re-checked.
     expect(reserves.filter((r) => r.tokenSymbol === 'WETH')).toHaveLength(2);
+    // The discarded AAV-1317 candidate (Monad USDC, ltv=0) must stay out of the
+    // composite: its LIVE campaign window would add a computable non-pairing
+    // group to every payload built from this fixture.
+    expect(reserves.filter((r) => r.tokenSymbol === 'USDC')).toHaveLength(1);
     expect(buildCrossAssetPairingStub(loadFixture(), AAV1317_SAME_SYMBOL_INJECTION).scenarios).toHaveLength(1);
   });
 

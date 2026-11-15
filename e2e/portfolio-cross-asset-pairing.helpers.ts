@@ -17,6 +17,7 @@ import {
   fillBorrowAmountMobile,
   fillSupplyAmount,
   foundValue,
+  portfolioAmountInputName,
   readIncentiveAfter,
   reserveGateFor,
   setupPortfolioMode,
@@ -136,11 +137,9 @@ async function expectRowAmount(
   expected: string,
 ) {
   const row = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  const input = row
-    .getByRole('textbox', {
-      name: new RegExp(`${side === 'supply' ? 'Supply' : 'Borrow'} (?:amount|effective) for ${symbol}`, 'i'),
-    })
-    .first();
+  // Same matcher rule as the fill helpers (shared export, AAV-1317 review):
+  // symbol is regex-escaped and both amount/effective label variants match.
+  const input = row.getByRole('textbox', { name: portfolioAmountInputName(side, symbol) }).first();
   await expect(input, `Row ${reserveId} ${side} input must hold ${expected}`).toHaveValue(expected);
 }
 

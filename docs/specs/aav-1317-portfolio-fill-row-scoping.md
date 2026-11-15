@@ -23,7 +23,7 @@ stub 变体（WETH×USDC，同市场不同符号）。一旦 Merkl 真的下发�
      `activeTab` 渲染），helper 在 tab 存在且未选中时先点对应 side 的 tab——桌面行无 tab，该步自动跳过；
    - accessible-name 匹配放宽为 `Supply|Borrow (?:amount|effective) for <SYM>`（wallet-backed 行显示
      `effective`），symbol 走 `escapeRegExp`（`USDC.e` 等符号含正则元字符）。
-   - 签名变更（新增必填 `reserveId`）由编译期强制，11 处调用点（cross-asset helpers 5 + offset spec 5，
+   - 签名变更（新增必填 `reserveId`）由编译期强制，11 处调用点（cross-asset helpers 6 + offset spec 5，
      另 `fillBorrowAmountMobile` 签名不变）同 commit 更新。
 2. **Add 流程收紧**（`addReserveToPortfolio`）：同符号多候选且 market label 无命中时由「`.first()` 静默点击」
    改为 `return false`（调用方已有具名断言）。静默加错 reserve 是与 fill 同族的残留缺陷。
@@ -90,7 +90,7 @@ build rc=0（CSP 门绿）。
 | `e2e/test-reserves.ts` | fill 三 helper 收进行域共享实现（签名 +reserveId）；`addReserveToPortfolio` 无标签命中改 `return false` | High | 多 spec 消费的公共 helper。编译期强制所有调用点同 commit 更新（typecheck:e2e 覆盖 `e2e/**`，AAV-1319 门）；4 个消费 spec + offset spec 全部实跑回归；最坏后果 = e2e 定位失败（响亮红），不影响生产代码 |
 | `e2e/reserveDiscovery.ts` | 删同符号 `continue`；自配对注释重写（行为不变） | Medium | 单测 P11 翻转 + P10 保留锚定；live 路径 0 场景 ⇒ 无即时运行时行为变化；`usableForSimulatedPosition(paired)` 门保持不动 |
 | `e2e/portfolio-cross-asset-pairing.helpers.ts` | 第二 stub 构建 + `installStubRoutes(page, payload?)` 参数化（默认仍 AAV-1316 payload）+ runner 行归属断言 | Medium | 既有 stub 用例原样通过（断言兼容不同符号场景）；payload 参数有默认值，旧调用不破坏 |
-| `e2e/fixtures/markets-cross-asset-pairing-base.json` | 追加 Celo WETH（composite，见 provenance） | Medium | builder 对门控失败响应亮 throw；SS1–SS4 锚定 composite 契约（恰 2 条 WETH、 Monad/USDC 不在、窗口未覆盖、schema 通过） |
+| `e2e/fixtures/markets-cross-asset-pairing-base.json` | 追加 Celo WETH（composite，见 provenance） | Medium | builder 对门控失败响应亮 throw；SS 系列锚定 composite 契约（SS2：恰 2 条 WETH 且恰 1 条 USDC——被否决的 Monad USDC 候选不在；SS3：注入不改 base、真实窗口保留；SS4：schema 通过） |
 | `e2e/crossAssetPairingStub.ts` | `AAV1317_SAME_SYMBOL_INJECTION` 常量 + 筛选标准注释 | Low | 纯新增导出；SS parity 单测 |
 | `e2e/portfolio-cross-asset-pairing.{desktop,mobile}.spec.ts` | 各 +2 用例（同符号 stub、Add 探针）；`installStubRoutes` 显式传 payload | Low | 平台绑定方式不变（文件级 testIgnore） |
 | `e2e/portfolio-cross-reserve-offset.spec.ts` | 5 处调用点补 reserveId | Low | live self-loop 双平台实跑通过 |
@@ -105,7 +105,7 @@ build rc=0（CSP 门绿）。
 | B2 | 自配对（pairedReserveId === sourceReserveId） | 仍被排除（runner 单仓位模型，paired fill 会覆盖 source 仓位） | 中 | automated test（P10 保留 + 注释重写） | 解除需先改 runner，超出本票（用户拍板保留） |
 | B3 | `fillSupplyAmount` 桌面填目标行 | 值落在 reserveId 对应行，同符号另一行不受影响 | 中 | runtime（同符号 stub desktop：paired 行 = 500 且 source 行仍 1,000；旧实现红） | 行归属断言常驻 runner |
 | B4 | `fillSupplyAmount` 移动端（含 tab 切换） | 切到对应 side tab 后填目标卡片行 | 中 | runtime（同符号 stub mobile 3 passed） | helper 内 tab 切换 + 既有 `readIncentiveAfter` 同锚点 |
-| B5 | `fillBorrowAmountDesktop/Mobile` 行域 | borrow 填目标行 | 中 | runtime（offset live self-loop desktop 7.5s / mobile 11.0s 通过） | — |
+| B5 | `fillBorrowAmountDesktop/Mobile` 行域 | borrow 填目标行 | 中 | runtime（offset live self-loop desktop 7.5s / mobile 11.0s 通过；**依赖 live 数据**——staging 当前有 4 条 self-loop 真实执行，无常驻 stub 证据；desktop borrow 的 stub 覆盖需 borrow-side 同符号 stub，若 Merkl 真实下发 borrow 配对再补） | — |
 | B6 | Add：同符号多候选且无 label 命中 | 显式 `false`（调用方具名断言失败），绝不 `.first()` | 中 | runtime（Add 探针 desktop+mobile；旧实现红） | — |
 | B7 | Add：单候选且 label 不匹配 | 仍直接添加（count === 1 路径保持） | 低 | runtime（既有 stub 用例的 paired 添加走 count=1 路径，3 passed） | — |
 | B8 | 既有 WETH×USDC stub | 行为不变 + 行归属断言通过 | 低 | runtime（desktop 7.3s / mobile passed） | — |

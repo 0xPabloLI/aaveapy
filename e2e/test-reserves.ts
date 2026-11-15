@@ -357,8 +357,11 @@ function escapeRegExp(value: string): string {
  * Accessible-name matcher for a portfolio amount input. The label reads
  * "supply amount for <SYM>" for a fresh position and "supply effective for
  * <SYM>" for a wallet-backed one (PortfolioTablePrimitives.CompactInput).
+ * Exported so the cross-asset runner's row-ownership assertions match with
+ * the exact same rule the fill helpers use (AAV-1317 review: one matcher,
+ * not two copies that can drift).
  */
-function portfolioAmountInputName(side: 'supply' | 'borrow', symbol: string): RegExp {
+export function portfolioAmountInputName(side: 'supply' | 'borrow', symbol: string): RegExp {
   return new RegExp(`${side === 'supply' ? 'Supply' : 'Borrow'} (?:amount|effective) for ${escapeRegExp(symbol)}`, 'i');
 }
 
