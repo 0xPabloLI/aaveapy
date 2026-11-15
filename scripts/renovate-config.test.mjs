@@ -72,7 +72,7 @@ describe('renovate.json — ceilings and release gates', () => {
     }
   });
 
-  it('lockFileMaintenance stays off — routine npm churn belongs to hardcode-sync', () => {
+  it('lockFileMaintenance stays off — bumps arrive as per-package PRs so the 7-day age check can see them', () => {
     assert.equal(config.lockFileMaintenance?.enabled, false);
   });
 

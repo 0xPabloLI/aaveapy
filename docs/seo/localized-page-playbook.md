@@ -79,7 +79,7 @@
 ## 7. 上线前验证门槛
 
 ```bash
-npm run lint && npm test && npm run build && npx tsc --noEmit
+npm run lint && npm test && npm run build && npm run typecheck
 ```
 
 外加：

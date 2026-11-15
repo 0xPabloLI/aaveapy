@@ -103,7 +103,7 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 ## dependabot.yml 是「一处无效 = 整份不解析」，且重复条目只有 check-run 会告诉你
 
 - **`ignore` 要求 `dependency-name` + `versions` 组合唯一**：写成两条相同条目，Dependabot 报 `The property '#/updates/0/ignore/1/versions' includes a duplicate`，结果是**整份配置不解析**——不是那一条被忽略，而是 npm 与 github-actions 两个生态一起停摆，连 security 更新都不开。
-- **只有默认分支的那份真正生效，但破坏是从那里开始计时的**：非默认分支上的坏配置当下无害（Dependabot 不读它），一旦被 `→ main` 的发布流带进默认分支就全局失效。所以往 dev/lovable 写 dependabot 改动时，必须把它当成「等着被 ship 的定时炸弹」看，别用「现在还在红/绿」判断影响面。
+- **只有默认分支的那份真正生效，但破坏是从那里开始计时的**：非默认分支上的坏配置当下无害（Dependabot 不读它），一旦被 `→ main` 的发布流带进默认分支就全局失效。所以往 `dev` 写 dependabot 改动时，必须把它当成「等着被 ship 的定时炸弹」看，别用「现在还在红/绿」判断影响面。
 - **验证信号只存在于 commit 的 check-run 里**：`.github/dependabot.yml` 那条校验不是必需检查、也不在 CI workflow 内，`gh pr checks` 的流水线全绿照样可能是无效配置。取证方式：`gh api repos/<r>/commits/<sha>/check-runs --jq '.check_runs[] | select(.conclusion=="failure")'`，正文在 `.output.summary`。写完 YAML 列表项要跑这一条，不能只看 lint。
 - **改 YAML 列表项要整块替换**：同一次 session 里两次 Edit（第一次注释被截断、第二次只补注释）很容易把 `- dependency-name` 整块重新插进去而留下旧副本——本仓就因此把重复条目带进了 dev（`7f7b4a18`）。列表项的新增/改写一次成型，改完立刻 `grep -c dependency-name` 数一遍条数。
 
@@ -123,8 +123,8 @@ Historical lessons from CI/CD, external API integration, and deployment. Extract
 
 - **现象**：Hardcode Sync 在 `dev`/`main`/`lovable` 三个分支每天全红（实测 2026-09-16～2026-11-10 之间 41 天连续失败）。日志只有一行 `TypeError: Cannot read properties of undefined (reading 'UNDERLYING')`。
 - **⚠️ 堆栈会指错文件**：栈顶是 `collectRequiredIconSymbols (scripts/lib/token-icon-symbols.mjs:181)` 与 `getMissingSymbols (scripts/sync-token-icons.mjs:219)`，真凶在 `src/ui-config/reservePatches.ts` 的 key 表达式——`Function(...keys, 'return (...)')` 求值失败时，抛出点落在**调用方**，不在被求值的字面量里。
-- **机制**：`underlyingAssetMap` 的 key 是**对 address book 求值的表达式**（`[AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]`）。只要 `ASSETS` 里少一个名字，表达式就变成 `undefined.UNDERLYING`，**整张表**求值失败。地址簿每次发版都可能改名，而 CI 每天都 `npm update`。
-- **⚠️ 本地测不出来，差异只存在于 CI**：workflow 第 60 行是 `npm update @aave-dao/aave-address-book`，会拉到 **latest**；本地锁文件钉的是旧版。实测本地 `npm run sync-token-icons -- --check` 在 4.73.0 上 **exit 0**。**排查这类问题第一步先看 workflow 有没有主动升级依赖**，别在本地反复复现。
+- **机制**：`underlyingAssetMap` 的 key 是**对 address book 求值的表达式**（`[AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]`）。只要 `ASSETS` 里少一个名字，表达式就变成 `undefined.UNDERLYING`，**整张表**求值失败。地址簿每次发版都可能改名，而当时 CI 每天都 `npm update`（该步骤已于 2026-11-11 移除，见下一条）。
+- **⚠️ 本地测不出来，差异只存在于 CI**：当时 workflow 有一步 `npm update @aave-dao/aave-address-book`，会拉到 **latest**；本地锁文件钉的是旧版。实测本地 `npm run sync-token-icons -- --check` 在 4.73.0 上 **exit 0**。**排查这类问题第一步先看 workflow 有没有主动升级依赖**，别在本地反复复现。**该步骤已移除**：它每次采纳当天发布的上游版本（0 天），而 pre-commit 的 `check:dep-age` 拦截未满 7 天的依赖 ⇒ 该 job 自 2026-10-09 起结构上不可能通过；bump 现归 Renovate（`minimumReleaseAge: 7 days`）。
 - **本次的具体改名（已取证）**：`4.74.0` 把 Arbitrum/Optimism/Polygon 的**跨链 USDC** key 从 `USDC` 改成 `USDCe`。边界实测：`4.73.0` 有 `USDC` + `USDCn`，`4.74.0` 起是 `USDCe` + `USDCn`——**没有任何版本同时有两种拼写**，所以是改名不是别名。
 - **⚠️ 别改错成 `USDCn`（两个是不同的 token）**：用地址相等证明改名目标，不要靠名字猜。`USDC`/`USDCe` = `0xFF970A…`（Arbitrum，bridged，`symbol: 'USDC.e'`），`USDCn` = `0xaf88d0…`（native）。改成 `USDCn` 会把三条 patch 静默指向**另一个 token**，比崩溃更难发现。
 - **⚠️ 改名必须按 market 限定**：Ethereum/Base/Avalanche 等市场的 `USDC` 就是自己的 native USDC，全局替换会指错；Gnosis 同时有 `USDC` 与 `USDCe`。实测 4.77.6 只有那三个市场是 `USDCe + USDCn`。

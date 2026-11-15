@@ -19,7 +19,12 @@
 
 > 不属 core 偏离登记——本机环境事实，住这里避免 AGENTS.md 常驻载入膨胀。
 
-- **网络出口（直连不可达）**：`*.vercel.app` 直连解析到异常 IP（connection refused / timeout）；`git push` 直连 GitHub 会被 `Connection reset by peer`、`SSL_ERROR_SYSCALL` 中断。两者都走本机 SOCKS5 隧道 `127.0.0.1:7891`：浏览器加 `--proxy-server="socks5://127.0.0.1:7891"`（Playwright 用 `E2E_PROXY=http://127.0.0.1:7891`，见 `playwright.config.ts`）；git 用 `git -c http.proxy=socks5h://127.0.0.1:7891 push`（临时 `-c`，不动全局配置）。生产站 `aaveapy.com` 直连可达。
+- **网络出口（直连不可达）**：`*.vercel.app` 直连解析到异常 IP（connection refused / timeout）；`git push` 直连 GitHub 会被 `Connection reset by peer`、`SSL_ERROR_SYSCALL` 中断。出口是本机代理，**端口随代理应用每次启动漂移**，所以这里不写死数字：
+  - **先读 `scutil --proxy`** 拿当前 HTTP/HTTPS/SOCKS 端口。`7891`（本文件旧值）、`7899`/`7898`（`docs/issue-roadmap.md` 2026-11-11 记录）都已失效，2026-11-12 实测落在 `49967`。
+  - git 走 **SOCKS5**：`git -c http.proxy=socks5://127.0.0.1:<端口> push`（临时 `-c`，不动全局配置）。实测同一端口上 `http://` 代理对 `github.com` 直接 403，`socks5h://`（代理解析 DNS）报 `SSL_ERROR_SYSCALL`，只有 `socks5://`（本机解析 DNS）通——三种写法都试过，不是猜的。
+  - 排查时注意：代理核以 root 运行，`lsof -iTCP:<端口>` 可能查不到任何监听进程，但端口实际可用；用 `nc -z 127.0.0.1 <端口>` 或 `curl -x http://127.0.0.1:<端口> https://example.com/` 判断死活。`github.com:443` 直连被黑洞时 `api.github.com` 仍 200，`gh` 命令因此照常可用，不要用 `gh` 的可用性推断 git 传输可用。
+  - 浏览器加 `--proxy-server="socks5://127.0.0.1:<端口>"`（Playwright 用 `E2E_PROXY=socks5://127.0.0.1:<端口>`，见 `playwright.config.ts`）。
+  - 生产站 `aaveapy.com` 直连可达。
 - **专用 profile**：`/Users/pabloli/chrome-tiktok-profile`（用户维护，内含 Vercel SSO 登录态）。
 - **启动 + 附着**：`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/Users/pabloli/chrome-tiktok-profile --remote-debugging-port=9333 --no-first-run` 起可见窗口，`chromium.connectOverCDP('http://127.0.0.1:9333')` 附着；`browser.newContext({ ...devices['Pixel 7'] })` 可叠加移动端仿真。
 - **staging 鉴权墙备选**：Vercel 项目 `protectionBypass` 密钥加 `x-vercel-protection-bypass` 请求头（配 `x-vercel-set-bypass-mode: persist`），免登录过墙。

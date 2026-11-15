@@ -12,7 +12,7 @@
   "dependencyDashboardAutoclose": true,
   "packageRules": [
     {
-      "description": "Non-major Action bumps: Renovate opens the PR, merging stays with .github/workflows/automerge.yml via the automerge label (PAT path keeps the lovable->dev MERGE / others SQUASH policy). The 7-day wait binds here even though scripts/check-dep-release-age.mjs cannot see it - that gate diffs package-lock, which has no workflow pins.",
+      "description": "Non-major Action bumps: Renovate opens the PR, merging stays with .github/workflows/automerge.yml via the automerge label (PAT path; every automerged PR is SQUASH since lovable was retired on 2026-11-12 - see docs/dependabot-behavior.md). The 7-day wait binds here even though scripts/check-dep-release-age.mjs cannot see it - that gate diffs package-lock, which has no workflow pins.",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": false,

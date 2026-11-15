@@ -13,7 +13,7 @@
 
 "原子任务" = 一个 hook 抽取、一个 bug fix、一个独立 feature slice、一个文档段落消化。
 
-验证全绿(`lint` / `tsc --noEmit` / `vitest` / `build`)立刻 commit,不要攒成一大堆。攒 batch 的风险:
+验证全绿(`lint` / `typecheck` / `vitest` / `build`)立刻 commit,不要攒成一大堆。攒 batch 的风险:
 - 其它 agent 跑 `git add -A` 把你未提交的 in-progress 改动一起提交进他的 commit
 - 文件被工具(prettier hook / codegen / sync 脚本)刷新,你的改动丢失
 - IDE / format-on-save 改写文件,产生看不见的冲突
@@ -79,7 +79,7 @@ worktree 里出现的非己出改动一律**不动**:
 
 ```bash
 # 一次 commit 的标准流程
-npm run lint && npx tsc --noEmit && npm test -- --run && npm run build
+npm run lint && npm run typecheck && npm test -- --run && npm run build
 git add <自己改的具体路径>
 git commit -m "type(scope): message"
 

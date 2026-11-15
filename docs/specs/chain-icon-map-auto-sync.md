@@ -10,7 +10,7 @@
 
 ## Problem Statement
 
-CI 每日 `npm update @aave-dao/aave-address-book` → registry 新链（如 5042 AaveV4Arc）进入 `discoverMainnetChainIds()` → `check:chain-icons-upstream` 的 registry↔map 双向校验发现 `chainIconMap` 缺条目 → verify fail。而 `sync-chain-icon-map-upstream.mjs` 数据源只有 aave/interface networksConfig（上游未收录 5042），且 `hardcode:sync` 调用不带 `--write`（dry-run）→ 无法自愈 → 两轮失败不建 PR → 同步瘫痪（#629 瘫痪 14 天）。
+当时 CI 每日 `npm update @aave-dao/aave-address-book`（该步骤已于 2026-11-11 移除，现由 Renovate 负责）→ registry 新链（如 5042 AaveV4Arc）进入 `discoverMainnetChainIds()` → `check:chain-icons-upstream` 的 registry↔map 双向校验发现 `chainIconMap` 缺条目 → verify fail。而 `sync-chain-icon-map-upstream.mjs` 数据源只有 aave/interface networksConfig（上游未收录 5042），且 `hardcode:sync` 调用不带 `--write`（dry-run）→ 无法自愈 → 两轮失败不建 PR → 同步瘫痪（#629 瘫痪 14 天）。
 
 实测事实链：本地 lock 4.66.4（21 链全绿、无 AaveV4Arc）vs CI 4.68+（22 链、含 5042）。dev 已手工接入 `5042: 'chainlink-arc'` + SVG（PR #642）；main/lovable 靠本任务自动收敛。
 
@@ -132,7 +132,7 @@ sync 管道产出占位图后，换官方 logo 按此优先级手动取材：
 - Chainlink Arc 正式 logo 设计（后续替换 SVG 文件即可）
 - `MiscArc` / `ChainlinkArc` 模块（无 POOL/SPOKES，不进 registry）
 - `hardcode:sync` 其他子命令（reserve-patches / market-name-map 等）的 --write 语义
-- 本地 address-book lock 升级（走 CI npm update 自然演进）
+- 本地 address-book lock 升级（现由 Renovate 负责，`minimumReleaseAge: 7 days`）
 - 后端仓库侧改动
 
 ## Further Notes

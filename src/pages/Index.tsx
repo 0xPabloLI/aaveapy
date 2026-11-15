@@ -786,10 +786,6 @@ const Index = () => {
                   Merkl
                 </a>
                 {', '}
-                <a href="https://apps.aavechan.com/" {...footerLinkTab} className="text-secondary hover:underline">
-                  ACI
-                </a>
-                {', '}
                 <a
                   href="https://incentra.brevis.network/"
                   {...footerLinkTab}

@@ -112,5 +112,5 @@
 
 - [ ] 所有横向用例（截图对比）未被影响。
 - [ ] 纵向用例与右侧输入框依然顶/底对齐（无 1–2px 漂移）。
-- [ ] `npm run lint && npm test && npx tsc --noEmit` 全部通过。
+- [ ] `npm run lint && npm test && npm run typecheck` 全部通过。
 - [ ] 暗色模式下 `bg-muted/60` 与 `bg-card` 对比度仍清晰。

@@ -1,4 +1,6 @@
 # 在带 automerge 标签的 PR 合并后删除 head 分支（与 automerge.yml 一致）；dev 与默认分支永不删除
+# `lovable` 已从发布流程退役（2026-11-12，dev 成为前端首段），但分支本身保留作归档，
+# 因此这里的守卫继续列出它——删除该分支是人工决定，不由自动化代劳。
 name: Delete branch on merge
 
 on:
