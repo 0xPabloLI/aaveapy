@@ -91,7 +91,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
-| AAV-1362 | High | In Progress（主修复 + 文案已交付；仅剩 11-16 真实 schedule 验证） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。已按「移除 proactive bump，bump 归 Renovate」修复（未选「sync 显式豁免」那条）；实测 `workflow_dispatch` 三分支全绿（run 43150776651），并各开出一笔 bot PR（#823/#824/#825）。注意 `dev`/`main` 自身的 workflow 定义仍是旧版，需随本 PR 上线才生效。**⚠️ 本行 2026-11-12 订正**：原标 Done 是错的，Linear 实际是 In Progress（票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」均未完成）。**未一并处理**：`check-dep-release-age.mjs:159` 的提示仍写「`MIN_RELEASE_AGE_DAYS=0` in the workflow dispatch」，而 `hardcode-sync.yml:4` 是裸 `workflow_dispatch`（无 `inputs`）⇒ 该出口在本 workflow 根本不存在；`SECURITY.md:82` 同样复述了这条不存在的出口。**2026-11-15 更新（路线 A 收口）**：用户拍板 A，不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案已改为「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试。`8830d062` 已随 #835 进入 main（`b9c30868`）；11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）。绿后可关票。 |
+| AAV-1362 | High | In Progress（主修复 + 文案已交付；仅剩 11-16 真实 schedule 验证） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commit `5e057bbb`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；绿后可关票。 |
 | AAV-1330 | High | 已交付待上线（`52e5ace1`，已随 #822 合入 dev） | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） |
 
 ### Medium
@@ -151,6 +151,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1350 | Portfolio 模式在 reserve 缺 rate-calc 字段时激励显示为 —（`protocolFee` 移出 `hasRateCalcFields` 门槛，兜底改走 `getCampaignIncentiveValues` 并传 position/token/decimals；生产复验 6.17% / +$1.64 每天） | 2026-11-12 |
 | AAV-1323 | e2e market-filter-pin 用例 (5) 绝对几何阈值卡实盘（`eba3be94` 行前提发现式挑行+条件 skip；几何阈值判定为 app 自有 sticky 几何无需整改；e2e-desktop 三 run 全绿验收 `38177124100`/`38177997224`/`38196292330`） | 2026-10-12 |
 | AAV-1318 | offset discovery gates borrow room and LTV funding power（`d9809781`：O12–O22 单测，staging 4→4 结构性修复，e2e 8 passed） | 2026-10-12 |
 | AAV-1316 | cross-asset-pairing e2e synthetic 载荷 stub（`9cc1cebf`：真实 fixture 注入 + 真实 discovery 门控选景 + `page.route` 双拦全 hermetic + baseline 零断言；AAV-895 min(1,2) 链路首次真实执行，stub 双平台 passed 6.9s/9.5s；live 路径零变化） | 2026-10-10 |

@@ -1,6 +1,6 @@
 # AAV-1362 — release-age 门禁的覆盖提示必须指向真实出口
 
-> Status: implemented 2026-11-15 · Issue: [AAV-1362](https://linear.app/aaveapy/issue/AAV-1362) · Type: CI gate messaging fix (supply-chain control)
+> Status: implemented 2026-11-15 · **issue 仍 In Progress**（唯一未完成验收项 S8：2026-11-16 04:20 UTC 的真实 schedule 运行） · Issue: [AAV-1362](https://linear.app/aaveapy/issue/AAV-1362) · Type: CI gate messaging fix (supply-chain control)
 > Scope: 只修失败提示与文档，不改门禁检测逻辑、默认 7 天窗口或安全控制出口。路线 A（移除 proactive bump）已由 `8830d062` 落地。
 
 ## 背景与根因
@@ -56,7 +56,7 @@ export function formatReleaseAgeOverrideHint() {
     '  - Override deliberately for this PR: set MIN_RELEASE_AGE_DAYS=0 in the environment that runs the gate,',
     '    and document the root cause in the PR description. No workflow_dispatch input sets this value;',
     '    a CI-side exception requires a reviewed change to the workflow that invokes the gate.',
-  ];
+  ].join('\n');
 }
 ```
 
@@ -118,7 +118,71 @@ export function formatReleaseAgeOverrideHint() {
 
 ## Verification Evidence
 
-（实施后回填：RED/GREEN 命令、runtime smoke 输出、`ci:remote`、pre-push 结果。）
+### RED → GREEN
+
+- 先写测试（`src/test/depReleaseAge.test.ts` 新增 `formatReleaseAgeOverrideHint` 组）：
+  `npx vitest run src/test/depReleaseAge.test.ts` → **5 failed / 18 passed**。当时
+  `scripts/lib/dep-release-age-parse.mjs` 还没有该导出，`npm run typecheck` 报
+  **TS2305**（模块没有导出成员），补 `dep-release-age-parse.d.mts` 声明后消失。
+- 实现后：`npx vitest run src/test/depReleaseAge.test.ts` → **23/23 passed**。
+- 审查修复后（新增「workflow input 拼写」用例、收紧单一来源断言）：
+  **24/24 passed**。
+
+### Runtime smoke（真实 registry）
+
+临时 git repo（`/tmp`，用后删除；复制本仓脚本与 helper），`package.json` 声明
+`left-pad@1.3.0`，先提交不含该包块的 lockfile，再 stage 含
+`node_modules/left-pad` 的 lockfile：
+
+```bash
+MIN_RELEASE_AGE_DAYS=100000 node scripts/check-dep-release-age.mjs --staged
+```
+
+输出（节选）并 `exit=1`：
+
+```
+Checking 1 adopted version(s) (1 direct, 0 transitive) for minimum release age of 100000 day(s)…
+❌ Dependency release-age gate BLOCKED — direct dependencies younger than 100000 day(s):
+   left-pad@1.3.0 — published 2018-04-09T01:10:45.796Z
+
+Options:
+  - Wait 100000 day(s) and re-run (preferred: let the supply-chain window close)
+  - Pin the previous known-good version
+  - Override deliberately for this PR: set MIN_RELEASE_AGE_DAYS=0 in the environment that runs the gate,
+    and document the root cause in the PR description. No workflow_dispatch input sets this value;
+    a CI-side exception requires a reviewed change to the workflow that invokes the gate.
+```
+
+正常路径与显式禁用：
+
+```bash
+npm run check:dep-age -- --staged
+# No package-lock.json changes against base — release-age gate satisfied trivially.  (rc=0)
+
+MIN_RELEASE_AGE_DAYS=0 npm run check:dep-age -- --staged
+# MIN_RELEASE_AGE_DAYS=0 — release-age gate disabled.  (rc=0)
+```
+
+### Full local gate
+
+`npm run ci:remote` → **exit 0**：
+
+- Vitest: **190 files passed / 3 skipped**；**4253 tests passed / 14 skipped / 6 todo**。
+- `node --test` scripts: **246 pass / 0 fail**。
+- ESLint: **0 errors / 74 warnings**（均为既有 complexity 警告）。
+- Build 与 `check-csp-inline-scripts`：通过。
+- `npm audit --omit=dev --audit-level=high`：仍报 **11 high**，全部是既有的 zod 3
+  链（`GHSA-mrhx-c7xc-m3w5`，AAV-1348 已按「无法真修」记录并豁免），本 diff 未改依赖。
+
+`npm run typecheck` → clean；`npx prettier --check`（全部改动文件）→ clean；
+`git diff --check` → clean。
+
+### Not yet verified
+
+- **S8**：2026-11-16 04:20 UTC 的真实 Hardcode Sync schedule 运行。用户选择不手动
+  dispatch；AAV-1362 保持 In Progress，待该 run 绿后再关票。
+- **pre-push**：本 spec 的证据记录于 commit 前；`.husky/pre-push` 在推送时执行
+  （`ci:remote` + e2e + osv + semgrep + knip + dup），结果以推送日志为准。
 
 ## Further Notes
 

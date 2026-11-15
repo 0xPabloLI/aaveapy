@@ -10,6 +10,7 @@ import {
 } from '../../scripts/lib/dep-release-age-parse.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
+const WORKFLOW_INPUT_PATTERN = /min[_-]?release[_-]?age[_-]?days/i;
 
 describe('parseAddedLockEntries', () => {
   it('parses an added dependency block', () => {
@@ -204,7 +205,7 @@ describe('formatReleaseAgeOverrideHint', () => {
 
   it('is the single source used by the gate script', () => {
     const source = readFileSync(resolve(ROOT, 'scripts/check-dep-release-age.mjs'), 'utf8');
-    expect(source).toContain('formatReleaseAgeOverrideHint');
+    expect(source).toContain('console.error(formatReleaseAgeOverrideHint())');
     expect(source).not.toMatch(/in the workflow dispatch/i);
   });
 
@@ -219,10 +220,15 @@ describe('formatReleaseAgeOverrideHint', () => {
     const dir = resolve(ROOT, '.github/workflows');
     const declaresInput = readdirSync(dir)
       .filter((file) => file.endsWith('.yml') || file.endsWith('.yaml'))
-      .some((file) => /min_release_age_days/i.test(readFileSync(resolve(dir, file), 'utf8')));
+      .some((file) => WORKFLOW_INPUT_PATTERN.test(readFileSync(resolve(dir, file), 'utf8')));
     // If this flips to true, the hint and this test must be updated together:
     // the gate would then have a real dispatch exit to point at.
     expect(declaresInput).toBe(false);
-    expect(formatReleaseAgeOverrideHint()).not.toMatch(/in the workflow dispatch/i);
+  });
+
+  it('recognizes the workflow input spellings GitHub accepts', () => {
+    for (const name of ['min_release_age_days', 'min-release-age-days', 'minReleaseAgeDays']) {
+      expect(WORKFLOW_INPUT_PATTERN.test(name)).toBe(true);
+    }
   });
 });
