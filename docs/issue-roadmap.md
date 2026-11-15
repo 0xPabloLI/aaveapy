@@ -103,8 +103,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | Linear | Priority | State | Title |
 | --- | --- | --- | --- |
 | AAV-1356 | Medium | In Progress（退出条件 #1 已交付，见「当前状态」第五轮；余 #2/#3/#4） | V4 curated/派生 module 的 spoke 未纳入：`AaveV4EthereumSentoraCurated` 与 `AaveV4Ethereum` 同为 chain 1，按 `CHAIN_ID` 索引时 last-wins 令 Ethereum V4 仓位搜不到（「选哪个 module」已修）。**退出条件 #1（`deriveV4ReservesBySpoke` 改按 `spokeAddress` 作 key）已于 2026-11-12 交付**：顺带修掉的不只是 union 的前置条件，而是「V4 on-chain 兜底从未工作过」——生产数据 0/21 → 21/21。**剩下的不是名字冲突了**：key 已按地址，同名不同地址会各留各的 reserve；剩下的是 union 本身（chain 1 多 3 条 spoke 的 multicall 成本）与同名不同地址在 `failedSources` 标签里如何区分（退出条件 #2） |
-| AAV-1376 | Medium | In Progress（A+C 已交付并推 `railway`；整 run 绿待 AAV-1378） | [后端 CI] `test-canary` 先跑套件、后 `Build (timed)`，而套件全部经 `@internal/*` 的 `exports → dist`（外加 shared-contracts 自身测试直连 `../dist/index.js`）⇒ 干净 checkout 上 `ERR_MODULE_NOT_FOUND`，该 workflow 三次运行全红且原因各异。已改为 build 在前 + `backend/tests/testCanaryOrder.test.ts` 按行号守卫顺序/套件名单/`TREND_STEP` 名/`id: build`。run `43698501475`：build 首次成功、五个套件全部真跑（4 绿），backend 红 2 例属 AAV-1378 |
-| AAV-1378 | Medium | Backlog（`protocolFee` 需先定性：数据缺口还是 0 被真值判断丢掉） | [后端] canary 首次跑到 `RUN_API_FIELDS_TESTS` 用例：version 断言写死已废弃的 `markets-v3`（实现是 `MARKETS_API_VERSION = snapshot-v3`）；字段覆盖率把 supply 侧与 borrow 侧字段套同一个 90% 阈值（`protocolFee` 377/441）。该变量只有 canary 会设 ⇒ 三条断言从未在 CI 执行过。序列化侧 `marketsApiSerialize.ts:166` 与 `concurrent-fetch.ts:123` 对 `0` 的处置不一致是候选根因 |
 | AAV-1352 | Medium | Done（2026-11-15 交付 `a3f1e444`：tagged fetch outcome + 数据缺口 skip／不可达 fail + `E2E_ALLOW_STAGING_UNREACHABLE=1` 唯一出口；37 例单测；不可达实测 24 failed/2 passed 全为 stub，豁免实测 0 failed） | [e2e] 发现数据拉取失败与「数据缺口」不可区分 ⇒ 整个 spec 静默报绿（同族 AAV-1294/1330/1349，修复位置在 spec 的数据获取层） |
 | AAV-1349 | Medium | Done（2026-11-15 交付并推送到 `dev`：`29ec45d0` 代码 + `206372e8` 文档；推送时全门实跑：e2e 62 passed/26 skipped、osv No issues、dup 2.79%） | [CI] pre-push 的 e2e 门缺 chromium 时静默 `exit 0`：改为 `exit 1` + 唯一显式出口 `E2E_SKIP=1`（默认关闭、必须打印「无 e2e 证据」）+ `PLAYWRIGHT_BROWSERS_PATH=0`/shell-only 不误判；判定收进 `scripts/lib/e2e-browser-gate.mjs`，13 例守卫随 `npm test` 生效。e2e 提为必填检查按票面另行拍板 |
 | AAV-1334 | Low | Backlog | [CI] generate-snapshots dispatch job 引用已删除的 visual spec（`7c48ae01` 删文件时漏了 job），手动触发 CI 恒红 "No tests found"（push 触发恒 skipped 故从未暴露；整改方向＝删 job） |
@@ -158,6 +156,8 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1378 | API fields 断言改写：版本读 `MARKETS_API_VERSION`（常量上移到 `backend/src/types/`）、90% 覆盖率换成语义断言（必有字段 100% / borrow 侧全有或全无 / 无借入侧数量基线 19 / `protocolFee` 0..100）。`protocolFee` 定性为「缺席 = 0」契约（AAV-1350），**未改序列化**；45 条是 0 被按契约省略、19 条是 SDK `borrowInfo: null`。附带修 `run_suite` 失败吞没（无 `set -e`，只有最后一个套件决定 step 成败）与 canary 目标按 ref 对齐（main→production） | 2026-11-15 |
+| AAV-1376 | canary 改为 build 先于套件（去掉 `if: always()`/`continue-on-error`）+ `backend/tests/testCanaryOrder.test.ts` 11 例按**行号**守卫顺序、锁 `TREND_STEP` 名与 `id: build`、套件名单、`../dist/*`；`shared-contracts` 自身 3 个测试改 import `src`。run `43703832449` **整 run 绿**（1287 pass / 0 fail，该 workflow 历史首次） | 2026-11-15 |
 | AAV-1350 | Portfolio 模式在 reserve 缺 rate-calc 字段时激励显示为 —（`protocolFee` 移出 `hasRateCalcFields` 门槛，兜底改走 `getCampaignIncentiveValues` 并传 position/token/decimals；生产复验 6.17% / +$1.64 每天） | 2026-11-12 |
 | AAV-1323 | e2e market-filter-pin 用例 (5) 绝对几何阈值卡实盘（`eba3be94` 行前提发现式挑行+条件 skip；几何阈值判定为 app 自有 sticky 几何无需整改；e2e-desktop 三 run 全绿验收 `38177124100`/`38177997224`/`38196292330`） | 2026-10-12 |
 | AAV-1318 | offset discovery gates borrow room and LTV funding power（`d9809781`：O12–O22 单测，staging 4→4 结构性修复，e2e 8 passed） | 2026-10-12 |
