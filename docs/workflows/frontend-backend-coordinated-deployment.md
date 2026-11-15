@@ -23,7 +23,7 @@
 > 它曾由 GPT-engineer 直接推送，因此有独立的 CI 失败告警；该告警现挂 `dev`（标签 `ci-failure-dev`）。
 
 ## 前置条件
-- 前端代码已通过 validation gate（`npm run lint && npm test && npm run build && npx tsc --noEmit`）
+- 前端代码已通过 validation gate（`npm run lint && npm test && npm run build && npm run typecheck`）
 - `npm audit` 无未处理的 high+ 漏洞（或已确认不适用并 dismiss）
 
 ## 部署流程
@@ -51,7 +51,7 @@
 3. **更新 wrapper 引用**（如需要）：检查 `src/shared/market-contract/schemas.ts` 和 `src/lib/apiSchemas.ts` 中的 `generated.*` 引用是否需要更新
 4. **验证**：运行完整 validation gate：
    ```bash
-   npm run lint && npm test && npm run build && npx tsc --noEmit
+   npm run lint && npm test && npm run build && npm run typecheck
    ```
 5. **提交**：
    ```bash

@@ -1,23 +1,19 @@
 /**
  * Google Analytics (GA4) bootstrap.
  *
- * Loads gtag.js once at app startup using the measurement ID injected by the
- * Google Analytics connector. Safe no-op when the ID is missing (local dev,
- * tests, SSR) so analytics never breaks the app.
+ * Loads gtag.js once, only after analytics consent (first grant, or at boot for a
+ * previously-granted visitor — see src/lib/consent.ts, which owns the trigger). The
+ * property ID is fixed, and a build with no `window` (tests, SSR) is a no-op.
  */
 
-/** Static fallback so the tag exists even when the connector env var is absent (e.g. Vercel builds). */
-const FALLBACK_MEASUREMENT_ID = 'G-8WRVJ711MH';
-
-const MEASUREMENT_ID =
-  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined) || FALLBACK_MEASUREMENT_ID;
+/** The AaveAPY property. No deployment overrides it, so this is the whole configuration. */
+const MEASUREMENT_ID = 'G-8WRVJ711MH';
 
 let scriptInjected = false;
 
 export function initAnalytics(): void {
   if (scriptInjected) return;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  if (!MEASUREMENT_ID) return;
 
   scriptInjected = true;
 

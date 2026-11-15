@@ -150,5 +150,5 @@ After any change to `src/lib/seoChains.ts`, `public/sitemap.xml`, or `public/llm
 npm run lint
 npx vitest run src/lib/seoChains.test.ts
 npm run build
-npx tsc --noEmit
+npm run typecheck
 ```
