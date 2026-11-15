@@ -636,8 +636,11 @@ export function discoverCrossAssetPairingScenarios(reserves: DiscoveryReserve[],
       for (const group of merklGroupsForSide(r, side)) {
         const pairing = (group as { crossAssetPairing?: CrossAssetPairing | null }).crossAssetPairing;
         if (!pairing || typeof pairing.pairedReserveId !== 'string') continue;
-        // A self-pair would make the runner add the reserve twice and overwrite
-        // its own source position on the next fill.
+        // A self-pair would make the runner fill both positions into the same
+        // row: the portfolio model holds ONE position per reserve side, so the
+        // paired fill (e.g. supply 500) would overwrite the source position
+        // (supply 1000) and the min() ladder would no longer measure what it
+        // claims. Not a symbol-lookup concern — see AAV-1317 for that one.
         if (pairing.pairedReserveId === sourceReserveId) continue;
         const pairedSide = pairing.pairedSide;
         if (pairedSide !== 'supply' && pairedSide !== 'borrow') continue;
@@ -647,9 +650,10 @@ export function discoverCrossAssetPairingScenarios(reserves: DiscoveryReserve[],
 
         const paired = idMap.get(pairing.pairedReserveId);
         if (!paired || !hasRunnerIdentity(paired)) continue;
-        // The fill helpers locate portfolio inputs by accessible name (token
-        // symbol), so a same-symbol pair types into whichever row comes first.
-        if (paired.tokenSymbol === r.tokenSymbol) continue;
+        // Same-symbol pairs ARE selected since AAV-1317: the portfolio fill
+        // helpers scope to the row via [data-reserve-id] and the Add flow
+        // disambiguates by market label, so a same-symbol pair types into the
+        // intended rows.
         if (!usableForSimulatedPosition(paired, pairedSide)) continue;
 
         const dedupKey = `${sourceReserveId}:${side}`;

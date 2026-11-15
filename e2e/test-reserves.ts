@@ -313,6 +313,11 @@ export async function setupPortfolioMode(page: Page) {
 /**
  * Open the token search (if needed) and add a reserve by symbol + market label.
  * Returns false if no matching "Add" button is found (caller should skip).
+ *
+ * AAV-1317: when several markets list the same symbol, the market label is the
+ * ONLY disambiguator — falling back to `.first()` would silently add a
+ * possibly-wrong reserve and every downstream row-scoped assertion would then
+ * chase the wrong row. No match ⇒ explicit false.
  */
 export async function addReserveToPortfolio(page: Page, symbol: string, marketLabel: string): Promise<boolean> {
   const searchInput = page.getByRole('textbox', { name: 'Search tokens to add' });
@@ -339,43 +344,73 @@ export async function addReserveToPortfolio(page: Page, symbol: string, marketLa
       return true;
     }
   }
-  await addButtons.first().click();
-  return true;
+  return false;
 }
 
-export async function fillSupplyAmount(page: Page, symbol: string, amount: string) {
-  const input = page.getByRole('textbox', { name: new RegExp(`Supply amount for ${symbol}`, 'i') }).first();
-  await input.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+/** Escape a token symbol for use inside a RegExp accessible-name matcher —
+ * symbols like "USDC.e" or "USD₮0" carry regex metacharacters. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Accessible-name matcher for a portfolio amount input. The label reads
+ * "supply amount for <SYM>" for a fresh position and "supply effective for
+ * <SYM>" for a wallet-backed one (PortfolioTablePrimitives.CompactInput).
+ */
+function portfolioAmountInputName(side: 'supply' | 'borrow', symbol: string): RegExp {
+  return new RegExp(`${side === 'supply' ? 'Supply' : 'Borrow'} (?:amount|effective) for ${escapeRegExp(symbol)}`, 'i');
+}
+
+/**
+ * Fill ONE reserve row's supply/borrow amount in portfolio mode, desktop and
+ * mobile (AAV-1317).
+ *
+ * The row anchor is `[data-reserve-id]` — the same anchor `readIncentiveAfter`
+ * already uses — because a token symbol alone is ambiguous: 59 of the 441
+ * staging reserves share their symbol with another reserve (2026-11-15
+ * capture), and a symbol-keyed `.first()` types into whichever same-symbol row
+ * sorts first. Mobile cards render only the active side's input behind pill
+ * tabs, so the helper switches the tab when needed; desktop rows expose both
+ * inputs and have no tabs, so the tab step is skipped there.
+ */
+async function fillPortfolioAmount(
+  page: Page,
+  reserveId: string,
+  side: 'supply' | 'borrow',
+  symbol: string,
+  amount: string,
+) {
+  const row = page.locator(`[data-reserve-id="${reserveId}"]`).first();
+  await row.waitFor({ state: 'attached', timeout: 10_000 });
+  // Ensure the row is in viewport (InkAprCalculator + TopOpportunities push
+  // content down, especially on mobile).
+  await row.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+  await page.waitForTimeout(300);
+  // Note: Supply/Borrow are role="tab" elements on mobile, not role="button".
+  const tab = row.getByRole('tab', { name: side === 'supply' ? 'Supply' : 'Borrow', exact: true });
+  if (await tab.isVisible()) {
+    if ((await tab.getAttribute('aria-selected')) !== 'true') {
+      await tab.click();
+      await page.waitForTimeout(300);
+    }
+  }
+  const input = row.getByRole('textbox', { name: portfolioAmountInputName(side, symbol) }).first();
   await expect(input).toBeVisible({ timeout: 5000 });
   await input.fill(amount);
   await page.waitForTimeout(800);
 }
 
-export async function fillBorrowAmountDesktop(page: Page, symbol: string, amount: string) {
-  const input = page.getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') }).first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
+export async function fillSupplyAmount(page: Page, reserveId: string, symbol: string, amount: string) {
+  await fillPortfolioAmount(page, reserveId, 'supply', symbol, amount);
+}
+
+export async function fillBorrowAmountDesktop(page: Page, reserveId: string, symbol: string, amount: string) {
+  await fillPortfolioAmount(page, reserveId, 'borrow', symbol, amount);
 }
 
 export async function fillBorrowAmountMobile(page: Page, reserveId: string, symbol: string, amount: string) {
-  const card = page.locator(`[data-reserve-id="${reserveId}"]`).first();
-  await card.waitFor({ state: 'attached', timeout: 10000 });
-  // Ensure the card is in viewport (InkAprCalculator + TopOpportunities push cards down on mobile)
-  await card.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
-  await page.waitForTimeout(500);
-  // Note: Borrow is a role="tab" element, not role="button"
-  const borrowTab = card.getByRole('tab', { name: 'Borrow', exact: true });
-  await borrowTab.waitFor({ state: 'visible', timeout: 10000 });
-  const tabState = await borrowTab.getAttribute('aria-selected');
-  if (tabState !== 'true') {
-    await borrowTab.click();
-    await page.waitForTimeout(300);
-  }
-  const input = card.getByRole('textbox', { name: new RegExp(`Borrow amount for ${symbol}`, 'i') }).first();
-  await expect(input).toBeVisible({ timeout: 5000 });
-  await input.fill(amount);
-  await page.waitForTimeout(800);
+  await fillPortfolioAmount(page, reserveId, 'borrow', symbol, amount);
 }
 
 /**

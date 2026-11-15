@@ -934,7 +934,7 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
     ).toBe(1);
   });
 
-  it('P10: excludes a self-pairing (the runner would overwrite its own position)', () => {
+  it('P10: excludes a self-pairing (the runner holds one position per reserve side — the paired fill would overwrite the source position)', () => {
     const source = pairingReserve({
       reserveId: 'src',
       tokenSymbol: 'USDC',
@@ -943,7 +943,7 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
     expect(discoverCrossAssetPairingScenarios([source], NOW)).toEqual([]);
   });
 
-  it('P11: excludes a same-symbol pair (fill helpers locate inputs by token symbol)', () => {
+  it('P11: selects a same-symbol pair across markets (AAV-1317: fill helpers locate rows by reserveId)', () => {
     const source = pairingReserve({
       reserveId: 'src',
       tokenSymbol: 'USDC',
@@ -956,7 +956,18 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
       marketName: 'AaveV3Base',
     });
     expect(twinOnAnotherChain.reserveId).not.toBe(source.reserveId);
-    expect(discoverCrossAssetPairingScenarios([source, twinOnAnotherChain], NOW)).toEqual([]);
+    const scenarios = discoverCrossAssetPairingScenarios([source, twinOnAnotherChain], NOW);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0]).toMatchObject({
+      sourceReserveId: 'src',
+      pairedReserveId: 'paired',
+      // Same symbol, distinct markets — the Add flow disambiguates by market
+      // label and the fills land per reserveId (AAV-1317).
+      sourceSymbol: 'USDC',
+      pairedSymbol: 'USDC',
+      sourceMarketLabel: 'Core',
+      pairedMarketLabel: 'Base',
+    });
   });
 
   it('P13: dedups by reserveId+side — first qualifying group wins, both sides can each produce one', () => {

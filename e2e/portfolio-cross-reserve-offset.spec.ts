@@ -65,7 +65,7 @@ async function runCrossReserveScenario(page: Page, s: OffsetScenario, isMobile: 
   // Add target reserve, supply $100000 (large enough for LTV clamping at common ltv rates)
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added, `Should find and add ${s.targetSymbol} (${s.targetMarketLabel})`).toBe(true);
-  await fillSupplyAmount(page, s.targetSymbol, '100000');
+  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, '100000');
   const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
@@ -73,11 +73,11 @@ async function runCrossReserveScenario(page: Page, s: OffsetScenario, isMobile: 
   const offsetAdded = await addReserveToPortfolio(page, s.offsetSymbol!, s.offsetMarketLabel!);
   expect(offsetAdded, `Should find and add ${s.offsetSymbol} (${s.offsetMarketLabel})`).toBe(true);
   // Supply on offset reserve so its borrow is not LTV-clamped to 0
-  await fillSupplyAmount(page, s.offsetSymbol!, '100000');
+  await fillSupplyAmount(page, s.offsetReserveId!, s.offsetSymbol!, '100000');
 
   const fillOffsetBorrow = isMobile
     ? (amount: string) => fillBorrowAmountMobile(page, s.offsetReserveId!, s.offsetSymbol!, amount)
-    : (amount: string) => fillBorrowAmountDesktop(page, s.offsetSymbol!, amount);
+    : (amount: string) => fillBorrowAmountDesktop(page, s.offsetReserveId!, s.offsetSymbol!, amount);
 
   await fillOffsetBorrow('500');
   const halfOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
@@ -113,13 +113,13 @@ async function runSelfLoopScenario(page: Page, s: OffsetScenario, isMobile: bool
 
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added).toBe(true);
-  await fillSupplyAmount(page, s.targetSymbol, '100000');
+  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, '100000');
   const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
   expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   const fillOwnBorrow = isMobile
     ? (amount: string) => fillBorrowAmountMobile(page, s.targetReserveId, s.targetSymbol, amount)
-    : (amount: string) => fillBorrowAmountDesktop(page, s.targetSymbol, amount);
+    : (amount: string) => fillBorrowAmountDesktop(page, s.targetReserveId, s.targetSymbol, amount);
 
   // Half offset: borrow = $50000 (50% of supply, within LTV limit)
   await fillOwnBorrow('50000');

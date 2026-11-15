@@ -92,6 +92,45 @@ export const AAV1316_STUB_INJECTION: CrossAssetPairingInjection = {
   campaignWindow: { startedAt: '2026-01-01T00:00:00.000Z', endedAt: '2035-01-01T00:00:00.000Z' },
 };
 
+/**
+ * AAV-1317 — same-symbol injection: WETH on AaveV3Celo paired with WETH on
+ * AaveV3Base. This is the pair class the AAV-1308 gates used to exclude
+ * because the fill helpers located inputs by token symbol; since AAV-1317 the
+ * helpers scope to `[data-reserve-id]`, so the runner must land its 500 / 2000
+ * / 5000 ladder in the BASE row while the CELO row keeps its 1000 — the
+ * portfolio table renders rows in insertion order, so the pre-AAV-1317
+ * symbol-based `.first()` fills deterministically overwrote the source row
+ * and failed these tests.
+ *
+ * Candidate screening (2026-11-15 staging capture): the same-symbol source
+ * must pass every real discovery gate — `ltv > 0` (AAV-1380 currently zeroes
+ * most USDC ltv fields, which knocked out the USDC candidates), a supply room
+ * ≥ $5k, a non-AMOUNT-variant, non-forecast-requiring, non-whitelist campaign
+ * with positive APR (DUTCH_AUCTION qualifies; TARGET_TOTAL_APR was rejected
+ * because its rendered incentive depends on the nativeAPY/target comparison),
+ * and a same-symbol twin with `ltv > 0` already in the fixture.
+ *
+ * Provenance: the Celo WETH reserve was captured from staging /markets on
+ * 2026-11-15T16:23Z and appended to the AAV-1316 fixture verbatim (the two
+ * Base reserves are the original 2026-10-11 capture — recapturing them today
+ * is impossible because Base WETH no longer carries a merklSupplys group to
+ * inject into). The fixture is therefore a documented composite; its
+ * `snapshot.lastUpdated` keeps describing the original Base capture. The
+ * source group's real window is overridden by `campaignWindow` like every
+ * stub injection, so the committed file stays time-safe.
+ */
+export const AAV1317_SAME_SYMBOL_INJECTION: CrossAssetPairingInjection = {
+  sourceReserveId: '42220:0x3e59a31363e2ad014dcbc521c4a0d5757d9f3402:0xd221812de1bd094f35587ee8e174b07b6167d9af',
+  groupIndex: 0,
+  pairing: {
+    sourceSide: 'supply',
+    pairedReserveId: '8453:0xa238dd80c259a72e81d7e4664a9801593f98d1c5:0x4200000000000000000000000000000000000006',
+    pairedSide: 'supply',
+    discountFactor: 0.5,
+  },
+  campaignWindow: { startedAt: '2026-01-01T00:00:00.000Z', endedAt: '2035-01-01T00:00:00.000Z' },
+};
+
 function fail(message: string): never {
   throw new Error(`[AAV-1316 cross-asset-pairing stub] ${message}`);
 }
