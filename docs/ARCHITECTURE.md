@@ -172,7 +172,7 @@ useRateSimulation
 
 ## Build & CI
 
-- **Vite plugins**: React SWC、`generateOpenApiPlugin()`、`deployShaMetaPlugin()`、`selectiveModulePreloadPlugin()`（首屏/内容分阶段 modulepreload 白名单）、`assertFirstPaintChunksPlugin()`（entry 静态闭包触达重型 chunk 时 fail build）、`componentTagger()`
+- **Vite plugins**: React SWC、`generateOpenApiPlugin()`、`deployShaMetaPlugin()`、`selectiveModulePreloadPlugin()`（首屏/内容分阶段 modulepreload 白名单）、`assertFirstPaintChunksPlugin()`（entry 静态闭包触达重型 chunk 时 fail build）
 - **Chunk 策略**: `rollupOptions.output.advancedChunks` 正则分组（rolldown 原生 API，替代 manualChunks 模拟）；钱包/SDK 代码（vendor-blockchain/vendor-aave）只允许经 `WalletProviders`/`AaveProviders` lazy 边界到达，约束由 `assertFirstPaintChunksPlugin` 与 `src/test/architecture-guard.test.ts` 双层守卫
 - **Validation gate**: `npm run lint && npm test && npm run build && npx tsc --noEmit`
 - **Hardcode sync**: cron job 双轮 sync + verify，漂移自动创 issue/PR

@@ -1,7 +1,7 @@
 /**
  * Client for the SEO admin API.
  *
- * Calls go through the Lovable Cloud `seo-proxy` edge function, which injects the
+ * Calls go through the Supabase `seo-proxy` edge function, which injects the
  * `X-Admin-Token` header from the `SEO_ADMIN_TOKEN` server-side secret. The token
  * is never exposed to the browser bundle (we deliberately do not use a `VITE_`
  * prefixed env var, per docs/seo/m3-railway-backend-spec.md §3.1).
