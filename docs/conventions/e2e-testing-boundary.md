@@ -112,6 +112,30 @@ strength of an isolated red; it passed 2/2 in 16.5s once proxied.
   Use a project-filtered `test.describe` instead — desktop-only tests run in the
   desktop project, mobile-only in the mobile project.
 
+## Local pre-push gate: a missing browser is BLOCKED, not a skip
+
+`npm run test:e2e:pre-push` (`scripts/pre-push-e2e.mjs`) is the only place a push
+gets browser evidence locally. Its probing of `~/Library/Caches/ms-playwright`
+used to end in `process.exit(0)` when chromium was absent — and exit code 0 here
+means "the e2e gate passed". With `e2e-desktop`/`e2e-mobile` not being required
+checks on any branch, that combination allowed a merge with zero browser tests
+(AAV-1349).
+
+The contract now:
+
+- **Missing chromium ⇒ `exit 1`.** A gate that cannot run reports failure, with the
+  reason, the cache path it looked in, and the fix (`npx playwright install chromium`).
+- **`E2E_SKIP=1`** is the only bypass, it is per-push, and it prints that the push
+  carries no e2e evidence. `E2E_SKIP=0`, empty, or any other value leaves the gate on.
+- **`PLAYWRIGHT_BROWSERS_PATH=0`** (browsers inside `node_modules`) counts as
+  installed — the global cache is legitimately empty in that mode.
+- The decision logic lives in `scripts/lib/e2e-browser-gate.mjs`; the exit-code
+  contract lives in the script. `scripts/pre-push-e2e.test.mjs` pins both, including
+  a stub-`npx` case proving the run path still invokes Playwright.
+
+This is **not** an "acceptable skip" in the sense above: those are `test.skip(...)`
+calls inside a spec, this is the gate deciding not to run the suite at all.
+
 ## Seams (reuse, don't invent)
 
 - Pure-function unit tests — e.g. `src/lib/poolExplorerLinks.test.ts`.
