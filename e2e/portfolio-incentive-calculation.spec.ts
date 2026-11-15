@@ -23,7 +23,7 @@ import {
  * breakage when hardcoded tokens lose incentives or change LTV.
  */
 
-const PERCENT_RE = /\-?\d+\.\d{2}%/;
+const PERCENT_RE = /-?\d+\.\d{2}%/;
 /**
  * `$` amount with the cell's own K/M/B abbreviation.
  *

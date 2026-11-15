@@ -63,7 +63,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
 
       const summaryDelta = summaryCard
         .locator('span')
-        .filter({ hasText: /^\+?\-?\$[0-9]/ })
+        .filter({ hasText: /^\+?-?\$[0-9]/ })
         .first();
       await expect(summaryDelta).toBeVisible({ timeout: 5000 });
     });

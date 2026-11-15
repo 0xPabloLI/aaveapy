@@ -71,7 +71,7 @@ test.describe('Scenario recompute — 桌面表格', () => {
   test('M7/M8 净借贷开关：走 label 生效且可逆', async ({ page }, testInfo) => {
     await openApp(page);
     await setScenario(page, '250000', '120000');
-    await expect.poll(async () => (await desktopRows(page)).filter((r, i) => r !== '').length).toBeGreaterThan(0);
+    await expect.poll(async () => (await desktopRows(page)).filter((r) => r !== '').length).toBeGreaterThan(0);
 
     expect(await netCheckbox(page).isChecked(), '净借贷默认应为开启').toBe(true);
     const withNet = await desktopRows(page);

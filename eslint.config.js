@@ -7,7 +7,7 @@ import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
   {
-    ignores: ['dist', '.worktrees', 'e2e', 'scripts', 'test-results'],
+    ignores: ['dist', '.worktrees', 'scripts', 'test-results'],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -41,6 +41,35 @@ export default tseslint.config(
       // 机会性修复后逐步下调阈值。Golden-Rules 计算器刻意分支密集，
       // 重构前先读 docs/rate-calculation.md Part 8。
       complexity: ['warn', 15],
+    },
+  },
+  {
+    // e2e/ and the Playwright config are not React code and never ship, so they get
+    // the plain TS baseline (no react-hooks / react-refresh / complexity ratchet).
+    // AAV-1319: these files were ignored outright, so dead variables and broken
+    // escapes accumulated with nothing reading them. (The `test.skip('string')` that
+    // motivated the ticket is a *type* error — tsc's job, see tsconfig.e2e.json.)
+    // Why: docs/specs/aav-1319-e2e-static-gates.md
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      // Specs read `process.env` in helpers and touch `document` inside page.evaluate.
+      globals: { ...globals.node, ...globals.browser },
+    },
+    plugins: { import: importPlugin },
+    rules: {
+      // Same rule as src: two imports of the same module is a smell everywhere.
+      'import/no-duplicates': 'error',
+      // Playwright's `test('…', async ({}) => …)` is the documented empty-fixture form.
+      'no-empty-pattern': 'off',
+      // src has this off as a legacy ratchet; e2e is 42 files with no such backlog and
+      // already uses the `_`-prefix convention for throwaway fixture params, so it is
+      // enforced here with that escape (it found 3 real dead variables on day one).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+      ],
     },
   },
   {

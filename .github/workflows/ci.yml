@@ -99,6 +99,13 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
+      # Type gate. Until AAV-1319 this only ran in the local pre-commit hook, so a PR
+      # from the web UI (or any machine without hooks) could carry type errors into
+      # dev/main with CI green. `npm run typecheck` generates the gitignored icon
+      # manifests itself via its `pretypecheck` script — no separate step to keep in
+      # order here, and no TS2307 on a clean runner.
+      - name: Run TypeScript (src + node + e2e)
+        run: npm run typecheck
       # PR: one ESLint pass with Reviewdog annotations (avoids a duplicate workflow + second npm ci).
       # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
       - name: Run ESLint (Reviewdog)

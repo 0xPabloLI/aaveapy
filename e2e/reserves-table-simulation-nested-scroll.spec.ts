@@ -1,5 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 async function waitDesktopTable(page: Page) {
   await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 30_000 });

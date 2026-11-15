@@ -101,7 +101,7 @@
 ## Validation Gate (修改后必跑 — 强制)
 两道门，命令清单以它们为准（本文件不复述清单，复述出去迟早与实际漂移）：提交时过 `.husky/pre-commit`，推送前过 `npm run ci:remote`（含 build 与 e2e 子集）。任一失败 → 修根因 → 从头重跑。
 
-类型门是 `npm run typecheck`。根 `tsconfig.json` 是 solution-style（`files: []` + 两个 references），裸 `tsc --noEmit` 在其中一个文件都不检查却退出 0——本文件曾把它列为门禁项，那张**假绿灯**一直亮着。`e2e/` 也不在 lint 与 typecheck 的覆盖范围内：改了 `e2e` 下未被任何测试 import 的文件（spec、helper），就对那几个文件显式跑 tsc，否则类型错误靠运行时侥幸长期存活。
+类型门是 `npm run typecheck`（含 `e2e/**` 与根 `playwright.config.ts`；各 tsconfig 的覆盖面见 `package.json`，本文件不复述）。根 `tsconfig.json` 是 solution-style（`files: []` + 两个 references），裸 `tsc --noEmit` 在其中一个文件都不检查却退出 0——本文件曾把它列为门禁项，那张**假绿灯**一直亮着（AAV-1319 关闭）。`e2e/` 同样在 eslint 覆盖内（Playwright 空 fixture 关 `no-empty-pattern`、`_` 前缀参数豁免 unused-vars）；只改 e2e 时跑 `npm run typecheck:e2e`。该门在 pre-commit、`ci:remote`（pre-push）与 PR CI 三处都跑。
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 

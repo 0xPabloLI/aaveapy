@@ -9,13 +9,11 @@ fi
 
 npx lint-staged
 # `npm run typecheck` reads three generated modules (`chainIconManifest.generated`,
-# `tokenIconManifest.generated` ×2 import sites) that are gitignored by design.
-# `npm test` generates them as its first step, but typecheck runs *before* it — so
-# in a fresh linked worktree (nothing generated yet) every commit died on
-# TS2307 "Cannot find module './chainIconManifest.generated'", which reads exactly
-# like a code regression. Same command `npm test` already uses, so the hook stays
-# honest instead of ordering-dependent.
-node scripts/generate-icon-manifests.mjs
+# `tokenIconManifest.generated` ×2 import sites) that are gitignored by design. Its
+# `pretypecheck` script generates them, so a fresh linked worktree never dies on
+# TS2307 "Cannot find module './chainIconManifest.generated'" — which reads exactly
+# like a code regression. The step lives in package.json rather than here so ci.yml
+# and `ci:remote` get the same guarantee without copying it (AAV-1319).
 npm run typecheck
 npm run lint
 npm run check:agents-md
