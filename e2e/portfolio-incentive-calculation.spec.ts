@@ -1,5 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves';
+import {
+  INCENTIVE_RESERVE_GAP_REASON,
+  enforceReserveGate,
+  findIncentiveReserve,
+  foundValue,
+  reserveGateFor,
+  setupPortfolioWithReserve,
+} from './test-reserves';
 
 /**
  * Portfolio incentive calculation E2E verification (AAV-1143).
@@ -37,8 +44,12 @@ const USD_PER_DAY_RE = /^[+-]?\$[\d,]+(\.\d{2})?([KMB])?$/;
  */
 const USD_PER_DAY_PLACEHOLDERS = ['—', '–'];
 
-// Dynamically discover a reserve with supply incentives AND ltv > 0
-const testReserve = await findIncentiveReserve();
+// Dynamically discover a reserve with supply incentives AND ltv > 0.
+// AAV-1352: an unreachable staging FAILS the live tests; only a real staging
+// data gap skips. Conflating the two used to report this whole file green.
+const reserveDiscovery = await findIncentiveReserve();
+const testReserve = foundValue(reserveDiscovery);
+const reserveGate = reserveGateFor(reserveDiscovery, INCENTIVE_RESERVE_GAP_REASON);
 
 /**
  * Wait for a cell to show a computed value instead of a placeholder.
@@ -96,7 +107,7 @@ test.describe('Portfolio incentive values display', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('incentive columns show percentage values', async ({ page }) => {
@@ -173,7 +184,7 @@ test.describe('Portfolio incentive values display', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('metric bar shows incentive and total values', async ({ page }) => {
@@ -205,7 +216,7 @@ test.describe('Golden Rule §1 — current invariance', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
@@ -233,7 +244,7 @@ test.describe('Golden Rule §1 — current invariance', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('current values do not change after entering supply delta', async ({ page }) => {
@@ -265,7 +276,7 @@ test.describe('Cap threshold crossing — current invariance', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
@@ -293,7 +304,7 @@ test.describe('Cap threshold crossing — current invariance', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('entering large delta preserves current incentive', async ({ page }) => {
@@ -325,7 +336,7 @@ test.describe('Delta badge after manual position input', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('supply $/day cell shows delta after entering amount', async ({ page }) => {
@@ -347,7 +358,7 @@ test.describe('Delta badge after manual position input', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('usd-per-day shows value after entering amount', async ({ page }) => {
@@ -373,7 +384,7 @@ test.describe('APR/APY toggle updates incentive values', () => {
   test.describe('desktop', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {
@@ -414,7 +425,7 @@ test.describe('APR/APY toggle updates incentive values', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('toggling APR→APY updates radio state and incentive values', async ({ page }) => {

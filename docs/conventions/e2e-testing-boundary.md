@@ -112,6 +112,38 @@ strength of an isolated red; it passed 2/2 in 16.5s once proxied.
   Use a project-filtered `test.describe` instead — desktop-only tests run in the
   desktop project, mobile-only in the mobile project.
 
+## Discovery fetch failure is NOT a data gap
+
+Specs discover their premise from staging `/markets` (`e2e/test-reserves.ts`).
+"Staging has nothing that qualifies" and "the fetch failed" are different facts
+and must not collapse into one skip — a collapsed guard turns a whole spec file
+green while it verifies nothing (AAV-1352, same family as AAV-1294/1330/1349).
+
+The contract:
+
+- `fetchStagingReserves()` returns a **tagged outcome**: `ok` (with `reserves`,
+  `[]` allowed) or `unreachable` (network error, non-2xx, timeout, bad JSON).
+  Never a bare array whose emptiness is ambiguous.
+- `findIncentiveReserve()` / `findAnyActiveReserve()` / `toDiscovery()` return
+  `found` | `data-gap` | `unreachable`; `decideReserveGate()` maps that to
+  `run` | `skip` | `fail`, and `enforceReserveGate()` applies it.
+- **Data gap ⇒ `test.skip`** with a reason that says `/markets` loaded fine.
+- **Unreachable ⇒ a real failure** (`throw` in `beforeEach`, or the placeholder
+  test used when a scenario list is empty). `test.fail()` is wrong here: it
+  records an expected failure as a pass.
+- The only opt-out is `E2E_ALLOW_STAGING_UNREACHABLE=1` (same shape as
+  `E2E_SKIP`): default off, `0`/empty/`yes` ignored, and the skip text still
+  says the host was unreachable.
+- **Fail at the live-test scope, never at module load.** A module-level throw
+  would also take down variants that do not depend on staging data (the AAV-1316
+  cross-asset stub), converting a live-data outage into lost coverage. Note those
+  variants still share the module, so an outage costs them one bounded fetch of
+  latency — not a failure.
+
+Fetch policy lives in `e2e/stagingReservesFetch.ts`: 2 attempts × 30s, success
+and failure both cached per process. Spec:
+`docs/specs/aav-1352-staging-discovery-fetch-outcome.md`.
+
 ## Local pre-push gate: a missing browser is BLOCKED, not a skip
 
 `npm run test:e2e:pre-push` (`scripts/pre-push-e2e.mjs`) is the only place a push

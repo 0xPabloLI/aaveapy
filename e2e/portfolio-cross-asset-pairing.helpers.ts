@@ -6,13 +6,17 @@ import {
   buildCrossAssetPairingStub,
 } from './crossAssetPairingStub';
 import { discoverCrossAssetPairingScenarios, type CrossAssetScenario } from './reserveDiscovery';
+import { toDiscovery } from './stagingReservesFetch';
 import {
+  CROSS_ASSET_SCENARIO_GAP_REASON,
   addReserveToPortfolio,
   fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
+  foundValue,
   readIncentiveAfter,
+  reserveGateFor,
   setupPortfolioMode,
 } from './test-reserves';
 
@@ -64,13 +68,21 @@ import {
 // Discover at module load (top-level await — Playwright supports ESM TLA).
 // API base comes from the shared env-resolving fetcher; CI sets
 // VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
-const allScenarios: CrossAssetScenario[] = discoverCrossAssetPairingScenarios(
-  await fetchStagingReserves(),
-  new Date().toISOString(),
+//
+// AAV-1352: the fetch outcome is tagged, so "staging unreachable" is not the
+// same fact as "staging has no crossAssetPairing campaign". The live variants
+// fail on the former and skip on the latter. The stub variant consumes the
+// committed fixture and is not gated on staging data — but this module still
+// runs one bounded fetch at load (≤ 2×30s) before the stub test starts, so an
+// outage costs it latency, not a failure.
+const liveDiscovery = toDiscovery(await fetchStagingReserves(), (reserves) =>
+  discoverCrossAssetPairingScenarios(reserves, new Date().toISOString()),
 );
+const allScenarios: CrossAssetScenario[] = foundValue(liveDiscovery) ?? [];
 // Limit to top 2 scenarios to keep CI runtime reasonable
 export const scenarios = allScenarios.slice(0, 2);
 export const hasScenarios = scenarios.length > 0;
+export const liveScenarioGate = reserveGateFor(liveDiscovery, CROSS_ASSET_SCENARIO_GAP_REASON);
 
 // ─── Stub variant (AAV-1316) ─────────────────────────────────────
 

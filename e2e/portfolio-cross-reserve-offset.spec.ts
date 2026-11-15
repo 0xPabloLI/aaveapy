@@ -1,12 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
 import { discoverOffsetScenarios, type OffsetScenario } from './reserveDiscovery';
+import { toDiscovery } from './stagingReservesFetch';
 import {
+  OFFSET_SCENARIO_GAP_REASON,
   addReserveToPortfolio,
+  enforceEmptyListGate,
   fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
+  foundValue,
   readIncentiveAfter,
+  reserveGateFor,
   setupPortfolioMode,
 } from './test-reserves';
 
@@ -40,10 +45,16 @@ import {
 // Discover at module load (top-level await — Playwright supports ESM TLA).
 // API base comes from the shared env-resolving fetcher (AAV-1280 leftover):
 // CI sets VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
-const allScenarios: OffsetScenario[] = discoverOffsetScenarios(await fetchStagingReserves(), new Date().toISOString());
+// AAV-1352: tagged outcome — "staging unreachable" must not look like
+// "staging has no offset campaign". The live variants fail on the former.
+const scenarioDiscovery = toDiscovery(await fetchStagingReserves(), (reserves) =>
+  discoverOffsetScenarios(reserves, new Date().toISOString()),
+);
+const allScenarios: OffsetScenario[] = foundValue(scenarioDiscovery) ?? [];
 const crossReserveScenarios = allScenarios.filter((s) => s.type === 'cross-reserve').slice(0, 3);
 const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').slice(0, 5);
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
+const scenarioGate = reserveGateFor(scenarioDiscovery, OFFSET_SCENARIO_GAP_REASON);
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
 
@@ -143,8 +154,9 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     });
 
     if (!hasScenarios) {
-      test('no cross-offset scenarios found in staging data', () => {
-        test.skip(true, 'No cross-offset Merkl campaigns found in current staging data');
+      // AAV-1352: fail when staging was unreachable, skip only on a data gap.
+      test('staging discovery did not yield cross-offset scenarios', () => {
+        enforceEmptyListGate(scenarioGate);
       });
     }
 
@@ -171,8 +183,9 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     });
 
     if (!hasScenarios) {
-      test('no cross-offset scenarios found in staging data', () => {
-        test.skip(true, 'No cross-offset Merkl campaigns found in current staging data');
+      // AAV-1352: fail when staging was unreachable, skip only on a data gap.
+      test('staging discovery did not yield cross-offset scenarios', () => {
+        enforceEmptyListGate(scenarioGate);
       });
     }
 

@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
   getMarketChipLabel,
@@ -7,6 +7,17 @@ import {
   type DiscoveryReserve,
   type PickedReserve,
 } from './reserveDiscovery';
+import {
+  STAGING_FETCH_TIMEOUT_MS,
+  createReservesFetcher,
+  decideReserveGate,
+  gateEffect,
+  isUnreachableAllowed,
+  unreachableDiscovery,
+  type ReserveDiscovery,
+  type ReserveGate,
+  type ReservesFetchOutcome,
+} from './stagingReservesFetch';
 
 /**
  * Shared E2E test reserve discovery — prevents hardcoded token breakage.
@@ -15,7 +26,7 @@ import {
  * adjustments). Tests that hardcode a token symbol + market will break
  * when the staging data no longer matches their assumptions.
  *
- * This module fetches the staging API at module load and exposes:
+ * This module fetches the staging API lazily (first discovery call) and exposes:
  * - findIncentiveReserve(): a reserve with a COMPUTABLE supply incentive AND ltv > 0
  * - findAnyActiveReserve(): any active, non-frozen reserve (for UI tests)
  *
@@ -23,7 +34,22 @@ import {
  * tested in src/test/reserveDiscovery.test.ts — AAV-1299).
  *
  * Tests should use these instead of hardcoding 'USDC' / 'GHO' etc.
- * If no suitable reserve is found, tests skip gracefully.
+ *
+ * AAV-1352: discovery returns a tagged result, not `T | null`. "Staging has
+ * nothing that qualifies" (data gap) and "staging could not be reached" are
+ * different facts, and skipping on the second one is how an entire spec file
+ * used to report green while verifying nothing.
+ *
+ * Wiring is one call site per spec, so a new consumer cannot half-wire it:
+ *
+ *   const discovery = await findIncentiveReserve();
+ *   const testReserve = foundValue(discovery);            // null unless found
+ *   const reserveGate = reserveGateFor(discovery, INCENTIVE_RESERVE_GAP_REASON);
+ *   test.beforeEach(() => { enforceReserveGate(reserveGate); });
+ *
+ * A data gap still skips; an unreachable staging fails the live tests
+ * (opt-out: `E2E_ALLOW_STAGING_UNREACHABLE=1`).
+ * See docs/specs/aav-1352-staging-discovery-fetch-outcome.md.
  */
 
 // Resolve API base from env: CI sets VITE_API_BASE_URL to the Railway direct
@@ -37,25 +63,19 @@ export type TestReserve = PickedReserve;
 
 type ReserveData = DiscoveryReserve;
 
-let reservesCache: ReserveData[] | null = null;
+const reservesFetcher = createReservesFetcher({ url: `${STAGING_API}/markets` });
 
 /**
  * Fetch (and cache per process) the staging `/markets` reserves.
  * Shared by specs that run their own module-load discovery (AAV-1280):
  * API base resolution — CI's VITE_API_BASE_URL bypassing Cloudflare/WAF —
  * lives here only, so hardcoded staging URLs can't silently false-skip.
+ *
+ * Returns the tagged outcome: `unreachable` is NOT an empty list. Timeout and
+ * retry policy live in `./stagingReservesFetch`.
  */
-export async function fetchStagingReserves(): Promise<DiscoveryReserve[]> {
-  if (reservesCache) return reservesCache;
-  try {
-    const resp = await fetch(`${STAGING_API}/markets`);
-    if (!resp.ok) return [];
-    const data = (await resp.json()) as { reserves?: ReserveData[] };
-    reservesCache = data.reserves ?? [];
-    return reservesCache;
-  } catch {
-    return [];
-  }
+export function fetchStagingReserves(): Promise<ReservesFetchOutcome> {
+  return reservesFetcher.get();
 }
 
 let forecastAvailableCampaignIdsCache: Set<string> | null = null;
@@ -77,11 +97,20 @@ let forecastAvailableCampaignIdsCache: Set<string> | null = null;
 export async function fetchForecastAvailableCampaignIds(): Promise<Set<string> | null> {
   if (forecastAvailableCampaignIdsCache) return forecastAvailableCampaignIdsCache;
   try {
-    const resp = await fetch(`${STAGING_API}/meta/side-data`);
-    if (!resp.ok) return null;
+    // Bounded like the /markets fetch: a hung side-data call used to block module
+    // load forever with no output at all (AAV-1352).
+    const resp = await fetch(`${STAGING_API}/meta/side-data`, {
+      signal: AbortSignal.timeout(STAGING_FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) {
+      console.warn(`[e2e] staging /meta/side-data HTTP ${resp.status} — forecast gate disabled for this run`);
+      return null;
+    }
     forecastAvailableCampaignIdsCache = forecastAvailableCampaignIdsFromSideData(await resp.json());
     return forecastAvailableCampaignIdsCache;
-  } catch {
+  } catch (error) {
+    const detail = error instanceof Error ? error.message || error.name : String(error);
+    console.warn(`[e2e] staging /meta/side-data unreachable (${detail}) — forecast gate disabled for this run`);
     return null;
   }
 }
@@ -112,14 +141,18 @@ function hasLtv(r: ReserveData): boolean {
  * because their APR does not respond to position size (see
  * `fetchForecastAvailableCampaignIds`).
  * Prefers nonzero supply room, then highest net supply APR.
- * Returns null if no suitable reserve is found.
+ * Returns `found` | `data-gap` | `unreachable` — never null (AAV-1352).
  */
-export async function findIncentiveReserve(): Promise<TestReserve | null> {
-  const [reserves, forecastAvailableCampaignIds] = await Promise.all([
+export async function findIncentiveReserve(): Promise<ReserveDiscovery<TestReserve>> {
+  const [reservesOutcome, forecastAvailableCampaignIds] = await Promise.all([
     fetchStagingReserves(),
     fetchForecastAvailableCampaignIds(),
   ]);
-  return pickIncentiveReserve(reserves, new Date().toISOString(), forecastAvailableCampaignIds);
+  if (reservesOutcome.status === 'unreachable') return unreachableDiscovery(reservesOutcome);
+  const picked = pickIncentiveReserve(reservesOutcome.reserves, new Date().toISOString(), forecastAvailableCampaignIds);
+  // NEVER returns null: null would invite `if (!r) test.skip(...)` — the exact
+  // false-green shape this ticket removes (AAV-1352 review).
+  return picked ? { status: 'found', value: picked } : { status: 'data-gap' };
 }
 
 /**
@@ -128,19 +161,73 @@ export async function findIncentiveReserve(): Promise<TestReserve | null> {
  * but do need a reserve that can be added to the portfolio.
  *
  * Falls back to common stablecoins (USDC, USDT, WETH) for reliability.
+ * Returns `found` | `data-gap` | `unreachable` — never null (AAV-1352).
  */
-export async function findAnyActiveReserve(): Promise<TestReserve | null> {
-  const reserves = await fetchStagingReserves();
-  const candidates = reserves.filter((r) => isUsableReserve(r) && hasLtv(r));
-  if (candidates.length === 0) return null;
+export async function findAnyActiveReserve(): Promise<ReserveDiscovery<TestReserve>> {
+  const outcome = await fetchStagingReserves();
+  if (outcome.status === 'unreachable') return unreachableDiscovery(outcome);
+  const candidates = outcome.reserves.filter((r) => isUsableReserve(r) && hasLtv(r));
+  if (candidates.length === 0) return { status: 'data-gap' };
 
   // Prefer common stablecoins for UI tests (predictable decimal behavior)
   const preferredSymbols = ['USDC', 'USDT', 'DAI', 'WETH', 'GHO'];
   for (const sym of preferredSymbols) {
     const match = candidates.find((r) => (r.tokenSymbol as string) === sym);
-    if (match) return toTestReserve(match);
+    if (match) return { status: 'found', value: toTestReserve(match) };
   }
-  return toTestReserve(candidates[0]);
+  return { status: 'found', value: toTestReserve(candidates[0]) };
+}
+
+// ─── Gate enforcement (AAV-1352) ─────────────────────────────────────
+
+/** Gap reasons, single-sourced so skip text stays greppable across specs. */
+export const INCENTIVE_RESERVE_GAP_REASON = 'No reserve with incentives + ltv > 0 on staging';
+export const ACTIVE_RESERVE_GAP_REASON = 'No active reserve with ltv > 0 found on staging';
+export const OFFSET_SCENARIO_GAP_REASON = 'No cross-offset Merkl campaigns found in current staging data';
+export const CROSS_ASSET_SCENARIO_GAP_REASON = 'No crossAssetPairing campaigns found in current staging data';
+
+/**
+ * The one place the opt-out env is read: a spec cannot forget it, and cannot
+ * pass a different value from its sibling (AAV-1352 review).
+ */
+export function reserveGateFor(discovery: ReserveDiscovery<unknown>, dataGapReason: string): ReserveGate {
+  return decideReserveGate(discovery, {
+    dataGapReason,
+    allowUnreachable: isUnreachableAllowed(process.env),
+  });
+}
+
+/** The discovered value, or null when the gate will skip/fail. Works for a reserve or a scenario list. */
+export function foundValue<T>(discovery: ReserveDiscovery<T>): T | null {
+  return discovery.status === 'found' ? discovery.value : null;
+}
+
+/**
+ * Apply a gate (see `./stagingReservesFetch`).
+ *
+ * `fail` throws — inside `test.beforeEach` that is a real test failure, unlike
+ * `test.fail()` which would mark an expected failure as a pass. Call this in
+ * `beforeEach` (reserve-based specs) or in the placeholder test used when a
+ * scenario list came back empty (scenario-based specs).
+ */
+export function enforceReserveGate(gate: ReserveGate): void {
+  const effect = gateEffect(gate);
+  if (effect.kind === 'throw') throw effect.error;
+  if (effect.kind === 'skip') test.skip(true, effect.reason);
+}
+
+/**
+ * For the placeholder test that only exists because a scenario list is empty.
+ *
+ * `run` here would mean the gate and the list disagree (the gate is derived
+ * from the unfiltered list, the list from a capped/filtered view) — a silent
+ * pass that verifies nothing, so it is escalated instead of ignored.
+ */
+export function enforceEmptyListGate(gate: ReserveGate): void {
+  if (gate.action === 'run') {
+    throw new Error('discovery gate says run but the scenario list is empty — gate and list disagree');
+  }
+  enforceReserveGate(gate);
 }
 
 function toTestReserve(r: ReserveData): TestReserve {

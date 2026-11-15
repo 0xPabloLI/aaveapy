@@ -1,8 +1,11 @@
 import { test } from '@playwright/test';
 
+import { enforceEmptyListGate } from './test-reserves';
+
 import {
   hasScenarios,
   installStubRoutes,
+  liveScenarioGate,
   runCrossAssetPairingScenario,
   scenarios,
   stubScenario,
@@ -22,8 +25,9 @@ test.describe('Cross-asset pairing (min(1,2)) — portfolio simulation (AAV-895)
 
   test.describe('mobile', () => {
     if (!hasScenarios) {
-      test('no cross-asset pairing scenarios found in staging data', () => {
-        test.skip(true, 'No crossAssetPairing campaigns found in current staging data');
+      // AAV-1352: fail when staging was unreachable, skip only on a data gap.
+      test('staging discovery did not yield cross-asset pairing scenarios', () => {
+        enforceEmptyListGate(liveScenarioGate);
       });
     }
 

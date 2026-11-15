@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { findAnyActiveReserve, setupPortfolioWithReserve } from './test-reserves';
+import {
+  ACTIVE_RESERVE_GAP_REASON,
+  enforceReserveGate,
+  findAnyActiveReserve,
+  foundValue,
+  reserveGateFor,
+  setupPortfolioWithReserve,
+} from './test-reserves';
 
 /**
  * Mobile-only spacing assertion for the portfolio card layout.
@@ -11,7 +18,9 @@ import { findAnyActiveReserve, setupPortfolioWithReserve } from './test-reserves
  *
  * Test reserve is dynamically discovered from staging API.
  */
-const testReserve = await findAnyActiveReserve();
+const reserveDiscovery = await findAnyActiveReserve();
+const testReserve = foundValue(reserveDiscovery);
+const reserveGate = reserveGateFor(reserveDiscovery, ACTIVE_RESERVE_GAP_REASON);
 
 async function setupPortfolio(page: Page) {
   if (!testReserve) throw new Error('No suitable reserve found');
@@ -22,7 +31,7 @@ test.describe('Portfolio input — mobile spacing', () => {
   test.describe('mobile', () => {
     test.beforeEach(({}, testInfo) => {
       test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
-      test.skip(!testReserve, 'No active reserve with ltv > 0 found on staging');
+      enforceReserveGate(reserveGate);
     });
 
     test('token card renders with compact input area', async ({ page }, testInfo) => {
