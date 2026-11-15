@@ -295,3 +295,27 @@ export function getLowestHfDelta(healthFactors: { healthFactor: number | null; d
   const direction = Math.abs(delta) < 0.01 ? 'flat' : delta > 0 ? 'up' : 'down';
   return { delta, direction };
 }
+
+/**
+ * Render state for the always-visible "Lowest HF" badge (AAV-1304).
+ *
+ * Distinguishes three meanings that all previously rendered as "—":
+ * - `computed` — at least one pool has a valid HF; display the min value.
+ * - `no-debt`  — every pool has zero debt (supply-only portfolio); a "no debt"
+ *   hint is meaningful and safe to show.
+ * - `unknown`  — no pools at all, or debt exists but HF is not computable
+ *   (e.g. liquidation threshold missing ⇒ HF 0 is filtered out by getMinHf).
+ *   Showing "no debt" here would be a lie, so the badge stays a bare "—".
+ */
+export type LowestHfBadgeState = { kind: 'computed'; hf: number } | { kind: 'no-debt' } | { kind: 'unknown' };
+
+export function getLowestHfBadgeState(
+  healthFactors: { healthFactor: number | null; totalDebtUsd: number }[],
+): LowestHfBadgeState {
+  const minHf = getMinHf(healthFactors);
+  if (minHf != null) return { kind: 'computed', hf: minHf };
+  if (healthFactors.length > 0 && healthFactors.every((hf) => hf.totalDebtUsd === 0)) {
+    return { kind: 'no-debt' };
+  }
+  return { kind: 'unknown' };
+}
