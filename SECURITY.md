@@ -78,8 +78,10 @@ Three layers complement GitHub's Dependabot alerts / security updates:
 **Minimum release age:** adopted dependency versions must have been published at
 least **7 days** ago (`MIN_RELEASE_AGE_DAYS`, default 7). A freshly published
 compromised or buggy release cannot land here on day zero. Overrides are
-deliberate and must be documented in the PR description
-(`MIN_RELEASE_AGE_DAYS=0` via workflow dispatch).
+deliberate: set `MIN_RELEASE_AGE_DAYS=0` in the environment that runs the gate
+and document the root cause in the PR description. There is no default
+workflow_dispatch input for this override; a CI-side exception requires a
+reviewed change to the workflow that invokes the gate.
 
 ## Local verification commands
 

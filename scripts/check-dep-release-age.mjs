@@ -32,6 +32,7 @@ import {
   dedupeEntries,
   resolvePublishTime,
   isAtLeastDaysOld,
+  formatReleaseAgeOverrideHint,
 } from './lib/dep-release-age-parse.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -156,8 +157,7 @@ if (tooFreshDirect.length > 0) {
   console.error('\nOptions:');
   console.error(`  - Wait ${MIN_AGE_DAYS} day(s) and re-run (preferred: let the supply-chain window close)`);
   console.error('  - Pin the previous known-good version');
-  console.error(`  - Override deliberately for this PR: MIN_RELEASE_AGE_DAYS=0 in the workflow dispatch,`);
-  console.error('    documented in the PR description (root cause: why day-zero adoption is required).');
+  console.error(formatReleaseAgeOverrideHint());
   process.exit(1);
 }
 
