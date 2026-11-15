@@ -583,7 +583,7 @@ Three cap mechanisms are live: Merkl pool budget, Merkl APR cap, and the per-use
 | Source | API fields | Resolution |
 |--------|------------|------------|
 | Merkl breakdown | `positionCapNative`, `positionCapUsd`, `isCombineCap`, `aprCap` | `resolvePositionCapUsd(positionCapNative, positionCapUsd, tokenPrice, decimals)` — the native amount wins when the reserve price is known |
-| Brevis campaign | `positionCapUsd`, `isCombineCap` | used as-is; the fetcher always emits `isCombineCap: true` alongside a cap (`packages/aave-fetcher/src/brevis-api.ts`) |
+| Brevis campaign | `positionCapUsd`, `isCombineCap` | used as-is; the fetcher always emits `isCombineCap: true` alongside a cap (后端仓库 `packages/aave-fetcher/src/brevis-api.ts`) |
 | Protocol row | `supplyIncentives` / `borrowIncentives` (`number[]`) | none, and neither has an API producer — the `protocol` lane evaluates to 0 on every live reserve (AAV-1350 deprecation in `src/types/aave.ts`) |
 | Simulation UI | same diagnostics | `capNote`, `capWarning` |
 
@@ -604,8 +604,8 @@ Source: `src/lib/incentiveCaps.ts` (`capEffectToNote`).
 
 | Cap type | Scope | Mechanism | Source file |
 |----------|-------|-----------|-------------|
-| Pool budget | Pool-wide | `fixRewardableDays = remainingBudget / dailyRewards` | `merklForecast.ts` → `buildFixRewardCapEffect` |
-| APR cap | Pool-wide | MAX regime caps the APR when TVL is low | `merklForecast.ts` → `buildMaxRewardCapEffect` |
+| Pool budget | Pool-wide | `fixRewardableDays = remainingBudget / dailyRewards` | `incentiveCaps.ts` → `buildFixRewardCapEffect` |
+| APR cap | Pool-wide | MAX regime caps the APR when TVL is low | `incentiveCaps.ts` → `buildMaxRewardCapEffect` |
 | Position cap | Per-user | `eligibleUsd = min(positionUsd, positionCapUsd)`; effective APR `= nominal × eligibleUsd / positionUsd` | `applyPositionCapToForecastResult` |
 
 Caps apply only where a position is known: the per-campaign rows and `sr.*` lanes of `rateSimulationCalculator.ts`, plus the Merkl aggregate sums in `incentiveAggregation.ts` when they receive `positionUsd`. `headlineIncentive` stays uncapped by design (Golden Rule 4).
@@ -622,11 +622,11 @@ Caps apply only where a position is known: the per-campaign rows and `sr.*` lane
 - `positionUsd = combinedDepositUsd ?? totalPositionUsd ?? inputUsd`; the combined value requires the same `campaignId` and matching metadata across supply and borrow.
 - An open-ended campaign (no `campaignEndedAt`) still counts as active (`allowOpenEnd = true` in `hasActiveBrevisBreakdown`) and keeps its cap; only the `~Nd` horizon note is dropped, because `remainingDays` arrives as `null`.
 
-Brevis exposes no structured cap field. `extractPositionCapFromDescription()` (`packages/aave-fetcher/src/brevis-api.ts`) scrapes the campaign copy out of the Brevis frontend `_app` chunk and parses `/up to ([\d,]+)\s*(USDC|USD)/i`, so the copy is the semantic source and that regex is the contract. Live copy, 2026-11-12:
+Brevis exposes no structured cap field. `extractPositionCapFromDescription()` (后端仓库 `packages/aave-fetcher/src/brevis-api.ts`) scrapes the campaign copy out of the Brevis frontend `_app` chunk and parses `/up to ([\d,]+)\s*(USDC|USD)/i`, so the copy is the semantic source and that regex is the contract. Live copy, 2026-11-12:
 
 > Eligible MetaMask Card users … may earn a fixed 2.4% reward APR when lending or borrowing USDC on Aave via Linea. This promotional rate applies to a combined total of up to 5000 USDC in collateral and/or debt per user.
 
-That sentence makes `positionCap` a principal ceiling spread across supply and debt; principal and payout coincide only because the APR is fixed. Two edges follow: a campaign whose copy capped the payout would land in the same field silently (none today — the only observed `type === 3001` family is MetaMask), and a reworded sentence breaks the scrape, since the chunk scan keys off the literal markers `Eligible MetaMask` and `per user.` and a miss only logs a warning. Campaign-level evidence: `docs/api/brevis-supplement.md` §2.5.
+That sentence makes `positionCap` a principal ceiling spread across supply and debt; principal and payout coincide only because the APR is fixed. Two edges follow: a campaign whose copy capped the payout would land in the same field silently (none today — the only observed `type === 3001` family is MetaMask), and a reworded sentence breaks the scrape, since the chunk scan keys off the literal markers `Eligible MetaMask` and `per user.` and a miss only logs a warning. Campaign-level evidence: 后端仓库 `docs/api/brevis-supplement.md` §2.5.
 
 ### Merkl FIX reward cap
 
