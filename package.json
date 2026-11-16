@@ -47,6 +47,8 @@
     "knip": "knip",
     "dup:check": "jscpd src",
     "check:agents-md": "node scripts/validate-agents-md.mjs",
+    "check:product-view": "node scripts/check-product-view.mjs",
+    "product-view": "node scripts/product-view-section.mjs",
     "check:todos": "node scripts/check-todo-markers.mjs",
     "check:dep-age": "node scripts/check-dep-release-age.mjs",
     "lint:all": "npm run lint && npm run lint:colors",
