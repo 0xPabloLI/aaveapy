@@ -143,7 +143,7 @@ staging 当前 0 条 cross 场景，AAV-1316 先例：真实 fixture + 注入约
 | L15 | target 有 `supplyIncentives` | 不出场景 | Low | automated test |
 | L16 | cap 退化 / cap 为 0 | `positionCapUsd = 1` ⇒ `gross < 100` ⇒ 不出场景；`positionCapUsd = 0` ⇒ 无上限 ⇒ 正常出场景 | Low | automated test |
 | L17 | cross：`offsetReserveId` 缺失 | 不产出场景（既有行为 O7），plan 永不半成品 | Low | automated test |
-| L18 | 场景携带 plan | `plan.targetSupplyUsd === plan.grossUsd`；cross 的 `offsetSupplyUsd` 非空且 `offsetReserveId` 指向 offset | Low | automated test |
+| L18 | 场景携带 plan | `plan.targetSupplyUsd` 即 gross（不设重复字段）；cross 的 `offsetSupplyUsd` 非空且 `offsetReserveId` 指向 offset | Low | automated test |
 | L19 | 排序 | cross 优先、APR 降序不变 | Low | automated test |
 | L20 | runner 消费契约 | runner 打出的每个金额 = `plan` 字段，无 runner 侧二次推导（代码内不出现金额字面量） | Medium | static review（grep 无 500/1000/2000/50000）+ automated test（L18 plan/targetSupply 一致） |
 | L21 | live self-loop 运行时 | `measured ≥ 0.9 × expectedRatio`；单调；baseline > 0 | Medium | runtime-real-data |
@@ -155,11 +155,18 @@ staging 当前 0 条 cross 场景，AAV-1316 先例：真实 fixture + 注入约
 | L27 | staging 不可达 | live 变体 fail（AAV-1352 契约），stub 变体照常执行 | Medium | runtime-real-data |
 | L28 | 静态门 | 新文件纳入 `typecheck:e2e` + eslint 覆盖 | Low | static-type-lint |
 
-## 验证证据（收口时补）
+## 验证证据
 
-- 单测：`npm test -- reserveDiscovery crossReserveOffsetStub`（L1–L20、L24–L26）。
-- 运行时：`E2E_PROXY=… npx playwright test e2e/portfolio-cross-reserve-offset.spec.ts`（L21–L23、L27）——必须给出 cross 与 self-loop 各自的 passed 数与实测比例值。
-- 门禁：`npm run typecheck:e2e`、`npm run lint`。
+实测 2026-11-16，仓库 `dev`，提交 `897789fd`（本 spec 代码同批）。
+
+- 单测：`src/test/reserveDiscovery.test.ts` **151 passed**（L1–L18 + L5b：cap 镜像与 app `resolvePositionCapUsd` 互钉）；`src/test/crossReserveOffsetStub.test.ts` **6 passed**（S1–S6 覆盖 L24–L26）。
+- 全量单测：`npx vitest run` = **4445 passed / 14 skipped / 6 todo**（197 files）。
+- 静态门：`npm run typecheck`（app + node + e2e 三段）rc=0；eslint 对本次改动 7 个文件零输出（L28）。
+- 运行时：`npx playwright test e2e/portfolio-cross-reserve-offset.spec.ts` = **4 passed / 4 skipped（42.1s）**。
+  - synthetic cross（Base WETH 目标 × Base USDC offset，注入 `netPositionConstraint`）：gross **$37,500**、梯 **9,375 / 18,750 / 56,250**、期望比例 **0.25 / 0.5 / 1**、末步 `expectedAfterZero`；desktop 10.6s、mobile 13.5s（L22/L23 真绿）。
+  - live self-loop（Celo WETH，gross $100,000、capacity $78,000 ⇒ 比例 0.5/0.78/0.78）：desktop 10.3s、mobile 12.9s（L21）。
+  - 当日 staging 441 reserves：cross **0 条**、self-loop **1 条**；被 skip 的 4 条是既有"该平台无对应场景"分流，不是本票引入。
+- 回归：cross-asset pairing stub（desktop + mobile）= **6 passed**，`installStubRoutes` 改为委托 `installMarketsStubRoutes` 后无回归。
 
 ## Out of scope
 
