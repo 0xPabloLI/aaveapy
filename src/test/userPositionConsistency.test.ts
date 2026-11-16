@@ -121,55 +121,86 @@ function assertNoChainErrors(errors: { chainId?: number; spokeName?: string | nu
 }
 
 /**
+ * Ground truth from the payload itself: every spoke address named by a V4 reserveId
+ * on this chain. Independent of `deriveV4ReservesBySpoke` and of the address book.
+ */
+function payloadV4SpokeKeys(reserves: ReserveWithSpread[], chainId: number): string[] {
+  return [
+    ...new Set(
+      reserves
+        .filter((r) => r.chainId === chainId && getProtocolVersion(r.marketName) === 'v4')
+        .map((r) => toV4SpokeKey(parseReserveId(r.reserveId)?.poolOrSpokeAddress))
+        .filter((address): address is string => address !== null),
+    ),
+  ];
+}
+
+/**
  * AAV-1356 invariant：V4 兜底路径的 join 必须真的接通。修前生产方以 API 显示名
  * （`Main`）作 Map key、消费方以地址簿 raw key（`MAIN_SPOKE`）查询 ⇒ 每条链 0 条
  * spoke 被查询，本文件其余断言全部恒真。此处的地面真值取自 payload 自身（从每条 V4
  * `reserveId` 解析 spoke 地址），独立于生产方 ⇒ 「静默跳过全部 spoke」不能再冒充通过。
  */
 function assertV4SpokeJoinCoversPayload(
-  reserves: ReserveWithSpread[],
+  payloadSpokes: readonly string[],
   v4BySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
-  chainId: number,
   label: string,
 ) {
-  const spokeAddresses = new Set(
-    reserves
-      .filter((r) => r.chainId === chainId && getProtocolVersion(r.marketName) === 'v4')
-      .map((r) => toV4SpokeKey(parseReserveId(r.reserveId)?.poolOrSpokeAddress))
-      .filter((address): address is string => address !== null),
-  );
-
-  expect(spokeAddresses.size, `${label}: V4 reserveIds must name at least one spoke address`).toBeGreaterThan(0);
+  expect(payloadSpokes.length, `${label}: V4 reserveIds must name at least one spoke address`).toBeGreaterThan(0);
   expect(
-    [...spokeAddresses].filter((address) => !(v4BySpoke[address] ?? []).length),
+    payloadSpokes.filter((address) => !(v4BySpoke[address] ?? []).length),
     `${label}: every spoke address named by a reserveId must be a key of v4BySpoke`,
   ).toEqual([]);
 }
 
 /**
- * AAV-1356 invariant（地址簿一侧）：该链地址簿列出的每个 spoke 都必须**真的被查询到**。
- *
- * 上面那条以 payload 为准（parse 每个 `reserveId` 得到 spoke 地址），这一条反过来以
- * 地址簿为准，两者方向互补：payload 点名了但 map 里没有 ⇒ 上一条红；地址簿有而
- * payload 没点名 ⇒ 只有这一条能发现。修前该路径查询 0 条 spoke，本断言是它的直接
- * 红灯（chain 1 地址簿 13 条）。
+ * AAV-1356 #2/#3 invariant（地址簿一侧）：payload 点名的每个 spoke 都必须在
+ * `V4_SPOKE_ADDRESSES` 中。union 前 base-only 的地址簿会在这里红在缺口的地址上
+ * （4.76.1 为 `0x115af1c2…`），从而暴露「fallback 永远查不到该 spoke」。
+ */
+function assertV4AddressBookCoversPayload(payloadSpokes: readonly string[], chainId: number, label: string) {
+  const book = new Set(
+    (getV4SpokeAddresses(chainId) ?? [])
+      .map((spoke) => toV4SpokeKey(spoke.address))
+      .filter((address): address is string => address !== null),
+  );
+
+  expect(book.size, `${label}: the address book must list at least one spoke for chain ${chainId}`).toBeGreaterThan(0);
+  expect(
+    payloadSpokes.filter((address) => !book.has(address)),
+    `${label}: every payload spoke must exist in V4_SPOKE_ADDRESSES (address-book bump needed)`,
+  ).toEqual([]);
+}
+
+/**
+ * AAV-1356 #2/#3 invariant（所有链）：地址簿必须在 payload 出现的每条 V4 链上覆盖
+ * 所有 spoke。单链断言会漏掉 5042/8453/43114。
+ */
+function assertV4AddressBookCoversAllPayloadChains(reserves: ReserveWithSpread[], label: string) {
+  const chainIds = [
+    ...new Set(reserves.filter((r) => getProtocolVersion(r.marketName) === 'v4').map((r) => r.chainId)),
+  ].sort((a, b) => a - b);
+
+  expect(chainIds.length, `${label}: payload must name at least one V4 chain`).toBeGreaterThan(0);
+  for (const chainId of chainIds) {
+    assertV4AddressBookCoversPayload(payloadV4SpokeKeys(reserves, chainId), chainId, `${label} chain ${chainId}`);
+  }
+}
+
+/**
+ * AAV-1356 #3 invariant（查询覆盖）：payload 里每个有 reserve 的 spoke 都必须真的被
+ * 查询到。地面真值取 payload 而非地址簿条目数——地址簿可能领先 payload（新 spoke
+ * 已发布但 /markets 还没有 reserve），那不是失败。
  *
  * 前置：必须已在同一链上通过 `assertNoChainErrors` —— 有失败时成功计数不再等于查询
  * 计数，此时应当先由那条断言报错。
  */
-function assertV4QueriedSpokeCount(results: readonly unknown[], chainId: number, label: string) {
-  const bookSpokes = (getV4SpokeAddresses(chainId) ?? [])
-    .map((spoke) => toV4SpokeKey(spoke.address))
-    .filter((address): address is string => address !== null);
-
-  expect(
-    bookSpokes.length,
-    `${label}: the address book must list at least one spoke for chain ${chainId}`,
-  ).toBeGreaterThan(0);
+function assertV4QueriedSpokeCount(results: readonly unknown[], payloadSpokes: readonly string[], label: string) {
+  expect(payloadSpokes.length, `${label}: payload must name at least one V4 spoke`).toBeGreaterThan(0);
   expect(
     results.length,
-    `${label}: every address-book spoke must have been queried (call this after assertNoChainErrors)`,
-  ).toBe(bookSpokes.length);
+    `${label}: every payload spoke with reserves must be queried (call this after assertNoChainErrors)`,
+  ).toBe(payloadSpokes.length);
 }
 
 describe('On-chain user positions integration (live RPC + staging API)', () => {
@@ -241,11 +272,13 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     if (Object.keys(v4BySpoke).length === 0) {
       throw new Error('staging /markets has no V4 spokes — failing loudly instead of silently passing');
     }
-    assertV4SpokeJoinCoversPayload(reserves, v4BySpoke, 1, 'V4');
+    const payloadSpokes = payloadV4SpokeKeys(reserves, 1);
+    assertV4SpokeJoinCoversPayload(payloadSpokes, v4BySpoke, 'V4');
+    assertV4AddressBookCoversAllPayloadChains(reserves, 'V4');
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'V4');
-    assertV4QueriedSpokeCount(v4Response.results, 1, 'V4');
+    assertV4QueriedSpokeCount(v4Response.results, payloadSpokes, 'V4');
 
     const positions = convertV4PositionsToWalletPositions(
       v4Response.results.flatMap((r) => r.positions),
@@ -271,7 +304,9 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     if (Object.keys(v4BySpoke).length === 0) {
       throw new Error('staging /markets has no V4 spokes — failing loudly instead of silently passing');
     }
-    assertV4SpokeJoinCoversPayload(reserves, v4BySpoke, 1, 'combined V4');
+    const payloadSpokes = payloadV4SpokeKeys(reserves, 1);
+    assertV4SpokeJoinCoversPayload(payloadSpokes, v4BySpoke, 'combined V4');
+    assertV4AddressBookCoversAllPayloadChains(reserves, 'combined V4');
 
     const allPositions: WalletPosition[] = [];
 
@@ -287,7 +322,7 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'combined V4');
-    assertV4QueriedSpokeCount(v4Response.results, 1, 'combined V4');
+    assertV4QueriedSpokeCount(v4Response.results, payloadSpokes, 'combined V4');
     allPositions.push(
       ...convertV4PositionsToWalletPositions(
         v4Response.results.flatMap((r) => r.positions),

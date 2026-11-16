@@ -88,7 +88,8 @@ const V4_SPOKE_ADDRESS_PATTERN = /^0x[0-9a-f]{40}$/;
  * book's EIP-55 spelling. This normalises the two to one key (AAV-1356).
  *
  * Returns null when the value cannot be a spoke address, so callers skip the entry
- * instead of storing a key that can never match.
+ * instead of storing a key that can never match. The same 20-byte guard doubles as
+ * the address-shape check when unioning V4 address-book modules (spokes and hubs).
  */
 export function toV4SpokeKey(address: string | null | undefined): string | null {
   if (!address) return null;

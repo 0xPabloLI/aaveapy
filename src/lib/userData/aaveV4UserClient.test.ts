@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AaveV4Ethereum, AaveV4EthereumSentoraCurated } from '@aave-dao/aave-address-book';
 import {
   V4_SPOKE_ADDRESSES,
   V4_HUB_ADDRESSES,
@@ -11,6 +12,8 @@ import {
   SPOKE_ABI,
   getV4UserPositionsOnChain,
   getV4UserPositionsAllSpokes,
+  unionV4ModuleAddresses,
+  type V4ModuleSource,
   type V4ReserveInfo,
 } from './aaveV4UserClient';
 import { createPublicClient } from 'viem';
@@ -53,31 +56,31 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
   it('V4_SPOKE_ADDRESSES[1] contains non-oracle spokes', () => {
     const spokes = V4_SPOKE_ADDRESSES[1];
     expect(spokes.length).toBeGreaterThanOrEqual(10);
-    const names = spokes.map((s) => s.name);
-    expect(names).toContain('MAIN_SPOKE');
-    expect(names).toContain('BLUECHIP_SPOKE');
-    expect(names).toContain('ETHENA_CORRELATED_SPOKE');
-    expect(names).toContain('ETHENA_ECOSYSTEM_SPOKE');
-    expect(names).toContain('FOREX_SPOKE');
-    expect(names).toContain('GOLD_SPOKE');
-    expect(names).toContain('LOMBARD_BTC_SPOKE');
-    expect(names).toContain('ETHERFI_ESPOKE');
-    expect(names).toContain('KELP_ESPOKE');
-    expect(names).toContain('LIDO_ESPOKE');
+    const rawNames = spokes.map((s) => s.rawName);
+    expect(rawNames).toContain('MAIN_SPOKE');
+    expect(rawNames).toContain('BLUECHIP_SPOKE');
+    expect(rawNames).toContain('ETHENA_CORRELATED_SPOKE');
+    expect(rawNames).toContain('ETHENA_ECOSYSTEM_SPOKE');
+    expect(rawNames).toContain('FOREX_SPOKE');
+    expect(rawNames).toContain('GOLD_SPOKE');
+    expect(rawNames).toContain('LOMBARD_BTC_SPOKE');
+    expect(rawNames).toContain('ETHERFI_ESPOKE');
+    expect(rawNames).toContain('KELP_ESPOKE');
+    expect(rawNames).toContain('LIDO_ESPOKE');
   });
 
   it('V4_SPOKE_ADDRESSES[1] excludes oracle spokes', () => {
     const spokes = V4_SPOKE_ADDRESSES[1];
-    const names = spokes.map((s) => s.name);
-    for (const name of names) {
-      expect(name).not.toMatch(/_ORACLE$/);
+    for (const spoke of spokes) {
+      expect(spoke.rawName).not.toMatch(/_ORACLE$/);
+      expect(spoke.name).not.toMatch(/_ORACLE$/);
     }
   });
 
   it('V4_SPOKE_ADDRESSES[1] excludes treasury spoke', () => {
     const spokes = V4_SPOKE_ADDRESSES[1];
-    const names = spokes.map((s) => s.name);
-    expect(names).not.toContain('TREASURY_SPOKE');
+    const rawNames = spokes.map((s) => s.rawName);
+    expect(rawNames).not.toContain('TREASURY_SPOKE');
   });
 
   it('each spoke has valid address format', () => {
@@ -96,18 +99,55 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
   // replaced Ethereum's 27 spokes with its 7 and V4 positions on Ethereum went
   // undiscovered. The base module must win, whatever the enumeration order.
   it('is not shadowed by a curated module for the same chain', () => {
-    const names = V4_SPOKE_ADDRESSES[1].map((s) => s.name);
+    const rawNames = V4_SPOKE_ADDRESSES[1].map((s) => s.rawName);
     // Spokes that exist only on AaveV4Ethereum, not on the Sentora variant.
     for (const baseOnly of ['MAIN_SPOKE', 'ETHENA_CORRELATED_SPOKE', 'GOLD_SPOKE', 'LIDO_ESPOKE']) {
-      expect(names).toContain(baseOnly);
+      expect(rawNames).toContain(baseOnly);
     }
   });
 
+  // AAV-1356 #2/#3: curated modules are unioned, not skipped. The Sentora module
+  // deploys RLUSD/OUSD spokes and a second BLUECHIP_SPOKE under the same raw key
+  // as the base module. Both entries must survive; only the diagnostic label is
+  // disambiguated with the module name.
+  it('includes curated-module spokes alongside the base module', () => {
+    const spokes = V4_SPOKE_ADDRESSES[1];
+    const rawNames = spokes.map((s) => s.rawName);
+    expect(rawNames).toContain('RLUSD_YIELD_SPOKE');
+    expect(rawNames).toContain('OUSD_YIELD_SPOKE');
+    expect(spokes.map(addressKey)).toContain(AaveV4EthereumSentoraCurated.SPOKES.RLUSD_YIELD_SPOKE.toLowerCase());
+  });
+
+  // The payload's 17th Ethereum spoke (`Gold Correlated`,
+  // 0x115af1c2db26cd8eca3f29055e4e424af4edf616) only exists in AaveV4Ethereum from
+  // 4.77.6 onward. Without the bump the union still left it unqueryable.
+  it('includes the PAXG_PAXOS_ESPOKE spoke added in 4.77.6', () => {
+    expect(V4_SPOKE_ADDRESSES[1].map(addressKey)).toContain(AaveV4Ethereum.SPOKES.PAXG_PAXOS_ESPOKE.toLowerCase());
+  });
+
+  it('keeps both same-named BLUECHIP spokes and prefixes only the collision', () => {
+    const bluechips = V4_SPOKE_ADDRESSES[1].filter((s) => s.rawName === 'BLUECHIP_SPOKE');
+    expect(bluechips).toHaveLength(2);
+    expect(bluechips.map((s) => s.name).sort()).toEqual([
+      'AaveV4Ethereum:BLUECHIP_SPOKE',
+      'AaveV4EthereumSentoraCurated:BLUECHIP_SPOKE',
+    ]);
+    expect(bluechips.map(addressKey).sort()).toEqual(
+      [
+        AaveV4Ethereum.SPOKES.BLUECHIP_SPOKE.toLowerCase(),
+        AaveV4EthereumSentoraCurated.SPOKES.BLUECHIP_SPOKE.toLowerCase(),
+      ].sort(),
+    );
+
+    const main = V4_SPOKE_ADDRESSES[1].find((s) => s.rawName === 'MAIN_SPOKE')!;
+    expect(main.name).toBe('MAIN_SPOKE');
+  });
+
   // deriveV4ReservesBySpoke (src/lib/deriveOnchainConfig.ts) keys a Map by spoke
-  // ADDRESS since AAV-1356, so two spokes sharing a name would no longer have their
-  // reserves conflated — name uniqueness is only what the failure labels below rely on.
-  // The invariant the join itself relies on is address uniqueness.
-  it('every spoke name is unique within its chain', () => {
+  // ADDRESS since AAV-1356, so two spokes sharing a name no longer conflate their
+  // reserves. The join relies on address uniqueness; the failure labels rely on
+  // diagnostic-label uniqueness.
+  it('every spoke diagnostic label is unique within its chain', () => {
     for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
       const names = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map((s) => s.name);
       expect(new Set(names).size, `chain ${chainIdStr}`).toBe(names.length);
@@ -116,7 +156,7 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
 
   it('every spoke address is unique within its chain', () => {
     for (const chainIdStr of Object.keys(V4_SPOKE_ADDRESSES)) {
-      const addresses = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map(spokeKey);
+      const addresses = V4_SPOKE_ADDRESSES[Number(chainIdStr)].map(addressKey);
       expect(new Set(addresses).size, `chain ${chainIdStr}`).toBe(addresses.length);
     }
   });
@@ -130,10 +170,18 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     const hubs = V4_HUB_ADDRESSES[1];
     expect(hubs).toBeDefined();
     expect(hubs.length).toBeGreaterThanOrEqual(3);
-    const names = hubs.map((h) => h.name);
-    expect(names).toContain('CORE_HUB');
-    expect(names).toContain('PLUS_HUB');
-    expect(names).toContain('PRIME_HUB');
+    const rawNames = hubs.map((h) => h.rawName);
+    expect(rawNames).toContain('CORE_HUB');
+    expect(rawNames).toContain('PLUS_HUB');
+    expect(rawNames).toContain('PRIME_HUB');
+  });
+
+  it('unions hubs across modules', () => {
+    expect(V4_HUB_ADDRESSES[1].map((h) => h.rawName)).toContain('SENTORA_HUB');
+    for (const chainIdStr of Object.keys(V4_HUB_ADDRESSES)) {
+      const addresses = V4_HUB_ADDRESSES[Number(chainIdStr)].map(addressKey);
+      expect(new Set(addresses).size, `chain ${chainIdStr}`).toBe(addresses.length);
+    }
   });
 
   it('getV4SpokeAddresses returns spokes for known chain, undefined for unknown', () => {
@@ -146,6 +194,84 @@ describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
     expect(getV4HubAddresses(1)).toBeDefined();
     expect(getV4HubAddresses(1)!.length).toBeGreaterThanOrEqual(3);
     expect(getV4HubAddresses(42161)).toBeUndefined();
+  });
+
+  it('unions modules by address instead of picking one', () => {
+    const map = unionV4ModuleAddresses([
+      moduleOf('AaveV4EthereumSentoraCurated', { RLUSD_YIELD_SPOKE: address('aa') }),
+      moduleOf('AaveV4Ethereum', { MAIN_SPOKE: address('bb'), BLUECHIP_SPOKE: address('cc') }),
+    ]);
+
+    expect(
+      map
+        .get(1)!
+        .spokes.map((s) => s.rawName)
+        .sort(),
+    ).toEqual(['BLUECHIP_SPOKE', 'MAIN_SPOKE', 'RLUSD_YIELD_SPOKE']);
+  });
+
+  it('dedupes the same address across modules', () => {
+    const map = unionV4ModuleAddresses([
+      moduleOf('AaveV4Z', { SHARED: address('aa') }),
+      moduleOf('AaveV4A', { SHARED: address('aa'), OTHER: address('bb') }),
+    ]);
+
+    const spokes = map.get(1)!.spokes;
+    expect(spokes).toHaveLength(2);
+    expect(spokes.find((s) => s.rawName === 'SHARED')!.name).toBe('SHARED');
+  });
+
+  it('is independent of module enumeration order', () => {
+    const a = { name: 'AaveV4A', CHAIN_ID: 1, SPOKES: { ALIAS: address('aa') }, HUBS: {} };
+    const z = { name: 'AaveV4Z', CHAIN_ID: 1, SPOKES: { ORIGINAL: address('aa') }, HUBS: {} };
+
+    const forward = unionV4ModuleAddresses([a, z]).get(1)!.spokes;
+    const reverse = unionV4ModuleAddresses([z, a]).get(1)!.spokes;
+
+    expect(forward).toEqual(reverse);
+    expect(forward.map((s) => s.rawName)).toEqual(['ALIAS']);
+  });
+
+  it('filters oracle/treasury spokes and skips malformed addresses', () => {
+    const map = unionV4ModuleAddresses([
+      {
+        name: 'AaveV4A',
+        CHAIN_ID: 1,
+        SPOKES: {
+          MAIN_SPOKE: address('11'),
+          MAIN_SPOKE_ORACLE: address('22'),
+          TREASURY_SPOKE: address('33'),
+          BAD: 'not-an-address',
+        },
+        HUBS: {},
+      },
+    ]);
+
+    expect(map.get(1)!.spokes.map((s) => s.rawName)).toEqual(['MAIN_SPOKE']);
+  });
+
+  it('returns an empty map for no modules, empty arrays for an empty module, and keeps spokes without hubs', () => {
+    expect(unionV4ModuleAddresses([]).size).toBe(0);
+    expect(unionV4ModuleAddresses([{ name: 'AaveV4Empty', CHAIN_ID: 1, SPOKES: {}, HUBS: {} }]).get(1)).toEqual({
+      spokes: [],
+      hubs: [],
+    });
+    expect(
+      unionV4ModuleAddresses([{ name: 'AaveV4NoHubs', CHAIN_ID: 1, SPOKES: { MAIN_SPOKE: address('aa') } }]).get(1),
+    ).toEqual({
+      spokes: [{ name: 'MAIN_SPOKE', rawName: 'MAIN_SPOKE', address: address('aa') }],
+      hubs: [],
+    });
+  });
+
+  it('keeps the same raw key independent across chains', () => {
+    const map = unionV4ModuleAddresses([
+      { name: 'AaveV4A', CHAIN_ID: 1, SPOKES: { MAIN_SPOKE: address('11') }, HUBS: {} },
+      { name: 'AaveV4B', CHAIN_ID: 2, SPOKES: { MAIN_SPOKE: address('22') }, HUBS: {} },
+    ]);
+
+    expect(map.get(1)!.spokes[0].name).toBe('MAIN_SPOKE');
+    expect(map.get(2)!.spokes[0].name).toBe('MAIN_SPOKE');
   });
 
   it('SPOKE_ABI has required view functions', () => {
@@ -206,7 +332,16 @@ const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`;
 const MAIN_SPOKE = getV4SpokeAddresses(1)!.find((s) => s.name === 'MAIN_SPOKE')!;
 
 /** The join key `deriveV4ReservesBySpoke` produces and this module looks up (AAV-1356). */
-const spokeKey = (spoke: { address: string }) => spoke.address.toLowerCase();
+const addressKey = (entry: { address: string }) => entry.address.toLowerCase();
+
+/** Synthetic address-book entries for the pure union tests. */
+const address = (byte: string) => `0x${byte.repeat(20)}` as `0x${string}`;
+const moduleOf = (
+  name: string,
+  spokes: Record<string, string>,
+  hubs: Record<string, string> = {},
+  chainId = 1,
+): V4ModuleSource => ({ name, CHAIN_ID: chainId, SPOKES: spokes, HUBS: hubs });
 
 /** The API's display form of an address-book raw key: `MAIN_SPOKE` -> `Main`. */
 const displayNameOf = (rawKey: string) =>
@@ -647,7 +782,7 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
   it('filters spokes with no reserves', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      [spokeKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
+      [addressKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
     });
     expect(result.results.length + result.errors.length).toBe(1);
   });
@@ -671,7 +806,7 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
   it('queries every address-book spoke that has reserves', async () => {
     const spokes = getV4SpokeAddresses(1)!;
-    const reservesBySpoke = Object.fromEntries(spokes.map((s) => [spokeKey(s), [{ reserveId: 0n, asset: WETH }]]));
+    const reservesBySpoke = Object.fromEntries(spokes.map((s) => [addressKey(s), [{ reserveId: 0n, asset: WETH }]]));
 
     const result = await getV4UserPositionsAllSpokes(1, USER, reservesBySpoke);
 
@@ -691,14 +826,14 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
       const reserves = spokes.map(
         (s, i) =>
           ({
-            reserveId: `${chainId}:${spokeKey(s)}:${token}:0xhub`,
+            reserveId: `${chainId}:${addressKey(s)}:${token}:0xhub`,
             marketName: `AaveV4Chain${chainId}`,
             chainName: 'Test',
             chainId,
             tokenName: 'Token',
             tokenSymbol: 'TKN',
             tokenAddress: token,
-            spokeName: displayNameOf(s.name),
+            spokeName: displayNameOf(s.rawName),
             aaveProReserveId: Buffer.from(`${i + 1}::${token}`).toString('base64'),
           }) as ReserveWithSpread,
       );
@@ -713,6 +848,113 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
         unreachable.map((s) => s.name),
         `chain ${chainId}`,
       ).toEqual([]);
+    }
+  });
+
+  // AAV-1356 #2: two modules can name different spokes the same. Both are queried,
+  // and each result is attributed to its own address-book entry (not merged by name).
+  it('queries both same-named spokes under different modules', async () => {
+    const bluechips = V4_SPOKE_ADDRESSES[1].filter((s) => s.rawName === 'BLUECHIP_SPOKE');
+    expect(bluechips).toHaveLength(2);
+
+    const { client, mockMulticall } = makeMockClient([
+      { status: 'success', result: 1n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [true, false] },
+      {
+        status: 'success',
+        result: {
+          riskPremium: 0n,
+          avgCollateralFactor: 0n,
+          healthFactor: 0n,
+          totalCollateralValue: 0n,
+          totalDebtValueRay: 0n,
+          activeCollateralCount: 0n,
+          borrowCount: 0n,
+        },
+      },
+    ]);
+
+    const result = await getV4UserPositionsAllSpokes(
+      1,
+      USER,
+      Object.fromEntries(bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ reserveId: 0n, asset: WETH }]])),
+      client,
+    );
+
+    expect(mockMulticall).toHaveBeenCalledTimes(2);
+    expect(result.results).toHaveLength(2);
+    expect(result.errors).toHaveLength(0);
+    expect(result.results.flatMap((r) => r.positions.map((p) => p.spokeName)).sort()).toEqual(
+      bluechips.map((s) => s.name).sort(),
+    );
+  });
+
+  it('attributes a same-named spoke failure to its module-prefixed label', async () => {
+    const bluechips = V4_SPOKE_ADDRESSES[1].filter((s) => s.rawName === 'BLUECHIP_SPOKE');
+    expect(bluechips).toHaveLength(2);
+    const base = bluechips.find((s) => s.name === 'AaveV4Ethereum:BLUECHIP_SPOKE')!;
+    const curated = bluechips.find((s) => s.name === 'AaveV4EthereumSentoraCurated:BLUECHIP_SPOKE')!;
+    expect(base.address.toLowerCase()).not.toBe(curated.address.toLowerCase());
+
+    const success = [
+      { status: 'success', result: 1n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [true, false] },
+      {
+        status: 'success',
+        result: {
+          riskPremium: 0n,
+          avgCollateralFactor: 0n,
+          healthFactor: 0n,
+          totalCollateralValue: 0n,
+          totalDebtValueRay: 0n,
+          activeCollateralCount: 0n,
+          borrowCount: 0n,
+        },
+      },
+    ];
+    const failed = [
+      { status: 'failure', result: undefined },
+      { status: 'failure', result: undefined },
+      { status: 'failure', result: undefined },
+      {
+        status: 'success',
+        result: {
+          riskPremium: 0n,
+          avgCollateralFactor: 0n,
+          healthFactor: 0n,
+          totalCollateralValue: 0n,
+          totalDebtValueRay: 0n,
+          activeCollateralCount: 0n,
+          borrowCount: 0n,
+        },
+      },
+    ];
+
+    const { client, mockMulticall } = makeMockClient([]);
+    mockMulticall.mockImplementation((args: { contracts: { address: string }[] }) =>
+      Promise.resolve(args.contracts[0].address.toLowerCase() === base.address.toLowerCase() ? success : failed),
+    );
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const result = await getV4UserPositionsAllSpokes(
+        1,
+        USER,
+        Object.fromEntries(bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ reserveId: 0n, asset: WETH }]])),
+        client,
+      );
+
+      // The healthy sibling keeps its position; the failed one is labelled with its
+      // own module prefix, so the address is identifiable from failedSources.
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0].positions[0].spokeName).toBe(base.name);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].spokeName).toBe(curated.name);
+      expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
+    } finally {
+      errorSpy.mockRestore();
     }
   });
 });
@@ -740,7 +982,7 @@ describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
     rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      [spokeKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
+      [addressKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
     });
 
     expect(result.results).toHaveLength(0);

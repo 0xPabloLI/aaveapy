@@ -105,10 +105,12 @@ V4 仓位在 SDK 主路径失败时走 on-chain RPC 兜底。该路径**从未�
 
 ## Out of scope(AAV-1356 退出条件 #2/#3/#4)
 
-curated module 仍未 union。本修复后每链覆盖 = 基础 module 的 spoke:
+> 2026-11-16 更新：以下三项已由 `docs/specs/aav-1356-v4-module-union.md` 交付——curated module union、同名标签消歧、地址簿 4.77.6 升级，chain 1 覆盖 17/17。本段保留为交付前记录。
+
+交付前,curated module 仍未 union。本修复后每链覆盖 = 基础 module 的 spoke:
 
 - chain 1:`/markets` 有 17 个 spoke 地址,基础 module 13 个,4 个不在其中(`RLUSD Yield`、`OUSD Yield`、`Bluechip` curated `0xa37e7c…`、`Gold Correlated` `0x115af1…`)。
 - 联合 `AaveV4EthereumSentoraCurated` 后 chain 1 → 16 个,仍差 1 个(`Gold Correlated` 不在任何 module 里)。
 - 真做了 union 才需要的三件事:改 `selectModulesPerChain` 的「确定性选一个 + 歧义抛错」契约(该守卫是 `2a84e99c` 刚加的)、把「名字在链内唯一」的测试换成「地址唯一」、决定同名不同地址在 `failedSources` 标签里如何区分(退出条件 #2)。RPC 代价:chain 1 多 3 条 spoke 的 multicall,**仅在兜底激活时**。
 
-本修复把该路径从 0/21 变为 21/21;union 是它之上 +3 的独立增益,按票面保留待裁。
+本修复把该路径从 0/21 变为 21/21;union 的 +4 增益随后由 `aav-1356-v4-module-union.md` 交付(chain 1 17/17)。

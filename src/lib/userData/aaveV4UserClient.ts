@@ -6,14 +6,33 @@ import {
   type MulticallCallResult as CallResult,
 } from './multicallFailure';
 
-export interface V4SpokeEntry {
+interface V4AddressEntry {
+  /** Diagnostic label, unique within the chain. Prefixed with the module name only on collision. */
   name: string;
+  /** Raw address-book key, e.g. `MAIN_SPOKE` / `CORE_HUB`. */
+  rawName: string;
   address: `0x${string}`;
 }
 
-export interface V4HubEntry {
+export type V4SpokeEntry = V4AddressEntry;
+export type V4HubEntry = V4AddressEntry;
+
+/** Data fields of an address-book V4 module. */
+export interface V4ModuleData {
+  CHAIN_ID: number;
+  SPOKES: Record<string, string>;
+  /** Hubs are optional: a module with spokes but no hub data still contributes spokes. */
+  HUBS?: Record<string, string>;
+}
+
+/** Address-book V4 module with its export key as `name`. */
+export interface V4ModuleSource extends V4ModuleData {
   name: string;
-  address: `0x${string}`;
+}
+
+export interface V4AddressUnion {
+  spokes: V4SpokeEntry[];
+  hubs: V4HubEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -21,82 +40,123 @@ export interface V4HubEntry {
 // When a new V4 chain is added to the address book, it's immediately available.
 // ---------------------------------------------------------------------------
 
-interface V4AbModule {
-  CHAIN_ID: number;
-  SPOKES: Record<string, string>;
-  HUBS: Record<string, string>;
-}
-
-function isV4Module(name: string, mod: unknown): mod is V4AbModule {
+function isV4Module(name: string, mod: unknown): mod is V4ModuleData {
   if (!name.startsWith('AaveV4')) return false;
   if (name === 'AaveV4') return false; // base module
   if (name.includes('Sepolia') || name.includes('Fuji') || name.includes('Testnet')) return false;
-  const m = mod as V4AbModule;
+  const m = mod as V4ModuleData;
   return typeof m?.CHAIN_ID === 'number' && !!m?.SPOKES && typeof m?.SPOKES === 'object';
 }
 
-/**
- * One address-book module per chain, chosen without depending on enumeration order.
- *
- * The address book can ship several modules for the same chain: a base module plus
- * curated variants. `AaveV4Ethereum` and `AaveV4EthereumSentoraCurated` are both
- * `CHAIN_ID: 1`. Keying a `Record<chainId, …>` off every module let whichever one
- * happened to be enumerated last win — when 4.74.0 added the Sentora module it
- * silently replaced Ethereum's 27 spokes with that module's 7, so V4 positions on
- * Ethereum went undiscovered (found via the 15 failing assertions in
- * aaveV4UserClient.test.ts).
- *
- * The base module is the one whose name prefixes every other name for that chain, so
- * this does not depend on order. Curated variants are still skipped rather than merged:
- * they redeploy spokes under names the base module already uses (`BLUECHIP_SPOKE` is a
- * different address in each), so a union would carry two entries sharing a `name`.
- * Name collision is no longer what blocks the merge — `deriveV4ReservesBySpoke`
- * (src/lib/deriveOnchainConfig.ts) keys by spoke address since AAV-1356, so two
- * same-named spokes keep separate reserves. What is left is the union itself (RPC cost:
- * +3 spokes on Ethereum) and telling two same-named entries apart in the failure labels.
- * Tracked in AAV-1356.
- */
-function selectModulesPerChain(modules: { name: string; mod: V4AbModule }[]): V4AbModule[] {
-  const byChain = new Map<number, { name: string; mod: V4AbModule }[]>();
-  for (const entry of modules) {
-    const group = byChain.get(entry.mod.CHAIN_ID);
-    if (group) group.push(entry);
-    else byChain.set(entry.mod.CHAIN_ID, [entry]);
-  }
-
-  return [...byChain.values()].map((group) => {
-    if (group.length === 1) return group[0].mod;
-    const base = group.find((candidate) => group.every((other) => other.name.startsWith(candidate.name)));
-    if (!base) {
-      throw new Error(
-        `Ambiguous AaveV4 address-book modules for chain ${group[0].mod.CHAIN_ID}: ` +
-          `${group.map((g) => g.name).join(', ')} — none prefixes the others, so there is no base module to prefer.`,
-      );
-    }
-    return base.mod;
-  });
+interface RawEntry {
+  rawName: string;
+  moduleName: string;
+  address: `0x${string}`;
 }
 
-const V4_MODULES_PER_CHAIN = selectModulesPerChain(
-  Object.entries(ab)
-    .filter(([name, mod]) => isV4Module(name, mod))
-    .map(([name, mod]) => ({ name, mod: mod as V4AbModule })),
-);
+/**
+ * Collect one entry per address across every module of a chain.
+ *
+ * Modules arrive sorted by name so the result does not depend on address-book
+ * enumeration order, and the first module wins when two modules export the same
+ * address. Malformed addresses are skipped: they could never match a reserve key
+ * or name a real contract, so keeping them only adds dead diagnostics.
+ */
+function collectUniqueEntries(
+  modules: readonly V4ModuleSource[],
+  entriesOf: (module: V4ModuleSource) => Record<string, string>,
+  include: (rawName: string) => boolean = () => true,
+): RawEntry[] {
+  const seen = new Set<string>();
+  const entries: RawEntry[] = [];
+
+  for (const module of modules) {
+    for (const [rawName, rawAddress] of Object.entries(entriesOf(module))) {
+      if (!include(rawName)) continue;
+      const key = toV4SpokeKey(rawAddress);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      entries.push({ rawName, moduleName: module.name, address: rawAddress as `0x${string}` });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Label entries by raw name, adding the module prefix only where the raw name repeats.
+ *
+ * Two modules can name different spokes the same (`BLUECHIP_SPOKE` exists on Ethereum
+ * base and on Sentora with different addresses). The join key is the address, so both
+ * entries stay; the label only needs to distinguish them in diagnostics/failure
+ * sources. Unique names keep their historical raw form, so existing labels do not move.
+ */
+function labelEntries(entries: RawEntry[]): V4AddressEntry[] {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    counts.set(entry.rawName, (counts.get(entry.rawName) ?? 0) + 1);
+  }
+
+  return entries.map((entry) => ({
+    name: (counts.get(entry.rawName) ?? 0) > 1 ? `${entry.moduleName}:${entry.rawName}` : entry.rawName,
+    rawName: entry.rawName,
+    address: entry.address,
+  }));
+}
+
+/**
+ * Union every V4 address-book module of a chain, keyed by address (AAV-1356).
+ *
+ * The address book ships several modules per chain: a base module plus curated
+ * variants (`AaveV4Ethereum` and `AaveV4EthereumSentoraCurated` are both `CHAIN_ID: 1`).
+ * Picking one module silently dropped the other's spokes from the on-chain fallback:
+ * before this union, only Ethereum's base module was queried, and a later base-only
+ * bump still missed the curated `Gold Correlated` spoke. Since the join key is the
+ * spoke address, merging is safe — same-address entries dedupe, and same-name entries
+ * remain separate (see `labelEntries`).
+ *
+ * Spokes only: `_ORACLE` helper entries and `TREASURY_SPOKE` are not position spokes.
+ * Hubs are unioned too because strategy discovery walks them.
+ */
+export function unionV4ModuleAddresses(modules: readonly V4ModuleSource[]): Map<number, V4AddressUnion> {
+  const sorted = [...modules].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
+  const byChain = new Map<number, V4ModuleSource[]>();
+  for (const module of sorted) {
+    const group = byChain.get(module.CHAIN_ID);
+    if (group) group.push(module);
+    else byChain.set(module.CHAIN_ID, [module]);
+  }
+
+  const union = new Map<number, V4AddressUnion>();
+  for (const [chainId, group] of byChain) {
+    union.set(chainId, {
+      spokes: labelEntries(
+        collectUniqueEntries(
+          group,
+          (module) => module.SPOKES,
+          (rawName) => !rawName.endsWith('_ORACLE') && rawName !== 'TREASURY_SPOKE',
+        ),
+      ),
+      hubs: labelEntries(collectUniqueEntries(group, (module) => module.HUBS ?? {})),
+    });
+  }
+  return union;
+}
+
+const V4_MODULES: V4ModuleSource[] = [];
+for (const [name, mod] of Object.entries(ab)) {
+  if (isV4Module(name, mod)) V4_MODULES.push({ name, ...mod });
+}
+
+const V4_ADDRESS_UNION = unionV4ModuleAddresses(V4_MODULES);
 
 export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = Object.fromEntries(
-  V4_MODULES_PER_CHAIN.map((m) => [
-    m.CHAIN_ID,
-    Object.entries(m.SPOKES)
-      .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
-      .map(([name, address]) => ({ name, address: address as `0x${string}` })),
-  ]),
+  [...V4_ADDRESS_UNION].map(([chainId, union]) => [chainId, union.spokes]),
 );
 
 export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = Object.fromEntries(
-  V4_MODULES_PER_CHAIN.map((m) => [
-    m.CHAIN_ID,
-    Object.entries(m.HUBS).map(([name, address]) => ({ name, address: address as `0x${string}` })),
-  ]),
+  [...V4_ADDRESS_UNION].map(([chainId, union]) => [chainId, union.hubs]),
 );
 
 export function getV4SpokeAddresses(chainId: number): V4SpokeEntry[] | undefined {
