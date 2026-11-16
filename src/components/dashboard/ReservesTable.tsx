@@ -91,6 +91,8 @@ interface ReservesTableProps {
   lastModifiedReserveId?: string;
   onWalletSync?: () => void;
   walletLoadState?: WalletLoadState;
+  /** Sources that failed during the last wallet sync (AAV-1315). */
+  failedSources?: string[];
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
@@ -128,6 +130,7 @@ const ReservesTable = ({
   lastModifiedReserveId,
   onWalletSync,
   walletLoadState,
+  failedSources,
   onRefresh,
   dataUpdatedAt,
   topOppsRef,
@@ -1027,6 +1030,7 @@ const ReservesTable = ({
           snapshots={portfolioSnapshots}
           onWalletSync={onWalletSync}
           walletLoadState={walletLoadState}
+          failedSources={failedSources}
           simulationMode={simulationMode}
           onSimulationModeChange={onSimulationModeChange}
           capWarningsMap={portfolioCapWarningsMap}

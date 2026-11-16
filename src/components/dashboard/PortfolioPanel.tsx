@@ -6,7 +6,19 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, CloudDownload } from 'lucide-react';
+import {
+  Search,
+  X,
+  Layers,
+  Trash2,
+  Save,
+  ArrowRightLeft,
+  Check,
+  RefreshCw,
+  Wallet,
+  CloudDownload,
+  AlertTriangle,
+} from 'lucide-react';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import { isFeatureEnabled } from '@/config/featureFlags';
 import { toast } from 'sonner';
@@ -64,6 +76,8 @@ interface PortfolioPanelProps {
   onWalletSync?: () => void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
+  /** Sources that failed during the last wallet sync (AAV-1315). */
+  failedSources?: string[];
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
   /** Per-reserve cap warnings for portfolio input fields. */
@@ -186,6 +200,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   snapshots = [],
   onWalletSync,
   walletLoadState,
+  failedSources = [],
   simulationMode,
   onSimulationModeChange,
   capWarningsMap,
@@ -463,6 +478,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </>
             )}
             {walletLoadState === 'error' && <span className="text-destructive/80">Wallet sync failed</span>}
+            {/*
+              AAV-1315: `partial` is mapped onto `'success'` by contract, so the
+              notice keys off the failed sources instead of a new enum value.
+              `error` requires zero positions, so the two never stack.
+            */}
+            {walletLoadState === 'success' && failedSources.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 ds-text-amber-600"
+                role="status"
+                title={`Unavailable sources: ${failedSources.join(', ')}`}
+                data-testid="wallet-partial-notice"
+              >
+                <AlertTriangle className="size-3" aria-hidden />
+                {`Incomplete sync — ${failedSources.length} source${failedSources.length === 1 ? '' : 's'} unavailable`}
+              </span>
+            )}
           </div>
         )}
 

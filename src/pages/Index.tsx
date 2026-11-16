@@ -339,6 +339,7 @@ const Index = () => {
   const {
     walletLoadState,
     result: walletResult,
+    failedSources: walletFailedSources,
     v3SdkFailed,
     v4SdkFailed,
   } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
@@ -747,6 +748,7 @@ const Index = () => {
                 lastModifiedReserveId={portfolio.lastModifiedReserveId}
                 onWalletSync={handleWalletSync}
                 walletLoadState={walletLoadState}
+                failedSources={walletFailedSources}
                 onRefresh={handleRefresh}
                 dataUpdatedAt={dataUpdatedAt}
                 topOppsRef={topOppsRef}

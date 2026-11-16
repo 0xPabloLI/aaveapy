@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ReservesTable from './ReservesTable';
 import type { ReserveWithSpread } from '@/types/aave';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { marketKey } from '@/lib/marketKey';
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -56,6 +57,18 @@ vi.mock('./ReservesTableDesktopSkeleton', () => ({
 
 vi.mock('./ReservesTableTooltipOverlay', () => ({
   default: () => null,
+}));
+
+// AAV-1315 M12: the wallet sync pair must survive the ReservesTable hop. The panel
+// itself is covered by PortfolioPanel.walletSync.test.tsx; here it is a spy.
+vi.mock('./PortfolioPanel', () => ({
+  default: (props: { walletLoadState?: string; failedSources?: string[] }) => (
+    <div
+      data-testid="portfolio-panel"
+      data-wallet-state={props.walletLoadState ?? ''}
+      data-failed-sources={(props.failedSources ?? []).join(',')}
+    />
+  ),
 }));
 
 vi.mock('./PortfolioModeToggle', () => ({
@@ -393,5 +406,46 @@ describe('ReservesTable expand/collapse interaction', () => {
     expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
     fireEvent.click(usdtButtons[0]);
     expect(screen.getByTestId(`expanded-${reserves[1].reserveId}`)).toBeInTheDocument();
+  });
+
+  it('forwards the wallet sync pair to PortfolioPanel in portfolio mode', () => {
+    const actions = {
+      setActive: vi.fn(),
+      addReserve: vi.fn(),
+      updateReserve: vi.fn(),
+      hideReserve: vi.fn(),
+      unhideReserve: vi.fn(),
+      importReserves: vi.fn(),
+      forceSyncReserves: vi.fn(),
+      restoreToWallet: vi.fn(),
+      removeWalletEntries: vi.fn(() => 0),
+      removeReserve: vi.fn(),
+      clearAll: vi.fn(),
+      saveSnapshot: vi.fn(),
+      deleteSnapshot: vi.fn(),
+    } as unknown as PortfolioSimulationActions;
+
+    renderWithQueryClient(
+      <ReservesTable
+        reserves={reserves}
+        allReserves={reserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+        simulationMode="portfolio"
+        portfolioEntries={[]}
+        portfolioActions={actions}
+        walletLoadState="success"
+        failedSources={['onchain-v3-chain-42220', 'sdk-v4']}
+      />,
+    );
+
+    const panel = screen.getByTestId('portfolio-panel');
+    expect(panel.getAttribute('data-wallet-state')).toBe('success');
+    expect(panel.getAttribute('data-failed-sources')).toBe('onchain-v3-chain-42220,sdk-v4');
   });
 });

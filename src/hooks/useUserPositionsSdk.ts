@@ -49,6 +49,10 @@ import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery';
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge';
 import { subscribeRefetch } from '@/lib/userData/refetchEvent';
 
+// AAV-1315: shared empty list so "no failures" keeps one identity across renders —
+// `PortfolioPanel` is memoized and a fresh `[]` would re-render it on every pass.
+const EMPTY_FAILED_SOURCES: string[] = [];
+
 interface SdkQueryResult {
   loading: boolean;
   error?: unknown;
@@ -538,7 +542,15 @@ export function useUserPositionsSdk(
   const gapFailed = gapFallbackQuery.data?.failedSources ?? [];
 
   const allPositions = mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions);
-  const allFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed);
+  const mergedFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed);
+  // `mergeFailedSources` always builds a new array; keying the memo on the joined
+  // labels keeps the identity stable for the memoized `PortfolioPanel` while
+  // preserving the merged/deduped order. Labels never contain NUL.
+  const failedSourceKey = mergedFailedSources.join('\u0000');
+  const allFailedSources = useMemo(
+    () => (failedSourceKey === '' ? EMPTY_FAILED_SOURCES : failedSourceKey.split('\u0000')),
+    [failedSourceKey],
+  );
 
   const isLoading = sdkLoading || onchainFallbackQuery.isLoading || gapFallbackQuery.isLoading;
   const isError = !isLoading && allPositions.length === 0 && allFailedSources.length > 0;
@@ -574,6 +586,12 @@ export function useUserPositionsSdk(
   return {
     walletLoadState,
     result,
+    /**
+     * AAV-1315: the same merged/deduped list `result.data.failedSources` carries
+     * on `partial`, surfaced directly so UI consumers do not have to narrow the
+     * `DegradedResult` union just to render a degradation notice.
+     */
+    failedSources: allFailedSources,
     v3SdkFailed,
     v4SdkFailed,
     isLoading,

@@ -90,6 +90,7 @@ const actions: PortfolioSimulationActions = {
 function renderPanel(props: {
   reserves: ReserveWithSpread[];
   walletLoadState?: 'idle' | 'loading' | 'success' | 'success-empty' | 'error';
+  failedSources?: string[];
   onWalletSync?: () => void;
 }) {
   return render(
@@ -103,6 +104,7 @@ function renderPanel(props: {
                 actions={actions}
                 reserves={props.reserves}
                 walletLoadState={props.walletLoadState}
+                failedSources={props.failedSources}
                 onWalletSync={props.onWalletSync}
               />
             </TooltipProvider>
@@ -147,5 +149,81 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
     renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'idle', onWalletSync });
     fireEvent.click(screen.getByTestId('wallet-sync-button'));
     expect(onWalletSync).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * AAV-1315 — partial degradation must be visible. `walletLoadState` maps
+ * `partial` onto `'success'` (the enum is unchanged by contract), so the
+ * notice keys off `failedSources`, which the hook already merges and dedupes.
+ */
+describe('PortfolioPanel — wallet partial degradation notice', () => {
+  beforeEach(() => {
+    vi.mocked(useWatchModeConnect).mockReturnValue({ connectWatchAddress: vi.fn() });
+
+    vi.mocked(useWallet).mockReturnValue({
+      address: '0xabc',
+      isConnected: true,
+      isWatchMode: false,
+      disconnect: vi.fn(),
+    } as unknown as ReturnType<typeof useWallet>);
+  });
+  afterEach(() => cleanup());
+
+  it('P1 success with no failed sources shows no notice', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'success', failedSources: [] });
+
+    expect(screen.queryByTestId('wallet-partial-notice')).toBeNull();
+  });
+
+  it('P2 partial sync renders an amber notice with the source count and the source list', () => {
+    const failedSources = ['onchain-v3-chain-42220', 'sdk-v4'];
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'success', failedSources });
+
+    const notice = screen.getByTestId('wallet-partial-notice');
+    expect(notice.textContent).toContain('Incomplete sync');
+    expect(notice.textContent).toContain('2 sources unavailable');
+    expect(notice.className).toContain('ds-text-amber-600');
+    expect(notice.getAttribute('role')).toBe('status');
+    expect(notice.getAttribute('title')).toBe('Unavailable sources: onchain-v3-chain-42220, sdk-v4');
+  });
+
+  it('P3 a single failed source uses the singular wording', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'success', failedSources: ['gap-v3-chain-10'] });
+
+    const notice = screen.getByTestId('wallet-partial-notice');
+    expect(notice.textContent).toContain('1 source unavailable');
+    expect(notice.getAttribute('title')).toBe('Unavailable sources: gap-v3-chain-10');
+  });
+
+  it('P4 a full failure keeps the existing error text without stacking the notice', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'error', failedSources: ['sdk-v3', 'sdk-v4'] });
+
+    expect(screen.getByText('Wallet sync failed')).not.toBeNull();
+    expect(screen.queryByTestId('wallet-partial-notice')).toBeNull();
+  });
+
+  it('P5 idle renders neither the status row nor the notice', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'idle', failedSources: ['sdk-v3'] });
+
+    // M5 is "the whole status row is not rendered", so assert every row variant is absent.
+    expect(screen.queryByText('Syncing…')).toBeNull();
+    expect(screen.queryByText('Wallet has no positions')).toBeNull();
+    expect(screen.queryByText('Wallet sync failed')).toBeNull();
+    expect(screen.queryByTestId('wallet-partial-notice')).toBeNull();
+  });
+
+  it('P6 loading keeps Syncing as the only status line', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'loading', failedSources: ['sdk-v3'] });
+
+    expect(screen.getByText('Syncing…')).not.toBeNull();
+    expect(screen.queryByTestId('wallet-partial-notice')).toBeNull();
+  });
+
+  it('P7 an empty wallet shows the empty text and no degradation notice', () => {
+    renderPanel({ reserves: [makeReserve('USDC')], walletLoadState: 'success-empty', failedSources: [] });
+
+    expect(screen.getByText('Wallet has no positions')).not.toBeNull();
+    expect(screen.queryByTestId('wallet-partial-notice')).toBeNull();
   });
 });
