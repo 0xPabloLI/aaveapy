@@ -32,6 +32,24 @@ third-party site state, pixel baselines, or live external services it cannot moc
 - **Anything a Vitest unit/integration test already covers deterministically**
   (pure functions, hook logic). e2e must not duplicate it.
 
+## Unit and script tests are hermetic
+
+- `npm test` runs the unit and `scripts/**/*.test.mjs` suites inside the pre-commit and
+  pre-push gate of every machine. One live download makes that deterministic suite
+  network-dependent: AAV-1335 burned **46s** and failed with
+  `upstream download failed after 2 attempts (cloudflare blocked)` on one run, then passed
+  on the next with the same tree.
+- Keep importing a module side-effect free: export the pure helpers at module scope and
+  put downloads/writes inside `main()`, invoked only when `process.argv[1]` resolves to the
+  module file (`const isDirectRun = …; if (isDirectRun) { main().catch(…) }`).
+- Pin it with a guard that traps `fetch`, `http(s).request`, `dns.lookup` and `net.connect`
+  **before** importing the module and then asserts zero attempts —
+  `scripts/sync-reserve-patches-upstream.hermetic.test.mjs` is the reference shape. Assert
+  "no attempt", not "no error": on a connected machine an unguarded import succeeds and
+  the regression stays invisible.
+- A suite that genuinely needs the upstream is an explicit integration/live test
+  (env-gated, like `RUN_LIVE_TESTS`), never part of the default `npm test`.
+
 ## Deterministic waiting (app-ready signal)
 
 - After `page.goto('/')`, wait for the canonical app-ready signal:
