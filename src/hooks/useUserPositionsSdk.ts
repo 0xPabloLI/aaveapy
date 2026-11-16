@@ -47,6 +47,7 @@ import { isInfrastructureFailure } from '@/lib/userData/rpcResilience';
 import { computeGapChainIds, type SdkCoverage } from '@/lib/userData/gapChainComputation';
 import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery';
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge';
+import { SDK_V3_FALLBACK_LABEL, SDK_V4_FALLBACK_LABEL } from '@/lib/userData/failureLabels';
 import { subscribeRefetch } from '@/lib/userData/refetchEvent';
 
 // AAV-1315: shared empty list so "no failures" keeps one identity across renders —
@@ -396,8 +397,8 @@ export function useUserPositionsSdk(
     queryFn: async () => {
       if (!address) return { positions: [] as WalletPosition[], failedSources: [] as string[] };
       const failedLabels: string[] = [];
-      if (v3SdkFailed) failedLabels.push('sdk-v3-fallback');
-      if (v4SdkFailed) failedLabels.push('sdk-v4-fallback');
+      if (v3SdkFailed) failedLabels.push(SDK_V3_FALLBACK_LABEL);
+      if (v4SdkFailed) failedLabels.push(SDK_V4_FALLBACK_LABEL);
       console.info('[onchain-fallback] Fetching onchain fallback positions, reserves:', reserves.length);
       const result = await fetchOnchainFallback(address, reserves, v3AssetsByMarket, v4ReservesBySpoke);
       return { positions: result.positions, failedSources: [...result.failedSources, ...failedLabels] };
