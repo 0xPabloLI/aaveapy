@@ -30,6 +30,8 @@ AAV-1310 / AAV-1314 / AAV-1387 把「读不到」从静默假 $0 变成了 `fail
 
 **判据为什么是 `walletLoadState === 'success'`**：partial 在枚举里就是 `'success'`；`error` 要求 `allPositions.length === 0`，两条分支互斥，所以不会出现「红 + 琥珀」叠加。`success-empty` 的失败集必为空（否则它是 `error`），条件天然为假。
 
+> **后续变更（AAV-1393）**：上面的 `title` 列源与 `Incomplete sync — N source(s) unavailable` 计数已不再面向用户——内部标签（`sdk-*` / `onchain-*` / `gap-*` / `spoke-*`）只留在 `data-failed-sources` 与 console，提示固定为 `Wallet data incomplete`；且只有 `sdk-*-fallback` 时不再提示（fallback 已补齐数据）。以 `docs/specs/aav-1393-wallet-sync-notice-copy.md` 为准。
+
 **契约不变量**：`DegradedResult` 状态机零变更；`walletLoadState` 取值零变更；toast 文案零变更（自动导入仍照常导入）；`failedSources` 的构造仍只在 `mergeFailedSources` 里做一次去重。
 
 ## 接口契约
