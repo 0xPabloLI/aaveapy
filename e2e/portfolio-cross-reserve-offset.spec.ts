@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
+
 import { expect, test, type Page } from '@playwright/test';
+
+import { CROSS_RESERVE_OFFSET_FIXTURE_URL, buildCrossReserveOffsetStub } from './crossReserveOffsetStub';
 import { discoverOffsetScenarios, type OffsetScenario } from './reserveDiscovery';
+import { installMarketsStubRoutes } from './stubRoutes';
 import { toDiscovery } from './stagingReservesFetch';
 import {
   OFFSET_SCENARIO_GAP_REASON,
@@ -27,8 +32,14 @@ import {
  * - cross-reserve: target supply + different offset reserve borrow
  * - self-loop: same reserve supply + borrow (looping offset)
  *
- * Assertions are behavioural (relative changes, proportional to Merkl APR),
- * not value-specific, to remain resilient to APR changes over time.
+ * Assertions are behavioural and DIMENSIONLESS (AAV-1333): every scenario
+ * carries a `plan` derived by discovery from the same numbers the app clamps
+ * with (supply room, borrow room, LTV, campaign cap). The runner types the
+ * plan's amounts verbatim and asserts the measured FRACTIONAL decrease is at
+ * least `expectedDecreaseRatio × 0.9` — so an APY cell, a multi-campaign
+ * display, an APR/APY toggle, or a room-clamped gross can no longer turn a
+ * hand-picked constant into a false red. The rung that is expected to floor
+ * the eligible position at 0 additionally asserts the cell reads ~0.
  *
  * Scenario selection lives in ./reserveDiscovery (AAV-1280): groups only
  * qualify when their computable breakdown APRs sum > 0, mirroring the UI's
@@ -36,8 +47,10 @@ import {
  * scenario always renders a numeric incentive — never the '—' failure shape.
  * Unit-tested in src/test/reserveDiscovery.test.ts.
  *
- * If no cross-offset campaigns are found in staging data, all tests skip.
- * Desktop + mobile variants are generated from the same scenario list.
+ * staging has had ZERO cross-reserve scenarios on every capture so far, so the
+ * cross-reserve ladder is also exercised hermetically against a real fixture
+ * with one injected constraint (AAV-1316 precedent, AAV-1333). Desktop +
+ * mobile variants are generated from the same scenario list.
  */
 
 // ─── API Discovery ─────────────────────────────────────────────────
@@ -56,55 +69,77 @@ const selfLoopScenarios = allScenarios.filter((s) => s.type === 'self-loop').sli
 const hasScenarios = crossReserveScenarios.length > 0 || selfLoopScenarios.length > 0;
 const scenarioGate = reserveGateFor(scenarioDiscovery, OFFSET_SCENARIO_GAP_REASON);
 
+// Synthetic cross-reserve payload (AAV-1333): staging carries zero
+// cross-reserve constraints, so without this the cross-reserve ladder would
+// never execute. Built from a committed real payload; fails loudly if the
+// fixture stops producing a derivable scenario.
+const stub = buildCrossReserveOffsetStub(JSON.parse(readFileSync(CROSS_RESERVE_OFFSET_FIXTURE_URL, 'utf8')) as unknown);
+
 // ─── Shared Scenario Runner ────────────────────────────────────────
+
+/** Displayed-value precision is 4 decimals (`data-after`), so 0.01 is generous. */
+const ZERO_EPS = 0.01;
+/** 10% head-room absorbs APY compounding and other rungs' rounding. */
+const RATIO_TOLERANCE = 0.9;
+
+/**
+ * Drive the plan's ladder and assert it rung by rung.
+ *
+ * `measured` is the FRACTION of the baseline incentive the borrow removed —
+ * the only quantity the app's math guarantees (`eligible / gross`). Comparing
+ * an absolute delta against `targetApr` is what AAV-1333 removed: the cell
+ * renders APY while `targetApr` is an APR figure, and gross is a clamped
+ * number the runner does not choose.
+ */
+async function assertLadderRungs(
+  page: Page,
+  s: OffsetScenario,
+  isMobile: boolean,
+  fillBorrow: (amount: string) => Promise<void>,
+  baseline: number,
+) {
+  let previous = baseline;
+  for (const [index, step] of s.plan.steps.entries()) {
+    const rung = `rung ${index + 1}/${s.plan.steps.length} (borrow $${step.borrowUsd})`;
+    await fillBorrow(String(step.borrowUsd));
+    const after = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+
+    expect(after, `${rung}: incentive must not increase`).toBeLessThanOrEqual(previous + ZERO_EPS);
+    if (step.expectedAfterZero) {
+      expect(after, `${rung}: fully offset → eligible floors at 0`).toBeLessThanOrEqual(ZERO_EPS);
+    }
+    const measured = (baseline - after) / baseline;
+    expect(
+      measured,
+      `${rung}: must remove ≥ ${RATIO_TOLERANCE} × ${step.expectedDecreaseRatio} of the baseline`,
+    ).toBeGreaterThanOrEqual(step.expectedDecreaseRatio * RATIO_TOLERANCE);
+    previous = after;
+  }
+}
 
 async function runCrossReserveScenario(page: Page, s: OffsetScenario, isMobile: boolean) {
   test.setTimeout(180_000);
   await setupPortfolioMode(page);
 
-  // Add target reserve, supply $100000 (large enough for LTV clamping at common ltv rates)
+  // Target supply is the plan's gross: it is already ≤ supply room, so the app
+  // computes with exactly the number the plan derived from (AAV-1333).
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added, `Should find and add ${s.targetSymbol} (${s.targetMarketLabel})`).toBe(true);
-  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, '100000');
-  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
+  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, String(s.plan.targetSupplyUsd));
+  const baseline = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(baseline, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
-  // Add offset reserve with supply to give it borrowing power (AAV-1250: LTV clamping)
+  // Offset reserve funds the borrow (AAV-1250 LTV clamping) at the plan's
+  // funding amount, so its capacity is the one the plan assumed.
   const offsetAdded = await addReserveToPortfolio(page, s.offsetSymbol!, s.offsetMarketLabel!);
   expect(offsetAdded, `Should find and add ${s.offsetSymbol} (${s.offsetMarketLabel})`).toBe(true);
-  // Supply on offset reserve so its borrow is not LTV-clamped to 0
-  await fillSupplyAmount(page, s.offsetReserveId!, s.offsetSymbol!, '100000');
+  await fillSupplyAmount(page, s.offsetReserveId!, s.offsetSymbol!, String(s.plan.offsetSupplyUsd));
 
   const fillOffsetBorrow = isMobile
     ? (amount: string) => fillBorrowAmountMobile(page, s.offsetReserveId!, s.offsetSymbol!, amount)
     : (amount: string) => fillBorrowAmountDesktop(page, s.offsetReserveId!, s.offsetSymbol!, amount);
 
-  await fillOffsetBorrow('500');
-  const halfOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-
-  // Assert: incentive decreased
-  expect(halfOffsetAfter, 'Incentive should decrease when offset borrow is added').toBeLessThan(baselineAfter);
-
-  // Full offset: borrow = $1000 (well within maxBorrow at $100000 supply)
-  await fillOffsetBorrow('1000');
-  const fullOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-
-  // Assert: further decrease, proportional to Merkl APR
-  expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
-    halfOffsetAfter + 0.01,
-  );
-  expect(
-    baselineAfter - fullOffsetAfter,
-    'Decrease should be proportional to Merkl APR (>= 40% of advertised APR)',
-  ).toBeGreaterThanOrEqual(s.targetApr * 0.4);
-
-  // Over-offset: borrow > target supply ($2000) — should clamp via offset logic
-  await fillOffsetBorrow('2000');
-  const overOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(
-    Math.abs(overOffsetAfter - fullOffsetAfter),
-    'Over-offset should clamp (no further change beyond full offset)',
-  ).toBeLessThanOrEqual(0.05);
+  await assertLadderRungs(page, s, isMobile, fillOffsetBorrow, baseline);
 }
 
 async function runSelfLoopScenario(page: Page, s: OffsetScenario, isMobile: boolean) {
@@ -113,34 +148,15 @@ async function runSelfLoopScenario(page: Page, s: OffsetScenario, isMobile: bool
 
   const added = await addReserveToPortfolio(page, s.targetSymbol, s.targetMarketLabel);
   expect(added).toBe(true);
-  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, '100000');
-  const baselineAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(baselineAfter, 'Baseline after incentive should be positive').toBeGreaterThan(0);
+  await fillSupplyAmount(page, s.targetReserveId, s.targetSymbol, String(s.plan.targetSupplyUsd));
+  const baseline = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
+  expect(baseline, 'Baseline after incentive should be positive').toBeGreaterThan(0);
 
   const fillOwnBorrow = isMobile
     ? (amount: string) => fillBorrowAmountMobile(page, s.targetReserveId, s.targetSymbol, amount)
     : (amount: string) => fillBorrowAmountDesktop(page, s.targetReserveId, s.targetSymbol, amount);
 
-  // Half offset: borrow = $50000 (50% of supply, within LTV limit)
-  await fillOwnBorrow('50000');
-  const halfOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(halfOffsetAfter, 'Incentive should decrease when own borrow is added').toBeLessThan(baselineAfter);
-
-  // Full offset: borrow = $100000 (= supply, may be LTV-clamped to supply×ltv/100)
-  await fillOwnBorrow('100000');
-  const fullOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(fullOffsetAfter, 'Full offset should not increase from half offset').toBeLessThanOrEqual(
-    halfOffsetAfter + 0.01,
-  );
-  expect(
-    baselineAfter - fullOffsetAfter,
-    'Decrease should be proportional to Merkl APR (>= 40% of advertised APR)',
-  ).toBeGreaterThanOrEqual(s.targetApr * 0.4);
-
-  // Over-offset: borrow = $200000 (> supply, should be LTV-clamped)
-  await fillOwnBorrow('200000');
-  const overOffsetAfter = await readIncentiveAfter(page, s.targetReserveId, 'supply', isMobile);
-  expect(Math.abs(overOffsetAfter - fullOffsetAfter), 'Over-offset should clamp').toBeLessThanOrEqual(0.05);
+  await assertLadderRungs(page, s, isMobile, fillOwnBorrow, baseline);
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────
@@ -161,7 +177,7 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of crossReserveScenarios) {
-      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`, async ({
+      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] gross $${s.plan.targetSupplyUsd} offset by ${s.offsetSymbol} borrow`, async ({
         page,
       }) => {
         await runCrossReserveScenario(page, s, false);
@@ -169,10 +185,22 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of selfLoopScenarios) {
-      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`, async ({ page }) => {
+      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] gross $${s.plan.targetSupplyUsd} offset by own borrow`, async ({
+        page,
+      }) => {
         await runSelfLoopScenario(page, s, false);
       });
     }
+
+    // Synthetic cross-reserve payload (AAV-1333) — never gated on staging data:
+    // the fixture is committed, so the cross-reserve ladder executes in CI and
+    // locally even though staging carries zero netPositionConstraint campaigns.
+    test(`cross-reserve stub: ${stub.scenario.targetSymbol} gross $${stub.scenario.plan.targetSupplyUsd} offset by ${stub.scenario.offsetSymbol} borrow`, async ({
+      page,
+    }) => {
+      await installMarketsStubRoutes(page, stub.payload);
+      await runCrossReserveScenario(page, stub.scenario, false);
+    });
   });
 
   // ── Mobile ───────────────────────────────────────────────────────
@@ -190,7 +218,7 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of crossReserveScenarios) {
-      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by ${s.offsetSymbol} borrow`, async ({
+      test(`cross-reserve: ${s.targetSymbol} [${s.targetMarketLabel}] gross $${s.plan.targetSupplyUsd} offset by ${s.offsetSymbol} borrow`, async ({
         page,
       }) => {
         await runCrossReserveScenario(page, s, true);
@@ -198,9 +226,18 @@ test.describe('Cross-reserve Merkl offset — portfolio simulation', () => {
     }
 
     for (const s of selfLoopScenarios) {
-      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] supply offset by own borrow`, async ({ page }) => {
+      test(`self-loop: ${s.targetSymbol} [${s.targetMarketLabel}] gross $${s.plan.targetSupplyUsd} offset by own borrow`, async ({
+        page,
+      }) => {
         await runSelfLoopScenario(page, s, true);
       });
     }
+
+    test(`cross-reserve stub: ${stub.scenario.targetSymbol} gross $${stub.scenario.plan.targetSupplyUsd} offset by ${stub.scenario.offsetSymbol} borrow`, async ({
+      page,
+    }) => {
+      await installMarketsStubRoutes(page, stub.payload);
+      await runCrossReserveScenario(page, stub.scenario, true);
+    });
   });
 });

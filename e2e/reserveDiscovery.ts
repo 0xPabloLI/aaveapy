@@ -470,6 +470,12 @@ interface OffsetOpportunityGroup {
   breakdowns?: unknown;
 }
 
+/** Breakdown fields the runner plan reads beyond the computability gate. */
+interface OffsetCapBreakdown extends MerklBreakdown {
+  positionCapNative?: string;
+  positionCapUsd?: number;
+}
+
 /** A portfolio cross-reserve/self-loop offset scenario to exercise in e2e. */
 export interface OffsetScenario {
   type: 'cross-reserve' | 'self-loop';
@@ -482,6 +488,163 @@ export interface OffsetScenario {
   offsetSymbol?: string;
   offsetMarketLabel?: string;
   offsetReserveId?: string;
+  /** What the runner types and asserts — derived, never hand-picked (AAV-1333). */
+  plan: OffsetRunnerPlan;
+}
+
+/**
+ * One rung of the offset ladder (AAV-1333).
+ *
+ * `expectedDecreaseRatio` is the fraction of the BASELINE DISPLAYED incentive
+ * this rung must remove. It is dimensionless on purpose: the incentive cell
+ * renders APY (the app's `isApy` default), so comparing `Δ ≥ targetApr × 0.4`
+ * compared an APY difference against an APR constant.
+ */
+export interface OffsetRunnerStep {
+  /** Amount the runner types into the offset borrow input. */
+  borrowUsd: number;
+  /** Fraction of the baseline incentive this step must remove (0–1). */
+  expectedDecreaseRatio: number;
+  /** True when the eligible position is expected to floor at 0 (incentive → 0). */
+  expectedAfterZero: boolean;
+}
+
+/** What the runner types and asserts. Produced by `planOffsetRunner`, consumed verbatim. */
+export interface OffsetRunnerPlan {
+  /** Supply amount typed on the target reserve (integer USD). */
+  targetSupplyUsd: number;
+  /** Supply amount typed on the offset reserve to fund the borrow; null for self-loop. */
+  offsetSupplyUsd: number | null;
+  /** Effective offset borrow capacity, a conservative lower bound of the app's LTV clamp. */
+  offsetCapacityUsd: number;
+  steps: OffsetRunnerStep[];
+}
+
+/** APR split the plan needs: which groups respond to the borrow, and the display total. */
+export interface OffsetPlanAprs {
+  /** Computable APR of the supply groups whose constraint includes the reserve we borrow on. */
+  respondingAprPercent: number;
+  /** Computable APR of EVERY supply group on the target — the displayed denominator. */
+  totalAprPercent: number;
+  /** Smallest campaign position cap (USD); Infinity when no campaign caps. */
+  minPositionCapUsd?: number;
+}
+
+const OFFSET_TARGET_SUPPLY_CAP_USD = 100_000;
+const OFFSET_FUNDING_CAP_USD = 100_000;
+
+/**
+ * Cross-reserve ladder as fractions of the EFFECTIVE target supply (AAV-1333).
+ * The last rung (1.5×) is deliberately above gross so `max(gross − offset, 0)`
+ * floors the eligible position at 0 — the only unambiguous endpoint this
+ * simulation has. 0.25/0.5 keep the earlier rungs strictly proportional.
+ */
+const CROSS_OFFSET_STEP_FRACTIONS = [0.25, 0.5, 1.5] as const;
+
+/**
+ * Self-loop ladder stays ABSOLUTE: its borrow is LTV-clamped to `gross × ltv`,
+ * which is already proportional to gross. The plan derives what the clamp
+ * leaves instead of assuming a fixed fraction (AAV-1333).
+ */
+const SELF_LOOP_OFFSET_STEPS_USD = [50_000, 100_000, 200_000] as const;
+
+/**
+ * Cross-reserve plans below this effective supply degenerate: the first two
+ * rungs floor to single-digit dollars and stop being measurable. Skipping is
+ * the safe failure mode (AAV-1333).
+ */
+const MIN_OFFSET_GROSS_USD = 100;
+
+/** Campaign position cap in USD, mirroring `resolvePositionCapUsd` (src/lib/incentiveCaps). */
+function breakdownCapUsd(r: DiscoveryReserve, b: OffsetCapBreakdown): number | null {
+  const price = r.tokenPrice as number | undefined;
+  if (b.positionCapNative != null && price != null && Number.isFinite(price) && price > 0) {
+    const value = Number(b.positionCapNative);
+    if (Number.isFinite(value)) {
+      const decimals = (r.decimals as number | undefined) ?? 18;
+      return (value / Math.pow(10, decimals)) * price;
+    }
+  }
+  return typeof b.positionCapUsd === 'number' && Number.isFinite(b.positionCapUsd) ? b.positionCapUsd : null;
+}
+
+/** Smallest positive campaign cap across the target's computable campaigns; Infinity when none. */
+function minCampaignCapUsd(target: DiscoveryReserve, breakdowns: OffsetCapBreakdown[], nowIso: string): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const b of breakdowns) {
+    if (!isComputableMerklCampaign(b, nowIso)) continue;
+    const cap = breakdownCapUsd(target, b);
+    // Aave treats a non-positive cap as "unlimited"; the app's cap branch skips it too.
+    if (cap != null && cap > 0 && cap < min) min = cap;
+  }
+  return min;
+}
+
+/**
+ * Derive the whole runner contract (supply amounts, ladder, expected ratios)
+ * from the same numbers the app will clamp with (AAV-1333).
+ *
+ * The proportional model the runner asserts is
+ * `afterApr = apr × max(gross − offsetBorrow, 0) / gross`, so the BASELINE
+ * DISPLAYED incentive falls by `offsetBorrow / gross` — scaled by how much of
+ * the target's displayed incentive actually belongs to the responding groups
+ * (`respondingAprPercent / totalAprPercent`). Returns null when the shape
+ * cannot carry a derivable ladder; callers skip rather than assert on noise.
+ */
+export function planOffsetRunner(
+  type: OffsetScenario['type'],
+  target: DiscoveryReserve,
+  offset: DiscoveryReserve | null,
+  aprs: OffsetPlanAprs,
+): OffsetRunnerPlan | null {
+  const totalApr = aprs.totalAprPercent;
+  const respondApr = aprs.respondingAprPercent;
+  if (!(totalApr > 0) || !(respondApr > 0) || respondApr > totalApr + 1e-9) return null;
+
+  // Aave reads a non-positive campaign cap as "unlimited"; the app's cap branch
+  // skips it too, so it must not shrink the gross here.
+  const rawCap = aprs.minPositionCapUsd;
+  const capBound = rawCap != null && rawCap > 0 ? rawCap : Number.POSITIVE_INFINITY;
+  const targetRoom = getSupplyRoomUsd(target) ?? Number.POSITIVE_INFINITY;
+  const weight = respondApr / totalApr;
+
+  if (type === 'cross-reserve') {
+    if (!offset) return null;
+    const offsetRoom = getSupplyRoomUsd(offset) ?? Number.POSITIVE_INFINITY;
+    const funding = Math.floor(Math.min(OFFSET_FUNDING_CAP_USD, offsetRoom));
+    if (!(funding > 0)) return null;
+    const ltv = typeof offset.ltv === 'number' && Number.isFinite(offset.ltv) ? offset.ltv : 0;
+    const capacity = Math.min(getBorrowRoomUsd(offset) ?? Number.POSITIVE_INFINITY, (funding * ltv) / 100);
+    if (!(capacity > 0)) return null;
+    // capacity/2 keeps the 1.5× rung inside the fundable range (0.75×capacity).
+    const gross = Math.floor(Math.min(OFFSET_TARGET_SUPPLY_CAP_USD, targetRoom, capacity / 2, capBound));
+    if (gross < MIN_OFFSET_GROSS_USD) return null;
+    const steps = CROSS_OFFSET_STEP_FRACTIONS.map((fraction) => {
+      const borrowUsd = Math.floor(fraction * gross);
+      const eligibleFraction = Math.min(borrowUsd / gross, 1);
+      return {
+        borrowUsd,
+        expectedDecreaseRatio: weight * eligibleFraction,
+        expectedAfterZero: borrowUsd >= gross && weight >= 1 - 1e-9,
+      };
+    });
+    return { targetSupplyUsd: gross, offsetSupplyUsd: funding, offsetCapacityUsd: capacity, steps };
+  }
+
+  const targetLtv = typeof target.ltv === 'number' && Number.isFinite(target.ltv) ? target.ltv : 0;
+  const gross = Math.floor(Math.min(OFFSET_TARGET_SUPPLY_CAP_USD, targetRoom, capBound));
+  if (gross < MIN_OFFSET_GROSS_USD) return null;
+  const capacity = Math.min(getBorrowRoomUsd(target) ?? Number.POSITIVE_INFINITY, (gross * targetLtv) / 100);
+  if (!(capacity > 0)) return null;
+  const steps = SELF_LOOP_OFFSET_STEPS_USD.map((step) => {
+    const effective = Math.min(step, capacity);
+    return {
+      borrowUsd: step,
+      expectedDecreaseRatio: weight * Math.min(effective / gross, 1),
+      expectedAfterZero: effective >= gross && weight >= 1 - 1e-9,
+    };
+  });
+  return { targetSupplyUsd: gross, offsetSupplyUsd: null, offsetCapacityUsd: capacity, steps };
 }
 
 function usableForOffsetPosition(r: DiscoveryReserve): boolean {
@@ -511,6 +674,12 @@ function usableForOffsetPosition(r: DiscoveryReserve): boolean {
  * - self-loop: the TARGET itself, because the borrow happens on the target.
  * The cross-reserve TARGET only ever receives a supply, so it keeps the
  * AAV-1280 supply-side gate (`usableForOffsetPosition`) unchanged.
+ *
+ * Every selected scenario also carries a `plan` (AAV-1333): the supply amounts
+ * and ladder the runner types, plus the exact decrease ratio each rung must
+ * produce. The runner no longer picks amounts or thresholds by hand, so
+ * supply-room / LTV / campaign-cap clamping can no longer turn a threshold
+ * into a hand-picked constant that only holds for one data shape.
  */
 export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: string): OffsetScenario[] {
   const idMap = indexReservesById(reserves);
@@ -521,21 +690,63 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
   for (const r of reserves) {
     if (typeof r.reserveId !== 'string' || !r.reserveId) continue;
     if (!usableForOffsetPosition(r)) continue;
+    // AAV-1333: only Merkl supply campaigns respond to the offset. Brevis and
+    // the (API-unpopulated) flat protocol array keep their value while the
+    // Merkl part drops, so a derived ratio would under-shoot on such a target.
+    // Skipping is the safe failure mode — never assert a diluted fraction.
+    if (hasNonEmptyArray(r.brevisSupplys)) continue;
+    if (hasPositiveNumber(r.supplyIncentives)) continue;
 
     const groups = r.merklSupplys;
     if (!Array.isArray(groups)) continue;
-    for (const g of groups as OffsetOpportunityGroup[]) {
+    const typedGroups = groups as OffsetOpportunityGroup[];
+
+    // Displayed supply incentive = every computable group on the reserve, so
+    // the expected decrease is `responding / total` of the offset's own ratio.
+    const aprByGroup = typedGroups.map((group) => computableAprPercent(breakdownsOfGroup(group), nowIso));
+    const totalApr = aprByGroup.reduce((acc, value) => acc + value, 0);
+    if (totalApr <= 0) continue;
+
+    for (const [index, g] of typedGroups.entries()) {
       const offsets = g.netPositionConstraint?.offsetReserveIds;
       if (!Array.isArray(offsets)) continue;
       const nonSelf = offsets.filter((id) => id !== r.reserveId);
-      const breakdowns = Array.isArray(g.breakdowns) ? (g.breakdowns as MerklBreakdown[]) : [];
-      const apr = computableAprPercent(breakdowns, nowIso);
+      const apr = aprByGroup[index];
       if (apr <= 0) continue;
 
       const type = nonSelf.length > 0 ? 'cross-reserve' : 'self-loop';
       // Self-loop borrows on the target itself (AAV-1318): a target that cannot
       // carry a borrow clamps the whole ladder to one value.
       if (type === 'self-loop' && !usableForSimulatedPosition(r, 'borrow')) continue;
+
+      const offsetReserve = type === 'cross-reserve' ? (idMap.get(nonSelf[0]) ?? null) : null;
+      if (type === 'cross-reserve') {
+        if (!offsetReserve) continue;
+        // AAV-1318: replaces the old pair (`borrowDisabled === true` +
+        // `usableForOffsetPosition`) — one gate that subsumes both and adds
+        // borrow room plus LTV funding power.
+        if (!usableForSimulatedPosition(offsetReserve, 'borrow')) continue;
+      }
+
+      const borrowOnId = type === 'cross-reserve' ? (offsetReserve!.reserveId as string) : r.reserveId;
+      const respondingApr = typedGroups.reduce((acc, group, groupIndex) => {
+        const ids = group.netPositionConstraint?.offsetReserveIds;
+        return Array.isArray(ids) && ids.includes(borrowOnId) ? acc + aprByGroup[groupIndex] : acc;
+      }, 0);
+
+      const plan = planOffsetRunner(type, r, offsetReserve, {
+        respondingAprPercent: respondingApr,
+        totalAprPercent: totalApr,
+        minPositionCapUsd: minCampaignCapUsd(
+          r,
+          typedGroups.flatMap((group) => breakdownsOfGroup(group)) as OffsetCapBreakdown[],
+          nowIso,
+        ),
+      });
+      // No derivable ladder ⇒ no scenario. A hand-picked fallback here is the
+      // exact bug this ticket removes.
+      if (!plan) continue;
+
       const dedupKey = `${r.reserveId}:${type}`;
       if (seen.has(dedupKey)) continue;
 
@@ -546,21 +757,16 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
         targetReserveId: r.reserveId,
         targetApr: apr,
         chainName: r.chainName as string,
+        plan,
       };
 
       if (type === 'cross-reserve') {
-        const offsetReserve = idMap.get(nonSelf[0]);
-        if (!offsetReserve) continue;
-        // AAV-1318: replaces the old pair (`borrowDisabled === true` +
-        // `usableForOffsetPosition`) — one gate that subsumes both and adds
-        // borrow room plus LTV funding power.
-        if (!usableForSimulatedPosition(offsetReserve, 'borrow')) continue;
-        scenario.offsetSymbol = offsetReserve.tokenSymbol as string;
+        scenario.offsetSymbol = offsetReserve!.tokenSymbol as string;
         scenario.offsetMarketLabel = getMarketChipLabel(
-          offsetReserve.marketName as string,
-          offsetReserve.chainName as string,
+          offsetReserve!.marketName as string,
+          offsetReserve!.chainName as string,
         );
-        scenario.offsetReserveId = offsetReserve.reserveId;
+        scenario.offsetReserveId = offsetReserve!.reserveId;
       }
 
       seen.add(dedupKey);
@@ -576,6 +782,17 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
 
   return scenarios;
 }
+
+const hasNonEmptyArray = (value: unknown): boolean => Array.isArray(value) && value.length > 0;
+
+/**
+ * `supplyIncentives` (the protocol source) has NO producer in the API today
+ * (AAV-1350), so its element shape cannot be pinned from real data. Only plain
+ * positive numbers count as "present"; anything else leaves the field inert
+ * rather than inventing an extraction.
+ */
+const hasPositiveNumber = (value: unknown): boolean =>
+  Array.isArray(value) && value.some((entry) => typeof entry === 'number' && entry > 0);
 
 // ─── Cross-asset pairing scenarios (AAV-1308) ──────────────────────
 

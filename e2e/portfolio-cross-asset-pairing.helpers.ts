@@ -8,6 +8,7 @@ import {
   type CrossAssetPairingStubPayload,
 } from './crossAssetPairingStub';
 import { discoverCrossAssetPairingScenarios, type CrossAssetScenario } from './reserveDiscovery';
+import { installMarketsStubRoutes } from './stubRoutes';
 import { toDiscovery } from './stagingReservesFetch';
 import {
   CROSS_ASSET_SCENARIO_GAP_REASON,
@@ -144,33 +145,12 @@ async function expectRowAmount(
 }
 
 /**
- * Serve the stub payload to the browser: `/markets` returns the injected
- * payload, `/meta/side-data` a minimal deterministic body (only `generatedAt`
- * is required by the schema; empty forecast/campaignAccess keep the incentive
- * math on the breakdown-APR path instead of forecast-TV recomputation).
- * Pathname matching is host-agnostic on purpose: the app's API base differs
- * between dev (staging host from apiBase.ts) and CI (VITE_API_BASE_URL), and
- * both end in /markets and /meta/side-data.
+ * Serve the stub payload to the browser. The generic route installer lives in
+ * `./stubRoutes` (shared with the cross-reserve offset stub, AAV-1333); this
+ * wrapper keeps the pairing default payload for its own spec files.
  */
 export async function installStubRoutes(page: Page, payload: CrossAssetPairingStubPayload = stub.payload) {
-  await page.route(
-    (url) => url.pathname.endsWith('/markets'),
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(payload),
-      }),
-  );
-  await page.route(
-    (url) => url.pathname.endsWith('/meta/side-data'),
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ generatedAt: '2026-01-01T00:00:00.000Z' }),
-      }),
-  );
+  await installMarketsStubRoutes(page, payload);
 }
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
