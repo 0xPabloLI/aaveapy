@@ -308,6 +308,9 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
     '0x4e72025984424e52838cf8953e2863eff036b67a': {
       iconSymbol: 'mwin',
     },
+    '0x015c477a4e2881c4b3bb8999f59ee4a04e812344': {
+      iconSymbol: 'hinc',
+    },
   };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
