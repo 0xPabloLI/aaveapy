@@ -14,6 +14,7 @@
 | scenario 两文件 | 住 `docs/conventions/`，用 core 合并版原样 | 与 core 一致 |
 | AGENTS.md 设计段 | Users/Brand/Aesthetic/Principles/Token 全套内联（AAVE repos 中最完整） | 本 repo 的插槽值；core 不收品牌内容 |
 | SESSION-BOARD.md | **本地发明组件**（core 无对应物），经 AGENTS.md `## Session Start` 路由 | 多 agent 并发协调：启动注册 + 冲突检测 + 结束注销。core 回仓**缓做**——重评条件：board 实际拦截或暴露过一次真实冲突（当前唯一一次靠 git 事后发现）；届时与 core git-workflow 的 Session-Id trailer 分工一起定义（trailer = 事后溯源，board = 事前协调） |
+| 产品视角门禁 | `scripts/check-product-view.mjs` + `scripts/product-view-section.mjs` + PR 模板的 `## 产品视角` 节，**取自 inside-china-ai（core 无此组件）**；校验器原样复制（纯文本、无依赖），渲染器改为 Linear 取数 | core 的 `implementation-workflow.md` §9 步骤 8–9 有这条规则的完整论证（「文字从未缺席，缺的是可判定的边界」），本仓此前只有 AGENTS.md 一行不可判定的清单，AAV-1335 实证了它会被跳过。取数源不同是唯一本地化：本仓票在 Linear，链路是 `线性 GraphQL → 最新合规交付记录` |
 
 ## 本机 CDP 测试浏览器环境（machine-local）
 
