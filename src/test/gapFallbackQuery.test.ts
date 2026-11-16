@@ -17,6 +17,7 @@ vi.mock('@/lib/userData/aaveV4UserClient', () => ({
 
 import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient';
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
+import { MulticallAllCallsFailedError } from '@/lib/userData/multicallFailure';
 
 const mockV3Positions = (chainId: number, assets: `0x${string}`[]): WalletPosition[] =>
   assets.map((asset, i) => ({
@@ -154,7 +155,12 @@ describe('fetchGapPositions', () => {
 
     vi.mocked(getV3UserPositionsMultiChain).mockResolvedValue({
       results: [],
-      errors: [{ chainId: 4326, error: new Error('rpc failed') }],
+      errors: [
+        {
+          chainId: 4326,
+          error: new MulticallAllCallsFailedError(4326, 'AaveV3Eth-Chain4326', 2),
+        },
+      ],
     });
 
     const result = await fetchGapPositions({
@@ -192,7 +198,13 @@ describe('fetchGapPositions', () => {
 
     vi.mocked(getV4UserPositionsAllSpokes).mockResolvedValue({
       results: [],
-      errors: [{ chainId: 9745, spokeName: 'Spoke1', error: new Error('rpc failed') }],
+      errors: [
+        {
+          chainId: 9745,
+          spokeName: 'Spoke1',
+          error: new MulticallAllCallsFailedError(9745, 'Spoke1', 3),
+        },
+      ],
     });
 
     const result = await fetchGapPositions({

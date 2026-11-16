@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   V4_SPOKE_ADDRESSES,
   V4_HUB_ADDRESSES,
@@ -15,6 +15,7 @@ import {
 } from './aaveV4UserClient';
 import { createPublicClient } from 'viem';
 import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
+import { MulticallAllCallsFailedError } from './multicallFailure';
 import { getAllRpcUrls } from './chainDiscovery';
 import { deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
 import { toV4SpokeKey } from '@/lib/reserveKey';
@@ -286,10 +287,14 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
   });
 
   it('skips failed multicall entries', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'failure', result: undefined },
       { status: 'failure', result: undefined },
       { status: 'failure', result: undefined },
+      { status: 'success', result: 0n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [false, false] },
       {
         status: 'success',
         result: {
@@ -309,10 +314,15 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 0n, asset: WETH }],
+      [
+        { reserveId: 0n, asset: WETH },
+        { reserveId: 1n, asset: USDC },
+      ],
       client,
     );
     expect(result.positions).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserves had failed reads'));
+    warnSpy.mockRestore();
   });
 
   it('returns empty positions when no client available', async () => {
@@ -324,6 +334,7 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
   });
 
   it('returns empty accountSummaries when getUserAccountData fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'success', result: 100n * 10n ** 18n },
       { status: 'success', result: [0n, 0n] },
@@ -341,9 +352,12 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
     );
     expect(result.positions).toHaveLength(1);
     expect(result.accountSummaries).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('account-level read failed'));
+    warnSpy.mockRestore();
   });
 
   it('handles partial multicall failures (some reserves succeed, some fail)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'success', result: 100n * 10n ** 18n },
       { status: 'success', result: [0n, 0n] },
@@ -374,6 +388,247 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
     expect(result.positions).toHaveLength(1);
     expect(result.positions[0].asset).toBe(WETH);
     expect(result.accountSummaries).toHaveLength(1);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserves had failed reads'));
+    warnSpy.mockRestore();
+  });
+});
+
+describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () => {
+  const FAILED_READ = { status: 'failure', result: undefined } as const;
+  const ACCOUNT_OK = {
+    status: 'success',
+    result: {
+      riskPremium: 0n,
+      avgCollateralFactor: 0n,
+      healthFactor: 0n,
+      totalCollateralValue: 0n,
+      totalDebtValueRay: 0n,
+      activeCollateralCount: 0n,
+      borrowCount: 0n,
+    },
+  } as const;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+  });
+
+  it('rejects when every reserve read fails (even if the account call succeeds)', async () => {
+    const { client } = makeMockClient([FAILED_READ, FAILED_READ, FAILED_READ, ACCOUNT_OK]);
+
+    await expect(
+      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+    ).rejects.toBeInstanceOf(MulticallAllCallsFailedError);
+  });
+
+  it('reports chain, spoke and attempted call count on the thrown error', async () => {
+    const { client } = makeMockClient([FAILED_READ, FAILED_READ, FAILED_READ, ACCOUNT_OK]);
+
+    await expect(
+      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+    ).rejects.toMatchObject({ chainId: 1, scope: 'MAIN_SPOKE', attemptedCalls: 3 });
+  });
+
+  it('keeps successful positions and warns on a partial failure', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: 100n * 10n ** 18n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [true, false] },
+      FAILED_READ,
+      FAILED_READ,
+      FAILED_READ,
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV4UserPositionsOnChain(
+      1,
+      'MAIN_SPOKE',
+      MAIN_SPOKE.address,
+      USER,
+      [
+        { reserveId: 0n, asset: WETH },
+        { reserveId: 1n, asset: USDC },
+      ],
+      client,
+    );
+
+    expect(result.positions).toHaveLength(1);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserves had failed reads'));
+  });
+
+  it('does not count a reserve with only 2 of 3 successful calls as read', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: 100n * 10n ** 18n },
+      FAILED_READ, // debt read fails
+      { status: 'success', result: [true, false] },
+      { status: 'success', result: 1n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [true, false] },
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV4UserPositionsOnChain(
+      1,
+      'MAIN_SPOKE',
+      MAIN_SPOKE.address,
+      USER,
+      [
+        { reserveId: 0n, asset: WETH },
+        { reserveId: 1n, asset: USDC },
+      ],
+      client,
+    );
+
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0].reserveId).toBe(1n);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserves had failed reads'));
+  });
+
+  it('does not warn when every read succeeds with zero balances', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: 0n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [false, false] },
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV4UserPositionsOnChain(
+      1,
+      'MAIN_SPOKE',
+      MAIN_SPOKE.address,
+      USER,
+      [{ reserveId: 0n, asset: WETH }],
+      client,
+    );
+
+    expect(result.positions).toHaveLength(0);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when there are no reserves to read', async () => {
+    const { client } = makeMockClient([ACCOUNT_OK]);
+
+    const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [], client);
+
+    expect(result.accountSummaries).toHaveLength(1);
+  });
+
+  it('warns but does not throw when only the account call fails', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: 100n * 10n ** 18n },
+      { status: 'success', result: [0n, 0n] },
+      { status: 'success', result: [true, false] },
+      FAILED_READ,
+    ]);
+
+    const result = await getV4UserPositionsOnChain(
+      1,
+      'MAIN_SPOKE',
+      MAIN_SPOKE.address,
+      USER,
+      [{ reserveId: 0n, asset: WETH }],
+      client,
+    );
+
+    expect(result.positions).toHaveLength(1);
+    expect(result.accountSummaries).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('account-level read failed'));
+  });
+
+  // User-approved adjacent fix (2026-11-16, option B): 0n supply is a valid
+  // balance, not a failed read. A borrow-only reserve must yield a position.
+  it('returns a borrow-only reserve (zero supply, non-zero debt)', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: 0n },
+      { status: 'success', result: [0n, 500n * 10n ** 18n] },
+      { status: 'success', result: [false, true] },
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV4UserPositionsOnChain(
+      1,
+      'MAIN_SPOKE',
+      MAIN_SPOKE.address,
+      USER,
+      [{ reserveId: 7n, asset: USDC }],
+      client,
+    );
+
+    expect(result.positions).toHaveLength(1);
+    expect(result.positions[0]).toMatchObject({
+      reserveId: 7n,
+      asset: USDC,
+      suppliedAssets: 0n,
+      stableDebt: 0n,
+      variableDebt: 500n * 10n ** 18n,
+    });
+  });
+
+  it('bubbles a multicall rejection unchanged', async () => {
+    const rpcError = new Error('rpc down');
+    const client = {
+      multicall: vi.fn().mockRejectedValue(rpcError),
+    } as unknown as Parameters<typeof getV4UserPositionsOnChain>[5];
+
+    await expect(
+      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+    ).rejects.toBe(rpcError);
+  });
+
+  it('allSpokes records the failing spoke and keeps the healthy one', async () => {
+    const [good, bad] = getV4SpokeAddresses(1)!;
+    const reserves = [{ reserveId: 0n, asset: WETH }];
+    const client = {
+      multicall: vi.fn(async ({ contracts }: { contracts: { address: string; functionName: string }[] }) => {
+        if (contracts[0].address.toLowerCase() === bad.address.toLowerCase()) {
+          return contracts.map(() => ({ status: 'failure' as const, result: undefined }));
+        }
+        return contracts.map((call) => {
+          switch (call.functionName) {
+            case 'getUserSuppliedAssets':
+              return { status: 'success' as const, result: 1n };
+            case 'getUserDebt':
+              return { status: 'success' as const, result: [0n, 0n] };
+            case 'getUserReserveStatus':
+              return { status: 'success' as const, result: [true, false] };
+            default:
+              return {
+                status: 'success' as const,
+                result: {
+                  riskPremium: 0n,
+                  avgCollateralFactor: 0n,
+                  healthFactor: 1n,
+                  totalCollateralValue: 1n,
+                  totalDebtValueRay: 0n,
+                  activeCollateralCount: 1n,
+                  borrowCount: 0n,
+                },
+              };
+          }
+        });
+      }),
+    } as unknown as Parameters<typeof getV4UserPositionsAllSpokes>[3];
+
+    const result = await getV4UserPositionsAllSpokes(
+      1,
+      USER,
+      {
+        [toV4SpokeKey(good.address)!]: reserves,
+        [toV4SpokeKey(bad.address)!]: reserves,
+      },
+      client,
+    );
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].positions).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].spokeName).toBe(bad.name);
+    expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
   });
 });
 

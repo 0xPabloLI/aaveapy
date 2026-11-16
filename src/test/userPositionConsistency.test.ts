@@ -14,8 +14,8 @@
  *
  * 已知局限（AAV-1310，已修复）：RPC 轮换耗尽不再静默返回空仓位，而是抛
  * RpcRotationExhaustedError 并进 errors —— 因此「全链失败」场景下链级 error 断言
- * 会红灯。残留局限：multicall 层 client 健康但批量读全失败时仍返回空成功（假 $0），
- * 已另开票跟踪，修复前该场景本测试仍会空跑通过。
+ * 会红灯。multicall 层「client 健康但批量读全失败」由 AAV-1314 收口：V3 按市场、
+ * V4 按 spoke 抛 MulticallAllCallsFailedError，同样进 errors。
  * 金额量级断言（AAV-1311）：assertAmountMagnitudes 对每个仓位复算
  * raw / 10^decimals × tokenPrice（独立取自 /markets reserves），相对偏差 > 1e-6 红灯。
  *

@@ -1,4 +1,9 @@
 import { V3_POOL_ADDRESSES, V3_PROTOCOL_DATA_PROVIDER_ADDRESSES } from '../chainRegistry';
+import {
+  MulticallAllCallsFailedError,
+  isSuccessfulRead,
+  type MulticallCallResult as CallResult,
+} from './multicallFailure';
 
 export { V3_POOL_ADDRESSES, V3_PROTOCOL_DATA_PROVIDER_ADDRESSES };
 
@@ -15,9 +20,6 @@ export function getV3PoolAddress(chainId: number): `0x${string}` | undefined {
 export function getV3ProtocolDataProviderAddress(chainId: number): `0x${string}` | undefined {
   return V3_PROTOCOL_DATA_PROVIDER_ADDRESSES[chainId] as `0x${string}` | undefined;
 }
-
-type CallResult<T> =
-  { status: 'success'; result: T; error?: undefined } | { status: 'failure'; result?: undefined; error: Error };
 
 export interface V3UserReserveData {
   currentATokenBalance: bigint;
@@ -177,15 +179,21 @@ export async function getV3UserPositionsOnChain(
 
   const positions: V3UserPosition[] = [];
   if (providerAddress) {
-    const reserveResults = results.slice(0, reserveIds.length) as CallResult<readonly unknown[]>[];
+    const reserveResults = results.slice(0, reserveIds.length) as (CallResult<readonly unknown[]> | undefined)[];
+    let successfulReads = 0;
+
     for (let i = 0; i < reserveIds.length; i++) {
       const res = reserveResults[i];
       // viem decodes multi-output calls as positional tuples, not named
       // objects (same pattern as fetchV3PoolHf in useOnchainHealthFactor).
       // Field order is the DATA_PROVIDER_ABI output order above.
-      if (res.status === 'failure' || !Array.isArray(res.result)) continue;
+      if (!isSuccessfulRead(res) || !Array.isArray(res.result)) continue;
+      successfulReads++;
       const [currentATokenBalance, currentStableDebt, currentVariableDebt] = res.result as bigint[];
       const usageAsCollateralEnabled = res.result[8] === true;
+      // A zero balance is a successful read — the wallet simply holds nothing
+      // in this reserve. Only call failures / malformed shapes are failed
+      // reads for the all-failed judgement below.
       if (currentATokenBalance === 0n && currentStableDebt === 0n && currentVariableDebt === 0n) continue;
       positions.push({
         chainId,
@@ -197,11 +205,25 @@ export async function getV3UserPositionsOnChain(
         isCollateral: usageAsCollateralEnabled,
       });
     }
+
+    // A healthy client returning zero successful reserve reads is
+    // indistinguishable from "this wallet has no positions" unless it fails
+    // loudly. The error travels through the existing multichain errors
+    // channel into failedSources (AAV-1314).
+    if (reserveIds.length > 0 && successfulReads === 0) {
+      throw new MulticallAllCallsFailedError(chainId, marketName, reserveIds.length);
+    }
+    if (successfulReads > 0 && successfulReads < reserveIds.length) {
+      console.warn(
+        `[onchain-v3] partial multicall failure for ${marketName} on chain ${chainId}: ` +
+          `${reserveIds.length - successfulReads}/${reserveIds.length} reserve reads failed`,
+      );
+    }
   }
 
   let accountSummary: V3AccountSummary | null = null;
   const accountResult = results[accountCallIndex] as CallResult<readonly unknown[]> | undefined;
-  if (poolAddress && accountResult && accountResult.status === 'success' && Array.isArray(accountResult.result)) {
+  if (poolAddress && isSuccessfulRead(accountResult) && Array.isArray(accountResult.result)) {
     const [totalCollateralBase, totalDebtBase, availableBorrowsBase, currentLiquidationThreshold, ltv, healthFactor] =
       accountResult.result as bigint[];
     accountSummary = {
@@ -214,6 +236,11 @@ export async function getV3UserPositionsOnChain(
       ltvWad: ltv,
       healthFactorWad: healthFactor,
     };
+  } else if (poolAddress) {
+    console.warn(
+      `[onchain-v3] account-level read failed for ${marketName} on chain ${chainId}; ` +
+        'returning positions without account summary',
+    );
   }
 
   return { positions, accountSummary };

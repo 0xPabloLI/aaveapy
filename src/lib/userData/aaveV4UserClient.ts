@@ -1,8 +1,10 @@
 import * as ab from '@aave-dao/aave-address-book';
 import { toV4SpokeKey } from '@/lib/reserveKey';
-
-type CallResult<T> =
-  { status: 'success'; result: T; error?: undefined } | { status: 'failure'; result?: undefined; error: Error };
+import {
+  MulticallAllCallsFailedError,
+  isSuccessfulRead,
+  type MulticallCallResult as CallResult,
+} from './multicallFailure';
 
 export interface V4SpokeEntry {
   name: string;
@@ -258,22 +260,20 @@ export async function getV4UserPositionsOnChain(
 
   const CALLS_PER_RESERVE = 3;
   const positions: V4UserPosition[] = [];
+  let successfulReserves = 0;
 
   for (let i = 0; i < reserves.length; i++) {
     const baseIdx = i * CALLS_PER_RESERVE;
-    const suppliedResult = results[baseIdx] as CallResult<bigint>;
-    const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]>;
-    const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]>;
+    const suppliedResult = results[baseIdx] as CallResult<bigint> | undefined;
+    const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]> | undefined;
+    const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]> | undefined;
 
-    if (
-      suppliedResult.status === 'failure' ||
-      debtResult.status === 'failure' ||
-      statusResult.status === 'failure' ||
-      !suppliedResult.result ||
-      !debtResult.result ||
-      !statusResult.result
-    )
-      continue;
+    // A reserve is readable only when all three calls succeeded. `0n` is a
+    // valid balance: checking truthiness here used to drop borrow-only
+    // reserves (zero supply, non-zero debt).
+    if (!isSuccessfulRead(suppliedResult) || !isSuccessfulRead(debtResult) || !isSuccessfulRead(statusResult)) continue;
+
+    successfulReserves++;
 
     const [stableDebt, variableDebt] = debtResult.result;
     const [isCollateral] = statusResult.result;
@@ -292,13 +292,28 @@ export async function getV4UserPositionsOnChain(
     });
   }
 
+  // Zero successful reserve reads on a healthy client is not "no positions".
+  // Let it fail so getV4UserPositionsAllSpokes records the spoke in errors
+  // (AAV-1314).
+  if (reserves.length > 0 && successfulReserves === 0) {
+    throw new MulticallAllCallsFailedError(chainId, spokeName, reserves.length * CALLS_PER_RESERVE);
+  }
+  if (successfulReserves > 0 && successfulReserves < reserves.length) {
+    console.warn(
+      `[onchain-v4] partial multicall failure for ${spokeName} on chain ${chainId}: ` +
+        `${reserves.length - successfulReserves}/${reserves.length} reserves had failed reads`,
+    );
+  }
+
   const accountSummaries: V4AccountSummary[] = [];
-  const accountResult = results[reserveCalls.length] as CallResult<{
-    healthFactor: bigint;
-    totalCollateralValue: bigint;
-    totalDebtValueRay: bigint;
-  }>;
-  if (accountResult.status === 'success' && accountResult.result) {
+  const accountResult = results[reserveCalls.length] as
+    | CallResult<{
+        healthFactor: bigint;
+        totalCollateralValue: bigint;
+        totalDebtValueRay: bigint;
+      }>
+    | undefined;
+  if (isSuccessfulRead(accountResult)) {
     const r = accountResult.result;
     accountSummaries.push({
       chainId,
@@ -308,6 +323,11 @@ export async function getV4UserPositionsOnChain(
       totalCollateralValue: r.totalCollateralValue,
       totalDebtValueRay: r.totalDebtValueRay,
     });
+  } else {
+    console.warn(
+      `[onchain-v4] account-level read failed for ${spokeName} on chain ${chainId}; ` +
+        'returning positions without account summary',
+    );
   }
 
   return { positions, accountSummaries };
