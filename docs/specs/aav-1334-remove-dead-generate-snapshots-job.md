@@ -81,7 +81,7 @@ Error: No tests found.
 | S11 | 删除后 `ci.yml` 仍是合法 YAML、job 图无悬挂 `needs` | 解析成功；无 `needs: generate-snapshots` | High | runtime smoke：一次性 YAML 解析 + `rg needs` | 删除前确认无 `needs` 引用 |
 | S12 | 分支保护 | `dev`/`main` 的 required checks 不含 `generate-snapshots` | Medium | runtime-real-data：`gh api branches/{dev,main}/protection` | 删除不会改变 required checks |
 | S13 | 活文档仍指向被删 spec | 两处活文档指针改到实际存在的 geometry spec；`rg` 在 `docs/conventions` 与 `docs/design` 不再命中 `*-visual.spec.ts` | Medium | static check：范围化 `rg` + 文档 diff | 同批订正；archive/plans/handoff 属历史材料，明确 out of scope |
-| S14 | 手动 dispatch `ci.yml` | 所有 job 绿（`generate-snapshots` 不再存在） | High | runtime-real-data：推送后 `gh workflow run ci.yml --ref dev` 的 run 结果 | 若 dispatch 受权限/代理限制，如实记录未执行 |
+| S14 | 手动 dispatch `ci.yml` | 所有 job 绿（`generate-snapshots` 不再存在） | High | runtime-real-data：run `43841466135`（`workflow_dispatch`，head `571328c4`）conclusion=success，14 个 job success + `openapi-sync` skipped，job 列表无 `generate-snapshots` | 已执行；head 含并行 session 的 docs commit，但本票 commit 是其父 |
 
 ## Testing Decisions
 
@@ -177,6 +177,14 @@ needs edges: [["openapi-sync",["openapi-check"]]]
 - `docs/handoff-playwright-flaky-fixes.md`、`docs/archive/`、`docs/plans/`
   仍含历史 spec 名，按 Out of Scope 保留。
 
-**未执行**：推送后的 `gh workflow run ci.yml --ref dev`（票面 S14 /
-验收条件 1）。该动作会写远端 workflow run，需显式授权；本地已用 YAML 解析、
-job 键 diff 与守卫覆盖其失败机制。
+**手动 dispatch（S14 / 验收条件 1，用户授权后执行）**：
+
+- run [43841466135](https://github.com/0xPabloLI/aaveapy/actions/runs/43841466135)，
+  `event=workflow_dispatch`，`conclusion=success`，head `571328c4`（含本票
+  `875d4a8e` 作为父提交；并行 session 的 docs commit 在其上）。
+- Job 结果：`lint` / `build` / `content-security-check` / `socket-firewall` /
+  `live-simulation-validation` / `e2e-mobile (1/2)` / `e2e-mobile (2/2)` /
+  `e2e-desktop (1/2)` / `e2e-desktop (2/2)` / `openapi-check` /
+  `live-schema-validation` / `security-audit` / `peer-dep-check` / `repo-policy`
+  全部 success；`openapi-sync` skipped（既有条件）。
+- `gh run view … --json jobs` 中 `generate-snapshots` 命中数为 **0**。
