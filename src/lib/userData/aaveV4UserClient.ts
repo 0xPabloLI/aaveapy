@@ -204,11 +204,35 @@ export const SPOKE_ABI = [
 ] as const;
 
 import { createPublicClient, http, type PublicClient } from 'viem';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { readFromHealthyRpc } from './rpcRead';
+import type { RpcReadAttempt } from './rpcResilience';
 
 export interface V4ReserveInfo {
   reserveId: bigint;
   asset: `0x${string}`;
+}
+
+/** supplied / debt / status — the three reads that make one reserve readable. */
+const V4_CALLS_PER_RESERVE = 3;
+
+/**
+ * A reserve counts only when all three of its calls succeeded. The rotation
+ * decision (`allCallsFailed`) and the all-failed error share this count so
+ * they cannot drift apart; `0n` balances are successful reads (AAV-1314).
+ */
+function countReadableV4Reserves(results: readonly unknown[], reserveCount: number): number {
+  let count = 0;
+  for (let i = 0; i < reserveCount; i++) {
+    const base = i * V4_CALLS_PER_RESERVE;
+    if (
+      isSuccessfulRead(results[base] as CallResult<unknown> | undefined) &&
+      isSuccessfulRead(results[base + 1] as CallResult<unknown> | undefined) &&
+      isSuccessfulRead(results[base + 2] as CallResult<unknown> | undefined)
+    ) {
+      count++;
+    }
+  }
+  return count;
 }
 
 export async function getV4UserPositionsOnChain(
@@ -219,9 +243,6 @@ export async function getV4UserPositionsOnChain(
   reserves: V4ReserveInfo[],
   client?: PublicClient,
 ): Promise<V4OnchainResult> {
-  const publicClient = client ?? (await createClientWithRpcRotation(chainId));
-  if (!publicClient) return { positions: [], accountSummaries: [] };
-
   const reserveCalls = reserves.flatMap((reserve) => [
     {
       address: spokeAddress,
@@ -251,19 +272,33 @@ export async function getV4UserPositionsOnChain(
   };
 
   const allCalls = [...reserveCalls, accountCall];
-  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
-  const results = await multicall({
-    contracts: allCalls,
-    multicallAddress: MULTICALL3_ADDRESS,
-    allowFailure: true,
-  });
 
-  const CALLS_PER_RESERVE = 3;
+  // One batch read against one endpoint. `allCallsFailed` shares its
+  // definition with the all-failed error below so rotation and the domain
+  // error cannot disagree (AAV-1387).
+  const readBatch = async (publicClient: PublicClient): Promise<RpcReadAttempt<CallResult<unknown>[]>> => {
+    const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
+    const batch = (await multicall({
+      contracts: allCalls,
+      multicallAddress: MULTICALL3_ADDRESS,
+      allowFailure: true,
+    })) as CallResult<unknown>[];
+    return {
+      value: batch,
+      allCallsFailed: reserves.length > 0 && countReadableV4Reserves(batch, reserves.length) === 0,
+    };
+  };
+
+  // Explicit client (tests, health-factor path) bypasses rotation by
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387).
+  const results = await readFromHealthyRpc(chainId, client, readBatch);
+  if (!results) return { positions: [], accountSummaries: [] };
+
   const positions: V4UserPosition[] = [];
-  let successfulReserves = 0;
+  const successfulReserves = countReadableV4Reserves(results, reserves.length);
 
   for (let i = 0; i < reserves.length; i++) {
-    const baseIdx = i * CALLS_PER_RESERVE;
+    const baseIdx = i * V4_CALLS_PER_RESERVE;
     const suppliedResult = results[baseIdx] as CallResult<bigint> | undefined;
     const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]> | undefined;
     const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]> | undefined;
@@ -272,8 +307,6 @@ export async function getV4UserPositionsOnChain(
     // valid balance: checking truthiness here used to drop borrow-only
     // reserves (zero supply, non-zero debt).
     if (!isSuccessfulRead(suppliedResult) || !isSuccessfulRead(debtResult) || !isSuccessfulRead(statusResult)) continue;
-
-    successfulReserves++;
 
     const [stableDebt, variableDebt] = debtResult.result;
     const [isCollateral] = statusResult.result;
@@ -296,7 +329,7 @@ export async function getV4UserPositionsOnChain(
   // Let it fail so getV4UserPositionsAllSpokes records the spoke in errors
   // (AAV-1314).
   if (reserves.length > 0 && successfulReserves === 0) {
-    throw new MulticallAllCallsFailedError(chainId, spokeName, reserves.length * CALLS_PER_RESERVE);
+    throw new MulticallAllCallsFailedError(chainId, spokeName, reserves.length * V4_CALLS_PER_RESERVE);
   }
   if (successfulReserves > 0 && successfulReserves < reserves.length) {
     console.warn(

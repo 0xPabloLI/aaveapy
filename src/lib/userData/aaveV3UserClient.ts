@@ -108,7 +108,8 @@ export const POOL_ABI = [
 ] as const;
 
 import { createPublicClient, http, type PublicClient } from 'viem';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { readFromHealthyRpc } from './rpcRead';
+import type { RpcReadAttempt } from './rpcResilience';
 
 export interface V3OnchainResult {
   positions: V3UserPosition[];
@@ -132,6 +133,21 @@ interface MulticallContract {
   args: readonly `0x${string}`[];
 }
 
+/**
+ * A reserve read counts only when the call succeeded and decoded to a tuple —
+ * the same guard the parse loop uses. The rotation decision (`allCallsFailed`)
+ * and the all-failed error share this count so they cannot drift apart; a
+ * zero balance is a successful read and still counts (AAV-1314).
+ */
+function countSuccessfulReserveReads(results: readonly unknown[], reserveCount: number): number {
+  let count = 0;
+  for (let i = 0; i < reserveCount; i++) {
+    const res = results[i] as CallResult<readonly unknown[]> | undefined;
+    if (isSuccessfulRead(res) && Array.isArray(res.result)) count++;
+  }
+  return count;
+}
+
 export async function getV3UserPositionsOnChain(
   chainId: number,
   userAddress: `0x${string}`,
@@ -142,9 +158,6 @@ export async function getV3UserPositionsOnChain(
   const providerAddress = getV3ProtocolDataProviderAddress(chainId);
   const poolAddress = getV3PoolAddress(chainId);
   if (!providerAddress && !poolAddress) return { positions: [], accountSummary: null };
-
-  const publicClient = client ?? (await createClientWithRpcRotation(chainId));
-  if (!publicClient) return { positions: [], accountSummary: null };
 
   // Reserve-level reads target the DataProvider; the account-level aggregate
   // targets the Pool. Either side degrades independently when its address is
@@ -170,17 +183,34 @@ export async function getV3UserPositionsOnChain(
     });
   }
 
-  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
-  const results = await multicall({
-    contracts: allCalls,
-    multicallAddress: MULTICALL3_ADDRESS,
-    allowFailure: true,
-  });
+  // One batch read against one endpoint. `allCallsFailed` is the same
+  // judgement that later throws, so rotation and the domain error can never
+  // disagree about whether this batch was readable (AAV-1387).
+  const readBatch = async (publicClient: PublicClient): Promise<RpcReadAttempt<CallResult<readonly unknown[]>[]>> => {
+    const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
+    const batch = (await multicall({
+      contracts: allCalls,
+      multicallAddress: MULTICALL3_ADDRESS,
+      allowFailure: true,
+    })) as CallResult<readonly unknown[]>[];
+    return {
+      value: batch,
+      allCallsFailed:
+        Boolean(providerAddress) &&
+        reserveIds.length > 0 &&
+        countSuccessfulReserveReads(batch, reserveIds.length) === 0,
+    };
+  };
+
+  // Explicit client (tests, health-factor path) bypasses rotation by
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387).
+  const results = await readFromHealthyRpc(chainId, client, readBatch);
+  if (!results) return { positions: [], accountSummary: null };
 
   const positions: V3UserPosition[] = [];
   if (providerAddress) {
     const reserveResults = results.slice(0, reserveIds.length) as (CallResult<readonly unknown[]> | undefined)[];
-    let successfulReads = 0;
+    const successfulReads = countSuccessfulReserveReads(results, reserveIds.length);
 
     for (let i = 0; i < reserveIds.length; i++) {
       const res = reserveResults[i];
@@ -188,7 +218,6 @@ export async function getV3UserPositionsOnChain(
       // objects (same pattern as fetchV3PoolHf in useOnchainHealthFactor).
       // Field order is the DATA_PROVIDER_ABI output order above.
       if (!isSuccessfulRead(res) || !Array.isArray(res.result)) continue;
-      successfulReads++;
       const [currentATokenBalance, currentStableDebt, currentVariableDebt] = res.result as bigint[];
       const usageAsCollateralEnabled = res.result[8] === true;
       // A zero balance is a successful read — the wallet simply holds nothing

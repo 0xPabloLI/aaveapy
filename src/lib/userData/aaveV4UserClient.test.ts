@@ -14,7 +14,7 @@ import {
   type V4ReserveInfo,
 } from './aaveV4UserClient';
 import { createPublicClient } from 'viem';
-import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
+import { RpcRotationExhaustedError } from './rpcResilience';
 import { MulticallAllCallsFailedError } from './multicallFailure';
 import { getAllRpcUrls } from './chainDiscovery';
 import { deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
@@ -27,11 +27,16 @@ vi.mock('./chainDiscovery', () => ({
 
 const rpcRotationMocks = vi.hoisted(() => ({
   createClientWithRpcRotation: vi.fn(),
+  readWithRpcRotation: vi.fn(),
 }));
 
 vi.mock('./rpcResilience', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./rpcResilience')>();
-  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+  return {
+    ...actual,
+    createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation,
+    readWithRpcRotation: rpcRotationMocks.readWithRpcRotation,
+  };
 });
 
 vi.mock('viem', () => ({
@@ -416,6 +421,7 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
   afterEach(() => {
     warnSpy.mockRestore();
     rpcRotationMocks.createClientWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockReset();
   });
 
   it('rejects when every reserve read fails (even if the account call succeeds)', async () => {
@@ -713,17 +719,17 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
 describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   beforeEach(() => {
-    rpcRotationMocks.createClientWithRpcRotation.mockReset();
-    rpcRotationMocks.createClientWithRpcRotation.mockResolvedValue(null);
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
   });
 
-  it('registry has no RPC (client null) → empty success (unchanged degradation)', async () => {
+  it('registry has no RPC (rotation returns null) → empty success (unchanged degradation)', async () => {
     const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, []);
     expect(result).toEqual({ positions: [], accountSummaries: [] });
   });
 
   it('rotation exhausted → getV4UserPositionsOnChain rejects (not empty success)', async () => {
-    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     await expect(getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [])).rejects.toBeInstanceOf(
       RpcRotationExhaustedError,
@@ -731,7 +737,7 @@ describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   });
 
   it('allSpokes captures rotation exhaustion into errors (not silent empty)', async () => {
-    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     const result = await getV4UserPositionsAllSpokes(1, USER, {
       [spokeKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
@@ -742,5 +748,129 @@ describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
     expect(result.errors[0].chainId).toBe(1);
     expect(result.errors[0].spokeName).toBe('MAIN_SPOKE');
     expect(result.errors[0].error).toBeInstanceOf(RpcRotationExhaustedError);
+  });
+});
+
+describe('getV4UserPositionsOnChain read rotation wiring (AAV-1387)', () => {
+  const FAILED_READ = { status: 'failure', result: undefined } as const;
+  const SUPPLIED = { status: 'success', result: 100n * 10n ** 18n } as const;
+  const DEBT = { status: 'success', result: [0n, 0n] } as const;
+  const STATUS = { status: 'success', result: [true, false] } as const;
+  const ACCOUNT_OK = {
+    status: 'success',
+    result: {
+      riskPremium: 0n,
+      avgCollateralFactor: 0n,
+      healthFactor: 0n,
+      totalCollateralValue: 0n,
+      totalDebtValueRay: 0n,
+      activeCollateralCount: 0n,
+      borrowCount: 0n,
+    },
+  } as const;
+
+  type AttemptFn = (client: unknown) => Promise<{ value: unknown; allCallsFailed: boolean }>;
+
+  /** Routes the mocked rotation through `client` and captures the caller's flag. */
+  function captureAttempt(client: unknown): { allCallsFailed?: boolean } {
+    const captured: { allCallsFailed?: boolean } = {};
+    rpcRotationMocks.readWithRpcRotation.mockImplementation(async (_chainId: number, attempt: AttemptFn) => {
+      const outcome = await attempt(client);
+      captured.allCallsFailed = outcome.allCallsFailed;
+      return outcome.value;
+    });
+    return captured;
+  }
+
+  const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+
+  beforeEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+  });
+
+  afterEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+  });
+
+  it('V4-R1 flags an all-failed spoke so rotation moves to the next RPC', async () => {
+    const { client } = makeMockClient([FAILED_READ, FAILED_READ, FAILED_READ, ACCOUNT_OK]);
+    const captured = captureAttempt(client);
+
+    await expect(getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves)).rejects.toBeInstanceOf(
+      MulticallAllCallsFailedError,
+    );
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledWith(1, expect.any(Function));
+    expect(captured.allCallsFailed).toBe(true);
+  });
+
+  it('V4-R2 flags a readable spoke as readable (no rotation)', async () => {
+    const { client } = makeMockClient([SUPPLIED, DEBT, STATUS, ACCOUNT_OK]);
+    const captured = captureAttempt(client);
+
+    const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves);
+
+    expect(result.positions).toHaveLength(1);
+    expect(captured.allCallsFailed).toBe(false);
+  });
+
+  it('V4-R3 keeps the empty-success degradation when rotation yields null', async () => {
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
+
+    await expect(getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves)).resolves.toEqual({
+      positions: [],
+      accountSummaries: [],
+    });
+  });
+
+  it('V4-R4 reads an injected client without consulting rotation', async () => {
+    const { client } = makeMockClient([SUPPLIED, DEBT, STATUS, ACCOUNT_OK]);
+
+    const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves, client);
+
+    expect(result.positions).toHaveLength(1);
+    expect(rpcRotationMocks.readWithRpcRotation).not.toHaveBeenCalled();
+  });
+
+  // M14: rotation is per spoke. One spoke rotating off a bad RPC must not
+  // disturb its sibling, which reads through its own batch and client.
+  it('V4-R5 rotates only the all-failed spoke and keeps its sibling', async () => {
+    const [good, bad] = getV4SpokeAddresses(1)!;
+    const client = {
+      multicall: vi.fn(async ({ contracts }: { contracts: { address: string; functionName: string }[] }) => {
+        if (contracts[0].address.toLowerCase() === bad.address.toLowerCase()) {
+          return contracts.map(() => FAILED_READ);
+        }
+        return contracts.map((call) => {
+          switch (call.functionName) {
+            case 'getUserSuppliedAssets':
+              return SUPPLIED;
+            case 'getUserDebt':
+              return DEBT;
+            case 'getUserReserveStatus':
+              return STATUS;
+            default:
+              return ACCOUNT_OK;
+          }
+        });
+      }),
+    };
+    rpcRotationMocks.readWithRpcRotation.mockImplementation(async (_chainId: number, attempt: AttemptFn) => {
+      const outcome = await attempt(client);
+      return outcome.value;
+    });
+
+    const result = await getV4UserPositionsAllSpokes(1, USER, {
+      [toV4SpokeKey(good.address)!]: reserves,
+      [toV4SpokeKey(bad.address)!]: reserves,
+    });
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledTimes(2);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].positions).toHaveLength(1);
+    expect(result.results[0].positions[0].reserveId).toBe(0n);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].spokeName).toBe(bad.name);
+    expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
   });
 });
