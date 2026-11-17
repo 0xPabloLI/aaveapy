@@ -471,6 +471,12 @@ jobs:
       - name: Create spec sync PR
         id: cpr
         if: steps.diff.outputs.changed == 'true'
+        env:
+          # A runner has no Playwright browser, so the developer pre-push hook's
+          # e2e gate blocks this push exactly when a real spec drift exists
+          # (AAV-1362 found the same class in hardcode-sync). What the bot commits
+          # is verified by the PR CI this step opens, not by the local hook.
+          HUSKY: '0'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.

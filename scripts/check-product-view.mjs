@@ -80,7 +80,25 @@ const SECTION_STOP = [
  * @returns {string}
  */
 function stripHtmlComments(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, '');
+  // Scan comment spans instead of one regex replace: a single-pass `.replace()`
+  // on a multi-character opener is the pattern CodeQL flags as incomplete
+  // sanitization (js/incomplete-multi-character-sanitization), because a
+  // reassembled opener could survive. Walking the string removes every span.
+  const source = String(text);
+  let out = '';
+  let cursor = 0;
+  for (;;) {
+    const open = source.indexOf('<!--', cursor);
+    if (open === -1) {
+      out += source.slice(cursor);
+      return out;
+    }
+    out += source.slice(cursor, open);
+    const close = source.indexOf('-->', open + 4);
+    // An unterminated comment is still an instruction to the author, never content.
+    if (close === -1) return out;
+    cursor = close + 3;
+  }
 }
 
 /**
