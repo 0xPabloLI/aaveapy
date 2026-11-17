@@ -113,8 +113,8 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 | Linear | Priority | Title |
 | --- | --- | --- |
+| AAV-1399 | Medium | [前端] Borrow capacity 按用户 eMode 类别取 LTV/LT：按 `getUserEMode()` 的 category id 从 `/api/meta/e-mode/{marketKey}` 取 `maxLtv`/`liquidationThreshold`/成员数组；category 0 回退 base LTV；处理 400/404/503。验收 WETH eMode 81%→93%（后端 AAV-1394 已完成，端点已上 staging） |
 | AAV-1396 | High | • portfolio: LTV 钳制只作用于显示额，incentive / cross-reserve 仍按原始输入计算 |
-| AAV-1394 | Medium | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
 | AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
 | AAV-1275 | Medium | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
 | AAV-1327 | Medium | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
@@ -169,6 +169,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1394 | [后端] eMode 抵押参数独立端点：`GET /api/meta/e-mode`（索引）+ `/:marketKey`（类别与成员），不改 `/api/markets`；shared 类型 + `v3MarketKey`、fetcher `buildEModeMarkets`/`selectFreshEModeMarkets`、backend 只读快照 + stale hard TTL、OpenAPI 4 paths、cache 头、文档与 AAV-1399 前端票。staging `6a797f2` live：24 市场 / 3,564B，AaveV3Ethereum 48 类别 / 16,436B，WETH category 1 `93/95`；CI `44071575973` 四门绿 | 2026-11-17 |
 | AAV-1367 | 嵌套 zod 3.x 的 CVE-2023-54404 收口：`overrides.zod=$zod` 把 4 份 zod 收敛为 1 份 4.6.7（lock 只删 3 个嵌套条目、29 行）；新增 `scripts/check-zod-version-floor.mjs`（精确允许清单 + 可选 peer 跳过 + fail-closed）与 appkit-wallet `W3mFrameSchema` 的 zod-4 canary（16 tests）；删除失效的 osv 豁免（`osv-scanner` No issues found）；`npm audit --omit=dev` 11 high → 0；codegen 字节一致；产物仍只含 zod/v4；ci:remote 绿 | 2026-11-17 |
 | AAV-1293 | [后端] `/api/seo/*` 不进公开 OpenAPI（判断题收口）：决策理由落 `generate-openapi.ts` 注释（admin 面 / `X-Admin-Token` / 经 Supabase `seo-proxy` / `seo-api-documentation.md` 独立文档 / 非公开契约），2 条守卫（paths 恰好 `/markets` + `/meta/side-data`、注释锚点存在）+ `api-documentation.md` 边界句；mutation 加 `/api/seo/status`、删注释各自打红；生成物逐字节不变；run `44058368427` 四门绿 | 2026-11-17 |
 | AAV-1347 | [Chore] Prettier 未纳入 CI 门禁：`check:prettier` 置于 `check:quality` 首位 + CI `quality-gates` 新增 `Prettier format check (tracked files)`；tracked symlink 跳过、`.prettierignore` 保留生成物豁免、25 条守卫（真实 git + 真实 prettier 子进程）；run `44051705352` 四门绿且新 step 在干净 checkout 首跑通过；本地 463 受检 / 2 skipped、负控 rc 1 点名、干净 clone rc 0 | 2026-11-17 |
