@@ -57,7 +57,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 ## Active Linear Issues
 
 非 GitHub 来源的 Linear issue，按 **Linear 状态**分组；本区只列 open（Done / Duplicate / Canceled 一律不进本区）。
-盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **66 张 open** = In Progress 2 + Ready for agent 9 + Needs Info 7 + Todo 13 + Backlog 35。
+盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **65 张 open** = In Progress 2 + Ready for agent 9 + Needs Info 7 + Todo 13 + Backlog 34。
 
 ### In Progress（2）
 
@@ -110,12 +110,11 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1293 | Low | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（35）
+### Backlog（34）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
 | AAV-1367 | High | • security: 嵌套 zod 3.x 未覆盖 CVE-2023-54404（Dependabot #99） |
-| AAV-1391 | High | • [CI] openapi-sync 在 CI 内 git push 触发 husky pre-push → 无 Playwright 直接 BLOCK |
 | AAV-1396 | High | • portfolio: LTV 钳制只作用于显示额，incentive / cross-reserve 仍按原始输入计算 |
 | AAV-1394 | Medium | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
 | AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
@@ -173,6 +172,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1391 | [CI] 机器人 PR 推送不得运行开发者本地 hook：openapi-sync 由并行提交 `8fe76047` 落地并经 run `44040361980` 开出 PR #852 验证；本票补齐 `token-icon-sync` / `ci-auto-remediation` 两处同族 step（`HUSKY: '0'`）+ `scripts/bot-push-hook-guard.test.mjs`（T1–T6 枚举全部 create-pull-request 步骤、禁止扩到 job/workflow、mutation 控制）；dev CI run `44051928967` 全绿（openapi-sync skipped，无漂移）；症状票 AAV-1390 同步关闭 | 2026-11-17 |
 | AAV-1389 | 产品视角三句门禁：照搬 inside-china-ai 的纯文本校验器（原样）+ Linear 取数的渲染器（合同不变）；CI `repo-policy` 校验 PR body、AGENTS.md Step 9 渲染汇报首段；22 例测试全绿 | 2026-11-16 |
 | AAV-1335 | unit/script 测试不得真实出网：断网实证（陷阱全拦截下 17 passed / 0.16s / 0 次触发）+ `isDirectRun` 门与 `fetchWithTimeout` 位置的行为/静态守卫 + boundary doc 红线；去门 mutation 实测 attempts 命中 | 2026-11-16 |
 | AAV-1334 | 删除 dispatch-only `generate-snapshots` 死 job（引用已删除 visual spec）：ci.yml 删除整 job；新增 workflow Playwright spec 路径守卫（显式路径必须存在 + 禁止 `--update-snapshots`/`=all`/`-u`），随 `npm test` 生效；两处活文档指针订正 + checklist 的 `toHaveScreenshot` 改 geometry；14 行矩阵 S1–S14 | 2026-11-16 |
