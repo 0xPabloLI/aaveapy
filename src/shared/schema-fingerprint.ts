@@ -8,7 +8,8 @@
 //
 // Current value matches the backend's generated
 // packages/aave-shared-config/schema-fingerprint.ts. The previous value
-// (2d1059421baf) was three months stale — it predates the incentive-source
-// retirement that dropped the Merit fields from the payload on 2026-09-16
-// (AAV-1289 / AAV-1346).
-export const SCHEMA_FP = '0f60c7e06ff5';
+// (0f60c7e06ff5) predates the `spokeName` removal from `/api/markets`
+// (AAV-449). Before that, 2d1059421baf was three months stale — it predated
+// the incentive-source retirement that dropped the Merit fields from the
+// payload on 2026-09-16 (AAV-1289 / AAV-1346).
+export const SCHEMA_FP = 'e01da0e9d32f';
