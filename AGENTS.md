@@ -124,6 +124,8 @@
 ## Cross-Branch Workflow（禁止本地切分支）
 **核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。场景和命令详见 `docs/workflows/cross-branch-workflow.md`。
 
+**并行 session**：同一仓库存在第二个写入 session 时，本 session 必须在独占 worktree 中提交（共享工作目录即共享 index 与工作树，是并行冲突的根因）；`pull --rebase`/`push`/`switch` 只在自己的 worktree 内执行。竞态已发生（提交被挤出、或必须不动共享 index 完成提交）时按 `docs/agents/git-concurrent-recovery.md` 处置，不用 `--no-verify` 绕门。
+
 ## 标准上线流程 (Production Deployment Checklist)
 
 **每次合并到 main 都必须走完以下流程，不得跳步。**

@@ -10,7 +10,7 @@
 | issue-tracker.md | core 后端无关契约 + 本 repo Linear 段（teamId/AAV/MCP 工具/wayfinding/sub-issue 坑） | 后端是 Linear |
 | git 纪律 | 无独立 git-workflow.md；规则在 AGENTS.md（stash 禁令、禁本地切分支、commit cadence 外链） | 内联模式；core 的「写入者独占 worktree」规则未整体引入，仅保留禁切分支部分 |
 | proposal-review.md | **未引入** | AGENTS.md 无对应路由；需要引入时同时加路由行 |
-| git-concurrent-recovery.md | **未引入** | 单写者纪律下竞态应急未触发过；触发时从 core 仓取 |
+| git-concurrent-recovery.md | **已引入**（`docs/agents/git-concurrent-recovery.md`）；本地化两处：绕过 hook 后必须在 gated worktree（先 `npm install` + `check:hooks-path`）补跑只存在于 pre-push 的四道门；pathspec commit 遇他方在途改动导致门变红时禁止 `--no-verify` | 2026-11-18 首次多 session 竞态（同一 `dev` 链交替提交）后按 core 落地 |
 | scenario 两文件 | 住 `docs/conventions/`，用 core 合并版原样 | 与 core 一致 |
 | AGENTS.md 设计段 | Users/Brand/Aesthetic/Principles/Token 全套内联（AAVE repos 中最完整） | 本 repo 的插槽值；core 不收品牌内容 |
 | SESSION-BOARD.md | **本地发明组件**（core 无对应物），经 AGENTS.md `## Session Start` 路由 | 多 agent 并发协调：启动注册 + 冲突检测 + 结束注销。core 回仓**缓做**——重评条件：board 实际拦截或暴露过一次真实冲突（当前唯一一次靠 git 事后发现）；届时与 core git-workflow 的 Session-Id trailer 分工一起定义（trailer = 事后溯源，board = 事前协调） |
