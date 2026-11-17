@@ -56,15 +56,28 @@ export async function sizeCellByRow(page: Page): Promise<Record<string, string>>
   });
 }
 
-/** 子行 = 只有一个单元格且承载模拟明细文本的行。 */
+/**
+ * 子行 = 只有一个单元格、且模拟面板**实际可见**的行。
+ *
+ * AAV-1322：面板在首次展开后常驻挂载，收起只把 `grid-template-rows` 打回
+ * `0fr`（文本仍在 DOM 里）。按 textContent 计数会把「已收起」误判为「仍展开」
+ * ——这正是 AAV-1322 票面证据的假象来源。这里以面板目标样式为准：
+ * `0fr` = 收起，其余 = 展开；同时要求高度 > 0，避免样式漂移时假绿。
+ */
 export async function subRowText(page: Page): Promise<string> {
-  return page.evaluate(() =>
-    [...document.querySelectorAll('table tbody tr')]
+  return page.evaluate(() => {
+    return [...document.querySelectorAll('table tbody tr')]
       .filter((tr) => tr.children.length === 1)
+      .filter((tr) => {
+        const scrollport = tr.querySelector('[data-reserves-simulation-scrollport]');
+        const panel = scrollport?.closest('.grid');
+        if (!(panel instanceof HTMLElement)) return false;
+        return panel.style.gridTemplateRows !== '0fr' && panel.getBoundingClientRect().height > 0;
+      })
       .map((tr) => tr.textContent?.replace(/\s+/g, ' ').trim() ?? '')
       .filter((t) => /Simulation is for reference only|Spread/i.test(t))
-      .join(' | '),
-  );
+      .join(' | ');
+  });
 }
 
 export async function illegalNumbers(page: Page) {
