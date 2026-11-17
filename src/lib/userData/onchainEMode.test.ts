@@ -7,7 +7,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { PublicClient } from 'viem';
 import { RpcRotationExhaustedError } from './rpcResilience';
-import { fetchOnchainEModeCategoryIds, type V3EModeTarget } from './onchainEMode';
+import type { V3EModeTarget } from './eMode';
+import { fetchOnchainEModeCategoryIds } from './onchainEMode';
 
 const rpcMocks = vi.hoisted(() => ({ createClientWithRpcRotation: vi.fn() }));
 

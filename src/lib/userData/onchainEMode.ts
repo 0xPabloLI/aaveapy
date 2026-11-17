@@ -10,8 +10,6 @@ import { MULTICALL3_ADDRESS, POOL_ABI } from './aaveV3UserClient';
 import { createClientWithRpcRotation, isRpcRotationExhausted } from './rpcResilience';
 import type { V3EModeTarget } from './eMode';
 
-export type { V3EModeTarget } from './eMode';
-
 interface GetUserEModeCallResult {
   status: 'success' | 'failure';
   /** viem decodes a single uint256 as bigint; tolerate tuple shapes from other clients. */

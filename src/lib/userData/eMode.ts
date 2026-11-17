@@ -12,6 +12,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry } from '@/types/portfolio';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { parseReserveId } from '@/lib/reserveIdParser';
+import { marketKey } from '@/lib/marketKey';
 
 /** 一个需要读取 eMode 的 V3 pool。 */
 export interface V3EModeTarget {
@@ -86,7 +87,7 @@ export function extractV3EModeTargets(
     if (parsed.chainId !== reserve.chainId) continue;
     if (!isValidPoolAddress(parsed.poolOrSpokeAddress)) continue;
 
-    const poolKey = `${reserve.chainId}:${reserve.marketName}`;
+    const poolKey = marketKey(reserve.chainId, reserve.marketName);
     if (seen.has(poolKey)) continue;
     seen.add(poolKey);
 
@@ -160,7 +161,7 @@ export function buildEModeOverrides({
 }
 
 function findPoolParams(reserve: EModeReserveLike, params?: EModeParamsByPool): EModeCategoryParams | undefined {
-  return params?.get(`${reserve.chainId}:${reserve.marketName}`);
+  return params?.get(marketKey(reserve.chainId, reserve.marketName));
 }
 
 /**
