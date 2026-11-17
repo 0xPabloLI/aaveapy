@@ -67,7 +67,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1362 | High | Done（三阶段根因全部收口：移除 proactive bump、release-age 提示改真出口、机器人推送绕过本地 hook；dispatch run 44026720906 绿 + PR #850） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commits `5e057bbb` + `7500586b`）；已推送 `dev`（`eeca95d7..7500586b`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；该 run 读 `main` `b9c30868`，验证主修复，文案在 `dev`、随下一次标准 `dev → main` 推广上线；绿后可关票。**2026-11-17 第三种根因**：11-16 的 run `43870754983` 在 11-15 绿过之后又红，`hardcode-sync (dev)` 的 step 10 死在 `peter-evans/create-pull-request` 的 `git push` 触发的 `.husky/pre-push` （`ci:remote` + e2e 门；runner 无 Playwright chromium，AAV-1349 起硬阻断）⇒ 机器人推送被开发机门禁拦住。修法只给该 step 加 `HUSKY: '0'`（+ 注释），`.husky/pre-push` 与其他 workflow 不动；新增 `scripts/hardcode-sync-hook-guard.test.mjs`，spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`。**待验证**：一次真实 dispatch 或下一次 schedule 的 `hardcode-sync (dev)`。 |
 | AAV-1292 | Medium | railway → main 正式晋升：三个定时工作流从未运行 |
 
-### Ready for agent（9）
+### Ready for agent（8）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -75,7 +75,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-726 | Medium | • Refactor: flatten monorepo to single-package backend |
 | AAV-781 | Medium | • Unify endDate semantics and data directory paths（Merit cache） |
 | AAV-782 | — | • Distinguish「extraction failed」vs「成功但非目标激励类型」（Merit cache） |
-| AAV-449 | — | • [Backend] 移除 spokeName 字段（与 marketName 语义冗余） |
 | AAV-517 | — | • [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询 |
 | AAV-1227 | Low | • Spec: Inline Widget Embedding System for Article Pages |
 | AAV-829 | Low | • Unify ~35 处地址相关 toLowerCase() → normalizeAddress() |
@@ -167,6 +166,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-449 | [Backend] 从 `/api/markets` 移除 `spokeName`：它是 V4 `marketName` 的后缀重复（`AaveV4Main` vs `Main`），且 SDK 路径（`Main`）与 RPC fallback 路径（`MAIN_SPOKE`/`unknown`）取值语义漂移。落地：`PASSTHROUGH_FIELDS` 删除条目并把元素类型收紧为 `keyof MarketWithSpread`（以后删字段忘记同步白名单会直接 `tsc` 失败）、`MarketWithSpread` 显式 `Omit`；`MARKETS_API_VERSION` `snapshot-v3 → snapshot-v4`；schema fingerprint `0f60c7e06ff5 → e01da0e9d32f`（后端生成物 + 前端 mirror 同步）；OpenAPI 重生成；`RuntimeReserveData`/DB `spoke_name` 归档保留。新增 6 例测试 + backend 623 例 / 613 pass / 0 fail、root 139 例、`check:quality` rc 0；mutation 实测（加回白名单 → `TS2322` + 4 例红）。staging `3d4093c`：`snapshot-v4`、fp `e01da0e9d32f`、441 条 reserve / 124 条 V4 行 / `spokeName` 0 命中、`spokeId`/`hubId`/`hubName` 完整；live `RUN_API_FIELDS_TESTS` 10/10 绿；Linear 已关票 | 2026-11-17 |
 | AAV-365 | [后端] `GET /api/meta/side-data` 确定性 ETag + `If-None-Match` → 304（本票只做后端，前端条件请求尚未接线）：根因是响应体每次请求重写 `generatedAt`、每个 markets tick 重置 `campaignAccess.updatedAt`，Express 字节哈希标签必变 ⇒ 304 结构上不可达。新增 `backend/src/services/sideDataEtag.ts`，对**语义内容**算 `W/"<sha256 前 32 hex>"`（对象键排序、数组保序，仅排除上述两个保活标记，`fetchedAt`/`staleTimeMs` 仍入哈希）；`metaController` 改可注入工厂（reader + 时钟 seam）；全子块失败 500 显式 `Cache-Control: no-store` 且不写内容标签。24 例新测试（含跨进程复算）+ backend 全量 616 例 / 607 pass；staging `75cfade` 实测：跨多个 markets tick 携带旧标签仍 304（0 字节）、真实重取换标签后 200、`Cache-Control: no-cache` 仍 200。⚠️ 首部署 `f0a06b64` 标 FAILED 且无容器日志（基建抖动），`railway deployment redeploy` 后恢复 | 2026-11-17 |
 | AAV-1394 | [后端] eMode 抵押参数独立端点：`GET /api/meta/e-mode`（索引）+ `/:marketKey`（类别与成员），不改 `/api/markets`；shared 类型 + `v3MarketKey`、fetcher `buildEModeMarkets`/`selectFreshEModeMarkets`、backend 只读快照 + stale hard TTL、OpenAPI 4 paths、cache 头、文档与 AAV-1399 前端票。staging `6a797f2` live：24 市场 / 3,564B，AaveV3Ethereum 48 类别 / 16,436B，WETH category 1 `93/95`；CI `44071575973` 四门绿 | 2026-11-17 |
 | AAV-1367 | 嵌套 zod 3.x 的 CVE-2023-54404 收口：`overrides.zod=$zod` 把 4 份 zod 收敛为 1 份 4.6.7（lock 只删 3 个嵌套条目、29 行）；新增 `scripts/check-zod-version-floor.mjs`（精确允许清单 + 可选 peer 跳过 + fail-closed）与 appkit-wallet `W3mFrameSchema` 的 zod-4 canary（16 tests）；删除失效的 osv 豁免（`osv-scanner` No issues found）；`npm audit --omit=dev` 11 high → 0；codegen 字节一致；产物仍只含 zod/v4；ci:remote 绿 | 2026-11-17 |
