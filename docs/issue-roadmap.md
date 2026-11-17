@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 + AAV-1293 已于 2026-11-17 交付 → open 63 / Todo 12 / Backlog 33**。)
+> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 + AAV-1293 已于 2026-11-17 交付；AAV-1367 同日收口（zod 下限 + 守卫）→ open 62 / Todo 12 / Backlog 32**。)
 
 > **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
@@ -109,11 +109,10 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-760 | Low | • 判断哪些 reserve 可作质押 / 可做循环贷，一键最优配置需考虑 |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（33）
+### Backlog（32）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
-| AAV-1367 | High | • security: 嵌套 zod 3.x 未覆盖 CVE-2023-54404（Dependabot #99） |
 | AAV-1396 | High | • portfolio: LTV 钳制只作用于显示额，incentive / cross-reserve 仍按原始输入计算 |
 | AAV-1394 | Medium | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
 | AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
@@ -170,6 +169,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1367 | 嵌套 zod 3.x 的 CVE-2023-54404 收口：`overrides.zod=$zod` 把 4 份 zod 收敛为 1 份 4.6.7（lock 只删 3 个嵌套条目、29 行）；新增 `scripts/check-zod-version-floor.mjs`（精确允许清单 + 可选 peer 跳过 + fail-closed）与 appkit-wallet `W3mFrameSchema` 的 zod-4 canary（16 tests）；删除失效的 osv 豁免（`osv-scanner` No issues found）；`npm audit --omit=dev` 11 high → 0；codegen 字节一致；产物仍只含 zod/v4；ci:remote 绿 | 2026-11-17 |
 | AAV-1293 | [后端] `/api/seo/*` 不进公开 OpenAPI（判断题收口）：决策理由落 `generate-openapi.ts` 注释（admin 面 / `X-Admin-Token` / 经 Supabase `seo-proxy` / `seo-api-documentation.md` 独立文档 / 非公开契约），2 条守卫（paths 恰好 `/markets` + `/meta/side-data`、注释锚点存在）+ `api-documentation.md` 边界句；mutation 加 `/api/seo/status`、删注释各自打红；生成物逐字节不变；run `44058368427` 四门绿 | 2026-11-17 |
 | AAV-1347 | [Chore] Prettier 未纳入 CI 门禁：`check:prettier` 置于 `check:quality` 首位 + CI `quality-gates` 新增 `Prettier format check (tracked files)`；tracked symlink 跳过、`.prettierignore` 保留生成物豁免、25 条守卫（真实 git + 真实 prettier 子进程）；run `44051705352` 四门绿且新 step 在干净 checkout 首跑通过；本地 463 受检 / 2 skipped、负控 rc 1 点名、干净 clone rc 0 | 2026-11-17 |
 | AAV-1391 | [CI] 机器人 PR 推送不得运行开发者本地 hook：openapi-sync 由并行提交 `8fe76047` 落地并经 run `44040361980` 开出 PR #852 验证；本票补齐 `token-icon-sync` / `ci-auto-remediation` 两处同族 step（`HUSKY: '0'`）+ `scripts/bot-push-hook-guard.test.mjs`（T1–T6 枚举全部 create-pull-request 步骤、禁止扩到 job/workflow、mutation 控制）；dev CI run `44051928967` 全绿（openapi-sync skipped，无漂移）；症状票 AAV-1390 同步关闭 | 2026-11-17 |
