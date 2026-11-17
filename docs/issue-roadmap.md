@@ -109,7 +109,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-760 | Low | • 判断哪些 reserve 可作质押 / 可做循环贷，一键最优配置需考虑 |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（31）
+### Backlog（30）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -123,7 +123,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1370 | Medium | • chore(frontend): supplyIncentives/borrowIncentives 两种语义共存，需拍定删除或封口 |
 | AAV-1375 | Medium | • SEO 后台已失效：Supabase 项目消失，需决定下线还是重建 |
 | AAV-1354 | Low | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
-| AAV-1322 | Low | [桌面] 储备行展开模拟子行后再点同一行不收起（**2026-11-17 复核：非产品缺陷**——票面 textContent 探针把常驻挂载 `0fr` 面板计为展开；真浏览器 dev 366→0、生产 331→0。`subRowText` 已改 visible-only，M9 补收起断言；待 owner 确认关票）— 由 AAV-1321 实施期发现 |
 | AAV-1312 | Low | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
 | AAV-1274 | Low | RENAME: campaignType → distributionType (cross-repo API breaking change) *(降级：建议前端别名适配替代跨仓重命名)* |
 | AAV-1271 | Low | 工具：Aave UI ↔ Backend API 对比工具 Phase 3 |
