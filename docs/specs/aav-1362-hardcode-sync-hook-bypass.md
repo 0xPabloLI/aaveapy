@@ -133,7 +133,15 @@ husky0 exit=0
 * `c64674d5` — workflow 修复 + 守卫测试；`3790f77d` — 本 spec 与文档。
 * `origin/dev` 已是 `3790f77d`；远端文件 `.github/workflows/hardcode-sync.yml@dev` 第 133 行是 `Create PR when hardcode changed`、第 152 行是 `HUSKY: '0'`。
 
-### 尚未取得
+### 真实运行（owner 授权后手动 dispatch）
 
-* **一次真实的 workflow 运行**。schedule 读 `main`，本修复在 `dev`，需等标准 `dev → main` 之后才轮到每日 cron；手动 `workflow_dispatch` 可立即验证，但会在 `dev` 上开出一笔 bot PR 并自动合并（该 workflow 的正常行为），需 owner 授权后再触发。
+`gh workflow run hardcode-sync.yml --ref dev` → run **`44026720906`**（2026-11-17），conclusion **success**：
+
+| job | step 6 Round 1 sync | step 7 Round 1 verify | step 10 Create PR | step 11 approve + auto-merge |
+| --- | --- | --- | --- | --- |
+| `hardcode-sync (dev)` | success | success | **success** | **success** |
+| `hardcode-sync (main)` | success | success | success（无变更，空转） | skipped |
+| `report-failure` | — | — | 整个 job skipped | — |
+
+产物是 PR **#850**（`bot/hardcode-sync-dev` → `dev`，`chore(hardcode): sync hardcoded assets and mappings`）——即 `git push` 真的落到了 GitHub，而不是「没有变更所以绿」。这正是 11-16 被 `.husky/pre-push` 拦死的那条路径。
 
