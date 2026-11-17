@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **66 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 35，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）。)
+> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 已于 2026-11-17 交付 → open 64 / Backlog 33**。)
 
 > **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
@@ -110,7 +110,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1293 | Low | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（34）
+### Backlog（33）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -120,7 +120,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
 | AAV-1275 | Medium | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
 | AAV-1327 | Medium | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
-| AAV-1347 | Medium | • [Chore] Prettier 未纳入 CI 门禁 → 227 文件漂移的成因，会随时间重新积累 |
 | AAV-1348 | Medium | • [Deps] zod 3 → 4 迁移被钱包 SDK 阻塞（osv GHSA-mrhx-c7xc-m3w5 已豁免到 2027-01-31） |
 | AAV-1361 | Medium | • google-auth-library + googleapis 必须成对合并（冷却期 2026-11-16） |
 | AAV-1370 | Medium | • chore(frontend): supplyIncentives/borrowIncentives 两种语义共存，需拍定删除或封口 |
@@ -172,6 +171,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1347 | [Chore] Prettier 未纳入 CI 门禁：`check:prettier` 置于 `check:quality` 首位 + CI `quality-gates` 新增 `Prettier format check (tracked files)`；tracked symlink 跳过、`.prettierignore` 保留生成物豁免、25 条守卫（真实 git + 真实 prettier 子进程）；run `44051705352` 四门绿且新 step 在干净 checkout 首跑通过；本地 463 受检 / 2 skipped、负控 rc 1 点名、干净 clone rc 0 | 2026-11-17 |
 | AAV-1391 | [CI] 机器人 PR 推送不得运行开发者本地 hook：openapi-sync 由并行提交 `8fe76047` 落地并经 run `44040361980` 开出 PR #852 验证；本票补齐 `token-icon-sync` / `ci-auto-remediation` 两处同族 step（`HUSKY: '0'`）+ `scripts/bot-push-hook-guard.test.mjs`（T1–T6 枚举全部 create-pull-request 步骤、禁止扩到 job/workflow、mutation 控制）；dev CI run `44051928967` 全绿（openapi-sync skipped，无漂移）；症状票 AAV-1390 同步关闭 | 2026-11-17 |
 | AAV-1389 | 产品视角三句门禁：照搬 inside-china-ai 的纯文本校验器（原样）+ Linear 取数的渲染器（合同不变）；CI `repo-policy` 校验 PR body、AGENTS.md Step 9 渲染汇报首段；22 例测试全绿 | 2026-11-16 |
 | AAV-1335 | unit/script 测试不得真实出网：断网实证（陷阱全拦截下 17 passed / 0.16s / 0 次触发）+ `isDirectRun` 门与 `fetchWithTimeout` 位置的行为/静态守卫 + boundary doc 红线；去门 mutation 实测 attempts 命中 | 2026-11-16 |
