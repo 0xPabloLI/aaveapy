@@ -67,7 +67,7 @@ third-party site state, pixel baselines, or live external services it cannot moc
   MutationObserver or in-page probe — not via before/after snapshots. The app
   reacts per React commit; a transient intermediate state that restores before
   the next snapshot is real behavior the snapshots can't see (seen in
-  `reserves-table-scenario-pin.spec.ts`: the pin fired on a debounce-window
+  `reserves-table-scenario-pin.desktop.spec.ts`: the pin fired on a debounce-window
   intermediate sort while before == after).
 - A `test.skip` conditioned on a page query ("no such reserve in staging")
   must come after the ready wait — otherwise a slow load masquerades as
@@ -127,8 +127,11 @@ strength of an isolated red; it passed 2/2 in 16.5s once proxied.
 - A file that is `describe.skip` in CI is acceptable only as a **deliberate local
   operator check** (e.g. staging API smoke) with its rationale in the file header.
 - **Never** skip by platform to dodge work (`test.skip(mobile, 'Desktop-only')`).
-  Use a project-filtered `test.describe` instead — desktop-only tests run in the
-  desktop project, mobile-only in the mobile project.
+  Route by file name instead: platform-specific specs are `*.desktop.spec.ts` /
+  `*.mobile.spec.ts`, and `playwright.config.ts` ignores the other suffix per
+  project. A file that carries both platforms must be split (shared code goes to
+  a co-located `*.helpers.ts`), so each project only ever collects its own tests
+  (AAV-1395; precedent `portfolio-cross-asset-pairing.*`, `scenario-input-modes.*`).
 
 ## Discovery fetch failure is NOT a data gap
 
@@ -198,7 +201,7 @@ Backend data changes under the suite. Two rules, enforced by `npm run check:e2e-
 
 - **No chain name in a selector literal.** Pick the chip from the rendered row (`e2e/marketChips.ts`); a name in a *candidate list* that tolerates absence is fine. Arbitrum and Celo both left `/markets` and each took a spec down as a locator timeout that read like a flake.
 - **Locate row chips by `data-chip-kind`, not by label text.** A row renders both `Filter by <hub> hub` and `Filter by <market> market`; `[aria-label^="Filter by "]` matches both → strict mode violation, or silently testing the hub. Use `button[data-chip-kind="market"]`. The attribute is asserted in `DesktopReserveRow.test.tsx`, so dropping it fails at the unit layer.
-- **Discover the premise, don't assume the row index.** An assertion about *reordering* is only meaningful on a row whose market differs from the page it sits in. `reserves-table-market-filter-pin (5)` used "the 3rd visible row" and passed for months; on 2026-10-05 CI's snapshot had every visible row in one market (`Filter by Ink market` ×13), the filter changed nothing, nothing pinned, and it failed identically on both attempts (`y=376.75` vs a `274.25` anchor) — a deterministic data premise, not a load flake. Use `pickReorderCapableRowIndex(labels)` from `e2e/reserveDiscovery.ts` and `test.skip(-1, reason)` when no reorder-capable row exists, the same discovery+conditional-skip shape as `portfolio-cross-asset-pairing`.
+- **Discover the premise, don't assume the row index.** An assertion about *reordering* is only meaningful on a row whose market differs from the page it sits in. `reserves-table-market-filter-pin.desktop.spec.ts` used "the 3rd visible row" and passed for months; on 2026-10-05 CI's snapshot had every visible row in one market (`Filter by Ink market` ×13), the filter changed nothing, nothing pinned, and it failed identically on both attempts (`y=376.75` vs a `274.25` anchor) — a deterministic data premise, not a load flake. Use `pickReorderCapableRowIndex(labels)` from `e2e/reserveDiscovery.ts` and `test.skip(-1, reason)` when no reorder-capable row exists, the same discovery+conditional-skip shape as `portfolio-cross-asset-pairing`.
 
 Escape hatch for legitimate label collisions: `market-name-guard: allow` on the line. Coverage limits (chain names only, no hub names, no live-data comparison) are in `docs/specs/e2e-hardcoded-market-name-guard.md`.
 

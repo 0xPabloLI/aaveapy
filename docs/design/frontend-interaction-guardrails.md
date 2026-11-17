@@ -467,7 +467,7 @@ Visual / interaction parity for the frozen/paused badge:
   the small visual pill so it satisfies the 44px touch-target spirit without
   enlarging the visual mark.
 
-Regression coverage: see `e2e/top-opportunities-mobile-layout.spec.ts`
+Regression coverage: see `e2e/top-opportunities-mobile-layout.mobile.spec.ts`
 (`mobile frozen / paused badge uses frozen/paused semantic color tokens`),
 the desktop `SimulationSubRow` tests, and
 `MobileReserveCard.test.tsx` (frozen/paused badge rendering tests

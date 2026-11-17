@@ -96,7 +96,7 @@
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
-- **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
+- **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式，`test.describe` 也**不能**按 project 过滤（它只组织用例，仍会被两个 project 收集）。桌面端专用测试必须命名为 `*.desktop.spec.ts` 并由 `playwright.config.ts` 的 `mobile-chromium.testIgnore` 排除；移动端专用测试命名为 `*.mobile.spec.ts` 并由 `chromium.testIgnore` 排除；同一文件跨两端的必须拆分，共享代码放 co-located `*.helpers.ts`（AAV-1395，先例 `portfolio-cross-asset-pairing.*`）。缺少对应 platform 的测试用例时应补充，而非 skip。详见 `docs/conventions/e2e-testing-boundary.md`。
 
 ## Validation Gate (修改后必跑 — 强制)
 两道门，命令清单以它们为准（本文件不复述清单，复述出去迟早与实际漂移）：提交时过 `.husky/pre-commit`，推送前过 `npm run ci:remote`（含 build 与 e2e 子集）。任一失败 → 修根因 → 从头重跑。

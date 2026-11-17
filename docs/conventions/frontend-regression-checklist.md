@@ -75,7 +75,7 @@ The portfolio panel uses a **unified single-column grid** for both desktop and m
 
 ### SegmentedToggle visual invariants
 
-The `SegmentedToggle` component supports `orientation` (`horizontal` | `vertical`) and `size` (`default` | `chip`). Layout rules are normative and enforced by visual invariant source-level regression tests (`segmented-toggle.visual-invariant.test.ts`) plus Playwright geometry assertions (`e2e/segmented-toggle.spec.ts`).
+The `SegmentedToggle` component supports `orientation` (`horizontal` | `vertical`) and `size` (`default` | `chip`). Layout rules are normative and enforced by visual invariant source-level regression tests (`segmented-toggle.visual-invariant.test.ts`) plus Playwright geometry assertions (`e2e/segmented-toggle.desktop.spec.ts` + `e2e/segmented-toggle.mobile.spec.ts`).
 
 **Mandatory invariants (do not regress):**
 
@@ -92,7 +92,7 @@ The `SegmentedToggle` component supports `orientation` (`horizontal` | `vertical
 
 **Regression test locations:**
 - Source invariants: `src/components/ui/segmented-toggle.visual-invariant.test.ts` (20 tests). Run with: `npm test -- segmented-toggle.visual-invariant`.
-- Geometry + layout: `e2e/segmented-toggle.spec.ts`. Run with: `npx playwright test e2e/segmented-toggle.spec.ts`.
+- Geometry + layout: `e2e/segmented-toggle.desktop.spec.ts` (desktop geometry, horizontal indicator slide) and `e2e/segmented-toggle.mobile.spec.ts` (vertical radii, AprApy mobile, vertical slide). Run with: `npx playwright test e2e/segmented-toggle` (each project only collects its own half).
 
 ## Browser regression pass
 
@@ -124,7 +124,7 @@ CI E2E tests (`playwright.config.ts`, `e2e/` directory) are prone to flakiness f
 1. **Never hardcode staging API values** — use format/structure assertions (e.g., assert a `\d+\.\d{2}%` pattern instead of a specific APR value). Staging data refreshes invalidate hardcoded expectations. Use `e2e/test-reserves.ts` dynamic discovery instead of hardcoding token symbols.
 2. **Set reasonable timeouts** — `test.setTimeout(120_000)` for tests that involve Portfolio setup + large input + staging API round-trips. Default 60s timeout is insufficient for wallet-mode tests.
 3. **Mark external dependencies** — `test.skip` when external services (block explorers, Merkl API) are unreachable. Do not let third-party downtime block CI.
-4. **Assert geometry, not pixels** — use bounding-box / `getComputedStyle` assertions (see `e2e/segmented-toggle.spec.ts` and `e2e/portfolio-panel-header.spec.ts`). Pixel screenshot baselines are retired: they are macOS-render-specific, skipped in CI, and cannot separate a real regression from font/anti-aliasing drift (`docs/conventions/e2e-testing-boundary.md`).
+4. **Assert geometry, not pixels** — use bounding-box / `getComputedStyle` assertions (see `e2e/segmented-toggle.desktop.spec.ts` / `.mobile.spec.ts` and `e2e/portfolio-panel-header.spec.ts`). Pixel screenshot baselines are retired: they are macOS-render-specific, skipped in CI, and cannot separate a real regression from font/anti-aliasing drift (`docs/conventions/e2e-testing-boundary.md`).
 5. **CI E2E uses Railway direct URL** — `VITE_API_BASE_URL` is injected from `LIVE_TEST_API_BASE_CI` secret to bypass Cloudflare/WAF. See ADR-0029 for details.
 
 ## Numeric consistency checks
