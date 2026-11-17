@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 已于 2026-11-17 交付 → open 64 / Backlog 33**。)
+> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 + AAV-1293 已于 2026-11-17 交付 → open 63 / Todo 12 / Backlog 33**。)
 
 > **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
@@ -92,7 +92,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-891 | — | • 官方 Interface repo 每次改动时让 LLM 比对是否需借鉴（如 Target total APR 支持） |
 | AAV-892 | — | • Merkl 出现新 campaign type 时自动预警建 issue（AAV-329 子票） |
 
-### Todo（13）
+### Todo（12）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -107,7 +107,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-587 | Low | • [Follow-up] 主动通知（Slack/Telegram）新链 RPC 检测（AAV-329 子票） |
 | AAV-738 | Low | • Portfolio 模式下当前展开行始终置顶（同 Single simulation 的 sticky 行为） |
 | AAV-760 | Low | • 判断哪些 reserve 可作质押 / 可做循环贷，一键最优配置需考虑 |
-| AAV-1293 | Low | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
 ### Backlog（33）
@@ -171,6 +170,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1293 | [后端] `/api/seo/*` 不进公开 OpenAPI（判断题收口）：决策理由落 `generate-openapi.ts` 注释（admin 面 / `X-Admin-Token` / 经 Supabase `seo-proxy` / `seo-api-documentation.md` 独立文档 / 非公开契约），2 条守卫（paths 恰好 `/markets` + `/meta/side-data`、注释锚点存在）+ `api-documentation.md` 边界句；mutation 加 `/api/seo/status`、删注释各自打红；生成物逐字节不变；run `44058368427` 四门绿 | 2026-11-17 |
 | AAV-1347 | [Chore] Prettier 未纳入 CI 门禁：`check:prettier` 置于 `check:quality` 首位 + CI `quality-gates` 新增 `Prettier format check (tracked files)`；tracked symlink 跳过、`.prettierignore` 保留生成物豁免、25 条守卫（真实 git + 真实 prettier 子进程）；run `44051705352` 四门绿且新 step 在干净 checkout 首跑通过；本地 463 受检 / 2 skipped、负控 rc 1 点名、干净 clone rc 0 | 2026-11-17 |
 | AAV-1391 | [CI] 机器人 PR 推送不得运行开发者本地 hook：openapi-sync 由并行提交 `8fe76047` 落地并经 run `44040361980` 开出 PR #852 验证；本票补齐 `token-icon-sync` / `ci-auto-remediation` 两处同族 step（`HUSKY: '0'`）+ `scripts/bot-push-hook-guard.test.mjs`（T1–T6 枚举全部 create-pull-request 步骤、禁止扩到 job/workflow、mutation 控制）；dev CI run `44051928967` 全绿（openapi-sync skipped，无漂移）；症状票 AAV-1390 同步关闭 | 2026-11-17 |
 | AAV-1389 | 产品视角三句门禁：照搬 inside-china-ai 的纯文本校验器（原样）+ Linear 取数的渲染器（合同不变）；CI `repo-policy` 校验 PR body、AGENTS.md Step 9 渲染汇报首段；22 例测试全绿 | 2026-11-16 |
