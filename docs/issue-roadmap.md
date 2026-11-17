@@ -8,11 +8,9 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（第二十四轮，摘要）：**roadmap ↔ Linear 二次全量对账，真实 open 66 张**（In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 35）。第一次对账补入 29 张之后仍缺 23 张，根因是 Linear 列表虚拟化——`read_all` 只拿到视口内的行，「Add filter」与 `bu.scroll` 都绕不开。有效解法是 `document.body.style.zoom='0.4'` 压缩行高：Active 视图由 18 行扩到 32 行、Backlog 由 19 行扩到 38 行，缺口全部落地（Needs Info 的 AAV-891/892、Todo 组 11 张、Backlog 12 张），并把 AAV-333/364 从 Needs Info 挪回 Todo。Done 一律不进本区。
+> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **66 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 35，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）。)
 
-> **当前 frontier：AAV-1362**（schedule 复验 / 关票，证据已齐：run `43711695827` 在 `main` `b9c30868` 上 `hardcode-sync (dev)` 全绿）；次选 AAV-1356 余项。
-
-> **历史流水**：2026-10-01 起共 24 轮盘点记录已迁至 [`issue-roadmap-changelog.md`](./issue-roadmap-changelog.md)。
+> **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
 ## 方案审查结论与关键建议速览
 
@@ -171,7 +169,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 ## Recently Completed
 
-近 session 完成的 issue（仅列代表性的，完整历史见 Linear）。
+近三轮（2026-11-12 起）交付的 issue；更早的 22 行已闭票见 [archive](./archive/2026-11-17-roadmap-inventory-history.md)「已闭票行（2026-09 至 10-12）」。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
@@ -186,32 +184,8 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 | AAV-1378 | API fields 断言改写：版本读 `MARKETS_API_VERSION`（常量上移到 `backend/src/types/`）、90% 覆盖率换成语义断言（必有字段 100% / borrow 侧全有或全无 / 无借入侧数量基线 19 / `protocolFee` 0..100）。`protocolFee` 定性为「缺席 = 0」契约（AAV-1350），**未改序列化**；45 条是 0 被按契约省略、19 条是 SDK `borrowInfo: null`。附带修 `run_suite` 失败吞没（无 `set -e`，只有最后一个套件决定 step 成败）与 canary 目标按 ref 对齐（main→production） | 2026-11-15 |
 | AAV-1376 | canary 改为 build 先于套件（去掉 `if: always()`/`continue-on-error`）+ `backend/tests/testCanaryOrder.test.ts` 11 例按**行号**守卫顺序、锁 `TREND_STEP` 名与 `id: build`、套件名单、`../dist/*`；`shared-contracts` 自身 3 个测试改 import `src`。run `43703832449` **整 run 绿**（1287 pass / 0 fail，该 workflow 历史首次） | 2026-11-15 |
 | AAV-1350 | Portfolio 模式在 reserve 缺 rate-calc 字段时激励显示为 —（`protocolFee` 移出 `hasRateCalcFields` 门槛，兜底改走 `getCampaignIncentiveValues` 并传 position/token/decimals；生产复验 6.17% / +$1.64 每天） | 2026-11-12 |
-| AAV-1323 | e2e market-filter-pin 用例 (5) 绝对几何阈值卡实盘（`eba3be94` 行前提发现式挑行+条件 skip；几何阈值判定为 app 自有 sticky 几何无需整改；e2e-desktop 三 run 全绿验收 `38177124100`/`38177997224`/`38196292330`） | 2026-10-12 |
-| AAV-1318 | offset discovery gates borrow room and LTV funding power（`d9809781`：O12–O22 单测，staging 4→4 结构性修复，e2e 8 passed） | 2026-10-12 |
-| AAV-1316 | cross-asset-pairing e2e synthetic 载荷 stub（`9cc1cebf`：真实 fixture 注入 + 真实 discovery 门控选景 + `page.route` 双拦全 hermetic + baseline 零断言；AAV-895 min(1,2) 链路首次真实执行，stub 双平台 passed 6.9s/9.5s；live 路径零变化） | 2026-10-10 |
-| AAV-1329 | e2e 首步等待改「页面自身就绪判据」（`3430b65b`：3 处 `networkidle` → `waitForPageReady(page)`，断言一行未动）+ 新增 `scripts/e2e-wait-strategy.test.mjs` 静态守卫（随既有 `npm test` 生效，11 例含真实 `e2e/` 目录集成断言，改前必红）；3 次整条套件本 spec 均 9/9 绿、单例 1.6–3.1s；**未 push** | 2026-10-09 |
-| AAV-1331 | architecture-guard 的 FS 遍历改一次性（`a0c8982f`：记忆化 + 清单提到模块作用域 + 导入期预热；全量 `npm test` 6 failed → **rc=0 / 4098 passed**，用例只增不减；不放宽 `testTimeout`） | 2026-10-09 |
-| AAV-1308 | cross-asset-pairing e2e discovery 门控对齐（`09b42aa4` 纯函数抽离 + 仓位可行性 room/LTV 门 + P1–P22 54 单测；`8b27e1fc` spec 登记；review 追加修 `getMarketChipLabel` 镜像与 `cap=0` 语义；现网 0 条 `crossAssetPairing` → 运行时仅证明干净 skip，门控证据在单测） | 2026-09-28 |
-| AAV-1310 | RPC 轮换耗尽静默空成功修复(`9552fe60` throw RpcRotationExhaustedError + null 语义收紧;V3/V4 errors 通道非空 + failedSources;HF 消费方降级对齐;spec `4f93ca0b` 含场景矩阵 + review 闭环) | 2026-09-27 |
-| AAV-1311 | Onchain fallback 非 18-dec 代币 USD 缩水（`rawToHuman` 按 meta.decimals 换算 `084131f5`；Celo USD₮ live 实测 $1044.57；一致性测试量级 invariant） | 2026-09-27 |
-| AAV-1309 | 一致性测试 API base 失效 + 空洞断言 + 假 HITL 标注（`deec631e`，onchain-only 语义；过程中发现 AAV-1310/1311） | 2026-09-27 |
-| AAV-1305 | 生产钱包仓位导入失败双层根因（P1 MULTICALL3 常量 `1061bd14`；P2 DataProvider 迁移 `2d6e70fb` + watch-reentry 加固 `5f928681`，Celo 真实仓位实测检出） | 2026-09-27 |
-| AAV-1280 | e2e self-loop offset：场景 discovery 对齐 UI 渲染门控（测试侧加固，原始触发数据已消失，e2e 实测干净 skip） | 2026-09-26 |
-| GitHub #676 | PR_TARGET 迁移到 pull_request 生产部署（dev→main 合并 52cf2aef，审计日志零残留） | 2026-09-25 |
-| AAV-1305 (P1) | 修复 MULTICALL3_ADDRESS 常量缺 hex 字符（19.5B→20B）+ 金丝雀测试防回归（commit `1061bd14`） | 2026-09-25 |
-| AAV-1282 | 移动端 Connect 弹窗为空：RainbowKit wallets 注入（connectorsForWallets + 本地工厂，e2e 双端解禁） | 2026-09-25 |
-| AAV-1298 | 🔥 Lovable CI failure: openapi-sync（bot PR 收敛 dev + codegen patcher） | 2026-09-24 |
-| AAV-1299 | e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | 2026-09-24 |
-| AAV-1296 | Hardcode Sync 韧性：解除「全或无」门禁单点故障 | 2026-09-24 |
-| AAV-1279 | FCP 优化：延迟加载非首屏 chunk（代码 `19b102a1` 已合入三分支） | 2026-09-24 |
-| AAV-1300 | [Hardcode Sync] verify failed after retry | 2026-09-24 |
-| AAV-1294 | [CI] deployment-smoke-test 恒为假绿灯 | 2026-09-24 |
-| AAV-1289 | 下线 Merit 全链路 | 2026-09-24 |
-| AAV-1278 | Side-Data Persistence to PostgreSQL | 2026-09-24 |
-| AAV-1330 | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） | — |
 | AAV-1352 | [e2e] 发现数据拉取失败与「数据缺口」不可区分 ⇒ 整个 spec 静默报绿（同族 AAV-1294/1330/1349，修复位置在 spec 的数据获取层） | 2026-11-15 |
 | AAV-1349 | [CI] pre-push 的 e2e 门缺 chromium 时静默 `exit 0`：改为 `exit 1` + 唯一显式出口 `E2E_SKIP=1`（默认关闭、必须打印「无 e2e 证据」）+ `PLAYWRIGHT_BROWSERS_PATH=0`/shell-only 不误判；判定收进 `scripts/lib/e2e-browser-gate.mjs`，13 例守卫随 `npm test` 生效。e2e 提为必填检查按票面另行拍板 | 2026-11-15 |
-| AAV-1303 | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） | — |
 | AAV-1317 | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 | 2026-11-16 |
 | AAV-1314 | [Bug] onchain multicall 批量读全失败仍返回空成功（AAV-1310 同类：client 健康但结果全 failure → 假 $0） | 2026-11-16 |
 | AAV-1387 | [Bug] RPC 探活只看 eth_chainId：批量读整批失败仍沿用该节点（Optimism fastnode 对 >4KB eth_call 回 413 → 假 $0） | 2026-11-16 |
@@ -221,9 +195,6 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 | AAV-1386 | [后端] AAV-1379 残余风险收敛：新增 `reserve-shape.ts`，V3 market/reserve 与 V4 reserve 顶层键用 `satisfies keyof` 钉住 SDK fragment 类型（SDK 升级删字段 → build 红），每轮 fetch 审计键存在性（缺失即 warn+样本，干净每进程一行 info）。**关键证据**：`borrowInfo` 在 fragment 里是必填键至多 nullable，键缺失在当前 SDK 版本下结构性不可达——门禁钉住的是「SDK 升级删字段」那条唯一路径。fetcher 433 例全绿、lint 289 warning 持平、变异验证 3/4 fail、部署后快照仍 441/142/19（纯观察）。`protocolFee` 缺席 = 0 仍按 AAV-1350 契约不改 | 2026-11-16 |
 | AAV-1379 | [后端] `concurrent-fetch.ts` 只用 `=== null` 判定「无借入侧」：`buildV3BaseDataset(markets: any[])` 入参是 `any`，若 SDK 省略 `borrowInfo` 键而非显式 `null`，该 reserve 会读成「可借但借入侧全零」。**已修**：循环顶部 `const borrowInfo = reserve.borrowInfo ?? null` 收敛一次，11 处改读它；新增 6 例 `packages/aave-fetcher/tests/borrowInfoMissingKey.test.ts`（变异验证只 2 例红，其余为行为不变的对照），fetcher 416 例全绿。**口径订正**：142 条 `borrowDisabled` 里只有 **18** 条真的无借入侧数字（才是 `=== null` 的命中数），另 124 条借入侧齐全（`borrowCap === 1` 等）——别把 142 当作该分支计数。部署后快照仍 441/142/19（纯防御）。**`protocolFee` 不动**（缺席 = 0 是 AAV-1350 契约）；**残余风险已由 AAV-1386 收敛** | 2026-11-15 |
 | AAV-1304 | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 | 2026-11-15 |
-| AAV-1301 | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* | — |
-| AAV-1283 | Security audit: moderate vulnerabilities (tracking) | — |
-| AAV-1359 | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） | — |
 | AAV-1313 | [Improvement] onchain 仓位路径按 chainId 共享 RPC client（V3 多 market / V4 多 spoke 各自重复轮换） | 2026-11-17 |
 
 ---
@@ -232,8 +203,9 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 - **更新时机**：每次 triage 或 issue 状态变更后更新本文件。
 - **排序**：GitHub issue 始终在最前；Linear 部分按 **Linear 状态**分组（In Progress → Ready for agent → Needs Info → Todo → Backlog），组内按 priority 降序。
-- **只列 open**：Done / Duplicate / Canceled 一律不进 `## Active Linear Issues`；近期交付的 Done 下沉到 `## Recently Completed`。
-- **历史流水写 changelog**：每次盘点的叙述追加到 [`issue-roadmap-changelog.md`](./issue-roadmap-changelog.md) 顶部，本文件 `## 当前状态` 只留最新一轮摘要 + frontier 指针——正表不再堆 20+ 轮流水。
+- **只列 open**：Done / Duplicate / Canceled 一律不进 `## Active Linear Issues`；近三轮的 Done 下沉到 `## Recently Completed`，更早的进 archive——该表不再无限增长。
+- **`Last inventory` ≤600 字符**：只承载四件事——轮次 + 票号 + 一句话结论、PR / squash sha、产品验证门定性、frontier。超出的叙事归 archive 与 issue 评论。这是本文件不会长回 100KB 的机制，不要靠"记得写短一点"。
+- **历史流水写 archive**：每轮盘点收尾时把上一轮整段追加到 [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)，本文件只留当前一轮；archive 满约 20 轮按日期开新档。
 - **列表抓取要看全量**：Linear 列表是虚拟化的，`read_all` 只返回视口内的行。盘点前先 `document.body.style.zoom='0.4'` 压缩行高再抓，并反复把列表容器 `scrollTop=scrollHeight` 直到行数不再增长，否则会静默漏票。
 - **不缓存交付细节**：本文件只记 issue 号、priority、state、title；commits、测试、live evidence 沉淀在 issue 评论里。
 - **与 `docs/agents/issue-tracker.md` 分工**：本文件是用户可见的 Roadmap 快照；issue-tracker.md 是 agent 内部的 Linear 操作配置 + triage 契约。

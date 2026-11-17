@@ -1,8 +1,8 @@
-# Issue Roadmap — Inventory Changelog
+# 2026-11-17 — Roadmap Inventory History
 
-`docs/issue-roadmap.md` 的历史盘点流水。正表只保留当前 frontier 与最新一轮摘要，**2026-10-01 起 24 轮 inventory 全量记录在这里**，倒序（最新在上）。
+`docs/issue-roadmap.md` 的 L3 归档：**2026-10-01 起 24 轮盘点流水**（倒序，最新在上）+ 早期已闭票行。正表只保留当前一轮摘要与 frontier。
 
-> 每轮记录的是当时做了什么、证据是什么、当时的 next pick 是什么。交付细节的唯一权威源仍是 issue 评论；本文件只作盘点上下文。
+> 本文件是追溯材料，不是现状依据：票的实时状态看 Linear，交付的权威记录看 issue 评论。
 
 ---
 
@@ -69,3 +69,39 @@
 >
 > **AAV-1313 已于 2026-11-17 交付**（onchain 仓位路径按 chainId 共享 RPC 读会话：单飞探活 + adopt/release + V3/V4/同步共池；见顶部第二十二轮 inventory 与 `docs/specs/aav-1313-chain-rpc-session-sharing.md`）。**next pick = AAV-1362**（schedule 复验/关票）；次选 AAV-1356 余项。> **AAV-1395 已于 2026-11-17 交付关闭**（AAV-1333 复核 5 条发现全收口：严格 incentive 读取、self-loop capacity 用 borrow room、points 混合组排除、stub 覆盖 weight 0.5、13 个 e2e 文件按 platform 拆分；见顶部第二十一轮 inventory 与 `docs/specs/aav-1395-e2e-oracle-hardening-and-platform-split.md`）。> **next pick = AAV-1313**（ready-for-agent：onchain 路径按 chainId 共享 RPC client）。**AAV-1393 已于 2026-11-16 交付关闭**（钱包降级提示文案/语义修正，见顶部第十九轮 inventory 与 `docs/specs/aav-1393-wallet-sync-notice-copy.md`）。> **next pick = AAV-1333**（ready-for-agent：cross-reserve offset runner 梯级与 `0.4×targetApr` 量纲不自洽；e2e 侧非功能性，可直接开工）。**AAV-1335 已于 2026-11-16 交付**（unit 层出网实证 + `isDirectRun` 门的行为/静态守卫 + boundary doc 红线；见顶部第十七轮 inventory 与 `docs/specs/aav-1335-unit-network-coupling.md`）。**AAV-1362 验收证据已齐**：schedule run `43711695827`（11-15 12:01:04Z，`main` `b9c30868`）green，`hardcode-sync (dev)` 全绿 ⇒ 「schedule 触发能绿」已满足，可关票；文案改动在 `dev`，随下一次标准 `dev → main` 上线。**AAV-1295 已于 2026-11-16 交付关闭**（回滚首次实战：drill 入口 + 目标选择 + production 闸门；`deploymentRollback` 4/4 慢到不可用 ⇒ 改 `deploymentRedeploy`，平台缺陷另开 AAV-1388，见顶部第十六轮 inventory 与 `docs/plans/executed/aav-1295-rollback-drill-spec.md`）。**AAV-1356 已于 2026-11-16 交付关闭**（curated module union + 地址簿 4.77.6：chain 1 17/17、全链 25/25；同名标签 module 前缀；fallback 13/244 → 17/296，见顶部第十四轮 inventory 与 `docs/specs/aav-1356-v4-module-union.md`）。**AAV-1315 已于 2026-11-16 交付关闭**（钱包 partial 降级 UI 提示：`failedSources` 透传 + 琥珀 `role=status` 提示 + 引用稳定化，见顶部第十三轮 inventory 与 `docs/specs/aav-1315-wallet-partial-ui-notice.md`）。**AAV-1387 已于 2026-11-16 交付关闭**（RPC 读层轮换 + session 降级缓存，见顶部第十二轮 inventory 与 `docs/specs/aav-1387-rpc-read-rotation.md`）。**AAV-1314 已于 2026-11-16 交付关闭**（multicall 全失败进 errors，见顶部第十一轮 inventory 与 `docs/specs/aav-1314-multicall-all-calls-failed.md`）。**AAV-1352 已于 2026-11-15 交付关闭**（tagged fetch outcome，见顶部 inventory）。**AAV-1323 已于 2026-10-12 交付关闭**（验收「CI 连续 ≥3 绿」凑满，见顶部 inventory）。**AAV-1318 已于 2026-10-12 交付关闭**（offset discovery 复用 room·LTV 门，见本文件顶部 inventory），**AAV-1316 已于 2026-10-10 交付关闭**（synthetic 载荷 stub）。上一版此处的 `next pick = AAV-1303 第二段` **已失效**（AAV-1303 于 2026-09-30 Done）。此前的 **AAV-1320 已上线并生产复验**：#693 合入 main `f7873eea`，`aaveapy-deploy-sha` 对齐，未同意 0 GA / 点 Allow → `g/collect` 204 / 点 Decline → 0 GA 三项全过。2026-09-28 复核补强三条事实：(1) 直取后端 spec，production `api.aaveapy.com/api/docs/openapi.json` 仍含 Merit 24 处 / `ApiMeritCampaign` 14 处，staging 已全部删除(0 处)，仓内 `public/openapi.json` 停在 24 处——openapi-sync 红灯、wb-0928a 的"已知非阻塞噪声"与前端 TS2551/2339 同此一根源；(2) **但 production `/markets` 实际已不输出 merit 字段（实测 0 处，与 staging 一致）**，故票面「生产运行时不受影响、prod 前后端世界都有 Merit」的前提已推进为「两端数据都为零」，前端清理无运行时风险，不必等后端 prod spec 收敛；(3) 前端引用面实测落在高风险区：`incentiveAggregation.ts` 20 处、`IncentiveTooltip.tsx` 13、`SimulationSubRow.tsx` 7、`types/aave.ts` 5、`merit.ts`/`meritForecast.ts` 及各自测试；**另有一类不在代码链里的东西——`src/locales/*/landing.json`(4 处) 与 `ui.json`(1 处) 的对外文案仍把 Merit 当卖点宣传**，属产品/SEO 决策，应与拆除链分开拍板（AAV-1289 只拆了后端与 worker，前端镜像正是本票）。
 > 同批候选:**AAV-1316** 与 **AAV-1318** 均已交付关闭（2026-10-10 / 2026-10-12，见下「Recently Completed」）⇒ **不再是候选**;下一梯队:AAV-1315(failedSources 只到 hook、组件零消费)/ AAV-1313·AAV-1314(onchain RPC 未按 chainId 共享 / multicall 全失败返回假成功);AAV-1323(绝对几何阈值卡实盘) 已于 2026-10-12 交付关闭;AAV-1295/1292 依赖 CI 与部署窗口;AAV-1319 需先认可 AGENTS.md 验证门改动。**AAV-1329 已于 2026-10-09 交付关闭**，不再在候选列。
+
+
+---
+
+## 已闭票行（早于 2026-11-12，部分无关闭日期）
+
+从 `docs/issue-roadmap.md` 的 Recently Completed 表下沉，保留原行以便追溯。
+
+| Linear | Title | Closed |
+| --- | --- | --- |
+| AAV-1323 | e2e market-filter-pin 用例 (5) 绝对几何阈值卡实盘（`eba3be94` 行前提发现式挑行+条件 skip；几何阈值判定为 app 自有 sticky 几何无需整改；e2e-desktop 三 run 全绿验收 `38177124100`/`38177997224`/`38196292330`） | 2026-10-12 |
+| AAV-1318 | offset discovery gates borrow room and LTV funding power（`d9809781`：O12–O22 单测，staging 4→4 结构性修复，e2e 8 passed） | 2026-10-12 |
+| AAV-1316 | cross-asset-pairing e2e synthetic 载荷 stub（`9cc1cebf`：真实 fixture 注入 + 真实 discovery 门控选景 + `page.route` 双拦全 hermetic + baseline 零断言；AAV-895 min(1,2) 链路首次真实执行，stub 双平台 passed 6.9s/9.5s；live 路径零变化） | 2026-10-10 |
+| AAV-1329 | e2e 首步等待改「页面自身就绪判据」（`3430b65b`：3 处 `networkidle` → `waitForPageReady(page)`，断言一行未动）+ 新增 `scripts/e2e-wait-strategy.test.mjs` 静态守卫（随既有 `npm test` 生效，11 例含真实 `e2e/` 目录集成断言，改前必红）；3 次整条套件本 spec 均 9/9 绿、单例 1.6–3.1s；**未 push** | 2026-10-09 |
+| AAV-1331 | architecture-guard 的 FS 遍历改一次性（`a0c8982f`：记忆化 + 清单提到模块作用域 + 导入期预热；全量 `npm test` 6 failed → **rc=0 / 4098 passed**，用例只增不减；不放宽 `testTimeout`） | 2026-10-09 |
+| AAV-1308 | cross-asset-pairing e2e discovery 门控对齐（`09b42aa4` 纯函数抽离 + 仓位可行性 room/LTV 门 + P1–P22 54 单测；`8b27e1fc` spec 登记；review 追加修 `getMarketChipLabel` 镜像与 `cap=0` 语义；现网 0 条 `crossAssetPairing` → 运行时仅证明干净 skip，门控证据在单测） | 2026-09-28 |
+| AAV-1310 | RPC 轮换耗尽静默空成功修复(`9552fe60` throw RpcRotationExhaustedError + null 语义收紧;V3/V4 errors 通道非空 + failedSources;HF 消费方降级对齐;spec `4f93ca0b` 含场景矩阵 + review 闭环) | 2026-09-27 |
+| AAV-1311 | Onchain fallback 非 18-dec 代币 USD 缩水（`rawToHuman` 按 meta.decimals 换算 `084131f5`；Celo USD₮ live 实测 $1044.57；一致性测试量级 invariant） | 2026-09-27 |
+| AAV-1309 | 一致性测试 API base 失效 + 空洞断言 + 假 HITL 标注（`deec631e`，onchain-only 语义；过程中发现 AAV-1310/1311） | 2026-09-27 |
+| AAV-1305 | 生产钱包仓位导入失败双层根因（P1 MULTICALL3 常量 `1061bd14`；P2 DataProvider 迁移 `2d6e70fb` + watch-reentry 加固 `5f928681`，Celo 真实仓位实测检出） | 2026-09-27 |
+| AAV-1280 | e2e self-loop offset：场景 discovery 对齐 UI 渲染门控（测试侧加固，原始触发数据已消失，e2e 实测干净 skip） | 2026-09-26 |
+| AAV-1305 (P1) | 修复 MULTICALL3_ADDRESS 常量缺 hex 字符（19.5B→20B）+ 金丝雀测试防回归（commit `1061bd14`） | 2026-09-25 |
+| AAV-1282 | 移动端 Connect 弹窗为空：RainbowKit wallets 注入（connectorsForWallets + 本地工厂，e2e 双端解禁） | 2026-09-25 |
+| AAV-1298 | 🔥 Lovable CI failure: openapi-sync（bot PR 收敛 dev + codegen patcher） | 2026-09-24 |
+| AAV-1299 | e2e flaky: portfolio-incentive-calculation supply total 超时显示占位符 | 2026-09-24 |
+| AAV-1296 | Hardcode Sync 韧性：解除「全或无」门禁单点故障 | 2026-09-24 |
+| AAV-1279 | FCP 优化：延迟加载非首屏 chunk（代码 `19b102a1` 已合入三分支） | 2026-09-24 |
+| AAV-1300 | [Hardcode Sync] verify failed after retry | 2026-09-24 |
+| AAV-1294 | [CI] deployment-smoke-test 恒为假绿灯 | 2026-09-24 |
+| AAV-1289 | 下线 Merit 全链路 | 2026-09-24 |
+| AAV-1278 | Side-Data Persistence to PostgreSQL | 2026-09-24 |
+| AAV-1330 | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） | — |
+| AAV-1303 | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） | — |
+| AAV-1301 | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* | — |
+| AAV-1283 | Security audit: moderate vulnerabilities (tracking) | — |
+| AAV-1359 | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） | — |
