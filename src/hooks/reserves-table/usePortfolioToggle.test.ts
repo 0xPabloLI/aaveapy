@@ -2,6 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import type { EModeOverrides } from '@/lib/userData/eMode';
 import { usePortfolioToggle } from './usePortfolioToggle';
 import type { PortfolioSimulationContext } from './usePortfolioToggle';
 import type { PortfolioReserveEntry } from '@/types/portfolio';
@@ -723,5 +724,84 @@ describe('usePortfolioToggle', () => {
       expect(result.current.portfolioResults).toHaveLength(1);
       expect(result.current.portfolioResults[0].nativePercent).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('AAV-1399 — eMode overrides reach the simulator', () => {
+  it('raises WETH borrow capacity to the category max LTV for a member asset', () => {
+    const pool = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2';
+    const weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+    const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+    const wethId = `1:${pool.toLowerCase()}:${weth.toLowerCase()}`;
+    const usdcId = `1:${pool.toLowerCase()}:${usdc.toLowerCase()}`;
+    const reserves = [
+      makeReserve({
+        reserveId: wethId,
+        marketName: 'AaveV3Ethereum',
+        chainId: 1,
+        tokenSymbol: 'WETH',
+        tokenAddress: weth,
+        ltv: 81,
+        liquidationThreshold: 84,
+      }),
+      makeReserve({
+        reserveId: usdcId,
+        marketName: 'AaveV3Ethereum',
+        chainId: 1,
+        tokenSymbol: 'USDC',
+        tokenAddress: usdc,
+        ltv: 75,
+        liquidationThreshold: 78,
+      }),
+    ];
+    const entries = [
+      makeEntry({
+        reserveId: wethId,
+        tokenSymbol: 'WETH',
+        supply: { amount: '100000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '', inputMode: 'usd', walletValue: null },
+      }),
+      makeEntry({
+        reserveId: usdcId,
+        tokenSymbol: 'USDC',
+        supply: { amount: '', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '100000', inputMode: 'usd', walletValue: null },
+      }),
+    ];
+    const eModeOverrides: EModeOverrides = {
+      params: new Map([
+        [
+          '1:AaveV3Ethereum',
+          {
+            categoryId: 1,
+            label: 'ETH correlated',
+            maxLtv: 93,
+            liquidationThreshold: 95,
+            collateralReserves: new Set([weth.toLowerCase()]),
+          },
+        ],
+      ]),
+      fallbackPools: new Set<string>(),
+    };
+
+    const { result } = renderHook(() =>
+      usePortfolioToggle({
+        isPortfolioMode: true,
+        reserves,
+        entries,
+        simulationContext: {
+          isApy: true,
+          whitelistMerklCampaignIds: new Set<string>(),
+          tydroPointToUsdRate: 0,
+          forecastStates: {},
+        },
+        eModeOverrides,
+      }),
+    );
+
+    const borrow = result.current.portfolioResults.find((r) => r.reserveId === usdcId && r.side === 'borrow');
+    expect(borrow?.amountUsd).toBeCloseTo(93_000, 6);
+    expect(result.current.portfolioHealthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(93_000, 6);
+    expect(result.current.portfolioHealthFactors?.[0].totalCollateralUsd).toBeCloseTo(95_000, 6);
   });
 });

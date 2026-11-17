@@ -6,6 +6,7 @@ import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositi
 import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
 import { useWallet } from '@/hooks/useWallet';
 import { useOnchainHealthFactor } from '@/hooks/useOnchainHealthFactor';
+import { useEModeOverrides } from '@/hooks/useEModeOverrides';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useChainDiscovery } from '@/hooks/useChainDiscovery';
@@ -360,6 +361,13 @@ const Index = () => {
 
   // On-chain HF baseline (AAV-1253 P7) — fetch real HF per pool/spoke when wallet is connected
   const onchainHfResult = useOnchainHealthFactor({
+    address: walletAddress,
+    entries: portfolio.entries,
+    reserves: stableReserves,
+  });
+
+  // eMode effective LTV/LT (AAV-1399) — same wallet/entries lifecycle as the HF baseline
+  const eModeResult = useEModeOverrides({
     address: walletAddress,
     entries: portfolio.entries,
     reserves: stableReserves,
@@ -754,6 +762,7 @@ const Index = () => {
                 topOppsRef={topOppsRef}
                 campaignAccessStatuses={campaignAccessStatuses}
                 onchainHfMap={onchainHfResult.onchainHfMap}
+                eModeOverrides={eModeResult.eModeOverrides}
               />
             </div>
 

@@ -139,3 +139,24 @@ describe('PortfolioSummaryBar — Advanced section typography (AAV-1304)', () =>
     expect(value.className).toContain('font-bold');
   });
 });
+
+describe('PortfolioSummaryBar — eMode fallback notice (AAV-1399)', () => {
+  function renderExpanded(hfs: PortfolioHealthFactor[]) {
+    render(<PortfolioSummaryBar summary={summary} healthFactors={hfs} />);
+    fireEvent.click(screen.getByTestId('portfolio-advanced-toggle'));
+  }
+
+  it('B1: shows the base-LTV notice when a pool fell back from a known eMode category', () => {
+    renderExpanded([makeHf({ totalBorrowCapacityUsd: 93_000, totalDebtUsd: 50_000, eModeFallback: true })]);
+    const notice = screen.getByTestId('emode-fallback-notice');
+    expect(notice.getAttribute('role')).toBe('status');
+    expect(notice.textContent).toContain('eMode data refreshing');
+    expect(notice.textContent).toContain('base LTV');
+    expect(notice.className).toContain('text-muted-foreground');
+  });
+
+  it('B2: no notice when all pools resolved their eMode category', () => {
+    renderExpanded([makeHf({ totalBorrowCapacityUsd: 93_000, totalDebtUsd: 50_000 })]);
+    expect(screen.queryByTestId('emode-fallback-notice')).toBeNull();
+  });
+});
