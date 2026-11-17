@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **65 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 34，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）；**AAV-1347 + AAV-1293 已于 2026-11-17 交付；AAV-1367 同日收口（zod 下限 + 守卫）→ open 62 / Todo 12 / Backlog 32**。)
+> **Last inventory**: 2026-11-18（**R25：AAV-517 交付 dev `26f0cb11`**——V4 onchain 兜底的查询集合从地址簿改为 payload 的 `reserveId` 派生地址：地址簿降级为诊断标签 + 漂移 warn、新 Spoke 不必等 `aave-address-book` 发版、地址簿缺链不再短路；4521 tests + typecheck/lint/build/`ci:remote` 绿。live 的「地址簿 ⊇ payload」硬断言按新语义退役，查询覆盖门改由 payload 地面真值承担。**待办：Linear 收口（交付记录 + Done）与 dev→main 待授权；frontier 仍为 Ready for agent 的 AAV-843 / AAV-726 / AAV-781 / AAV-782 / AAV-1227 / AAV-829 / AAV-830**。)
 
 > **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
@@ -75,7 +75,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-726 | Medium | • Refactor: flatten monorepo to single-package backend |
 | AAV-781 | Medium | • Unify endDate semantics and data directory paths（Merit cache） |
 | AAV-782 | — | • Distinguish「extraction failed」vs「成功但非目标激励类型」（Merit cache） |
-| AAV-517 | — | • [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询 |
+| AAV-517 | — | • [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询（**dev 已交付 `26f0cb11`**：迭代源改为 payload 派生地址、地址簿降级为标签 + 漂移 warn；待 Linear 收口） |
 | AAV-1227 | Low | • Spec: Inline Widget Embedding System for Article Pages |
 | AAV-829 | Low | • Unify ~35 处地址相关 toLowerCase() → normalizeAddress() |
 | AAV-830 | Low | • Migrate merit-api raw RPC fetch → ProviderPool |

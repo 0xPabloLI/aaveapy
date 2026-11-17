@@ -1,6 +1,6 @@
 # AAV-517 — onchain V4 仓位查询的 spoke 来源:地址簿 → reserveId
 
-> Status: implementing 2026-11-18 · Issue: [AAV-517](https://linear.app/aaveapy/issue/AAV-517) · 前置: AAV-1356（join key 改为地址）· Type: tech debt / data layer（非新增功能）
+> Status: implemented 2026-11-18 (`26f0cb11`) · Issue: [AAV-517](https://linear.app/aaveapy/issue/AAV-517) · 前置: AAV-1356（join key 改为地址）· Type: tech debt / data layer（非新增功能）
 
 ## 背景与根因
 

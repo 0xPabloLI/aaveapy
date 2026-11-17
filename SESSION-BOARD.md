@@ -121,6 +121,7 @@
 | droid-0408a  | Droid  | 修复 mobile 展开动画           | MobileReserveCard.tsx, MobileExpandedReserveShell.tsx | active  | 2026-04-08T10:30:00 |                    |
 | cursor-0408b | Cursor | 重构利率模拟添加 Brevis 支持   | rateSimulation.ts, brevisForecast.ts, useRateSimulation.ts | active | 2026-04-08T10:45:00 |                    |
 | droid-0408c  | Droid  | 调整 ReservesTable 排序逻辑    | sorters.ts, ReservesTable.tsx                        | blocked | 2026-04-08T11:00:00 | 被 cursor-0408b 阻塞（ReservesTable 间接依赖 rateSimulation） |
+| doubao-1118a | Doubao | AAV-517 onchain V4 查询的 spoke 来源改为 reserveId（地址簿降级为标签 + 校验） | src/lib/userData/aaveV4UserClient.ts, src/lib/userData/aaveV4UserClient.test.ts, src/lib/reserveKey.ts, src/test/userPositionConsistency.test.ts, docs/specs/aav-517-*, docs/specs/aav-1356-v4-spoke-address-key.md, docs/DOCS-INDEX.md, docs/issue-roadmap.md, SESSION-BOARD.md | active | 2026-11-18T06:35:00+08:00 | 冲突检测：`active` 行 qoder-0929a（09-29 >48h 僵尸；e2e/scripts/renovate，无交集）、droid-1112b（11-12 >48h 僵尸，PR #833 已合并；其 touch-files 与本行同区，按 §4 标 `stale?` 后谨慎推进）、droid-0408a/b/c（04-08 僵尸）。票面正文（06-02）早于 AAV-1356，实际形状已变：生产侧 `deriveV4ReservesBySpoke` 已按地址 key，本票只改消费侧迭代源。<br>**交付 `26f0cb11`**（7 files / 305 insertions）：`getV4UserPositionsAllSpokes` 迭代 `reservesBySpoke`、地址簿改为 label map + 缺失 warn、`shortSpokeLabel` 兜底；删掉 `if (!spokes)` 短路；空集在 pool 前返回。4521 tests（新增 5 例、live 覆盖断言按新语义退役）全绿、typecheck/lint/build/`ci:remote` 绿。**待授权**：push dev、Linear 收口。 |
 ```
 
 当 `cursor-0408b` 完成并注销后，`droid-0408c` 重新读取本文件，发现无冲突，即可将自己改为 `active` 并开始执行。
