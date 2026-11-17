@@ -123,4 +123,5 @@
   - `[live-probe] chain=1 rpcUrls=4 block1=26431614 block2=26431614 createPublicClient: firstRead=1 afterSecondRead=1`
   - 即：以太坊主网 4 个候选端点，同一池两次真实 `getBlockNumber` 读合计只 1 次 `createPublicClient`（只探活 1 个端点），两次读均返回真实区块号。改动前同一链的第二次读会再烧一轮探活。
 - 未做：V3/V4 真实仓位端到端 smoke（需要 API 侧 reserves 输入，属 S14 的「仓位结果与改动前一致」一半；已由 fallback 层共池的 wiring 断言 + 全量 `userPositionConsistency` 覆盖替代）。
-- commit / Linear：待回填。
+- commit：`312f79e7`（代码 + 测试 + 本 spec）· `7f9fc7f6`（DOCS-INDEX / roadmap / board 登记）。两者**仅在本地 `dev`**：本机到 `github.com:443` 连接超时（DNS 解析到 20.6.7.17、`curl`/`git` 均 15s 无响应），push 未完成。
+- Linear AAV-1313：交付记录评论 + 状态置 Done。
