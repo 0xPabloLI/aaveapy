@@ -57,14 +57,14 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 ## Active Linear Issues
 
 非 GitHub 来源的 Linear issue，按 **Linear 状态**分组；本区只列 open（Done / Duplicate / Canceled 一律不进本区）。
-盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **65 张 open** = In Progress 2 + Ready for agent 9 + Needs Info 7 + Todo 13 + Backlog 34。
+盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **59 张 open** = In Progress 4 + Ready for agent 7 + Needs Info 7 + Todo 12 + Backlog 29。
 
 ### In Progress（4）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
-| AAV-517 | Low | [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询。**dev 已交付 `8aff6e36`**：迭代源改为 payload 派生地址、地址簿降级为标签 + 漂移 warn、`V4ReserveInfo` 补 chainId 分链；4522 tests + live 4/4 + CI / Deployment Smoke / CodeQL 全绿；Linear 已记交付记录并置 In Review，待 dev→main |
-| AAV-1399 | Medium | [前端] eMode 类别 LTV/LT 接入 Portfolio 模拟：`getUserEMode` → `/api/meta/e-mode/{marketKey}`，category 0 / V4 / 读取失败均回退 base；类别外资产 LTV=LT=0；503 时区块内提示。**dev 已交付 `7e1d135b`**：WETH cat 1 借力 81k→93k、HF LT 84→95；category 0 与 503 回退经运行时验证；Linear 已记交付记录并置 In Review，待 dev→main |
+| AAV-517 | Low | [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询（dev 已交付，待 dev→main） |
+| AAV-1399 | Medium | [前端] eMode 类别 LTV/LT 接入 Portfolio 模拟（dev 已交付，待 dev→main） |
 | AAV-1362 | High | Done（三阶段根因全部收口：移除 proactive bump、release-age 提示改真出口、机器人推送绕过本地 hook；dispatch run 44026720906 绿 + PR #850） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commits `5e057bbb` + `7500586b`）；已推送 `dev`（`eeca95d7..7500586b`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；该 run 读 `main` `b9c30868`，验证主修复，文案在 `dev`、随下一次标准 `dev → main` 推广上线；绿后可关票。**2026-11-17 第三种根因**：11-16 的 run `43870754983` 在 11-15 绿过之后又红，`hardcode-sync (dev)` 的 step 10 死在 `peter-evans/create-pull-request` 的 `git push` 触发的 `.husky/pre-push` （`ci:remote` + e2e 门；runner 无 Playwright chromium，AAV-1349 起硬阻断）⇒ 机器人推送被开发机门禁拦住。修法只给该 step 加 `HUSKY: '0'`（+ 注释），`.husky/pre-push` 与其他 workflow 不动；新增 `scripts/hardcode-sync-hook-guard.test.mjs`，spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`。**待验证**：一次真实 dispatch 或下一次 schedule 的 `hardcode-sync (dev)`。 |
 | AAV-1292 | Medium | railway → main 正式晋升：三个定时工作流从未运行 |
 
