@@ -24,6 +24,12 @@ import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
+import {
+  effectiveLiquidationThreshold,
+  effectiveLtv,
+  type EModeOverrides,
+  type EModeParamsByPool,
+} from '@/lib/userData/eMode';
 
 export interface PerReserveInput {
   supplyInput: string;
@@ -58,6 +64,8 @@ export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
   lastModifiedReserveId?: string;
   /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
   onchainHfMap?: OnchainHfMap;
+  /** eMode effective LTV/LT overrides per pool (AAV-1399). undefined = base parameters. */
+  eModeOverrides?: EModeOverrides;
 }
 
 export interface SimulatePortfolioResult {
@@ -192,6 +200,7 @@ function computeLtvClamping(
   groupMap: Map<string, EntryGroup>,
   reserveMap: Map<string, ReserveWithSpread>,
   lastModifiedReserveId: string | undefined,
+  eModeParams?: EModeParamsByPool,
 ): Map<SideSlot, number> {
   const ltvClampBySlot = new Map<SideSlot, number>();
 
@@ -214,7 +223,7 @@ function computeLtvClamping(
     if (!reserve) continue;
 
     const poolKey = `${reserve.chainId}:${reserve.marketName}`;
-    const ltv = reserve.ltv ?? 0;
+    const ltv = effectiveLtv(reserve, eModeParams);
     const collateralContribution = (group.supplyUsd * ltv) / 100;
 
     const poolGroup = poolGroups.get(poolKey) ?? {
@@ -493,6 +502,7 @@ function computeHealthFactors(
   results: PortfolioPositionResult[],
   reserves: ReserveWithSpread[],
   onchainHfMap?: OnchainHfMap,
+  eModeOverrides?: EModeOverrides,
 ): PortfolioHealthFactor[] {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
 
@@ -511,8 +521,8 @@ function computeHealthFactors(
     if (!reserve) continue;
 
     const poolKey = `${reserve.chainId}:${reserve.marketName}`;
-    const lt = reserve.liquidationThreshold ?? 0;
-    const ltv = reserve.ltv ?? 0;
+    const lt = effectiveLiquidationThreshold(reserve, eModeOverrides?.params);
+    const ltv = effectiveLtv(reserve, eModeOverrides?.params);
 
     const poolGroup = poolGroups.get(poolKey) ?? { totalCollateralUsd: 0, totalDebtUsd: 0, totalBorrowCapacityUsd: 0 };
 
@@ -543,6 +553,7 @@ function computeHealthFactors(
       totalCollateralUsd,
       totalDebtUsd,
       totalBorrowCapacityUsd,
+      ...(eModeOverrides?.fallbackPools.has(poolKey) ? { eModeFallback: true } : {}),
     });
   }
   return healthFactors;
@@ -581,7 +592,12 @@ export function simulatePortfolioFromEntries(args: SimulatePortfolioEntriesArgs)
   // AAV-1250: Compute LTV (maxBorrow) clamping per pool/spoke group.
   // Must happen after groupMap is built (needs supplyUsd/borrowUsd per reserve)
   // and before computeResultsFromGroups (which applies the clamped amounts).
-  const ltvClampBySlot = computeLtvClamping(groupMap, reserveMap, args.lastModifiedReserveId);
+  const ltvClampBySlot = computeLtvClamping(
+    groupMap,
+    reserveMap,
+    args.lastModifiedReserveId,
+    args.eModeOverrides?.params,
+  );
 
   const results = computeResultsFromGroups(
     groupMap,
@@ -595,7 +611,7 @@ export function simulatePortfolioFromEntries(args: SimulatePortfolioEntriesArgs)
 
   // AAV-1251: Compute per-pool/spoke Health Factor from post-clamp results.
   // AAV-1253 (P7): Pass on-chain HF baseline for current/delta computation.
-  const healthFactors = computeHealthFactors(results, reserves, args.onchainHfMap);
+  const healthFactors = computeHealthFactors(results, reserves, args.onchainHfMap, args.eModeOverrides);
 
   return {
     results,

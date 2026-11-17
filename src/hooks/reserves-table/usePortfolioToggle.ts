@@ -9,6 +9,7 @@ import type {
 } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
+import type { EModeOverrides } from '@/lib/userData/eMode';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
@@ -35,6 +36,8 @@ export interface UsePortfolioToggleArgs {
   lastModifiedReserveId?: string;
   /** On-chain HF baseline per pool (AAV-1253 P7). undefined = no wallet. */
   onchainHfMap?: OnchainHfMap;
+  /** eMode effective LTV/LT overrides (AAV-1399). undefined = base parameters. */
+  eModeOverrides?: EModeOverrides;
 }
 
 export interface UsePortfolioToggleResult {
@@ -54,6 +57,7 @@ export const usePortfolioToggle = ({
   simulationContext,
   lastModifiedReserveId,
   onchainHfMap,
+  eModeOverrides,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
   const effectiveEntries = useMemo(() => entries ?? [], [entries]);
   const portfolioReserveIds = useMemo(() => {
@@ -148,6 +152,7 @@ export const usePortfolioToggle = ({
         forecastStates: simulationContext.forecastStates,
         lastModifiedReserveId,
         onchainHfMap,
+        eModeOverrides,
       });
       return { portfolioResults: results, portfolioSummary: summary, portfolioHealthFactors: healthFactors };
     }
@@ -178,7 +183,15 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, effectiveEntries, reserves, simulationContext, lastModifiedReserveId, onchainHfMap]);
+  }, [
+    isPortfolioMode,
+    effectiveEntries,
+    reserves,
+    simulationContext,
+    lastModifiedReserveId,
+    onchainHfMap,
+    eModeOverrides,
+  ]);
 
   return {
     portfolioReserveIds,

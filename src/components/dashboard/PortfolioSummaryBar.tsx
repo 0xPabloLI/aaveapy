@@ -154,6 +154,15 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
           {hfs.some((hf) => hf.totalBorrowCapacityUsd > 0 || hf.totalDebtUsd > 0) && (
             <div className="space-y-0.5">
               <div className={SECTION_HEADER_CLASS}>Borrow capacity</div>
+              {hfs.some((hf) => hf.eModeFallback) && (
+                <div
+                  data-testid="emode-fallback-notice"
+                  role="status"
+                  className="ds-text-11 font-medium text-muted-foreground"
+                >
+                  eMode data refreshing — using base LTV
+                </div>
+              )}
               {hfs.map((hf) => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;

@@ -49,7 +49,7 @@ const mockV4Positions = (chainId: number, assets: `0x${string}`[]): WalletPositi
 
 const EMPTY_RESERVES: ReserveWithSpread[] = [];
 const EMPTY_V3_ASSETS: Record<string, V3AssetsByMarket> = {};
-const EMPTY_V4_RESERVES: Record<string, { reserveId: bigint; asset: `0x${string}` }[]> = {};
+const EMPTY_V4_RESERVES: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]> = {};
 const TEST_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`;
 
 beforeEach(() => {
@@ -112,7 +112,7 @@ describe('fetchGapPositions', () => {
       address: TEST_ADDRESS,
       reserves: EMPTY_RESERVES,
       v3AssetsByMarket: EMPTY_V3_ASSETS,
-      v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
+      v4ReservesBySpoke: { Spoke1: [{ chainId: 1, reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
     // AAV-1313: the call now also carries an explicit client slot (undefined)
@@ -148,7 +148,7 @@ describe('fetchGapPositions', () => {
       address: TEST_ADDRESS,
       reserves: EMPTY_RESERVES,
       v3AssetsByMarket,
-      v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
+      v4ReservesBySpoke: { Spoke1: [{ chainId: 1, reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
     expect(getV3UserPositionsMultiChain).toHaveBeenCalledTimes(1);
@@ -220,7 +220,7 @@ describe('fetchGapPositions', () => {
       address: TEST_ADDRESS,
       reserves: EMPTY_RESERVES,
       v3AssetsByMarket: EMPTY_V3_ASSETS,
-      v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
+      v4ReservesBySpoke: { Spoke1: [{ chainId: 1, reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
     expect(result.failedSources).toContain('gap-v4-chain-9745-spoke-Spoke1');
@@ -236,7 +236,7 @@ describe('fetchGapPositions', () => {
       address: TEST_ADDRESS,
       reserves: EMPTY_RESERVES,
       v3AssetsByMarket: EMPTY_V3_ASSETS,
-      v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
+      v4ReservesBySpoke: { Spoke1: [{ chainId: 1, reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
     expect(result.failedSources).toContain('gap-v4-chain-9745');

@@ -14,7 +14,7 @@ export interface FallbackPositionsConfig {
   userAddress: `0x${string}`;
   reserves: ReserveWithSpread[];
   v3AssetsByMarket: Record<string, V3AssetsByMarket>;
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>;
+  v4ReservesBySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>;
   v4ChainIds: number[];
 }
 
@@ -120,7 +120,7 @@ async function fetchV4Positions(
   chainIds: number[],
   userAddress: `0x${string}`,
   reserves: ReserveWithSpread[],
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
+  v4ReservesBySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>,
   prefix: string,
   rpcPool: RpcClientPool,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {

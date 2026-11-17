@@ -95,21 +95,19 @@ test.describe('Scenario recompute — 桌面表格', () => {
     await expect.poll(async () => (await desktopRows(page)).join('\n')).toBe(withNet.join('\n'));
   });
 
-  test('M9 点整行（非芯片单元格）展开模拟子行', async ({ page }, testInfo) => {
+  test('M9 点整行（非芯片单元格）展开模拟子行，再点同一行收起', async ({ page }) => {
     await openApp(page);
     await setScenario(page, '250000', '120000');
     expect(await subRowText(page), '未点击前不应有展开的子行').toBe('');
 
-    await page.locator('table tbody tr').first().locator('td').nth(2).click();
+    const plainCell = () => page.locator('table tbody tr').first().locator('td').nth(2);
+    await plainCell().click();
     await expect.poll(() => subRowText(page), { timeout: 10_000 }).toMatch(/Simulation is for reference only|Spread/);
     await expect(illegalNumbers(page)).resolves.toBe(0);
-    // 已知缺陷（AAV-1322）：桌面行展开后再点同一行不会收起——5 个单元格 × dev/生产
-    // 双环境实测一致，而 handleToggleExpand 的代码语义是 toggle。收起路径未固定，
-    // 故本用例不断言 collapse，避免把缺陷写成预期行为。
-    testInfo.annotations.push({
-      type: 'known-issue',
-      description: 'AAV-1322：展开后再次点击行不收起；collapse 断言待缺陷修复后补',
-    });
+
+    // AAV-1322：折叠后模拟面板仍以 0fr 常驻挂载，visible-only 探针必须返回空。
+    await plainCell().click();
+    await expect.poll(() => subRowText(page), { timeout: 10_000 }).toBe('');
   });
 
   test('M10 点 Market 芯片是筛选动作，不展开模拟子行', async ({ page }) => {

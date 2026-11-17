@@ -249,7 +249,7 @@ async function fetchOnchainFallback(
   userAddress: `0x${string}`,
   reserves: ReserveWithSpread[],
   v3AssetsByMarket: Record<string, V3AssetsByMarket>,
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
+  v4ReservesBySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
   const config: FallbackPositionsConfig = {
     userAddress,
@@ -341,7 +341,7 @@ export function buildV4SdkArgs(enabled: boolean, account: `0x${string}` | undefi
 export function useUserPositionsSdk(
   reserves: ReserveWithSpread[],
   v3AssetsByMarket: Record<string, V3AssetsByMarket>,
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
+  v4ReservesBySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>,
 ) {
   const { address, isConnected } = useWallet();
   const queryClient = useQueryClient();

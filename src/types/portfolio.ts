@@ -142,6 +142,8 @@ export interface PortfolioHealthFactor {
   totalDebtUsd: number;
   /** Σ(supplyUsd × ltv / 100) — max borrow capacity (AAV-1252 P6). */
   totalBorrowCapacityUsd: number;
+  /** Known eMode category but category data unavailable: capacity/HF fell back to base (AAV-1399). */
+  eModeFallback?: boolean;
 }
 
 /** A saved snapshot for comparison. */

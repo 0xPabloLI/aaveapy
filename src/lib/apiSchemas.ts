@@ -103,3 +103,6 @@ export const SideDataMetaResponseSchema = generated.SideDataPayload.extend({
     })
     .optional(),
 }).strip();
+
+// ── eMode market payload (AAV-1394 endpoint; AAV-1399 consumer) ──
+export const EModeMarketPayloadSchema = generated.EModeMarketPayload.strip();

@@ -39,6 +39,7 @@ import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion'
 import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
 import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves-table/usePortfolioToggle';
+import type { EModeOverrides } from '@/lib/userData/eMode';
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
@@ -99,6 +100,8 @@ interface ReservesTableProps {
   campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
   /** On-chain HF baseline per pool (AAV-1253 P7). */
   onchainHfMap?: OnchainHfMap;
+  /** eMode effective LTV/LT overrides (AAV-1399). */
+  eModeOverrides?: EModeOverrides;
 }
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -136,6 +139,7 @@ const ReservesTable = ({
   topOppsRef,
   campaignAccessStatuses,
   onchainHfMap,
+  eModeOverrides,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
 
@@ -960,6 +964,7 @@ const ReservesTable = ({
     simulationContext: portfolioSimulationContext,
     lastModifiedReserveId,
     onchainHfMap,
+    eModeOverrides,
   });
 
   const portfolioCapWarningsMap = useMemo(() => {

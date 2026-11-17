@@ -375,8 +375,8 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
     ]);
 
     const reserves: V4ReserveInfo[] = [
-      { reserveId: 0n, asset: WETH },
-      { reserveId: 1n, asset: USDC },
+      { chainId: 1, reserveId: 0n, asset: WETH },
+      { chainId: 1, reserveId: 1n, asset: USDC },
     ];
 
     const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves, client);
@@ -420,7 +420,7 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 0n, asset: WETH }],
+      [{ chainId: 1, reserveId: 0n, asset: WETH }],
       client,
     );
     expect(result.positions).toHaveLength(0);
@@ -455,8 +455,8 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
       MAIN_SPOKE.address,
       USER,
       [
-        { reserveId: 0n, asset: WETH },
-        { reserveId: 1n, asset: USDC },
+        { chainId: 1, reserveId: 0n, asset: WETH },
+        { chainId: 1, reserveId: 1n, asset: USDC },
       ],
       client,
     );
@@ -467,7 +467,7 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
 
   it('returns empty positions when no client available', async () => {
     const result = await getV4UserPositionsOnChain(999999, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [
-      { reserveId: 0n, asset: WETH },
+      { chainId: 1, reserveId: 0n, asset: WETH },
     ]);
     expect(result.positions).toHaveLength(0);
     expect(result.accountSummaries).toHaveLength(0);
@@ -487,7 +487,7 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 0n, asset: WETH }],
+      [{ chainId: 1, reserveId: 0n, asset: WETH }],
       client,
     );
     expect(result.positions).toHaveLength(1);
@@ -520,8 +520,8 @@ describe('AAV-456 Slice 2: getV4UserPositionsOnChain', () => {
     ]);
 
     const reserves: V4ReserveInfo[] = [
-      { reserveId: 0n, asset: WETH },
-      { reserveId: 1n, asset: USDC },
+      { chainId: 1, reserveId: 0n, asset: WETH },
+      { chainId: 1, reserveId: 1n, asset: USDC },
     ];
 
     const result = await getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, reserves, client);
@@ -563,7 +563,14 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
     const { client } = makeMockClient([FAILED_READ, FAILED_READ, FAILED_READ, ACCOUNT_OK]);
 
     await expect(
-      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+      getV4UserPositionsOnChain(
+        1,
+        'MAIN_SPOKE',
+        MAIN_SPOKE.address,
+        USER,
+        [{ chainId: 1, reserveId: 0n, asset: WETH }],
+        client,
+      ),
     ).rejects.toBeInstanceOf(MulticallAllCallsFailedError);
   });
 
@@ -571,7 +578,14 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
     const { client } = makeMockClient([FAILED_READ, FAILED_READ, FAILED_READ, ACCOUNT_OK]);
 
     await expect(
-      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+      getV4UserPositionsOnChain(
+        1,
+        'MAIN_SPOKE',
+        MAIN_SPOKE.address,
+        USER,
+        [{ chainId: 1, reserveId: 0n, asset: WETH }],
+        client,
+      ),
     ).rejects.toMatchObject({ chainId: 1, scope: 'MAIN_SPOKE', attemptedCalls: 3 });
   });
 
@@ -592,8 +606,8 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
       MAIN_SPOKE.address,
       USER,
       [
-        { reserveId: 0n, asset: WETH },
-        { reserveId: 1n, asset: USDC },
+        { chainId: 1, reserveId: 0n, asset: WETH },
+        { chainId: 1, reserveId: 1n, asset: USDC },
       ],
       client,
     );
@@ -619,8 +633,8 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
       MAIN_SPOKE.address,
       USER,
       [
-        { reserveId: 0n, asset: WETH },
-        { reserveId: 1n, asset: USDC },
+        { chainId: 1, reserveId: 0n, asset: WETH },
+        { chainId: 1, reserveId: 1n, asset: USDC },
       ],
       client,
     );
@@ -643,7 +657,7 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 0n, asset: WETH }],
+      [{ chainId: 1, reserveId: 0n, asset: WETH }],
       client,
     );
 
@@ -672,7 +686,7 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 0n, asset: WETH }],
+      [{ chainId: 1, reserveId: 0n, asset: WETH }],
       client,
     );
 
@@ -696,7 +710,7 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
       'MAIN_SPOKE',
       MAIN_SPOKE.address,
       USER,
-      [{ reserveId: 7n, asset: USDC }],
+      [{ chainId: 1, reserveId: 7n, asset: USDC }],
       client,
     );
 
@@ -717,13 +731,20 @@ describe('getV4UserPositionsOnChain multicall failure semantics (AAV-1314)', () 
     } as unknown as Parameters<typeof getV4UserPositionsOnChain>[5];
 
     await expect(
-      getV4UserPositionsOnChain(1, 'MAIN_SPOKE', MAIN_SPOKE.address, USER, [{ reserveId: 0n, asset: WETH }], client),
+      getV4UserPositionsOnChain(
+        1,
+        'MAIN_SPOKE',
+        MAIN_SPOKE.address,
+        USER,
+        [{ chainId: 1, reserveId: 0n, asset: WETH }],
+        client,
+      ),
     ).rejects.toBe(rpcError);
   });
 
   it('allSpokes records the failing spoke and keeps the healthy one', async () => {
     const [good, bad] = getV4SpokeAddresses(1)!;
-    const reserves = [{ reserveId: 0n, asset: WETH }];
+    const reserves = [{ chainId: 1, reserveId: 0n, asset: WETH }];
     const client = {
       multicall: vi.fn(async ({ contracts }: { contracts: { address: string; functionName: string }[] }) => {
         if (contracts[0].address.toLowerCase() === bad.address.toLowerCase()) {
@@ -782,7 +803,7 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
   it('filters spokes with no reserves', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      [addressKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
+      [addressKey(MAIN_SPOKE)]: [{ chainId: 1, reserveId: 0n, asset: WETH }],
     });
     expect(result.results.length + result.errors.length).toBe(1);
   });
@@ -797,8 +818,8 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
   // the V4 on-chain fallback silently queries zero spokes on every chain.
   it('finds no spokes when the map is keyed by name instead of address', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      MAIN_SPOKE: [{ reserveId: 0n, asset: WETH }],
-      Main: [{ reserveId: 0n, asset: WETH }],
+      MAIN_SPOKE: [{ chainId: 1, reserveId: 0n, asset: WETH }],
+      Main: [{ chainId: 1, reserveId: 0n, asset: WETH }],
     });
     expect(result.results).toHaveLength(0);
     expect(result.errors).toHaveLength(0);
@@ -806,7 +827,9 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
 
   it('queries every address-book spoke that has reserves', async () => {
     const spokes = getV4SpokeAddresses(1)!;
-    const reservesBySpoke = Object.fromEntries(spokes.map((s) => [addressKey(s), [{ reserveId: 0n, asset: WETH }]]));
+    const reservesBySpoke = Object.fromEntries(
+      spokes.map((s) => [addressKey(s), [{ chainId: 1, reserveId: 0n, asset: WETH }]]),
+    );
 
     const result = await getV4UserPositionsAllSpokes(1, USER, reservesBySpoke);
 
@@ -878,7 +901,9 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
     const result = await getV4UserPositionsAllSpokes(
       1,
       USER,
-      Object.fromEntries(bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ reserveId: 0n, asset: WETH }]])),
+      Object.fromEntries(
+        bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ chainId: 1, reserveId: 0n, asset: WETH }]]),
+      ),
       client,
     );
 
@@ -942,7 +967,9 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
       const result = await getV4UserPositionsAllSpokes(
         1,
         USER,
-        Object.fromEntries(bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ reserveId: 0n, asset: WETH }]])),
+        Object.fromEntries(
+          bluechips.map((s) => [toV4SpokeKey(s.address)!, [{ chainId: 1, reserveId: 0n, asset: WETH }]]),
+        ),
         client,
       );
 
@@ -955,6 +982,153 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
       expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
     } finally {
       errorSpy.mockRestore();
+    }
+  });
+});
+
+describe('AAV-517 spoke source: reserveId payload, not the address book', () => {
+  const OK_READS = [
+    { status: 'success' as const, result: 1n },
+    { status: 'success' as const, result: [0n, 0n] },
+    { status: 'success' as const, result: [true, false] },
+    {
+      status: 'success' as const,
+      result: {
+        riskPremium: 0n,
+        avgCollateralFactor: 0n,
+        healthFactor: 0n,
+        totalCollateralValue: 0n,
+        totalDebtValueRay: 0n,
+        activeCollateralCount: 0n,
+        borrowCount: 0n,
+      },
+    },
+  ];
+  const UNKNOWN_SPOKE = address('ab');
+  const shortLabel = (value: string) => `${value.slice(0, 6)}…${value.slice(-4)}`;
+  const reserves = [{ chainId: 1, reserveId: 0n, asset: WETH }];
+
+  it('queries a spoke the address book does not know, labelled by its short address', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      expect(V4_SPOKE_ADDRESSES[1].every((s) => s.address.toLowerCase() !== UNKNOWN_SPOKE)).toBe(true);
+
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves }, client);
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.results[0].positions[0].spokeName).toBe(shortLabel(UNKNOWN_SPOKE));
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain(UNKNOWN_SPOKE);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('queries a chain the address book does not list at all', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      expect(getV4SpokeAddresses(999999)).toBeUndefined();
+
+      const result = await getV4UserPositionsAllSpokes(
+        999999,
+        USER,
+        { [toV4SpokeKey(UNKNOWN_SPOKE)!]: [{ chainId: 999999, reserveId: 0n, asset: WETH }] },
+        client,
+      );
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.results).toHaveLength(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('reads only the reserves that belong to the chain being queried', async () => {
+    // `reservesBySpoke` is keyed by address across every chain: chain 1's call must not
+    // fire a multicall at a spoke that only has reserves on 5042 (AAV-517).
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const otherChainSpoke = address('cd');
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      const result = await getV4UserPositionsAllSpokes(
+        1,
+        USER,
+        {
+          [toV4SpokeKey(UNKNOWN_SPOKE)!]: [{ chainId: 1, reserveId: 0n, asset: WETH }],
+          [toV4SpokeKey(otherChainSpoke)!]: [{ chainId: 5042, reserveId: 0n, asset: WETH }],
+        },
+        client,
+      );
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0].positions[0].spokeName).toBe(shortLabel(UNKNOWN_SPOKE));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('queries once when the same address appears under two spellings', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      const upper = `0x${'AB'.repeat(20)}`;
+
+      const result = await getV4UserPositionsAllSpokes(
+        1,
+        USER,
+        { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves, [upper]: reserves },
+        client,
+      );
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.results).toHaveLength(1);
+      // Warn fires after dedupe, so the drift is reported once per spoke.
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('attributes an unknown spoke failure to its short address', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { client } = makeMockClient([
+      { status: 'failure' as const, result: undefined },
+      { status: 'failure' as const, result: undefined },
+      { status: 'failure' as const, result: undefined },
+      OK_READS[3],
+    ]);
+    try {
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves }, client);
+
+      expect(result.results).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].spokeName).toBe(shortLabel(UNKNOWN_SPOKE));
+      expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('keeps the address-book label when the payload key differs only in case', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client } = makeMockClient(OK_READS);
+    try {
+      const upper = MAIN_SPOKE.address.toUpperCase().replace('0X', '0x');
+
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [upper]: reserves }, client);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.results[0].positions[0].spokeName).toBe(MAIN_SPOKE.name);
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
     }
   });
 });
@@ -982,7 +1156,7 @@ describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
     rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     const result = await getV4UserPositionsAllSpokes(1, USER, {
-      [addressKey(MAIN_SPOKE)]: [{ reserveId: 0n, asset: WETH }],
+      [addressKey(MAIN_SPOKE)]: [{ chainId: 1, reserveId: 0n, asset: WETH }],
     });
 
     expect(result.results).toHaveLength(0);
@@ -1024,7 +1198,7 @@ describe('getV4UserPositionsOnChain read rotation wiring (AAV-1387)', () => {
     return captured;
   }
 
-  const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+  const reserves: V4ReserveInfo[] = [{ chainId: 1, reserveId: 0n, asset: WETH }];
 
   beforeEach(() => {
     rpcRotationMocks.readWithRpcRotation.mockReset();
@@ -1126,7 +1300,7 @@ describe('getV4UserPositionsAllSpokes shared RPC session (AAV-1313)', () => {
   it('passes one read session to every spoke of the chain', async () => {
     const spokes = getV4SpokeAddresses(1)!;
     const [first, second] = spokes;
-    const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+    const reserves: V4ReserveInfo[] = [{ chainId: 1, reserveId: 0n, asset: WETH }];
     const pool = createRpcClientPool();
 
     await getV4UserPositionsAllSpokes(
@@ -1149,7 +1323,7 @@ describe('getV4UserPositionsAllSpokes shared RPC session (AAV-1313)', () => {
 
   it('creates one session per chain call when none is injected', async () => {
     const [first, second] = getV4SpokeAddresses(1)!;
-    const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+    const reserves: V4ReserveInfo[] = [{ chainId: 1, reserveId: 0n, asset: WETH }];
 
     await getV4UserPositionsAllSpokes(1, USER, {
       [toV4SpokeKey(first.address)!]: reserves,

@@ -12,6 +12,7 @@ import {
   simulatePortfolioFromEntries,
 } from './portfolioSimulator';
 import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
+import type { EModeOverrides } from '@/lib/userData/eMode';
 import type { OnchainHfMap } from '@/lib/userData/onchainHealthFactor';
 import { wadToHf } from '@/lib/userData/onchainHealthFactor';
 
@@ -3010,5 +3011,180 @@ describe('On-chain HF baseline (AAV-1253)', () => {
     // Simulated HF still works
     expect(hfA.healthFactor).toBeCloseTo(1.6, 5);
     expect(hfB.healthFactor).toBeCloseTo(1.6, 5);
+  });
+});
+
+describe('AAV-1399 — eMode effective LTV/LT in portfolio simulation', () => {
+  const POOL = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2';
+  const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+  const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+  const WETH_ID = `1:${POOL.toLowerCase()}:${WETH.toLowerCase()}`;
+  const USDC_ID = `1:${POOL.toLowerCase()}:${USDC.toLowerCase()}`;
+
+  const wethReserve = makeRateCalcReserve({
+    reserveId: WETH_ID,
+    tokenSymbol: 'WETH',
+    tokenAddress: WETH,
+    ltv: 81,
+    liquidationThreshold: 84,
+  });
+  const usdcReserve = makeRateCalcReserve({
+    reserveId: USDC_ID,
+    tokenSymbol: 'USDC',
+    tokenAddress: USDC,
+    ltv: 75,
+    liquidationThreshold: 78,
+  });
+
+  const entries = [
+    makeEntry({
+      reserveId: WETH_ID,
+      tokenSymbol: 'WETH',
+      supply: { amount: '100000', inputMode: 'usd', walletValue: null },
+      borrow: { ...emptySide },
+    }),
+    makeEntry({
+      reserveId: USDC_ID,
+      tokenSymbol: 'USDC',
+      supply: { ...emptySide },
+      borrow: { amount: '100000', inputMode: 'usd', walletValue: null },
+    }),
+  ];
+
+  function overrides(
+    opts: {
+      member?: string;
+      maxLtv?: number;
+      liquidationThreshold?: number;
+      fallback?: boolean;
+    } = {},
+  ): EModeOverrides {
+    const member = opts.member ?? WETH;
+    // Real producer treats a fallback pool as "no params"; keep the fixture honest.
+    const params = opts.fallback
+      ? new Map()
+      : new Map([
+          [
+            '1:AaveV3Ethereum',
+            {
+              categoryId: 1,
+              label: 'ETH correlated',
+              maxLtv: opts.maxLtv ?? 93,
+              liquidationThreshold: opts.liquidationThreshold ?? 95,
+              collateralReserves: new Set([member.toLowerCase()]),
+            },
+          ],
+        ]);
+    return {
+      params,
+      fallbackPools: new Set(opts.fallback ? ['1:AaveV3Ethereum'] : []),
+    };
+  }
+
+  const run = (eModeOverrides?: EModeOverrides) =>
+    simulatePortfolioFromEntries(baseEntriesSimArgs({ entries, reserves: [wethReserve, usdcReserve], eModeOverrides }));
+
+  it('S1: category 0 / no override → base LTV clamp (81k) and base HF collateral (84k)', () => {
+    const { results, healthFactors } = run(undefined);
+    const borrow = results.find((r) => r.reserveId === USDC_ID && r.side === 'borrow');
+    expect(borrow?.amountUsd).toBeCloseTo(81_000, 6);
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(81_000, 6);
+    expect(healthFactors?.[0].totalCollateralUsd).toBeCloseTo(84_000, 6);
+    expect(healthFactors?.[0].totalDebtUsd).toBeCloseTo(81_000, 6);
+  });
+
+  it('S2: WETH in category 1 → 93k capacity, 95k collateral, 93k clamped debt', () => {
+    const { results, healthFactors } = run(overrides());
+    const borrow = results.find((r) => r.reserveId === USDC_ID && r.side === 'borrow');
+    expect(borrow?.amountUsd).toBeCloseTo(93_000, 6);
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(93_000, 6);
+    expect(healthFactors?.[0].totalCollateralUsd).toBeCloseTo(95_000, 6);
+    expect(healthFactors?.[0].totalDebtUsd).toBeCloseTo(93_000, 6);
+    expect(healthFactors?.[0].healthFactor).toBeCloseTo(95_000 / 93_000, 6);
+  });
+
+  it('S3: a non-member collateral asset contributes 0 capacity and 0 collateral', () => {
+    const nonMemberEntries = [
+      makeEntry({
+        reserveId: USDC_ID,
+        tokenSymbol: 'USDC',
+        supply: { amount: '100000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
+      }),
+      makeEntry({
+        reserveId: WETH_ID,
+        tokenSymbol: 'WETH',
+        supply: { ...emptySide },
+        borrow: { amount: '100000', inputMode: 'usd', walletValue: null },
+      }),
+    ];
+    const { results, healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({
+        entries: nonMemberEntries,
+        reserves: [wethReserve, usdcReserve],
+        eModeOverrides: overrides(),
+      }),
+    );
+    const borrow = results.find((r) => r.reserveId === WETH_ID && r.side === 'borrow');
+    expect(borrow?.amountUsd).toBe(0);
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBe(0);
+    expect(healthFactors?.[0].totalCollateralUsd).toBe(0);
+    expect(healthFactors?.[0].healthFactor).toBeNull();
+  });
+
+  it('S4: base LTV 0 does not mask a category override for a member asset', () => {
+    const zeroBase = makeRateCalcReserve({
+      reserveId: WETH_ID,
+      tokenSymbol: 'WETH',
+      tokenAddress: WETH,
+      ltv: 0,
+      liquidationThreshold: 0,
+    });
+    const { healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({ entries, reserves: [zeroBase, usdcReserve], eModeOverrides: overrides() }),
+    );
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(93_000, 6);
+    expect(healthFactors?.[0].totalCollateralUsd).toBeCloseTo(95_000, 6);
+  });
+
+  it('S5: fallback pool → base numbers + eModeFallback flag', () => {
+    const { results, healthFactors } = run(overrides({ fallback: true }));
+    const borrow = results.find((r) => r.reserveId === USDC_ID && r.side === 'borrow');
+    expect(borrow?.amountUsd).toBeCloseTo(81_000, 6);
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(81_000, 6);
+    expect(healthFactors?.[0].totalCollateralUsd).toBeCloseTo(84_000, 6);
+    expect(healthFactors?.[0].eModeFallback).toBe(true);
+  });
+
+  it('S6: eMode override for pool A does not change pool B numbers', () => {
+    const otherReserve = makeRateCalcReserve({
+      reserveId: `10:0x794a61358D6845594F94dc1DB02A252b5b4814aD:${USDC.toLowerCase()}`,
+      marketName: 'AaveV3Optimism',
+      chainName: 'Optimism',
+      chainId: 10,
+      tokenSymbol: 'USDC',
+      tokenAddress: USDC,
+      ltv: 75,
+      liquidationThreshold: 78,
+    });
+    const otherEntry = makeEntry({
+      reserveId: `10:0x794a61358D6845594F94dc1DB02A252b5b4814aD:${USDC.toLowerCase()}`,
+      marketName: 'AaveV3Optimism',
+      chainId: 10,
+      tokenSymbol: 'USDC',
+      supply: { amount: '100000', inputMode: 'usd', walletValue: null },
+      borrow: { amount: '50000', inputMode: 'usd', walletValue: null },
+    });
+    const { results, healthFactors } = simulatePortfolioFromEntries(
+      baseEntriesSimArgs({
+        entries: [otherEntry],
+        reserves: [otherReserve],
+        eModeOverrides: overrides(),
+      }),
+    );
+    const borrow = results.find((r) => r.side === 'borrow');
+    expect(borrow?.amountUsd).toBeCloseTo(50_000, 6);
+    expect(healthFactors?.[0].totalBorrowCapacityUsd).toBeCloseTo(75_000, 6);
+    expect(healthFactors?.[0].eModeFallback).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MarketsResponseSchema, SideDataMetaResponseSchema } from './apiSchemas';
+import { EModeMarketPayloadSchema, MarketsResponseSchema, SideDataMetaResponseSchema } from './apiSchemas';
 
 const buildMarketsPayloadWithRetiredMeritFields = () => ({
   snapshot: {
@@ -403,5 +403,41 @@ describe('apiSchemas', () => {
     expect(brevisSupplys[1]?.campaignId).toBe('1754995105');
     expect(brevisSupplys[1]?.link).toBe('https://example.com/brevis-group');
     expect(brevisSupplys[1]?.message).toBe('Group-level message');
+  });
+});
+
+describe('EModeMarketPayloadSchema (AAV-1399)', () => {
+  it('parses the category fields the simulator needs and strips unknown keys', () => {
+    const payload = {
+      marketKey: '1:0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2',
+      chainId: 1,
+      chainName: 'Ethereum',
+      marketName: 'AaveV3Ethereum',
+      categories: [
+        {
+          id: 1,
+          label: 'ETH correlated',
+          maxLtv: 93,
+          liquidationThreshold: 95,
+          liquidationPenalty: 1,
+          collateralReserves: ['0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'],
+          borrowableReserves: ['0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'],
+          unknownField: 'drop-me',
+        },
+      ],
+      generatedAt: '2026-11-17T00:00:00.000Z',
+      unknownTopLevel: 'drop-me',
+    };
+
+    const parsed = EModeMarketPayloadSchema.parse(payload);
+
+    expect(parsed.categories[0].maxLtv).toBe(93);
+    expect(parsed.categories[0].liquidationThreshold).toBe(95);
+    expect('unknownField' in parsed.categories[0]).toBe(false);
+    expect('unknownTopLevel' in parsed).toBe(false);
+  });
+
+  it('rejects a payload without categories', () => {
+    expect(() => EModeMarketPayloadSchema.parse({ marketKey: '1:0x', chainId: 1 })).toThrow();
   });
 });

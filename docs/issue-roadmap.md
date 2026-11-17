@@ -8,7 +8,7 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
-> **Last inventory**: 2026-11-17（R24：二次全量对账，真实 open **66 张** = In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 13 / Backlog 35，比首轮多 23 张。根因是 Linear 列表虚拟化——`read_all` 只拿视口行，`style.zoom='0.4'` 后 Active 18→32、Backlog 19→38；补 Needs Info AAV-891/892、Todo 11 张、Backlog 12 张，AAV-333/364 由 Needs Info 移回 Todo。**frontier：AAV-1356 余项**；AAV-1362 已于 2026-11-17 收口（dispatch `44026720906` 绿 + PR #850）。)
+> **Last inventory**: 2026-11-18（**R25：AAV-517 交付 dev `26f0cb11` + `b6817cb6`**——V4 onchain 兜底的查询集合从地址簿改为 payload 的 `reserveId` 派生地址：地址簿降级为诊断标签 + 漂移 warn、新 Spoke 不必等 `aave-address-book` 发版、地址簿缺链不再短路；4522 tests + typecheck/lint/build/`ci:remote` 绿；live 验证抓到并修掉跨链误读（8 个其它链 spoke 被 chain 1 查询）后复跑 4/4。live 的「地址簿 ⊇ payload」硬断言按新语义退役，查询覆盖门改由 payload 地面真值承担。**已推送并置 Linear In Review（交付记录已记，`8aff6e36` 的 CI / Deployment Smoke / CodeQL 三绿）；dev→main 待授权；frontier 为 Ready for agent 的 AAV-843 / AAV-726 / AAV-781 / AAV-782 / AAV-1227 / AAV-829 / AAV-830**。)
 
 > **历史流水**：24 轮盘点记录（2026-10-01 起）与 22 行早期已闭票 → [`archive/2026-11-17-roadmap-inventory-history.md`](./archive/2026-11-17-roadmap-inventory-history.md)。
 
@@ -57,16 +57,18 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 ## Active Linear Issues
 
 非 GitHub 来源的 Linear issue，按 **Linear 状态**分组；本区只列 open（Done / Duplicate / Canceled 一律不进本区）。
-盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **66 张 open** = In Progress 2 + Ready for agent 9 + Needs Info 7 + Todo 13 + Backlog 35。
+盘点时点 2026-11-17（第二次全量核对），逐票与 Linear 核对；本次新补入的行以 `•` 标记。共 **59 张 open** = In Progress 4 + Ready for agent 7 + Needs Info 7 + Todo 12 + Backlog 29。
 
-### In Progress（2）
+### In Progress（4）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
+| AAV-517 | Low | [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询（dev 已交付，待 dev→main） |
+| AAV-1399 | Medium | [前端] eMode 类别 LTV/LT 接入 Portfolio 模拟（dev 已交付，待 dev→main） |
 | AAV-1362 | High | Done（三阶段根因全部收口：移除 proactive bump、release-age 提示改真出口、机器人推送绕过本地 hook；dispatch run 44026720906 绿 + PR #850） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commits `5e057bbb` + `7500586b`）；已推送 `dev`（`eeca95d7..7500586b`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；该 run 读 `main` `b9c30868`，验证主修复，文案在 `dev`、随下一次标准 `dev → main` 推广上线；绿后可关票。**2026-11-17 第三种根因**：11-16 的 run `43870754983` 在 11-15 绿过之后又红，`hardcode-sync (dev)` 的 step 10 死在 `peter-evans/create-pull-request` 的 `git push` 触发的 `.husky/pre-push` （`ci:remote` + e2e 门；runner 无 Playwright chromium，AAV-1349 起硬阻断）⇒ 机器人推送被开发机门禁拦住。修法只给该 step 加 `HUSKY: '0'`（+ 注释），`.husky/pre-push` 与其他 workflow 不动；新增 `scripts/hardcode-sync-hook-guard.test.mjs`，spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`。**待验证**：一次真实 dispatch 或下一次 schedule 的 `hardcode-sync (dev)`。 |
 | AAV-1292 | Medium | railway → main 正式晋升：三个定时工作流从未运行 |
 
-### Ready for agent（9）
+### Ready for agent（7）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -74,8 +76,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-726 | Medium | • Refactor: flatten monorepo to single-package backend |
 | AAV-781 | Medium | • Unify endDate semantics and data directory paths（Merit cache） |
 | AAV-782 | — | • Distinguish「extraction failed」vs「成功但非目标激励类型」（Merit cache） |
-| AAV-449 | — | • [Backend] 移除 spokeName 字段（与 marketName 语义冗余） |
-| AAV-517 | — | • [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询 |
 | AAV-1227 | Low | • Spec: Inline Widget Embedding System for Article Pages |
 | AAV-829 | Low | • Unify ~35 处地址相关 toLowerCase() → normalizeAddress() |
 | AAV-830 | Low | • Migrate merit-api raw RPC fetch → ProviderPool |
@@ -92,7 +92,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-891 | — | • 官方 Interface repo 每次改动时让 LLM 比对是否需借鉴（如 Target total APR 支持） |
 | AAV-892 | — | • Merkl 出现新 campaign type 时自动预警建 issue（AAV-329 子票） |
 
-### Todo（13）
+### Todo（12）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -107,34 +107,27 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-587 | Low | • [Follow-up] 主动通知（Slack/Telegram）新链 RPC 检测（AAV-329 子票） |
 | AAV-738 | Low | • Portfolio 模式下当前展开行始终置顶（同 Single simulation 的 sticky 行为） |
 | AAV-760 | Low | • 判断哪些 reserve 可作质押 / 可做循环贷，一键最优配置需考虑 |
-| AAV-1293 | Low | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（35）
+### Backlog（29）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
-| AAV-1367 | High | • security: 嵌套 zod 3.x 未覆盖 CVE-2023-54404（Dependabot #99） |
-| AAV-1391 | High | • [CI] openapi-sync 在 CI 内 git push 触发 husky pre-push → 无 Playwright 直接 BLOCK |
 | AAV-1396 | High | • portfolio: LTV 钳制只作用于显示额，incentive / cross-reserve 仍按原始输入计算 |
-| AAV-1394 | Medium | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
 | AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
 | AAV-1275 | Medium | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
 | AAV-1327 | Medium | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
-| AAV-1347 | Medium | • [Chore] Prettier 未纳入 CI 门禁 → 227 文件漂移的成因，会随时间重新积累 |
 | AAV-1348 | Medium | • [Deps] zod 3 → 4 迁移被钱包 SDK 阻塞（osv GHSA-mrhx-c7xc-m3w5 已豁免到 2027-01-31） |
 | AAV-1361 | Medium | • google-auth-library + googleapis 必须成对合并（冷却期 2026-11-16） |
 | AAV-1370 | Medium | • chore(frontend): supplyIncentives/borrowIncentives 两种语义共存，需拍定删除或封口 |
 | AAV-1375 | Medium | • SEO 后台已失效：Supabase 项目消失，需决定下线还是重建 |
 | AAV-1354 | Low | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
-| AAV-1322 | Low | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
 | AAV-1312 | Low | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
 | AAV-1274 | Low | RENAME: campaignType → distributionType (cross-repo API breaking change) *(降级：建议前端别名适配替代跨仓重命名)* |
 | AAV-1271 | Low | 工具：Aave UI ↔ Backend API 对比工具 Phase 3 |
 | AAV-1270 | Low | 后端：incentive_details 列级 NULL 命中率测试 + 决策 |
 | AAV-1269 | Low | 后端：LOCF 查询实现（/api/markets/history 历史回放） |
 | AAV-360 | Low | • 给 Megaeth 做个反色的 logo |
-| AAV-365 | Low | • side-data endpoints 增加 deterministic ETag + 前端 If-None-Match 304 节流 |
 | AAV-395 | Low | • 评估从 reserveId 提取数值以省下 API 字段，划不划算 |
 | AAV-800 | Low | • PortfolioPanel 重复计算路径：统一 simulationsById 与 computeResultsFromGroups |
 | AAV-900 | Low | • Pendle PT token targetTokenPrice：解析 3 个 campaign 的 underlying 资产价格 |
@@ -173,6 +166,13 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-449 | [Backend] 从 `/api/markets` 移除 `spokeName`：它是 V4 `marketName` 的后缀重复（`AaveV4Main` vs `Main`），且 SDK 路径（`Main`）与 RPC fallback 路径（`MAIN_SPOKE`/`unknown`）取值语义漂移。落地：`PASSTHROUGH_FIELDS` 删除条目并把元素类型收紧为 `keyof MarketWithSpread`（以后删字段忘记同步白名单会直接 `tsc` 失败）、`MarketWithSpread` 显式 `Omit`；`MARKETS_API_VERSION` `snapshot-v3 → snapshot-v4`；schema fingerprint `0f60c7e06ff5 → e01da0e9d32f`（后端生成物 + 前端 mirror 同步）；OpenAPI 重生成；`RuntimeReserveData`/DB `spoke_name` 归档保留。新增 6 例测试 + backend 623 例 / 613 pass / 0 fail、root 139 例、`check:quality` rc 0；mutation 实测（加回白名单 → `TS2322` + 4 例红）。staging `3d4093c`：`snapshot-v4`、fp `e01da0e9d32f`、441 条 reserve / 124 条 V4 行 / `spokeName` 0 命中、`spokeId`/`hubId`/`hubName` 完整；live `RUN_API_FIELDS_TESTS` 10/10 绿；Linear 已关票 | 2026-11-17 |
+| AAV-365 | [后端] `GET /api/meta/side-data` 确定性 ETag + `If-None-Match` → 304（本票只做后端，前端条件请求尚未接线）：根因是响应体每次请求重写 `generatedAt`、每个 markets tick 重置 `campaignAccess.updatedAt`，Express 字节哈希标签必变 ⇒ 304 结构上不可达。新增 `backend/src/services/sideDataEtag.ts`，对**语义内容**算 `W/"<sha256 前 32 hex>"`（对象键排序、数组保序，仅排除上述两个保活标记，`fetchedAt`/`staleTimeMs` 仍入哈希）；`metaController` 改可注入工厂（reader + 时钟 seam）；全子块失败 500 显式 `Cache-Control: no-store` 且不写内容标签。24 例新测试（含跨进程复算）+ backend 全量 616 例 / 607 pass；staging `75cfade` 实测：跨多个 markets tick 携带旧标签仍 304（0 字节）、真实重取换标签后 200、`Cache-Control: no-cache` 仍 200。⚠️ 首部署 `f0a06b64` 标 FAILED 且无容器日志（基建抖动），`railway deployment redeploy` 后恢复 | 2026-11-17 |
+| AAV-1394 | [后端] eMode 抵押参数独立端点：`GET /api/meta/e-mode`（索引）+ `/:marketKey`（类别与成员），不改 `/api/markets`；shared 类型 + `v3MarketKey`、fetcher `buildEModeMarkets`/`selectFreshEModeMarkets`、backend 只读快照 + stale hard TTL、OpenAPI 4 paths、cache 头、文档与 AAV-1399 前端票。staging `6a797f2` live：24 市场 / 3,564B，AaveV3Ethereum 48 类别 / 16,436B，WETH category 1 `93/95`；CI `44071575973` 四门绿 | 2026-11-17 |
+| AAV-1367 | 嵌套 zod 3.x 的 CVE-2023-54404 收口：`overrides.zod=$zod` 把 4 份 zod 收敛为 1 份 4.6.7（lock 只删 3 个嵌套条目、29 行）；新增 `scripts/check-zod-version-floor.mjs`（精确允许清单 + 可选 peer 跳过 + fail-closed）与 appkit-wallet `W3mFrameSchema` 的 zod-4 canary（16 tests）；删除失效的 osv 豁免（`osv-scanner` No issues found）；`npm audit --omit=dev` 11 high → 0；codegen 字节一致；产物仍只含 zod/v4；ci:remote 绿 | 2026-11-17 |
+| AAV-1293 | [后端] `/api/seo/*` 不进公开 OpenAPI（判断题收口）：决策理由落 `generate-openapi.ts` 注释（admin 面 / `X-Admin-Token` / 经 Supabase `seo-proxy` / `seo-api-documentation.md` 独立文档 / 非公开契约），2 条守卫（paths 恰好 `/markets` + `/meta/side-data`、注释锚点存在）+ `api-documentation.md` 边界句；mutation 加 `/api/seo/status`、删注释各自打红；生成物逐字节不变；run `44058368427` 四门绿 | 2026-11-17 |
+| AAV-1347 | [Chore] Prettier 未纳入 CI 门禁：`check:prettier` 置于 `check:quality` 首位 + CI `quality-gates` 新增 `Prettier format check (tracked files)`；tracked symlink 跳过、`.prettierignore` 保留生成物豁免、25 条守卫（真实 git + 真实 prettier 子进程）；run `44051705352` 四门绿且新 step 在干净 checkout 首跑通过；本地 463 受检 / 2 skipped、负控 rc 1 点名、干净 clone rc 0 | 2026-11-17 |
+| AAV-1391 | [CI] 机器人 PR 推送不得运行开发者本地 hook：openapi-sync 由并行提交 `8fe76047` 落地并经 run `44040361980` 开出 PR #852 验证；本票补齐 `token-icon-sync` / `ci-auto-remediation` 两处同族 step（`HUSKY: '0'`）+ `scripts/bot-push-hook-guard.test.mjs`（T1–T6 枚举全部 create-pull-request 步骤、禁止扩到 job/workflow、mutation 控制）；dev CI run `44051928967` 全绿（openapi-sync skipped，无漂移）；症状票 AAV-1390 同步关闭 | 2026-11-17 |
 | AAV-1389 | 产品视角三句门禁：照搬 inside-china-ai 的纯文本校验器（原样）+ Linear 取数的渲染器（合同不变）；CI `repo-policy` 校验 PR body、AGENTS.md Step 9 渲染汇报首段；22 例测试全绿 | 2026-11-16 |
 | AAV-1335 | unit/script 测试不得真实出网：断网实证（陷阱全拦截下 17 passed / 0.16s / 0 次触发）+ `isDirectRun` 门与 `fetchWithTimeout` 位置的行为/静态守卫 + boundary doc 红线；去门 mutation 实测 attempts 命中 | 2026-11-16 |
 | AAV-1334 | 删除 dispatch-only `generate-snapshots` 死 job（引用已删除 visual spec）：ci.yml 删除整 job；新增 workflow Playwright spec 路径守卫（显式路径必须存在 + 禁止 `--update-snapshots`/`=all`/`-u`），随 `npm test` 生效；两处活文档指针订正 + checklist 的 `toHaveScreenshot` 改 geometry；14 行矩阵 S1–S14 | 2026-11-16 |

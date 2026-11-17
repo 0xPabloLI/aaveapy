@@ -147,6 +147,7 @@
   "overrides": {
     "@types/react": "$@types/react",
     "@types/react-dom": "$@types/react-dom",
+    "zod": "$zod",
     "minimatch@3": {
       "brace-expansion": "1.1.21"
     },

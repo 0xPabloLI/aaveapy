@@ -167,6 +167,16 @@ export function getV4HubAddresses(chainId: number): V4HubEntry[] | undefined {
   return V4_HUB_ADDRESSES[chainId];
 }
 
+/**
+ * Diagnostic label for a spoke the address book does not list: `0x1234…abcd`.
+ *
+ * `V4OnchainError.spokeName` only feeds `failedSources` and console diagnostics, so the
+ * label needs to identify the contract, not to be a valid address-book key (AAV-517).
+ */
+function shortSpokeLabel(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
 // Canonical Multicall3 (EIP-55 checksummed) — must stay 20 bytes / 40 hex
 // chars, or viem's multicall rejects it with InvalidAddressError before any
 // RPC is attempted (kept in sync with aaveV3UserClient.ts).
@@ -268,6 +278,13 @@ import { readFromHealthyRpc } from './rpcRead';
 import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V4ReserveInfo {
+  /**
+   * Chain the reserve lives on. `reservesBySpoke` is keyed by spoke address across all
+   * chains, so this is the only per-chain field: the reader filters to its own chain
+   * before querying (AAV-517). Without it the address book's chain filter was the only
+   * thing keeping chain N's call from reading chain M's spokes.
+   */
+  chainId: number;
   reserveId: bigint;
   asset: `0x${string}`;
 }
@@ -435,18 +452,48 @@ export async function getV4UserPositionsAllSpokes(
   client?: PublicClient,
   pool?: RpcClientPool,
 ): Promise<V4OnchainResponse> {
-  const spokes = getV4SpokeAddresses(chainId);
-  if (!spokes) return { results: [], errors: [] };
+  // The address book now answers "what is this spoke called" and "has the address
+  // book drifted", not "which spokes exist" (AAV-517).
+  const addressBook = new Map<string, V4SpokeEntry>();
+  for (const entry of getV4SpokeAddresses(chainId) ?? []) {
+    const key = toV4SpokeKey(entry.address);
+    if (key) addressBook.set(key, entry);
+  }
 
-  // Looked up by spoke address: a map keyed by name — the address book's raw key or the
-  // API's display name — matches nothing here, and the fallback then silently queries
-  // zero spokes (AAV-1356). A single `targeted` array keeps each outcome aligned with
-  // the spoke it belongs to, so a failure is never attributed to a neighbour.
-  const targeted = spokes.flatMap((spoke) => {
-    const key = toV4SpokeKey(spoke.address);
-    const reserves = key ? reservesBySpoke[key] : undefined;
-    return reserves && reserves.length > 0 ? [{ spoke, reserves }] : [];
-  });
+  // Query the spokes the payload actually names. `deriveV4ReservesBySpoke` reads the
+  // spoke out of `reserveId`, so a freshly deployed spoke is queryable before an
+  // `aave-address-book` release, and a chain the address book omits no longer
+  // short-circuits to an empty success (AAV-517). A single `targeted` array keeps each
+  // outcome aligned with the spoke it belongs to, so a failure is never attributed to
+  // a neighbour (AAV-1356).
+  const targeted: { spoke: V4SpokeEntry; reserves: V4ReserveInfo[] }[] = [];
+  const seen = new Set<string>();
+  for (const [rawKey, reserves] of Object.entries(reservesBySpoke)) {
+    const key = toV4SpokeKey(rawKey);
+    if (!key || !reserves || reserves.length === 0 || seen.has(key)) continue;
+    // The map is keyed by address across every chain; a chain's call must only read the
+    // reserves that belong to it (AAV-517).
+    const chainReserves = reserves.filter((info) => info.chainId === chainId);
+    if (chainReserves.length === 0) continue;
+    seen.add(key);
+
+    // Warn (not throw) on drift: the address book is not a gate any more, and a throw
+    // here would restore the very dependency this ticket removes.
+    const entry = addressBook.get(key);
+    if (!entry) {
+      console.warn(
+        `[onchain-v4] spoke ${key} on chain ${chainId} is not in the address book; querying from reserveId (AAV-517)`,
+      );
+    }
+    targeted.push({
+      spoke: entry ?? { name: shortSpokeLabel(key), rawName: key, address: key as `0x${string}` },
+      reserves: chainReserves,
+    });
+  }
+
+  // Nothing to read: return before creating a pool (unchanged degradation for a chain
+  // with neither address-book entries nor V4 reserves).
+  if (targeted.length === 0) return { results: [], errors: [] };
 
   // One read session per chain call: 17 Ethereum spokes share one probe result
   // and re-use the endpoint that served the first read (AAV-1313).

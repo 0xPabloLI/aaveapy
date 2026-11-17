@@ -50,11 +50,15 @@ export function deriveV3AssetsByMarket(reserves: ReserveWithSpread[]): Record<st
  * reserve: the payload leaves `spokeAddress` undefined on every V4 reserve, so reading
  * the property would depend on `enrichReservesFromId` having run first — and that
  * helper only fills it when the reserveId carries a hub segment.
+ *
+ * Keys are addresses, not `chain:address`: the same spoke address is not expected to
+ * repeat across chains, while a single map serves every chain. Each entry therefore
+ * carries its own `chainId`, which is what the reader filters on (AAV-517).
  */
-export function deriveV4ReservesBySpoke(
-  reserves: ReserveWithSpread[],
-): Record<string, { reserveId: bigint; asset: `0x${string}` }[]> {
-  const map = new Map<string, { reserveId: bigint; asset: `0x${string}` }[]>();
+export type V4ReserveEntry = { chainId: number; reserveId: bigint; asset: `0x${string}` };
+
+export function deriveV4ReservesBySpoke(reserves: ReserveWithSpread[]): Record<string, V4ReserveEntry[]> {
+  const map = new Map<string, V4ReserveEntry[]>();
 
   for (const r of reserves) {
     if (getProtocolVersion(r.marketName) !== 'v4') continue;
@@ -65,11 +69,11 @@ export function deriveV4ReservesBySpoke(
     if (!spokeKey) continue;
 
     const entries = map.get(spokeKey) ?? [];
-    entries.push({ reserveId, asset: r.tokenAddress as `0x${string}` });
+    entries.push({ chainId: r.chainId, reserveId, asset: r.tokenAddress as `0x${string}` });
     map.set(spokeKey, entries);
   }
 
-  const result: Record<string, { reserveId: bigint; asset: `0x${string}` }[]> = {};
+  const result: Record<string, V4ReserveEntry[]> = {};
   for (const [spokeKey, entries] of map) {
     result[spokeKey] = entries;
   }

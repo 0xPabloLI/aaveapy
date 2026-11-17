@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReservesTable from './ReservesTable';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
 import { marketKey } from '@/lib/marketKey';
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -62,11 +63,16 @@ vi.mock('./ReservesTableTooltipOverlay', () => ({
 // AAV-1315 M12: the wallet sync pair must survive the ReservesTable hop. The panel
 // itself is covered by PortfolioPanel.walletSync.test.tsx; here it is a spy.
 vi.mock('./PortfolioPanel', () => ({
-  default: (props: { walletLoadState?: string; failedSources?: string[] }) => (
+  default: (props: {
+    walletLoadState?: string;
+    failedSources?: string[];
+    healthFactors?: Array<{ eModeFallback?: boolean }>;
+  }) => (
     <div
       data-testid="portfolio-panel"
       data-wallet-state={props.walletLoadState ?? ''}
       data-failed-sources={(props.failedSources ?? []).join(',')}
+      data-emode-fallback={props.healthFactors?.some((h) => h.eModeFallback) ? 'true' : 'false'}
     />
   ),
 }));
@@ -447,5 +453,102 @@ describe('ReservesTable expand/collapse interaction', () => {
     const panel = screen.getByTestId('portfolio-panel');
     expect(panel.getAttribute('data-wallet-state')).toBe('success');
     expect(panel.getAttribute('data-failed-sources')).toBe('onchain-v3-chain-42220,sdk-v4');
+  });
+});
+
+describe('ReservesTable — eMode overrides forwarding (AAV-1399)', () => {
+  it('keeps eMode fallback state through the ReservesTable hop into PortfolioPanel', () => {
+    const pool = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2';
+    const weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+    const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+    const wethId = `1:${pool.toLowerCase()}:${weth.toLowerCase()}`;
+    const usdcId = `1:${pool.toLowerCase()}:${usdc.toLowerCase()}`;
+    const portfolioReserves: ReserveWithSpread[] = [
+      {
+        ...reserveBase,
+        reserveId: wethId,
+        marketName: 'AaveV3Ethereum',
+        tokenSymbol: 'WETH',
+        tokenName: 'Wrapped Ether',
+        tokenAddress: weth,
+        ltv: 81,
+        liquidationThreshold: 84,
+      },
+      {
+        ...reserveBase,
+        reserveId: usdcId,
+        marketName: 'AaveV3Ethereum',
+        tokenSymbol: 'USDC',
+        tokenName: 'USD Coin',
+        tokenAddress: usdc,
+        ltv: 75,
+        liquidationThreshold: 78,
+      },
+    ];
+    const portfolioEntries: PortfolioReserveEntry[] = [
+      {
+        reserveId: wethId,
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        tokenSymbol: 'WETH',
+        restrictedStatus: null,
+        supply: { amount: '100000', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '', inputMode: 'usd', walletValue: null },
+        hidden: false,
+        isOrphan: false,
+      },
+      {
+        reserveId: usdcId,
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        chainId: 1,
+        tokenSymbol: 'USDC',
+        restrictedStatus: null,
+        supply: { amount: '', inputMode: 'usd', walletValue: null },
+        borrow: { amount: '100000', inputMode: 'usd', walletValue: null },
+        hidden: false,
+        isOrphan: false,
+      },
+    ];
+    const actions = {
+      setActive: vi.fn(),
+      addReserve: vi.fn(),
+      updateReserve: vi.fn(),
+      hideReserve: vi.fn(),
+      unhideReserve: vi.fn(),
+      importReserves: vi.fn(),
+      forceSyncReserves: vi.fn(),
+      restoreToWallet: vi.fn(),
+      removeReserve: vi.fn(),
+      removeWalletEntries: vi.fn(() => 0),
+      clearAll: vi.fn(),
+      saveSnapshot: vi.fn(),
+      deleteSnapshot: vi.fn(),
+    } as unknown as PortfolioSimulationActions;
+
+    renderWithQueryClient(
+      <ReservesTable
+        reserves={portfolioReserves}
+        allReserves={portfolioReserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+        simulationMode="portfolio"
+        portfolioEntries={portfolioEntries}
+        portfolioActions={actions}
+        eModeOverrides={{
+          params: new Map(),
+          fallbackPools: new Set(['1:AaveV3Ethereum']),
+        }}
+      />,
+    );
+
+    const panel = screen.getByTestId('portfolio-panel');
+    expect(panel.getAttribute('data-emode-fallback')).toBe('true');
   });
 });

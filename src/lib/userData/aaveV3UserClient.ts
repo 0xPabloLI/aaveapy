@@ -93,6 +93,13 @@ export const DATA_PROVIDER_ABI = [
 export const POOL_ABI = [
   {
     inputs: [{ name: 'user', type: 'address' }],
+    name: 'getUserEMode',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'user', type: 'address' }],
     name: 'getUserAccountData',
     outputs: [
       { name: 'totalCollateralBase', type: 'uint256' },
