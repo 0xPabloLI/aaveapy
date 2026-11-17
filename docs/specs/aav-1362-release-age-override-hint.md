@@ -1,6 +1,6 @@
 # AAV-1362 — release-age 门禁的覆盖提示必须指向真实出口
 
-> Status: implemented 2026-11-15 · **issue 仍 In Progress**（唯一未完成验收项 S8：2026-11-16 04:20 UTC 的真实 schedule 运行） · Issue: [AAV-1362](https://linear.app/aaveapy/issue/AAV-1362) · Type: CI gate messaging fix (supply-chain control)
+> Status: implemented 2026-11-15 · S8 已验证：run `43870754983`（2026-11-16）的失败与发布年龄无关（husky `pre-push` 门），该第三种根因由 [`aav-1362-hardcode-sync-hook-bypass.md`](aav-1362-hardcode-sync-hook-bypass.md) 收口 · Issue: [AAV-1362](https://linear.app/aaveapy/issue/AAV-1362) · Type: CI gate messaging fix (supply-chain control)
 > Scope: 只修失败提示与文档，不改门禁检测逻辑、默认 7 天窗口或安全控制出口。路线 A（移除 proactive bump）已由 `8830d062` 落地。
 
 ## 背景与根因
@@ -96,7 +96,7 @@ export function formatReleaseAgeOverrideHint() {
 | S5 | 未来有人给 workflow 增加 `min_release_age_days` input | 契约测试变红，强制同步更新提示/文档 | 提示再次与 workflow 能力漂移 | 静态测试扫描 `.github/workflows/*.yml` | 测试把「提示引用的出口」与「workflow 实际 input」绑在一起 |
 | S6 | 人读 `SECURITY.md` | 不再出现「via workflow dispatch」；明确「无默认 dispatch input」 | 文档继续误导 | 静态测试读 `SECURITY.md` + `rg` | 与脚本提示同义 |
 | S7 | CI 打印失败提示 | 不含不存在的 input 引用；操作者可执行 | 失败时浪费一轮排查 | 脚本源码静态测试 + S1 的 runtime 输出 | 共享提示 |
-| S8 | 2026-11-16 的 schedule 运行 | 使用新 `main`（无 `npm update`），门禁不再被 sync 的 day-zero bump 触发；job 绿或失败原因与发布年龄无关 | 仍需真实运行验证 | 外部 GitHub Actions run（用户选择不手动 dispatch，等待 11-16） | 本轮保持 Linear In Progress，评论记录唯一待验证项 |
+| S8 | 2026-11-16 的 schedule 运行 | 使用新 `main`（无 `npm update`），门禁不再被 sync 的 day-zero bump 触发；job 绿或失败原因与发布年龄无关 | 仍需真实运行验证 | run `43870754983`（2026-11-16T12:54:11Z）：dev job 在 step 10 `Create PR when hardcode changed` 失败，日志是 husky `pre-push` 的 e2e 浏览器门，**与发布年龄无关** ⇒ 本条口径满足 | 该 run 仍红，但根因是第三种结构矛盾（机器人推送被本地门禁拦住），由姊妹 spec `aav-1362-hardcode-sync-hook-bypass.md` 收口 |
 
 ## Testing Decisions
 
