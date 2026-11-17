@@ -101,4 +101,39 @@ HUSKY=0 .husky/_/pre-push; echo $?   # → 0，且无 ci:remote / e2e 输出
 
 ## Verification Evidence
 
-（待本次提交与真实运行回填）
+### 静态与单元
+
+* `node --test scripts/hardcode-sync-hook-guard.test.mjs` → **5/5 passed**（S1–S5）。
+* `node --test "scripts/**/*.test.mjs"` → **315 passed / 0 failed**（76 suites）。
+* YAML 解析（`YAML.parse`）后该步骤的 `env.HUSKY` 读回 `"0"`（字符串，不是数字）。
+* `npx prettier --check` 对改动文件全绿；`eslint` 不覆盖 `scripts/*.test.mjs`（仓库既有 ignore）。
+
+### Runtime smoke（临时仓库，复刻 runner 的失败形态）
+
+`/tmp` 下建一个 bare remote + work 仓库，把真实的 `.husky/pre-push` 复制进去，`ci:remote` 打桩成成功、`test:e2e:pre-push` 打桩成 runner 上的同一句 `BLOCKED: e2e gate CANNOT RUN — Playwright chromium is not installed`（`exit 1`），`core.hooksPath=.husky/_`：
+
+```
+=== 1) 默认（模拟 runner，浏览器缺失）===
+❌ [pre-push] BLOCKED: e2e gate CANNOT RUN — Playwright chromium is not installed.
+❌ [pre-push] BLOCKED: ci:remote 或 e2e 失败 — 修根因，不要绕 hook。
+error: failed to push some refs to '../remote.git'
+default exit=1
+
+=== 2) HUSKY=0 ===
+husky0 exit=0
+
+=== 远端 refs ===
+25088b48e697921ef69d8519d12e44688303fbdb	refs/heads/test2
+```
+
+即：同一份 hook、同一个仓库，只差 `HUSKY=0` ⇒ 从 `exit 1` 变为 `exit 0` 且 ref 真的落到远端。临时目录用后删除。
+
+### 已推送
+
+* `c64674d5` — workflow 修复 + 守卫测试；`3790f77d` — 本 spec 与文档。
+* `origin/dev` 已是 `3790f77d`；远端文件 `.github/workflows/hardcode-sync.yml@dev` 第 133 行是 `Create PR when hardcode changed`、第 152 行是 `HUSKY: '0'`。
+
+### 尚未取得
+
+* **一次真实的 workflow 运行**。schedule 读 `main`，本修复在 `dev`，需等标准 `dev → main` 之后才轮到每日 cron；手动 `workflow_dispatch` 可立即验证，但会在 `dev` 上开出一笔 bot PR 并自动合并（该 workflow 的正常行为），需 owner 授权后再触发。
+
