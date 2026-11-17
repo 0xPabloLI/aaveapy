@@ -29,7 +29,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient';
-import { getV4SpokeAddresses, getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
+import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
@@ -153,39 +153,12 @@ function assertV4SpokeJoinCoversPayload(
   ).toEqual([]);
 }
 
-/**
- * AAV-1356 #2/#3 invariant（地址簿一侧）：payload 点名的每个 spoke 都必须在
- * `V4_SPOKE_ADDRESSES` 中。union 前 base-only 的地址簿会在这里红在缺口的地址上
- * （4.76.1 为 `0x115af1c2…`），从而暴露「fallback 永远查不到该 spoke」。
- */
-function assertV4AddressBookCoversPayload(payloadSpokes: readonly string[], chainId: number, label: string) {
-  const book = new Set(
-    (getV4SpokeAddresses(chainId) ?? [])
-      .map((spoke) => toV4SpokeKey(spoke.address))
-      .filter((address): address is string => address !== null),
-  );
-
-  expect(book.size, `${label}: the address book must list at least one spoke for chain ${chainId}`).toBeGreaterThan(0);
-  expect(
-    payloadSpokes.filter((address) => !book.has(address)),
-    `${label}: every payload spoke must exist in V4_SPOKE_ADDRESSES (address-book bump needed)`,
-  ).toEqual([]);
-}
-
-/**
- * AAV-1356 #2/#3 invariant（所有链）：地址簿必须在 payload 出现的每条 V4 链上覆盖
- * 所有 spoke。单链断言会漏掉 5042/8453/43114。
- */
-function assertV4AddressBookCoversAllPayloadChains(reserves: ReserveWithSpread[], label: string) {
-  const chainIds = [
-    ...new Set(reserves.filter((r) => getProtocolVersion(r.marketName) === 'v4').map((r) => r.chainId)),
-  ].sort((a, b) => a - b);
-
-  expect(chainIds.length, `${label}: payload must name at least one V4 chain`).toBeGreaterThan(0);
-  for (const chainId of chainIds) {
-    assertV4AddressBookCoversPayload(payloadV4SpokeKeys(reserves, chainId), chainId, `${label} chain ${chainId}`);
-  }
-}
+// AAV-517: the address-book coverage assertion that lived here (AAV-1356 #2/#3) is
+// retired on purpose. The on-chain fallback now queries the spokes named by the payload
+// itself, so a payload spoke the address book has not shipped yet still works — failing
+// the live test on that gap would report a defect for the exact case this ticket enables.
+// The coverage gate is `assertV4QueriedSpokeCount` (grounded in the payload), and the
+// address-book union keeps its unit coverage in `aaveV4UserClient.test.ts`.
 
 /**
  * AAV-1356 #3 invariant（查询覆盖）：payload 里每个有 reserve 的 spoke 都必须真的被
@@ -274,7 +247,6 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     }
     const payloadSpokes = payloadV4SpokeKeys(reserves, 1);
     assertV4SpokeJoinCoversPayload(payloadSpokes, v4BySpoke, 'V4');
-    assertV4AddressBookCoversAllPayloadChains(reserves, 'V4');
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     assertNoChainErrors(v4Response.errors, 'V4');
@@ -306,7 +278,6 @@ describe('On-chain user positions integration (live RPC + staging API)', () => {
     }
     const payloadSpokes = payloadV4SpokeKeys(reserves, 1);
     assertV4SpokeJoinCoversPayload(payloadSpokes, v4BySpoke, 'combined V4');
-    assertV4AddressBookCoversAllPayloadChains(reserves, 'combined V4');
 
     const allPositions: WalletPosition[] = [];
 

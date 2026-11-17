@@ -959,6 +959,128 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
   });
 });
 
+describe('AAV-517 spoke source: reserveId payload, not the address book', () => {
+  const OK_READS = [
+    { status: 'success' as const, result: 1n },
+    { status: 'success' as const, result: [0n, 0n] },
+    { status: 'success' as const, result: [true, false] },
+    {
+      status: 'success' as const,
+      result: {
+        riskPremium: 0n,
+        avgCollateralFactor: 0n,
+        healthFactor: 0n,
+        totalCollateralValue: 0n,
+        totalDebtValueRay: 0n,
+        activeCollateralCount: 0n,
+        borrowCount: 0n,
+      },
+    },
+  ];
+  const UNKNOWN_SPOKE = address('ab');
+  const shortLabel = (value: string) => `${value.slice(0, 6)}…${value.slice(-4)}`;
+  const reserves = [{ reserveId: 0n, asset: WETH }];
+
+  it('queries a spoke the address book does not know, labelled by its short address', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      expect(V4_SPOKE_ADDRESSES[1].every((s) => s.address.toLowerCase() !== UNKNOWN_SPOKE)).toBe(true);
+
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves }, client);
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.results[0].positions[0].spokeName).toBe(shortLabel(UNKNOWN_SPOKE));
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain(UNKNOWN_SPOKE);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('queries a chain the address book does not list at all', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      expect(getV4SpokeAddresses(999999)).toBeUndefined();
+
+      const result = await getV4UserPositionsAllSpokes(
+        999999,
+        USER,
+        { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves },
+        client,
+      );
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.results).toHaveLength(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('queries once when the same address appears under two spellings', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client, mockMulticall } = makeMockClient(OK_READS);
+    try {
+      const upper = `0x${'AB'.repeat(20)}`;
+
+      const result = await getV4UserPositionsAllSpokes(
+        1,
+        USER,
+        { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves, [upper]: reserves },
+        client,
+      );
+
+      expect(mockMulticall).toHaveBeenCalledTimes(1);
+      expect(result.results).toHaveLength(1);
+      // Warn fires after dedupe, so the drift is reported once per spoke.
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('attributes an unknown spoke failure to its short address', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { client } = makeMockClient([
+      { status: 'failure' as const, result: undefined },
+      { status: 'failure' as const, result: undefined },
+      { status: 'failure' as const, result: undefined },
+      OK_READS[3],
+    ]);
+    try {
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [toV4SpokeKey(UNKNOWN_SPOKE)!]: reserves }, client);
+
+      expect(result.results).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].spokeName).toBe(shortLabel(UNKNOWN_SPOKE));
+      expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('keeps the address-book label when the payload key differs only in case', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client } = makeMockClient(OK_READS);
+    try {
+      const upper = MAIN_SPOKE.address.toUpperCase().replace('0X', '0x');
+
+      const result = await getV4UserPositionsAllSpokes(1, USER, { [upper]: reserves }, client);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.results[0].positions[0].spokeName).toBe(MAIN_SPOKE.name);
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+});
+
 describe('getV4UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   beforeEach(() => {
     rpcRotationMocks.readWithRpcRotation.mockReset();

@@ -58,6 +58,8 @@ V4 仓位在 SDK 主路径失败时走 on-chain RPC 兜底。该路径**从未�
 
 **代价**:无。地址归一化是一次 `toLowerCase()`;两侧同批上线,不存在只改一边的中间态(改一侧则 join 仍然为 0,与改前等价,不是新增故障)。
 
+> **AAV-517 更新（2026-11-18）**:消费方的迭代源已从地址簿改为 `reservesBySpoke` 的 key(即本文定义的同一 join key),地址簿只剩诊断标签 + 漂移 warn。本文为覆盖「地址簿 ⊇ payload」而在 `userPositionConsistency.test.ts` 加的 live 硬断言已按新语义**退役**;查询覆盖门由既有的 `assertV4QueriedSpokeCount`(地面真值取 payload)承担。`spokeName` 在地址簿未收录时不再保证是 raw key,改为短地址 `0x1234…abcd`。见 `docs/specs/aav-517-spoke-address-from-reserveid.md`。
+
 ## Modified Files Impact
 
 | 文件 | 修改内容 | 风险等级 | 评估 |

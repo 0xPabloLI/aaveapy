@@ -131,6 +131,7 @@ _Last inventory pass: 2026-09-28._
 - Canonical: `docs/specs/aav-1315-wallet-partial-ui-notice.md` (钱包 partial 降级在 UI 可见:hook 暴露 failedSources、Index→ReservesTable→PortfolioPanel 同链路透传、`walletLoadState === 'success'` + 非空失败集时状态行渲染琥珀提示（原为 N source(s) unavailable + title 列源；**该文案与判定已由 AAV-1393 取代**为固定 `Wallet data incomplete` + fallback-only 过滤），不新增 WalletLoadState 取值、error/empty 文案不变;12 行矩阵 M1–M12; AAV-1315)
 - Canonical: `docs/specs/aav-1393-wallet-sync-notice-copy.md` (钱包降级提示只给结论：固定文案 `Wallet data incomplete`、无 `title`、原始标签进 `data-failed-sources` + 一次 `console.info`；`hasMissingWalletData` 过滤 fallback-only 标签（`sdk-*-fallback` 表示数据已由链上读补齐 ⇒ 不提示），未知标签 fail open；标签词表由 `failureLabels.ts` 单一作者;9 行矩阵 M1–M9; AAV-1393)
 - Canonical: `docs/specs/aav-1334-remove-dead-generate-snapshots-job.md` (移除 dispatch-only `generate-snapshots` 死 job:被引用的两个 visual spec 已于 `7c48ae01` 删除、push/PR CI 恒 skip 故只在手动触发时暴露;守卫收进 `scripts/lib/workflow-playwright-specs.mjs` + `node:test`,校验 workflow 显式 spec 路径存在且禁止 `--update-snapshots`;14 行矩阵 S1–S14; AAV-1334)
+- Canonical: `docs/specs/aav-517-spoke-address-from-reserveid.md` (V4 onchain 兜底的查询集合改为 payload 的 reserveId 派生地址：地址簿降级为诊断标签 + 漂移 warn、新 Spoke 不必等 npm 发版、地址簿缺链不再短路;13 行矩阵 S1–S13; AAV-517)
 - Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### ADRs (Architecture Decision Records)

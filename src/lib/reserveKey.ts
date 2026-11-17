@@ -84,8 +84,9 @@ const V4_SPOKE_ADDRESS_PATTERN = /^0x[0-9a-f]{40}$/;
  * The address book's `SPOKES` keys are constant names (`MAIN_SPOKE`); the API's
  * `spokeName` is a display name (`Main`). Neither matches the other, so both sides key
  * on the spoke address instead: `deriveV4ReservesBySpoke` reads it out of `reserveId`
- * (which carries it lowercased) and `getV4UserPositionsAllSpokes` passes the address
- * book's EIP-55 spelling. This normalises the two to one key (AAV-1356).
+ * (which carries it lowercased) and `getV4UserPositionsAllSpokes` iterates that same
+ * key, resolving it back to an address-book entry only for the diagnostic label
+ * (AAV-1356, AAV-517). This normalises the two to one key.
  *
  * Returns null when the value cannot be a spoke address, so callers skip the entry
  * instead of storing a key that can never match. The same 20-byte guard doubles as
