@@ -7,13 +7,19 @@ import { discoverOffsetScenarios, type DiscoveryReserve, type OffsetScenario } f
  * only shape that exercises the cross-reserve offset ladder, and staging has
  * carried ZERO of them on every capture so far (2026-11-16: 441 reserves, 0
  * cross-reserve, 1 self-loop). Without a payload the cross-reserve half of
- * `portfolio-cross-reserve-offset.spec.ts` could never execute — the ladder
+ * `portfolio-cross-reserve-offset.desktop.spec.ts` /
+ * `.mobile.spec.ts` could never execute — the ladder
  * that AAV-1333 exists to fix was only ever type-checked, never run.
  *
- * This module turns a committed REAL `/markets` payload into a stub with ONE
- * injected constraint and re-runs the REAL discovery gates
- * (`discoverOffsetScenarios`) on it, so the runner chain proven here is the
- * production chain — not a parallel hand-rolled selection.
+ * This module turns a committed REAL `/markets` payload into a stub with TWO
+ * injections — the `netPositionConstraint` that makes the ladder cross-reserve,
+ * and (AAV-1395) a second, unconstrained campaign group cloned from the real
+ * one so the plan's `weight = responding / total` is 0.5. Without the second
+ * group the ladder could only ever run at weight = 1, leaving the dilution path
+ * covered by `planOffsetRunner`'s own unit tests alone. It then re-runs the REAL
+ * discovery gates (`discoverOffsetScenarios`) on the payload, so the runner
+ * chain proven here is the production chain — not a parallel hand-rolled
+ * selection.
  *
  * Design rules (mirrors AAV-1316's cross-asset stub):
  * - Pure: no @playwright/test, no fetch. Unit-tested in
@@ -76,6 +82,38 @@ function constraintOffsetIds(base: unknown): string[] | null {
   return Array.isArray(ids) ? (ids as string[]) : null;
 }
 
+interface StubCampaignGroup {
+  opportunityId?: string;
+  netPositionConstraint?: unknown;
+  breakdowns?: Array<{ campaignId?: string } & Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+const NON_RESPONDING_SUFFIX = '-nonresponding';
+
+/**
+ * AAV-1395 — append a second, unconstrained group cloned from the fixture's
+ * real campaign. Equal APRs make the plan's `weight` exactly 0.5, so the
+ * browser run exercises the dilution path end-to-end.
+ */
+function injectNonRespondingGroup(payload: CrossReserveOffsetStubPayload): void {
+  const target = payload.reserves.find((r) => r.reserveId === CROSS_RESERVE_OFFSET_TARGET_RESERVE_ID);
+  const groups = target?.merklSupplys;
+  if (!Array.isArray(groups) || groups.length === 0) {
+    fail(`target ${CROSS_RESERVE_OFFSET_TARGET_RESERVE_ID} carries no merklSupplys to clone`);
+  }
+  const clone = structuredClone(groups[0]) as StubCampaignGroup;
+  delete clone.netPositionConstraint;
+  if (typeof clone.opportunityId === 'string') {
+    clone.opportunityId = `${clone.opportunityId}${NON_RESPONDING_SUFFIX}`;
+  }
+  clone.breakdowns = (clone.breakdowns ?? []).map((breakdown, index) => ({
+    ...breakdown,
+    campaignId: `${breakdown.campaignId ?? `campaign-${index}`}${NON_RESPONDING_SUFFIX}`,
+  }));
+  groups.push(clone);
+}
+
 /**
  * Validate the fixture's baked injection and let the real discovery gates select
  * the scenario. Throws when the payload would silently skip — that is a
@@ -94,6 +132,9 @@ export function buildCrossReserveOffsetStub(base: unknown): CrossReserveOffsetSt
   }
 
   const payload = structuredClone(base) as CrossReserveOffsetStubPayload;
+  // AAV-1395: second injection — a non-responding group halves the weight.
+  injectNonRespondingGroup(payload);
+
   // The REAL gates select the scenario — a stub discovery excludes is a
   // fixture/injection bug and must fail loudly, not skip.
   const scenarios = discoverOffsetScenarios(payload.reserves, new Date().toISOString());
@@ -110,6 +151,13 @@ export function buildCrossReserveOffsetStub(base: unknown): CrossReserveOffsetSt
   }
   if (scenario.offsetReserveId !== CROSS_RESERVE_OFFSET_OFFSET_RESERVE_ID) {
     fail(`discovered offset ${scenario.offsetReserveId} is not the documented Base USDC reserve`);
+  }
+  // The cloned group must dilute the plan (weight 0.5 → rung 2 = 0.5 × 0.5).
+  // If it does not, the clone was dropped or the fixture gained a constraint and
+  // this stub silently stopped covering the multi-group path.
+  const dilutedRung = scenario.plan.steps[1]?.expectedDecreaseRatio ?? Number.NaN;
+  if (Math.abs(dilutedRung - 0.25) > 1e-9) {
+    fail(`the injected non-responding group did not dilute the plan (rung 2 ratio ${dilutedRung}, expected 0.25)`);
   }
 
   return { payload, scenario };

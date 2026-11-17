@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import type { IncentiveCellReading } from './incentiveReading';
+
 import {
   getMarketChipLabel,
   pickIncentiveReserve,
@@ -417,16 +419,15 @@ export async function fillBorrowAmountMobile(page: Page, reserveId: string, symb
 }
 
 /**
- * Read the incentive "after" value for a reserve's supply or borrow side.
- * Returns 0 if the cell has no data-after span (no incentive).
+ * Locate the incentive cell's `data-after` span for a reserve side.
  * Works for both desktop (table row) and mobile (card) layouts.
  */
-export async function readIncentiveAfter(
+async function locateIncentiveAfterSpan(
   page: Page,
   reserveId: string,
   side: 'supply' | 'borrow',
   isMobile: boolean,
-): Promise<number> {
+): Promise<Locator> {
   const cellName = side === 'supply' ? 'supply-incentive' : 'borrow-incentive';
 
   if (isMobile) {
@@ -442,18 +443,43 @@ export async function readIncentiveAfter(
       await tab.click();
       await page.waitForTimeout(300);
     }
-    const afterSpan = card.locator(`span[data-cell="${cellName}"] span[data-after]`).first();
-    const hasAfterSpan = (await afterSpan.count()) > 0;
-    if (!hasAfterSpan) return 0;
-    const attr = await afterSpan.getAttribute('data-after');
-    return attr ? parseFloat(attr) : 0;
+    return card.locator(`span[data-cell="${cellName}"] span[data-after]`).first();
   }
 
   const row = page.locator(`tr[data-reserve-id="${reserveId}"]`).first();
-  const incentiveCell = row.locator(`td[data-cell="${cellName}"]`);
-  const afterSpan = incentiveCell.locator('span[data-after]').first();
-  const hasAfterSpan = (await afterSpan.count()) > 0;
-  if (!hasAfterSpan) return 0;
+  return row.locator(`td[data-cell="${cellName}"] span[data-after]`).first();
+}
+
+/**
+ * Read the incentive cell while preserving the difference between "the cell
+ * says zero" and "the cell is gone" (AAV-1395). Callers that assert a decrease
+ * should pass this to `classifyIncentiveReading` instead of trusting the value.
+ */
+export async function readIncentiveCellState(
+  page: Page,
+  reserveId: string,
+  side: 'supply' | 'borrow',
+  isMobile: boolean,
+): Promise<IncentiveCellReading> {
+  const afterSpan = await locateIncentiveAfterSpan(page, reserveId, side, isMobile);
+  if ((await afterSpan.count()) === 0) return { present: false, numeric: false, value: 0 };
+
   const attr = await afterSpan.getAttribute('data-after');
-  return attr ? parseFloat(attr) : 0;
+  const parsed = attr == null || attr.trim() === '' ? Number.NaN : Number.parseFloat(attr);
+  const numeric = Number.isFinite(parsed);
+  return { present: true, numeric, value: numeric ? parsed : 0 };
+}
+
+/**
+ * Read the incentive "after" value for a reserve's supply or borrow side.
+ * Returns 0 when the cell has no data-after span (the '—' shape).
+ * Works for both desktop (table row) and mobile (card) layouts.
+ */
+export async function readIncentiveAfter(
+  page: Page,
+  reserveId: string,
+  side: 'supply' | 'borrow',
+  isMobile: boolean,
+): Promise<number> {
+  return (await readIncentiveCellState(page, reserveId, side, isMobile)).value;
 }

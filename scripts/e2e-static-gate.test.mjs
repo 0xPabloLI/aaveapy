@@ -172,7 +172,10 @@ describe('AAV-1319 behavioural gates (E1/E2/E5/E6)', () => {
       `eslint only read ${files.length} e2e files — the ignore or files glob is too narrow`,
     );
     assert.ok(
-      files.some((file) => file.endsWith('reserves-table-interactions.spec.ts')),
+      // AAV-1395 renamed the spec to `.desktop.spec.ts`; match the stem so a
+      // future platform suffix (or another rename) cannot silently hollow out
+      // this coverage check.
+      files.some((file) => file.includes('reserves-table-interactions') && file.endsWith('.spec.ts')),
       'eslint must read spec files, not just helpers',
     );
   });

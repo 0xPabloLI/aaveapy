@@ -22,9 +22,6 @@ const NEW_FIELDS = [
 ];
 
 test.describe('API fields v3 — UI rendering verification', () => {
-  test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Reserves table uses card layout on mobile, not tbody tr');
-  });
   test('main page loads with reserve data visible', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
@@ -69,11 +66,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
     expect(fieldErrors).toHaveLength(0);
   });
 
-  test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Desktop detail panel — mobile uses bottom sheet with different structure',
-    );
+  test('reserve detail panel opens and shows liquidity/borrow/supply data', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 120_000 });
@@ -90,11 +83,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
     expect(hasBorrowOrDebt).toBe(true);
   });
 
-  test('utilization indicator renders with percentage value', async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Desktop detail panel — mobile uses bottom sheet with different structure',
-    );
+  test('utilization indicator renders with percentage value', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 120_000 });
@@ -107,11 +96,7 @@ test.describe('API fields v3 — UI rendering verification', () => {
     expect(text).toMatch(/\d+(\.\d+)?\s*%/);
   });
 
-  test('rate simulation slider is interactable', async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes('mobile'),
-      'Desktop detail panel — mobile uses bottom sheet with different structure',
-    );
+  test('rate simulation slider is interactable', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/', { timeout: 30_000, waitUntil: 'domcontentloaded' });
     await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 120_000 });

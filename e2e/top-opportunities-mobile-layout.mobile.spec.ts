@@ -1,10 +1,6 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Top Opportunities mobile layout', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(!testInfo.project.name.includes('mobile'), 'Mobile layout only');
-  });
-
   test('mini card labels do not overlap total APY value', async ({ page }) => {
     await page.goto('/');
 

@@ -156,8 +156,12 @@ export function isComputableMerklCampaign(b: MerklBreakdown, nowIso: string): bo
   const apr = parseApr(b.campaignApr);
   if (apr > 0) return true;
   // APR=0 is only renderable for points-based campaigns (Tydro formula).
-  const points = parseApr(b.pointsPerThousandUsd);
-  return points > 0;
+  return isPointsBasedCampaign(b);
+}
+
+/** Points contribute to the displayed APY (`tydroPointToUsdRate`), never to `campaignApr`. */
+function isPointsBasedCampaign(b: MerklBreakdown): boolean {
+  return parseApr(b.pointsPerThousandUsd) > 0;
 }
 
 /**
@@ -258,6 +262,10 @@ function merklBreakdownsForSide(r: DiscoveryReserve, side: 'supply' | 'borrow'):
 
 /** Sum of the breakdown APRs the UI can actually render (percent points). */
 function computableAprPercent(breakdowns: MerklBreakdown[], nowIso: string): number {
+  // Points campaigns contribute their APY through `tydroPointToUsdRate` at
+  // render time, which this module deliberately does not mirror. Callers that
+  // need the full displayed value must exclude points-bearing targets instead
+  // of treating this sum as the display (AAV-1395).
   return breakdowns
     .filter((b) => isComputableMerklCampaign(b, nowIso))
     .reduce((acc, b) => acc + parseApr(b.campaignApr), 0);
@@ -542,9 +550,12 @@ const OFFSET_FUNDING_CAP_USD = 100_000;
 const CROSS_OFFSET_STEP_FRACTIONS = [0.25, 0.5, 1.5] as const;
 
 /**
- * Self-loop ladder stays ABSOLUTE: its borrow is LTV-clamped to `gross × ltv`,
- * which is already proportional to gross. The plan derives what the clamp
- * leaves instead of assuming a fixed fraction (AAV-1333).
+ * Self-loop ladder stays ABSOLUTE: the runner types the same 50k/100k/200k
+ * rungs regardless of gross. The app's incentive math consumes the RAW borrow
+ * input (`group.borrowUsd`), not the LTV-clamped display amount — see
+ * `portfolioSimulator.ts` `crossReservePositions`. So the plan's ceiling is the
+ * borrow room the input accepts, not `gross × ltv` (AAV-1395; the LTV term made
+ * the plan under-predict and the old reader turned the resulting '—' into 0).
  */
 const SELF_LOOP_OFFSET_STEPS_USD = [50_000, 100_000, 200_000] as const;
 
@@ -631,10 +642,13 @@ export function planOffsetRunner(
     return { targetSupplyUsd: gross, offsetSupplyUsd: funding, offsetCapacityUsd: capacity, steps };
   }
 
-  const targetLtv = typeof target.ltv === 'number' && Number.isFinite(target.ltv) ? target.ltv : 0;
   const gross = Math.floor(Math.min(OFFSET_TARGET_SUPPLY_CAP_USD, targetRoom, capBound));
   if (gross < MIN_OFFSET_GROSS_USD) return null;
-  const capacity = Math.min(getBorrowRoomUsd(target) ?? Number.POSITIVE_INFINITY, (gross * targetLtv) / 100);
+  // The app's incentive simulation consumes the raw borrow input, so the
+  // ceiling is the borrow room the input accepts — not `gross × ltv` (the LTV
+  // clamp only changes the displayed amount). `usableForSimulatedPosition` has
+  // already required enough LTV funding power for selection.
+  const capacity = getBorrowRoomUsd(target) ?? Number.POSITIVE_INFINITY;
   if (!(capacity > 0)) return null;
   const steps = SELF_LOOP_OFFSET_STEPS_USD.map((step) => {
     const effective = Math.min(step, capacity);
@@ -657,7 +671,8 @@ function usableForOffsetPosition(r: DiscoveryReserve): boolean {
 
 /**
  * Discover cross-reserve / self-loop Merkl offset scenarios from /markets
- * reserves (ported from portfolio-cross-reserve-offset.spec.ts — AAV-1280).
+ * reserves (ported from the offset spec — AAV-1280; now split into
+ * `portfolio-cross-reserve-offset.desktop.spec.ts` / `.mobile.spec.ts`).
  *
  * A group qualifies only when its COMPUTABLE breakdown APRs sum > 0: the
  * per-breakdown gate chain (active window with both boundaries, whitelist
@@ -700,6 +715,16 @@ export function discoverOffsetScenarios(reserves: DiscoveryReserve[], nowIso: st
     const groups = r.merklSupplys;
     if (!Array.isArray(groups)) continue;
     const typedGroups = groups as OffsetOpportunityGroup[];
+
+    // AAV-1395: a points-based breakdown renders through `tydroPointToUsdRate`
+    // but contributes 0 to `computableAprPercent`'s campaignApr sum, so a target
+    // that mixes points with APR would under-count the plan's denominator and
+    // assert a larger decrease than the UI can show. Skip the target instead of
+    // asserting a diluted fraction — same policy as brevis / `supplyIncentives`.
+    const hasPointsBreakdown = typedGroups.some((group) =>
+      breakdownsOfGroup(group).some((b) => isComputableMerklCampaign(b, nowIso) && isPointsBasedCampaign(b)),
+    );
+    if (hasPointsBreakdown) continue;
 
     // Displayed supply incentive = every computable group on the reserve, so
     // the expected decrease is `responding / total` of the offset's own ratio.

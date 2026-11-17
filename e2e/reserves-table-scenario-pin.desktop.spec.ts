@@ -235,10 +235,6 @@ async function getOrderProbeReordered(page: Page): Promise<boolean> {
 }
 
 test.describe('Scenario input pin scroll (desktop)', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Pin scroll is desktop-specific');
-  });
-
   test('expanded row stays pinned after second scenario input reorders list', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/');

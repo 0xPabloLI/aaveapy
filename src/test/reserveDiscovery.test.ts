@@ -694,6 +694,34 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetApr: 2 });
   });
 
+  // AAV-1395: the plan's weight multiplies the eligible fraction by
+  // `responding / total`, but `computableAprPercent` can only see
+  // `campaignApr`. A points-based breakdown contributes to the displayed APY
+  // through `tydroPointToUsdRate` yet contributes 0 to `totalApr`, so a target
+  // that mixes the two shapes would under-count its denominator and the runner
+  // would assert a larger decrease than the UI can produce (false red).
+  // Conservative fix: skip any target whose display includes a points
+  // campaign, matching the brevis / `supplyIncentives` policy.
+  it('O23: skips a target that mixes an APR campaign with a non-responding points campaign', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'apr', campaignApr: 2 })),
+        offsetGroup([], breakdown({ campaignId: 'points', campaignApr: 0, pointsPerThousandUsd: 5 })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toEqual([]);
+  });
+
+  it('O24: skips even when the points campaign sits in the responding group', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'apr', campaignApr: 2 })),
+        offsetGroup([SELF], breakdown({ campaignId: 'points', campaignApr: 0, pointsPerThousandUsd: 5 })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toEqual([]);
+  });
+
   // ─── AAV-1333: runner plan derivation (matrix rows L1–L20) ─────────
   //
   // The plan is the single seam: ladder amounts and expected decrease ratios
@@ -703,8 +731,9 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
   // Fixture arithmetic (realisticRoom: 6 dec, price 1, room $50k; ltv 80):
   //   cross  → funding = min(100k, 50k) = 50k, capacity = min(50k, 50k×0.8) = 40k
   //            gross = min(100k, 50k, 40k/2) = 20k ⇒ 5k / 10k / 30k
-  //   self   → gross = min(100k, 50k) = 50k, capacity = min(50k, 50k×0.8) = 40k
-  //            ⇒ every rung clamps to 40k ⇒ ratio 0.8
+  //   self   → gross = min(100k, 50k) = 50k, capacity = borrow room 50k
+  //            ⇒ every rung ≥ gross (AAV-1395: the incentive uses the raw
+  //            borrow, not the LTV-clamped display amount)
 
   const aprs = (respondingAprPercent: number, totalAprPercent = respondingAprPercent) => ({
     respondingAprPercent,
@@ -787,30 +816,42 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     expect(discoverOffsetScenarios([r], NOW)[0].plan.targetSupplyUsd).toBe(appCapUsd);
   });
 
-  it('L6: self-loop keeps the absolute ladder and derives the LTV-clamped ratio', () => {
-    const plan = planFor('self-loop');
-    expect(plan).toMatchObject({ targetSupplyUsd: 50_000, offsetSupplyUsd: null, offsetCapacityUsd: 40_000 });
+  it('L6: self-loop keeps the absolute ladder and derives the ratio from borrow room', () => {
+    // Supply room $200k keeps gross at the $100k cap; borrow room $200k leaves
+    // the ladder un-clamped, so the rungs are proportional to gross.
+    const plan = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000) });
+    expect(plan).toMatchObject({ targetSupplyUsd: 100_000, offsetSupplyUsd: null, offsetCapacityUsd: 200_000 });
     expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([50_000, 100_000, 200_000]);
-    // Every rung clamps to 40k ⇒ 0.8 of a 50k gross.
-    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.8, 0.8, 0.8]);
-    expect(plan!.steps.some((s) => s.expectedAfterZero)).toBe(false);
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([false, true, true]);
   });
 
-  it('L7: self-loop with ltv 20% derives 0.2 — the old hard-coded 0.4 would fail here', () => {
-    const plan = planFor('self-loop', { ltv: 20 });
-    expect(plan).toMatchObject({ offsetCapacityUsd: 10_000 });
-    expect(plan!.steps[0].expectedDecreaseRatio).toBeCloseTo(0.2);
-    // No asserted threshold may exceed the measured ceiling.
+  it('L7: a binding borrow room caps the self-loop ratio (LTV is not the ceiling)', () => {
+    const plan = planFor('self-loop', { borrowable: usd(20_000) });
+    expect(plan).toMatchObject({ offsetCapacityUsd: 20_000 });
+    // 20k of a 50k gross for every rung, whatever the LTV says.
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.4, 0.4, 0.4]);
     for (const step of plan!.steps) expect(step.expectedDecreaseRatio).toBeLessThanOrEqual(1);
+  });
+
+  it('L7b: LTV never enters the self-loop ratio (only the selection gate reads it)', () => {
+    // Same borrow room, very different LTVs: the plan must be identical,
+    // because the app's incentive math consumes the raw borrow input.
+    const tight = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000), ltv: 5 });
+    const loose = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000), ltv: 90 });
+    expect(tight).toEqual(loose);
+    expect(tight!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
   });
 
   it('L8: self-loop with a small supply room derives ratios from the reduced gross', () => {
     const plan = planFor('self-loop', { suppliable: usd(10_000) });
-    expect(plan).toMatchObject({ targetSupplyUsd: 10_000, offsetCapacityUsd: 8_000 });
-    expect(plan!.steps[0].expectedDecreaseRatio).toBeCloseTo(0.8);
+    expect(plan).toMatchObject({ targetSupplyUsd: 10_000, offsetCapacityUsd: 50_000 });
+    // Every rung is ≥ gross ⇒ the eligible position floors at 0.
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([1, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([true, true, true]);
   });
 
-  it('L9: capacity takes the smaller of borrow room and LTV funding power', () => {
+  it('L9: a borrow room below gross binds every rung', () => {
     const plan = planFor('self-loop', { borrowable: usd(6_000) });
     expect(plan).toMatchObject({ offsetCapacityUsd: 6_000 });
     expect(plan!.steps[0].expectedDecreaseRatio).toBeCloseTo(0.12);
@@ -825,8 +866,9 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
       borrowCap: undefined,
       borrowed: undefined,
     });
-    expect(plan).toMatchObject({ targetSupplyUsd: 100_000, offsetCapacityUsd: 80_000 });
-    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 0.8, 0.8]);
+    expect(plan).toMatchObject({ targetSupplyUsd: 100_000, offsetCapacityUsd: Number.POSITIVE_INFINITY });
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([false, true, true]);
   });
 
   it('L11: every plan amount is a finite, strictly increasing integer', () => {
@@ -859,8 +901,8 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     });
     const scenarios = discoverOffsetScenarios([r], NOW);
     expect(scenarios).toHaveLength(1);
-    // responding 2 of a 5-point display ⇒ 0.4 × the 0.8 LTV ratio.
-    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(0.32);
+    // responding 2 of a 5-point display ⇒ 0.4 × the full 50k-offset ratio.
+    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(0.4);
   });
 
   it('L13: an extra group that also responds to the borrow keeps the full ratio', () => {
@@ -872,7 +914,7 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     });
     const scenarios = discoverOffsetScenarios([r], NOW);
     expect(scenarios).toHaveLength(1);
-    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(0.8);
+    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(1);
   });
 
   it('L14: an unrenderable extra group does not dilute (it renders 0)', () => {
@@ -882,7 +924,7 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
         group(breakdown({ campaignId: 'expired', campaignApr: 50, campaignEndedAt: '2026-09-20T00:00:00Z' })),
       ],
     });
-    expect(discoverOffsetScenarios([r], NOW)[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(0.8);
+    expect(discoverOffsetScenarios([r], NOW)[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(1);
   });
 
   it('L15: brevis rewards on the target exclude it (the ratio would be diluted)', () => {

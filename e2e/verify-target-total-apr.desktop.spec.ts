@@ -16,9 +16,6 @@ import { test, expect } from '@playwright/test';
  * Mobile cards use a bottom sheet for details, not the tooltip.
  */
 test.describe('TARGET_TOTAL_APR UI verification', () => {
-  test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Incentive tooltip is desktop-only — mobile uses bottom sheet');
-  });
   test('incentive tooltip shows breakdown structure when clicking supply incentive', async ({ page }) => {
     test.setTimeout(120_000);
 

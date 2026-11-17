@@ -29,8 +29,7 @@ async function setupPortfolio(page: Page) {
 
 test.describe('Portfolio input — mobile spacing', () => {
   test.describe('mobile', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(!testInfo.project.name.includes('mobile'), 'Mobile card only');
+    test.beforeEach(() => {
       enforceReserveGate(reserveGate);
     });
 

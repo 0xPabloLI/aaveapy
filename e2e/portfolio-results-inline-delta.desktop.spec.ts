@@ -31,8 +31,7 @@ async function setupPortfolio(page: Page) {
 
 test.describe('Portfolio ResultsTable — inline delta', () => {
   test.describe('desktop', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
+    test.beforeEach(() => {
       enforceReserveGate(reserveGate);
     });
 

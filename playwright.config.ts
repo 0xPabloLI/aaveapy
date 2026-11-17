@@ -71,7 +71,9 @@ export default (async () => {
     projects: [
       {
         name: 'chromium',
-        testIgnore: [/scenario-input-modes\.mobile\.spec\.ts/, /portfolio-cross-asset-pairing\.mobile\.spec\.ts/],
+        // AAV-1395: platform-specific files are routed by name — never
+        // collected-then-skipped with `test.skip(project.name)`.
+        testIgnore: [/\.mobile\.spec\.ts/],
         use: {
           ...devices['Desktop Chrome'],
           viewport: { width: 1600, height: 1200 },
@@ -80,10 +82,10 @@ export default (async () => {
       {
         name: 'mobile-chromium',
         testIgnore: [
+          /\.desktop\.spec\.ts/,
+          // Desktop-only but not (yet) renamed to `.desktop.spec.ts`.
           /reserves-table-simulation-full-after-scenario-pin\.spec\.ts/,
           /reserves-table-simulation-nested-scroll\.spec\.ts/,
-          /scenario-input-modes\.desktop\.spec\.ts/,
-          /portfolio-cross-asset-pairing\.desktop\.spec\.ts/,
         ],
         use: {
           ...devices['Pixel 7'],
