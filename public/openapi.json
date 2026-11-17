@@ -406,7 +406,7 @@
                   },
                   "version": {
                     "type": "string",
-                    "const": "snapshot-v3"
+                    "const": "snapshot-v4"
                   },
                   "staleTimeMs": {
                     "type": "number"
@@ -613,9 +613,6 @@
                 "type": "string"
               },
               "spokeId": {
-                "type": "string"
-              },
-              "spokeName": {
                 "type": "string"
               },
               "spokeAddress": {
@@ -1171,9 +1168,6 @@
             "type": "string"
           },
           "spokeId": {
-            "type": "string"
-          },
-          "spokeName": {
             "type": "string"
           },
           "spokeAddress": {
