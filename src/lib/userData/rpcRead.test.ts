@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createRpcClientPool } from './rpcResilience';
 import { readFromHealthyRpc } from './rpcRead';
 
 const rotationMocks = vi.hoisted(() => ({ readWithRpcRotation: vi.fn() }));
@@ -39,5 +40,25 @@ describe('readFromHealthyRpc (AAV-1387)', () => {
     await expect(
       readFromHealthyRpc(1, undefined, async () => ({ value: 'batch', allCallsFailed: false })),
     ).resolves.toBeNull();
+  });
+
+  it('forwards the chain read session to rotation when one is supplied (AAV-1313)', async () => {
+    rotationMocks.readWithRpcRotation.mockResolvedValue('rotated');
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async () => ({ value: 'batch', allCallsFailed: false }));
+
+    await expect(readFromHealthyRpc(1, undefined, attempt, pool)).resolves.toBe('rotated');
+
+    expect(rotationMocks.readWithRpcRotation).toHaveBeenCalledWith(1, attempt, pool);
+  });
+
+  it('ignores the session when a client is injected', async () => {
+    const client = { tag: 'injected' };
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async () => ({ value: 'batch', allCallsFailed: false }));
+
+    await expect(readFromHealthyRpc(1, client as never, attempt, pool)).resolves.toBe('batch');
+
+    expect(rotationMocks.readWithRpcRotation).not.toHaveBeenCalled();
   });
 });

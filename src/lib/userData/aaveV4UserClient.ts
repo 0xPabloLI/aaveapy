@@ -265,7 +265,7 @@ export const SPOKE_ABI = [
 
 import { createPublicClient, http, type PublicClient } from 'viem';
 import { readFromHealthyRpc } from './rpcRead';
-import type { RpcReadAttempt } from './rpcResilience';
+import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V4ReserveInfo {
   reserveId: bigint;
@@ -302,6 +302,7 @@ export async function getV4UserPositionsOnChain(
   userAddress: `0x${string}`,
   reserves: V4ReserveInfo[],
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V4OnchainResult> {
   const reserveCalls = reserves.flatMap((reserve) => [
     {
@@ -350,8 +351,9 @@ export async function getV4UserPositionsOnChain(
   };
 
   // Explicit client (tests, health-factor path) bypasses rotation by
-  // contract; otherwise the read goes through endpoint rotation (AAV-1387).
-  const results = await readFromHealthyRpc(chainId, client, readBatch);
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387),
+  // reusing the per-chain probe shared by all spokes (AAV-1313).
+  const results = await readFromHealthyRpc(chainId, client, readBatch, pool);
   if (!results) return { positions: [], accountSummaries: [] };
 
   const positions: V4UserPosition[] = [];
@@ -431,6 +433,7 @@ export async function getV4UserPositionsAllSpokes(
   userAddress: `0x${string}`,
   reservesBySpoke: Record<string, V4ReserveInfo[]>,
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V4OnchainResponse> {
   const spokes = getV4SpokeAddresses(chainId);
   if (!spokes) return { results: [], errors: [] };
@@ -445,9 +448,13 @@ export async function getV4UserPositionsAllSpokes(
     return reserves && reserves.length > 0 ? [{ spoke, reserves }] : [];
   });
 
+  // One read session per chain call: 17 Ethereum spokes share one probe result
+  // and re-use the endpoint that served the first read (AAV-1313).
+  const sessionPool = client ? undefined : (pool ?? createRpcClientPool());
+
   const settled = await Promise.allSettled(
     targeted.map(({ spoke, reserves }) =>
-      getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reserves, client),
+      getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reserves, client, sessionPool),
     ),
   );
 

@@ -92,6 +92,106 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
   throw new RpcRotationExhaustedError(chainId);
 }
 
+/** One probed endpoint. `client` is bound to `url` by construction. */
+export interface RpcClientEntry {
+  url: string;
+  client: PublicClient;
+}
+
+/**
+ * Per-chain read session (AAV-1313).
+ *
+ * The onchain position path fans out per market (V3) and per spoke (V4), so a
+ * single wallet sync used to re-probe every RPC URL of a chain once per market
+ * and once per spoke — Ethereum's 17 V4 spokes meant 17 identical rotations,
+ * each with a 3s budget per URL, all inside a 15s outer timeout. HF baselines
+ * already grouped by chainId; this is the same idea for positions.
+ *
+ * The pool shares what sibling reads have in common: the probe result and the
+ * endpoint that actually served a read. It deliberately does NOT hand out one
+ * client as the only candidate — `readFromHealthyRpc` treats an injected
+ * client as "rotation already resolved" and would pin the whole sync to an
+ * endpoint that answers `eth_chainId` but rejects batch reads (fastnode 413,
+ * AAV-1387). A failed read therefore releases the entry, so the next read
+ * re-probes or moves to another endpoint.
+ *
+ * Scope: one `fetchFallbackPositions` call. Nothing is persisted across
+ * requests; a reload starts clean.
+ */
+export interface RpcClientPool {
+  /** First usable endpoint for `chainId`, probed at most once per sync. */
+  acquire(chainId: number): Promise<RpcClientEntry | null>;
+  /** Remembers the endpoint that just served a read, so siblings skip probing. */
+  adopt(chainId: number, entry: RpcClientEntry): void;
+  /** Drops `url` if it is the pooled endpoint — the next read must re-probe. */
+  release(chainId: number, url: string): void;
+}
+
+interface PooledChainState {
+  /** Endpoint currently serving reads for this chain. */
+  entry: RpcClientEntry | null;
+  /** Single-flight probe, resolved or rejected; also the per-sync cache. */
+  settled: Promise<RpcClientEntry | null> | null;
+}
+
+export function createRpcClientPool(): RpcClientPool {
+  const states = new Map<number, PooledChainState>();
+
+  const stateFor = (chainId: number): PooledChainState => {
+    let state = states.get(chainId);
+    if (!state) {
+      state = { entry: null, settled: null };
+      states.set(chainId, state);
+    }
+    return state;
+  };
+
+  return {
+    acquire(chainId) {
+      const state = stateFor(chainId);
+      // Concurrent market/spoke reads start together, so only a shared
+      // in-flight promise collapses N probes into one.
+      if (!state.settled) state.settled = probeFirstHealthyClient(chainId);
+      return state.settled.then((entry) => {
+        state.entry = entry;
+        return entry;
+      });
+      // A rejection is intentionally kept in `settled`: every URL failing its
+      // probe is a fact about the chain for this sync, and re-probing it once
+      // per market would burn the same budget N times.
+    },
+    adopt(chainId, entry) {
+      const state = stateFor(chainId);
+      state.entry = entry;
+      state.settled = Promise.resolve(entry);
+    },
+    release(chainId, url) {
+      const state = states.get(chainId);
+      if (!state || state.entry?.url !== url) return;
+      state.entry = null;
+      state.settled = null;
+    },
+  };
+}
+
+/**
+ * Probes endpoints until one answers, preferring the healthy list and falling
+ * back to the full list when the filter left nothing that works (the same
+ * anti-lockout rule as `readWithRpcRotation`). Exhaustion is thrown rather
+ * than returned: "no endpoint is reachable" is not an empty result.
+ */
+async function probeFirstHealthyClient(chainId: number): Promise<RpcClientEntry | null> {
+  const rpcUrls = getAllRpcUrls(chainId);
+  if (rpcUrls.length === 0) return null;
+
+  const preferred = selectRpcUrlsByHealth(chainId, rpcUrls);
+  for await (const entry of healthyRpcClients(chainId, preferred)) return entry;
+  if (preferred.length < rpcUrls.length) {
+    for await (const entry of healthyRpcClients(chainId, rpcUrls)) return entry;
+  }
+  throw new RpcRotationExhaustedError(chainId);
+}
+
 /**
  * One batch read against one client. `allCallsFailed` is the caller's own
  * "nothing was readable here" judgement (V3: no reserve read succeeded), which
@@ -127,17 +227,18 @@ export interface RpcReadAttempt<T> {
 export async function readWithRpcRotation<T>(
   chainId: number,
   attempt: (client: PublicClient) => Promise<RpcReadAttempt<T>>,
+  pool?: RpcClientPool,
 ): Promise<T | null> {
   const rpcUrls = getAllRpcUrls(chainId);
   if (rpcUrls.length === 0) return null;
 
   const preferred = selectRpcUrlsByHealth(chainId, rpcUrls);
-  let outcome = await attemptAcrossRpcUrls(chainId, preferred, attempt);
+  let outcome = await attemptAcrossRpcUrls(chainId, preferred, attempt, pool);
   // Anti-lockout has to hold end to end: the health filter can narrow the list
   // down to a URL whose probe now fails too. Without this retry the demoted
   // endpoints are never probed and the chain stays unreadable for the session.
   if (outcome.attempts === 0 && preferred.length < rpcUrls.length) {
-    outcome = await attemptAcrossRpcUrls(chainId, rpcUrls, attempt);
+    outcome = await attemptAcrossRpcUrls(chainId, rpcUrls, attempt, pool);
   }
 
   if (outcome.lastValue) return outcome.lastValue.value;
@@ -156,22 +257,28 @@ async function attemptAcrossRpcUrls<T>(
   chainId: number,
   rpcUrls: readonly string[],
   attempt: (client: PublicClient) => Promise<RpcReadAttempt<T>>,
+  pool?: RpcClientPool,
 ): Promise<RotationOutcome<T>> {
   const outcome: RotationOutcome<T> = { attempts: 0, lastValue: null, lastError: null };
 
-  for await (const { url, client } of healthyRpcClients(chainId, rpcUrls)) {
+  for await (const { url, client } of healthyRpcClients(chainId, rpcUrls, pool)) {
     outcome.attempts += 1;
     try {
       const result = await attempt(client);
       if (!result.allCallsFailed) {
         clearRpcUnhealthy(chainId, url);
+        pool?.adopt(chainId, { url, client });
         return { ...outcome, lastValue: { value: result.value } };
       }
       markRpcUnhealthy(chainId, url);
+      // The pooled endpoint just failed a real batch: drop it so the next market/spoke
+      // re-probes instead of inheriting a node that only answered `eth_chainId`.
+      pool?.release(chainId, url);
       console.warn(`[rpc-rotation] ${url} returned no successful reads for chain ${chainId}; trying next RPC`);
       outcome.lastValue = { value: result.value };
     } catch (err) {
       markRpcUnhealthy(chainId, url);
+      pool?.release(chainId, url);
       const errorType = classifyRpcError(err);
       console.warn(`[rpc-rotation] ${url} read failed for chain ${chainId} (${errorType}):`, err); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
       outcome.lastError = { error: err };
@@ -199,12 +306,26 @@ function createClientForUrl(chainId: number, url: string): PublicClient {
  * list on the anti-lockout retry), so filtering and retrying cannot fight each
  * other. Shared by both entry points so the probe timeout and warn text cannot
  * drift apart.
+ *
+ * With a `pool`, the endpoint that already served a read for this chain goes
+ * first and is not probed again; the rest of the list is still walked so a
+ * failed batch can rotate away (AAV-1387). `pool.acquire` itself owns the
+ * anti-lockout retry for the "no endpoint is reachable" case.
  */
 async function* healthyRpcClients(
   chainId: number,
   rpcUrls: readonly string[],
+  pool?: RpcClientPool,
 ): AsyncGenerator<{ url: string; client: PublicClient }> {
+  let pooled: RpcClientEntry | null = null;
+  if (pool) {
+    pooled = await pool.acquire(chainId);
+    if (!pooled) return;
+    yield pooled;
+  }
+
   for (const url of rpcUrls) {
+    if (pooled?.url === url) continue;
     const client = createClientForUrl(chainId, url);
     try {
       await withTimeout(client.getChainId(), PROBE_TIMEOUT_MS, `rpc-rotation-chain-${chainId}`);

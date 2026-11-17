@@ -17,7 +17,7 @@ import {
   type V4ReserveInfo,
 } from './aaveV4UserClient';
 import { createPublicClient } from 'viem';
-import { RpcRotationExhaustedError } from './rpcResilience';
+import { createRpcClientPool, RpcRotationExhaustedError } from './rpcResilience';
 import { MulticallAllCallsFailedError } from './multicallFailure';
 import { getAllRpcUrls } from './chainDiscovery';
 import { deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
@@ -1114,5 +1114,51 @@ describe('getV4UserPositionsOnChain read rotation wiring (AAV-1387)', () => {
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].spokeName).toBe(bad.name);
     expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
+  });
+});
+
+describe('getV4UserPositionsAllSpokes shared RPC session (AAV-1313)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
+  });
+
+  it('passes one read session to every spoke of the chain', async () => {
+    const spokes = getV4SpokeAddresses(1)!;
+    const [first, second] = spokes;
+    const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+    const pool = createRpcClientPool();
+
+    await getV4UserPositionsAllSpokes(
+      1,
+      USER,
+      {
+        [toV4SpokeKey(first.address)!]: reserves,
+        [toV4SpokeKey(second.address)!]: reserves,
+      },
+      undefined,
+      pool,
+    );
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledTimes(2);
+    for (const call of rpcRotationMocks.readWithRpcRotation.mock.calls) {
+      expect(call[0]).toBe(1);
+      expect(call[2]).toBe(pool);
+    }
+  });
+
+  it('creates one session per chain call when none is injected', async () => {
+    const [first, second] = getV4SpokeAddresses(1)!;
+    const reserves: V4ReserveInfo[] = [{ reserveId: 0n, asset: WETH }];
+
+    await getV4UserPositionsAllSpokes(1, USER, {
+      [toV4SpokeKey(first.address)!]: reserves,
+      [toV4SpokeKey(second.address)!]: reserves,
+    });
+
+    const calls = rpcRotationMocks.readWithRpcRotation.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][2]).toBeDefined();
+    expect(calls[0][2]).toBe(calls[1][2]);
   });
 });

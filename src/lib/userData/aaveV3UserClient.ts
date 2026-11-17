@@ -109,7 +109,7 @@ export const POOL_ABI = [
 
 import { createPublicClient, http, type PublicClient } from 'viem';
 import { readFromHealthyRpc } from './rpcRead';
-import type { RpcReadAttempt } from './rpcResilience';
+import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V3OnchainResult {
   positions: V3UserPosition[];
@@ -154,6 +154,7 @@ export async function getV3UserPositionsOnChain(
   reserveIds: `0x${string}`[],
   marketName: string,
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V3OnchainResult> {
   const providerAddress = getV3ProtocolDataProviderAddress(chainId);
   const poolAddress = getV3PoolAddress(chainId);
@@ -203,8 +204,10 @@ export async function getV3UserPositionsOnChain(
   };
 
   // Explicit client (tests, health-factor path) bypasses rotation by
-  // contract; otherwise the read goes through endpoint rotation (AAV-1387).
-  const results = await readFromHealthyRpc(chainId, client, readBatch);
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387),
+  // reusing the per-chain probe from `pool` when the multichain caller passes
+  // one (AAV-1313).
+  const results = await readFromHealthyRpc(chainId, client, readBatch, pool);
   if (!results) return { positions: [], accountSummary: null };
 
   const positions: V3UserPosition[] = [];
@@ -283,17 +286,25 @@ export interface V3AssetsByMarket {
 export async function getV3UserPositionsMultiChain(
   userAddress: `0x${string}`,
   assetsByMarket: Record<string, V3AssetsByMarket>,
+  pool?: RpcClientPool,
 ): Promise<V3OnchainResponse> {
   const marketNames = Object.keys(assetsByMarket);
+  // One read session per wallet sync: markets on the same chainId share the
+  // probe result and the endpoint that served the first read (AAV-1313).
+  const sessionPool = pool ?? createRpcClientPool();
   const settled = await Promise.allSettled(
     marketNames.map((marketName) => {
       const { chainId, assets } = assetsByMarket[marketName];
-      return getV3UserPositionsOnChain(chainId, userAddress, assets, marketName);
+      return getV3UserPositionsOnChain(chainId, userAddress, assets, marketName, undefined, sessionPool);
     }),
   );
 
   const results: V3OnchainResult[] = [];
   const errors: V3OnchainError[] = [];
+  // `errors` carries no market name, so N markets failing on the same chain
+  // used to produce N indistinguishable entries. Report the chain once; the
+  // console line below still names every market for diagnostics (AAV-1313).
+  const reportedChainIds = new Set<number>();
 
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
@@ -302,6 +313,8 @@ export async function getV3UserPositionsMultiChain(
     } else {
       const { chainId } = assetsByMarket[marketNames[i]];
       console.error(`[onchain-v3] Chain ${chainId} (${marketNames[i]}) failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      if (reportedChainIds.has(chainId)) continue;
+      reportedChainIds.add(chainId);
       errors.push({ chainId, error: outcome.reason });
     }
   }

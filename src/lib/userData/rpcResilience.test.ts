@@ -5,6 +5,7 @@ import {
   classifyRpcError,
   createClientWithRpcRotation,
   readWithRpcRotation,
+  createRpcClientPool,
   RpcRotationExhaustedError,
   isRpcRotationExhausted,
 } from './rpcResilience';
@@ -512,5 +513,159 @@ describe('readWithRpcRotation (AAV-1387)', () => {
     expect(attempt).toHaveBeenCalledTimes(3);
     expect(isRpcUnhealthy(1, A)).toBe(false);
     expect(isRpcUnhealthy(1, B)).toBe(false);
+  });
+});
+
+describe('RpcClientPool shared read session (AAV-1313)', () => {
+  const mockedGetAllRpcUrls = vi.mocked(getAllRpcUrls);
+  const mockedCreatePublicClient = vi.mocked(createPublicClient);
+  const A = 'https://rpc-a.example.com';
+  const B = 'https://rpc-b.example.com';
+  const C = 'https://rpc-c.example.com';
+
+  type FakeClient = { url: string };
+  const urlOf = (client: unknown): string => (client as FakeClient).url;
+
+  /** Mock viem so every client remembers which URL it was built for. */
+  function serveClients(probe: (url: string) => Promise<number> = () => Promise.resolve(1)): void {
+    mockedCreatePublicClient.mockImplementation(((params: { chain: { rpcUrls: { default: { http: string[] } } } }) => {
+      const url = params.chain.rpcUrls.default.http[0];
+      return { url, getChainId: vi.fn(() => probe(url)) };
+    }) as unknown as typeof createPublicClient);
+  }
+
+  beforeEach(() => {
+    resetRpcHealthCache();
+    mockedGetAllRpcUrls.mockReset();
+    mockedCreatePublicClient.mockReset();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('P1 shares one probe across sequential reads on the same chain', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([A]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBe(A);
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBe(A);
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBe(A);
+
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(1);
+    expect(attempt).toHaveBeenCalledTimes(3);
+  });
+
+  it('P2 single-flights the probe for concurrent reads on the same chain', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([A]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+
+    const values = await Promise.all([
+      readWithRpcRotation(1, attempt, pool),
+      readWithRpcRotation(1, attempt, pool),
+      readWithRpcRotation(1, attempt, pool),
+    ]);
+
+    expect(values).toEqual([A, A, A]);
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(1);
+    expect(attempt).toHaveBeenCalledTimes(3);
+  });
+
+  it('P3 buckets by chain: two chains probe once each', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockImplementation((chainId: number) => (chainId === 1 ? [A] : [C]));
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+
+    await readWithRpcRotation(1, attempt, pool);
+    await readWithRpcRotation(1, attempt, pool);
+    await readWithRpcRotation(10, attempt, pool);
+    await readWithRpcRotation(10, attempt, pool);
+
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
+  });
+
+  it('P4 releases a pooled endpoint whose batch all-fails and rotates to the next', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([A, B]);
+    const pool = createRpcClientPool();
+    const first = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: urlOf(client) === A }));
+
+    await expect(readWithRpcRotation(1, first, pool)).resolves.toBe(B);
+    expect(first).toHaveBeenCalledTimes(2);
+    expect(isRpcUnhealthy(1, A)).toBe(true);
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
+
+    // The winner is adopted: the next read does not probe or retry the demoted node.
+    const second = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+    await expect(readWithRpcRotation(1, second, pool)).resolves.toBe(B);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
+  });
+
+  it('P5 rotates when the pooled endpoint throws', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([A, B]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async (client: unknown) => {
+      if (urlOf(client) === A) throw new Error('HTTP request failed.');
+      return { value: urlOf(client), allCallsFailed: false };
+    });
+
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBe(B);
+    expect(isRpcUnhealthy(1, A)).toBe(true);
+  });
+
+  it('P6 caches probe exhaustion: the second read does not burn the budget again', async () => {
+    serveClients(() => Promise.reject(new Error('ETIMEDOUT')));
+    mockedGetAllRpcUrls.mockReturnValue([A, B]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async () => ({ value: 'never', allCallsFailed: false }));
+
+    await expect(readWithRpcRotation(1, attempt, pool)).rejects.toBeInstanceOf(RpcRotationExhaustedError);
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
+
+    await expect(readWithRpcRotation(1, attempt, pool)).rejects.toBeInstanceOf(RpcRotationExhaustedError);
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
+    expect(attempt).not.toHaveBeenCalled();
+  });
+
+  it('P7 returns null without probing when the chain has no RPC URLs', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async () => ({ value: 'never', allCallsFailed: false }));
+
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBeNull();
+    expect(mockedCreatePublicClient).not.toHaveBeenCalled();
+    expect(attempt).not.toHaveBeenCalled();
+  });
+
+  it('P8 keeps anti-lockout: a surviving endpoint failing its probe falls back to the full list', async () => {
+    markRpcUnhealthy(1, A);
+    serveClients((url) => (url === B ? Promise.reject(new Error('ETIMEDOUT')) : Promise.resolve(1)));
+    mockedGetAllRpcUrls.mockReturnValue([A, B]);
+    const pool = createRpcClientPool();
+    const attempt = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+
+    await expect(readWithRpcRotation(1, attempt, pool)).resolves.toBe(A);
+    expect(attempt).toHaveBeenCalledTimes(1);
+    expect(isRpcUnhealthy(1, A)).toBe(false);
+  });
+
+  it('P9 keeps per-call isolation when no pool is passed', async () => {
+    serveClients();
+    mockedGetAllRpcUrls.mockReturnValue([A]);
+    const attempt = vi.fn(async (client: unknown) => ({ value: urlOf(client), allCallsFailed: false }));
+
+    await readWithRpcRotation(1, attempt);
+    await readWithRpcRotation(1, attempt);
+
+    expect(mockedCreatePublicClient).toHaveBeenCalledTimes(2);
   });
 });

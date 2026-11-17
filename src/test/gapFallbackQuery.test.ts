@@ -115,7 +115,15 @@ describe('fetchGapPositions', () => {
       v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
-    expect(getV4UserPositionsAllSpokes).toHaveBeenCalledWith(gapChainId, TEST_ADDRESS, expect.anything());
+    // AAV-1313: the call now also carries an explicit client slot (undefined)
+    // and the per-call RPC read session created inside the gap query.
+    expect(getV4UserPositionsAllSpokes).toHaveBeenCalledWith(
+      gapChainId,
+      TEST_ADDRESS,
+      expect.anything(),
+      undefined,
+      expect.anything(),
+    );
   });
 
   it('combines V3 and V4 gap results', async () => {

@@ -12,7 +12,7 @@ import {
   type V3OnchainResult,
   type V3AssetsByMarket,
 } from './aaveV3UserClient';
-import { RpcRotationExhaustedError } from './rpcResilience';
+import { createRpcClientPool, RpcRotationExhaustedError } from './rpcResilience';
 import { MulticallAllCallsFailedError } from './multicallFailure';
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains';
 import type { createPublicClient } from 'viem';
@@ -628,5 +628,74 @@ describe('getV3UserPositionsOnChain read rotation wiring (AAV-1387)', () => {
 
     expect(result.positions).toHaveLength(1);
     expect(rpcRotationMocks.readWithRpcRotation).not.toHaveBeenCalled();
+  });
+});
+
+describe('getV3UserPositionsMultiChain shared RPC session (AAV-1313)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
+  });
+
+  it('passes one read session to every market on the same chain', async () => {
+    const pool = createRpcClientPool();
+
+    await getV3UserPositionsMultiChain(
+      USER,
+      {
+        AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+        AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+      },
+      pool,
+    );
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledTimes(2);
+    for (const call of rpcRotationMocks.readWithRpcRotation.mock.calls) {
+      expect(call[0]).toBe(1);
+      expect(call[2]).toBe(pool);
+    }
+  });
+
+  it('creates one session for all markets when none is injected', async () => {
+    await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+    });
+
+    const calls = rpcRotationMocks.readWithRpcRotation.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][2]).toBeDefined();
+    expect(calls[0][2]).toBe(calls[1][2]);
+  });
+
+  it('reports a chain once when two of its markets fail', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(1);
+    // The per-market console line stays: the dedupe only targets the aggregate array.
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+  });
+
+  it('keeps one error per distinct chain', async () => {
+    rpcRotationMocks.readWithRpcRotation.mockImplementation(async (chainId: number) => {
+      throw new RpcRotationExhaustedError(chainId);
+    });
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3Arbitrum: { chainId: 42161, assets: [USDC] },
+    });
+
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors.map((entry) => entry.chainId)).toEqual([1, 42161]);
   });
 });
