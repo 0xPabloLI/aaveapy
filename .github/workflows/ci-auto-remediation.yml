@@ -170,6 +170,11 @@ jobs:
       - name: Create remediation PR
         id: cpr
         if: steps.skip-check.outputs.skip != 'true' && steps.verify.outputs.ok == 'true' && steps.diff.outputs.changed == 'true'
+        env:
+          # The bot's commit/push must not run the developer-local git hooks (AAV-1391).
+          # `.husky/pre-push` needs a machine with Playwright browsers; the runner has
+          # none. The validation steps above plus the PR's own CI are the verification.
+          HUSKY: '0'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: 'chore: auto-remediate dependency issues after CI failure'

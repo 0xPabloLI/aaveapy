@@ -77,6 +77,11 @@ jobs:
 
       - name: Create PR when icons changed
         id: cpr
+        env:
+          # The bot's commit/push must not run the developer-local git hooks (AAV-1391).
+          # `.husky/pre-push` needs a machine with Playwright browsers; the runner has
+          # none. The sync step above plus the PR's own CI are the verification.
+          HUSKY: '0'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
