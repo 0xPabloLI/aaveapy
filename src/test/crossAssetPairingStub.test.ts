@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   AAV1316_STUB_INJECTION,
+  AAV1317_SAME_SYMBOL_INJECTION,
   CROSS_ASSET_PAIRING_FIXTURE_URL,
   buildCrossAssetPairingStub,
   type CrossAssetPairingInjection,
@@ -141,6 +142,73 @@ describe('AAV-1316 buildCrossAssetPairingStub', () => {
     // a fixture that fails it would render the error state, not the table.
     const { MarketsResponseSchema } = await import('../shared/market-contract/schemas');
     const { payload } = buildCrossAssetPairingStub(loadFixture(), INJECTION);
+    expect(() => MarketsResponseSchema.parse(payload)).not.toThrow();
+  });
+});
+
+describe('AAV-1317 same-symbol injection', () => {
+  const CELO_WETH_ID = '42220:0x3e59a31363e2ad014dcbc521c4a0d5757d9f3402:0xd221812de1bd094f35587ee8e174b07b6167d9af';
+
+  // SS1 — the same-symbol pair passes the REAL discovery gates and carries
+  // every runner field, with identical symbols and distinct markets.
+  it('SS1: yields exactly one same-symbol discovery scenario with expected fields', () => {
+    const { scenarios } = buildCrossAssetPairingStub(loadFixture(), AAV1317_SAME_SYMBOL_INJECTION);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0]).toEqual({
+      sourceSymbol: 'WETH',
+      sourceMarketLabel: 'Celo',
+      sourceReserveId: AAV1317_SAME_SYMBOL_INJECTION.sourceReserveId,
+      sourceSide: 'supply',
+      pairedSymbol: 'WETH',
+      pairedMarketLabel: 'Base',
+      // The same-symbol pair lands on the fixture's ORIGINAL source reserve
+      // (Base WETH) — the one the AAV-1316 injection uses as its source.
+      pairedReserveId: SOURCE_ID,
+      pairedSide: 'supply',
+      discountFactor: 0.5,
+      chainName: 'Celo',
+      apr: expect.any(Number),
+    });
+    expect(scenarios[0].apr).toBeGreaterThan(0);
+    // The discriminating property: same symbol, different reserve.
+    expect(scenarios[0].sourceSymbol).toBe(scenarios[0].pairedSymbol);
+    expect(scenarios[0].sourceReserveId).not.toBe(scenarios[0].pairedReserveId);
+  });
+
+  it('SS2: the committed injection is aligned with the composite fixture', () => {
+    const reserves = (loadFixture() as { reserves: DiscoveryReserve[] }).reserves;
+    const ids = reserves.map((r) => r.reserveId);
+    expect(ids).toContain(AAV1317_SAME_SYMBOL_INJECTION.sourceReserveId);
+    expect(ids).toContain(AAV1317_SAME_SYMBOL_INJECTION.pairing.pairedReserveId);
+    // Exactly one same-symbol WETH source + one WETH pair in the fixture —
+    // if a future append adds another WETH, the Add-flow label matching and
+    // the row-order reasoning in AAV1317_SAME_SYMBOL_INJECTION must be re-checked.
+    expect(reserves.filter((r) => r.tokenSymbol === 'WETH')).toHaveLength(2);
+    // The discarded AAV-1317 candidate (Monad USDC, ltv=0) must stay out of the
+    // composite: its LIVE campaign window would add a computable non-pairing
+    // group to every payload built from this fixture.
+    expect(reserves.filter((r) => r.tokenSymbol === 'USDC')).toHaveLength(1);
+    expect(buildCrossAssetPairingStub(loadFixture(), AAV1317_SAME_SYMBOL_INJECTION).scenarios).toHaveLength(1);
+  });
+
+  it('SS3: the appended Celo reserve keeps its real group unpaired in the base fixture', () => {
+    const base = loadFixture();
+    const before = JSON.stringify(base);
+    buildCrossAssetPairingStub(base, AAV1317_SAME_SYMBOL_INJECTION);
+    expect(JSON.stringify(base)).toBe(before);
+    const reserves = (base as { reserves: DiscoveryReserve[] }).reserves;
+    const celo = reserves.find((r) => r.reserveId === CELO_WETH_ID);
+    const group = (celo?.merklSupplys as unknown[] | undefined)?.[0] as Record<string, unknown> | undefined;
+    expect(group).toBeDefined();
+    expect(group?.crossAssetPairing).toBeUndefined();
+    // Real (unmodified) campaign window is preserved on the base fixture.
+    const breakdown = (group?.breakdowns as Array<Record<string, unknown>>)?.[0];
+    expect(breakdown?.campaignEndedAt).not.toBe('2035-01-01T00:00:00.000Z');
+  });
+
+  it('SS4: same-symbol stub payload passes the app schema (composite fixture stays shape-real)', async () => {
+    const { MarketsResponseSchema } = await import('../shared/market-contract/schemas');
+    const { payload } = buildCrossAssetPairingStub(loadFixture(), AAV1317_SAME_SYMBOL_INJECTION);
     expect(() => MarketsResponseSchema.parse(payload)).not.toThrow();
   });
 });

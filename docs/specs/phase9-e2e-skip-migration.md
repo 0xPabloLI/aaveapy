@@ -2,6 +2,12 @@
 
 > Linear: AAV-1154
 > Parent: AAV-1143
+>
+> **SUPERSEDED by AAV-1395 (2026-11-17).** This plan was never shipped. The implemented pattern is
+> `*.desktop.spec.ts` / `*.mobile.spec.ts` + `playwright.config.ts` `testIgnore`, with co-located
+> `*.helpers.ts` next to the specs (not `e2e/helpers/`). See
+> `docs/specs/aav-1395-e2e-oracle-hardening-and-platform-split.md` and
+> `docs/conventions/e2e-testing-boundary.md`. Kept for history only — do not implement from it.
 
 ## Problem Statement
 

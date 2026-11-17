@@ -16,6 +16,7 @@ import {
 import { composeReserveId } from '@/lib/reserveKey';
 import { V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient';
 import type { ReserveWithSpread } from '@/types/aave';
+import type { WalletPosition } from '@/lib/userData/userPositionMapper';
 import { evmAddress, chainId } from '@aave/types';
 import { bumpRefetch, _resetRefetchListeners } from '@/lib/userData/refetchEvent';
 
@@ -23,6 +24,12 @@ import { bumpRefetch, _resetRefetchListeners } from '@/lib/userData/refetchEvent
 
 const { useWalletMock } = vi.hoisted(() => ({
   useWalletMock: vi.fn(),
+}));
+// SDK query results and the gap-fallback payload are switchable per test so
+// the wallet-load-state assembly can be exercised end to end (AAV-1315).
+const { sdkQueryState, gapQueryOverride } = vi.hoisted(() => ({
+  sdkQueryState: { loading: true },
+  gapQueryOverride: { current: null as null | Record<string, unknown> },
 }));
 const { mockGapRefetch } = vi.hoisted(() => ({ mockGapRefetch: vi.fn() }));
 const { mockInvalidateQueries, lastOnchainFallbackQueryKey } = vi.hoisted(() => ({
@@ -47,8 +54,8 @@ vi.mock('./useWallet', () => ({
 }));
 
 vi.mock('@aave/react', () => ({
-  useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
-  useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useUserSupplies: vi.fn(() => ({ data: undefined, loading: sdkQueryState.loading, error: undefined })),
+  useUserBorrows: vi.fn(() => ({ data: undefined, loading: sdkQueryState.loading, error: undefined })),
   useAaveClient: () =>
     v4ClientOverride.current !== null
       ? (v4ClientOverride.current as never)
@@ -56,8 +63,8 @@ vi.mock('@aave/react', () => ({
 }));
 
 vi.mock('@aave/react-v3', () => ({
-  useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
-  useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useUserSupplies: vi.fn(() => ({ data: undefined, loading: sdkQueryState.loading, error: undefined })),
+  useUserBorrows: vi.fn(() => ({ data: undefined, loading: sdkQueryState.loading, error: undefined })),
   useAaveClient: () =>
     v3ClientOverride.current !== null
       ? (v3ClientOverride.current as never)
@@ -65,11 +72,14 @@ vi.mock('@aave/react-v3', () => ({
 }));
 
 vi.mock('@/lib/userData/gapFallbackQuery', () => ({
-  useGapFallbackQuery: vi.fn(() => ({
-    data: undefined,
-    isLoading: false,
-    refetch: mockGapRefetch,
-  })),
+  useGapFallbackQuery: vi.fn(
+    () =>
+      gapQueryOverride.current ?? {
+        data: undefined,
+        isLoading: false,
+        refetch: mockGapRefetch,
+      },
+  ),
 }));
 
 vi.mock('@tanstack/react-query', async () => {
@@ -679,6 +689,115 @@ describe('useUserPositionsSdk - refetchEvent listener resilience (AAV-1305)', ()
     );
 
     errorSpy.mockRestore();
+    unmount();
+  });
+});
+
+// ---------- wallet failed sources (AAV-1315) ----------
+
+describe('useUserPositionsSdk - failedSources exposure (AAV-1315)', () => {
+  const POSITION: WalletPosition = {
+    reserveId: `1:${POOL}:${USDC}`,
+    chainId: 1,
+    asset: USDC,
+    tokenSymbol: 'USDC',
+    side: 'supply',
+    amountWad: 1_000_000n,
+    amountUsd: 1,
+    isCollateral: true,
+    source: 'gap-v3',
+    isOrphan: false,
+  };
+
+  beforeEach(() => {
+    sdkQueryState.loading = true;
+    gapQueryOverride.current = null;
+    useWalletMock.mockReturnValue({ address: USER, isConnected: true });
+  });
+
+  afterEach(() => {
+    sdkQueryState.loading = true;
+    gapQueryOverride.current = null;
+  });
+
+  it('H1 partial sync exposes the deduped failed sources next to result.data', () => {
+    sdkQueryState.loading = false;
+    gapQueryOverride.current = {
+      data: { positions: [POSITION], failedSources: ['gap-v3-chain-10', 'gap-v3-chain-10'] },
+      isLoading: false,
+      refetch: mockGapRefetch,
+    };
+
+    const { result, unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(result.current.walletLoadState).toBe('success');
+    expect(result.current.result.status).toBe('partial');
+    expect(result.current.failedSources).toEqual(['gap-v3-chain-10']);
+    expect(result.current.result.status === 'partial' && result.current.result.data.failedSources).toEqual([
+      'gap-v3-chain-10',
+    ]);
+
+    unmount();
+  });
+
+  it('H2 an all-success sync exposes an empty failedSources list', () => {
+    sdkQueryState.loading = false;
+
+    const { result, unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(result.current.walletLoadState).toBe('success-empty');
+    expect(result.current.result.status).toBe('success');
+    expect(result.current.failedSources).toEqual([]);
+
+    unmount();
+  });
+
+  it('H3 an idle wallet exposes an empty failedSources list', () => {
+    useWalletMock.mockReturnValue({ address: undefined, isConnected: false });
+
+    const { result, unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(result.current.walletLoadState).toBe('idle');
+    expect(result.current.failedSources).toEqual([]);
+
+    unmount();
+  });
+
+  it('H4 an all-success sync with positions exposes an empty failedSources list', () => {
+    sdkQueryState.loading = false;
+    gapQueryOverride.current = {
+      data: { positions: [POSITION], failedSources: [] },
+      isLoading: false,
+      refetch: mockGapRefetch,
+    };
+
+    const { result, unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+
+    expect(result.current.walletLoadState).toBe('success');
+    expect(result.current.result.status).toBe('success');
+    expect(result.current.failedSources).toEqual([]);
+
+    unmount();
+  });
+
+  it('H5 keeps one failedSources identity across renders so memoized consumers stay put', () => {
+    // PortfolioPanel is memoized; a fresh array per render would re-render it even
+    // when the merged/deduped failure set is unchanged (AAV-1315 review).
+    sdkQueryState.loading = false;
+    gapQueryOverride.current = {
+      data: { positions: [POSITION], failedSources: ['gap-v3-chain-10'] },
+      isLoading: false,
+      refetch: mockGapRefetch,
+    };
+
+    const { result, rerender, unmount } = renderHook(() => useUserPositionsSdk([], {}, {}), { wrapper });
+    const first = result.current.failedSources;
+
+    rerender();
+
+    expect(result.current.failedSources).toBe(first);
+    expect(result.current.failedSources).toEqual(['gap-v3-chain-10']);
+
     unmount();
   });
 });

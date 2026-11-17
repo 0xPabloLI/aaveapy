@@ -270,11 +270,11 @@ _Avoid_: UiPoolDataProvider（缩放值需额外换算，已否决）
 遍历 `V4_SPOKE_ADDRESSES` 所有链（不硬编码 chainId=1），同链 Spoke 并行，同 Spoke 内 Multicall3 批量。`getUserSuppliedAssets`/`getUserDebt`（直接值零换算）。`totalDebtValueRay` 入口处统一 `/ RAY` 降精度。合约地址从 address-book 取。
 
 **Spoke Discovery**:
-遍历 address-book 中所有 Spoke，Multicall3 批量聚合查询。不做"先探再查"。
-_Avoid_: 后端 reserves 推断（可能遗漏新 Spoke）
+遍历 address-book 中该链所有 V4 module（base + curated）的 spoke 并集，按地址去重；Multicall3 批量聚合查询。不做"先探再查"。
+_Avoid_: 只选一个 module（curated spoke 会静默不可见）；按名字去重（同名不同址会丢一条）
 
-**Tech Debt: onchain 查询 spokeAddress 来源**:
-`getV4UserPositionsAllSpokes` 通过 `V4_SPOKE_ADDRESSES`（从 `@aave-dao/aave-address-book` 导入）以 spokeName 反查 spokeAddress，而非从 reserveId 解析。当前可行（address-book 跟随链上部署更新），但新增 Spoke 时需等 address-book 发版。未来可改为从 reserveId 第2段直接获取 spokeAddress，消除对 address-book 的依赖。
+**Address Book 与 Payload 的版本差**:
+`getV4UserPositionsAllSpokes` 以 `V4_SPOKE_ADDRESSES` 的 spoke 地址作 join key（AAV-1356），reserve 分组来自 `reserveId` 第2段。地址簿仍可能落后 payload：新 spoke 已出现在 `/markets` 但地址簿未发版时，fallback 查不到该 spoke；live 测试 `assertV4AddressBookCoversPayload` 会点名缺失地址并红灯。这是显式失败，不是静默降级；升级地址簿即可恢复。
 
 **RPC Rotation**:
 多 public RPC URL 逐个试连通性（`getChainId` 验证），首个可用即用。全挂才返回 null。见 ADR-0004。

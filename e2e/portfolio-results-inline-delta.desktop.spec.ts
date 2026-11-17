@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves';
+import {
+  INCENTIVE_RESERVE_GAP_REASON,
+  enforceReserveGate,
+  findIncentiveReserve,
+  foundValue,
+  reserveGateFor,
+  setupPortfolioWithReserve,
+} from './test-reserves';
 
 /**
  * Portfolio ResultsTable inline delta regression.
@@ -13,7 +20,9 @@ import { findIncentiveReserve, setupPortfolioWithReserve } from './test-reserves
  * Test reserve is dynamically discovered from staging API.
  */
 
-const testReserve = await findIncentiveReserve();
+const reserveDiscovery = await findIncentiveReserve();
+const testReserve = foundValue(reserveDiscovery);
+const reserveGate = reserveGateFor(reserveDiscovery, INCENTIVE_RESERVE_GAP_REASON);
 
 async function setupPortfolio(page: Page) {
   if (!testReserve) throw new Error('No suitable reserve found');
@@ -22,9 +31,8 @@ async function setupPortfolio(page: Page) {
 
 test.describe('Portfolio ResultsTable — inline delta', () => {
   test.describe('desktop', () => {
-    test.beforeEach(({}, testInfo) => {
-      test.skip(testInfo.project.name.includes('mobile'), 'Desktop table only');
-      test.skip(!testReserve, 'No reserve with incentives + ltv > 0 on staging');
+    test.beforeEach(() => {
+      enforceReserveGate(reserveGate);
     });
 
     test('shows inline delta badges after manual position input', async ({ page }) => {
@@ -54,7 +62,7 @@ test.describe('Portfolio ResultsTable — inline delta', () => {
 
       const summaryDelta = summaryCard
         .locator('span')
-        .filter({ hasText: /^\+?\-?\$[0-9]/ })
+        .filter({ hasText: /^\+?-?\$[0-9]/ })
         .first();
       await expect(summaryDelta).toBeVisible({ timeout: 5000 });
     });

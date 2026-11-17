@@ -5,8 +5,13 @@ import {
   buildReserveLookupByChainAndToken,
   toChainTokenKey,
   composeReserveId,
+  toV4SpokeKey,
 } from './reserveKey';
 import type { ReserveWithSpread } from '@/types/aave';
+
+// Real address (aave-address-book 4.76.1, AaveV4Ethereum.MAIN_SPOKE) — EIP-55 checksummed.
+const MAIN_SPOKE = '0x94e7A5dCbE816e498b89aB752661904E2F56c485';
+const MAIN_SPOKE_LOWER = '0x94e7a5dcbe816e498b89ab752661904e2f56c485';
 
 describe('getReserveKey', () => {
   it('returns V3 reserveId as-is', () => {
@@ -31,6 +36,44 @@ describe('toChainTokenKey', () => {
 
   it('handles already-lowercased address', () => {
     expect(toChainTokenKey(42161, '0xdead')).toBe('42161:0xdead');
+  });
+});
+
+describe('toV4SpokeKey', () => {
+  // The address book ships EIP-55 while /markets reserveIds carry the spoke address
+  // lowercased, so normalisation is what makes the two sides join (AAV-1356).
+  it('lowercases an EIP-55 checksummed address', () => {
+    expect(toV4SpokeKey(MAIN_SPOKE)).toBe(MAIN_SPOKE_LOWER);
+  });
+
+  it('accepts an already-lowercase address', () => {
+    expect(toV4SpokeKey(MAIN_SPOKE_LOWER)).toBe(MAIN_SPOKE_LOWER);
+  });
+
+  it('normalises both spellings of one address to the same key', () => {
+    expect(toV4SpokeKey(MAIN_SPOKE)).toBe(toV4SpokeKey(MAIN_SPOKE_LOWER));
+  });
+
+  it('returns null for undefined, null and empty string', () => {
+    expect(toV4SpokeKey(undefined)).toBeNull();
+    expect(toV4SpokeKey(null)).toBeNull();
+    expect(toV4SpokeKey('')).toBeNull();
+  });
+
+  // A key that can never match a real spoke address is worse than no key: it makes the
+  // reserve silently unreachable. Rejecting the shape keeps the join honest (AAV-1356).
+  it('returns null for a non-address: raw address-book key', () => {
+    expect(toV4SpokeKey('MAIN_SPOKE')).toBeNull();
+  });
+
+  it('returns null for hex that is not 20 bytes', () => {
+    expect(toV4SpokeKey('0xdead')).toBeNull();
+    expect(toV4SpokeKey('0x94e7a5dcbe816e498b89ab752661904e2f56c48')).toBeNull(); // 41 hex chars
+    expect(toV4SpokeKey('94e7a5dcbe816e498b89ab752661904e2f56c485')).toBeNull(); // no 0x
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(toV4SpokeKey(`  ${MAIN_SPOKE}  `)).toBe(MAIN_SPOKE_LOWER);
   });
 });
 

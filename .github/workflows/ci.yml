@@ -99,11 +99,18 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm run ci:lockcheck
+      # Type gate. Until AAV-1319 this only ran in the local pre-commit hook, so a PR
+      # from the web UI (or any machine without hooks) could carry type errors into
+      # dev/main with CI green. `npm run typecheck` generates the gitignored icon
+      # manifests itself via its `pretypecheck` script — no separate step to keep in
+      # order here, and no TS2307 on a clean runner.
+      - name: Run TypeScript (src + node + e2e)
+        run: npm run typecheck
       # PR: one ESLint pass with Reviewdog annotations (avoids a duplicate workflow + second npm ci).
       # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
       - name: Run ESLint (Reviewdog)
         if: github.event_name == 'pull_request'
-        uses: reviewdog/action-eslint@3ee2a450da17e060b9dfa4bffd53976906c6b2b0 # v1
+        uses: reviewdog/action-eslint@6dad10dc50476699ad1ddbbb19bf55d36f311a39 # v1
         env:
           REVIEWDOG_VERSION: v0.20.3
         with:
@@ -223,36 +230,6 @@ jobs:
             e2e/*-snapshots/*-linux.png
           retention-days: 7
 
-  generate-snapshots:
-    name: generate-snapshots
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      CI_REF: ${{ github.event.pull_request.head_sha || github.event.inputs.target_ref || github.sha }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.CI_REF }}
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Install dependencies
-        run: npm run ci:lockcheck
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-      - name: Generate Linux screenshot baselines
-        run: npx playwright test e2e/segmented-toggle-visual.spec.ts e2e/portfolio-panel-header-visual.spec.ts --update-snapshots
-      - name: Upload Linux baselines
-        uses: actions/upload-artifact@v7
-        with:
-          name: linux-screenshot-baselines
-          path: e2e/*-snapshots/*-linux.png
-          retention-days: 30
-
   live-schema-validation:
     name: live-schema-validation
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -334,13 +311,28 @@ jobs:
         with:
           ref: ${{ env.CI_REF }}
           fetch-depth: 0
-      # The four policy scripts are dependency-free node builtins — no npm ci.
+      # The five policy scripts are dependency-free node builtins — no npm ci.
       - name: Validate AGENTS.md references (commands + doc paths)
         run: npm run check:agents-md
       - name: Technical-debt marker policy (ratchet)
         run: npm run check:todos
       - name: e2e selectors must not pin literal chain names (data-drift guard)
         run: npm run check:e2e-market-names
+      # AAV-1389: AGENTS.md Step 9 had always required the product-view three
+      # sentences and deliveries kept skipping them — the line was un-checkable
+      # (AAV-1335 ticked every step and shipped without it). The body is checked
+      # here, before CI goes green, because a close-out check can only be satisfied
+      # retroactively. The head branch is author-controlled, so it is deliberately
+      # not an input this gate trusts; the exemptions are a bot author and a label
+      # only someone with write access can apply (see the note in the script).
+      - name: Product-view section (PR body)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: npm run check:product-view
       - name: Dependency release-age gate (lockfile PRs only)
         run: |
           if git diff --name-only "${{ env.BASE_REF }}...${{ env.CI_REF }}" -- package-lock.json | grep -q .; then
@@ -479,6 +471,12 @@ jobs:
       - name: Create spec sync PR
         id: cpr
         if: steps.diff.outputs.changed == 'true'
+        env:
+          # A runner has no Playwright browser, so the developer pre-push hook's
+          # e2e gate blocks this push exactly when a real spec drift exists
+          # (AAV-1362 found the same class in hardcode-sync). What the bot commits
+          # is verified by the PR CI this step opens, not by the local hook.
+          HUSKY: '0'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.

@@ -118,9 +118,7 @@ test.describe('/defi-yield-tracker Related FAQs anchor jump', () => {
           .toBeGreaterThanOrEqual(0);
         await assertTargetWellPositioned(page, slug);
 
-        await expect
-          .poll(() => page.evaluate((id) => document.activeElement?.id ?? null, slug), { timeout: 5_000 })
-          .toBe(slug);
+        await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? null), { timeout: 5_000 }).toBe(slug);
       });
 
       test('loading with #faq scrolls to and focuses the FAQ heading', async ({ page }) => {

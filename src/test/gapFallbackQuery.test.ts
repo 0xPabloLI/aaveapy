@@ -17,6 +17,7 @@ vi.mock('@/lib/userData/aaveV4UserClient', () => ({
 
 import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient';
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
+import { MulticallAllCallsFailedError } from '@/lib/userData/multicallFailure';
 
 const mockV3Positions = (chainId: number, assets: `0x${string}`[]): WalletPosition[] =>
   assets.map((asset, i) => ({
@@ -114,7 +115,15 @@ describe('fetchGapPositions', () => {
       v4ReservesBySpoke: { Spoke1: [{ reserveId: 1n, asset: '0xccc' as `0x${string}` }] },
     });
 
-    expect(getV4UserPositionsAllSpokes).toHaveBeenCalledWith(gapChainId, TEST_ADDRESS, expect.anything());
+    // AAV-1313: the call now also carries an explicit client slot (undefined)
+    // and the per-call RPC read session created inside the gap query.
+    expect(getV4UserPositionsAllSpokes).toHaveBeenCalledWith(
+      gapChainId,
+      TEST_ADDRESS,
+      expect.anything(),
+      undefined,
+      expect.anything(),
+    );
   });
 
   it('combines V3 and V4 gap results', async () => {
@@ -154,7 +163,12 @@ describe('fetchGapPositions', () => {
 
     vi.mocked(getV3UserPositionsMultiChain).mockResolvedValue({
       results: [],
-      errors: [{ chainId: 4326, error: new Error('rpc failed') }],
+      errors: [
+        {
+          chainId: 4326,
+          error: new MulticallAllCallsFailedError(4326, 'AaveV3Eth-Chain4326', 2),
+        },
+      ],
     });
 
     const result = await fetchGapPositions({
@@ -192,7 +206,13 @@ describe('fetchGapPositions', () => {
 
     vi.mocked(getV4UserPositionsAllSpokes).mockResolvedValue({
       results: [],
-      errors: [{ chainId: 9745, spokeName: 'Spoke1', error: new Error('rpc failed') }],
+      errors: [
+        {
+          chainId: 9745,
+          spokeName: 'Spoke1',
+          error: new MulticallAllCallsFailedError(9745, 'Spoke1', 3),
+        },
+      ],
     });
 
     const result = await fetchGapPositions({

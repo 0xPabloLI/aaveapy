@@ -90,6 +90,64 @@
       "baseBorrowRate": 0,
       "ltv": 75,
       "liquidationThreshold": 78
+    },
+    {
+      "reserveId": "42220:0x3e59a31363e2ad014dcbc521c4a0d5757d9f3402:0xd221812de1bd094f35587ee8e174b07b6167d9af",
+      "marketName": "AaveV3Celo",
+      "chainName": "Celo",
+      "chainId": 42220,
+      "tokenName": "Wrapped Ether (Celo native bridge)",
+      "tokenSymbol": "WETH",
+      "tokenAddress": "0xD221812de1BD094f35587EE8E174B07B6167D9Af",
+      "tokenPrice": 1805.73658195,
+      "utilizationPct": 7.928241292445532,
+      "aTokenAddress": "0xf385280F36e009C157697D25E0B802EfaBfd789c",
+      "vTokenAddress": "0x6508cff7c5FbA053Af00a4E894500e6fA00274B7",
+      "liquidity": "592954787778231121305",
+      "borrowed": "51058964214516793879",
+      "supplied": "644013751992747915184",
+      "supplyCap": "2100000000000000000000",
+      "borrowCap": "900000000000000000000",
+      "deficit": "0",
+      "supplyApy": 0.01603,
+      "borrowApy": 0.23813,
+      "protocolFee": 15,
+      "slopeBelowOptimal": 2.7,
+      "slopeAboveOptimal": 80,
+      "optimalUtilization": 90,
+      "baseBorrowRate": 0,
+      "ltv": 78,
+      "liquidationThreshold": 80,
+      "merklSupplys": [
+        {
+          "link": "https://app.merkl.xyz/opportunities/6609521675456928679",
+          "opportunityId": "6609521675456928679",
+          "name": "Lend WETH on Aave",
+          "message": "Earn rewards on your net lending position (WETH supply minus WETH borrows) on Aave on Celo",
+          "netPositionConstraint": {
+            "sourceSide": "supply",
+            "offsetReserveIds": [
+              "42220:0x3e59a31363e2ad014dcbc521c4a0d5757d9f3402:0xd221812de1bd094f35587ee8e174b07b6167d9af"
+            ]
+          },
+          "breakdowns": [
+            {
+              "campaignApr": 2.647794,
+              "campaignStartedAt": "2026-11-12T14:00:00.000Z",
+              "campaignEndedAt": "2026-12-10T14:00:00.000Z",
+              "campaignId": "0x2b35e4a535f6855b84d244c6ff3ffdad0543dcfd6f4671ea01fcbbf07c6d6db6",
+              "whitelistOnly": false,
+              "rewardTokenSymbol": "aCelUSDT",
+              "rewardTokenIconUrl": "https://raw.githubusercontent.com/AngleProtocol/angle-token-list/refs/heads/main/src/assets/tokens/USDT.svg",
+              "rewardTokenId": "17005700044595165334",
+              "campaignType": "DUTCH_AUCTION",
+              "latestTvl": 1163154.539924374,
+              "plannedDaily": 84.37791428571428,
+              "databaseId": "200975853806802232"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

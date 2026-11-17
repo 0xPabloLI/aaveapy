@@ -11,13 +11,16 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent, formatReserveSizeUsd } from '@/lib/formatters';
-import { getHfColorClass, getHfColorName, getMinHf, getLowestHfDelta } from '@/lib/portfolioCalculator';
+import { getHfColorClass, getHfColorName, getLowestHfBadgeState, getLowestHfDelta } from '@/lib/portfolioCalculator';
 import type { PortfolioSummary, PortfolioHealthFactor } from '@/types/portfolio';
 
 interface PortfolioSummaryBarProps {
   summary?: PortfolioSummary;
   healthFactors?: PortfolioHealthFactor[];
 }
+
+/** Shared section-header tokens for the Advanced area (design-principles §2: extract before repeating 3+). */
+const SECTION_HEADER_CLASS = 'ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground';
 
 function formatHfValue(hf: number | null): string {
   if (hf == null || hf === 0) return '—';
@@ -30,10 +33,11 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
   if (!summary) return null;
 
   const hfs = healthFactors ?? [];
-  const minHf = getMinHf(hfs);
+  const badgeState = getLowestHfBadgeState(hfs);
+  const minHf = badgeState.kind === 'computed' ? badgeState.hf : null;
   const { direction: hfDirection } = getLowestHfDelta(hfs);
   const hasHealthFactors = hfs.length > 0;
-  const hasAnyValidHf = hfs.some((hf) => hf.healthFactor != null && hf.healthFactor > 0);
+  const hasAnyValidHf = badgeState.kind === 'computed';
 
   // NE APY display
   const neApyValue = summary.totalSupplyUsd > 0 ? summary.netEffectiveApy : null;
@@ -44,14 +48,20 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
       {/* Summary bar — always visible */}
       <div data-testid="portfolio-summary-bar" className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">Lowest HF</span>
+          <span className={SECTION_HEADER_CLASS}>Lowest HF</span>
           <span
             data-testid="portfolio-min-hf"
+            data-hf-state={badgeState.kind}
             data-hf-color={getHfColorName(minHf)}
             className={cn('ds-text-12 font-bold tabular-nums', getHfColorClass(minHf))}
           >
             {formatHfValue(minHf)}
           </span>
+          {badgeState.kind === 'no-debt' && (
+            <span data-testid="portfolio-hf-empty-hint" className="ds-text-10 text-muted-foreground">
+              no debt
+            </span>
+          )}
           {hfDirection === 'up' && (
             <span
               data-testid="portfolio-hf-delta-arrow"
@@ -87,9 +97,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
           {/* HF per-pool detail */}
           {hasAnyValidHf && (
             <div className="space-y-0.5">
-              <div className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">
-                Health Factor {hfs.length > 1 ? `(${hfs.length} pools)` : ''}
-              </div>
+              <div className={SECTION_HEADER_CLASS}>Health Factor {hfs.length > 1 ? `(${hfs.length} pools)` : ''}</div>
               {hfs.map((hf) => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;
@@ -124,9 +132,9 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
             </div>
           )}
 
-          {/* NE APY */}
+          {/* NE APY — label carries the shared section-header tokens (SECTION_HEADER_CLASS, AAV-1304) */}
           <div className="flex items-center justify-between gap-2 ds-text-11">
-            <span className="text-muted-foreground">Net Effective APY</span>
+            <span className={SECTION_HEADER_CLASS}>Net Effective APY</span>
             <span
               data-testid="portfolio-ne-apy"
               className={cn(
@@ -145,9 +153,7 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
           {/* Borrow capacity per pool */}
           {hfs.some((hf) => hf.totalBorrowCapacityUsd > 0 || hf.totalDebtUsd > 0) && (
             <div className="space-y-0.5">
-              <div className="ds-text-10 font-semibold uppercase tracking-wider text-muted-foreground">
-                Borrow capacity
-              </div>
+              <div className={SECTION_HEADER_CLASS}>Borrow capacity</div>
               {hfs.map((hf) => {
                 const poolName = hf.poolKey.split(':')[1] ?? hf.poolKey;
                 const remaining = hf.totalBorrowCapacityUsd - hf.totalDebtUsd;
@@ -163,7 +169,10 @@ export function PortfolioSummaryBar({ summary, healthFactors }: PortfolioSummary
                     <span className="text-muted-foreground truncate">{poolName}</span>
                     <span
                       className={cn(
-                        'font-medium tabular-nums',
+                        // Numeric summary values are bold (design-system rule); status text
+                        // ("No borrowing capacity" / "Borrow limit reached") stays medium —
+                        // non-numeric status descriptions are excluded from the bold rule.
+                        hasNoCapacity || isExhausted ? 'font-medium' : 'font-bold tabular-nums',
                         isExhausted ? 'text-red-500 dark:text-red-400' : 'text-foreground',
                       )}
                     >

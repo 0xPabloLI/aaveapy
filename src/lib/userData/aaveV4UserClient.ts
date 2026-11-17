@@ -1,16 +1,38 @@
 import * as ab from '@aave-dao/aave-address-book';
+import { toV4SpokeKey } from '@/lib/reserveKey';
+import {
+  MulticallAllCallsFailedError,
+  isSuccessfulRead,
+  type MulticallCallResult as CallResult,
+} from './multicallFailure';
 
-type CallResult<T> =
-  { status: 'success'; result: T; error?: undefined } | { status: 'failure'; result?: undefined; error: Error };
-
-export interface V4SpokeEntry {
+interface V4AddressEntry {
+  /** Diagnostic label, unique within the chain. Prefixed with the module name only on collision. */
   name: string;
+  /** Raw address-book key, e.g. `MAIN_SPOKE` / `CORE_HUB`. */
+  rawName: string;
   address: `0x${string}`;
 }
 
-export interface V4HubEntry {
+export type V4SpokeEntry = V4AddressEntry;
+export type V4HubEntry = V4AddressEntry;
+
+/** Data fields of an address-book V4 module. */
+export interface V4ModuleData {
+  CHAIN_ID: number;
+  SPOKES: Record<string, string>;
+  /** Hubs are optional: a module with spokes but no hub data still contributes spokes. */
+  HUBS?: Record<string, string>;
+}
+
+/** Address-book V4 module with its export key as `name`. */
+export interface V4ModuleSource extends V4ModuleData {
   name: string;
-  address: `0x${string}`;
+}
+
+export interface V4AddressUnion {
+  spokes: V4SpokeEntry[];
+  hubs: V4HubEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -18,80 +40,123 @@ export interface V4HubEntry {
 // When a new V4 chain is added to the address book, it's immediately available.
 // ---------------------------------------------------------------------------
 
-interface V4AbModule {
-  CHAIN_ID: number;
-  SPOKES: Record<string, string>;
-  HUBS: Record<string, string>;
-}
-
-function isV4Module(name: string, mod: unknown): mod is V4AbModule {
+function isV4Module(name: string, mod: unknown): mod is V4ModuleData {
   if (!name.startsWith('AaveV4')) return false;
   if (name === 'AaveV4') return false; // base module
   if (name.includes('Sepolia') || name.includes('Fuji') || name.includes('Testnet')) return false;
-  const m = mod as V4AbModule;
+  const m = mod as V4ModuleData;
   return typeof m?.CHAIN_ID === 'number' && !!m?.SPOKES && typeof m?.SPOKES === 'object';
 }
 
-/**
- * One address-book module per chain, chosen without depending on enumeration order.
- *
- * The address book can ship several modules for the same chain: a base module plus
- * curated variants. `AaveV4Ethereum` and `AaveV4EthereumSentoraCurated` are both
- * `CHAIN_ID: 1`. Keying a `Record<chainId, …>` off every module let whichever one
- * happened to be enumerated last win — when 4.74.0 added the Sentora module it
- * silently replaced Ethereum's 27 spokes with that module's 7, so V4 positions on
- * Ethereum went undiscovered (found via the 15 failing assertions in
- * aaveV4UserClient.test.ts).
- *
- * The base module is the one whose name prefixes every other name for that chain, so
- * this does not depend on order. Curated variants are skipped rather than merged:
- * they redeploy spokes under names the base module already uses (`BLUECHIP_SPOKE`
- * is a different address in each), and `deriveV4ReservesBySpoke`
- * (src/lib/deriveOnchainConfig.ts) keys a Map by spoke name, so merging would
- * conflate two spokes' reserves. Supporting curated modules needs that consumer to
- * key by address first — tracked in AAV-1356.
- */
-function selectModulesPerChain(modules: { name: string; mod: V4AbModule }[]): V4AbModule[] {
-  const byChain = new Map<number, { name: string; mod: V4AbModule }[]>();
-  for (const entry of modules) {
-    const group = byChain.get(entry.mod.CHAIN_ID);
-    if (group) group.push(entry);
-    else byChain.set(entry.mod.CHAIN_ID, [entry]);
-  }
-
-  return [...byChain.values()].map((group) => {
-    if (group.length === 1) return group[0].mod;
-    const base = group.find((candidate) => group.every((other) => other.name.startsWith(candidate.name)));
-    if (!base) {
-      throw new Error(
-        `Ambiguous AaveV4 address-book modules for chain ${group[0].mod.CHAIN_ID}: ` +
-          `${group.map((g) => g.name).join(', ')} — none prefixes the others, so there is no base module to prefer.`,
-      );
-    }
-    return base.mod;
-  });
+interface RawEntry {
+  rawName: string;
+  moduleName: string;
+  address: `0x${string}`;
 }
 
-const V4_MODULES_PER_CHAIN = selectModulesPerChain(
-  Object.entries(ab)
-    .filter(([name, mod]) => isV4Module(name, mod))
-    .map(([name, mod]) => ({ name, mod: mod as V4AbModule })),
-);
+/**
+ * Collect one entry per address across every module of a chain.
+ *
+ * Modules arrive sorted by name so the result does not depend on address-book
+ * enumeration order, and the first module wins when two modules export the same
+ * address. Malformed addresses are skipped: they could never match a reserve key
+ * or name a real contract, so keeping them only adds dead diagnostics.
+ */
+function collectUniqueEntries(
+  modules: readonly V4ModuleSource[],
+  entriesOf: (module: V4ModuleSource) => Record<string, string>,
+  include: (rawName: string) => boolean = () => true,
+): RawEntry[] {
+  const seen = new Set<string>();
+  const entries: RawEntry[] = [];
+
+  for (const module of modules) {
+    for (const [rawName, rawAddress] of Object.entries(entriesOf(module))) {
+      if (!include(rawName)) continue;
+      const key = toV4SpokeKey(rawAddress);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      entries.push({ rawName, moduleName: module.name, address: rawAddress as `0x${string}` });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Label entries by raw name, adding the module prefix only where the raw name repeats.
+ *
+ * Two modules can name different spokes the same (`BLUECHIP_SPOKE` exists on Ethereum
+ * base and on Sentora with different addresses). The join key is the address, so both
+ * entries stay; the label only needs to distinguish them in diagnostics/failure
+ * sources. Unique names keep their historical raw form, so existing labels do not move.
+ */
+function labelEntries(entries: RawEntry[]): V4AddressEntry[] {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    counts.set(entry.rawName, (counts.get(entry.rawName) ?? 0) + 1);
+  }
+
+  return entries.map((entry) => ({
+    name: (counts.get(entry.rawName) ?? 0) > 1 ? `${entry.moduleName}:${entry.rawName}` : entry.rawName,
+    rawName: entry.rawName,
+    address: entry.address,
+  }));
+}
+
+/**
+ * Union every V4 address-book module of a chain, keyed by address (AAV-1356).
+ *
+ * The address book ships several modules per chain: a base module plus curated
+ * variants (`AaveV4Ethereum` and `AaveV4EthereumSentoraCurated` are both `CHAIN_ID: 1`).
+ * Picking one module silently dropped the other's spokes from the on-chain fallback:
+ * before this union, only Ethereum's base module was queried, and a later base-only
+ * bump still missed the curated `Gold Correlated` spoke. Since the join key is the
+ * spoke address, merging is safe — same-address entries dedupe, and same-name entries
+ * remain separate (see `labelEntries`).
+ *
+ * Spokes only: `_ORACLE` helper entries and `TREASURY_SPOKE` are not position spokes.
+ * Hubs are unioned too because strategy discovery walks them.
+ */
+export function unionV4ModuleAddresses(modules: readonly V4ModuleSource[]): Map<number, V4AddressUnion> {
+  const sorted = [...modules].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
+  const byChain = new Map<number, V4ModuleSource[]>();
+  for (const module of sorted) {
+    const group = byChain.get(module.CHAIN_ID);
+    if (group) group.push(module);
+    else byChain.set(module.CHAIN_ID, [module]);
+  }
+
+  const union = new Map<number, V4AddressUnion>();
+  for (const [chainId, group] of byChain) {
+    union.set(chainId, {
+      spokes: labelEntries(
+        collectUniqueEntries(
+          group,
+          (module) => module.SPOKES,
+          (rawName) => !rawName.endsWith('_ORACLE') && rawName !== 'TREASURY_SPOKE',
+        ),
+      ),
+      hubs: labelEntries(collectUniqueEntries(group, (module) => module.HUBS ?? {})),
+    });
+  }
+  return union;
+}
+
+const V4_MODULES: V4ModuleSource[] = [];
+for (const [name, mod] of Object.entries(ab)) {
+  if (isV4Module(name, mod)) V4_MODULES.push({ name, ...mod });
+}
+
+const V4_ADDRESS_UNION = unionV4ModuleAddresses(V4_MODULES);
 
 export const V4_SPOKE_ADDRESSES: Record<number, V4SpokeEntry[]> = Object.fromEntries(
-  V4_MODULES_PER_CHAIN.map((m) => [
-    m.CHAIN_ID,
-    Object.entries(m.SPOKES)
-      .filter(([name]) => !name.endsWith('_ORACLE') && name !== 'TREASURY_SPOKE')
-      .map(([name, address]) => ({ name, address: address as `0x${string}` })),
-  ]),
+  [...V4_ADDRESS_UNION].map(([chainId, union]) => [chainId, union.spokes]),
 );
 
 export const V4_HUB_ADDRESSES: Record<number, V4HubEntry[]> = Object.fromEntries(
-  V4_MODULES_PER_CHAIN.map((m) => [
-    m.CHAIN_ID,
-    Object.entries(m.HUBS).map(([name, address]) => ({ name, address: address as `0x${string}` })),
-  ]),
+  [...V4_ADDRESS_UNION].map(([chainId, union]) => [chainId, union.hubs]),
 );
 
 export function getV4SpokeAddresses(chainId: number): V4SpokeEntry[] | undefined {
@@ -199,11 +264,35 @@ export const SPOKE_ABI = [
 ] as const;
 
 import { createPublicClient, http, type PublicClient } from 'viem';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { readFromHealthyRpc } from './rpcRead';
+import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V4ReserveInfo {
   reserveId: bigint;
   asset: `0x${string}`;
+}
+
+/** supplied / debt / status — the three reads that make one reserve readable. */
+const V4_CALLS_PER_RESERVE = 3;
+
+/**
+ * A reserve counts only when all three of its calls succeeded. The rotation
+ * decision (`allCallsFailed`) and the all-failed error share this count so
+ * they cannot drift apart; `0n` balances are successful reads (AAV-1314).
+ */
+function countReadableV4Reserves(results: readonly unknown[], reserveCount: number): number {
+  let count = 0;
+  for (let i = 0; i < reserveCount; i++) {
+    const base = i * V4_CALLS_PER_RESERVE;
+    if (
+      isSuccessfulRead(results[base] as CallResult<unknown> | undefined) &&
+      isSuccessfulRead(results[base + 1] as CallResult<unknown> | undefined) &&
+      isSuccessfulRead(results[base + 2] as CallResult<unknown> | undefined)
+    ) {
+      count++;
+    }
+  }
+  return count;
 }
 
 export async function getV4UserPositionsOnChain(
@@ -213,10 +302,8 @@ export async function getV4UserPositionsOnChain(
   userAddress: `0x${string}`,
   reserves: V4ReserveInfo[],
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V4OnchainResult> {
-  const publicClient = client ?? (await createClientWithRpcRotation(chainId));
-  if (!publicClient) return { positions: [], accountSummaries: [] };
-
   const reserveCalls = reserves.flatMap((reserve) => [
     {
       address: spokeAddress,
@@ -246,31 +333,42 @@ export async function getV4UserPositionsOnChain(
   };
 
   const allCalls = [...reserveCalls, accountCall];
-  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
-  const results = await multicall({
-    contracts: allCalls,
-    multicallAddress: MULTICALL3_ADDRESS,
-    allowFailure: true,
-  });
 
-  const CALLS_PER_RESERVE = 3;
+  // One batch read against one endpoint. `allCallsFailed` shares its
+  // definition with the all-failed error below so rotation and the domain
+  // error cannot disagree (AAV-1387).
+  const readBatch = async (publicClient: PublicClient): Promise<RpcReadAttempt<CallResult<unknown>[]>> => {
+    const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
+    const batch = (await multicall({
+      contracts: allCalls,
+      multicallAddress: MULTICALL3_ADDRESS,
+      allowFailure: true,
+    })) as CallResult<unknown>[];
+    return {
+      value: batch,
+      allCallsFailed: reserves.length > 0 && countReadableV4Reserves(batch, reserves.length) === 0,
+    };
+  };
+
+  // Explicit client (tests, health-factor path) bypasses rotation by
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387),
+  // reusing the per-chain probe shared by all spokes (AAV-1313).
+  const results = await readFromHealthyRpc(chainId, client, readBatch, pool);
+  if (!results) return { positions: [], accountSummaries: [] };
+
   const positions: V4UserPosition[] = [];
+  const successfulReserves = countReadableV4Reserves(results, reserves.length);
 
   for (let i = 0; i < reserves.length; i++) {
-    const baseIdx = i * CALLS_PER_RESERVE;
-    const suppliedResult = results[baseIdx] as CallResult<bigint>;
-    const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]>;
-    const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]>;
+    const baseIdx = i * V4_CALLS_PER_RESERVE;
+    const suppliedResult = results[baseIdx] as CallResult<bigint> | undefined;
+    const debtResult = results[baseIdx + 1] as CallResult<readonly [bigint, bigint]> | undefined;
+    const statusResult = results[baseIdx + 2] as CallResult<readonly [boolean, boolean]> | undefined;
 
-    if (
-      suppliedResult.status === 'failure' ||
-      debtResult.status === 'failure' ||
-      statusResult.status === 'failure' ||
-      !suppliedResult.result ||
-      !debtResult.result ||
-      !statusResult.result
-    )
-      continue;
+    // A reserve is readable only when all three calls succeeded. `0n` is a
+    // valid balance: checking truthiness here used to drop borrow-only
+    // reserves (zero supply, non-zero debt).
+    if (!isSuccessfulRead(suppliedResult) || !isSuccessfulRead(debtResult) || !isSuccessfulRead(statusResult)) continue;
 
     const [stableDebt, variableDebt] = debtResult.result;
     const [isCollateral] = statusResult.result;
@@ -289,13 +387,28 @@ export async function getV4UserPositionsOnChain(
     });
   }
 
+  // Zero successful reserve reads on a healthy client is not "no positions".
+  // Let it fail so getV4UserPositionsAllSpokes records the spoke in errors
+  // (AAV-1314).
+  if (reserves.length > 0 && successfulReserves === 0) {
+    throw new MulticallAllCallsFailedError(chainId, spokeName, reserves.length * V4_CALLS_PER_RESERVE);
+  }
+  if (successfulReserves > 0 && successfulReserves < reserves.length) {
+    console.warn(
+      `[onchain-v4] partial multicall failure for ${spokeName} on chain ${chainId}: ` +
+        `${reserves.length - successfulReserves}/${reserves.length} reserves had failed reads`,
+    );
+  }
+
   const accountSummaries: V4AccountSummary[] = [];
-  const accountResult = results[reserveCalls.length] as CallResult<{
-    healthFactor: bigint;
-    totalCollateralValue: bigint;
-    totalDebtValueRay: bigint;
-  }>;
-  if (accountResult.status === 'success' && accountResult.result) {
+  const accountResult = results[reserveCalls.length] as
+    | CallResult<{
+        healthFactor: bigint;
+        totalCollateralValue: bigint;
+        totalDebtValueRay: bigint;
+      }>
+    | undefined;
+  if (isSuccessfulRead(accountResult)) {
     const r = accountResult.result;
     accountSummaries.push({
       chainId,
@@ -305,6 +418,11 @@ export async function getV4UserPositionsOnChain(
       totalCollateralValue: r.totalCollateralValue,
       totalDebtValueRay: r.totalDebtValueRay,
     });
+  } else {
+    console.warn(
+      `[onchain-v4] account-level read failed for ${spokeName} on chain ${chainId}; ` +
+        'returning positions without account summary',
+    );
   }
 
   return { positions, accountSummaries };
@@ -315,29 +433,41 @@ export async function getV4UserPositionsAllSpokes(
   userAddress: `0x${string}`,
   reservesBySpoke: Record<string, V4ReserveInfo[]>,
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V4OnchainResponse> {
   const spokes = getV4SpokeAddresses(chainId);
   if (!spokes) return { results: [], errors: [] };
 
+  // Looked up by spoke address: a map keyed by name — the address book's raw key or the
+  // API's display name — matches nothing here, and the fallback then silently queries
+  // zero spokes (AAV-1356). A single `targeted` array keeps each outcome aligned with
+  // the spoke it belongs to, so a failure is never attributed to a neighbour.
+  const targeted = spokes.flatMap((spoke) => {
+    const key = toV4SpokeKey(spoke.address);
+    const reserves = key ? reservesBySpoke[key] : undefined;
+    return reserves && reserves.length > 0 ? [{ spoke, reserves }] : [];
+  });
+
+  // One read session per chain call: 17 Ethereum spokes share one probe result
+  // and re-use the endpoint that served the first read (AAV-1313).
+  const sessionPool = client ? undefined : (pool ?? createRpcClientPool());
+
   const settled = await Promise.allSettled(
-    spokes
-      .filter((s) => reservesBySpoke[s.name] && reservesBySpoke[s.name].length > 0)
-      .map((spoke) =>
-        getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reservesBySpoke[spoke.name], client),
-      ),
+    targeted.map(({ spoke, reserves }) =>
+      getV4UserPositionsOnChain(chainId, spoke.name, spoke.address, userAddress, reserves, client, sessionPool),
+    ),
   );
 
   const results: V4OnchainResult[] = [];
   const errors: V4OnchainError[] = [];
-  const filteredSpokes = spokes.filter((s) => reservesBySpoke[s.name] && reservesBySpoke[s.name].length > 0);
 
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === 'fulfilled') {
       results.push(outcome.value);
     } else {
-      console.error(`[onchain-v4] Spoke ${filteredSpokes[i].name} on chain ${chainId} failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
-      errors.push({ chainId, spokeName: filteredSpokes[i].name, error: outcome.reason });
+      console.error(`[onchain-v4] Spoke ${targeted[i].spoke.name} on chain ${chainId} failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      errors.push({ chainId, spokeName: targeted[i].spoke.name, error: outcome.reason });
     }
   }
 

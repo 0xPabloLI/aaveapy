@@ -47,7 +47,12 @@ import { isInfrastructureFailure } from '@/lib/userData/rpcResilience';
 import { computeGapChainIds, type SdkCoverage } from '@/lib/userData/gapChainComputation';
 import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery';
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge';
+import { SDK_V3_FALLBACK_LABEL, SDK_V4_FALLBACK_LABEL } from '@/lib/userData/failureLabels';
 import { subscribeRefetch } from '@/lib/userData/refetchEvent';
+
+// AAV-1315: shared empty list so "no failures" keeps one identity across renders —
+// `PortfolioPanel` is memoized and a fresh `[]` would re-render it on every pass.
+const EMPTY_FAILED_SOURCES: string[] = [];
 
 interface SdkQueryResult {
   loading: boolean;
@@ -392,8 +397,8 @@ export function useUserPositionsSdk(
     queryFn: async () => {
       if (!address) return { positions: [] as WalletPosition[], failedSources: [] as string[] };
       const failedLabels: string[] = [];
-      if (v3SdkFailed) failedLabels.push('sdk-v3-fallback');
-      if (v4SdkFailed) failedLabels.push('sdk-v4-fallback');
+      if (v3SdkFailed) failedLabels.push(SDK_V3_FALLBACK_LABEL);
+      if (v4SdkFailed) failedLabels.push(SDK_V4_FALLBACK_LABEL);
       console.info('[onchain-fallback] Fetching onchain fallback positions, reserves:', reserves.length);
       const result = await fetchOnchainFallback(address, reserves, v3AssetsByMarket, v4ReservesBySpoke);
       return { positions: result.positions, failedSources: [...result.failedSources, ...failedLabels] };
@@ -538,7 +543,15 @@ export function useUserPositionsSdk(
   const gapFailed = gapFallbackQuery.data?.failedSources ?? [];
 
   const allPositions = mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions);
-  const allFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed);
+  const mergedFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed);
+  // `mergeFailedSources` always builds a new array; keying the memo on the joined
+  // labels keeps the identity stable for the memoized `PortfolioPanel` while
+  // preserving the merged/deduped order. Labels never contain NUL.
+  const failedSourceKey = mergedFailedSources.join('\u0000');
+  const allFailedSources = useMemo(
+    () => (failedSourceKey === '' ? EMPTY_FAILED_SOURCES : failedSourceKey.split('\u0000')),
+    [failedSourceKey],
+  );
 
   const isLoading = sdkLoading || onchainFallbackQuery.isLoading || gapFallbackQuery.isLoading;
   const isError = !isLoading && allPositions.length === 0 && allFailedSources.length > 0;
@@ -574,6 +587,12 @@ export function useUserPositionsSdk(
   return {
     walletLoadState,
     result,
+    /**
+     * AAV-1315: the same merged/deduped list `result.data.failedSources` carries
+     * on `partial`, surfaced directly so UI consumers do not have to narrow the
+     * `DegradedResult` union just to render a degradation notice.
+     */
+    failedSources: allFailedSources,
     v3SdkFailed,
     v4SdkFailed,
     isLoading,

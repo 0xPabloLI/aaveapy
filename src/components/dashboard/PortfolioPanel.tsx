@@ -6,8 +6,21 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, CloudDownload } from 'lucide-react';
+import {
+  Search,
+  X,
+  Layers,
+  Trash2,
+  Save,
+  ArrowRightLeft,
+  Check,
+  RefreshCw,
+  Wallet,
+  CloudDownload,
+  AlertTriangle,
+} from 'lucide-react';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
+import { hasMissingWalletData } from '@/lib/userData/walletSyncNotice';
 import { isFeatureEnabled } from '@/config/featureFlags';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -64,6 +77,8 @@ interface PortfolioPanelProps {
   onWalletSync?: () => void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
+  /** Sources that failed during the last wallet sync (AAV-1315). */
+  failedSources?: string[];
   simulationMode?: SimulationMode;
   onSimulationModeChange?: (mode: SimulationMode) => void;
   /** Per-reserve cap warnings for portfolio input fields. */
@@ -186,6 +201,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   snapshots = [],
   onWalletSync,
   walletLoadState,
+  failedSources = [],
   simulationMode,
   onSimulationModeChange,
   capWarningsMap,
@@ -328,6 +344,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
     onWalletSync?.();
   }, [onWalletSync]);
 
+  // AAV-1393: `sdk-*-fallback` labels only mean the SDK layer was bypassed, so the
+  // notice keys off real read failures. One boolean drives the span and its log,
+  // so the diagnostic line never claims "incomplete" while the notice is hidden.
+  const failedSourceKey = failedSources.join(',');
+  const showPartialNotice = walletLoadState === 'success' && hasMissingWalletData(failedSources);
+  useEffect(() => {
+    if (showPartialNotice) {
+      console.info('[wallet-sync] incomplete sources:', failedSourceKey);
+    }
+  }, [showPartialNotice, failedSourceKey]);
+
   // When entries transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
   // Do NOT continuously force search open while empty — users must be able
@@ -463,6 +490,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </>
             )}
             {walletLoadState === 'error' && <span className="text-destructive/80">Wallet sync failed</span>}
+            {/*
+              AAV-1315/AAV-1393: `partial` is mapped onto `'success'` by contract, so
+              the notice keys off failed sources instead of a new enum value; only
+              real read failures count (a successful fallback is not "incomplete").
+              `error` requires zero positions, so the two never stack.
+            */}
+            {showPartialNotice && (
+              <span
+                className="inline-flex items-center gap-1.5 ds-text-amber-600"
+                role="status"
+                data-failed-sources={failedSourceKey}
+                data-testid="wallet-partial-notice"
+              >
+                <AlertTriangle className="size-3" aria-hidden />
+                Wallet data incomplete
+              </span>
+            )}
           </div>
         )}
 

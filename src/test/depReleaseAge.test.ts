@@ -1,10 +1,16 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   parseAddedLockEntries,
   dedupeEntries,
   resolvePublishTime,
   isAtLeastDaysOld,
+  formatReleaseAgeOverrideHint,
 } from '../../scripts/lib/dep-release-age-parse.mjs';
+
+const ROOT = resolve(import.meta.dirname, '../..');
+const WORKFLOW_INPUT_PATTERN = /min[_-]?release[_-]?age[_-]?days/i;
 
 describe('parseAddedLockEntries', () => {
   it('parses an added dependency block', () => {
@@ -181,5 +187,48 @@ describe('isAtLeastDaysOld', () => {
 
   it('passes for old releases', () => {
     expect(isAtLeastDaysOld(new Date('2021-02-20T00:00:00.000Z'), now, 7)).toBe(true);
+  });
+});
+
+describe('formatReleaseAgeOverrideHint', () => {
+  it('points at the real environment override and the PR record', () => {
+    const hint = formatReleaseAgeOverrideHint();
+    expect(hint).toContain('MIN_RELEASE_AGE_DAYS=0');
+    expect(hint).toMatch(/document the root cause in the PR description/i);
+  });
+
+  it('does not promise the old workflow dispatch exit', () => {
+    const hint = formatReleaseAgeOverrideHint();
+    expect(hint).not.toMatch(/in the workflow dispatch/i);
+    expect(hint).toMatch(/no workflow[_-]?dispatch input/i);
+  });
+
+  it('is the single source used by the gate script', () => {
+    const source = readFileSync(resolve(ROOT, 'scripts/check-dep-release-age.mjs'), 'utf8');
+    expect(source).toContain('console.error(formatReleaseAgeOverrideHint())');
+    expect(source).not.toMatch(/in the workflow dispatch/i);
+  });
+
+  it('SECURITY.md does not repeat the nonexistent dispatch exit', () => {
+    const doc = readFileSync(resolve(ROOT, 'SECURITY.md'), 'utf8');
+    expect(doc).not.toMatch(/via workflow dispatch/i);
+    expect(doc).toMatch(/no default\s+workflow[_-]?dispatch\s+input/i);
+    expect(doc).toContain('MIN_RELEASE_AGE_DAYS=0');
+  });
+
+  it('does not claim a dispatch input that no workflow declares', () => {
+    const dir = resolve(ROOT, '.github/workflows');
+    const declaresInput = readdirSync(dir)
+      .filter((file) => file.endsWith('.yml') || file.endsWith('.yaml'))
+      .some((file) => WORKFLOW_INPUT_PATTERN.test(readFileSync(resolve(dir, file), 'utf8')));
+    // If this flips to true, the hint and this test must be updated together:
+    // the gate would then have a real dispatch exit to point at.
+    expect(declaresInput).toBe(false);
+  });
+
+  it('recognizes the workflow input spellings GitHub accepts', () => {
+    for (const name of ['min_release_age_days', 'min-release-age-days', 'minReleaseAgeDays']) {
+      expect(WORKFLOW_INPUT_PATTERN.test(name)).toBe(true);
+    }
   });
 });

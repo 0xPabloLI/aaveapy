@@ -122,3 +122,20 @@ export function isAtLeastDaysOld(publishTime, now, minAgeDays) {
   const ageMs = now.getTime() - publishTime.getTime();
   return ageMs >= minAgeDays * 24 * 60 * 60 * 1000;
 }
+
+/**
+ * Failure hint for a blocked adoption. Keep it honest: the only override that
+ * exists today is the MIN_RELEASE_AGE_DAYS environment variable at the point
+ * the gate runs. No workflow declares a workflow_dispatch input for it, so the
+ * hint must not send operators to one. If an input is ever added, update this
+ * function and the contract test in src/test/depReleaseAge.test.ts together.
+ *
+ * @returns {string}
+ */
+export function formatReleaseAgeOverrideHint() {
+  return [
+    '  - Override deliberately for this PR: set MIN_RELEASE_AGE_DAYS=0 in the environment that runs the gate,',
+    '    and document the root cause in the PR description. No workflow_dispatch input sets this value;',
+    '    a CI-side exception requires a reviewed change to the workflow that invokes the gate.',
+  ].join('\n');
+}

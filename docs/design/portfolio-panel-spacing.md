@@ -68,10 +68,10 @@ Four layers protect the spacing contract:
 3. **Playwright bounding-box** (`e2e/portfolio-toggle-alignment.spec.ts`)
    — measures the toggle's right edge in Single vs Portfolio mode at
    1280 / 768 / 640 / 390 / 360 px and asserts drift ≤ 1px.
-4. **Playwright screenshot** (`e2e/portfolio-panel-header-visual.spec.ts`)
-   — pixel-diff snapshot of both header variants at desktop and mobile
-   to catch subtle padding/typography drift that the bounding-box check
-   misses.
+4. **Playwright geometry** (`e2e/portfolio-panel-header.spec.ts`)
+   — asserts the mode toggle is visible and non-collapsed in both modes
+   at desktop and mobile, and its center stays horizontally inside the
+   viewport; no pixel snapshots (see `docs/conventions/e2e-testing-boundary.md`).
 
 ## Reference files
 

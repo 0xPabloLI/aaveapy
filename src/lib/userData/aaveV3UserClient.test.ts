@@ -12,7 +12,8 @@ import {
   type V3OnchainResult,
   type V3AssetsByMarket,
 } from './aaveV3UserClient';
-import { createClientWithRpcRotation, RpcRotationExhaustedError } from './rpcResilience';
+import { createRpcClientPool, RpcRotationExhaustedError } from './rpcResilience';
+import { MulticallAllCallsFailedError } from './multicallFailure';
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains';
 import type { createPublicClient } from 'viem';
 
@@ -30,11 +31,16 @@ vi.mock('./chainDiscovery', async (importOriginal) => {
 // test are visible to the module under test at call time.
 const rpcRotationMocks = vi.hoisted(() => ({
   createClientWithRpcRotation: vi.fn(),
+  readWithRpcRotation: vi.fn(),
 }));
 
 vi.mock('./rpcResilience', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./rpcResilience')>();
-  return { ...actual, createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation };
+  return {
+    ...actual,
+    createClientWithRpcRotation: rpcRotationMocks.createClientWithRpcRotation,
+    readWithRpcRotation: rpcRotationMocks.readWithRpcRotation,
+  };
 });
 
 const registryOverrides = vi.hoisted(() => ({
@@ -184,24 +190,32 @@ describe('getV3UserPositionsOnChain', () => {
   });
 
   it('skips failed multicall entries', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'failure', result: undefined },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, false] },
       { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
     ]);
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum', client);
     expect(result.positions).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserve reads failed'));
+    warnSpy.mockRestore();
   });
 
   it('skips a success entry whose result is not an array (unexpected shape)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'success', result: { currentATokenBalance: 5n } as never },
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, false] },
       { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] },
     ]);
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum', client);
     expect(result.positions).toHaveLength(0);
     expect(result.accountSummary).not.toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserve reads failed'));
+    warnSpy.mockRestore();
   });
 
   it('returns empty for unknown chain', async () => {
@@ -211,6 +225,7 @@ describe('getV3UserPositionsOnChain', () => {
   });
 
   it('returns null accountSummary when getUserAccountData fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { client } = makeMockClient([
       { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
       { status: 'failure', result: undefined },
@@ -219,6 +234,8 @@ describe('getV3UserPositionsOnChain', () => {
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
     expect(result.positions).toHaveLength(1);
     expect(result.accountSummary).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('account-level read failed'));
+    warnSpy.mockRestore();
   });
 
   // AAV-1305 Phase 2: reserve reads moved off the Pool (V3.2+ removed
@@ -305,6 +322,131 @@ describe('getV3UserPositionsOnChain degradation (registry overrides)', () => {
   });
 });
 
+describe('getV3UserPositionsOnChain multicall failure semantics (AAV-1314)', () => {
+  const FAILED_READ = { status: 'failure', result: undefined } as const;
+  const ACCOUNT_OK = { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] } as const;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+    rpcRotationMocks.createClientWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+  });
+
+  it('rejects when every reserve read fails (even if the account call succeeds)', async () => {
+    const { client } = makeMockClient([FAILED_READ, FAILED_READ, ACCOUNT_OK]);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum', client)).rejects.toBeInstanceOf(
+      MulticallAllCallsFailedError,
+    );
+  });
+
+  it('reports chain, market and attempted call count on the thrown error', async () => {
+    const { client } = makeMockClient([FAILED_READ, ACCOUNT_OK]);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)).rejects.toMatchObject({
+      chainId: 1,
+      scope: 'AaveV3Ethereum',
+      attemptedCalls: 1,
+    });
+  });
+
+  it('keeps successful positions and warns on a partial failure', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: [1000n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
+      FAILED_READ,
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum', client);
+
+    expect(result.positions).toHaveLength(1);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1/2 reserve reads failed'));
+  });
+
+  it('does not warn when every read succeeds with zero balances', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, false] },
+      ACCOUNT_OK,
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    expect(result.positions).toHaveLength(0);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when there are no reserves to read', async () => {
+    const { client } = makeMockClient([ACCOUNT_OK]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [], 'AaveV3Ethereum', client);
+
+    expect(result.accountSummary).not.toBeNull();
+  });
+
+  it('warns but does not throw when only the account call fails', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: [100n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true] },
+      FAILED_READ,
+    ]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    expect(result.positions).toHaveLength(1);
+    expect(result.accountSummary).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('account-level read failed'));
+  });
+
+  it('bubbles a multicall rejection unchanged', async () => {
+    const rpcError = new Error('rpc down');
+    const client = {
+      multicall: vi.fn().mockRejectedValue(rpcError),
+    } as unknown as Parameters<typeof getV3UserPositionsOnChain>[4];
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)).rejects.toBe(rpcError);
+  });
+
+  it('treats a missing result entry as a failed read', async () => {
+    const { client } = makeMockClient([]);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)).rejects.toBeInstanceOf(
+      MulticallAllCallsFailedError,
+    );
+  });
+
+  it('rejects when every reserve result is a non-array success shape', async () => {
+    const { client } = makeMockClient([
+      { status: 'success', result: { currentATokenBalance: 5n } as never },
+      ACCOUNT_OK,
+    ]);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)).rejects.toBeInstanceOf(
+      MulticallAllCallsFailedError,
+    );
+  });
+
+  it('multichain captures the all-failed error into errors', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Rotation exhausted: every endpoint reported an all-failed batch, and the
+    // last one comes back so the client raises the domain error.
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue([FAILED_READ, FAILED_READ]);
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(1);
+    expect(result.errors[0].error).toBeInstanceOf(MulticallAllCallsFailedError);
+    errorSpy.mockRestore();
+  });
+});
+
 describe('getV3UserPositionsMultiChain', () => {
   it('returns results and errors from multi-chain query', async () => {
     const { client } = makeMockClient([
@@ -377,17 +519,17 @@ describe('getV3UserPositionsMultiChain', () => {
 
 describe('getV3UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   beforeEach(() => {
-    rpcRotationMocks.createClientWithRpcRotation.mockReset();
-    rpcRotationMocks.createClientWithRpcRotation.mockResolvedValue(null);
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
   });
 
-  it('registry has no RPC (client null) → empty success (unchanged degradation)', async () => {
+  it('registry has no RPC (rotation returns null) → empty success (unchanged degradation)', async () => {
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum');
     expect(result).toEqual({ positions: [], accountSummary: null });
   });
 
   it('rotation exhausted → getV3UserPositionsOnChain rejects (not empty success)', async () => {
-    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
 
     await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum')).rejects.toBeInstanceOf(
       RpcRotationExhaustedError,
@@ -395,7 +537,7 @@ describe('getV3UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
   });
 
   it('multichain captures rotation exhaustion into errors (not silent empty)', async () => {
-    rpcRotationMocks.createClientWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(42161));
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(42161));
 
     const result = await getV3UserPositionsMultiChain(USER, {
       AaveV3Arbitrum: { chainId: 42161, assets: [USDC] },
@@ -415,5 +557,145 @@ describe('getV3UserPositionsOnChain RPC rotation exhaustion (AAV-1310)', () => {
 
     const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
     expect(result.positions).toHaveLength(1);
+    expect(rpcRotationMocks.readWithRpcRotation).not.toHaveBeenCalled();
+  });
+});
+
+describe('getV3UserPositionsOnChain read rotation wiring (AAV-1387)', () => {
+  const FAILED_READ = { status: 'failure', result: undefined } as const;
+  const ACCOUNT_OK = { status: 'success', result: [0n, 0n, 0n, 0n, 0n, 0n] } as const;
+  const SUPPLY_1000 = {
+    status: 'success',
+    result: [1000n * 10n ** 18n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, true],
+  } as const;
+
+  type AttemptFn = (client: unknown) => Promise<{ value: unknown; allCallsFailed: boolean }>;
+
+  /** Routes the mocked rotation through `client` and captures the caller's flag. */
+  function captureAttempt(client: unknown): { allCallsFailed?: boolean } {
+    const captured: { allCallsFailed?: boolean } = {};
+    rpcRotationMocks.readWithRpcRotation.mockImplementation(async (_chainId: number, attempt: AttemptFn) => {
+      const outcome = await attempt(client);
+      captured.allCallsFailed = outcome.allCallsFailed;
+      return outcome.value;
+    });
+    return captured;
+  }
+
+  beforeEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+  });
+
+  afterEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+  });
+
+  it('V3-R1 flags an all-failed batch so rotation moves to the next RPC', async () => {
+    const { client } = makeMockClient([FAILED_READ, FAILED_READ, ACCOUNT_OK]);
+    const captured = captureAttempt(client);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum')).rejects.toBeInstanceOf(
+      MulticallAllCallsFailedError,
+    );
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledWith(1, expect.any(Function));
+    expect(captured.allCallsFailed).toBe(true);
+  });
+
+  it('V3-R2 flags a partially readable batch as readable (no rotation)', async () => {
+    const { client } = makeMockClient([SUPPLY_1000, FAILED_READ, ACCOUNT_OK]);
+    const captured = captureAttempt(client);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum');
+
+    expect(result.positions).toHaveLength(1);
+    expect(captured.allCallsFailed).toBe(false);
+  });
+
+  it('V3-R3 keeps the empty-success degradation when rotation yields null', async () => {
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
+
+    await expect(getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum')).resolves.toEqual({
+      positions: [],
+      accountSummary: null,
+    });
+  });
+
+  it('V3-R4 reads an injected client without consulting rotation', async () => {
+    const { client } = makeMockClient([SUPPLY_1000, ACCOUNT_OK]);
+
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client);
+
+    expect(result.positions).toHaveLength(1);
+    expect(rpcRotationMocks.readWithRpcRotation).not.toHaveBeenCalled();
+  });
+});
+
+describe('getV3UserPositionsMultiChain shared RPC session (AAV-1313)', () => {
+  beforeEach(() => {
+    rpcRotationMocks.readWithRpcRotation.mockReset();
+    rpcRotationMocks.readWithRpcRotation.mockResolvedValue(null);
+  });
+
+  it('passes one read session to every market on the same chain', async () => {
+    const pool = createRpcClientPool();
+
+    await getV3UserPositionsMultiChain(
+      USER,
+      {
+        AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+        AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+      },
+      pool,
+    );
+
+    expect(rpcRotationMocks.readWithRpcRotation).toHaveBeenCalledTimes(2);
+    for (const call of rpcRotationMocks.readWithRpcRotation.mock.calls) {
+      expect(call[0]).toBe(1);
+      expect(call[2]).toBe(pool);
+    }
+  });
+
+  it('creates one session for all markets when none is injected', async () => {
+    await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+    });
+
+    const calls = rpcRotationMocks.readWithRpcRotation.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][2]).toBeDefined();
+    expect(calls[0][2]).toBe(calls[1][2]);
+  });
+
+  it('reports a chain once when two of its markets fail', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    rpcRotationMocks.readWithRpcRotation.mockRejectedValue(new RpcRotationExhaustedError(1));
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3EthereumLido: { chainId: 1, assets: [USDC] },
+    });
+
+    expect(result.results).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].chainId).toBe(1);
+    // The per-market console line stays: the dedupe only targets the aggregate array.
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+  });
+
+  it('keeps one error per distinct chain', async () => {
+    rpcRotationMocks.readWithRpcRotation.mockImplementation(async (chainId: number) => {
+      throw new RpcRotationExhaustedError(chainId);
+    });
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      AaveV3Ethereum: { chainId: 1, assets: [DAI] },
+      AaveV3Arbitrum: { chainId: 42161, assets: [USDC] },
+    });
+
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors.map((entry) => entry.chainId)).toEqual([1, 42161]);
   });
 });

@@ -57,10 +57,6 @@ async function expectExpandedRowInViewport(page: Page, reserveId: string) {
 }
 
 test.describe('Reserves table interaction matrix', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
-    test.skip(testInfo.project.name.includes('mobile'), 'Desktop table matrix only');
-  });
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForTableReady(page);

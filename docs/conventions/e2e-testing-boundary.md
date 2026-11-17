@@ -32,6 +32,24 @@ third-party site state, pixel baselines, or live external services it cannot moc
 - **Anything a Vitest unit/integration test already covers deterministically**
   (pure functions, hook logic). e2e must not duplicate it.
 
+## Unit and script tests are hermetic
+
+- `npm test` runs the unit and `scripts/**/*.test.mjs` suites inside the pre-commit and
+  pre-push gate of every machine. One live download makes that deterministic suite
+  network-dependent: AAV-1335 burned **46s** and failed with
+  `upstream download failed after 2 attempts (cloudflare blocked)` on one run, then passed
+  on the next with the same tree.
+- Keep importing a module side-effect free: export the pure helpers at module scope and
+  put downloads/writes inside `main()`, invoked only when `process.argv[1]` resolves to the
+  module file (`const isDirectRun = …; if (isDirectRun) { main().catch(…) }`).
+- Pin it with a guard that traps `fetch`, `http(s).request`, `dns.lookup` and `net.connect`
+  **before** importing the module and then asserts zero attempts —
+  `scripts/sync-reserve-patches-upstream.hermetic.test.mjs` is the reference shape. Assert
+  "no attempt", not "no error": on a connected machine an unguarded import succeeds and
+  the regression stays invisible.
+- A suite that genuinely needs the upstream is an explicit integration/live test
+  (env-gated, like `RUN_LIVE_TESTS`), never part of the default `npm test`.
+
 ## Deterministic waiting (app-ready signal)
 
 - After `page.goto('/')`, wait for the canonical app-ready signal:
@@ -49,7 +67,7 @@ third-party site state, pixel baselines, or live external services it cannot moc
   MutationObserver or in-page probe — not via before/after snapshots. The app
   reacts per React commit; a transient intermediate state that restores before
   the next snapshot is real behavior the snapshots can't see (seen in
-  `reserves-table-scenario-pin.spec.ts`: the pin fired on a debounce-window
+  `reserves-table-scenario-pin.desktop.spec.ts`: the pin fired on a debounce-window
   intermediate sort while before == after).
 - A `test.skip` conditioned on a page query ("no such reserve in staging")
   must come after the ready wait — otherwise a slow load masquerades as
@@ -109,8 +127,67 @@ strength of an isolated red; it passed 2/2 in 16.5s once proxied.
 - A file that is `describe.skip` in CI is acceptable only as a **deliberate local
   operator check** (e.g. staging API smoke) with its rationale in the file header.
 - **Never** skip by platform to dodge work (`test.skip(mobile, 'Desktop-only')`).
-  Use a project-filtered `test.describe` instead — desktop-only tests run in the
-  desktop project, mobile-only in the mobile project.
+  Route by file name instead: platform-specific specs are `*.desktop.spec.ts` /
+  `*.mobile.spec.ts`, and `playwright.config.ts` ignores the other suffix per
+  project. A file that carries both platforms must be split (shared code goes to
+  a co-located `*.helpers.ts`), so each project only ever collects its own tests
+  (AAV-1395; precedent `portfolio-cross-asset-pairing.*`, `scenario-input-modes.*`).
+
+## Discovery fetch failure is NOT a data gap
+
+Specs discover their premise from staging `/markets` (`e2e/test-reserves.ts`).
+"Staging has nothing that qualifies" and "the fetch failed" are different facts
+and must not collapse into one skip — a collapsed guard turns a whole spec file
+green while it verifies nothing (AAV-1352, same family as AAV-1294/1330/1349).
+
+The contract:
+
+- `fetchStagingReserves()` returns a **tagged outcome**: `ok` (with `reserves`,
+  `[]` allowed) or `unreachable` (network error, non-2xx, timeout, bad JSON).
+  Never a bare array whose emptiness is ambiguous.
+- `findIncentiveReserve()` / `findAnyActiveReserve()` / `toDiscovery()` return
+  `found` | `data-gap` | `unreachable`; `decideReserveGate()` maps that to
+  `run` | `skip` | `fail`, and `enforceReserveGate()` applies it.
+- **Data gap ⇒ `test.skip`** with a reason that says `/markets` loaded fine.
+- **Unreachable ⇒ a real failure** (`throw` in `beforeEach`, or the placeholder
+  test used when a scenario list is empty). `test.fail()` is wrong here: it
+  records an expected failure as a pass.
+- The only opt-out is `E2E_ALLOW_STAGING_UNREACHABLE=1` (same shape as
+  `E2E_SKIP`): default off, `0`/empty/`yes` ignored, and the skip text still
+  says the host was unreachable.
+- **Fail at the live-test scope, never at module load.** A module-level throw
+  would also take down variants that do not depend on staging data (the AAV-1316
+  cross-asset stub), converting a live-data outage into lost coverage. Note those
+  variants still share the module, so an outage costs them one bounded fetch of
+  latency — not a failure.
+
+Fetch policy lives in `e2e/stagingReservesFetch.ts`: 2 attempts × 30s, success
+and failure both cached per process. Spec:
+`docs/specs/aav-1352-staging-discovery-fetch-outcome.md`.
+
+## Local pre-push gate: a missing browser is BLOCKED, not a skip
+
+`npm run test:e2e:pre-push` (`scripts/pre-push-e2e.mjs`) is the only place a push
+gets browser evidence locally. Its probing of `~/Library/Caches/ms-playwright`
+used to end in `process.exit(0)` when chromium was absent — and exit code 0 here
+means "the e2e gate passed". With `e2e-desktop`/`e2e-mobile` not being required
+checks on any branch, that combination allowed a merge with zero browser tests
+(AAV-1349).
+
+The contract now:
+
+- **Missing chromium ⇒ `exit 1`.** A gate that cannot run reports failure, with the
+  reason, the cache path it looked in, and the fix (`npx playwright install chromium`).
+- **`E2E_SKIP=1`** is the only bypass, it is per-push, and it prints that the push
+  carries no e2e evidence. `E2E_SKIP=0`, empty, or any other value leaves the gate on.
+- **`PLAYWRIGHT_BROWSERS_PATH=0`** (browsers inside `node_modules`) counts as
+  installed — the global cache is legitimately empty in that mode.
+- The decision logic lives in `scripts/lib/e2e-browser-gate.mjs`; the exit-code
+  contract lives in the script. `scripts/pre-push-e2e.test.mjs` pins both, including
+  a stub-`npx` case proving the run path still invokes Playwright.
+
+This is **not** an "acceptable skip" in the sense above: those are `test.skip(...)`
+calls inside a spec, this is the gate deciding not to run the suite at all.
 
 ## Seams (reuse, don't invent)
 
@@ -124,7 +201,7 @@ Backend data changes under the suite. Two rules, enforced by `npm run check:e2e-
 
 - **No chain name in a selector literal.** Pick the chip from the rendered row (`e2e/marketChips.ts`); a name in a *candidate list* that tolerates absence is fine. Arbitrum and Celo both left `/markets` and each took a spec down as a locator timeout that read like a flake.
 - **Locate row chips by `data-chip-kind`, not by label text.** A row renders both `Filter by <hub> hub` and `Filter by <market> market`; `[aria-label^="Filter by "]` matches both → strict mode violation, or silently testing the hub. Use `button[data-chip-kind="market"]`. The attribute is asserted in `DesktopReserveRow.test.tsx`, so dropping it fails at the unit layer.
-- **Discover the premise, don't assume the row index.** An assertion about *reordering* is only meaningful on a row whose market differs from the page it sits in. `reserves-table-market-filter-pin (5)` used "the 3rd visible row" and passed for months; on 2026-10-05 CI's snapshot had every visible row in one market (`Filter by Ink market` ×13), the filter changed nothing, nothing pinned, and it failed identically on both attempts (`y=376.75` vs a `274.25` anchor) — a deterministic data premise, not a load flake. Use `pickReorderCapableRowIndex(labels)` from `e2e/reserveDiscovery.ts` and `test.skip(-1, reason)` when no reorder-capable row exists, the same discovery+conditional-skip shape as `portfolio-cross-asset-pairing`.
+- **Discover the premise, don't assume the row index.** An assertion about *reordering* is only meaningful on a row whose market differs from the page it sits in. `reserves-table-market-filter-pin.desktop.spec.ts` used "the 3rd visible row" and passed for months; on 2026-10-05 CI's snapshot had every visible row in one market (`Filter by Ink market` ×13), the filter changed nothing, nothing pinned, and it failed identically on both attempts (`y=376.75` vs a `274.25` anchor) — a deterministic data premise, not a load flake. Use `pickReorderCapableRowIndex(labels)` from `e2e/reserveDiscovery.ts` and `test.skip(-1, reason)` when no reorder-capable row exists, the same discovery+conditional-skip shape as `portfolio-cross-asset-pairing`.
 
 Escape hatch for legitimate label collisions: `market-name-guard: allow` on the line. Coverage limits (chain names only, no hub names, no live-data comparison) are in `docs/specs/e2e-hardcoded-market-name-guard.md`.
 

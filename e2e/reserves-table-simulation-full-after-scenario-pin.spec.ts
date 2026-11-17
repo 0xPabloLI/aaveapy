@@ -1,5 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /** Desktop table mounted (not mobile cards, not full-page LoadingState skeleton). */
 async function waitDesktopReservesReady(page: Page) {

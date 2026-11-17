@@ -14,3 +14,4 @@ export function parseAddedLockEntries(diffText: string): LockEntry[];
 export function dedupeEntries(entries: LockEntry[]): LockEntry[];
 export function resolvePublishTime(timeMap: Record<string, string>, version: string): Date | null;
 export function isAtLeastDaysOld(publishTime: Date, now: Date, minAgeDays: number): boolean;
+export function formatReleaseAgeOverrideHint(): string;

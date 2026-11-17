@@ -59,7 +59,7 @@ function significantDigits(raw: string): number {
 }
 
 test.describe('Portfolio — Wallet Sync precision', () => {
-  test.beforeEach(({}, testInfo) => {
+  test.beforeEach(() => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
     test.skip(
       !!process.env.CI,

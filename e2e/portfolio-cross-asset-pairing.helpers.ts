@@ -2,17 +2,25 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import {
   AAV1316_STUB_INJECTION,
+  AAV1317_SAME_SYMBOL_INJECTION,
   CROSS_ASSET_PAIRING_FIXTURE_URL,
   buildCrossAssetPairingStub,
+  type CrossAssetPairingStubPayload,
 } from './crossAssetPairingStub';
 import { discoverCrossAssetPairingScenarios, type CrossAssetScenario } from './reserveDiscovery';
+import { installMarketsStubRoutes } from './stubRoutes';
+import { toDiscovery } from './stagingReservesFetch';
 import {
+  CROSS_ASSET_SCENARIO_GAP_REASON,
   addReserveToPortfolio,
   fetchStagingReserves,
   fillBorrowAmountDesktop,
   fillBorrowAmountMobile,
   fillSupplyAmount,
+  foundValue,
+  portfolioAmountInputName,
   readIncentiveAfter,
+  reserveGateFor,
   setupPortfolioMode,
 } from './test-reserves';
 
@@ -38,9 +46,10 @@ import {
  * are scanned and each group is gated by the UI's own render gates
  * (computable campaign, position room, LTV funding), so a selected scenario
  * always renders a numeric incentive and never a clamped position — the two
- * ways this spec could otherwise go quietly false-green. Self-pairings and
- * same-symbol pairs are excluded because the fill helpers type into inputs
- * located by token symbol. Unit-tested in src/test/reserveDiscovery.test.ts.
+ * ways this spec could otherwise go quietly false-green. Self-pairings are
+ * excluded because the runner holds one position per reserve side; same-symbol
+ * pairs are allowed since AAV-1317 (fills are scoped by reserveId). Unit-tested
+ * in src/test/reserveDiscovery.test.ts.
  *
  * If no crossAssetPairing campaigns are found in staging data, the live tests
  * skip and only the stub variant runs.
@@ -64,13 +73,21 @@ import {
 // Discover at module load (top-level await — Playwright supports ESM TLA).
 // API base comes from the shared env-resolving fetcher; CI sets
 // VITE_API_BASE_URL to bypass Cloudflare/WAF 403s on the staging host.
-const allScenarios: CrossAssetScenario[] = discoverCrossAssetPairingScenarios(
-  await fetchStagingReserves(),
-  new Date().toISOString(),
+//
+// AAV-1352: the fetch outcome is tagged, so "staging unreachable" is not the
+// same fact as "staging has no crossAssetPairing campaign". The live variants
+// fail on the former and skip on the latter. The stub variant consumes the
+// committed fixture and is not gated on staging data — but this module still
+// runs one bounded fetch at load (≤ 2×30s) before the stub test starts, so an
+// outage costs it latency, not a failure.
+const liveDiscovery = toDiscovery(await fetchStagingReserves(), (reserves) =>
+  discoverCrossAssetPairingScenarios(reserves, new Date().toISOString()),
 );
+const allScenarios: CrossAssetScenario[] = foundValue(liveDiscovery) ?? [];
 // Limit to top 2 scenarios to keep CI runtime reasonable
 export const scenarios = allScenarios.slice(0, 2);
 export const hasScenarios = scenarios.length > 0;
+export const liveScenarioGate = reserveGateFor(liveDiscovery, CROSS_ASSET_SCENARIO_GAP_REASON);
 
 // ─── Stub variant (AAV-1316) ─────────────────────────────────────
 
@@ -83,34 +100,57 @@ const stub = buildCrossAssetPairingStub(
 );
 export const stubScenario: CrossAssetScenario = stub.scenarios[0];
 
+// AAV-1317: a second stub variant pairing the same SYMBOL across two markets
+// (Celo WETH → Base WETH). This is the pair class the fill helpers used to be
+// unable to serve; it is the runtime proof that fills land per reserveId.
+// Same loud-failure contract as the AAV-1316 stub.
+const sameSymbolStub = buildCrossAssetPairingStub(
+  JSON.parse(readFileSync(CROSS_ASSET_PAIRING_FIXTURE_URL, 'utf8')) as unknown,
+  AAV1317_SAME_SYMBOL_INJECTION,
+);
+export const stubSameSymbolScenario: CrossAssetScenario = sameSymbolStub.scenarios[0];
+export const stubSameSymbolPayload = sameSymbolStub.payload;
+
 /**
- * Serve the stub payload to the browser: `/markets` returns the injected
- * payload, `/meta/side-data` a minimal deterministic body (only `generatedAt`
- * is required by the schema; empty forecast/campaignAccess keep the incentive
- * math on the breakdown-APR path instead of forecast-TV recomputation).
- * Pathname matching is host-agnostic on purpose: the app's API base differs
- * between dev (staging host from apiBase.ts) and CI (VITE_API_BASE_URL), and
- * both end in /markets and /meta/side-data.
+ * Display value a portfolio input shows after `fill(amount)`: the app's
+ * `useDebouncedInput` formats on every change (`formatNumberInput`), so 1000
+ * renders as "1,000". Row-ownership assertions below compare against this.
+ * Only plain integer amounts are typed by the runner, which is what this
+ * replicates — clamping never applies (stub caps are orders of magnitude above
+ * the ladder).
  */
-export async function installStubRoutes(page: Page) {
-  await page.route(
-    (url) => url.pathname.endsWith('/markets'),
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(stub.payload),
-      }),
-  );
-  await page.route(
-    (url) => url.pathname.endsWith('/meta/side-data'),
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ generatedAt: '2026-01-01T00:00:00.000Z' }),
-      }),
-  );
+function typedDisplayValue(amount: string): string {
+  return Number(amount.replace(/,/g, '')).toLocaleString('en-US');
+}
+
+/**
+ * Assert the portfolio input of ONE specific reserve row holds `expected`.
+ * This is the AAV-1317 row-ownership check: a symbol-based `.first()` fill
+ * overwrites the first same-symbol row, so after the paired fill the SOURCE
+ * row's value must still be its own amount — reading both rows turns "the
+ * incentive didn't move" into a named, located failure.
+ */
+async function expectRowAmount(
+  page: Page,
+  reserveId: string,
+  side: 'supply' | 'borrow',
+  symbol: string,
+  expected: string,
+) {
+  const row = page.locator(`[data-reserve-id="${reserveId}"]`).first();
+  // Same matcher rule as the fill helpers (shared export, AAV-1317 review):
+  // symbol is regex-escaped and both amount/effective label variants match.
+  const input = row.getByRole('textbox', { name: portfolioAmountInputName(side, symbol) }).first();
+  await expect(input, `Row ${reserveId} ${side} input must hold ${expected}`).toHaveValue(expected);
+}
+
+/**
+ * Serve the stub payload to the browser. The generic route installer lives in
+ * `./stubRoutes` (shared with the cross-reserve offset stub, AAV-1333); this
+ * wrapper keeps the pairing default payload for its own spec files.
+ */
+export async function installStubRoutes(page: Page, payload: CrossAssetPairingStubPayload = stub.payload) {
+  await installMarketsStubRoutes(page, payload);
 }
 
 // ─── Shared Scenario Runner ────────────────────────────────────────
@@ -132,7 +172,7 @@ export async function runCrossAssetPairingScenario(
 
   // If source is borrow, we need to supply first to get borrowing power (LTV clamping)
   if (s.sourceSide === 'borrow') {
-    await fillSupplyAmount(page, s.sourceSymbol, '100000');
+    await fillSupplyAmount(page, s.sourceReserveId, s.sourceSymbol, '100000');
   }
 
   // Set source position
@@ -140,11 +180,13 @@ export async function runCrossAssetPairingScenario(
     s.sourceSide === 'borrow'
       ? isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.sourceReserveId, s.sourceSymbol, amount)
-        : (amount: string) => fillBorrowAmountDesktop(page, s.sourceSymbol, amount)
-      : (amount: string) => fillSupplyAmount(page, s.sourceSymbol, amount);
+        : (amount: string) => fillBorrowAmountDesktop(page, s.sourceReserveId, s.sourceSymbol, amount)
+      : (amount: string) => fillSupplyAmount(page, s.sourceReserveId, s.sourceSymbol, amount);
 
   // Use $1000 as source position
   await fillSourcePosition('1000');
+  // AAV-1317 row ownership: the fill must have landed in the SOURCE row.
+  await expectRowAmount(page, s.sourceReserveId, s.sourceSide, s.sourceSymbol, typedDisplayValue('1000'));
   const baselineAfter = await readIncentiveAfter(page, s.sourceReserveId, s.sourceSide, isMobile);
 
   // Baseline: without paired asset, min(source, 0 × discountFactor) = 0.
@@ -164,20 +206,26 @@ export async function runCrossAssetPairingScenario(
 
   // If paired is borrow, need supply for LTV
   if (s.pairedSide === 'borrow') {
-    await fillSupplyAmount(page, s.pairedSymbol, '100000');
+    await fillSupplyAmount(page, s.pairedReserveId, s.pairedSymbol, '100000');
   }
 
   const fillPairedPosition =
     s.pairedSide === 'borrow'
       ? isMobile
         ? (amount: string) => fillBorrowAmountMobile(page, s.pairedReserveId, s.pairedSymbol, amount)
-        : (amount: string) => fillBorrowAmountDesktop(page, s.pairedSymbol, amount)
-      : (amount: string) => fillSupplyAmount(page, s.pairedSymbol, amount);
+        : (amount: string) => fillBorrowAmountDesktop(page, s.pairedReserveId, s.pairedSymbol, amount)
+      : (amount: string) => fillSupplyAmount(page, s.pairedReserveId, s.pairedSymbol, amount);
 
   // Step 3: Add small paired position ($500)
   // effective = min(1000, 500 × discountFactor)
   // If discountFactor < 2, effective < 1000 → incentive should increase from baseline
   await fillPairedPosition('500');
+  // AAV-1317 row ownership: the paired fill must have landed in the PAIRED row
+  // and must not have overwritten the source row (the pre-AAV-1317 symbol-based
+  // `.first()` filled the first same-symbol row — for the same-symbol stub that
+  // is the source row, so this assertion is the discriminating red).
+  await expectRowAmount(page, s.pairedReserveId, s.pairedSide, s.pairedSymbol, typedDisplayValue('500'));
+  await expectRowAmount(page, s.sourceReserveId, s.sourceSide, s.sourceSymbol, typedDisplayValue('1000'));
   const halfPairedAfter = await readIncentiveAfter(page, s.sourceReserveId, s.sourceSide, isMobile);
 
   // Incentive should be higher than baseline (0 or low) when paired position is added

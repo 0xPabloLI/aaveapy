@@ -1,4 +1,9 @@
 import { V3_POOL_ADDRESSES, V3_PROTOCOL_DATA_PROVIDER_ADDRESSES } from '../chainRegistry';
+import {
+  MulticallAllCallsFailedError,
+  isSuccessfulRead,
+  type MulticallCallResult as CallResult,
+} from './multicallFailure';
 
 export { V3_POOL_ADDRESSES, V3_PROTOCOL_DATA_PROVIDER_ADDRESSES };
 
@@ -15,9 +20,6 @@ export function getV3PoolAddress(chainId: number): `0x${string}` | undefined {
 export function getV3ProtocolDataProviderAddress(chainId: number): `0x${string}` | undefined {
   return V3_PROTOCOL_DATA_PROVIDER_ADDRESSES[chainId] as `0x${string}` | undefined;
 }
-
-type CallResult<T> =
-  { status: 'success'; result: T; error?: undefined } | { status: 'failure'; result?: undefined; error: Error };
 
 export interface V3UserReserveData {
   currentATokenBalance: bigint;
@@ -106,7 +108,8 @@ export const POOL_ABI = [
 ] as const;
 
 import { createPublicClient, http, type PublicClient } from 'viem';
-import { createClientWithRpcRotation } from './rpcResilience';
+import { readFromHealthyRpc } from './rpcRead';
+import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V3OnchainResult {
   positions: V3UserPosition[];
@@ -130,19 +133,32 @@ interface MulticallContract {
   args: readonly `0x${string}`[];
 }
 
+/**
+ * A reserve read counts only when the call succeeded and decoded to a tuple —
+ * the same guard the parse loop uses. The rotation decision (`allCallsFailed`)
+ * and the all-failed error share this count so they cannot drift apart; a
+ * zero balance is a successful read and still counts (AAV-1314).
+ */
+function countSuccessfulReserveReads(results: readonly unknown[], reserveCount: number): number {
+  let count = 0;
+  for (let i = 0; i < reserveCount; i++) {
+    const res = results[i] as CallResult<readonly unknown[]> | undefined;
+    if (isSuccessfulRead(res) && Array.isArray(res.result)) count++;
+  }
+  return count;
+}
+
 export async function getV3UserPositionsOnChain(
   chainId: number,
   userAddress: `0x${string}`,
   reserveIds: `0x${string}`[],
   marketName: string,
   client?: PublicClient,
+  pool?: RpcClientPool,
 ): Promise<V3OnchainResult> {
   const providerAddress = getV3ProtocolDataProviderAddress(chainId);
   const poolAddress = getV3PoolAddress(chainId);
   if (!providerAddress && !poolAddress) return { positions: [], accountSummary: null };
-
-  const publicClient = client ?? (await createClientWithRpcRotation(chainId));
-  if (!publicClient) return { positions: [], accountSummary: null };
 
   // Reserve-level reads target the DataProvider; the account-level aggregate
   // targets the Pool. Either side degrades independently when its address is
@@ -168,24 +184,48 @@ export async function getV3UserPositionsOnChain(
     });
   }
 
-  const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
-  const results = await multicall({
-    contracts: allCalls,
-    multicallAddress: MULTICALL3_ADDRESS,
-    allowFailure: true,
-  });
+  // One batch read against one endpoint. `allCallsFailed` is the same
+  // judgement that later throws, so rotation and the domain error can never
+  // disagree about whether this batch was readable (AAV-1387).
+  const readBatch = async (publicClient: PublicClient): Promise<RpcReadAttempt<CallResult<readonly unknown[]>[]>> => {
+    const multicall = publicClient.multicall as unknown as (args: Record<string, unknown>) => Promise<unknown[]>;
+    const batch = (await multicall({
+      contracts: allCalls,
+      multicallAddress: MULTICALL3_ADDRESS,
+      allowFailure: true,
+    })) as CallResult<readonly unknown[]>[];
+    return {
+      value: batch,
+      allCallsFailed:
+        Boolean(providerAddress) &&
+        reserveIds.length > 0 &&
+        countSuccessfulReserveReads(batch, reserveIds.length) === 0,
+    };
+  };
+
+  // Explicit client (tests, health-factor path) bypasses rotation by
+  // contract; otherwise the read goes through endpoint rotation (AAV-1387),
+  // reusing the per-chain probe from `pool` when the multichain caller passes
+  // one (AAV-1313).
+  const results = await readFromHealthyRpc(chainId, client, readBatch, pool);
+  if (!results) return { positions: [], accountSummary: null };
 
   const positions: V3UserPosition[] = [];
   if (providerAddress) {
-    const reserveResults = results.slice(0, reserveIds.length) as CallResult<readonly unknown[]>[];
+    const reserveResults = results.slice(0, reserveIds.length) as (CallResult<readonly unknown[]> | undefined)[];
+    const successfulReads = countSuccessfulReserveReads(results, reserveIds.length);
+
     for (let i = 0; i < reserveIds.length; i++) {
       const res = reserveResults[i];
       // viem decodes multi-output calls as positional tuples, not named
       // objects (same pattern as fetchV3PoolHf in useOnchainHealthFactor).
       // Field order is the DATA_PROVIDER_ABI output order above.
-      if (res.status === 'failure' || !Array.isArray(res.result)) continue;
+      if (!isSuccessfulRead(res) || !Array.isArray(res.result)) continue;
       const [currentATokenBalance, currentStableDebt, currentVariableDebt] = res.result as bigint[];
       const usageAsCollateralEnabled = res.result[8] === true;
+      // A zero balance is a successful read — the wallet simply holds nothing
+      // in this reserve. Only call failures / malformed shapes are failed
+      // reads for the all-failed judgement below.
       if (currentATokenBalance === 0n && currentStableDebt === 0n && currentVariableDebt === 0n) continue;
       positions.push({
         chainId,
@@ -197,11 +237,25 @@ export async function getV3UserPositionsOnChain(
         isCollateral: usageAsCollateralEnabled,
       });
     }
+
+    // A healthy client returning zero successful reserve reads is
+    // indistinguishable from "this wallet has no positions" unless it fails
+    // loudly. The error travels through the existing multichain errors
+    // channel into failedSources (AAV-1314).
+    if (reserveIds.length > 0 && successfulReads === 0) {
+      throw new MulticallAllCallsFailedError(chainId, marketName, reserveIds.length);
+    }
+    if (successfulReads > 0 && successfulReads < reserveIds.length) {
+      console.warn(
+        `[onchain-v3] partial multicall failure for ${marketName} on chain ${chainId}: ` +
+          `${reserveIds.length - successfulReads}/${reserveIds.length} reserve reads failed`,
+      );
+    }
   }
 
   let accountSummary: V3AccountSummary | null = null;
   const accountResult = results[accountCallIndex] as CallResult<readonly unknown[]> | undefined;
-  if (poolAddress && accountResult && accountResult.status === 'success' && Array.isArray(accountResult.result)) {
+  if (poolAddress && isSuccessfulRead(accountResult) && Array.isArray(accountResult.result)) {
     const [totalCollateralBase, totalDebtBase, availableBorrowsBase, currentLiquidationThreshold, ltv, healthFactor] =
       accountResult.result as bigint[];
     accountSummary = {
@@ -214,6 +268,11 @@ export async function getV3UserPositionsOnChain(
       ltvWad: ltv,
       healthFactorWad: healthFactor,
     };
+  } else if (poolAddress) {
+    console.warn(
+      `[onchain-v3] account-level read failed for ${marketName} on chain ${chainId}; ` +
+        'returning positions without account summary',
+    );
   }
 
   return { positions, accountSummary };
@@ -227,17 +286,25 @@ export interface V3AssetsByMarket {
 export async function getV3UserPositionsMultiChain(
   userAddress: `0x${string}`,
   assetsByMarket: Record<string, V3AssetsByMarket>,
+  pool?: RpcClientPool,
 ): Promise<V3OnchainResponse> {
   const marketNames = Object.keys(assetsByMarket);
+  // One read session per wallet sync: markets on the same chainId share the
+  // probe result and the endpoint that served the first read (AAV-1313).
+  const sessionPool = pool ?? createRpcClientPool();
   const settled = await Promise.allSettled(
     marketNames.map((marketName) => {
       const { chainId, assets } = assetsByMarket[marketName];
-      return getV3UserPositionsOnChain(chainId, userAddress, assets, marketName);
+      return getV3UserPositionsOnChain(chainId, userAddress, assets, marketName, undefined, sessionPool);
     }),
   );
 
   const results: V3OnchainResult[] = [];
   const errors: V3OnchainError[] = [];
+  // `errors` carries no market name, so N markets failing on the same chain
+  // used to produce N indistinguishable entries. Report the chain once; the
+  // console line below still names every market for diagnostics (AAV-1313).
+  const reportedChainIds = new Set<number>();
 
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
@@ -246,6 +313,8 @@ export async function getV3UserPositionsMultiChain(
     } else {
       const { chainId } = assetsByMarket[marketNames[i]];
       console.error(`[onchain-v3] Chain ${chainId} (${marketNames[i]}) failed:`, outcome.reason); // nosemgrep: unsafe-formatstring — template literal interpolation, not a printf-style format string
+      if (reportedChainIds.has(chainId)) continue;
+      reportedChainIds.add(chainId);
       errors.push({ chainId, error: outcome.reason });
     }
   }

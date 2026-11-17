@@ -142,6 +142,14 @@ jobs:
           # outputs ('true'/'false') take precedence whenever they exist.
           HAS_GAPS: ${{ steps.verify_round2.outputs.has_gaps != '' && steps.verify_round2.outputs.has_gaps || steps.verify_round1.outputs.has_gaps }}
           GAP_SUMMARY: ${{ steps.verify_round2.outputs.has_gaps == 'true' && steps.verify_round2.outputs.gap_summary || steps.verify_round1.outputs.gap_summary }}
+          # The bot's commit/push must not run the local git hooks. `.husky/pre-push`
+          # runs `ci:remote` + the e2e browser gate, which demands a dev machine with
+          # Playwright browsers — the runner has none, so every run since AAV-1349
+          # hard-blocked here ("e2e gate CANNOT RUN ... chromium is not installed",
+          # run 43870754983). This step's own verify rounds plus the PR's CI checks
+          # are the verification for a bot commit; duplicating the developer-local
+          # gate inside the runner only re-runs the whole suite and then fails.
+          HUSKY: '0'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.

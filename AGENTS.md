@@ -86,7 +86,7 @@
    - [ ] Step 6 Runtime Verify 完成（有运行时验证证据：截图 / DOM 检查 / E2E 结果）
    - [ ] Step 7 Commit 完成（有 commit hash）
    - [ ] Step 8 文档及 Issue 更新完成（Linear 状态已更新）
-   - [ ] 产品视角结论完成（汇报先讲清 issue/feature 原本要什么、用户现在看到什么，再列 Step 1-8 完成情况与证据）
+   - [ ] 产品视角三句完成：原本要解决什么用户可见问题 / 用户现在看到什么变化 / 哪些行为或边界没有变（无用户可见变化时第三句写明原因）。三句落在票的 `交付记录` 评论 `## 产品视角` 节，PR body 同节由 CI `repo-policy` 校验（`skip-product-view` 标签豁免）；汇报首段用 `node scripts/product-view-section.mjs AAV-xxxx` 渲染，`exit ≠ 0` 即收尾未完成
    - 如有任何步骤跳过，必须在向用户汇报时**显式列出**跳过的步骤和原因，不得遗漏
 
 ## Coding Conventions
@@ -96,12 +96,12 @@
 - Treat `reserves[].reserveId` as required canonical identity in `/markets`; do not add new composite-key fallback paths.
 - For new domain naming, prefer *cap* semantics (`selfPositionCapUsd`, `positionCapUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
-- **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式。桌面端专用测试必须在 desktop 项目中执行，移动端专用测试必须在 mobile 项目中执行。用 `test.describe` 按 project 过滤代替 `test.skip(condition)`；缺少对应 platform 的测试用例时应补充，而非 skip。
+- **E2E 测试禁止按 platform 互斥 skip**：`test.skip(mobile, 'Desktop-only')` 是反模式，`test.describe` 也**不能**按 project 过滤（它只组织用例，仍会被两个 project 收集）。桌面端专用测试必须命名为 `*.desktop.spec.ts` 并由 `playwright.config.ts` 的 `mobile-chromium.testIgnore` 排除；移动端专用测试命名为 `*.mobile.spec.ts` 并由 `chromium.testIgnore` 排除；同一文件跨两端的必须拆分，共享代码放 co-located `*.helpers.ts`（AAV-1395，先例 `portfolio-cross-asset-pairing.*`）。缺少对应 platform 的测试用例时应补充，而非 skip。详见 `docs/conventions/e2e-testing-boundary.md`。
 
 ## Validation Gate (修改后必跑 — 强制)
 两道门，命令清单以它们为准（本文件不复述清单，复述出去迟早与实际漂移）：提交时过 `.husky/pre-commit`，推送前过 `npm run ci:remote`（含 build 与 e2e 子集）。任一失败 → 修根因 → 从头重跑。
 
-类型门是 `npm run typecheck`。根 `tsconfig.json` 是 solution-style（`files: []` + 两个 references），裸 `tsc --noEmit` 在其中一个文件都不检查却退出 0——本文件曾把它列为门禁项，那张**假绿灯**一直亮着。`e2e/` 也不在 lint 与 typecheck 的覆盖范围内：改了 `e2e` 下未被任何测试 import 的文件（spec、helper），就对那几个文件显式跑 tsc，否则类型错误靠运行时侥幸长期存活。
+类型门是 `npm run typecheck`（含 `e2e/**` 与根 `playwright.config.ts`；各 tsconfig 的覆盖面见 `package.json`，本文件不复述）。根 `tsconfig.json` 是 solution-style（`files: []` + 两个 references），裸 `tsc --noEmit` 在其中一个文件都不检查却退出 0——本文件曾把它列为门禁项，那张**假绿灯**一直亮着（AAV-1319 关闭）。`e2e/` 同样在 eslint 覆盖内（Playwright 空 fixture 关 `no-empty-pattern`、`_` 前缀参数豁免 unused-vars）；只改 e2e 时跑 `npm run typecheck:e2e`。该门在 pre-commit、`ci:remote`（pre-push）与 PR CI 三处都跑。
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 

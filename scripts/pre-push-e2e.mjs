@@ -2,8 +2,14 @@
 /**
  * Pre-push e2e gate — runs Playwright desktop chromium tests before push.
  *
- * Skips gracefully if Playwright browsers aren't installed (first-time setup,
- * fresh clone, etc.) so the push isn't blocked by missing infrastructure.
+ * Browser availability (AAV-1349):
+ *   - Missing chromium is a BLOCKED gate, not a skip. A 0-test browser run must
+ *     never be reported as a pass: e2e is not a required check on any branch, so a
+ *     silent skip here is enough to merge with zero browser evidence. This used to
+ *     `process.exit(0)` — the gate was green because it never ran.
+ *   - The only way through without browsers is a per-push, explicit opt-out:
+ *     `E2E_SKIP=1 git push`. It says out loud that this push carries no e2e
+ *     evidence. Default is off; `E2E_SKIP=0`/empty/anything else leaves it off.
  *
  * Strategy:
  *   - Uses `dev:staging` webServer (Vite dev server, no build step → no OOM)
@@ -30,27 +36,45 @@
  *     API timing flakiness while still catching real regressions.
  */
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
 import { archiveFailingResults, findFailingResultDirs } from './lib/e2e-artifacts.mjs';
+import { SKIP_ENV_VAR, decideBrowserGate, isSkipRequested, readBrowserCache } from './lib/e2e-browser-gate.mjs';
 
-// --- 1. Determine Playwright browser cache path ---
-const browserCache =
+// --- 1. Resolve the browser cache path (Playwright's own default when unset) ---
+const browsersPath =
   process.env.PLAYWRIGHT_BROWSERS_PATH ||
   (platform() === 'darwin'
     ? join(homedir(), 'Library', 'Caches', 'ms-playwright')
     : join(homedir(), '.cache', 'ms-playwright'));
 
-// --- 2. Check if chromium browser is installed ---
-const hasChromium = existsSync(browserCache) && readdirSync(browserCache).some((dir) => dir.startsWith('chromium'));
+// --- 2. Decide whether this gate can run at all ---
+// The decision lives in scripts/lib/e2e-browser-gate.mjs so it can be tested
+// without a browser; the exit-code contract lives here.
+const gate = decideBrowserGate({
+  browsersPath,
+  skipRequested: isSkipRequested(),
+  ...readBrowserCache(browsersPath),
+});
 
-if (!hasChromium) {
+if (gate.action === 'skip') {
   console.log('');
-  console.log('⚠️  Playwright chromium browser not installed — skipping e2e gate.');
-  console.log('   Install with: npx playwright install chromium');
+  console.log(`⚠️  [pre-push] e2e gate SKIPPED by explicit opt-out (${SKIP_ENV_VAR}=1).`);
+  console.log('   No browser test ran. This push carries no e2e evidence.');
+  console.log(`   Restore the gate: unset ${SKIP_ENV_VAR}. Install browsers: npx playwright install chromium`);
   console.log('');
   process.exit(0);
+}
+
+if (gate.action === 'block') {
+  console.error('');
+  console.error('❌ [pre-push] BLOCKED: e2e gate CANNOT RUN — Playwright chromium is not installed.');
+  console.error(`   Reason: ${gate.reason}`);
+  console.error('   A 0-test browser run is not a pass — this gate blocks until browsers exist (AAV-1349).');
+  console.error('   Fix (one-off, ~120 MB): npx playwright install chromium');
+  console.error(`   Deliberate skip (no e2e evidence for this push): ${SKIP_ENV_VAR}=1 git push`);
+  console.error('');
+  process.exit(1);
 }
 
 // --- 3. Run desktop chromium e2e tests ---
@@ -80,7 +104,7 @@ const GREP_INVERT = [
 ].join('|');
 
 console.log('');
-console.log('🧪 Running e2e tests (desktop chromium, 2 workers, staging API)...');
+console.log('🧪 Running e2e tests (desktop chromium, 1 worker, staging API)...');
 console.log(
   '   Excludes: explorer links, staging-smoke, visual, wallet-sync, watch-mode, wallet-reconnect, scenario-pin 8-step timing.',
 );

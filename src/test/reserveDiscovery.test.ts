@@ -15,8 +15,13 @@ import {
   isComputableMerklCampaign,
   pickIncentiveReserve,
   pickReorderCapableRowIndex,
+  planOffsetRunner,
   type DiscoveryReserve,
 } from '../../e2e/reserveDiscovery';
+
+// The app's cap resolver — the e2e mirror is pinned against it by L5b (the
+// mirror stays dependency-free on purpose, see the module header).
+import { resolvePositionCapUsd } from '@/lib/incentiveCaps';
 
 // The UI label the portfolio Add button actually renders — the e2e mirror must
 // agree with it (AAV-1308 review).
@@ -688,6 +693,271 @@ describe('discoverOffsetScenarios (AAV-1280)', () => {
     expect(scenarios).toHaveLength(1);
     expect(scenarios[0]).toMatchObject({ type: 'cross-reserve', targetApr: 2 });
   });
+
+  // AAV-1395: the plan's weight multiplies the eligible fraction by
+  // `responding / total`, but `computableAprPercent` can only see
+  // `campaignApr`. A points-based breakdown contributes to the displayed APY
+  // through `tydroPointToUsdRate` yet contributes 0 to `totalApr`, so a target
+  // that mixes the two shapes would under-count its denominator and the runner
+  // would assert a larger decrease than the UI can produce (false red).
+  // Conservative fix: skip any target whose display includes a points
+  // campaign, matching the brevis / `supplyIncentives` policy.
+  it('O23: skips a target that mixes an APR campaign with a non-responding points campaign', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'apr', campaignApr: 2 })),
+        offsetGroup([], breakdown({ campaignId: 'points', campaignApr: 0, pointsPerThousandUsd: 5 })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toEqual([]);
+  });
+
+  it('O24: skips even when the points campaign sits in the responding group', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'apr', campaignApr: 2 })),
+        offsetGroup([SELF], breakdown({ campaignId: 'points', campaignApr: 0, pointsPerThousandUsd: 5 })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)).toEqual([]);
+  });
+
+  // ─── AAV-1333: runner plan derivation (matrix rows L1–L20) ─────────
+  //
+  // The plan is the single seam: ladder amounts and expected decrease ratios
+  // are derived from the same numbers the app clamps with, so the runner never
+  // re-derives (or hand-picks) a threshold.
+  //
+  // Fixture arithmetic (realisticRoom: 6 dec, price 1, room $50k; ltv 80):
+  //   cross  → funding = min(100k, 50k) = 50k, capacity = min(50k, 50k×0.8) = 40k
+  //            gross = min(100k, 50k, 40k/2) = 20k ⇒ 5k / 10k / 30k
+  //   self   → gross = min(100k, 50k) = 50k, capacity = borrow room 50k
+  //            ⇒ every rung ≥ gross (AAV-1395: the incentive uses the raw
+  //            borrow, not the LTV-clamped display amount)
+
+  const aprs = (respondingAprPercent: number, totalAprPercent = respondingAprPercent) => ({
+    respondingAprPercent,
+    totalAprPercent,
+  });
+
+  const planFor = (
+    type: 'cross-reserve' | 'self-loop',
+    targetOverrides: Record<string, unknown> = {},
+    offsetOverrides: Record<string, unknown> = {},
+    aprOverrides: { respondingAprPercent: number; totalAprPercent: number; minPositionCapUsd?: number } = aprs(2),
+  ) =>
+    planOffsetRunner(
+      type,
+      targetReserve(targetOverrides),
+      type === 'cross-reserve' ? offsetReserve(offsetOverrides) : null,
+      aprOverrides,
+    );
+
+  it('L1: cross plan sizes the ladder off the effective capacity (gross = capacity/2)', () => {
+    const plan = planFor('cross-reserve');
+    expect(plan).not.toBeNull();
+    expect(plan).toMatchObject({
+      targetSupplyUsd: 20_000,
+      offsetSupplyUsd: 50_000,
+      offsetCapacityUsd: 40_000,
+    });
+    expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([5_000, 10_000, 30_000]);
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.25, 0.5, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([false, false, true]);
+  });
+
+  it('L2: cross plan shrinks to the target supply room when it binds', () => {
+    const plan = planFor('cross-reserve', { suppliable: usd(3_000) });
+    expect(plan).toMatchObject({ targetSupplyUsd: 3_000 });
+    // 1.5 × 3000 stays inside the 40k capacity, so the last rung still floors.
+    expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([750, 1_500, 4_500]);
+    expect(plan!.steps[plan!.steps.length - 1].expectedAfterZero).toBe(true);
+  });
+
+  it('L3: cross plan still works at the $5k capacity floor (gross $2.5k)', () => {
+    const plan = planFor('cross-reserve', {}, { suppliable: usd(5_000), borrowable: usd(5_000) });
+    expect(plan).toMatchObject({ targetSupplyUsd: 2_000, offsetSupplyUsd: 5_000, offsetCapacityUsd: 4_000 });
+    expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([500, 1_000, 3_000]);
+    for (const step of plan!.steps) expect(Number.isInteger(step.borrowUsd)).toBe(true);
+  });
+
+  it('L4: a campaign position cap shrinks gross instead of diluting the ratio', () => {
+    const plan = planFor('cross-reserve', {}, {}, { ...aprs(2), minPositionCapUsd: 1_200 });
+    expect(plan).toMatchObject({ targetSupplyUsd: 1_200 });
+    expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([300, 600, 1_800]);
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.25, 0.5, 1]);
+  });
+
+  it('L5: no campaign cap is unbounded, not zero', () => {
+    expect(planFor('cross-reserve')!.targetSupplyUsd).toBe(20_000);
+    expect(planFor('cross-reserve', {}, {}, { ...aprs(2), minPositionCapUsd: 0 })!.targetSupplyUsd).toBe(20_000);
+  });
+
+  it('L5b: the campaign-cap mirror agrees with the app (drift pin)', () => {
+    // src/lib/incentiveCaps.ts `resolvePositionCapUsd`: positionCapNative (via
+    // token price + decimals) WINS over positionCapUsd. The e2e module mirrors
+    // that rule dependency-free, so pin the two against each other here.
+    const nativeCap = '2000000000000000000'; // 2 tokens, 18 decimals
+    const price = 5_000;
+    const appCapUsd = resolvePositionCapUsd(nativeCap, 9_000, price, 18);
+    expect(appCapUsd).toBe(10_000);
+
+    const r = targetReserve({
+      decimals: 18,
+      tokenPrice: price,
+      // 100 tokens ⇒ $500k supply AND borrow room (decimals 18 at $5000;
+      // the 6-decimal `realisticRoom` values would round to ~$0 here).
+      suppliable: '100000000000000000000',
+      borrowable: '100000000000000000000',
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignApr: 2, positionCapNative: nativeCap, positionCapUsd: 9_000 })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)[0].plan.targetSupplyUsd).toBe(appCapUsd);
+  });
+
+  it('L6: self-loop keeps the absolute ladder and derives the ratio from borrow room', () => {
+    // Supply room $200k keeps gross at the $100k cap; borrow room $200k leaves
+    // the ladder un-clamped, so the rungs are proportional to gross.
+    const plan = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000) });
+    expect(plan).toMatchObject({ targetSupplyUsd: 100_000, offsetSupplyUsd: null, offsetCapacityUsd: 200_000 });
+    expect(plan!.steps.map((s) => s.borrowUsd)).toEqual([50_000, 100_000, 200_000]);
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([false, true, true]);
+  });
+
+  it('L7: a binding borrow room caps the self-loop ratio (LTV is not the ceiling)', () => {
+    const plan = planFor('self-loop', { borrowable: usd(20_000) });
+    expect(plan).toMatchObject({ offsetCapacityUsd: 20_000 });
+    // 20k of a 50k gross for every rung, whatever the LTV says.
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.4, 0.4, 0.4]);
+    for (const step of plan!.steps) expect(step.expectedDecreaseRatio).toBeLessThanOrEqual(1);
+  });
+
+  it('L7b: LTV never enters the self-loop ratio (only the selection gate reads it)', () => {
+    // Same borrow room, very different LTVs: the plan must be identical,
+    // because the app's incentive math consumes the raw borrow input.
+    const tight = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000), ltv: 5 });
+    const loose = planFor('self-loop', { suppliable: usd(200_000), borrowable: usd(200_000), ltv: 90 });
+    expect(tight).toEqual(loose);
+    expect(tight!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
+  });
+
+  it('L8: self-loop with a small supply room derives ratios from the reduced gross', () => {
+    const plan = planFor('self-loop', { suppliable: usd(10_000) });
+    expect(plan).toMatchObject({ targetSupplyUsd: 10_000, offsetCapacityUsd: 50_000 });
+    // Every rung is ≥ gross ⇒ the eligible position floors at 0.
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([1, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([true, true, true]);
+  });
+
+  it('L9: a borrow room below gross binds every rung', () => {
+    const plan = planFor('self-loop', { borrowable: usd(6_000) });
+    expect(plan).toMatchObject({ offsetCapacityUsd: 6_000 });
+    expect(plan!.steps[0].expectedDecreaseRatio).toBeCloseTo(0.12);
+  });
+
+  it('L10: unknown room data reads as unbounded, never NaN', () => {
+    const plan = planFor('self-loop', {
+      suppliable: undefined,
+      supplyCap: undefined,
+      supplied: undefined,
+      borrowable: undefined,
+      borrowCap: undefined,
+      borrowed: undefined,
+    });
+    expect(plan).toMatchObject({ targetSupplyUsd: 100_000, offsetCapacityUsd: Number.POSITIVE_INFINITY });
+    expect(plan!.steps.map((s) => s.expectedDecreaseRatio)).toEqual([0.5, 1, 1]);
+    expect(plan!.steps.map((s) => s.expectedAfterZero)).toEqual([false, true, true]);
+  });
+
+  it('L11: every plan amount is a finite, strictly increasing integer', () => {
+    const plans = [
+      planFor('cross-reserve'),
+      planFor('self-loop'),
+      planFor('cross-reserve', { suppliable: usd(3_000) }),
+    ];
+    for (const plan of plans) {
+      expect(plan).not.toBeNull();
+      expect(Number.isInteger(plan!.targetSupplyUsd)).toBe(true);
+      if (plan!.offsetSupplyUsd != null) expect(Number.isInteger(plan!.offsetSupplyUsd)).toBe(true);
+      for (let i = 0; i < plan!.steps.length; i += 1) {
+        const step = plan!.steps[i];
+        expect(Number.isInteger(step.borrowUsd)).toBe(true);
+        expect(step.borrowUsd).toBeGreaterThan(0);
+        expect(step.expectedDecreaseRatio).toBeGreaterThan(0);
+        expect(step.expectedDecreaseRatio).toBeLessThanOrEqual(1);
+        if (i > 0) expect(step.borrowUsd).toBeGreaterThan(plan!.steps[i - 1].borrowUsd);
+      }
+    }
+  });
+
+  it('L12: a second computable supply group dilutes the expected ratio', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'offset', campaignApr: 2 })),
+        group(breakdown({ campaignId: 'plain', campaignApr: 3 })),
+      ],
+    });
+    const scenarios = discoverOffsetScenarios([r], NOW);
+    expect(scenarios).toHaveLength(1);
+    // responding 2 of a 5-point display ⇒ 0.4 × the full 50k-offset ratio.
+    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(0.4);
+  });
+
+  it('L13: an extra group that also responds to the borrow keeps the full ratio', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignId: 'g1', campaignApr: 2 })),
+        offsetGroup([SELF], breakdown({ campaignId: 'g2', campaignApr: 3 })),
+      ],
+    });
+    const scenarios = discoverOffsetScenarios([r], NOW);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(1);
+  });
+
+  it('L14: an unrenderable extra group does not dilute (it renders 0)', () => {
+    const r = targetReserve({
+      merklSupplys: [
+        offsetGroup([SELF], breakdown({ campaignApr: 2 })),
+        group(breakdown({ campaignId: 'expired', campaignApr: 50, campaignEndedAt: '2026-09-20T00:00:00Z' })),
+      ],
+    });
+    expect(discoverOffsetScenarios([r], NOW)[0].plan.steps[0].expectedDecreaseRatio).toBeCloseTo(1);
+  });
+
+  it('L15: brevis rewards on the target exclude it (the ratio would be diluted)', () => {
+    const r = targetReserve({ brevisSupplys: [{ campaignId: 'brevis' }] });
+    expect(discoverOffsetScenarios([r], NOW)).toEqual([]);
+  });
+
+  it('L16: protocol incentives on the target exclude it', () => {
+    expect(discoverOffsetScenarios([targetReserve({ supplyIncentives: [1.5] })], NOW)).toEqual([]);
+  });
+
+  it('L17: a cap too small to carry a measurable ladder is skipped, and cap 0 means unlimited', () => {
+    const tiny = targetReserve({
+      merklSupplys: [offsetGroup([SELF], breakdown({ campaignApr: 2, positionCapUsd: 1 }))],
+    });
+    expect(discoverOffsetScenarios([tiny], NOW)).toEqual([]);
+    const unlimited = targetReserve({
+      merklSupplys: [offsetGroup([SELF], breakdown({ campaignApr: 2, positionCapUsd: 0 }))],
+    });
+    expect(discoverOffsetScenarios([unlimited], NOW)[0].plan.targetSupplyUsd).toBe(50_000);
+  });
+
+  it('L18: every discovered scenario carries a complete plan', () => {
+    const scenarios = discoverOffsetScenarios([crossTarget(), offsetReserve()], NOW);
+    expect(scenarios).toHaveLength(1);
+    const { plan } = scenarios[0];
+    expect(Number.isInteger(plan.targetSupplyUsd)).toBe(true);
+    expect(plan.targetSupplyUsd).toBeGreaterThan(0);
+    expect(plan.steps).toHaveLength(3);
+    // cross only: the funding amount the runner types on the offset reserve.
+    expect(plan.offsetSupplyUsd).toBeGreaterThan(0);
+    expect(scenarios[0].offsetReserveId).toBe(OTHER);
+  });
 });
 
 // ─── AAV-1308: cross-asset pairing discovery (P series) ──────────────
@@ -934,7 +1204,7 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
     ).toBe(1);
   });
 
-  it('P10: excludes a self-pairing (the runner would overwrite its own position)', () => {
+  it('P10: excludes a self-pairing (the runner holds one position per reserve side — the paired fill would overwrite the source position)', () => {
     const source = pairingReserve({
       reserveId: 'src',
       tokenSymbol: 'USDC',
@@ -943,7 +1213,7 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
     expect(discoverCrossAssetPairingScenarios([source], NOW)).toEqual([]);
   });
 
-  it('P11: excludes a same-symbol pair (fill helpers locate inputs by token symbol)', () => {
+  it('P11: selects a same-symbol pair across markets (AAV-1317: fill helpers locate rows by reserveId)', () => {
     const source = pairingReserve({
       reserveId: 'src',
       tokenSymbol: 'USDC',
@@ -956,7 +1226,18 @@ describe('discoverCrossAssetPairingScenarios (AAV-1308)', () => {
       marketName: 'AaveV3Base',
     });
     expect(twinOnAnotherChain.reserveId).not.toBe(source.reserveId);
-    expect(discoverCrossAssetPairingScenarios([source, twinOnAnotherChain], NOW)).toEqual([]);
+    const scenarios = discoverCrossAssetPairingScenarios([source, twinOnAnotherChain], NOW);
+    expect(scenarios).toHaveLength(1);
+    expect(scenarios[0]).toMatchObject({
+      sourceReserveId: 'src',
+      pairedReserveId: 'paired',
+      // Same symbol, distinct markets — the Add flow disambiguates by market
+      // label and the fills land per reserveId (AAV-1317).
+      sourceSymbol: 'USDC',
+      pairedSymbol: 'USDC',
+      sourceMarketLabel: 'Core',
+      pairedMarketLabel: 'Base',
+    });
   });
 
   it('P13: dedups by reserveId+side — first qualifying group wins, both sides can each produce one', () => {

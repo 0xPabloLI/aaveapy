@@ -10,6 +10,7 @@ import {
   getHfColorName,
   getMinHf,
   getLowestHfDelta,
+  getLowestHfBadgeState,
 } from './portfolioCalculator';
 import type { PortfolioPositionResult, PortfolioSideData } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -626,5 +627,48 @@ describe('getLowestHfDelta', () => {
     const result = getLowestHfDelta(hfs);
     expect(result.delta).toBeCloseTo(0.1, 5);
     expect(result.direction).toBe('up');
+  });
+});
+
+describe('getLowestHfBadgeState (AAV-1304)', () => {
+  it('returns computed with the min valid HF', () => {
+    const hfs = [
+      { healthFactor: 2.5, totalDebtUsd: 1000 },
+      { healthFactor: 1.6, totalDebtUsd: 2000 },
+    ];
+    expect(getLowestHfBadgeState(hfs)).toEqual({ kind: 'computed', hf: 1.6 });
+  });
+
+  it('returns no-debt when every pool has zero debt (supply-only)', () => {
+    const hfs = [
+      { healthFactor: null, totalDebtUsd: 0 },
+      { healthFactor: null, totalDebtUsd: 0 },
+    ];
+    expect(getLowestHfBadgeState(hfs)).toEqual({ kind: 'no-debt' });
+  });
+
+  it('returns unknown for empty health factors', () => {
+    expect(getLowestHfBadgeState([])).toEqual({ kind: 'unknown' });
+  });
+
+  it('returns unknown when debt exists but HF is not computable (0, e.g. missing liquidation threshold)', () => {
+    const hfs = [{ healthFactor: 0, totalDebtUsd: 4000 }];
+    expect(getLowestHfBadgeState(hfs)).toEqual({ kind: 'unknown' });
+  });
+
+  it('returns unknown for a mixed portfolio (one debt-free pool + one debt pool with HF 0)', () => {
+    const hfs = [
+      { healthFactor: null, totalDebtUsd: 0 },
+      { healthFactor: 0, totalDebtUsd: 4000 },
+    ];
+    expect(getLowestHfBadgeState(hfs)).toEqual({ kind: 'unknown' });
+  });
+
+  it('never claims no-debt while any pool still has debt', () => {
+    const hfs = [
+      { healthFactor: null, totalDebtUsd: 0 },
+      { healthFactor: null, totalDebtUsd: 1 },
+    ];
+    expect(getLowestHfBadgeState(hfs).kind).not.toBe('no-debt');
   });
 });

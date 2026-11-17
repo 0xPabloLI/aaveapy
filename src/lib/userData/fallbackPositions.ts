@@ -7,7 +7,7 @@ import {
 } from './onchainPositionConverter';
 import type { WalletPosition, WalletPositionSource } from './userPositionMapper';
 import type { ReserveWithSpread } from '@/types/aave';
-import { withTimeout } from './rpcResilience';
+import { createRpcClientPool, withTimeout, type RpcClientPool } from './rpcResilience';
 import { FALLBACK_TIMEOUT_MS } from './fallbackConstants';
 
 export interface FallbackPositionsConfig {
@@ -38,12 +38,17 @@ export async function fetchFallbackPositions(
   const positions: WalletPosition[] = [];
   const failedSources: string[] = [];
 
+  // One RPC read session for the whole sync: V3 markets and V4 spokes on the
+  // same chain share one probe result instead of rotating per position batch
+  // (AAV-1313). Scoped to this call — nothing is cached across requests.
+  const rpcPool = createRpcClientPool();
+
   const filteredV3Assets = chainFilter.v3ChainIds
     ? filterV3AssetsByChainIds(v3AssetsByMarket, chainFilter.v3ChainIds)
     : v3AssetsByMarket;
 
   if (Object.keys(filteredV3Assets).length > 0) {
-    const v3Result = await fetchV3Positions(filteredV3Assets, userAddress, reserves, v3Prefix);
+    const v3Result = await fetchV3Positions(filteredV3Assets, userAddress, reserves, v3Prefix, rpcPool);
     positions.push(...v3Result.positions);
     failedSources.push(...v3Result.failedSources);
   }
@@ -51,7 +56,14 @@ export async function fetchFallbackPositions(
   const filteredV4ChainIds = chainFilter.v4ChainIds ?? v4ChainIds;
 
   if (filteredV4ChainIds.length > 0) {
-    const v4Result = await fetchV4Positions(filteredV4ChainIds, userAddress, reserves, v4ReservesBySpoke, v4Prefix);
+    const v4Result = await fetchV4Positions(
+      filteredV4ChainIds,
+      userAddress,
+      reserves,
+      v4ReservesBySpoke,
+      v4Prefix,
+      rpcPool,
+    );
     positions.push(...v4Result.positions);
     failedSources.push(...v4Result.failedSources);
   }
@@ -77,6 +89,7 @@ async function fetchV3Positions(
   userAddress: `0x${string}`,
   reserves: ReserveWithSpread[],
   prefix: string,
+  rpcPool: RpcClientPool,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
   const positions: WalletPosition[] = [];
   const failedSources: string[] = [];
@@ -85,7 +98,7 @@ async function fetchV3Positions(
   const lookupMap = buildReserveLookupByChainAndToken(reserves);
   try {
     const v3Response = await withTimeout(
-      getV3UserPositionsMultiChain(userAddress, assetsByMarket),
+      getV3UserPositionsMultiChain(userAddress, assetsByMarket, rpcPool),
       FALLBACK_TIMEOUT_MS,
       prefix,
     );
@@ -109,6 +122,7 @@ async function fetchV4Positions(
   reserves: ReserveWithSpread[],
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
   prefix: string,
+  rpcPool: RpcClientPool,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
   const positions: WalletPosition[] = [];
   const failedSources: string[] = [];
@@ -118,7 +132,7 @@ async function fetchV4Positions(
   const settled = await Promise.allSettled(
     chainIds.map((chainId) =>
       withTimeout(
-        getV4UserPositionsAllSpokes(chainId, userAddress, v4ReservesBySpoke),
+        getV4UserPositionsAllSpokes(chainId, userAddress, v4ReservesBySpoke, undefined, rpcPool),
         FALLBACK_TIMEOUT_MS,
         `${prefix}-chain-${chainId}`,
       ),
