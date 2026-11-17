@@ -17,6 +17,8 @@ error: failed to push some refs to 'https://github.com/0xPabloLI/aaveapy'
 
 AAV-1362 已为 hardcode-sync 修掉同一问题（step 级 `HUSKY: '0'`）。本票是同一结构缺陷在 `openapi-sync` 的复发：2026-11-16 起后端 spec 持续漂移，`dev` 每次 push 都让 `openapi-sync` 真正执行并在「Create spec sync PR」的 push 处失败——`AAV-1390`（🔥 Dev CI failure）因此积累了 11 条连红记录（`2d45c91` → `a76b6ad`）。
 
+**2026-11-17 15:35 的 `8fe76047` 已按同一决策修掉 openapi-sync**，并由真实运行验证：run `44040361980` 在 dev 上开出 `bot/openapi-sync-44040361980` → PR #852（07:40Z 创建、07:41Z 合并），后续 dev CI run `44046072307`（`06245b83`）全绿。本变更收口同一不变量的剩余两处（`token-icon-sync` / `ci-auto-remediation`）并加统一守卫，防止第四处复发；`ci.yml` 的 env 块沿用 `8fe76047` 的写法，不重复引入。
+
 ### 证据
 
 | 事实 | 证据 |
@@ -24,12 +26,13 @@ AAV-1362 已为 hardcode-sync 修掉同一问题（step 级 `HUSKY: '0'`）。�
 | 失败发生在「Create spec sync PR」的 push | run `43867040116`（首红，`2d45c91`）与 run `44039789059`（最新红，`a76b6ad`）的日志尾部：`husky - pre-push script failed (code 1)` → `failed to push some refs` |
 | 阻断条件是环境事实，不是业务失败 | 同一 run 的 `openapi-check` 已输出 `drift=true`；`openapi-sync` 的 fetch/codegen/diff 全部 success，死点只在 push |
 | 「以前没红」是判据没触发 | job 的 `if:` 要求 `needs.openapi-check.outputs.drift == 'true'`；无漂移时 job 直接 skipped |
+| openapi-sync 修复已被真实运行验证 | `8fe76047` → run `44040361980` 成功开出 PR #852（07:40Z），PR 07:41Z 合并；dev CI run `44046072307` success |
 | 同族潜伏存在 | `token-icon-sync`（schedule，dev+main matrix）与 `ci-auto-remediation`（`workflow_run`）同样 `npm ci` + `create-pull-request`，且没有 `HUSKY: '0'`；它们只是在「今天恰好有变更」时才会撞上同一堵墙 |
 | 机器人步骤的验证不依赖 pre-push | `openapi-sync` 有 drift 判据与前序 fetch/codegen；`token-icon-sync` 有 sync 步骤；`ci-auto-remediation` 有 `ci:auto-fix` + 自有 validate 回合；PR 开出后仍走 CI 的 lint/build/测试 |
 
 ## 决策
 
-**给每个 `peter-evans/create-pull-request` 步骤加 step-scoped `HUSKY: '0'`，并用一条守卫测试枚举全部此类步骤。**
+**给每个 `peter-evans/create-pull-request` 步骤加 step-scoped `HUSKY: '0'`（openapi-sync 已由 `8fe76047` 落地），并用一条守卫测试枚举全部此类步骤。**
 
 husky 9 的 shim（`.husky/_/h`）在跑 hook 脚本前执行 `[ "${HUSKY-}" = "0" ] && exit 0`——这是 husky 官方语义里的显式关停，不是自定义绕门禁手法。作用域只到「机器人提交/推送」这一步：开发者、其他 workflow、其他 hook 全部不变。
 
@@ -81,7 +84,7 @@ husky 9 的 shim（`.husky/_/h`）在跑 hook 脚本前执行 `[ "${HUSKY-}" = "
 
 | # | Scenario | Expected Behavior | Risk | Evidence | Mitigation |
 | --- | --- | --- | --- | --- | --- |
-| S1 | `dev` push 且 spec 漂移 ⇒ openapi-sync 真跑 | 机器人 push 不触发 pre-push，PR 步骤绿 | 每次 spec 漂移都带一个红 job（AAV-1390 连红） | 红侧基线 run `44039789059`；修复后由真实 push 验证 | 守卫 T1 + 实跑 |
+| S1 | `dev` push 且 spec 漂移 ⇒ openapi-sync 真跑 | 机器人 push 不触发 pre-push，PR 步骤绿 | 每次 spec 漂移都带一个红 job（AAV-1390 连红） | 红侧基线 run `44039789059`；修复后 run `44040361980` 真实开出 PR #852 | 守卫 T1 + 实跑 |
 | S2 | `dev` push 且无漂移 | job 仍 skipped（行为不变） | 误以为守卫能覆盖 skip 场景 | job `if:` 未改 | 不动 `if:` |
 | S3 | schedule 触发 openapi-sync | 同一步 step env 生效 | schedule 与 push 路径不一致 | step env 与触发方式无关 | 守卫对 `ci.yml` 全文枚举 |
 | S4 | token-icon-sync 有 icon 变更 | push 绕过 hook（潜伏修复） | 同族继续每天红 | 该 step 此前无 `HUSKY` | T1 |
@@ -100,7 +103,7 @@ husky 9 的 shim（`.husky/_/h`）在跑 hook 脚本前执行 `[ "${HUSKY-}" = "
 
 | File | Change |
 | --- | --- |
-| `.github/workflows/ci.yml` | openapi-sync 的 `Create spec sync PR` 加 step env |
+| `.github/workflows/ci.yml` | openapi-sync 的 `Create spec sync PR` 加 step env（已由 `8fe76047` 落地；合并保留其注释） |
 | `.github/workflows/token-icon-sync.yml` | `Create PR when icons changed` 加 step env |
 | `.github/workflows/ci-auto-remediation.yml` | `Create remediation PR` 加 step env |
 | `scripts/bot-push-hook-guard.test.mjs` | 新增统一守卫（T1–T6） |
@@ -121,5 +124,5 @@ husky 9 的 shim（`.husky/_/h`）在跑 hook 脚本前执行 `[ "${HUSKY-}" = "
 
 ## Further Notes
 
-* `AAV-1390`（🔥 Dev CI failure: openapi-sync）是本票的症状票；本票落地并经一次真实 `dev` push 验证后应一并关闭。
+* `AAV-1390`（🔥 Dev CI failure: openapi-sync）是本票的症状票。openapi-sync 的真实运行已在 `8fe76047` 后转绿（run `44040361980` → PR #852；dev CI run `44046072307` success），可在本变更合并后一并关闭。
 * 若未来新增机器人 PR 步骤，守卫会强制它带 `HUSKY: '0'`——这是有意为之的「第四处不再犯」。
