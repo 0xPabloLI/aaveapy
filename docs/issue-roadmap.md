@@ -8,6 +8,8 @@ GitHub Issues + Linear Issues 的优先级排序、状态追踪与依赖关系�
 
 ## 当前状态
 
+> **Last inventory**: 2026-11-17(第二十四轮：**roadmap ↔ Linear 双向对账，活跃区 35 行里 21 行其实已 Done，修订后为 43 张真 open**。① 文件自己的规则写着「仅列 open」，实际 21 行是 Done（1356/1352/1349/1334/1389/1335/1317/1314/1387/1319/1295/1330/1323/1303/1380/1386/1379/1304/1283/1301/1359）⇒ 全部下沉 Recently Completed；② Linear 里开着、文档从未登记 **29 张** ⇒ 全部补入；③ AAV-1313 已由并行 session 交付（Done）⇒ 登记。新结构按 Linear 状态分组：In Progress 2 / Ready for agent 9 / Needs Info 7 / Todo 2 / Backlog 23，Done 一律不进本区。**Needs Info 计数 7 但只取到 5 个编号**（Linear 列表虚拟化）。)
+>
 > **Last inventory**: 2026-11-17(第二十三轮：**AAV-1362 第三种根因——Hardcode Sync 的机器人推送被开发者本地 hook 拦住**。11-16 的 schedule run `43870754983`（12:54:11Z）在 11-15 绿过之后再次红：`hardcode-sync (dev)` job `133310986515` step 10 `Create PR when hardcode changed` 失败，`main` 侧同一步成功——因为 main 没有资产变更，PR 步骤空转、没有 push。job 日志（`gh api .../actions/jobs/133310986515/logs`）显示 `peter-evans/create-pull-request` 的 `git push` 触发了仓库的 `.husky/pre-push`：先跑 `ci:remote`（vitest 全套 + `npm audit` 噪声），再跑 `test:e2e:pre-push`，后者打印 `❌ [pre-push] BLOCKED: e2e gate CANNOT RUN — Playwright chromium is not installed`（runner 的 `~/.cache/ms-playwright` 为空），随后 `husky - pre-push script failed (code 1)` / `error: failed to push some refs`。**这不是 release-age，也不是「自己拉的版本太新」**，而是 AAV-1349 把「浏览器缺失 ⇒ 0 条测试不算通过」写成硬阻断之后，机器人替开发机跑了一遍本地门。修法（最小作用域）：只给该 step 加 `HUSKY: '0'`（husky 9 的 `_/h` 在跑 hook 脚本前就放行），不动 `.husky/pre-push`、不动其他 workflow（`ci.yml` 甚至有意生成 icon manifest 去满足 pre-commit，AAV-1298）。新增 `scripts/hardcode-sync-hook-guard.test.mjs`（5 条：env 在位、仍是该 action、mutation 去行即红、未加引号的 `0`/`'1'` 不算通过、verify 门仍在）。spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`（8 行矩阵 S1–S8）。**当前 frontier：AAV-1362**（需一次真实 dispatch 或下一次 schedule 证实绿）；次选 AAV-1356 余项。)
 > **Last inventory**: 2026-11-17(第二十二轮：**AAV-1313 交付——onchain 仓位路径按 chainId 共享「读会话」，V3 多 market / V4 多 spoke 不再各自重复轮换**。票面写于 AAV-1310 时期（计划在 `getV3UserPositionsOnChain` 内建 `Map<chainId, client>` 并透传），但 AAV-1387/1314 已把轮换搬到读层，且 `rpcRead.ts` 的显式 client 分支是 **by contract 旁路轮换** ⇒ 照票面共享 client 会把 fastnode 这类「`eth_chainId` 能过、`aggregate3` 批量读 413」的端点钉死整次同步，等于回退 AAV-1387。改为 `RpcClientPool`（共享探活结果与胜出端点，但不接管换点）：`acquire` 单飞探活（并发 market/spoke 共享同一个 in-flight promise ⇒ 探活次数 = 去重链数）、`adopt` 成功后记住端点、`release` 在整批失败/抛错时丢弃端点并沿健康列表换点、探活全失败缓存 rejected promise（同链后续 market 不再重烧 3s×URL）；`fetchFallbackPositions` 一次同步 V3+V4 共用一个池；V3 `errors` 按 chainId 去重（条目不携带 market 名，`console.error` 仍逐 market 取证），V4 保留 spoke 级。**验证**：定向 64（rpcResilience，含新增 P1–P9）/ 5（rpcRead）/ 47（V3）/ 60（V4）/ 2（新 fallbackPositions 共池）/ 9（gapFallbackQuery 形状更新）；全量 vitest **4469 passed / 14 skipped / 6 todo**（199 files + 3 skipped）、`tsc -p tsconfig.app.json --noEmit` rc=0、lint **0 error**（74 warn 基线）、build 绿（`check-csp` 绿）、pre-commit scripts **310 passed**。**live 探针**（临时文件，跑完即删）：chain 1 有 4 个候选端点，同一池两次真实 `getBlockNumber` 读合计 **只 1 次 `createPublicClient`**（`rpcUrls=4 block1=26431614 block2=26431614 createPublicClient: firstRead=1 afterSecondRead=1`）。**未做**：真实 V3/V4 仓位端到端 smoke（需 API 侧 reserves 输入，已由 fallback 共池 wiring 断言 + 全量 `userPositionConsistency` 覆盖替代）。**当前 frontier：AAV-1362**（schedule 复验/关票，证据已齐）；次选 AAV-1356 余项。本票交付 commit `312f79e7` 已随并行 session 的推送落到 `origin/dev`（`2feb4167` 的父链）；文档提交 `7f9fc7f6` / `c24aeabb` 因本机到 `github.com:443` 超时仍在本地，网络恢复后 `git push origin dev` 补齐。)
 >
@@ -118,57 +120,78 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 
 ## Active Linear Issues
 
-非 GitHub 来源的 Linear issue，按 priority 降序排列。仅列 open（非 Done/Canceled/Duplicate）。
+非 GitHub 来源的 Linear issue，按 **Linear 状态**分组；本区只列 open（Done / Duplicate / Canceled 一律不进本区）。
+盘点时点 2026-11-17，逐票与 Linear 核对；本次新补入的行以 `•` 标记。
 
-### Urgent / High
+### In Progress（2）
 
-| Linear | Priority | State | Title |
-| --- | --- | --- | --- |
-| AAV-1362 | High | In Progress（主修复 + 文案 + hook 绕过已交付；待一次真实运行证实绿） | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commits `5e057bbb` + `7500586b`）；已推送 `dev`（`eeca95d7..7500586b`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；该 run 读 `main` `b9c30868`，验证主修复，文案在 `dev`、随下一次标准 `dev → main` 推广上线；绿后可关票。**2026-11-17 第三种根因**：11-16 的 run `43870754983` 在 11-15 绿过之后又红，`hardcode-sync (dev)` 的 step 10 死在 `peter-evans/create-pull-request` 的 `git push` 触发的 `.husky/pre-push` （`ci:remote` + e2e 门；runner 无 Playwright chromium，AAV-1349 起硬阻断）⇒ 机器人推送被开发机门禁拦住。修法只给该 step 加 `HUSKY: '0'`（+ 注释），`.husky/pre-push` 与其他 workflow 不动；新增 `scripts/hardcode-sync-hook-guard.test.mjs`，spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`。**待验证**：一次真实 dispatch 或下一次 schedule 的 `hardcode-sync (dev)`。 |
-| AAV-1330 | High | 已交付待上线（`52e5ace1`，已随 #822 合入 dev） | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） |
+| Linear | Priority | Title |
+| --- | --- | --- |
+| AAV-1362 | High | Hardcode Sync 结构性自相矛盾：`npm update` 刻意拉 day-zero latest，又被 `check-dep-release-age` 的 7 天冷却期拦下 ⇒ 该 job 自 2026-10-09 起全红。主修复按「移除 proactive bump，bump 归 Renovate」落地（`8830d062`，随 #835 进入 main `b9c30868`）；`workflow_dispatch` 三分支实测全绿（run 43150776651），各开出一笔 bot PR（#823/#824/#825）。**2026-11-12 订正**：本行原标 Done 是错的，Linear 实为 In Progress——票面验收条件 2「schedule 触发能绿」与 3「错误文案与 workflow 实际能力一致」当时均未完成。**2026-11-15 路线 A 收口**：用户拍板不新增 dispatch input；`check-dep-release-age.mjs` 与 `SECURITY.md` 的文案改成「在运行门禁的环境里显式设 `MIN_RELEASE_AGE_DAYS=0` + PR 记录根因 + 无默认 workflow_dispatch input」，并加脚本/文档/workflow 契约测试（commits `5e057bbb` + `7500586b`）；已推送 `dev`（`eeca95d7..7500586b`）。11-14 的 schedule 仍用旧 main `524a9de7`。**唯一待验证**：2026-11-16 04:20 UTC 的 schedule 运行（用户选择不手动 dispatch）；该 run 读 `main` `b9c30868`，验证主修复，文案在 `dev`、随下一次标准 `dev → main` 推广上线；绿后可关票。**2026-11-17 第三种根因**：11-16 的 run `43870754983` 在 11-15 绿过之后又红，`hardcode-sync (dev)` 的 step 10 死在 `peter-evans/create-pull-request` 的 `git push` 触发的 `.husky/pre-push` （`ci:remote` + e2e 门；runner 无 Playwright chromium，AAV-1349 起硬阻断）⇒ 机器人推送被开发机门禁拦住。修法只给该 step 加 `HUSKY: '0'`（+ 注释），`.husky/pre-push` 与其他 workflow 不动；新增 `scripts/hardcode-sync-hook-guard.test.mjs`，spec `docs/specs/aav-1362-hardcode-sync-hook-bypass.md`。**待验证**：一次真实 dispatch 或下一次 schedule 的 `hardcode-sync (dev)`。 |
+| AAV-1292 | Medium | railway → main 正式晋升：三个定时工作流从未运行 |
 
-### Medium
+### Ready for agent（9）
 
-| Linear | Priority | State | Title |
-| --- | --- | --- | --- |
-| AAV-1356 | Medium | Done（2026-11-16 交付，见顶部第十四轮 inventory 与 `docs/specs/aav-1356-v4-module-union.md`） | V4 curated/派生 module 的 spoke 未纳入：`AaveV4EthereumSentoraCurated` 与 `AaveV4Ethereum` 同为 chain 1，按 `CHAIN_ID` 索引时 last-wins 令 Ethereum V4 仓位搜不到（「选哪个 module」已修）。退出条件 #1 于 2026-11-12 把 join key 改为地址（生产 0/21 → 21/21）；#2/#3/#4 于 2026-11-16 由 module union + 地址簿 4.77.6 收口（chain 1 17/17、全链 25/25，同名标签 module 前缀，fallback 13/244 → 17/296） |
-| AAV-1352 | Medium | Done（2026-11-15 交付 `a3f1e444`：tagged fetch outcome + 数据缺口 skip／不可达 fail + `E2E_ALLOW_STAGING_UNREACHABLE=1` 唯一出口；37 例单测；不可达实测 24 failed/2 passed 全为 stub，豁免实测 0 failed） | [e2e] 发现数据拉取失败与「数据缺口」不可区分 ⇒ 整个 spec 静默报绿（同族 AAV-1294/1330/1349，修复位置在 spec 的数据获取层） |
-| AAV-1349 | Medium | Done（2026-11-15 交付并推送到 `dev`：`29ec45d0` 代码 + `206372e8` 文档；推送时全门实跑：e2e 62 passed/26 skipped、osv No issues、dup 2.79%） | [CI] pre-push 的 e2e 门缺 chromium 时静默 `exit 0`：改为 `exit 1` + 唯一显式出口 `E2E_SKIP=1`（默认关闭、必须打印「无 e2e 证据」）+ `PLAYWRIGHT_BROWSERS_PATH=0`/shell-only 不误判；判定收进 `scripts/lib/e2e-browser-gate.mjs`，13 例守卫随 `npm test` 生效。e2e 提为必填检查按票面另行拍板 |
-| AAV-1334 | Low | Done（2026-11-16 交付：删 job + 14 例守卫；commit `875d4a8e`，dispatch run `43841466135` success；见顶部第十五轮 inventory 与 `docs/specs/aav-1334-remove-dead-generate-snapshots-job.md`） | [CI] generate-snapshots dispatch job 引用已删除的 visual spec（`7c48ae01` 删文件时漏了 job），手动触发 CI 恒红 "No tests found"（push 触发恒 skipped 故从未暴露；整改方向＝删 job） |
-| AAV-1389 | Medium | Done（2026-11-16 交付：产品视角三句门禁。照搬 inside-china-ai 的 `check-product-view.mjs`（纯文本校验，含 bot/`skip-product-view`/非 PR 事件豁免），渲染器换 Linear 取数；接线 CI `repo-policy`（`pull_request` 事件）+ AGENTS.md Step 9；测试 22 例，渲染器注入 seam、`fetch` 陷阱 0 调用。见 `docs/specs/aav-1389-product-view-gate.md`） | 工作流：产品视角三句门禁（复用 inside-china-ai 的校验器 + Linear 渲染器） |
-| AAV-1335 | Medium | Done（2026-11-16 交付：断网实证 17 passed / wall 0.16s / 陷阱 0 次触发；`scripts/sync-reserve-patches-upstream.hermetic.test.mjs` 行为+静态守卫；boundary doc 红线；去门 mutation 实测 attempts 命中。根因（导入即跑 `main()`）已由 `7a64abc2` 修掉，本轮是实证+防复发。见顶部第十七轮 inventory 与 `docs/specs/aav-1335-unit-network-coupling.md`） | [unit] sync-reserve-patches-upstream.test.mjs 疑似真实上游网络请求，断连环境下 46s 失败/全绿交替 |
-| AAV-1327 | Medium | Backlog | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
-| AAV-1323 | Medium | 已 push 待 CI 复验（`7e3d868c` 在 `origin/lovable`；pre-push 全门三轮全绿；CI run `38177124100` 起跑。**剩验收项：CI 连续 ≥3 绿 → 关票**） | [e2e] market-filter-pin 用例 (5) 用绝对几何阈值卡实盘数据 → CI 隔频报红（首跑与 Retry 数值逐位相同，非时序；同族 AAV-1307 是另一种形态） |
-| AAV-1303 | Medium | Todo（**第一段已交付** #710/#711：`openapi-sync` 恢复绿、契约改手写 base + 13 例解析测试；剩第二段真删 Merit，含 5 语言 landing 文案需产品拍板） | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） |
-| AAV-1317 | Medium | Done（2026-11-16 交付，见顶部第十轮 inventory 与 `docs/specs/aav-1317-portfolio-fill-row-scoping.md`） | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 |
-| AAV-1314 | Medium | Done（2026-11-16 交付 `fb0cc2e0`：`MulticallAllCallsFailedError` + `isSuccessfulRead`；V3 市场级 / V4 spoke 级全失败 throw 进 `errors → failedSources`；部分失败 warn；V4 borrow-only 回归；27 新测试 + 三向 mutation；全量 4343 passed。live 探针暴露 Optimism fastnode 整批 HTTP 失败——既有假 $0，follow-up 待开） | [Bug] onchain multicall 批量读全失败仍返回空成功（AAV-1310 同类：client 健康但结果全 failure → 假 $0） |
-| AAV-1387 | High | Done（2026-11-16 交付：`readWithRpcRotation` 读层轮换 + `rpcHealth` session 降级缓存；V3/V4 接线复用同一成功计数；35 新测试 + 7 项 mutation；review follow-up 补 value 优先、端到端反自锁重试与并发一致性；live Optimism 由整链 error 转绿） | [Bug] RPC 探活只看 eth_chainId：批量读整批失败仍沿用该节点（Optimism fastnode 对 >4KB eth_call 回 413 → 假 $0） |
-| AAV-1319 | Medium | Done（2026-11-15 交付 `dbbdcac6`（已推 `dev`）：`tsconfig.e2e.json` + `typecheck:e2e` 并入 `typecheck` + `ci:remote` 前置类型门 + PR CI 补 typecheck step；eslint 收编 e2e 并清 5 处存量；9 例守卫含 mutation 负控） | [CI] e2e 目录不在常态 lint/typecheck 覆盖内；AGENTS.md 验证门 `npx tsc --noEmit` 实际检查 0 文件 |
-| AAV-1295 | Medium | Done（2026-11-16 交付 10 笔 commit `0fc068e`…`a6fddf6`，已推 `railway`；staging drill `43835257174`/`43831007873` 双绿；`deploymentRollback` 4/4 慢到不可用 ⇒ 自动恢复改 `deploymentRedeploy`（40–92s）；production 闸门已打开并复验 `43840148408`；见顶部第十六轮 inventory 与 `docs/plans/executed/aav-1295-rollback-drill-spec.md`） | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过（drill 入口 + 目标选择 + production 路径 + `rollback_executed` 串联均已实跑；平台缺陷另开 AAV-1388） |
-| AAV-1292 | Medium | In Progress（**2026-11-15 晋升完成**：PR #247 / merge `4ab7243`，main `192c3dc`→`4ab7243`。生产部署 success、烟测 `43717274540` success、main 上 canary dispatch `43717305808` **success**（1243 tests / 0 fail，默认分支首绿）。仅剩 `11-16 14:57Z` 周跑为最后判据，绿即关票） | railway → main 正式晋升：三个定时工作流从未运行 |
-| AAV-1275 | Medium | Backlog | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
-| AAV-1394 | Medium | Backlog (needs-triage) | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
+| Linear | Priority | Title |
+| --- | --- | --- |
+| AAV-843 | Medium | • Brevis per-user API 接入：个人 Dashboard + Claim 功能 |
+| AAV-726 | Medium | • Refactor: flatten monorepo to single-package backend |
+| AAV-781 | Medium | • Unify endDate semantics and data directory paths（Merit cache） |
+| AAV-782 | — | • Distinguish「extraction failed」vs「成功但非目标激励类型」（Merit cache） |
+| AAV-449 | — | • [Backend] 移除 spokeName 字段（与 marketName 语义冗余） |
+| AAV-517 | — | • [Tech Debt] onchain 查询 spokeAddress 从 reserveId 解析，替代 address-book 查询 |
+| AAV-1227 | Low | • Spec: Inline Widget Embedding System for Article Pages |
+| AAV-829 | Low | • Unify ~35 处地址相关 toLowerCase() → normalizeAddress() |
+| AAV-830 | Low | • Migrate merit-api raw RPC fetch → ProviderPool |
 
-### Low / No priority
+### Needs Info（7；另 2 张未编号）
 
-| Linear | Priority | State | Title |
-| --- | --- | --- | --- |
-| AAV-1380 | Medium | Done（2026-11-16 交付 `38d7940` + `ab7c7e7`，已推 `railway`；CI `43865996825` success） | **[后端] `/markets` 的 `ltv` 字段 312/441 条为 0 → 定性为协议真值（base LTV），不是映射缺陷**。三源一致：链上 DataProvider vs staging 全等 103/103（ETH 68 / Base 15 / Arbitrum 20，`ltv` 与 `lt` 双字段）；SDK `maxLTV` 本即 `{value:"0"}`、两层 `!== undefined` 不吞 0；prod 与 staging 同 `reserveId` 差异 0 条（各 441：zero 312 / 正数 129）。312 个 0 = 128 冻结（V3.6 `setReserveFreeze` 联动 LTV→0，LT 不变 ⇒ HF 不受影响）+ 64 有抵押资格但不给 base 借力（稳定币治理 LTV-0）+ 120 非抵押品（`lt` 亦 0）。⇒ 前端借力算 0 对这批资产正确；**残余缺口是 API 不暴露 eMode 参数**（WETH base 81% vs ETH-correlated 93%），另开 AAV-1394。落地：fetcher `ltvZeroPreserved` + backend `ltvSemantics` 守卫（各 3 例，mutation 各只打红一条）；`apiFieldsVerification` 加 `ltv ≤ lt` 与 V4 `ltv === lt` 不变量（staging 真 payload 9/9）；JSDoc 落进 `backend/static/openapi.json` 两处 description；`docs/api/api-documentation.md` 补齐三个风险字段；spec `docs/plans/executed/aav-1380-ltv-zero-semantics.md`（S1-S16） |
-| AAV-1386 | Low | Done（2026-11-16 交付 `5ceb6e6`，已推 `railway`；CI `43801627978` 绿、staging deployment `7815207272` 绿、烟测绿、`/health.commitSha=5ceb6e6`） | [后端] AAV-1379 残余风险收敛：新增 `reserve-shape.ts`，V3 market/reserve 与 V4 reserve 顶层键用 `satisfies keyof` 钉住 SDK fragment 类型（SDK 升级删字段 → build 红），每轮 fetch 审计键存在性（缺失即 warn+样本，干净每进程一行 info）。**关键证据**：`borrowInfo` 在 fragment 里是必填键至多 nullable，键缺失在当前 SDK 版本下结构性不可达——门禁钉住的是「SDK 升级删字段」那条唯一路径。fetcher 433 例全绿、lint 289 warning 持平、变异验证 3/4 fail、部署后快照仍 441/142/19（纯观察）。`protocolFee` 缺席 = 0 仍按 AAV-1350 契约不改 |
-| AAV-1379 | Low | Done（2026-11-15 交付 `4568702` + `91a36af`，已推 `railway`；CI `43726394350`/`43727758717` 绿、staging deployment `7805083292` 绿、烟测绿、`/health.commitSha=4568702`） | [后端] `concurrent-fetch.ts` 只用 `=== null` 判定「无借入侧」：`buildV3BaseDataset(markets: any[])` 入参是 `any`，若 SDK 省略 `borrowInfo` 键而非显式 `null`，该 reserve 会读成「可借但借入侧全零」。**已修**：循环顶部 `const borrowInfo = reserve.borrowInfo ?? null` 收敛一次，11 处改读它；新增 6 例 `packages/aave-fetcher/tests/borrowInfoMissingKey.test.ts`（变异验证只 2 例红，其余为行为不变的对照），fetcher 416 例全绿。**口径订正**：142 条 `borrowDisabled` 里只有 **18** 条真的无借入侧数字（才是 `=== null` 的命中数），另 124 条借入侧齐全（`borrowCap === 1` 等）——别把 142 当作该分支计数。部署后快照仍 441/142/19（纯防御）。**`protocolFee` 不动**（缺席 = 0 是 AAV-1350 契约）；**残余风险已由 AAV-1386 收敛** |
-| AAV-1359 | Low | Backlog | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） |
-| AAV-1354 | Low | Backlog | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
-| AAV-1322 | Low | Backlog | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
-| AAV-1312 | Low | Backlog (needs-triage) | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
-| AAV-1304 | Low | Done（2026-11-15 交付：空态三态化 + Advanced 归一，spec `docs/specs/aav-1304-portfolio-summary-empty-state.md`；grocery 发现 `ltv=0` 缺口另开 AAV-1380） | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 |
-| AAV-1302 | Low | Todo | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
-| AAV-1301 | Low | Backlog | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* |
-| AAV-1274 | Low | Backlog | RENAME: campaignType → distributionType (cross-repo API breaking change) *(降级：建议前端别名适配替代跨仓重命名)* |
-| AAV-1293 | Low | Todo | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
-| AAV-1271 | Low | Backlog | 工具：Aave UI ↔ Backend API 对比工具 Phase 3 |
-| AAV-1270 | Low | Backlog | 后端：incentive_details 列级 NULL 命中率测试 + 决策 |
-| AAV-1269 | Low | Backlog | 后端：LOCF 查询实现（/api/markets/history 历史回放） |
-| AAV-1283 | None | Backlog | Security audit: moderate vulnerabilities (tracking) |
+| Linear | Priority | Title |
+| --- | --- | --- |
+| AAV-364 | High | • [EPIC] 市场宏观指标聚合 — market size / liquidity / utilization / 全局 deficit（8/14） |
+| AAV-333 | Medium | • V4 Risk Premium Simulation（per-user portfolio 级别） |
+| AAV-482 | — | • [前端] Risk Premium Simulation：RP 计算 + Simulation 集成 + UI |
+| AAV-387 | Low | • 对比前后端 API 字段，用不上的看是否可节省（子票 AAV-449 已拆出，1/4） |
+| AAV-535 | Low | • V3/V4 存在多个 collateral 时的清算顺序 |
+| AAV-79 | — | • deficit 的全局数据（EPIC 子票） |
+| AAV-751 | — | • 钱包下拉菜单与 token 跳转下拉字体不协调 |
+
+### Todo（2）
+
+| Linear | Priority | Title |
+| --- | --- | --- |
+| AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
+| AAV-1293 | Low | [后端] 是否将 /api/seo/* 管理面纳入 OpenAPI spec *(建议：确认为内部管理路由，不予公开)* |
+
+### Backlog（23）
+
+| Linear | Priority | Title |
+| --- | --- | --- |
+| AAV-1394 | Medium | [后端] `/markets` 不暴露 eMode 抵押参数：eMode 用户的 Borrow capacity 被低估（AAV-1380 残余缺口）。API 只有 base LTV，而同一资产在 eMode 类别下更高（WETH base 81% vs ETH-correlated 93%）；USDC 在该市场 25 个类别 `canBeCollateral` 全 false。口径建议：按用户实际启用的 eMode 类别取数；验收含 payload 体积评估（441 × 25 类别是否裁剪）、`FIELD_UNITS`/序列化同步、V4 等价物定性、前端额度从 81%→93% 复验、文档同步 |
+| AAV-1275 | Medium | DESIGN: AMOUNT variant campaign APR display strategy (product decision needed) |
+| AAV-1327 | Medium | [CSP] Cloudflare **JavaScript detections（bot 检测）**自动注入的内联块被 `script-src` 拦 → 生产每条加载 1 条 console error。**建票时归因错了**（写成「Web Analytics beacon」）：真浏览器复现 + 逐 inline script 扫字面量证明被拦块含 `challenge-platform/scripts/jsd`、不含 beacon，且 Web Analytics 早已是 disabled（用户看板所见一致）。zone plan = Free ⇒ 按一手文档该检测「automatically enabled and cannot be disabled」；hash 也钉不住（`r`/`t` 每请求变，10-05 现场再验，Chrome 建议的 hash 与建票时不同）。详见票内更正 #2。建议：确认没有吃 bot score 的防火墙规则后，按「接受为已知噪音」关闭并附解释（我这份 token 读 zone settings 是 403/9109，需用户在 Dashboard 看） |
+| AAV-1245 | Medium | • V4 RPC Fallback 架构优化：per-chain Multicall3 超批 + ltv/liquidationThreshold 补全 + V3/V4 统一 |
+| AAV-1347 | Medium | • [Chore] Prettier 未纳入 CI 门禁 → 227 文件漂移的成因，会随时间重新积累 |
+| AAV-1348 | Medium | • [Deps] zod 3 → 4 迁移被钱包 SDK 阻塞（osv GHSA-mrhx-c7xc-m3w5 已豁免到 2027-01-31） |
+| AAV-1361 | Medium | • google-auth-library + googleapis 必须成对合并（冷却期 2026-11-16） |
+| AAV-1370 | Medium | • chore(frontend): supplyIncentives/borrowIncentives 两种语义共存，需拍定删除或封口 |
+| AAV-1375 | Medium | • SEO 后台已失效：Supabase 项目消失，需决定下线还是重建 |
+| AAV-1367 | High | • security: 嵌套 zod 3.x 未覆盖 CVE-2023-54404（Dependabot #99） |
+| AAV-1391 | High | • [CI] openapi-sync 在 CI 内 git push 触发 husky pre-push → 无 Playwright 直接 BLOCK |
+| AAV-1354 | Low | [后端] TypeScript 7 升级被上游阻塞：`typescript-eslint` 全版本 peer 为 `>=4.8.4 <6.1.0`，且 TS 7 移除 `moduleResolution: "node"`（`TS5108` 硬错，命中 4 个 tsconfig）。已加 `renovate.json` 规则止住重复提案；TS 6.0.3 是可行中间站（仅 `TS5107` deprecate，可用 `ignoreDeprecations` 压掉） |
+| AAV-1322 | Low | [桌面] 储备行展开模拟子行后再点同一行不收起（`handleToggleExpand` 语义是 toggle；dev + 生产 `d39ad25f` 双环境 5 列实测一致）— 由 AAV-1321 实施期发现 |
+| AAV-1312 | Low | [Improvement] sync 第三数据源：MarketSwitcher V4_LINKS 外链 logo（V4-only 链官方图标自动化） |
+| AAV-1274 | Low | RENAME: campaignType → distributionType (cross-repo API breaking change) *(降级：建议前端别名适配替代跨仓重命名)* |
+| AAV-1271 | Low | 工具：Aave UI ↔ Backend API 对比工具 Phase 3 |
+| AAV-1270 | Low | 后端：incentive_details 列级 NULL 命中率测试 + 决策 |
+| AAV-1269 | Low | 后端：LOCF 查询实现（/api/markets/history 历史回放） |
+| AAV-75 | — | • size 的变化、liquidity 的变化（EPIC 子票） |
+| AAV-76 | — | • 对比 defillama 有没有这些内容（EPIC 子票） |
+| AAV-91 | — | • reserve 未来 APY 预测（EPIC 子票） |
+| AAV-127 | — | • 要有一个总的看 liquidity 的页面（per market，EPIC 子票） |
+| AAV-262 | — | • 增加 TVL 历史（EPIC 子票） |
+
+> **Needs Info 备注**：Linear 分组计数为 7，本轮取到 7 条标题但只有 5 条拿到编号（列表虚拟化），其余 2 张下次 triage 补编号。
 
 ---
 
@@ -226,6 +249,23 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 | AAV-1294 | [CI] deployment-smoke-test 恒为假绿灯 | 2026-09-24 |
 | AAV-1289 | 下线 Merit 全链路 | 2026-09-24 |
 | AAV-1278 | Side-Data Persistence to PostgreSQL | 2026-09-24 |
+| AAV-1330 | [pre-push] hook 吞掉 `ci:remote` 失败。真因是 errexit 对 `&&` 非末位命令的例外，不是"后四道门覆盖 `$?`"；e2e 作末位命令仍能挡（订正见 Linear 与 `.husky/pre-push` 注释） | — |
+| AAV-1352 | [e2e] 发现数据拉取失败与「数据缺口」不可区分 ⇒ 整个 spec 静默报绿（同族 AAV-1294/1330/1349，修复位置在 spec 的数据获取层） | 2026-11-15 |
+| AAV-1349 | [CI] pre-push 的 e2e 门缺 chromium 时静默 `exit 0`：改为 `exit 1` + 唯一显式出口 `E2E_SKIP=1`（默认关闭、必须打印「无 e2e 证据」）+ `PLAYWRIGHT_BROWSERS_PATH=0`/shell-only 不误判；判定收进 `scripts/lib/e2e-browser-gate.mjs`，13 例守卫随 `npm test` 生效。e2e 提为必填检查按票面另行拍板 | 2026-11-15 |
+| AAV-1303 | Merit 退役清理：前端 schema/契约/Forecast 链路移除 + openapi-sync 恢复（prod `/markets` 已零 merit 数据，唯 landing/UI 文案仍宣传） | — |
+| AAV-1317 | [e2e] portfolio fill helper 按 token 符号定位输入框，跨链同符号会填到错误的行 | 2026-11-16 |
+| AAV-1314 | [Bug] onchain multicall 批量读全失败仍返回空成功（AAV-1310 同类：client 健康但结果全 failure → 假 $0） | 2026-11-16 |
+| AAV-1387 | [Bug] RPC 探活只看 eth_chainId：批量读整批失败仍沿用该节点（Optimism fastnode 对 >4KB eth_call 回 413 → 假 $0） | 2026-11-16 |
+| AAV-1319 | [CI] e2e 目录不在常态 lint/typecheck 覆盖内；AGENTS.md 验证门 `npx tsc --noEmit` 实际检查 0 文件 | 2026-11-15 |
+| AAV-1295 | [CI] smoke test 修好后 auto-rollback 首次可达，但 deploymentRollback mutation 从未执行过（drill 入口 + 目标选择 + production 路径 + `rollback_executed` 串联均已实跑；平台缺陷另开 AAV-1388） | 2026-11-16 |
+| AAV-1380 | **[后端] `/markets` 的 `ltv` 字段 312/441 条为 0 → 定性为协议真值（base LTV），不是映射缺陷**。三源一致：链上 DataProvider vs staging 全等 103/103（ETH 68 / Base 15 / Arbitrum 20，`ltv` 与 `lt` 双字段）；SDK `maxLTV` 本即 `{value:"0"}`、两层 `!== undefined` 不吞 0；prod 与 staging 同 `reserveId` 差异 0 条（各 441：zero 312 / 正数 129）。312 个 0 = 128 冻结（V3.6 `setReserveFreeze` 联动 LTV→0，LT 不变 ⇒ HF 不受影响）+ 64 有抵押资格但不给 base 借力（稳定币治理 LTV-0）+ 120 非抵押品（`lt` 亦 0）。⇒ 前端借力算 0 对这批资产正确；**残余缺口是 API 不暴露 eMode 参数**（WETH base 81% vs ETH-correlated 93%），另开 AAV-1394。落地：fetcher `ltvZeroPreserved` + backend `ltvSemantics` 守卫（各 3 例，mutation 各只打红一条）；`apiFieldsVerification` 加 `ltv ≤ lt` 与 V4 `ltv === lt` 不变量（staging 真 payload 9/9）；JSDoc 落进 `backend/static/openapi.json` 两处 description；`docs/api/api-documentation.md` 补齐三个风险字段；spec `docs/plans/executed/aav-1380-ltv-zero-semantics.md`（S1-S16） | 2026-11-16 |
+| AAV-1386 | [后端] AAV-1379 残余风险收敛：新增 `reserve-shape.ts`，V3 market/reserve 与 V4 reserve 顶层键用 `satisfies keyof` 钉住 SDK fragment 类型（SDK 升级删字段 → build 红），每轮 fetch 审计键存在性（缺失即 warn+样本，干净每进程一行 info）。**关键证据**：`borrowInfo` 在 fragment 里是必填键至多 nullable，键缺失在当前 SDK 版本下结构性不可达——门禁钉住的是「SDK 升级删字段」那条唯一路径。fetcher 433 例全绿、lint 289 warning 持平、变异验证 3/4 fail、部署后快照仍 441/142/19（纯观察）。`protocolFee` 缺席 = 0 仍按 AAV-1350 契约不改 | 2026-11-16 |
+| AAV-1379 | [后端] `concurrent-fetch.ts` 只用 `=== null` 判定「无借入侧」：`buildV3BaseDataset(markets: any[])` 入参是 `any`，若 SDK 省略 `borrowInfo` 键而非显式 `null`，该 reserve 会读成「可借但借入侧全零」。**已修**：循环顶部 `const borrowInfo = reserve.borrowInfo ?? null` 收敛一次，11 处改读它；新增 6 例 `packages/aave-fetcher/tests/borrowInfoMissingKey.test.ts`（变异验证只 2 例红，其余为行为不变的对照），fetcher 416 例全绿。**口径订正**：142 条 `borrowDisabled` 里只有 **18** 条真的无借入侧数字（才是 `=== null` 的命中数），另 124 条借入侧齐全（`borrowCap === 1` 等）——别把 142 当作该分支计数。部署后快照仍 441/142/19（纯防御）。**`protocolFee` 不动**（缺席 = 0 是 AAV-1350 契约）；**残余风险已由 AAV-1386 收敛** | 2026-11-15 |
+| AAV-1304 | PortfolioSummaryBar：supply-only 仓位 Lowest HF 空态无上下文 + Advanced 区标签字重不一致 | 2026-11-15 |
+| AAV-1301 | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* | — |
+| AAV-1283 | Security audit: moderate vulnerabilities (tracking) | — |
+| AAV-1359 | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） | — |
+| AAV-1313 | [Improvement] onchain 仓位路径按 chainId 共享 RPC client（V3 多 market / V4 多 spoke 各自重复轮换） | 2026-11-17 |
 
 ---
 
