@@ -149,6 +149,221 @@
           }
         }
       }
+    },
+    "/meta/e-mode": {
+      "get": {
+        "operationId": "getMetaEModeIndex",
+        "summary": "List V3 markets that expose eMode categories",
+        "responses": {
+          "200": {
+            "description": "eMode market index",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EModeIndexPayload"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (120 requests/min per IP)",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry"
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable — data not ready or too stale",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry (10=loading, 60=stale)"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "EMODE_SNAPSHOT_NOT_READY",
+                        "EMODE_DATA_UNAVAILABLE",
+                        "EMODE_INVALID_MARKET_KEY",
+                        "EMODE_MARKET_NOT_FOUND"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/e-mode/{marketKey}": {
+      "get": {
+        "operationId": "getMetaEModeMarket",
+        "summary": "Get eMode categories and reserve membership for one V3 market",
+        "parameters": [
+          {
+            "name": "marketKey",
+            "in": "path",
+            "required": true,
+            "description": "`chainId:poolAddress` — same prefix as reserveId",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+:0x[0-9a-fA-F]{40}$",
+              "example": "1:0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "eMode categories for one market",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EModeMarketPayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed marketKey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "EMODE_SNAPSHOT_NOT_READY",
+                        "EMODE_DATA_UNAVAILABLE",
+                        "EMODE_INVALID_MARKET_KEY",
+                        "EMODE_MARKET_NOT_FOUND"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found (or V4 market, which has no eMode categories)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "EMODE_SNAPSHOT_NOT_READY",
+                        "EMODE_DATA_UNAVAILABLE",
+                        "EMODE_INVALID_MARKET_KEY",
+                        "EMODE_MARKET_NOT_FOUND"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (120 requests/min per IP)",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry"
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable — data not ready or too stale",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry (10=loading, 60=stale)"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "EMODE_SNAPSHOT_NOT_READY",
+                        "EMODE_DATA_UNAVAILABLE",
+                        "EMODE_INVALID_MARKET_KEY",
+                        "EMODE_MARKET_NOT_FOUND"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1588,6 +1803,136 @@
         },
         "additionalProperties": false,
         "description": "Structured per-sub-source errors, replacing the removed `partial: boolean` field."
+      },
+      "EModeIndexPayload": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string"
+          },
+          "markets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EModeMarketSummary"
+            }
+          }
+        },
+        "required": [
+          "generatedAt",
+          "markets"
+        ],
+        "additionalProperties": false,
+        "description": "`GET /api/meta/e-mode` response."
+      },
+      "EModeMarketSummary": {
+        "type": "object",
+        "properties": {
+          "marketKey": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "number"
+          },
+          "chainName": {
+            "type": "string"
+          },
+          "marketName": {
+            "type": "string"
+          },
+          "categoryCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "marketKey",
+          "chainId",
+          "chainName",
+          "marketName",
+          "categoryCount"
+        ],
+        "additionalProperties": false,
+        "description": "Compact market entry returned by the eMode index endpoint."
+      },
+      "EModeMarketPayload": {
+        "type": "object",
+        "properties": {
+          "marketKey": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "number"
+          },
+          "chainName": {
+            "type": "string"
+          },
+          "marketName": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EModeCategoryData"
+            }
+          },
+          "generatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "categories",
+          "chainId",
+          "chainName",
+          "generatedAt",
+          "marketKey",
+          "marketName"
+        ],
+        "additionalProperties": false,
+        "description": "`GET /api/meta/e-mode/:marketKey` response."
+      },
+      "EModeCategoryData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          },
+          "maxLtv": {
+            "type": "number"
+          },
+          "liquidationThreshold": {
+            "type": "number"
+          },
+          "liquidationPenalty": {
+            "type": "number"
+          },
+          "collateralReserves": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lowercase reserve token addresses that can be used as collateral."
+          },
+          "borrowableReserves": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lowercase reserve token addresses that can be borrowed."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "maxLtv",
+          "liquidationThreshold",
+          "liquidationPenalty",
+          "collateralReserves",
+          "borrowableReserves"
+        ],
+        "additionalProperties": false,
+        "description": "One V3 eMode category, in API percent units (93 = 93%).\n\nMember arrays are pruned: a reserve only appears in `collateralReserves` when `canBeCollateral` is true, and in `borrowableReserves` when `canBeBorrowed` is true. A reserve that is neither is not a member of the category and is omitted entirely."
       }
     }
   }
