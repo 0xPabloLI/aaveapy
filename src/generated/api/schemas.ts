@@ -52,6 +52,31 @@ const SideDataPayload = z.object({
     .optional(),
   errors: SideDataSubSourceErrors.optional(),
 });
+const EModeMarketSummary = z.object({
+  marketKey: z.string(),
+  chainId: z.number(),
+  chainName: z.string(),
+  marketName: z.string(),
+  categoryCount: z.number(),
+});
+const EModeIndexPayload = z.object({ generatedAt: z.string(), markets: z.array(EModeMarketSummary) });
+const EModeCategoryData = z.object({
+  id: z.number(),
+  label: z.string(),
+  maxLtv: z.number(),
+  liquidationThreshold: z.number(),
+  liquidationPenalty: z.number(),
+  collateralReserves: z.array(z.string()),
+  borrowableReserves: z.array(z.string()),
+});
+const EModeMarketPayload = z.object({
+  marketKey: z.string(),
+  chainId: z.number(),
+  chainName: z.string(),
+  marketName: z.string(),
+  categories: z.array(EModeCategoryData),
+  generatedAt: z.string(),
+});
 const MarketsErrorResponse = z
   .object({
     errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
@@ -205,6 +230,10 @@ export const schemas = {
   MerklBorrowHookProtocol,
   SideDataSubSourceErrors,
   SideDataPayload,
+  EModeMarketSummary,
+  EModeIndexPayload,
+  EModeCategoryData,
+  EModeMarketPayload,
   MarketsErrorResponse,
   ForecastCampaignTypeLite,
   MerklCampaignBreakdown,
@@ -235,6 +264,105 @@ const endpoints = makeApi([
         schema: z
           .object({
             errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
+            error: z.string(),
+            message: z.string(),
+          })
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/meta/e-mode',
+    alias: 'getMetaEModeIndex',
+    requestFormat: 'json',
+    response: EModeIndexPayload,
+    errors: [
+      {
+        status: 429,
+        description: `Rate limit exceeded (120 requests/min per IP)`,
+        schema: z.void(),
+      },
+      {
+        status: 503,
+        description: `Service unavailable — data not ready or too stale`,
+        schema: z
+          .object({
+            errorCode: z.enum([
+              'EMODE_SNAPSHOT_NOT_READY',
+              'EMODE_DATA_UNAVAILABLE',
+              'EMODE_INVALID_MARKET_KEY',
+              'EMODE_MARKET_NOT_FOUND',
+            ]),
+            error: z.string(),
+            message: z.string(),
+          })
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/meta/e-mode/:marketKey',
+    alias: 'getMetaEModeMarket',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'marketKey',
+        type: 'Path',
+        schema: z.string().regex(/^[0-9]+:0x[0-9a-fA-F]{40}$/),
+      },
+    ],
+    response: EModeMarketPayload,
+    errors: [
+      {
+        status: 400,
+        description: `Malformed marketKey`,
+        schema: z
+          .object({
+            errorCode: z.enum([
+              'EMODE_SNAPSHOT_NOT_READY',
+              'EMODE_DATA_UNAVAILABLE',
+              'EMODE_INVALID_MARKET_KEY',
+              'EMODE_MARKET_NOT_FOUND',
+            ]),
+            error: z.string(),
+            message: z.string(),
+          })
+          .passthrough(),
+      },
+      {
+        status: 404,
+        description: `Market not found (or V4 market, which has no eMode categories)`,
+        schema: z
+          .object({
+            errorCode: z.enum([
+              'EMODE_SNAPSHOT_NOT_READY',
+              'EMODE_DATA_UNAVAILABLE',
+              'EMODE_INVALID_MARKET_KEY',
+              'EMODE_MARKET_NOT_FOUND',
+            ]),
+            error: z.string(),
+            message: z.string(),
+          })
+          .passthrough(),
+      },
+      {
+        status: 429,
+        description: `Rate limit exceeded (120 requests/min per IP)`,
+        schema: z.void(),
+      },
+      {
+        status: 503,
+        description: `Service unavailable — data not ready or too stale`,
+        schema: z
+          .object({
+            errorCode: z.enum([
+              'EMODE_SNAPSHOT_NOT_READY',
+              'EMODE_DATA_UNAVAILABLE',
+              'EMODE_INVALID_MARKET_KEY',
+              'EMODE_MARKET_NOT_FOUND',
+            ]),
             error: z.string(),
             message: z.string(),
           })
