@@ -109,7 +109,7 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-760 | Low | • 判断哪些 reserve 可作质押 / 可做循环贷，一键最优配置需考虑 |
 | AAV-1302 | Low | [CI] release-drafter v7 迁移：autolabeler action 拆分 + category 模型（GitHub #656） |
 
-### Backlog（32）
+### Backlog（31）
 
 | Linear | Priority | Title |
 | --- | --- | --- |
@@ -130,7 +130,6 @@ GitHub 上创建的 issue，双向链接到 Linear，按用户规则始终排最
 | AAV-1270 | Low | 后端：incentive_details 列级 NULL 命中率测试 + 决策 |
 | AAV-1269 | Low | 后端：LOCF 查询实现（/api/markets/history 历史回放） |
 | AAV-360 | Low | • 给 Megaeth 做个反色的 logo |
-| AAV-365 | Low | • side-data endpoints 增加 deterministic ETag + 前端 If-None-Match 304 节流 |
 | AAV-395 | Low | • 评估从 reserveId 提取数值以省下 API 字段，划不划算 |
 | AAV-800 | Low | • PortfolioPanel 重复计算路径：统一 simulationsById 与 computeResultsFromGroups |
 | AAV-900 | Low | • Pendle PT token targetTokenPrice：解析 3 个 campaign 的 underlying 资产价格 |
@@ -169,6 +168,7 @@ Linear project（state=backlog），未排入具体 issue 执行序列。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-365 | [后端] `GET /api/meta/side-data` 确定性 ETag + `If-None-Match` → 304（本票只做后端，前端条件请求尚未接线）：根因是响应体每次请求重写 `generatedAt`、每个 markets tick 重置 `campaignAccess.updatedAt`，Express 字节哈希标签必变 ⇒ 304 结构上不可达。新增 `backend/src/services/sideDataEtag.ts`，对**语义内容**算 `W/"<sha256 前 32 hex>"`（对象键排序、数组保序，仅排除上述两个保活标记，`fetchedAt`/`staleTimeMs` 仍入哈希）；`metaController` 改可注入工厂（reader + 时钟 seam）；全子块失败 500 显式 `Cache-Control: no-store` 且不写内容标签。24 例新测试（含跨进程复算）+ backend 全量 616 例 / 607 pass；staging `75cfade` 实测：跨多个 markets tick 携带旧标签仍 304（0 字节）、真实重取换标签后 200、`Cache-Control: no-cache` 仍 200。⚠️ 首部署 `f0a06b64` 标 FAILED 且无容器日志（基建抖动），`railway deployment redeploy` 后恢复 | 2026-11-17 |
 | AAV-1394 | [后端] eMode 抵押参数独立端点：`GET /api/meta/e-mode`（索引）+ `/:marketKey`（类别与成员），不改 `/api/markets`；shared 类型 + `v3MarketKey`、fetcher `buildEModeMarkets`/`selectFreshEModeMarkets`、backend 只读快照 + stale hard TTL、OpenAPI 4 paths、cache 头、文档与 AAV-1399 前端票。staging `6a797f2` live：24 市场 / 3,564B，AaveV3Ethereum 48 类别 / 16,436B，WETH category 1 `93/95`；CI `44071575973` 四门绿 | 2026-11-17 |
 | AAV-1367 | 嵌套 zod 3.x 的 CVE-2023-54404 收口：`overrides.zod=$zod` 把 4 份 zod 收敛为 1 份 4.6.7（lock 只删 3 个嵌套条目、29 行）；新增 `scripts/check-zod-version-floor.mjs`（精确允许清单 + 可选 peer 跳过 + fail-closed）与 appkit-wallet `W3mFrameSchema` 的 zod-4 canary（16 tests）；删除失效的 osv 豁免（`osv-scanner` No issues found）；`npm audit --omit=dev` 11 high → 0；codegen 字节一致；产物仍只含 zod/v4；ci:remote 绿 | 2026-11-17 |
 | AAV-1293 | [后端] `/api/seo/*` 不进公开 OpenAPI（判断题收口）：决策理由落 `generate-openapi.ts` 注释（admin 面 / `X-Admin-Token` / 经 Supabase `seo-proxy` / `seo-api-documentation.md` 独立文档 / 非公开契约），2 条守卫（paths 恰好 `/markets` + `/meta/side-data`、注释锚点存在）+ `api-documentation.md` 边界句；mutation 加 `/api/seo/status`、删注释各自打红；生成物逐字节不变；run `44058368427` 四门绿 | 2026-11-17 |
