@@ -17,7 +17,7 @@ export interface FetchGapPositionsParams {
   address: `0x${string}`;
   reserves: ReserveWithSpread[];
   v3AssetsByMarket: Record<string, V3AssetsByMarket>;
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>;
+  v4ReservesBySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>;
 }
 
 export async function fetchGapPositions(

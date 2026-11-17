@@ -140,7 +140,7 @@ describe('deriveV4ReservesBySpoke', () => {
   it('keys by the spoke address, not by the API display name', () => {
     const result = deriveV4ReservesBySpoke([makeV4Reserve(1, '0xAa', SPOKES.main, encode('1::0xAa'))]);
     expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
-    expect(result[keyOf(SPOKES.main)]).toEqual([{ reserveId: 1n, asset: '0xAa' }]);
+    expect(result[keyOf(SPOKES.main)]).toEqual([{ chainId: 1, reserveId: 1n, asset: '0xAa' }]);
   });
 
   it('does not key by the display name or the address book raw key', () => {
@@ -157,8 +157,8 @@ describe('deriveV4ReservesBySpoke', () => {
     const result = deriveV4ReservesBySpoke(reserves);
     expect(Object.keys(result)).toEqual([keyOf(SPOKES.main)]);
     expect(result[keyOf(SPOKES.main)]).toHaveLength(2);
-    expect(result[keyOf(SPOKES.main)][0]).toEqual({ reserveId: 1n, asset: '0xAa' });
-    expect(result[keyOf(SPOKES.main)][1]).toEqual({ reserveId: 2n, asset: '0xBb' });
+    expect(result[keyOf(SPOKES.main)][0]).toEqual({ chainId: 1, reserveId: 1n, asset: '0xAa' });
+    expect(result[keyOf(SPOKES.main)][1]).toEqual({ chainId: 1, reserveId: 2n, asset: '0xBb' });
   });
 
   it('separates reserves from different spokes', () => {
@@ -177,8 +177,8 @@ describe('deriveV4ReservesBySpoke', () => {
     ];
     const result = deriveV4ReservesBySpoke(reserves);
     expect(Object.keys(result).sort()).toEqual([keyOf(SPOKES.bluechip), keyOf(SPOKES.bluechipSentora)].sort());
-    expect(result[keyOf(SPOKES.bluechip)]).toEqual([{ reserveId: 1n, asset: '0xAa' }]);
-    expect(result[keyOf(SPOKES.bluechipSentora)]).toEqual([{ reserveId: 2n, asset: '0xBb' }]);
+    expect(result[keyOf(SPOKES.bluechip)]).toEqual([{ chainId: 1, reserveId: 1n, asset: '0xAa' }]);
+    expect(result[keyOf(SPOKES.bluechipSentora)]).toEqual([{ chainId: 1, reserveId: 2n, asset: '0xBb' }]);
   });
 
   it('normalises the EIP-55 and lowercase spellings of one address to a single key', () => {

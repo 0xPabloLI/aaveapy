@@ -278,6 +278,13 @@ import { readFromHealthyRpc } from './rpcRead';
 import { createRpcClientPool, type RpcClientPool, type RpcReadAttempt } from './rpcResilience';
 
 export interface V4ReserveInfo {
+  /**
+   * Chain the reserve lives on. `reservesBySpoke` is keyed by spoke address across all
+   * chains, so this is the only per-chain field: the reader filters to its own chain
+   * before querying (AAV-517). Without it the address book's chain filter was the only
+   * thing keeping chain N's call from reading chain M's spokes.
+   */
+  chainId: number;
   reserveId: bigint;
   asset: `0x${string}`;
 }
@@ -464,6 +471,10 @@ export async function getV4UserPositionsAllSpokes(
   for (const [rawKey, reserves] of Object.entries(reservesBySpoke)) {
     const key = toV4SpokeKey(rawKey);
     if (!key || !reserves || reserves.length === 0 || seen.has(key)) continue;
+    // The map is keyed by address across every chain; a chain's call must only read the
+    // reserves that belong to it (AAV-517).
+    const chainReserves = reserves.filter((info) => info.chainId === chainId);
+    if (chainReserves.length === 0) continue;
     seen.add(key);
 
     // Warn (not throw) on drift: the address book is not a gate any more, and a throw
@@ -476,7 +487,7 @@ export async function getV4UserPositionsAllSpokes(
     }
     targeted.push({
       spoke: entry ?? { name: shortSpokeLabel(key), rawName: key, address: key as `0x${string}` },
-      reserves,
+      reserves: chainReserves,
     });
   }
 

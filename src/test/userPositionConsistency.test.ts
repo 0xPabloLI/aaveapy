@@ -143,7 +143,7 @@ function payloadV4SpokeKeys(reserves: ReserveWithSpread[], chainId: number): str
  */
 function assertV4SpokeJoinCoversPayload(
   payloadSpokes: readonly string[],
-  v4BySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
+  v4BySpoke: Record<string, { chainId: number; reserveId: bigint; asset: `0x${string}` }[]>,
   label: string,
 ) {
   expect(payloadSpokes.length, `${label}: V4 reserveIds must name at least one spoke address`).toBeGreaterThan(0);
