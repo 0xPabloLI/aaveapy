@@ -55,7 +55,9 @@
 ## Session Workflow
 
 ### Decision: Lightweight or Substantial?
-- **Lightweight**（检查、解释、常规工作）：直接进行，不需要加载额外 skill。
+- 先按 `docs/agents/implementation-workflow.md` 判 **Planning Scale**（S0–S3）与 **Risk**（R0–R3）：S0/S1 不要求独立 Spec/Tickets，S2/S3 走完整 8 步；R3 必须留真实失败基线。
+- 给建议（代码/架构/工具/服务/模型/流程改动）前读 `docs/agents/proposal-review.md`（影响面、事实双源；操作程序在 `docs/conventions/fact-verification.md`）。
+- **Lightweight**（S0/S1 + R0/R1：检查、解释、纯文档/规则改动）：直接进行，不需要加载额外 skill。
 - **UI/UX 设计任务**: 用 `impeccable` skill。
 - **Substantial implementation**: 按以下 Mandatory Implementation Workflow 执行。
 

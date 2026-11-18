@@ -6,10 +6,10 @@
 
 | 文件 | 偏离 | 原因 |
 | --- | --- | --- |
-| 实施工作流 | **内联在 AGENTS.md**（8 步 + Session 结束 checklist），无独立 `implementation-workflow.md` | 历史；S0–S3×R0–R3 双分流未引入。若 AGENTS.md 膨胀再考虑拆出 |
+| 实施工作流 | **8 步清单内联在 AGENTS.md**；**分级层在 `docs/agents/implementation-workflow.md`**（S0–S3 × R0–R3、skill 契约与降级、本仓 R3 触发） | 保留可执行清单，补「何时不需要 Spec/Tickets」的判定层 |
 | issue-tracker.md | core 后端无关契约 + 本 repo Linear 段（teamId/AAV/MCP 工具/wayfinding/sub-issue 坑） | 后端是 Linear |
-| git 纪律 | 无独立 git-workflow.md；规则在 AGENTS.md（stash 禁令、禁本地切分支、commit cadence 外链） | 内联模式；core 的「写入者独占 worktree」规则未整体引入，仅保留禁切分支部分 |
-| proposal-review.md | **未引入** | AGENTS.md 无对应路由；需要引入时同时加路由行 |
+| git 纪律 | 无独立 git-workflow.md；规则在 AGENTS.md（stash 禁令、禁本地切分支、commit cadence 外链）+ `docs/workflows/cross-branch-workflow.md`（worktree 与 hooks 绝对路径机制）+ 并行 session 规则 | 内联模式；core 的 worktree 纪律已由 cross-branch 文档覆盖 |
+| proposal-review.md | **已引入**（`docs/agents/proposal-review.md` + `docs/conventions/fact-verification.md`），影响面按前后端契约链本地化 | 2026-11-18 与 core 对齐；路由已加到 AGENTS.md「Decision: Lightweight or Substantial?」 |
 | git-concurrent-recovery.md | **已引入**（`docs/agents/git-concurrent-recovery.md`）；本地化两处：绕过 hook 后必须在 gated worktree（先 `npm install` + `check:hooks-path`）补跑只存在于 pre-push 的四道门；pathspec commit 遇他方在途改动导致门变红时禁止 `--no-verify` | 2026-11-18 首次多 session 竞态（同一 `dev` 链交替提交）后按 core 落地 |
 | scenario 两文件 | 住 `docs/conventions/`，用 core 合并版原样 | 与 core 一致 |
 | AGENTS.md 设计段 | Users/Brand/Aesthetic/Principles/Token 全套内联（AAVE repos 中最完整） | 本 repo 的插槽值；core 不收品牌内容 |
