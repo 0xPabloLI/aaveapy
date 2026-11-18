@@ -34,15 +34,17 @@
 | --- | --- | --- | --- | --- |
 | M1 | 模式切换反映在控件状态 | 点 `Token` radio | `Token` 的 `aria-checked=true`、`USD=false` | e2e 断言 |
 | M2 | 模式切换改变输入语义 | 同上 | Supply/Borrow 的 `placeholder` 从 USD 千分位形态变为代币量级（不等于切换前的值） | e2e 断言 |
-| M3 | 模式切换按设计清空输入 | USD 填值后切 Token | 两个输入值均为空串（钉住 `ScenarioControls.tsx:261-269` 的 `handleClear()`） | e2e 断言 |
+| M3 | 模式切换按设计清空输入 | USD 填值后切 Token | 两个输入值均为空串（钉住 `ScenarioControls.handleModeChange → handleClear()` 的清空语义） | e2e 断言 |
 | M4 | 切回 USD 语义恢复 | Token 再切 USD | `placeholder` 恢复 USD 形态、`aria-checked` 回到 USD | e2e 断言 |
 | M5 | USD 场景驱动表格重算 | 填 250,000 / 120,000 + Tab | 锚定行集合至少 1 行文本变化；全页无 `NaN`/`undefined`/`Infinity` | e2e 断言 |
 | M6 | Token 场景驱动重算并换单位 | Token 模式填 3 / 1 | 至少 1 行变化；该行 Size 列不再含 `$`+`M/K` 单位后缀 | e2e 断言 |
+| M6b | 仅切换模式（不输入）单位立即跟随 | 点 `Token` radio，不填任何输入 | 表格 Size 列立即去掉 `$` 前缀；再点 `USD` 立即恢复 `$` | e2e 断言（桌面 M6b） |
 | M7 | 净借贷开关有可观察效果 | 有活跃场景时点 label | 至少 1 行文本变化（当前数据实测为 USDC/Ink 行 Incentive 与 Spread 变化）；若无受影响行 → 干净 skip + annotation 说明数据条件 | e2e 断言（条件式） |
 | M8 | 净借贷开关可逆 | 再点一次 label | `checked` 回到 true，且锚定行文本与首次状态**逐字节相同** | e2e 断言 |
 | M9 | 桌面整行可展开模拟子行 | 点首行 Price 单元格 | 紧邻下一行出现子行文本（含 `Simulation is for reference only` 或 `Spread`/`Liquidity`） | e2e 断言 |
 | M10 | Market 芯片不触发展开 | 收起后点首行 Market 芯片 | 子行数仍为 0（芯片是筛选动作） | e2e 断言 |
 | M11 | 移动端卡片可展开 | 点 `Expand details panel` | 出现 `Collapse details panel`，且展开态在输入场景后保持 | e2e 断言 |
+| M11c | 移动端仅切换模式（不输入）单位立即跟随 | 点 `Token` radio，不填任何输入 | 首张卡片 Size 立即去掉 `$`；再点 `USD` 立即恢复 `$` | e2e 断言（移动 M11c） |
 | M12 | 空输入回落到基线 | 场景输入后清空 | 锚定行文本与初始基线一致（空=无场景） | e2e 断言 |
 | M13 | `0` 与空串语义区分 | 输入 `0` | 不抛错、无 `NaN`；`0` 场景与空场景的行文本允许不同（0 是显式零仓位），断言为「页面仍健康 + 无非法数值」 | e2e 断言（弱化为不变量） |
 | M14 | 全页控制台无新增错误 | 上述所有步骤 | 无未预期 `pageerror`；已知生产 CSP 报错在本地 dev server 下不出现 | e2e 断言 |
@@ -59,6 +61,25 @@
 - 桌面 `<tr>` 展开没有 `aria-expanded`，屏幕阅读器与测试都只能靠「整行可点」这一隐式契约；建议另开票给行加 `aria-expanded` + `role=button` 语义。
 - `e2e/` 不在 lint 与 `typecheck` 覆盖内（AGENTS.md 已记），本票验收要求对新 spec 显式跑 tsc。
 - 净借贷开关 id 仍叫 `scenario-merit-merkl-net-lending-borrowing`，而 Merit 后端已下线（AAV-1303 范围）。
+
+## 补充：M6b / M11c 与「切换即换单位」契约（2026-11-18）
+
+原 M1–M4 只钉住控件状态与输入清空，M6 只在**输入后**验单位；因此「点 Token 但不输入」时表格仍显示 USD 的缺陷没有守卫，生产上从 2026-07-16 起出现「控件与单位相反」的观感。
+
+根因（AAV-745 重构引入）：`ScenarioControls.handleModeChange` 先 `handleClear()`，而 `handleClear()` 同步提交的值由 `modeRef.current` 提供；`modeRef` 只在 `useEffect` 中随下一次渲染更新，切换瞬间仍是旧模式 ⇒ 父级 `ReservesTable.sharedInputMode` 收到的是旧模式，表格单位慢一拍。
+
+修复契约：**切换模式必须在同一 tick 把新模式提交给父级**（`modeRef.current = newMode` 先于清空），无论输入是否为空。守卫：
+
+- 单测：`ScenarioControls.test.tsx` 的 `reports the new mode when switching with empty inputs` 与 AAV-746 用例改用 `toHaveBeenLastCalledWith(..., 'token')`。
+- e2e：桌面 `M6b`、移动 `M11c` 断言「仅切换、不输入」时 Size 列/卡片单位立即跟随，切回立即恢复。
+
+| 文件 | 修改内容 | 风险等级 | 评估 |
+| --- | --- | --- | --- |
+| `src/components/dashboard/ScenarioControls.tsx` | `handleModeChange` 先同步 `modeRef`/空 ref 再清空输入 | Medium | 影响 ScenarioControls 的父级提交时序；场景输入为空时无计算副作用，输入非空时仍按既有语义清空 |
+| `src/components/dashboard/ScenarioControls.test.tsx` | 修正 AAV-746 断言并新增空输入传播用例（桌面 + 移动） | Low | 纯测试；旧断言实际钉的是缺陷 |
+| `e2e/scenario-input-modes.{desktop,mobile}.spec.ts` | 新增 M6b/M11c 用户可见单位跟随断言 | Low | 相对断言，不依赖 staging 绝对数值 |
+
+> 测试变更纪律：M3/M6b/M11c 的预期属于用户可见契约；若要改断言，必须同步改本矩阵并说明产品行为变化，禁止只改断言让红变绿。
 
 ## 验收
 

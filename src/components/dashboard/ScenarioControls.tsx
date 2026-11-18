@@ -260,10 +260,14 @@ const ScenarioControls = memo(
 
       const handleModeChange = (newMode: ScenarioInputMode) => {
         if (newMode !== inputMode) {
-          supplyInput.handleClear();
-          borrowInput.handleClear();
+          // handleClear() commits synchronously through batchCommit(), which reads
+          // modeRef.current. Sync the ref (and the pending values) before clearing so
+          // the parent receives the new unit in the same tick instead of the old one.
+          modeRef.current = newMode;
           supplyRef.current = '';
           borrowRef.current = '';
+          supplyInput.handleClear();
+          borrowInput.handleClear();
           setInputMode(newMode);
         }
       };

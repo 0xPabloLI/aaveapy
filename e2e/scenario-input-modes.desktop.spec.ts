@@ -68,6 +68,42 @@ test.describe('Scenario recompute — 桌面表格', () => {
     await expect(illegalNumbers(page)).resolves.toBe(0);
   });
 
+  test('M6b 仅切换 Token 不输入，Size 列立即换成代币单位，切回 USD 立即恢复 $', async ({ page }) => {
+    await openApp(page);
+    const usdSizes = await sizeCellByRow(page);
+    const common = () => Object.keys(usdSizes);
+
+    expect(
+      common().some((k) => usdSizes[k].includes('$')),
+      '基线应为 USD 单位',
+    ).toBe(true);
+
+    await modeRadio(page, 'Token').click();
+    await expect
+      .poll(
+        async () => {
+          const tokenSizes = await sizeCellByRow(page);
+          const overlapping = Object.keys(tokenSizes).filter((k) => k in usdSizes);
+          return overlapping.some((k) => tokenSizes[k].includes('$')) ? 'usd-units' : 'token-units';
+        },
+        { timeout: 10_000, message: '仅切换 Token（未输入）后 Size 应立即显示代币单位' },
+      )
+      .toBe('token-units');
+
+    await modeRadio(page, 'USD').click();
+    await expect
+      .poll(
+        async () => {
+          const backToUsd = await sizeCellByRow(page);
+          const overlapping = Object.keys(backToUsd).filter((k) => k in usdSizes);
+          return overlapping.some((k) => backToUsd[k].includes('$')) ? 'usd-units' : 'token-units';
+        },
+        { timeout: 10_000, message: '切回 USD（未输入）后 Size 应立即恢复 $ 前缀' },
+      )
+      .toBe('usd-units');
+    await expect(illegalNumbers(page)).resolves.toBe(0);
+  });
+
   test('M7/M8 净借贷开关：走 label 生效且可逆', async ({ page }, testInfo) => {
     await openApp(page);
     await setScenario(page, '250000', '120000');
