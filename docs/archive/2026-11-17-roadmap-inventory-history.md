@@ -73,12 +73,13 @@
 
 ---
 
-## 已闭票行（早于 2026-11-12，部分无关闭日期）
+## 已闭票行（早于 2026-11-15，部分无关闭日期）
 
 从 `docs/issue-roadmap.md` 的 Recently Completed 表下沉，保留原行以便追溯。
 
 | Linear | Title | Closed |
 | --- | --- | --- |
+| AAV-1350 | Portfolio 模式在 reserve 缺 rate-calc 字段时激励显示为 —（`protocolFee` 移出 `hasRateCalcFields` 门槛，兜底改走 `getCampaignIncentiveValues` 并传 position/token/decimals；生产复验 6.17% / +$1.64 每天） | 2026-11-12 |
 | AAV-1323 | e2e market-filter-pin 用例 (5) 绝对几何阈值卡实盘（`eba3be94` 行前提发现式挑行+条件 skip；几何阈值判定为 app 自有 sticky 几何无需整改；e2e-desktop 三 run 全绿验收 `38177124100`/`38177997224`/`38196292330`） | 2026-10-12 |
 | AAV-1318 | offset discovery gates borrow room and LTV funding power（`d9809781`：O12–O22 单测，staging 4→4 结构性修复，e2e 8 passed） | 2026-10-12 |
 | AAV-1316 | cross-asset-pairing e2e synthetic 载荷 stub（`9cc1cebf`：真实 fixture 注入 + 真实 discovery 门控选景 + `page.route` 双拦全 hermetic + baseline 零断言；AAV-895 min(1,2) 链路首次真实执行，stub 双平台 passed 6.9s/9.5s；live 路径零变化） | 2026-10-10 |
