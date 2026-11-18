@@ -76,6 +76,7 @@
     "check:coingecko-platform-map-upstream": "node scripts/check-coingecko-platform-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
     "check:e2e-market-names": "node scripts/check-e2e-hardcoded-market-names.mjs",
+    "wip:snapshot": "node scripts/wip-snapshot.mjs",
     "test": "node scripts/generate-icon-manifests.mjs && vitest run && node --test \"scripts/**/*.test.mjs\"",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
