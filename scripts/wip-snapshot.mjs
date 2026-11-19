@@ -53,6 +53,14 @@ if (dryRun) {
 
 const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
 const ref = `refs/wip/${stamp}${label ? `-${label.replace(/[^a-zA-Z0-9._-]/g, '-')}` : ''}`;
+const snapshotIdentity = [
+  '-c',
+  'user.name=AaveAPY WIP Snapshot',
+  '-c',
+  'user.email=wip-snapshot@local',
+  '-c',
+  'commit.gpgsign=false',
+];
 const head = (() => {
   try {
     return git(['-C', top, 'rev-parse', '--verify', 'HEAD']);
@@ -69,8 +77,8 @@ try {
   const tree = git(['-C', top, 'write-tree'], env);
   const message = `wip snapshot ${stamp}${label ? ` ${label}` : ''}`;
   const commit = head
-    ? git(['-C', top, 'commit-tree', tree, '-p', head, '-m', message])
-    : git(['-C', top, 'commit-tree', tree, '-m', message]);
+    ? git(['-C', top, ...snapshotIdentity, 'commit-tree', tree, '-p', head, '-m', message])
+    : git(['-C', top, ...snapshotIdentity, 'commit-tree', tree, '-m', message]);
   git(['-C', top, 'update-ref', ref, commit]);
 
   const refs = git(['-C', top, 'for-each-ref', '--sort=-refname', '--format=%(refname)', 'refs/wip'])

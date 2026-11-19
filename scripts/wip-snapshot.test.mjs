@@ -24,7 +24,18 @@ const withRepo = (fn) => {
   const git = (args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).replace(/\n$/, '');
   try {
     git(['init', '-q', '-b', 'main']);
-    git(['-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'base']);
+    git([
+      '-c',
+      'user.email=t@example.com',
+      '-c',
+      'user.name=t',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '--allow-empty',
+      '-m',
+      'base',
+    ]);
     fn(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -50,9 +61,13 @@ test('captures tracked edits and untracked files without touching index or workt
   withRepo((root) => {
     writeFileSync(join(root, 'tracked.txt'), 'before\n');
     execFileSync('git', ['add', 'tracked.txt'], { cwd: root });
-    execFileSync('git', ['-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-m', 'add'], {
-      cwd: root,
-    });
+    execFileSync(
+      'git',
+      ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', 'commit', '-m', 'add'],
+      {
+        cwd: root,
+      },
+    );
     writeFileSync(join(root, 'tracked.txt'), 'after\n');
     writeFileSync(join(root, 'notes.txt'), 'untracked body\n');
 
@@ -79,6 +94,36 @@ test('dry-run reports paths and writes no ref', () => {
     assert.match(run(root, ['--dry-run']), /dry-run: 1 path/);
     assert.deepEqual(refs(root), []);
   });
+});
+
+test('works without ambient git identity', () => {
+  const root = mkdtempSync(join(tmpdir(), 'wip-empty-'));
+  const emptyHome = mkdtempSync(join(tmpdir(), 'wip-home-'));
+  try {
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: root });
+    writeFileSync(join(root, 'notes.txt'), 'untracked body\n');
+
+    const env = {
+      ...process.env,
+      HOME: emptyHome,
+      XDG_CONFIG_HOME: emptyHome,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_SYSTEM: '/dev/null',
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'user.useConfigOnly',
+      GIT_CONFIG_VALUE_0: 'true',
+    };
+    for (const key of ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL']) {
+      delete env[key];
+    }
+
+    execFileSync(process.execPath, [SCRIPT, '--repo', root], { encoding: 'utf8', env });
+    assert.equal(refs(root).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(emptyHome, { recursive: true, force: true });
+  }
 });
 
 test('exits non-zero outside a git repository', () => {
