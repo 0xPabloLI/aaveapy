@@ -103,6 +103,7 @@ _Last inventory pass: 2026-09-28._
 - Canonical: `docs/specs/aav-1308-cross-asset-pairing-discovery.md` (cross-asset-pairing e2e discovery 对齐 UI 门控：两端可算性 + 仓位可行性 room/LTV 门 + label 镜像与 cap=0 修正; AAV-1308)
 - Canonical: `docs/specs/aav-1310-rpc-rotation-exhaustion.md` (RPC 轮换耗尽语义分流:createClientWithRpcRotation 轮换耗尽改 throw RpcRotationExhaustedError,null 语义收紧为 registry 无 RPC;V3/V4 multichain errors 通道 + HF 消费方降级对齐; AAV-1310)
 - Canonical: `docs/specs/aav-1321-scenario-input-modes-e2e.md` (场景模拟交互链路 e2e 覆盖 spec:USD↔Token 模式切换与清空语义 / 相对断言抗 staging 漂移 / 净借贷开关走 label 且验可逆 / 桌面整行展开 vs Market 芯片筛选;含 14 行场景矩阵; AAV-1321)
+- Canonical: `docs/specs/control-propagation-e2e.md` (全局控件→展示面传播契约：APR/APY 与 Chain/Hub 的最短路径切换必须立即改变表格/卡片/markets-row，切回逐字节恢复；USD/Token 由 AAV-1321 M6b/M11c 拥有；含 CP1–CP5 矩阵；无 issue 票)
 - Canonical: `docs/specs/aav-1320-ga4-csp-inline-scripts.md` (GA4 CSP 修复:consent 内联块 sha256 放行 + googletagmanager/google-analytics origin + 构建期 hash 校验门接 npm run build;含 16 行场景矩阵与运行时 probe 证据; AAV-1320)
 - Canonical: `docs/specs/e2e-parallel-port-isolation.md` (本地 e2e webServer 端口按 run 动态分配:固定 4173 + reuseExistingServer 导致并发门禁互相打断的根因与不变量（CI 固定端口 / origin ≡ baseURL / 分配只算一次 / URL 与命令单一来源）;含 13 行场景矩阵与整条门禁实跑证据; 无 issue 票)
 - Canonical: `docs/specs/e2e-hardcoded-market-name-guard.md` (e2e 选择器不得钉死链名的守卫:词汇取 src/lib/chainIconMap、只判选择器行、候选列表与注释豁免、allow 逃生阀、空词汇即报错;含 12 行场景矩阵与事故前文件正对照; 无 issue 票)

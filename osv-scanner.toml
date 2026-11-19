@@ -18,3 +18,14 @@ chokidar@3.6.0 与 → micromatch@4.0.8，两边 dedupe 到同一个 braces；�
 的 watch/glob 依赖链。追踪 AAV-1328。
 """
 ignoreUntil = "2027-01-31T00:00:00Z"
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+reason = """
+picomatch ReDoS（<=4.0.7）。dev-only 传递依赖：tailwind v3 的 watch/glob 链与 vitest 的
+glob 匹配都走它，不进生产产物。上游还没有修复版：npm 上最新即 4.0.7，OSV 的 affected
+只有 last_affected、没有 fixed 事件，所以 `npm audit fix` 修不掉——`--package-lock-only`
+实测会顺带改写约 1500 行无关版本（oxc-parser 等）且仍留 33 个 high，已回滚。到期若上游
+仍无 4.0.8，改走替换 glob 依赖链的根治路线，而不是继续续期。
+"""
+ignoreUntil = "2026-11-30T00:00:00Z"

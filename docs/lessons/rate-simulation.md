@@ -11,6 +11,12 @@ Historical lessons from working on `rateSimulationCalculator.ts` and related inc
 ## 实时千分位格式化 (AAV-745)
 - `useDebouncedInput` 的 `handleChange` 必须 sanitize→formatNumberInput→setDisplayValue，输入过程中实时显示千分位。`computeCursorAfterFormat` 基于 cursor 前有效数字字符数推算格式化后位置。handleFocus 不剥离逗号（只设 cursor 到末尾），handleBlur 保留 formatNumberInput（幂等防御）。CJK 全角小数点归一化（AAV-739）必须在 format 之前完成。
 
+## 模式切换必须同 tick 上报父级（AAV-745 后续，2026-11-18）
+- **症状**：Reserves 表格的 USD/Token 切换「反过来」——点 Token 后 Size 仍带 `$`，点回 USD 后 Size 仍不带 `$`；只有输入一次数字才纠正。
+- **根因**：`ScenarioControls.handleModeChange` 先 `handleClear()`；`useDebouncedInput.handleClear()` 同步 `onCommit('')` → `batchCommit` 读取 `modeRef.current`。`modeRef` 由 `useEffect` 在下一次渲染后才同步，所以提交的是旧模式，父级 `ReservesTable.sharedInputMode` 永远慢一拍。
+- **修复模式**：切换时先把 `modeRef.current = newMode`、清空 `supplyRef`/`borrowRef`，再 `handleClear()`，最后 `setInputMode`。原则：**任何影响父级渲染的控件状态，必须在会触发父级提交的同一个 handler 里先同步到最新值**；不能依赖 `useEffect` 同步的 ref 承担事件路径的读值。
+- **守卫**：`ScenarioControls.test.tsx` 的空输入传播用例 + e2e `M6b` / `M11c`（`docs/specs/aav-1321-scenario-input-modes-e2e.md`）。旧单测把 `('', '', 'usd')` 写成预期，标题却写 “new mode”——**断言与标题矛盾时按产品契约审，不要按当前输出固化**。
+
 ## Simulation `after` 语义（AAV-761）
 - **`after=0` 与 `after=null` 语义不同，`??` 运算符下行为迥异**: `0 ?? fallback` → `0`（不 fallback），`null ?? fallback` → `fallback`。当 `hasInput=false` 时，after 必须为 `null`（表示"未参与模拟，使用 current 值"），不能为 `0`（表示"模拟后为 0%"）。这条规则适用于所有 `SimulationLane` 的 after/delta 字段及 per-campaign detail row。
 - **多层计算链路需逐层统一语义**: campaign row 层（`buildMeritCampaignDetails`/`buildMerklCampaignDetails`）、`buildMetricsFromLane` 层、aggregate 层（`supplyAfterSources`/`borrowAfterSources`）需一致使用 `hasInput` 分支，否则会出现某层 `after=null` 而另一层 `after=0` 的矛盾。修改某一层时必须检查上下游所有层级。

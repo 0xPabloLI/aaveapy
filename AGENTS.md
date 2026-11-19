@@ -55,7 +55,9 @@
 ## Session Workflow
 
 ### Decision: Lightweight or Substantial?
-- **Lightweight**（检查、解释、常规工作）：直接进行，不需要加载额外 skill。
+- 先按 `docs/agents/implementation-workflow.md` 判 **Planning Scale**（S0–S3）与 **Risk**（R0–R3）：S0/S1 不要求独立 Spec/Tickets，S2/S3 走完整 8 步；R3 必须留真实失败基线。
+- 给建议（代码/架构/工具/服务/模型/流程改动）前读 `docs/agents/proposal-review.md`（影响面、事实双源；操作程序在 `docs/conventions/fact-verification.md`）。
+- **Lightweight**（S0/S1 + R0/R1：检查、解释、纯文档/规则改动）：直接进行，不需要加载额外 skill。
 - **UI/UX 设计任务**: 用 `impeccable` skill。
 - **Substantial implementation**: 按以下 Mandatory Implementation Workflow 执行。
 
@@ -124,7 +126,7 @@
 ## Cross-Branch Workflow（禁止本地切分支）
 **核心规则**：永远不要在当前工作目录执行 `git checkout`/`git switch` 切换分支。所有跨分支操作通过 worktree 或 GitHub API 完成。场景和命令详见 `docs/workflows/cross-branch-workflow.md`。
 
-**并行 session**：同一仓库存在第二个写入 session 时，本 session 必须在独占 worktree 中提交（共享工作目录即共享 index 与工作树，是并行冲突的根因）；`pull --rebase`/`push`/`switch` 只在自己的 worktree 内执行。竞态已发生（提交被挤出、或必须不动共享 index 完成提交）时按 `docs/agents/git-concurrent-recovery.md` 处置，不用 `--no-verify` 绕门。
+**并行 session**：同一仓库存在第二个写入 session 时，本 session 必须在独占 worktree 中提交（共享工作目录即共享 index 与工作树，是并行冲突的根因）；`pull --rebase`/`push`/`switch` 只在自己的 worktree 内执行。竞态已发生（提交被挤出、或必须不动共享 index 完成提交）时按 `docs/agents/git-concurrent-recovery.md` 处置，不用 `--no-verify` 绕门。 清理共享 checkout 前先拍 WIP 快照：`npm run wip:snapshot` 把跟踪、未暂存、未跟踪改动一起钉到 `refs/wip/<stamp>`，不碰 index 与工作树，恢复命令 `git checkout <ref> -- .` 写进当轮汇报；`reset --hard` 写在快照之后（ref 门挡不住工作树改写，机制见 `~/Documents/code/agent-harness/slots/wip-snapshot.md`）。
 
 ## 标准上线流程 (Production Deployment Checklist)
 

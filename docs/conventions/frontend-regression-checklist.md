@@ -42,9 +42,12 @@ Examples:
   - When no incentive is visible, the hero empty-state helper copy must remain present and follow the active rate mode wording (`APY` vs `APR`).
 - `ReservesTable`
   - Sort controls must preserve current sorting semantics.
+  - **USD/Token 切换单位立即跟随（不做输入也算）**: `ScenarioControls` 的 `handleModeChange` 必须在同一个 handler 里把新模式提交给父级（`modeRef.current = newMode` 先于 `handleClear()`）；断言：仅点 `Token`/`USD`、不输入任何金额时，桌面 Size 列与移动卡片 Size 必须立即在 `$` 与代币单位之间切换。守卫：`ScenarioControls.test.tsx` 空输入传播用例 + `e2e/scenario-input-modes.{desktop,mobile}.spec.ts` 的 M6b/M11c。
   - **Stable sort invariant**: every sort column's comparator must form a total order — when the primary comparison returns 0, a deterministic tiebreaker (currently `reserveId`) must be used. Without this, `Array.sort` produces non-deterministic order for equal items in V8, causing rows to shuffle on every data refresh. See `docs/conventions/sort-stability.md` for the full rule and examples.
   - Sticky/expanded row behavior must preserve the DOM contract documented in `docs/design/frontend-interaction-guardrails.md`.
   - Simulation/sort dependency stability (see `frontend-interaction-guardrails.md` § "Performance: simulation/sort dependency stability"): any change to `useSharedRateSimulations` or `ReservesTable.tsx` `sortedData` deps must keep `buildPriceDataSignature` / `buildPriceLoadingSignature` tests green and must NOT reintroduce raw `priceQueries` or unmodified `simulationsById` into those `useMemo` dep arrays.
+- Global `SegmentedToggle` modes (APR/APY, Chain/Hub)
+  - **Shortest-path propagation**: clicking a mode must change the display surface immediately, without any amount being typed; clicking back must restore the surface byte-for-byte. Guard: `e2e/control-propagation.{desktop,mobile}.spec.ts` (CP1–CP5). USD/Token is guarded by AAV-1321 M6b/M11c.
 - `DesktopReserveRow` (and any row that fades color per side)
   - When `supplyDisabled / borrowDisabled / isPaused / isFrozen` is true, every cell that exposes the corresponding side (Size ring trigger, APY total, native APY, incentive button, etc.) must switch to the muted color class.
   - **Anti-pattern**: asserting `expect(html).toContain('text-cyan-500/50')` on whole-row HTML — multiple cells share that class, so a missing fade in one cell is hidden by another cell's fade. Always scope the assertion to the specific element (e.g. match the `<button aria-label="Borrow cap details for ...">` substring and assert the muted class on that match).
@@ -76,6 +79,8 @@ The portfolio panel uses a **unified single-column grid** for both desktop and m
 ### SegmentedToggle visual invariants
 
 The `SegmentedToggle` component supports `orientation` (`horizontal` | `vertical`) and `size` (`default` | `chip`). Layout rules are normative and enforced by visual invariant source-level regression tests (`segmented-toggle.visual-invariant.test.ts`) plus Playwright geometry assertions (`e2e/segmented-toggle.desktop.spec.ts` + `e2e/segmented-toggle.mobile.spec.ts`).
+
+Visual geometry does not prove state propagation. Every global mode toggle must also have a shortest-path propagation contract (click only, no input; display surface must change and restore). See `e2e/control-propagation.{desktop,mobile}.spec.ts` and `docs/specs/control-propagation-e2e.md`.
 
 **Mandatory invariants (do not regress):**
 

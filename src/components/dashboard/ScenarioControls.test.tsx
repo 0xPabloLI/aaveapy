@@ -329,7 +329,19 @@ describe('ScenarioControls', () => {
         expect(onDebouncedChange).toHaveBeenCalledWith('5,000', '', 'usd');
         onDebouncedChange.mockClear();
         fireEvent.click(screen.getByText('Token'));
-        expect(onDebouncedChange).toHaveBeenCalledWith('', '', 'usd');
+        expect(onDebouncedChange).toHaveBeenLastCalledWith('', '', 'token');
+        expect(onDebouncedChange).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), 'usd');
+      });
+
+      it('reports the new mode when switching with empty inputs (unit propagation)', () => {
+        const onDebouncedChange = vi.fn();
+        renderControls({ onDebouncedChange });
+        fireEvent.click(screen.getByText('Token'));
+        expect(onDebouncedChange).toHaveBeenLastCalledWith('', '', 'token');
+
+        onDebouncedChange.mockClear();
+        fireEvent.click(screen.getByText('USD'));
+        expect(onDebouncedChange).toHaveBeenLastCalledWith('', '', 'usd');
       });
 
       it('clears only supply when borrow is empty', () => {
@@ -462,6 +474,13 @@ describe('ScenarioControls', () => {
       fireEvent.click(screen.getByText('Token'));
       expect(supplyInput.value).toBe('');
       expect(borrowInput.value).toBe('');
+    });
+
+    it('reports the new mode on the mobile toggle with empty inputs', () => {
+      const onDebouncedChange = vi.fn();
+      renderControls({ onDebouncedChange });
+      fireEvent.click(screen.getByText('Token'));
+      expect(onDebouncedChange).toHaveBeenLastCalledWith('', '', 'token');
     });
 
     it('renders SlidersHorizontal button when onMerklNetPositionChange is provided', () => {
