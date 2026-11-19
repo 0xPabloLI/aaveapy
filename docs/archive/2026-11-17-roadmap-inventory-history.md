@@ -73,7 +73,7 @@
 
 ---
 
-## 已闭票行（早于 2026-11-15，部分无关闭日期）
+## 已闭票行（早于 2026-11-19，部分无关闭日期）
 
 从 `docs/issue-roadmap.md` 的 Recently Completed 表下沉，保留原行以便追溯。
 
@@ -106,3 +106,4 @@
 | AAV-1301 | [Toolchain] eslint 10 升级：@eslint/js 10 peer 冲突，需协调升级整条 eslint 工具链（GitHub #653）*(降级：暂缓升级，受阻于上游 react-hooks 插件)* | — |
 | AAV-1283 | Security audit: moderate vulnerabilities (tracking) | — |
 | AAV-1359 | [后端] `@aave/client` v7 删除 V3 数据模型（`markets()` 移除，替代的 `reserves()` 只覆盖 4 条链的 V4 hub/spoke）⇒ V3 路径无法升级，保持 `^0.12.0`，已加 `renovate.json` ceiling 止住重复提案（实测数据与退出条件见票内） | — |
+| AAV-1313 | [Improvement] onchain 仓位路径按 chainId 共享 RPC client（V3 多 market / V4 多 spoke 各自重复轮换） | 2026-11-17 |
