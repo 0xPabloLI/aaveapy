@@ -141,7 +141,7 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
-    "viem": "2.57.16",
+    "viem": "2.58.4",
     "wagmi": "^3.7.11",
     "zod": "^4.6.6"
   },
